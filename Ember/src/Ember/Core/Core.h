@@ -16,3 +16,4 @@
 
 
 #include "Assert.h"
+#include "Logger.h"

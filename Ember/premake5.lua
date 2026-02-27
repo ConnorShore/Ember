@@ -9,7 +9,10 @@ project "Ember"
    pchheader "ebpch.h"
    pchsource "src/ebpch.cpp"
 
-   includedirs { "src" }
+   includedirs 
+   {
+      "src"
+   }
 
    files 
    { 

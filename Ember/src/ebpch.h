@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Core/Core.h"
+#include "Ember/Core/Core.h"
 
 #ifdef EB_PLATFORM_WINDOWS
 	#include <Windows.h>

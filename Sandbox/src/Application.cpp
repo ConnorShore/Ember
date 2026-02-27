@@ -1,9 +1,9 @@
-#include <Ember.h>
-#include <iostream>
+#include "Ember.h"
 
 int main()
 {
-	Ember::Logger logger;
-	logger.Log("Hello World!");
+	EB_INFO("Hello World!");
+	EB_DEBUG("This is a debug message.");
+	EB_ERROR("This is an error message.");
 	return 0;
 }
