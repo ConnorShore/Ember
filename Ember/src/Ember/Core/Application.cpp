@@ -1,6 +1,6 @@
 #include "ebpch.h"
 #include "Application.h"
-#include "Logger.h"
+#include "Core.h"
 
 namespace Ember {
 
