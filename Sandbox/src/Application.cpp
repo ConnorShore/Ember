@@ -3,7 +3,7 @@
 
 int main()
 {
-	Ember::PrintTest("Hello, World!");
-	std::cin.get();
+	Ember::Logger logger;
+	logger.Log("Hello World!");
 	return 0;
 }
