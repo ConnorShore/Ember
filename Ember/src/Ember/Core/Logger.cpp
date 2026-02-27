@@ -20,11 +20,6 @@
 
 namespace Ember {
 
-	void Logger::Log(LogLevel logLevel, const std::string& message)
-	{
-		std::cout << GetLogLevelColor(logLevel) << "[" << GetLogLevelString(logLevel) << "]\t" << message << EB_COLOR_LOG_RESET << std::endl;
-	}
-
 	const char* Logger::GetLogLevelString(LogLevel logLevel)
 	{
 		switch (logLevel)
@@ -49,6 +44,11 @@ namespace Ember {
 		case LogLevel::Fatal: return EB_COLOR_LOG_FATAL;
 		default: return EB_COLOR_LOG_INFO;
 		}
+	}
+
+	const char* Logger::GetLogLevelResetColor()
+	{
+		return EB_COLOR_LOG_RESET;
 	}
 
 }

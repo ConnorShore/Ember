@@ -1,5 +1,5 @@
 #pragma once
 
-#include "Ember/Core/Core.h"
+#include "Ember/Core/Application.h"
 #include "Ember/Core/Logger.h"
-#include "Ember/Core/SharedPointer.h"
+#include "Ember/Core/EntryPoint.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <iostream>
 
 namespace Ember {
 
@@ -19,7 +19,13 @@ namespace Ember {
 		Logger() = default;
 		~Logger() = default;
 
-		void Log(LogLevel logLevel, const std::string& message);
+		template <typename... Args>
+		void Log(LogLevel logLevel, std::format_string<Args...> fmt, Args&&... args)
+		{
+			std::cout << GetLogLevelColor(logLevel) << "[" << GetLogLevelString(logLevel) << "] "; 
+			std::cout << std::format(fmt, std::forward<Args>(args)...);
+			std::cout << "\n" << GetLogLevelResetColor();
+		}
 
 		static Logger* CoreLogger()
 		{
@@ -36,6 +42,7 @@ namespace Ember {
 	private:
 		const char* GetLogLevelString(LogLevel logLevel);
 		const char* GetLogLevelColor(LogLevel logLevel);
+		const char* GetLogLevelResetColor();
 	};
 
 }
