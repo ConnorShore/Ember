@@ -2,3 +2,4 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Core/Logger.h"
+#include "Ember/Core/SharedPointer.h"

@@ -17,3 +17,4 @@
 
 #include "Assert.h"
 #include "Logger.h"
+#include "SharedPointer.h"
