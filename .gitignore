@@ -39,3 +39,10 @@
 
 # debug information files
 *.dwo
+
+# Visual Studio generated files
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+.vs/
