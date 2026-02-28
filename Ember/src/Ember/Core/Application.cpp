@@ -6,12 +6,11 @@
 
 namespace Ember {
 
-	Ember::Application* Application::s_Instance = nullptr;
-
 	Application::Application()
 	{
+		m_Window = ScopedPtr<Window>(Window::Create());
+		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
 		EB_CORE_INFO("Application created!");
-		s_Instance = this;
 	}
 
 	Application::~Application()
@@ -19,41 +18,35 @@ namespace Ember {
 		EB_CORE_INFO("Application destroyed!");
 	}
 
+	void Application::OnEvent(Event& event)
+	{
+		EB_CREATE_DISPATCHER(event)
+		EB_DISPATCH_EVENT(WindowCloseEvent, OnWindowClose);
+		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
+	}
+
 	void Application::Run()
 	{
 		EB_CORE_INFO("Application running!");
-		m_Running = true;
-
-		GLFWwindow* window;
-
-		/* Initialize the library */
-		EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
-
-		/* Create a windowed mode window and its OpenGL context */
-		window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-		if (!window)
+		
+		while (m_Running)
 		{
-			glfwTerminate();
-			return;
+			m_Window->OnUpdate();
 		}
 
-		/* Make the window's context current */
-		glfwMakeContextCurrent(window);
-
-		/* Loop until the user closes the window */
-		while (!glfwWindowShouldClose(window))
-		{
-			/* Render here */
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			/* Swap front and back buffers */
-			glfwSwapBuffers(window);
-
-			/* Poll for and process events */
-			glfwPollEvents();
-		}
-
-		glfwTerminate();
-		EB_CORE_INFO("Application stopped!");
+		EB_CORE_INFO("Application stopped running!");
 	}
+
+	bool Application::OnWindowClose(WindowCloseEvent& e)
+	{
+		m_Running = false;
+		return true;
+	}
+
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		EB_CORE_TRACE("Window resized to {0}x{1}", e.GetWidth(), e.GetHeight());
+		return true;
+	}
+
 }

@@ -1,5 +1,10 @@
 #pragma once
 
+#include "Window.h"
+#include "Ember/Event/Event.h"
+#include "Ember/Event/WindowEvent.h"
+#include "ScopedPointer.h"
+
 namespace Ember {
 
 	class Application
@@ -8,12 +13,18 @@ namespace Ember {
 		Application();
 		virtual ~Application();
 
+		void OnEvent(Event& event);
+
 		void Run();
 		bool IsRunning() const { return m_Running; }
 
 	private:
-		static Application* s_Instance;
-		bool m_Running = false;
+		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
+
+	private:
+		ScopedPtr<Window> m_Window;
+		bool m_Running = true;
 	};
 
 	Application* CreateApplication();
