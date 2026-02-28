@@ -11,13 +11,20 @@ project "Ember"
 
    includedirs 
    {
-      "src"
+      "src",
+      "vendor/GLFW/include"
    }
 
    files 
    { 
       "src/**.h",
       "src/**.cpp" 
+   }
+
+   links
+   {
+      "GLFW",
+      "opengl32.lib"
    }
 
    filter "system:windows"
