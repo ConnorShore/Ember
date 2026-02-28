@@ -8,14 +8,23 @@ namespace Ember {
 		return new Windows::Window(config);
 	}
 
+	static bool s_GLFWInitialized = false;
+
 	namespace Windows {
 
-		Ember::Windows::Window::Window(const WindowConfig& config)
-			: m_Width(config.Width), m_Height(config.Height), m_Title(config.Title)
+		Window::Window(const WindowConfig& config)
+			: m_WindowData({ config.Title, config.Width, config.Height })
 		{
-			EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
+			EB_CORE_INFO("Creating Windows (GLFW) window: {0} ({1}x{2})", config.Title, config.Width, config.Height);
 
-			m_Window = ScopedPtr<GLFWwindow>::Create(glfwCreateWindow(config.Width, config.Height, config.Title.c_str(), NULL, NULL));
+			if (!s_GLFWInitialized)
+			{
+				EB_CORE_INFO("Initializing GLFW...");
+				EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
+				s_GLFWInitialized = true;
+			}
+
+			m_Window = glfwCreateWindow(config.Width, config.Height, config.Title.c_str(), NULL, NULL);
 			if (!m_Window)
 			{
 				glfwTerminate();
@@ -23,18 +32,23 @@ namespace Ember {
 				return;
 			}
 
-			glfwMakeContextCurrent(m_Window.Ptr());
+			glfwMakeContextCurrent(m_Window);
+			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 		}
 
-		Ember::Windows::Window::~Window()
+		Window::~Window()
 		{
+			glfwDestroyWindow(m_Window);
 			glfwTerminate();
+
+			EB_CORE_INFO("GLFW window destroyed!");
 		}
 
-		void Ember::Windows::Window::OnUpdate()
+		void Window::OnUpdate()
 		{
-
+			glClear(GL_COLOR_BUFFER_BIT);
+			glfwSwapBuffers(m_Window);
+			glfwPollEvents();
 		}
-
 	}
 }

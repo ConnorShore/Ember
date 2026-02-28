@@ -6,12 +6,10 @@
 
 namespace Ember {
 
-	Ember::Application* Application::s_Instance = nullptr;
-
 	Application::Application()
 	{
+		m_Window = ScopedPtr<Window>(Window::Create());
 		EB_CORE_INFO("Application created!");
-		s_Instance = this;
 	}
 
 	Application::~Application()
@@ -22,38 +20,12 @@ namespace Ember {
 	void Application::Run()
 	{
 		EB_CORE_INFO("Application running!");
-		m_Running = true;
-
-		GLFWwindow* window;
-
-		/* Initialize the library */
-		EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
-
-		/* Create a windowed mode window and its OpenGL context */
-		window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-		if (!window)
+		
+		while (m_Running)
 		{
-			glfwTerminate();
-			return;
+			m_Window->OnUpdate();
 		}
 
-		/* Make the window's context current */
-		glfwMakeContextCurrent(window);
-
-		/* Loop until the user closes the window */
-		while (!glfwWindowShouldClose(window))
-		{
-			/* Render here */
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			/* Swap front and back buffers */
-			glfwSwapBuffers(window);
-
-			/* Poll for and process events */
-			glfwPollEvents();
-		}
-
-		glfwTerminate();
-		EB_CORE_INFO("Application stopped!");
+		EB_CORE_INFO("Application stopped running!");
 	}
 }

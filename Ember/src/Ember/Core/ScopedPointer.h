@@ -1,5 +1,9 @@
 #pragma once
 
+#include <utility>
+
+#include "Logger.h"
+
 namespace Ember {
 
 	template <typename T>
@@ -8,6 +12,7 @@ namespace Ember {
 	public:
 		ScopedPtr() = default;
 		ScopedPtr(const ScopedPtr& ptr) = delete;
+		explicit ScopedPtr(T* ptr) : m_Ptr(ptr) {}
 
 		~ScopedPtr()
 		{
@@ -43,7 +48,6 @@ namespace Ember {
 		bool operator!() const { return m_Ptr == nullptr; }
 
 	private:
-		explicit ScopedPtr(T* ptr) : m_Ptr(ptr) {}
 		T* m_Ptr = nullptr;
 	};
 

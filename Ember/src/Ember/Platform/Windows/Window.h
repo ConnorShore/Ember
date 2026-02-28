@@ -16,14 +16,20 @@ namespace Ember {
 
 			virtual void OnUpdate() override;
 
-			virtual unsigned int GetWidth() override { return m_Width; }
-			virtual unsigned int GetHeight() override { return m_Height; }
+			inline virtual unsigned int GetWidth() override { return m_WindowData.Width; }
+			inline virtual unsigned int GetHeight() override { return m_WindowData.Height; }
+			inline virtual void SetEventCallback(const std::function<void(Event&)>& callback) override { m_WindowData.EventCallback = callback; }
+			inline virtual void* GetNativeWindow() const override { return m_Window; }
 
 		private:
-			unsigned int m_Width, m_Height;
-			std::string m_Title;
+			GLFWwindow* m_Window;
 
-			ScopedPtr<GLFWwindow> m_Window;
+			struct WindowData
+			{
+				std::string Title;
+				unsigned int Width, Height;
+				std::function<void(Event&)> EventCallback;
+			} m_WindowData;
 		};
 
 	}

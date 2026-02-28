@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Window.h"
+#include "ScopedPointer.h"
+
 namespace Ember {
 
 	class Application
@@ -12,8 +15,8 @@ namespace Ember {
 		bool IsRunning() const { return m_Running; }
 
 	private:
-		static Application* s_Instance;
-		bool m_Running = false;
+		ScopedPtr<Window> m_Window;
+		bool m_Running = true;
 	};
 
 	Application* CreateApplication();

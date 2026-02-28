@@ -9,9 +9,6 @@ public:
 	~SandboxApp()
 	{
 	}
-
-private:
-
 };
 
 Ember::Application* Ember::CreateApplication()

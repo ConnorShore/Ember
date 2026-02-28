@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <functional>
+
+#include "Ember/Event/Event.h"
 
 namespace Ember {
 
@@ -26,6 +29,10 @@ namespace Ember {
 
 		virtual unsigned int GetWidth() = 0;
 		virtual unsigned int GetHeight() = 0;
+
+		virtual void SetEventCallback(const std::function<void(Event&)>& callback) = 0;
+
+		virtual void* GetNativeWindow() const = 0;
 
 		static Window* Create(const WindowConfig& config = WindowConfig());
 	};
