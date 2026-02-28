@@ -14,10 +14,17 @@ namespace Ember {
 		ScopedPtr(const ScopedPtr& ptr) = delete;
 		explicit ScopedPtr(T* ptr) : m_Ptr(ptr) {}
 
+		ScopedPtr(ScopedPtr&& ptr) noexcept : m_Ptr(ptr.m_Ptr)
+		{
+			ptr.m_Ptr = nullptr;
+		}
+
 		~ScopedPtr()
 		{
-			delete m_Ptr;
-			EB_CORE_INFO("Scoped pointer destroyed!");
+			if (m_Ptr)
+			{
+				delete m_Ptr;
+			}
 		}
 
 		template <typename... Args>

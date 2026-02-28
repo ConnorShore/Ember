@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "Window.h"
+#include "Ember/Event/WindowEvent.h"
 
 namespace Ember {
 
@@ -34,6 +35,14 @@ namespace Ember {
 
 			glfwMakeContextCurrent(m_Window);
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
+
+			glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* w)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+
+					WindowCloseEvent event;
+					data.EventCallback(event);
+				});
 		}
 
 		Window::~Window()

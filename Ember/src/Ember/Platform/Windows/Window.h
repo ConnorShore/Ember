@@ -11,6 +11,8 @@ namespace Ember {
 		class Window : public Ember::Window
 		{
 		public:
+			using EventCallbackFunc = std::function<void(Event&)>;
+
 			Window(const WindowConfig& config);
 			virtual ~Window();
 
@@ -18,7 +20,7 @@ namespace Ember {
 
 			inline virtual unsigned int GetWidth() override { return m_WindowData.Width; }
 			inline virtual unsigned int GetHeight() override { return m_WindowData.Height; }
-			inline virtual void SetEventCallback(const std::function<void(Event&)>& callback) override { m_WindowData.EventCallback = callback; }
+			inline virtual void SetEventCallback(const EventCallbackFunc& callback) override { m_WindowData.EventCallback = callback; }
 			inline virtual void* GetNativeWindow() const override { return m_Window; }
 
 		private:
@@ -28,7 +30,7 @@ namespace Ember {
 			{
 				std::string Title;
 				unsigned int Width, Height;
-				std::function<void(Event&)> EventCallback;
+				EventCallbackFunc EventCallback;
 			} m_WindowData;
 		};
 

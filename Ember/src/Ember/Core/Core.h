@@ -14,7 +14,6 @@
 #define EB_ENABLE_ASSERTS
 #endif
 
-
 #include "Assert.h"
 #include "Logger.h"
 #include "SharedPointer.h"

@@ -1,6 +1,17 @@
 #pragma once 
 
 namespace Ember {
+
+#define EB_EVENT_FUNCTION(f) [this](Event& e) { f; }
+#define EB_CREATE_DISPATCHER(event) EventDispatcher dispatcher(event);
+#define EB_DISPATCH_EVENT(eventType, handler) dispatcher.Dispatch<eventType>([this](eventType e) { return handler(e); });
+
+
+#define EB_EVENT_TYPE_INITIALIZER(type) static EventType GetStaticType() { return EventType::type; }\
+								virtual EventType GetEventType() const override { return GetStaticType(); }\
+								virtual const char* GetName() const override { return #type; }
+#define EB_EVENT_CATEGORY_INITIALIZER(category) virtual int GetCategoryFlags() const override { return category; }
+
 	
 	enum class EventType
 	{
@@ -22,11 +33,10 @@ namespace Ember {
 	{
 		None = 0,
 		EventCategoryApplication =	1 << 0,
-		EventCategoryWindow =		1 << 1,
-		EventCategoryInput =		1 << 2,
-		EventCategoryKeyboard =		1 << 3,
-		EventCategoryMouse =		1 << 4,
-		EventCategoryMouseButton =	1 << 5
+		EventCategoryInput =		1 << 1,
+		EventCategoryKeyboard =		1 << 2,
+		EventCategoryMouse =		1 << 3,
+		EventCategoryMouseButton =	1 << 4
 	};
 
 	class Event
@@ -40,9 +50,9 @@ namespace Ember {
 
 		bool IsInCategory(EventCategory category) { return GetCategoryFlags() & category; }
 		bool Handled() const { return m_Handled; }
-		void Consume() { m_Handled = true; }
 
 	private:
+		friend class EventDispatcher;
 		bool m_Handled = false;
 	};
 
@@ -58,7 +68,7 @@ namespace Ember {
 			{
 				if (func(static_cast<T&>(m_Event)))
 				{
-					m_Event.Consume();
+					m_Event.m_Handled = true;
 				}
 
 				return true;
