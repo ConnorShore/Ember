@@ -1,0 +1,3 @@
+[submodule "Ember/vendor/GLFW"]
+	path = Ember/vendor/GLFW
+	url = https://github.com/ConnorShore/glfw.git
