@@ -19,7 +19,8 @@ namespace Ember {
 		bool IsRunning() const { return m_Running; }
 
 	private:
-		bool OnWindowClose(WindowCloseEvent e);
+		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 
 	private:
 		ScopedPtr<Window> m_Window;

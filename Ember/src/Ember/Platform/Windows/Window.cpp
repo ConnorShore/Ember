@@ -36,11 +36,21 @@ namespace Ember {
 			glfwMakeContextCurrent(m_Window);
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
+			// Set GLFW callbacks
 			glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* w)
 				{
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
 
 					WindowCloseEvent event;
+					data.EventCallback(event);
+				});
+			glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* w, int width, int height)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+					data.Width = width;
+					data.Height = height;
+
+					WindowResizeEvent event(width, height);
 					data.EventCallback(event);
 				});
 		}

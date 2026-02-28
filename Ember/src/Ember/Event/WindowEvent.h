@@ -17,4 +17,19 @@ namespace Ember {
 		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryApplication);
 	};
 
+	class WindowResizeEvent : public Event
+	{
+	public:
+		WindowResizeEvent(unsigned int width, unsigned int height)
+			: m_Width(width), m_Height(height) { }
+
+		EB_EVENT_TYPE_INITIALIZER(WindowResize);
+		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryApplication);
+
+		const int GetWidth() const { return m_Width; }
+		const int GetHeight() const { return m_Height; }
+
+	private:
+		unsigned int m_Width, m_Height;
+	};
 }

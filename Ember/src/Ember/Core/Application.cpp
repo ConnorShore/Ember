@@ -22,6 +22,7 @@ namespace Ember {
 	{
 		EB_CREATE_DISPATCHER(event)
 		EB_DISPATCH_EVENT(WindowCloseEvent, OnWindowClose);
+		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
 	void Application::Run()
@@ -36,9 +37,15 @@ namespace Ember {
 		EB_CORE_INFO("Application stopped running!");
 	}
 
-	bool Application::OnWindowClose(WindowCloseEvent e)
+	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
 		m_Running = false;
+		return true;
+	}
+
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		EB_CORE_TRACE("Window resized to {0}x{1}", e.GetWidth(), e.GetHeight());
 		return true;
 	}
 
