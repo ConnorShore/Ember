@@ -10,6 +10,9 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <cstdint>
+#include <concepts>
+#include <format>
 
 #include "Ember/Core/Core.h"
 

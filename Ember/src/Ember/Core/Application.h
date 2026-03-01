@@ -3,6 +3,8 @@
 #include "Window.h"
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
+#include "Ember/Event/KeyEvent.h"
+#include "Ember/Event/MouseEvent.h"
 #include "ScopedPointer.h"
 
 namespace Ember {
@@ -21,6 +23,11 @@ namespace Ember {
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
+		bool OnKeyPressed(KeyPressedEvent& e);
+		bool OnKeyReleased(KeyReleasedEvent& e);
+		bool OnKeyRepeat(KeyRepeatEvent& e);
+		bool OnMousePressed(MousePressedEvent& e);
+		bool OnMouseReleased(MouseReleasedEvent& e);
 
 	private:
 		ScopedPtr<Window> m_Window;

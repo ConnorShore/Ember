@@ -1,8 +1,14 @@
 #include "ebpch.h"
 #include "Window.h"
+#include "Input.h"
 #include "Ember/Event/WindowEvent.h"
+#include "Ember/Event/KeyEvent.h"
+#include "Ember/Event/MouseEvent.h"
+#include "Ember/Input/Input.h"
 
 namespace Ember {
+
+	//------- Static Methods/Members --------------------------------
 
 	Window* Window::Create(const WindowConfig& config)
 	{
@@ -10,6 +16,8 @@ namespace Ember {
 	}
 
 	static bool s_GLFWInitialized = false;
+
+	//---------------------------------------------------------------
 
 	namespace Windows {
 
@@ -41,8 +49,8 @@ namespace Ember {
 				{
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
 
-					WindowCloseEvent event;
-					data.EventCallback(event);
+					WindowCloseEvent e;
+					data.EventCallback(e);
 				});
 			glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* w, int width, int height)
 				{
@@ -50,8 +58,60 @@ namespace Ember {
 					data.Width = width;
 					data.Height = height;
 
-					WindowResizeEvent event(width, height);
-					data.EventCallback(event);
+					WindowResizeEvent e(width, height);
+					data.EventCallback(e);
+				});
+
+			// Key Callbacks
+			glfwSetKeyCallback(m_Window, [](GLFWwindow* w, int key, int scancode, int action, int mods)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+					KeyCode keyCode = Input::GlfwKeyCodeToEmberKeyCode(key);
+
+					switch (action)
+					{
+					case GLFW_PRESS:
+					{
+						KeyPressedEvent e(keyCode);
+						data.EventCallback(e);
+						break;
+					}
+					case GLFW_REPEAT:
+					{
+						KeyRepeatEvent e(keyCode);
+						data.EventCallback(e);
+						break;
+					}
+					case GLFW_RELEASE:
+					{
+						KeyReleasedEvent e(keyCode);
+						data.EventCallback(e);
+						break;
+					}
+					}
+				});
+
+			// Mouse Callbacks
+			glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* w, int button, int action, int mods)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+					MouseButton mouseButton = Input::GlfwMouseButtonToEmberMouseButton(button);
+
+					switch (action) 
+					{
+					case GLFW_PRESS:
+					{
+						MousePressedEvent e(mouseButton);
+						data.EventCallback(e);
+						break;
+					}
+					case GLFW_RELEASE:
+					{
+						MouseReleasedEvent e(mouseButton);
+						data.EventCallback(e);
+						break;
+					}
+					}
 				});
 		}
 

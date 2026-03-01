@@ -22,6 +22,7 @@ namespace Ember {
 		WindowLostFocus,
 		WindowMoved,
 		KeyPressed,
+		KeyRepeat,
 		KeyReleased,
 		MouseButtonPressed,
 		MouseButtonReleased,
