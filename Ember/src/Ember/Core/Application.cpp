@@ -52,12 +52,12 @@ namespace Ember {
 		while (m_Running) {
 			TimeStamp currentTime = Timer::Now();
 			TimeStep delta = currentTime - lastTime;
+			lastTime = currentTime;
 
 			for (auto& layer : m_LayerStack)
 				layer->OnUpdate(delta);
 
 			m_Window->OnUpdate();
-			lastTime = Timer::Now();
 		}
 
 		EB_CORE_INFO("Application stopped running!");

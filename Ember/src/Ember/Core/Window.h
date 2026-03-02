@@ -31,6 +31,9 @@ namespace Ember {
 		virtual unsigned int GetWidth() = 0;
 		virtual unsigned int GetHeight() = 0;
 
+		virtual void SetVSync(bool enabled) = 0;
+		virtual bool IsVSync() const = 0;
+
 		virtual void SetEventCallback(const std::function<void(Event&)>& callback) = 0;
 
 		virtual void* GetNativeWindow() const = 0;

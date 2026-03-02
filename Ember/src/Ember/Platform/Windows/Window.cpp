@@ -40,7 +40,37 @@ namespace Ember {
 
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
-			// Set GLFW callbacks
+			SetVSync(true);
+			RegisterCallbacks();
+		}
+
+		Window::~Window()
+		{
+			glfwDestroyWindow(m_Window);
+			glfwTerminate();
+
+			EB_CORE_INFO("GLFW window destroyed!");
+		}
+
+		void Window::OnUpdate()
+		{
+			glfwPollEvents();
+			m_GraphicsContext->SwapBuffers();
+		}
+
+		void Window::SetVSync(bool enabled)
+		{
+			m_WindowData.VSync = enabled;
+			glfwSwapInterval(enabled ? 1 : 0);
+		}
+
+		bool Window::IsVSync() const
+		{
+			return m_WindowData.VSync;
+		}
+
+		void Window::RegisterCallbacks()
+		{
 			glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* w)
 				{
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
@@ -93,7 +123,7 @@ namespace Ember {
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
 					MouseButton mouseButton = Input::GlfwMouseButtonToEmberMouseButton(button);
 
-					switch (action) 
+					switch (action)
 					{
 					case GLFW_PRESS:
 					{
@@ -111,18 +141,5 @@ namespace Ember {
 				});
 		}
 
-		Window::~Window()
-		{
-			glfwDestroyWindow(m_Window);
-			glfwTerminate();
-
-			EB_CORE_INFO("GLFW window destroyed!");
-		}
-
-		void Window::OnUpdate()
-		{
-			glfwPollEvents();
-			m_GraphicsContext->SwapBuffers();
-		}
 	}
 }
