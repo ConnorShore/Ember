@@ -25,7 +25,9 @@ namespace Ember {
 	public:
 		virtual ~Window() = default;
 
-		virtual void OnUpdate() = 0;
+		virtual void Clear() = 0;
+		virtual void PollEvents() = 0;
+		virtual void SwapBuffers() = 0;
 
 		virtual unsigned int GetWidth() = 0;
 		virtual unsigned int GetHeight() = 0;

@@ -11,6 +11,7 @@ namespace Ember {
 	{
 	public:
 		ScopedPtr() = default;
+		ScopedPtr(std::nullptr_t ptr) : m_Ptr(nullptr) {}
 		ScopedPtr(const ScopedPtr& ptr) = delete;
 		explicit ScopedPtr(T* ptr) : m_Ptr(ptr) {}
 

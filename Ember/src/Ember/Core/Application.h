@@ -5,6 +5,7 @@
 #include "Ember/Event/WindowEvent.h"
 #include "Ember/Event/KeyEvent.h"
 #include "Ember/Event/MouseEvent.h"
+#include "LayerStack.h"
 #include "ScopedPointer.h"
 
 namespace Ember {
@@ -14,6 +15,9 @@ namespace Ember {
 	public:
 		Application();
 		virtual ~Application();
+
+		void PushLayer(ScopedPtr<Layer> layer);
+		void PushCanvasLayer(ScopedPtr<Layer> canvas);
 
 		void OnEvent(Event& event);
 
@@ -32,6 +36,8 @@ namespace Ember {
 	private:
 		ScopedPtr<Window> m_Window;
 		bool m_Running = true;
+
+		LayerStack m_LayerStack;
 	};
 
 	Application* CreateApplication();

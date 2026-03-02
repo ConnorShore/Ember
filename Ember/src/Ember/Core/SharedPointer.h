@@ -32,29 +32,23 @@ namespace Ember {
 	/// -------------------------------------------------------------------------------------
 
 	template<typename T>
-	class SharedRef
+	class SharedPtr
 	{
 	public:
-		SharedRef() = default;
-
-		SharedRef(std::nullptr_t ptr)
-			: m_Ptr(nullptr)
-		{
-		}
-
-		SharedRef(T* ptr)
-			: m_Ptr(ptr)
+		SharedPtr() = default;
+		SharedPtr(std::nullptr_t ptr) : m_Ptr(nullptr) {}
+		SharedPtr(T* ptr) : m_Ptr(ptr)
 		{
 			m_Ptr->IncrementRefCount();
 		}
 
-		SharedRef(const SharedRef<T>& other)
+		SharedPtr(const SharedPtr<T>& other)
 			: m_Ptr(other.m_Ptr)
 		{
 			IncrementRefCount();
 		}
 
-		SharedRef<T>& operator=(const SharedRef<T>& other)
+		SharedPtr<T>& operator=(const SharedPtr<T>& other)
 		{
 			if (this != &other)
 			{
@@ -69,22 +63,22 @@ namespace Ember {
 			return *this;
 		}
 
-		~SharedRef()
+		~SharedPtr()
 		{
 			DecrementRefCount();
 		}
 
 		template <typename... Args>
-		static SharedRef<T> Create(Args&&... args)
+		static SharedPtr<T> Create(Args&&... args)
 		{
-			return SharedRef<T>(new T(std::forward<Args>(args)...));
+			return SharedPtr<T>(new T(std::forward<Args>(args)...));
 		}
 
 		T* operator->() { return m_Ptr; }
 		const T& operator*() const { return *m_Ptr; }
 
-		bool operator==(const SharedRef<T>& other) const { return m_Ptr == other.m_Ptr; }
-		bool operator!=(const SharedRef<T>& other) const { return m_Ptr != other.m_Ptr; }
+		bool operator==(const SharedPtr<T>& other) const { return m_Ptr == other.m_Ptr; }
+		bool operator!=(const SharedPtr<T>& other) const { return m_Ptr != other.m_Ptr; }
 		bool operator==(std::nullptr_t) const { return m_Ptr == nullptr; }
 		bool operator!=(std::nullptr_t) const { return m_Ptr != nullptr; }
 

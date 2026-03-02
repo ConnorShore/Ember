@@ -123,11 +123,19 @@ namespace Ember {
 			EB_CORE_INFO("GLFW window destroyed!");
 		}
 
-		void Window::OnUpdate()
+		void Window::Clear()
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
-			glfwSwapBuffers(m_Window);
+		}
+
+		void Window::PollEvents()
+		{
 			glfwPollEvents();
+		}
+
+		void Window::SwapBuffers()
+		{
+			glfwSwapBuffers(m_Window);
 		}
 	}
 }

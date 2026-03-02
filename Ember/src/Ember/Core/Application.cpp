@@ -19,6 +19,18 @@ namespace Ember {
 		EB_CORE_INFO("Application destroyed!");
 	}
 
+	void Application::PushLayer(ScopedPtr<Layer> layer)
+	{
+		layer->OnAttach();
+		m_LayerStack.PushLayer(std::move(layer));
+	}
+
+	void Application::PushCanvasLayer(ScopedPtr<Layer> canvas)
+	{
+		canvas->OnAttach();
+		m_LayerStack.PushCanvasLayer(std::move(canvas));
+	}
+
 	void Application::OnEvent(Event& event)
 	{
 		EB_CREATE_DISPATCHER(event)
@@ -35,9 +47,14 @@ namespace Ember {
 	{
 		EB_CORE_INFO("Application running!");
 		
-		while (m_Running)
-		{
-			m_Window->OnUpdate();
+		while (m_Running) {
+			m_Window->Clear();
+			m_Window->PollEvents();
+
+			for (auto& layer : m_LayerStack)
+				layer->OnUpdate();
+
+			m_Window->SwapBuffers();
 		}
 
 		EB_CORE_INFO("Application stopped running!");
