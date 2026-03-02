@@ -6,6 +6,7 @@
 #include "Ember/Core/Layer.h"
 
 #include "Ember/Core/Logger.h"
+#include "Ember/Core/Time.h"
 
 #include "Ember/Core/ScopedPointer.h"
 #include "Ember/Core/SharedPointer.h"

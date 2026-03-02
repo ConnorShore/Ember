@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ember.h>>
+#include <Ember.h>
 
 class GuiLayer : public Ember::Layer {
 public:
@@ -10,7 +10,7 @@ public:
 
 	void OnAttach() override;
 	void OnDetatch() override;
-	void OnUpdate() override;
+	void OnUpdate(Ember::TimeStep delta) override;
 
 private:
 

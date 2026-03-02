@@ -10,7 +10,7 @@ public:
 
 	void OnAttach() override;
 	void OnDetatch() override;
-	void OnUpdate() override;
+	void OnUpdate(Ember::TimeStep delta) override;
 
 private:
 

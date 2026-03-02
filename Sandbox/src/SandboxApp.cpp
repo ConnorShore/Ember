@@ -10,7 +10,7 @@ public:
 	SandboxApp()
 	{
 		PushLayer(Ember::ScopedPtr<Ember::Layer>(new SandboxLayer()));
-		PushCanvasLayer(Ember::ScopedPtr<Ember::Layer>(new GuiLayer()));
+		//PushCanvasLayer(Ember::ScopedPtr<Ember::Layer>(new GuiLayer()));
 	}
 	~SandboxApp()
 	{

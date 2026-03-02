@@ -19,6 +19,6 @@ void GuiLayer::OnDetatch()
 	EB_INFO("Layer {} detatched!", GetName());
 }
 
-void GuiLayer::OnUpdate()
+void GuiLayer::OnUpdate(Ember::TimeStep delta)
 {
 }

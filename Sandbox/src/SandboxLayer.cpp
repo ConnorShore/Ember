@@ -19,8 +19,10 @@ void SandboxLayer::OnDetatch()
 	EB_INFO("Layer {} detatched!", GetName());
 }
 
-void SandboxLayer::OnUpdate()
+void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 {
 	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 1.0f, 0.0f, 1.0));
 	Ember::RenderAction::Clear();
+
+	EB_TRACE("Layer {} updated! Delta time: {} milliseconds", GetName(), delta.Milliseconds());
 }

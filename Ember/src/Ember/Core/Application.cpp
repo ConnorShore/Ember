@@ -1,6 +1,7 @@
  #include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
+#include "Ember/Core/Time.h"
 #include "Ember/Input/Input.h"
 
 #include <GLFW/glfw3.h>
@@ -46,13 +47,17 @@ namespace Ember {
 	void Application::Run()
 	{
 		EB_CORE_INFO("Application running!");
-		
+
+		TimeStamp lastTime = Timer::Now();
 		while (m_Running) {
+			TimeStamp currentTime = Timer::Now();
+			TimeStep delta = currentTime - lastTime;
 
 			for (auto& layer : m_LayerStack)
-				layer->OnUpdate();
+				layer->OnUpdate(delta);
 
 			m_Window->OnUpdate();
+			lastTime = Timer::Now();
 		}
 
 		EB_CORE_INFO("Application stopped running!");
