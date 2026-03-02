@@ -13,7 +13,8 @@ project "Ember"
    {
       "src",
       "vendor/GLFW/include",
-      "vendor/glad/include"
+      "vendor/glad/include",
+      "vendor/glm"
    }
 
    files 

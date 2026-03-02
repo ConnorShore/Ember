@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Ember/Core/Core.h"
+#include "Ember/Math/Math.h"
+
 namespace Ember {
 
 	class RendererAPI
@@ -11,8 +14,12 @@ namespace Ember {
 			OpenGL
 		};
 
+		virtual void Clear() = 0;
+		virtual void SetClearColor(Vector4<float> color) = 0;
+
 	public:
 		static API GetApi() { return s_Api; }
+		static ScopedPtr<RendererAPI> Create();
 
 	private:
 		static API s_Api;

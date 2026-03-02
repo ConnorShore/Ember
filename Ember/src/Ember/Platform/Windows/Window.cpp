@@ -119,12 +119,6 @@ namespace Ember {
 			EB_CORE_INFO("GLFW window destroyed!");
 		}
 
-		void Window::Clear()
-		{
-			glClear(GL_COLOR_BUFFER_BIT);
-			glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-		}
-
 		void Window::OnUpdate()
 		{
 			glfwPollEvents();

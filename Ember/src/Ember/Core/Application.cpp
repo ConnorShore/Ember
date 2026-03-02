@@ -48,7 +48,6 @@ namespace Ember {
 		EB_CORE_INFO("Application running!");
 		
 		while (m_Running) {
-			m_Window->Clear();
 
 			for (auto& layer : m_LayerStack)
 				layer->OnUpdate();

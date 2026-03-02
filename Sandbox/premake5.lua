@@ -14,7 +14,8 @@ project "Sandbox"
 
    includedirs 
    {
-       "%{wks.location}/Ember/src"
+       "%{wks.location}/Ember/src",
+       "%{wks.location}/Ember/vendor/glm"
    }
 
    links 

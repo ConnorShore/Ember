@@ -12,3 +12,7 @@
 
 #include "Ember/Input/Input.h"
 #include "Ember/Input/InputCode.h"
+
+#include "Ember/Math/Math.h"
+
+#include "Ember/Render/RenderAction.h"

@@ -26,7 +26,6 @@ namespace Ember {
 	public:
 		virtual ~Window() = default;
 
-		virtual void Clear() = 0;	// TODO: This will move to rendering
 		virtual void OnUpdate() = 0;
 
 		virtual unsigned int GetWidth() = 0;

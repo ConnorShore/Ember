@@ -21,4 +21,6 @@ void SandboxLayer::OnDetatch()
 
 void SandboxLayer::OnUpdate()
 {
+	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 1.0f, 0.0f, 1.0));
+	Ember::RenderAction::Clear();
 }

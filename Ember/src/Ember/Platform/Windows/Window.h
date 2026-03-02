@@ -17,7 +17,6 @@ namespace Ember {
 			Window(const WindowConfig& config);
 			virtual ~Window();
 
-			virtual void Clear() override;
 			virtual void OnUpdate() override;
 
 			inline virtual unsigned int GetWidth() override { return m_WindowData.Width; }
