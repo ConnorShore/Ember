@@ -1,25 +1,19 @@
 #include "ebpch.h"
 #include "Window.h"
+#include "Ember/Core/Core.h"
 #include "Input.h"
 #include "Ember/Event/WindowEvent.h"
 #include "Ember/Event/KeyEvent.h"
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/Input/Input.h"
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 namespace Ember {
-
-	//------- Static Methods/Members --------------------------------
-
-	Window* Window::Create(const WindowConfig& config)
-	{
-		return new Windows::Window(config);
-	}
-
-	static bool s_GLFWInitialized = false;
-
-	//---------------------------------------------------------------
-
 	namespace Windows {
+
+		static bool s_GLFWInitialized = false;
 
 		Window::Window(const WindowConfig& config)
 			: m_WindowData({ config.Title, config.Width, config.Height })
@@ -41,7 +35,9 @@ namespace Ember {
 				return;
 			}
 
-			glfwMakeContextCurrent(m_Window);
+			m_GraphicsContext = GraphicsContext::Create(m_Window);
+			m_GraphicsContext->Init();
+
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
 			// Set GLFW callbacks
@@ -126,16 +122,13 @@ namespace Ember {
 		void Window::Clear()
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
+			glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 		}
 
-		void Window::PollEvents()
+		void Window::OnUpdate()
 		{
 			glfwPollEvents();
-		}
-
-		void Window::SwapBuffers()
-		{
-			glfwSwapBuffers(m_Window);
+			m_GraphicsContext->SwapBuffers();
 		}
 	}
 }

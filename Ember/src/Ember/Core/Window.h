@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "Ember/Event/Event.h"
+#include "Ember/Core/Core.h"
 
 namespace Ember {
 
@@ -25,9 +26,8 @@ namespace Ember {
 	public:
 		virtual ~Window() = default;
 
-		virtual void Clear() = 0;
-		virtual void PollEvents() = 0;
-		virtual void SwapBuffers() = 0;
+		virtual void Clear() = 0;	// TODO: This will move to rendering
+		virtual void OnUpdate() = 0;
 
 		virtual unsigned int GetWidth() = 0;
 		virtual unsigned int GetHeight() = 0;
@@ -36,7 +36,7 @@ namespace Ember {
 
 		virtual void* GetNativeWindow() const = 0;
 
-		static Window* Create(const WindowConfig& config = WindowConfig());
+		static ScopedPtr<Window> Create(const WindowConfig& config = WindowConfig());
 	};
 
 }

@@ -13,7 +13,10 @@ echo Removing .vs folder...
 IF EXIST ".vs" rmdir /s /q ".vs"
 
 echo Removing bin directories...
-IF EXIST "bin" rmdir /s /q "bin"
+for /d /r %%x in (bin) do @if exist "%%x" rmdir /s /q "%%x"
+
+echo Removing bin-int directories...
+for /d /r %%x in (bin-int) do @if exist "%%x" rmdir /s /q "%%x"
 
 echo.
 echo Clean complete!

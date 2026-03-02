@@ -2,6 +2,7 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Core/Window.h"
+#include "Ember/Render/GraphicsContext.h"
 
 #include <GLFW/glfw3.h>
 
@@ -17,8 +18,7 @@ namespace Ember {
 			virtual ~Window();
 
 			virtual void Clear() override;
-			virtual void PollEvents() override;
-			virtual void SwapBuffers() override;
+			virtual void OnUpdate() override;
 
 			inline virtual unsigned int GetWidth() override { return m_WindowData.Width; }
 			inline virtual unsigned int GetHeight() override { return m_WindowData.Height; }
@@ -27,6 +27,7 @@ namespace Ember {
 
 		private:
 			GLFWwindow* m_Window;
+			ScopedPtr<GraphicsContext> m_GraphicsContext;
 
 			struct WindowData
 			{

@@ -12,7 +12,8 @@ project "Ember"
    includedirs 
    {
       "src",
-      "vendor/GLFW/include"
+      "vendor/GLFW/include",
+      "vendor/glad/include"
    }
 
    files 
@@ -24,7 +25,13 @@ project "Ember"
    links
    {
       "GLFW",
+      "glad",
       "opengl32.lib"
+   }
+
+   defines
+   {
+      "GLFW_INCLUDE_NONE"
    }
 
    filter "system:windows"

@@ -20,6 +20,12 @@ namespace Ember {
 			ptr.m_Ptr = nullptr;
 		}
 
+		template <typename U>
+		ScopedPtr(ScopedPtr<U>&& ptr) noexcept : m_Ptr(ptr.m_Ptr)
+		{
+			ptr.m_Ptr = nullptr;
+		}
+
 		~ScopedPtr()
 		{
 			if (m_Ptr)
@@ -48,6 +54,15 @@ namespace Ember {
 			return *this;
 		}
 
+		template <typename U>
+		ScopedPtr& operator=(ScopedPtr<U>&& ptr) noexcept
+		{
+			delete m_Ptr;
+			m_Ptr = ptr.m_Ptr;
+			ptr.m_Ptr = nullptr;
+			return *this;
+		}
+
 		T& operator*() const { return *m_Ptr; }
 		T* operator->() const { return m_Ptr; }
 
@@ -56,6 +71,9 @@ namespace Ember {
 		bool operator!() const { return m_Ptr == nullptr; }
 
 	private:
+		template <typename U>
+		friend class ScopedPtr;
+
 		T* m_Ptr = nullptr;
 	};
 

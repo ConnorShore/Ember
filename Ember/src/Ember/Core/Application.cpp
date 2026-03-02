@@ -1,4 +1,4 @@
-#include "ebpch.h"
+ #include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
 #include "Ember/Input/Input.h"
@@ -9,7 +9,7 @@ namespace Ember {
 
 	Application::Application()
 	{
-		m_Window = ScopedPtr<Window>(Window::Create());
+		m_Window = Window::Create();
 		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
 		EB_CORE_INFO("Application created!");
 	}
@@ -49,12 +49,11 @@ namespace Ember {
 		
 		while (m_Running) {
 			m_Window->Clear();
-			m_Window->PollEvents();
 
 			for (auto& layer : m_LayerStack)
 				layer->OnUpdate();
 
-			m_Window->SwapBuffers();
+			m_Window->OnUpdate();
 		}
 
 		EB_CORE_INFO("Application stopped running!");
