@@ -13,10 +13,16 @@ echo Removing .vs folder...
 IF EXIST ".vs" rmdir /s /q ".vs"
 
 echo Removing bin directories...
-for /d /r %%x in (bin) do @if exist "%%x" rmdir /s /q "%%x"
+IF EXIST "bin" rmdir /s /q "bin"
 
 echo Removing bin-int directories...
-for /d /r %%x in (bin-int) do @if exist "%%x" rmdir /s /q "%%x"
+IF EXIST "bin-int" rmdir /s /q "bin-int"
+
+echo Removing bin and bin-int directories in Ember/vendor subdirectories...
+for /d %%D in ("Ember\vendor\*") do (
+    IF EXIST "%%D\bin" rmdir /s /q "%%D\bin"
+    IF EXIST "%%D\bin-int" rmdir /s /q "%%D\bin-int"
+)
 
 echo.
 echo Clean complete!
