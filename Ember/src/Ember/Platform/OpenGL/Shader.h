@@ -1,15 +1,12 @@
 #pragma once
 
 #include "Ember/Render/Shader.h"
+#include "Ember/Render/ShaderParser.h"
+
+#include <unordered_map>
 
 namespace Ember {
 	namespace OpenGL {
-
-		struct ShaderProgramSource
-		{
-			std::string VertexSource;
-			std::string FragmentSource;
-		};
 
 		class Shader : public Ember::Shader
 		{
@@ -23,8 +20,7 @@ namespace Ember {
 			const std::string& GetName() const override;
 
 		private:
-			unsigned int CompileShader(unsigned int type, const std::string& source);
-			ShaderProgramSource ParseShader();
+			void CompileShader(const std::unordered_map<ShaderType, std::string>& sources);
 
 		private:
 			unsigned int m_Id;

@@ -35,5 +35,4 @@ namespace Ember {
 	private:
 		std::unordered_map<std::string, SharedPtr<Shader>> m_ShaderMap;
 	};
-
 }

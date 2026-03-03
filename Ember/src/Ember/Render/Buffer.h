@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Ember/Core/Core.h"
+
 namespace Ember {
 
 	class VertexBuffer
@@ -10,19 +12,27 @@ namespace Ember {
 
 		virtual void Bind() const = 0;
 
-	private:
-		unsigned int m_Id;
+		static SharedPtr<VertexBuffer> Create(const void* data, unsigned int size);
 	};
 
 	class IndexBuffer
 	{
-		IndexBuffer(const unsigned int* data, unsigned int size);
+	public:
+		IndexBuffer(const unsigned int* data, unsigned int count);
 		virtual ~IndexBuffer() = default;
 
 		virtual void Bind() const = 0;
 
-	private:
-		unsigned int m_Id;
+		static SharedPtr<IndexBuffer> Create(const unsigned int* data, unsigned int count);
+	};
+
+	class IndexedVertexBuffer
+	{
+	public:
+		IndexedVertexBuffer();
+		virtual ~IndexedVertexBuffer() = default;
+
+		virtual void Bind() const = 0;
 	};
 
 }

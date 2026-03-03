@@ -15,4 +15,6 @@ public:
 
 private:
 	Ember::SharedPtr<Ember::Shader> m_Shader;
+
+	unsigned int m_VAO, m_VBO, m_IBO;
 };

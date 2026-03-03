@@ -3,6 +3,19 @@
 
 #include <glad/glad.h>
 
+namespace Utils {
+	static GLuint GLShaderTypeFromShaderType(Ember::ShaderType type)
+	{
+		switch (type)
+		{
+		case Ember::ShaderType::Vertex:		return GL_VERTEX_SHADER;
+		case Ember::ShaderType::Fragment:	return GL_FRAGMENT_SHADER;
+		case Ember::ShaderType::None:
+		default:							EB_CORE_ASSERT(false, "None Shader type is not supported for GL!"); return 0;
+		}
+	}
+}
+
 namespace Ember {
 	namespace OpenGL {
 
@@ -11,20 +24,8 @@ namespace Ember {
 		{
 			EB_CORE_INFO("Creating shader from file: {}", filePath);
 
-			ShaderProgramSource source = ParseShader();
-
-			m_Id = glCreateProgram();
-			unsigned int vs = CompileShader(GL_VERTEX_SHADER, source.VertexSource);
-			unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, source.FragmentSource);
-
-			glAttachShader(m_Id, vs);
-			glAttachShader(m_Id, fs);
-
-			glLinkProgram(m_Id);
-			glValidateProgram(m_Id);
-
-			glDeleteShader(vs);
-			glDeleteShader(fs);
+			std::unordered_map<ShaderType, std::string> sources = ShaderParser::Parse(filePath);
+			CompileShader(sources);
 
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
 		}
@@ -62,65 +63,51 @@ namespace Ember {
 		}
 
 
-		unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
+		void Shader::CompileShader(const std::unordered_map<ShaderType, std::string>& sources)
 		{
-			unsigned int id = glCreateShader(type);
-			const char* src = source.c_str();
-			glShaderSource(id, 1, &src, nullptr);
-			glCompileShader(id);
+			GLuint programId = glCreateProgram();
+			std::vector<GLuint> shaderIDs;
 
-			int result;
-			glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-			if (result == GL_FALSE)
-			{
-				int length;
-				glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-				char* message = (char*)alloca(length * sizeof(char));
-				glGetShaderInfoLog(id, length, &length, message);
-				std::cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
-				std::cout << message << std::endl;
+			for (auto kv : sources) {
+				ShaderType type = kv.first;
+				GLuint glType = Utils::GLShaderTypeFromShaderType(kv.first);
+				const std::string& source = kv.second;
+
+				GLuint shaderId = glCreateShader(glType);
+				const char* src = source.c_str();
+				glShaderSource(shaderId, 1, &src, nullptr);
+				glCompileShader(shaderId);
+
+				int result;
+				glGetShaderiv(shaderId, GL_COMPILE_STATUS, &result);
+				if (result == GL_FALSE)
+				{
+					int length;
+					glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &length);
+
+					char* message = (char*)alloca(length * sizeof(char));
+					glGetShaderInfoLog(shaderId, length, &length, message);
+
+					EB_CORE_ERROR("Failed to compile {} shader!", ShaderTypeToString(type));
+					EB_CORE_ERROR("\t{}", message);
+
+					glDeleteShader(shaderId);
+					break;
+				}
+
+				glAttachShader(programId, shaderId);
+				shaderIDs.push_back(shaderId);
+			}
+
+			// Only set id once shader compilation succeeds
+			EB_CORE_ASSERT(programId, "Failed to compile shaders!");
+			m_Id = programId;
+
+			glLinkProgram(m_Id);
+			glValidateProgram(m_Id);
+
+			for (auto id : shaderIDs)
 				glDeleteShader(id);
-				return 0;
-			}
-
-			return id;
 		}
-
-		ShaderProgramSource Shader::ParseShader()
-		{
-			std::ifstream stream(m_FilePath);
-			if (!stream.is_open())
-			{
-				EB_CORE_ERROR("Failed to open shader file: {}", m_FilePath);
-				return {};
-			}
-
-			enum class ShaderType
-			{
-				NONE = -1, VERTEX = 0, FRAGMENT = 1
-			};
-
-			ShaderType type = ShaderType::NONE;
-			std::stringstream ss[2];
-			std::string line;
-
-			while (getline(stream, line))
-			{
-				if (line.find("#shader") != std::string::npos)
-				{
-					if (line.find("vertex") != std::string::npos)
-						type = ShaderType::VERTEX;
-					else if (line.find("fragment") != std::string::npos)
-						type = ShaderType::FRAGMENT;
-				}
-				else
-				{
-					ss[(int)type] << line << '\n';
-				}
-			}
-
-			return { ss[0].str(), ss[1].str() };
-		}
-
 	}
 }
