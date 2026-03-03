@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <concepts>
 #include <format>
+#include <fstream>
+#include <sstream>
 
 #include "Ember/Core/Core.h"
 

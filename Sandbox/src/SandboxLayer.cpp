@@ -5,6 +5,8 @@
 SandboxLayer::SandboxLayer()
 	: Layer("Sandbox Layer")
 {
+
+	m_Shader = Ember::Shader::Create("assets/shaders/Basic.shader");
 }
 
 SandboxLayer::~SandboxLayer()
@@ -27,6 +29,8 @@ void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 	Ember::RenderAction::UseDepthTest(false);
 	Ember::RenderAction::UseFaceCulling(false);
 	Ember::RenderAction::Clear();
+
+	m_Shader->Bind();
 
 
 }

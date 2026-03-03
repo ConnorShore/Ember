@@ -2,6 +2,8 @@
 
 #include <atomic>
 #include <iostream>
+#include <type_traits>
+#include <utility>
 
 #include "Logger.h"
 
@@ -42,10 +44,23 @@ namespace Ember {
 			m_Ptr->IncrementRefCount();
 		}
 
+		template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+		SharedPtr(const SharedPtr<U>& other)
+			: m_Ptr(static_cast<T*>(other.m_Ptr))
+		{
+			IncrementRefCount();
+		}
+
 		SharedPtr(const SharedPtr<T>& other)
 			: m_Ptr(other.m_Ptr)
 		{
 			IncrementRefCount();
+		}
+
+		SharedPtr(SharedPtr<T>&& other) noexcept
+			: m_Ptr(other.m_Ptr)
+		{
+			other.m_Ptr = nullptr;
 		}
 
 		SharedPtr<T>& operator=(const SharedPtr<T>& other)
@@ -59,6 +74,29 @@ namespace Ember {
 				{
 					m_Ptr->IncrementRefCount();
 				}
+			}
+			return *this;
+		}
+
+		SharedPtr<T>& operator=(SharedPtr<T>&& other) noexcept
+		{
+			if (this != &other)
+			{
+				DecrementRefCount();
+				m_Ptr = other.m_Ptr;
+				other.m_Ptr = nullptr;
+			}
+			return *this;
+		}
+
+		template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+		SharedPtr<T>& operator=(const SharedPtr<U>& other)
+		{
+			if (m_Ptr != other.m_Ptr)
+			{
+				DecrementRefCount();
+				m_Ptr = static_cast<T*>(other.m_Ptr);
+				IncrementRefCount();
 			}
 			return *this;
 		}
@@ -83,6 +121,9 @@ namespace Ember {
 		bool operator!=(std::nullptr_t) const { return m_Ptr != nullptr; }
 
 	private:
+		template<typename U>
+		friend class SharedPtr;
+
 		void IncrementRefCount() const
 		{
 			if (m_Ptr)

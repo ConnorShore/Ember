@@ -14,5 +14,5 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
-
+	Ember::SharedPtr<Ember::Shader> m_Shader;
 };

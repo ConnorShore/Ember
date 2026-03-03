@@ -28,11 +28,13 @@ namespace Ember {
 			EB_CORE_TRACE("Version:  {}", (const char*)glGetString(GL_VERSION));
 			EB_CORE_TRACE("---------------------------------------");
 			
+#ifdef EB_DEBUG
 			// Enable error callbacks
 			glEnable(GL_DEBUG_OUTPUT);
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 			glDebugMessageCallback(GLMessageCallback, nullptr);
 			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
+#endif
 		}
 
 		void GraphicsContext::SwapBuffers()
@@ -55,11 +57,11 @@ namespace Ember {
 			}
 
 			switch (severity) {
-			case GL_DEBUG_SEVERITY_HIGH:			EB_CORE_ERROR("[{}]: {}", _type, (const char*)msg); break;
-			case GL_DEBUG_SEVERITY_MEDIUM:			EB_CORE_WARN("[{}]: {}", _type, (const char*)msg); break;
-			case GL_DEBUG_SEVERITY_LOW:				EB_CORE_INFO("[{}]: {}", _type, (const char*)msg); break;
+			case GL_DEBUG_SEVERITY_HIGH:			EB_CORE_ERROR("GL Callback [{}]: {}", _type, (const char*)msg); break;
+			case GL_DEBUG_SEVERITY_MEDIUM:
+			case GL_DEBUG_SEVERITY_LOW:				EB_CORE_WARN("GL Callback [{}]: {}", _type, (const char*)msg); break;
 			case GL_DEBUG_SEVERITY_NOTIFICATION:
-			default:								EB_CORE_TRACE("[{}]: {}", _type, (const char*)msg); break;
+			default:								EB_CORE_INFO("GL Callback [{}]: {}", _type, (const char*)msg); break;
 			}
 		}
 

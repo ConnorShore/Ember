@@ -17,5 +17,6 @@
 #include "Ember/Math/Math.h"
 
 #include "Ember/Render/RenderAction.h"
+#include "Ember/Render/Shader.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
