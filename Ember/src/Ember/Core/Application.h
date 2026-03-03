@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Window.h"
+#include "LayerStack.h"
+#include "ScopedPointer.h"
+
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
 #include "Ember/Event/KeyEvent.h"
 #include "Ember/Event/MouseEvent.h"
-#include "LayerStack.h"
-#include "ScopedPointer.h"
+#include "Ember/ImGui/ImGuiLayer.h"
 
 namespace Ember {
 
@@ -24,6 +26,10 @@ namespace Ember {
 		void Run();
 		bool IsRunning() const { return m_Running; }
 
+		inline static Application& Instance() { return *s_Instance; }
+
+		inline const Window& GetWindow() const { return *m_Window; }
+
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -38,6 +44,9 @@ namespace Ember {
 		bool m_Running = true;
 
 		LayerStack m_LayerStack;
+		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
+
+		static Application* s_Instance;
 	};
 
 	Application* CreateApplication();

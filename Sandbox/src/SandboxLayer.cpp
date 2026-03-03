@@ -1,5 +1,7 @@
 #include "SandboxLayer.h"
 
+#include <imgui/imgui.h>
+
 SandboxLayer::SandboxLayer()
 	: Layer("Sandbox Layer")
 {
@@ -25,4 +27,9 @@ void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 	Ember::RenderAction::Clear();
 
 	EB_TRACE("Layer {} updated! Delta time: {} milliseconds", GetName(), delta.Milliseconds());
+}
+
+void SandboxLayer::OnImGuiRender(Ember::TimeStep delta)
+{
+	ImGui::ShowDemoWindow();
 }

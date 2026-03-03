@@ -14,7 +14,8 @@ project "Ember"
       "src",
       "vendor/GLFW/include",
       "vendor/glad/include",
-      "vendor/glm"
+      "vendor/glm",
+      "vendor/imgui"
    }
 
    files 
@@ -27,11 +28,13 @@ project "Ember"
    {
       "GLFW",
       "glad",
+      "imgui",
       "opengl32.lib"
    }
 
    defines
    {
+		"_CRT_SECURE_NO_WARNINGS",
       "GLFW_INCLUDE_NONE"
    }
 

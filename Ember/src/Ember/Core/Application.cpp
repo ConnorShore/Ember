@@ -8,15 +8,27 @@
 
 namespace Ember {
 
+	Application* Application::s_Instance = nullptr;
+
 	Application::Application()
 	{
+		EB_CORE_ASSERT(s_Instance == nullptr, "Application instance is alredy created!");
+
+		s_Instance = this;
+
 		m_Window = Window::Create();
 		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
+
+		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
+		m_ImGuiLayer->OnAttach();
+
 		EB_CORE_INFO("Application created!");
 	}
 
 	Application::~Application()
 	{
+		m_ImGuiLayer->OnDetatch();
+
 		EB_CORE_INFO("Application destroyed!");
 	}
 
@@ -56,6 +68,13 @@ namespace Ember {
 
 			for (auto& layer : m_LayerStack)
 				layer->OnUpdate(delta);
+
+			m_ImGuiLayer->BeginFrame();
+
+			for (auto& layer : m_LayerStack)
+				layer->OnImGuiRender(delta);
+
+			m_ImGuiLayer->EndFrame();
 
 			m_Window->OnUpdate();
 		}
