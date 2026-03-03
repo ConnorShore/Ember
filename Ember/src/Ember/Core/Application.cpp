@@ -22,6 +22,8 @@ namespace Ember {
 		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
 		m_ImGuiLayer->OnAttach();
 
+		m_ShaderLibrary = ScopedPtr<ShaderLibrary>::Create();
+
 		EB_CORE_INFO("Application created!");
 	}
 
@@ -42,6 +44,27 @@ namespace Ember {
 	{
 		canvas->OnAttach();
 		m_LayerStack.PushCanvasLayer(std::move(canvas));
+	}
+
+	void Application::RegisterShader(const std::string& filePath)
+	{
+		auto shader = m_ShaderLibrary->Register(filePath);
+		EB_CORE_INFO("Successfully registered shader {}", shader->GetName());
+	}
+
+	SharedPtr<Shader> Application::GetShader(const std::string& name)
+	{
+		return m_ShaderLibrary->Get(name);
+	}
+
+	void Application::OnAttach()
+	{
+		EB_CORE_INFO("Application attached!");
+	}
+
+	void Application::OnDetatch()
+	{
+		EB_CORE_INFO("Application detatched!");
 	}
 
 	void Application::OnEvent(Event& event)

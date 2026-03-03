@@ -4,6 +4,8 @@
 
 namespace Ember {
 
+#define NUM_SUPPORTED_SHADERS 2
+
 	enum class ShaderType
 	{
 		None = -1,

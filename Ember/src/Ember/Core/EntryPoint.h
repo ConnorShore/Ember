@@ -10,7 +10,9 @@ extern Ember::Application* Ember::CreateApplication();
 int main(int argc, char** argv)
 {
 	auto app = Ember::CreateApplication();
+	app->OnAttach();
 	app->Run();
+	app->OnDetatch();
 	delete app;
 	return 0;
 }

@@ -5,8 +5,6 @@
 SandboxLayer::SandboxLayer()
 	: Layer("Sandbox Layer")
 {
-
-	m_Shader = Ember::Shader::Create("assets/shaders/Basic.glsl");
 }
 
 SandboxLayer::~SandboxLayer()
@@ -15,6 +13,8 @@ SandboxLayer::~SandboxLayer()
 
 void SandboxLayer::OnAttach()
 {
+	RegisterShader("assets/shaders/Basic.glsl");
+
 	//float vertices[] = {
 	//	-0.5f, -0.5f, 0.0f,
 	//	 0.5f, -0.5f, 0.0f,
@@ -58,9 +58,7 @@ void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 	Ember::RenderAction::UseFaceCulling(false);
 	Ember::RenderAction::Clear();
 
-	m_Shader->Bind();
-
-
+	GetShader("Basic")->Bind();
 }
 
 void SandboxLayer::OnImGuiRender(Ember::TimeStep delta)

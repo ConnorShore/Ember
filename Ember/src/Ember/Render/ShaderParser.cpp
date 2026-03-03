@@ -7,7 +7,7 @@
 
 namespace Ember {
 
-	std::unordered_map<ShaderType, std::string> ShaderParser::Parse(const std::string& filePath)
+	ShaderSourceMap ShaderParser::Parse(const std::string& filePath)
 	{
 		std::ifstream stream(filePath);
 		if (!stream.is_open())
@@ -16,7 +16,7 @@ namespace Ember {
 			return {};
 		}
 
-		std::unordered_map<ShaderType, std::string> shaderSources;
+		ShaderSourceMap shaderSources;
 		std::string line;
 		std::stringstream ss;
 		ShaderType currentType = ShaderType::None;
@@ -46,6 +46,18 @@ namespace Ember {
 		}
 
 		return shaderSources;
+	}
+
+	std::string ShaderParser::ExtractFileName(const std::string& filePath)
+	{
+		// Get filename with extension after slashes
+		unsigned int lastSlash = filePath.find_last_of("/\\");
+		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
+
+		// Remove last dot
+		unsigned int lastDot = filePath.find_last_of(".");
+		lastDot = lastDot == std::string::npos ? filePath.length() : lastDot;
+		return filePath.substr(lastSlash, lastDot - lastSlash);
 	}
 
 	ShaderType ShaderParser::ShaderTypeFromLine(const std::string& line)

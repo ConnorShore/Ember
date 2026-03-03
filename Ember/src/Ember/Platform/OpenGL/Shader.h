@@ -12,7 +12,9 @@ namespace Ember {
 		{
 		public:
 			Shader(const std::string& filePath);
+			Shader(const std::string& name, const std::string& filePath);
 			virtual ~Shader();
+
 			void Bind() const override;
 			void SetVec3f(const std::string& name, const Vector3f& vec) override;
 			void SetVec4f(const std::string& name, const Vector4f& vec) override;
@@ -20,7 +22,7 @@ namespace Ember {
 			const std::string& GetName() const override;
 
 		private:
-			void CompileShader(const std::unordered_map<ShaderType, std::string>& sources);
+			void CompileShader(const ShaderSourceMap& sources);
 
 		private:
 			unsigned int m_Id;

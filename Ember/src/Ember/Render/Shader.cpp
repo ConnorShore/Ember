@@ -19,27 +19,52 @@ namespace Ember {
 		}
 	}
 
-	void ShaderLibrary::Add(SharedPtr<Shader> shader)
+	SharedPtr<Shader> Shader::Create(const std::string& name, const std::string& filePath)
 	{
-		EB_CORE_ASSERT(!Exists(shader), "Shader already exists in library!");
-		m_ShaderMap[shader->GetName()] = shader;
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:
+			EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported");
+			return nullptr;
+		case RendererAPI::API::OpenGL:
+			return SharedPtr<OpenGL::Shader>::Create(name, filePath);
+		}
 	}
 
-	SharedPtr<Shader> ShaderLibrary::Get(const std::string& name)
-	{
-		return m_ShaderMap.at(name);
-	}
-
-	bool ShaderLibrary::Exists(SharedPtr<Shader> shader)
-	{
-		return m_ShaderMap.find(shader->GetName()) != m_ShaderMap.end();
-	}
-
-	SharedPtr<Shader> ShaderLibrary::Load(const std::string& filePath)
+	SharedPtr<Shader> ShaderLibrary::Register(const std::string& filePath)
 	{
 		auto shader = Shader::Create(filePath);
 		Add(shader);
 		return shader;
+	}
+
+	Ember::SharedPtr<Ember::Shader> ShaderLibrary::Register(const std::string& name, std::string& filePath)
+	{
+		auto shader = Shader::Create(name, filePath);
+		Add(shader);
+		return shader;
+	}
+
+	SharedPtr<Shader> ShaderLibrary::Get(const std::string& name)
+	{
+		EB_CORE_ASSERT(Exists(name), "Shader does not exists in library!");
+		return m_ShaderMap.at(name);
+	}
+
+	bool ShaderLibrary::Exists(const std::string& name)
+	{
+		return m_ShaderMap.find(name) != m_ShaderMap.end();
+	}
+
+	void ShaderLibrary::Add(SharedPtr<Shader> shader)
+	{
+		Add(shader->GetName(), shader);
+	}
+
+	void ShaderLibrary::Add(const std::string& name, SharedPtr<Shader> shader)
+	{
+		EB_CORE_ASSERT(!Exists(name), "Shader already exists in library!");
+		m_ShaderMap[name] = shader;
 	}
 
 }

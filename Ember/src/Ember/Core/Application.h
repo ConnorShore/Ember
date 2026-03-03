@@ -10,6 +10,8 @@
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/ImGui/ImGuiLayer.h"
 
+#include "Ember/Render/Shader.h"
+
 namespace Ember {
 
 	class Application
@@ -21,6 +23,11 @@ namespace Ember {
 		void PushLayer(ScopedPtr<Layer> layer);
 		void PushCanvasLayer(ScopedPtr<Layer> canvas);
 
+		void RegisterShader(const std::string& filePath);
+		SharedPtr<Shader> GetShader(const std::string& name);
+
+		void OnAttach();
+		void OnDetatch();
 		void OnEvent(Event& event);
 
 		void Run();
@@ -45,6 +52,8 @@ namespace Ember {
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
+
+		ScopedPtr<ShaderLibrary> m_ShaderLibrary;
 
 		static Application* s_Instance;
 	};

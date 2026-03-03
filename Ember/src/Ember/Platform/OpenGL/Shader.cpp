@@ -20,11 +20,16 @@ namespace Ember {
 	namespace OpenGL {
 
 		Shader::Shader(const std::string& filePath)
-			: m_FilePath(filePath)
+			: Shader(ShaderParser::ExtractFileName(filePath), filePath)
 		{
-			EB_CORE_INFO("Creating shader from file: {}", filePath);
+		}
 
-			std::unordered_map<ShaderType, std::string> sources = ShaderParser::Parse(filePath);
+		Shader::Shader(const std::string& name, const std::string& filePath)
+			: m_Name(name), m_FilePath(filePath)
+		{
+			EB_CORE_INFO("Creating shader with name {} from file: {}", m_Name, m_FilePath);
+
+			ShaderSourceMap sources = ShaderParser::Parse(m_FilePath);
 			CompileShader(sources);
 
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
@@ -63,11 +68,13 @@ namespace Ember {
 		}
 
 
-		void Shader::CompileShader(const std::unordered_map<ShaderType, std::string>& sources)
+		void Shader::CompileShader(const ShaderSourceMap& sources)
 		{
-			GLuint programId = glCreateProgram();
-			std::vector<GLuint> shaderIDs;
+			EB_CORE_ASSERT(sources.size() <= NUM_SUPPORTED_SHADERS, "Only {} shader types are currently supported!", NUM_SUPPORTED_SHADERS);
 
+			GLuint programId = glCreateProgram();
+			std::array<GLuint, NUM_SUPPORTED_SHADERS> shaderIDs;
+			unsigned int shaderIndex = 0;
 			for (auto kv : sources) {
 				ShaderType type = kv.first;
 				GLuint glType = Utils::GLShaderTypeFromShaderType(kv.first);
@@ -85,7 +92,7 @@ namespace Ember {
 					int length;
 					glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &length);
 
-					char* message = (char*)alloca(length * sizeof(char));
+					char* message = (char*)_alloca(length * sizeof(char));
 					glGetShaderInfoLog(shaderId, length, &length, message);
 
 					EB_CORE_ERROR("Failed to compile {} shader!", ShaderTypeToString(type));
@@ -96,7 +103,7 @@ namespace Ember {
 				}
 
 				glAttachShader(programId, shaderId);
-				shaderIDs.push_back(shaderId);
+				shaderIDs[shaderIndex++] = shaderId;
 			}
 
 			// Only set id once shader compilation succeeds

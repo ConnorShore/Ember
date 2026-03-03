@@ -22,16 +22,21 @@ namespace Ember {
 		virtual const std::string& GetName() const = 0;
 
 		static SharedPtr<Shader> Create(const std::string& filePath);
+		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath);
 	};
 
 	class ShaderLibrary
 	{
 	public:
-		void Add(SharedPtr<Shader> shader);
-		SharedPtr<Shader> Get(const std::string& name);
-		bool Exists(SharedPtr<Shader> shader);
-		SharedPtr<Shader> Load(const std::string& filePath);
+		SharedPtr<Shader> Register(const std::string& filePath);
+		SharedPtr<Shader> Register(const std::string& name, std::string& filePath);
 
+		SharedPtr<Shader> Get(const std::string& name);
+		bool Exists(const std::string& name);
+
+	private:
+		void Add(SharedPtr<Shader> shader);
+		void Add(const std::string& name, SharedPtr<Shader> shader);
 	private:
 		std::unordered_map<std::string, SharedPtr<Shader>> m_ShaderMap;
 	};

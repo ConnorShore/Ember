@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Time.h"
 #include "Ember/Event/Event.h"
+#include "Ember/Render/Shader.h"
 
 #include <string>
 
@@ -22,6 +23,10 @@ namespace Ember {
 		virtual void OnImGuiRender(TimeStep delta) {};
 
 		inline const std::string& GetName() const { return m_Name; }
+
+	protected:
+		void RegisterShader(const std::string& filePath);
+		SharedPtr<Shader> GetShader(const std::string& name);
 
 	private:
 		// TODO: Make m_Name debug only?

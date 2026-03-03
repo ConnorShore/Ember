@@ -34,6 +34,7 @@ project "Ember"
 
    defines
    {
+      "EB_ENGINE",
 		"_CRT_SECURE_NO_WARNINGS",
       "GLFW_INCLUDE_NONE"
    }
