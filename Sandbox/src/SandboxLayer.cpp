@@ -24,9 +24,11 @@ void SandboxLayer::OnDetatch()
 void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 {
 	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 1.0f, 0.0f, 1.0));
+	Ember::RenderAction::UseDepthTest(false);
+	Ember::RenderAction::UseFaceCulling(false);
 	Ember::RenderAction::Clear();
 
-	EB_TRACE("Layer {} updated! Delta time: {} milliseconds", GetName(), delta.Milliseconds());
+
 }
 
 void SandboxLayer::OnImGuiRender(Ember::TimeStep delta)

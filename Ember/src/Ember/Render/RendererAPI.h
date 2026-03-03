@@ -16,6 +16,9 @@ namespace Ember {
 
 		virtual void Clear() = 0;
 		virtual void SetClearColor(Vector4<float> color) = 0;
+		virtual void UseFaceCulling(bool use) = 0;
+		virtual void UseDepthTest(bool use) = 0;
+
 
 	public:
 		static API GetApi() { return s_Api; }

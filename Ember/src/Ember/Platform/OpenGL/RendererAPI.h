@@ -10,6 +10,8 @@ namespace Ember {
 		public:
 			virtual void Clear() override;
 			virtual void SetClearColor(Vector4<float> color) override;
+			virtual void UseFaceCulling(bool use) override;
+			virtual void UseDepthTest(bool use) override;
 		};
 
 	}

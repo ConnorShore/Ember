@@ -19,6 +19,16 @@ namespace Ember {
 			m_RendererApi->SetClearColor(color);
 		}
 
+		static inline void UseFaceCulling(bool use)
+		{
+			m_RendererApi->UseFaceCulling(use);
+		}
+
+		static inline void UseDepthTest(bool use)
+		{
+			m_RendererApi->UseDepthTest(use);
+		}
+
 	private:
 		static ScopedPtr<RendererAPI> m_RendererApi;
 	};
