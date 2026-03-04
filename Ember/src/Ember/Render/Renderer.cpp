@@ -4,9 +4,11 @@
 
 namespace Ember {
 
-	void Renderer::BeginFrame()
-	{
+	ScopedPtr<Renderer::FrameData> Renderer::s_FrameData = ScopedPtr<Renderer::FrameData>::Create();
 
+	void Renderer::BeginFrame(Camera& camera)
+	{
+		s_FrameData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
 	}
 
 	void Renderer::EndFrame()
@@ -18,6 +20,7 @@ namespace Ember {
 	{
 		vertexArray->Bind();
 		shader->Bind();
+		shader->SetMatrix4("u_ViewProjection", s_FrameData->ViewProjectionMatrix);
 		RenderAction::DrawInstanced(vertexArray);
 	}
 

@@ -1,16 +1,15 @@
 #pragma once 
 
-namespace Ember {
-
-#define EB_EVENT_FUNCTION(f) [this](Event& e) { f; }
-#define EB_CREATE_DISPATCHER(event) EventDispatcher dispatcher(event);
+#define EB_EVENT_FUNCTION(f) [this](Ember::Event& e) { f; }
+#define EB_CREATE_DISPATCHER(event) Ember::EventDispatcher dispatcher(event);
 #define EB_DISPATCH_EVENT(eventType, handler) dispatcher.Dispatch<eventType>([this](eventType e) { return handler(e); });
-
 
 #define EB_EVENT_TYPE_INITIALIZER(type) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
 								virtual const char* GetName() const override { return #type; }
 #define EB_EVENT_CATEGORY_INITIALIZER(category) virtual int GetCategoryFlags() const override { return category; }
+
+namespace Ember {
 
 	
 	enum class EventType

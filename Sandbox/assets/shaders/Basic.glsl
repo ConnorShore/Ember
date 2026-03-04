@@ -3,9 +3,11 @@
 
 in vec4 v_Position;
 
+uniform mat4 u_ViewProjection;
+
 void main()
 {
-	gl_Position = v_Position;
+	gl_Position = u_ViewProjection * v_Position;
 };
 
 #shader fragment

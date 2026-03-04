@@ -38,7 +38,7 @@ namespace Ember {
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key pressed!");
 		EB_CORE_TRACE("Key pressed {}", key);
-		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] = 1;
+		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] = pressed ? 1 : 0;
 	}
 
 	void Input::IncrementKeyRepeat(KeyCode key)

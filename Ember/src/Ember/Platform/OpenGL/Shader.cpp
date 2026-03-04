@@ -45,17 +45,17 @@ namespace Ember {
 			glUseProgram(m_Id);
 		}
 
-		void Shader::SetFloat3(const std::string& name, const Vector3f& vec)
+		void Shader::SetFloat3(const std::string& name, const Vector3f& vec) const
 		{
 			glUniform3f(GetUniformLocation(name), vec[0], vec[1], vec[2]);
 		}
 
-		void Shader::SetFloat4(const std::string& name, const Vector4f& vec)
+		void Shader::SetFloat4(const std::string& name, const Vector4f& vec) const
 		{
 			glUniform4f(GetUniformLocation(name), vec[0], vec[1], vec[2], vec[3]);
 		}
 
-		void Shader::SetMatrix4(const std::string& name, const Matrix4f& mat)
+		void Shader::SetMatrix4(const std::string& name, const Matrix4f& mat) const
 		{
 			glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 		}
@@ -114,7 +114,7 @@ namespace Ember {
 				glDeleteShader(id);
 		}
 
-		int Shader::GetUniformLocation(const std::string& name)
+		int Shader::GetUniformLocation(const std::string& name) const
 		{
 			if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
 				return m_UniformLocationCache[name];

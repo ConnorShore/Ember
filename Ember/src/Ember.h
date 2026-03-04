@@ -28,5 +28,8 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer.h"
+#include "Ember/Render/Camera.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
+
+#include "Ember/Event/Event.h""

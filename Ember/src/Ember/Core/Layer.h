@@ -18,7 +18,7 @@ namespace Ember {
 
 		virtual void OnAttach() {}
 		virtual void OnDetatch() {};
-		virtual void OnEvent(const Event& event) {}
+		virtual void OnEvent(Event& event) {}
 		virtual void OnUpdate(TimeStep delta) {};
 		virtual void OnImGuiRender(TimeStep delta) {};
 

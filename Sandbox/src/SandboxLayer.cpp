@@ -4,9 +4,10 @@
 #include <imgui/imgui_internal.h>
 
 #include <Ember/Core/SharedPointer.h>
+#include <Ember/Event/Event.h>
 
 SandboxLayer::SandboxLayer()
-	: Layer("Sandbox Layer"), u_Color(0.2f, 0.3f, 0.8f, 1.0f)
+	: Layer("Sandbox Layer"), u_Color(0.2f, 0.3f, 0.8f, 1.0f), m_Camera(-3.0f, 3.0f, -3.0f, 3.0f)
 {
 }
 
@@ -46,14 +47,42 @@ void SandboxLayer::OnDetatch()
 
 void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 {
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::W)) {
+		m_CameraPosition.y += m_CameraSpeed * delta;
+	}
+	else if (Ember::Input::IsKeyPressed(Ember::KeyCode::S)) {
+		m_CameraPosition.y -= m_CameraSpeed * delta;
+	}
+
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::D)) {
+		m_CameraPosition.x += m_CameraSpeed * delta;
+	}
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::A)) {
+		m_CameraPosition.x -= m_CameraSpeed * delta;
+	}
+
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::E)) {
+		m_CameraRotation += m_CameraSpeed * delta;
+	}
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::Q)) {
+		m_CameraRotation -= m_CameraSpeed * delta;
+	}
+
+	m_Camera.SetPosition(m_CameraPosition);
+	m_Camera.SetRotation(m_CameraRotation);
+
 	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0));
 	Ember::RenderAction::Clear();
+
+	Ember::Renderer::BeginFrame(m_Camera);
 
 	auto shader = GetShader("Basic");
 	shader->Bind();
 	shader->SetFloat4("u_Color", u_Color);
 
 	Ember::Renderer::Submit(m_vao, GetShader("Basic"));
+
+	Ember::Renderer::EndFrame();
 }
 
 void SandboxLayer::OnImGuiRender(Ember::TimeStep delta)

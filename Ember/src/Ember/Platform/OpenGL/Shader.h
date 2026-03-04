@@ -16,21 +16,21 @@ namespace Ember {
 			virtual ~Shader();
 
 			void Bind() const override;
-			void SetFloat3(const std::string& name, const Vector3f& vec) override;
-			void SetFloat4(const std::string& name, const Vector4f& vec) override;
-			void SetMatrix4(const std::string& name, const Matrix4f& mat) override;
+			void SetFloat3(const std::string& name, const Vector3f& vec) const override;
+			void SetFloat4(const std::string& name, const Vector4f& vec) const override;
+			void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;
 
 			const std::string& GetName() const override;
 
 		private:
 			void CompileShader(const ShaderSourceMap& sources);
-			int GetUniformLocation(const std::string& name);
+			int GetUniformLocation(const std::string& name) const;
 
 		private:
 			unsigned int m_Id;
 			std::string m_Name, m_FilePath;
 
-			std::unordered_map<std::string, int> m_UniformLocationCache;
+			mutable std::unordered_map<std::string, int> m_UniformLocationCache;
 		};
 
 	}
