@@ -1,11 +1,11 @@
 #shader vertex
 #version 330 core
 
-layout(location = 0) in vec4 position;
+layout(location = 0) in vec4 v_Position;
 
 void main()
 {
-	gl_Position = position;
+	gl_Position = v_Position;
 };
 
 #shader fragment

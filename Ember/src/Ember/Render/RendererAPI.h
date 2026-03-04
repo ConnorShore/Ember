@@ -2,6 +2,8 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
+#include "Ember/Render/VertexArray.h"
+#include "Ember/Render/Shader.h"
 
 namespace Ember {
 
@@ -19,6 +21,7 @@ namespace Ember {
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 
+		virtual void DrawInstanced(const SharedPtr<VertexArray>& vertexArray, const SharedPtr<Shader>& shader) = 0;
 
 	public:
 		static API GetApi() { return s_Api; }

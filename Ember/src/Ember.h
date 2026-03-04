@@ -18,5 +18,7 @@
 
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Shader.h"
+#include "Ember/Render/Buffer.h"
+#include "Ember/Render/VertexArray.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"

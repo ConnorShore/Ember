@@ -113,6 +113,9 @@ namespace Ember {
 		}
 
 		T* operator->() { return m_Ptr; }
+		const T* operator->() const { return m_Ptr; }
+
+		T& operator*() { return *m_Ptr; }
 		const T& operator*() const { return *m_Ptr; }
 
 		bool operator==(const SharedPtr<T>& other) const { return m_Ptr == other.m_Ptr; }

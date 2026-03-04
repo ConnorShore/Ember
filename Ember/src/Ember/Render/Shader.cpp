@@ -7,29 +7,37 @@
 
 namespace Ember {
 
+	//////////////////////////////////////////////////////////////////////////
+	// Shader
+	//////////////////////////////////////////////////////////////////////////
+
 	SharedPtr<Shader> Shader::Create(const std::string& filePath)
 	{
 		switch (RendererAPI::GetApi())
 		{
-		case RendererAPI::API::None:
-			EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported");
-			return nullptr;
-		case RendererAPI::API::OpenGL:
-			return SharedPtr<OpenGL::Shader>::Create(filePath);
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(filePath);
 		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
 	}
 
 	SharedPtr<Shader> Shader::Create(const std::string& name, const std::string& filePath)
 	{
 		switch (RendererAPI::GetApi())
 		{
-		case RendererAPI::API::None:
-			EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported");
-			return nullptr;
-		case RendererAPI::API::OpenGL:
-			return SharedPtr<OpenGL::Shader>::Create(name, filePath);
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported");  return nullptr;
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(name, filePath);
 		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Shader Library
+	//////////////////////////////////////////////////////////////////////////
 
 	SharedPtr<Shader> ShaderLibrary::Register(const std::string& filePath)
 	{

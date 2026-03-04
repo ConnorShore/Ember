@@ -7,19 +7,18 @@
 
 namespace Ember {
 
-	class VertexArray {
+	class VertexArray : public SharedResource
+	{
 	public:
-		VertexArray(/*vertexBuffer, indexBuffer*/);
 		virtual ~VertexArray() = default;
 
 		virtual void Bind() const = 0;
-		virtual void AddVertexBuffer(const SharedPtr<VertexBuffer>& vertexBuffer) = 0;
-		virtual void AddIndexBuffer(const SharedPtr<IndexBuffer>& indexBuffer) = 0;
+		virtual void SetBuffer(const SharedPtr<VertexBufferBase>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer) = 0;
 
-	private:
-		unsigned int m_Id, m_CurrentVertexBufferInd = 0;
-		std::vector<SharedPtr<VertexBuffer>> m_VertexBuffers;
-		SharedPtr<IndexBuffer> m_IndexBuffer;
+		virtual const SharedPtr<VertexBufferBase>& GetVertexBuffer() const = 0;
+		virtual const SharedPtr<IndexBuffer>& GetIndexBuffer() const = 0;
+
+		static SharedPtr<VertexArray> Create();
 	};
 
 }

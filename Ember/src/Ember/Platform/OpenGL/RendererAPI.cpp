@@ -26,5 +26,13 @@ namespace Ember {
 			use ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 		}
 
+		void RendererAPI::DrawInstanced(const SharedPtr<VertexArray>& vertexArray, const SharedPtr<Shader>& shader)
+		{
+			vertexArray->Bind();
+			shader->Bind();
+
+			glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+		}
+
 	}
 }

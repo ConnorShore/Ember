@@ -10,7 +10,6 @@
 
 namespace Ember {
 
-
 	ScopedPtr<Window> Window::Create(const WindowConfig& config)
 	{
 #ifdef EB_PLATFORM_WINDOWS
