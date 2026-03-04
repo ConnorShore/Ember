@@ -1,7 +1,14 @@
 #pragma once
 
 #include "Ember/Core/Application.h"
-// #include "Ember/Core/EntryPoint.h" // Only include in main application file
+
+/*
+ *  Only include in main application file:
+ * 
+ *	#include "Ember/Core/EntryPoint.h" 
+ * 
+*/
+
 #include "Ember/Core/Window.h"
 #include "Ember/Core/Layer.h"
 
@@ -16,9 +23,10 @@
 
 #include "Ember/Math/Math.h"
 
-#include "Ember/Render/RenderAction.h"
-#include "Ember/Render/Shader.h"
 #include "Ember/Render/Buffer.h"
 #include "Ember/Render/VertexArray.h"
+#include "Ember/Render/Shader.h"
+#include "Ember/Render/RenderAction.h"
+#include "Ember/Render/Renderer.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"

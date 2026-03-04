@@ -53,7 +53,7 @@ void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 	shader->Bind();
 	shader->SetFloat4("u_Color", u_Color);
 
-	Ember::RenderAction::DrawInstanced(m_vao, GetShader("Basic"));
+	Ember::Renderer::Submit(m_vao, GetShader("Basic"));
 }
 
 void SandboxLayer::OnImGuiRender(Ember::TimeStep delta)
