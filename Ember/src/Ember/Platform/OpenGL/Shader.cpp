@@ -45,28 +45,25 @@ namespace Ember {
 			glUseProgram(m_Id);
 		}
 
-		void Shader::SetVec3f(const std::string& name, const Vector3f& vec)
+		void Shader::SetFloat3(const std::string& name, const Vector3f& vec)
 		{
-			int location = glGetUniformLocation(m_Id, name.c_str());
-			glUniform3f(location, vec[0], vec[1], vec[2]);
+			glUniform3f(GetUniformLocation(name), vec[0], vec[1], vec[2]);
 		}
 
-		void Shader::SetVec4f(const std::string& name, const Vector4f& vec)
+		void Shader::SetFloat4(const std::string& name, const Vector4f& vec)
 		{
-			int location = glGetUniformLocation(m_Id, name.c_str());
-			glUniform4f(location, vec[0], vec[1], vec[2], vec[3]);
+			glUniform4f(GetUniformLocation(name), vec[0], vec[1], vec[2], vec[3]);
 		}
 
-		void Shader::SetMat4f(const std::string& name, const Matrix4f& mat)
+		void Shader::SetMatrix4(const std::string& name, const Matrix4f& mat)
 		{
-
+			glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 		}
 
 		const std::string& Shader::GetName() const
 		{
 			return m_Name;
 		}
-
 
 		void Shader::CompileShader(const ShaderSourceMap& sources)
 		{
@@ -115,6 +112,19 @@ namespace Ember {
 
 			for (auto id : shaderIDs)
 				glDeleteShader(id);
+		}
+
+		int Shader::GetUniformLocation(const std::string& name)
+		{
+			if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
+				return m_UniformLocationCache[name];
+
+			int location = glGetUniformLocation(m_Id, name.c_str());
+			if (location == -1)
+				EB_CORE_WARN("Warning: uniform '{}' doesn't exist!", name);
+
+			m_UniformLocationCache[name] = location;
+			return location;
 		}
 	}
 }

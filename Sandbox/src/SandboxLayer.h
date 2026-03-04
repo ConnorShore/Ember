@@ -17,4 +17,6 @@ private:
 	Ember::SharedPtr<Ember::VertexArray> m_vao;
 	Ember::SharedPtr<Ember::VertexBufferBase> m_vbo;
 	Ember::SharedPtr<Ember::IndexBuffer> m_ibo;
+
+	Ember::Vector4f u_Color;
 };
