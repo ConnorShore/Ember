@@ -83,7 +83,7 @@ namespace Ember {
 		void SetLayout(const BufferLayout& layout) { m_Layout = layout; }
 		const BufferLayout& GetLayout() const { return m_Layout; }
 
-	private:
+	protected:
 		BufferLayout m_Layout;
 	};
 
@@ -101,6 +101,7 @@ namespace Ember {
 		virtual ~VertexBuffer() = default;
 
 		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data);
+		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data, const BufferLayout& layout);
 	};
 	
 

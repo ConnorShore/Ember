@@ -19,6 +19,15 @@ namespace Ember {
 		}
 
 		template <Ember::VertexDataType T>
+		VertexBuffer<T>::VertexBuffer(std::span<const T> data, const BufferLayout& layout)
+			: m_Id(0), m_Size(data.size_bytes())
+		{
+			this->m_Layout = layout;
+			glCreateBuffers(1, &m_Id);
+			glNamedBufferStorage(m_Id, data.size_bytes(), data.data(), GL_DYNAMIC_STORAGE_BIT);
+		}
+
+		template <Ember::VertexDataType T>
 		VertexBuffer<T>::~VertexBuffer()
 		{
 			glDeleteBuffers(1, &m_Id);

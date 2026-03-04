@@ -16,6 +16,7 @@ namespace Ember {
 		{
 		public:
 			VertexBuffer(std::span<const T> data);
+			VertexBuffer(std::span<const T> data, const BufferLayout& layout);
 			virtual ~VertexBuffer();
 
 			void Bind() const override;

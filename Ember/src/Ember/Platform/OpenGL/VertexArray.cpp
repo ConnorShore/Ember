@@ -46,6 +46,9 @@ namespace Ember {
 
 		void VertexArray::SetBuffer(const SharedPtr<VertexBufferBase>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer)
 		{
+			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
+				"Vertex buffer must have a layout set before being used in a vertex array!");
+
 			m_VertexBuffer = vertexBuffer;
 			m_IndexBuffer = indexBuffer;
 

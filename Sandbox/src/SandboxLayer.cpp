@@ -16,10 +16,10 @@ SandboxLayer::~SandboxLayer()
 void SandboxLayer::OnAttach()
 {
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f,		0.2f, 0.5f, 0.9f,
+		 0.5f, -0.5f, 0.0f,		0.8f, 0.1f, 0.4f,
+		 0.5f,  0.5f, 0.0f,		0.3f, 0.7f, 0.1f,
+		-0.5f,  0.5f, 0.0f,		0.4f, 0.2f, 0.6f
 	};
 
 	unsigned int indices[] = {
@@ -27,11 +27,10 @@ void SandboxLayer::OnAttach()
 		2, 3, 0
 	};
 
-	m_vbo = Ember::VertexBuffer<float>::Create(vertices);
-	m_vbo->SetLayout({
-		{ Ember::ShaderDataType::Float3, "v_Position", false }
+	m_vbo = Ember::VertexBuffer<float>::Create(vertices, {
+		{ Ember::ShaderDataType::Float3, "v_Position" },
+		{ Ember::ShaderDataType::Float3, "v_Color" }
 		});
-
 	m_ibo = Ember::IndexBuffer::Create(indices);
 	m_vao = Ember::VertexArray::Create();
 
@@ -48,8 +47,6 @@ void SandboxLayer::OnDetatch()
 void SandboxLayer::OnUpdate(Ember::TimeStep delta)
 {
 	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0));
-	Ember::RenderAction::UseDepthTest(false);
-	Ember::RenderAction::UseFaceCulling(false);
 	Ember::RenderAction::Clear();
 
 	Ember::RenderAction::DrawInstanced(m_vao, GetShader("Basic"));
