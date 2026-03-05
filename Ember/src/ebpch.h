@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <queue>
 #include <memory>
 #include <algorithm>
 #include <functional>

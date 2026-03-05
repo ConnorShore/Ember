@@ -7,11 +7,13 @@ namespace Ember {
 	class Entity
 	{
 	public:
-		Entity(unsigned int id)
+		Entity(EntityID id)
 			: m_Id(id) { }
 		~Entity() = default;
 
+		operator EntityID() { return m_Id; }
 		operator unsigned int() { return m_Id; }
+		operator size_t() { return m_Id; }
 
 	private:
 		EntityID m_Id;
