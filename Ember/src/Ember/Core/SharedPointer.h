@@ -112,6 +112,8 @@ namespace Ember {
 			return SharedPtr<T>(new T(std::forward<Args>(args)...));
 		}
 
+		T* Ptr() const { return m_Ptr; }
+
 		T* operator->() { return m_Ptr; }
 		const T* operator->() const { return m_Ptr; }
 
@@ -151,5 +153,12 @@ namespace Ember {
 	private:
 		mutable T* m_Ptr = nullptr;
 	};
+
+	// Static cast implementation
+	template <typename T, typename U>
+	SharedPtr<T> StaticPointerCast(const SharedPtr<U>& ptr)
+	{
+		return SharedPtr<T>(static_cast<T*>(ptr.Ptr()));
+	}
 
 }

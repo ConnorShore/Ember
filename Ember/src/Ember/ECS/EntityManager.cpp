@@ -9,7 +9,7 @@ namespace Ember {
 	{
 	}
 
-	Ember::Entity EntityManager::CreateEntity()
+	Entity EntityManager::CreateEntity()
 	{
 		if (!m_UnusedIds.empty())
 		{
@@ -34,13 +34,13 @@ namespace Ember {
 
 	void EntityManager::AddComponent(Entity entity, ComponentType component)
 	{
-		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Entity {} has already reached it's component count limit!", entity);
+		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Entity has already reached it's component count limit!");
 		m_EntityComponentMask[entity].set(component, true);
 	}
 
 	void EntityManager::RemoveComponent(Entity entity, ComponentType component)
 	{
-		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Component {} is out of bounds!", entity);
+		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Component is out of bounds!");
 		m_EntityComponentMask[entity].set(component, false);
 	}
 

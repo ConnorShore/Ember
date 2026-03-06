@@ -17,14 +17,18 @@ namespace Ember {
 	public:
 		Entity CreateEntity();
 		void DestroyEntity(Entity entity);
-
-		template<std::same_as<ComponentType> T>
-		void AttachComponent(Entity entity, T component);
 		void DetatchComponent(Entity entity, ComponentType type);
+
+		template<typename T>
+		inline void AttachComponent(Entity entity, T component)
+		{
+
+		}
 
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
 		ScopedPtr<ComponentManager> m_ComponentManager;
 		ScopedPtr<SystemManager> m_SystemManager;
 	};
+
 }
