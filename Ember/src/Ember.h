@@ -33,3 +33,5 @@
 #include "Ember/ImGui/ImGuiLayer.h"
 
 #include "Ember/Event/Event.h""
+
+#include "Ember/ECS/Registry.h"

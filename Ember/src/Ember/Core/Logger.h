@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 
 namespace Ember {
 
@@ -16,26 +17,32 @@ namespace Ember {
 	class Logger
 	{
 	public:
-		Logger() = default;
+		Logger(const std::string& name) : m_Name(name) {}
 		~Logger() = default;
 
 		template <typename... Args>
 		void Log(LogLevel logLevel, std::format_string<Args...> fmt, Args&&... args)
 		{
-			std::cout << GetLogLevelColor(logLevel) << "[" << GetLogLevelString(logLevel) << "] "; 
-			std::cout << std::format(fmt, std::forward<Args>(args)...);
-			std::cout << "\n" << GetLogLevelResetColor();
+			std::string userMessage = std::format(fmt, std::forward<Args>(args)...);
+			std::string finalOutput = std::format("{}{}: [{}] {}{}\n",
+				GetLogLevelColor(logLevel),
+				m_Name,
+				GetLogLevelString(logLevel),
+				userMessage,
+				GetLogLevelResetColor());
+
+			std::cout << finalOutput;
 		}
 
 		static Logger* CoreLogger()
 		{
-			static Logger coreLogger;
+			static Logger coreLogger("ENGINE");
 			return &coreLogger;
 		}
 
 		static Logger* ClientLogger()
 		{
-			static Logger clientLogger;
+			static Logger clientLogger("APP");
 			return &clientLogger;
 		}
 
@@ -43,17 +50,18 @@ namespace Ember {
 		const char* GetLogLevelString(LogLevel logLevel);
 		const char* GetLogLevelColor(LogLevel logLevel);
 		const char* GetLogLevelResetColor();
+
+	private:
+		std::string m_Name;
 	};
 
 }
 
-#ifdef EB_ENGINE
-	#define EB_CORE_TRACE(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Trace, __VA_ARGS__)
-	#define EB_CORE_INFO(...)  Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Info, __VA_ARGS__)
-	#define EB_CORE_WARN(...)  Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Warn, __VA_ARGS__)
-	#define EB_CORE_ERROR(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Error, __VA_ARGS__)
-	#define EB_CORE_FATAL(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Fatal, __VA_ARGS__)
-#endif
+#define EB_CORE_TRACE(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Trace, __VA_ARGS__)
+#define EB_CORE_INFO(...)  Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Info, __VA_ARGS__)
+#define EB_CORE_WARN(...)  Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Warn, __VA_ARGS__)
+#define EB_CORE_ERROR(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Error, __VA_ARGS__)
+#define EB_CORE_FATAL(...) Ember::Logger::CoreLogger()->Log(Ember::LogLevel::Fatal, __VA_ARGS__)
 
 #define EB_TRACE(...) Ember::Logger::ClientLogger()->Log(Ember::LogLevel::Trace, __VA_ARGS__)
 #define EB_INFO(...)  Ember::Logger::ClientLogger()->Log(Ember::LogLevel::Info, __VA_ARGS__)

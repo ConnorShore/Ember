@@ -15,14 +15,28 @@ namespace Ember {
 	class Registry
 	{
 	public:
+		Registry();
+		~Registry() = default;
+
 		Entity CreateEntity();
 		void DestroyEntity(Entity entity);
-		void DetatchComponent(Entity entity, ComponentType type);
 
 		template<typename T>
 		inline void AttachComponent(Entity entity, T component)
 		{
+			ComponentType type = m_ComponentManager->GetComponentType<T>();
 
+			m_EntityManager->AttachComponent(entity, type);
+			m_ComponentManager->AttachComponent<T>(entity, component);
+		}
+
+		template<typename T>
+		inline void DetachComponent(Entity entity)
+		{
+			ComponentType type = m_ComponentManager->GetComponentType<T>();
+
+			m_EntityManager->DetachComponent(entity, type);
+			m_ComponentManager->DetachComponent<T>(entity);
 		}
 
 	private:

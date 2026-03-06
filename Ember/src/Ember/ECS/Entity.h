@@ -7,6 +7,8 @@ namespace Ember {
 	class Entity
 	{
 	public:
+		Entity()
+			: m_Id(EB_INVALID_ENTITY_ID) { }
 		Entity(EntityID id)
 			: m_Id(id) { }
 		~Entity() = default;

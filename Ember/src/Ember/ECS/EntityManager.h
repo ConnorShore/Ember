@@ -18,8 +18,8 @@ namespace Ember {
 		Entity CreateEntity();
 		void DestroyEntity(Entity entity);
 
-		void AddComponent(Entity entity, ComponentType component);
-		void RemoveComponent(Entity entity, ComponentType component);
+		void AttachComponent(Entity entity, ComponentType component);
+		void DetachComponent(Entity entity, ComponentType component);
 
 		inline const unsigned int GetNumActiveEntities() const { return m_NextEntityId - m_UnusedIds.size(); }
 

@@ -59,7 +59,7 @@ namespace Ember {
 			DenseComponentArray[componentIndex] = DenseComponentArray[lastComponentIndex];
 
 			// Update the mapping for that last component's new location
-			DenseEntityArray[componentIndex] = DenseComponentArray[lastComponentIndex];
+			DenseEntityArray[componentIndex] = lastComponentIndex;
 			SparseEntityArray[entityReplaceId] = componentIndex;
 
 			// Pop the dense arrays
@@ -69,7 +69,7 @@ namespace Ember {
 
 		virtual void EntityDestroyed(Entity entity) override
 		{
-			EB_CORE_ASSERT((entity < SparseEntityArray.size() && SparseEntityArray[entity] != EB_INVALID_ENTITY_ID),
+			EB_CORE_ASSERT((EntityID)entity < SparseEntityArray.size() && SparseEntityArray[(EntityID)entity] != EB_INVALID_ENTITY_ID,
 				"Entity does not exist for component type!");
 
 			RemoveComponent(entity);
@@ -87,7 +87,7 @@ namespace Ember {
 		~ComponentManager() = default;
 
 		template<typename T>
-		inline void AddComponent(Entity entity, T component)
+		inline void AttachComponent(Entity entity, T component)
 		{
 			ComponentType type = GetComponentType<T>();
 
@@ -95,7 +95,7 @@ namespace Ember {
 			if (type > m_ComponentArrays.size() - 1)
 				m_ComponentArrays.resize(type + 1);
 
-			if (!m_ComponentArrays[type])
+			if (m_ComponentArrays[type] != nullptr)
 				m_ComponentArrays[type] = SharedPtr<ComponentMemoryArray<T>>::Create();
 
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
@@ -103,7 +103,7 @@ namespace Ember {
 		}
 
 		template<typename T>
-		inline void RemoveComponent(Entity entity)
+		inline void DetachComponent(Entity entity)
 		{
 			ComponentType type = GetComponentType<T>();
 

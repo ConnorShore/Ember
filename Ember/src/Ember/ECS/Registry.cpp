@@ -3,19 +3,22 @@
 
 namespace Ember {
 
-	Ember::Entity Registry::CreateEntity()
+	Registry::Registry()
+		: m_EntityManager(ScopedPtr<EntityManager>::Create()),
+		m_ComponentManager(ScopedPtr<ComponentManager>::Create()),
+		m_SystemManager(nullptr)
 	{
-		return 0;
+	}
+
+	Entity Registry::CreateEntity()
+	{
+		return m_EntityManager->CreateEntity();
 	}
 
 	void Registry::DestroyEntity(Entity entity)
 	{
-
-	}
-
-	void Registry::DetatchComponent(Entity entity, ComponentType type)
-	{
-
+		m_EntityManager->DestroyEntity(entity);
+		m_ComponentManager->EntityDestroyed(entity);
 	}
 
 }

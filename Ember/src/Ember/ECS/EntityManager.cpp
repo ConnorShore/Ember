@@ -32,13 +32,13 @@ namespace Ember {
 		m_UnusedIds.emplace(entity);
 	}
 
-	void EntityManager::AddComponent(Entity entity, ComponentType component)
+	void EntityManager::AttachComponent(Entity entity, ComponentType component)
 	{
 		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Entity has already reached it's component count limit!");
 		m_EntityComponentMask[entity].set(component, true);
 	}
 
-	void EntityManager::RemoveComponent(Entity entity, ComponentType component)
+	void EntityManager::DetachComponent(Entity entity, ComponentType component)
 	{
 		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Component is out of bounds!");
 		m_EntityComponentMask[entity].set(component, false);
