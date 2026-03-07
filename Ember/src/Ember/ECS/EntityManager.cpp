@@ -20,7 +20,10 @@ namespace Ember {
 		}
 		
 		EB_CORE_ASSERT(m_NextEntityId < EB_MAX_ENTITIES, "Entity count has reached Ember's max limit!");
-		return m_NextEntityId++;
+
+		unsigned int newId = m_NextEntityId++;
+		m_AliveEntities.set(newId, true);
+		return newId;
 	}
 
 	void EntityManager::DestroyEntity(Entity entity)

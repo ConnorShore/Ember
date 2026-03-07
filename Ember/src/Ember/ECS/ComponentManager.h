@@ -29,7 +29,7 @@ namespace Ember {
 
 		ComponentMemoryArray()
 		{
-			SparseEntityArray.resize(EB_MAX_ENTITIES, EB_INVALID_ENTITY_ID);
+			SparseEntityArray.resize(EB_MAX_ENTITIES, EB_INVALID_COMPONENT_ID);
 		}
 
 		void InsertComponent(Entity entity, T component)
@@ -39,7 +39,7 @@ namespace Ember {
 
 			// Map the component index to which entity its for
 			DenseComponentArray.push_back(component);
-			DenseEntityArray.push_back(componentIndex);
+			DenseEntityArray.push_back(entity);
 
 			// Add entity to spare array to point to the mapper array to eventually point to the component
 			SparseEntityArray[entity] = componentIndex;
@@ -50,6 +50,12 @@ namespace Ember {
 			// Get the index of the component in the dense arrays
 			unsigned int componentIndex = SparseEntityArray[entity];
 
+			if (componentIndex == EB_INVALID_COMPONENT_ID)
+			{
+				EB_CORE_WARN("Entity {} does not contain component type!", (EntityID)entity);
+				return;
+			}
+
 			// Swap and pop the component //
 			unsigned int lastComponentIndex = DenseComponentArray.size() - 1;
 			unsigned int entityReplaceId = DenseEntityArray[lastComponentIndex];
@@ -59,10 +65,11 @@ namespace Ember {
 			DenseComponentArray[componentIndex] = DenseComponentArray[lastComponentIndex];
 
 			// Update the mapping for that last component's new location
-			DenseEntityArray[componentIndex] = lastComponentIndex;
+			DenseEntityArray[componentIndex] = entityReplaceId;
 			SparseEntityArray[entityReplaceId] = componentIndex;
 
 			// Pop the dense arrays
+			SparseEntityArray[entity] = EB_INVALID_COMPONENT_ID;
 			DenseComponentArray.pop_back();
 			DenseEntityArray.pop_back();
 		}
@@ -92,10 +99,10 @@ namespace Ember {
 			ComponentType type = GetComponentType<T>();
 
 			// Add component type to components array if it doesn't exist yet
-			if (type > m_ComponentArrays.size() - 1)
+			if (m_ComponentArrays.empty() || type > m_ComponentArrays.size() - 1)
 				m_ComponentArrays.resize(type + 1);
 
-			if (m_ComponentArrays[type] != nullptr)
+			if (m_ComponentArrays[type] == nullptr)
 				m_ComponentArrays[type] = SharedPtr<ComponentMemoryArray<T>>::Create();
 
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
