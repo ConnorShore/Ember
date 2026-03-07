@@ -39,6 +39,19 @@ namespace Ember {
 			m_ComponentManager->DetachComponent<T>(entity);
 		}
 
+		template<typename T>
+		inline bool ContainsComponent(Entity entity)
+		{
+			ComponentType type = m_ComponentManager->GetComponentType<T>();
+			return m_EntityManager->ContainsComponent(entity, type);
+		}
+
+		template<typename T>
+		inline T& GetComponent(Entity entity)
+		{
+			return m_ComponentManager->GetComponent<T>(entity);
+		}
+
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
 		ScopedPtr<ComponentManager> m_ComponentManager;

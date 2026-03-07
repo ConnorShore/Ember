@@ -21,6 +21,8 @@ namespace Ember {
 		void AttachComponent(Entity entity, ComponentType component);
 		void DetachComponent(Entity entity, ComponentType component);
 
+		bool ContainsComponent(Entity entity, ComponentType component);
+
 		inline const unsigned int GetNumActiveEntities() const { return m_NextEntityId - m_UnusedIds.size(); }
 
 	private:

@@ -45,6 +45,12 @@ namespace Ember {
 			SparseEntityArray[entity] = componentIndex;
 		}
 
+		T& GetComponent(Entity entity)
+		{
+			EB_CORE_ASSERT(SparseEntityArray[entity] != EB_INVALID_COMPONENT_ID, "Attempting to reetrieve a non-existent component!");
+			return DenseComponentArray[SparseEntityArray[entity]];
+		}
+
 		void RemoveComponent(Entity entity)
 		{
 			// Get the index of the component in the dense arrays
@@ -52,7 +58,7 @@ namespace Ember {
 
 			if (componentIndex == EB_INVALID_COMPONENT_ID)
 			{
-				EB_CORE_WARN("Entity {} does not contain component type!", (EntityID)entity);
+				EB_CORE_WARN("Entity {} does not contain component type!", entity);
 				return;
 			}
 
@@ -76,10 +82,8 @@ namespace Ember {
 
 		virtual void EntityDestroyed(Entity entity) override
 		{
-			EB_CORE_ASSERT((EntityID)entity < SparseEntityArray.size() && SparseEntityArray[(EntityID)entity] != EB_INVALID_ENTITY_ID,
-				"Entity does not exist for component type!");
-
-			RemoveComponent(entity);
+			if (entity < SparseEntityArray.size() && SparseEntityArray[entity] != EB_INVALID_COMPONENT_ID)
+				RemoveComponent(entity);
 		}
 	};
 
@@ -118,6 +122,23 @@ namespace Ember {
 			memoryArrays->RemoveComponent(entity);
 		}
 
+		template<typename T>
+		inline ComponentType GetComponentType()
+		{
+			// Generates once per type and then is cached
+			static const ComponentType typeId = GetNextComponentType();
+			return typeId;
+		}
+
+		template<typename T>
+		inline T& GetComponent(Entity entity)
+		{
+			ComponentType type = GetComponentType<T>();
+
+			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
+			return memoryArrays->GetComponent(entity);
+		}
+
 		inline void EntityDestroyed(Entity entity)
 		{
 			for (auto compArray : m_ComponentArrays)
@@ -127,14 +148,6 @@ namespace Ember {
 					compArray->EntityDestroyed(entity);
 				}
 			}
-		}
-
-		template<typename T>
-		inline ComponentType GetComponentType()
-		{
-			// Generates once per type and then is cached
-			static const ComponentType typeId = GetNextComponentType();
-			return typeId;
 		}
 	private:
 		inline ComponentType GetNextComponentType()

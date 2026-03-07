@@ -55,6 +55,13 @@ void EntityTestLayer::OnAttach()
 	m_Registry->DetachComponent<TransformComponent>(entities[3]);
 	m_Registry->DetachComponent<MeshComponent>(entities[3]);	// Nothing should be found and no error either (maybe log)
 
+	// Get/contains test
+	bool containsComp = m_Registry->ContainsComponent<TransformComponent>(entities[7]);
+	TransformComponent ret = m_Registry->GetComponent<TransformComponent>(entities[7]);
+
+	bool containsMesh = m_Registry->ContainsComponent<MeshComponent>(entities[7]);
+	MeshComponent ret2 = m_Registry->GetComponent<MeshComponent>(entities[7]);
+
 	for (int i = 0; i < 10; i++) {
 		m_Registry->DestroyEntity(entities[i]);
 	}

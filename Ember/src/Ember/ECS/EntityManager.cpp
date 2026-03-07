@@ -47,4 +47,10 @@ namespace Ember {
 		m_EntityComponentMask[entity].set(component, false);
 	}
 
+	bool EntityManager::ContainsComponent(Entity entity, ComponentType component)
+	{
+		EB_CORE_ASSERT(component < EB_MAX_COMPONENTS, "Component is out of bounds!");
+		return m_EntityComponentMask[entity].test(component);
+	}
+
 }
