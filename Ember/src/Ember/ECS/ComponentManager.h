@@ -7,6 +7,8 @@
 
 #include <vector>
 #include <concepts>
+#include <tuple>
+#include <ranges>
 
 namespace Ember {
 

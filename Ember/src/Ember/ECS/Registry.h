@@ -9,6 +9,7 @@
 #include "Ember/Core/Core.h"
 
 #include <concepts>
+#include <tuple>
 
 namespace Ember {
 
@@ -46,10 +47,22 @@ namespace Ember {
 			return m_EntityManager->ContainsComponent(entity, type);
 		}
 
+		template<typename... Args>
+		inline bool ContainsComponents(Entity entity)
+		{
+			return (ContainsComponent<Args>(entity) && ...);
+		}
+
 		template<typename T>
 		inline T& GetComponent(Entity entity)
 		{
 			return m_ComponentManager->GetComponent<T>(entity);
+		}
+
+		template<typename... Args>
+		inline std::tuple<Args&...> GetComponents(Entity entity)
+		{
+			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}
 
 	private:
