@@ -13,6 +13,9 @@
 
 namespace Ember {
 
+	template<typename Driver, typename... Filters>
+	class View;
+
 	class Registry
 	{
 	public:
@@ -65,10 +68,31 @@ namespace Ember {
 			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}
 
+		template<typename Driver, typename... Args>
+		inline View<Driver, Args...> Query();
+
+		template<typename T>
+		const std::vector<EntityID>& GetActiveEntities()
+		{
+			return m_ComponentManager->GetActiveEntities<T>();
+		}
+
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
 		ScopedPtr<ComponentManager> m_ComponentManager;
 		ScopedPtr<SystemManager> m_SystemManager;
 	};
+}
 
+// Including the implementation of the template function here since it's header-only
+// And also to avoid circular dependency issues since View also needs to reference Registry
+
+#include "View.h"
+
+namespace Ember {
+	template<typename Driver, typename... Args>
+	inline View<Driver, Args...> Registry::Query()
+	{
+		return View<Driver, Args...>(this);
+	}
 }

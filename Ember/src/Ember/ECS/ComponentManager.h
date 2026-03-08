@@ -141,6 +141,21 @@ namespace Ember {
 			return memoryArrays->GetComponent(entity);
 		}
 
+		template<typename T>
+		const std::vector<EntityID>& GetActiveEntities()
+		{
+			ComponentType type = GetComponentType<T>();
+			if (type >= m_ComponentArrays.size() || m_ComponentArrays[type] == nullptr)
+			{
+				static std::vector<EntityID> empty;
+				return empty;
+			}
+
+			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
+			return memoryArrays->DenseEntityArray;
+		}
+
+
 		inline void EntityDestroyed(Entity entity)
 		{
 			for (auto compArray : m_ComponentArrays)
@@ -151,6 +166,9 @@ namespace Ember {
 				}
 			}
 		}
+
+		inline const std::vector<SharedPtr<ComponentMemoryArraysBase>>& GetComponentArrays() { return m_ComponentArrays; }
+
 	private:
 		inline ComponentType GetNextComponentType()
 		{

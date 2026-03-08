@@ -25,7 +25,6 @@ EntityTestLayer::EntityTestLayer()
 
 EntityTestLayer::~EntityTestLayer()
 {
-
 }
 
 void EntityTestLayer::OnAttach()
@@ -60,11 +59,18 @@ void EntityTestLayer::OnAttach()
 		MeshComponent ret2 = m_Registry->GetComponent<MeshComponent>(entities[7]);
 
 	bool containsComps = m_Registry->ContainsComponents<TagComponent, MeshComponent>(entities[0]);
-	if (containsComps) 
+	if (containsComps)
 	{
 		auto [tag, mesh] = m_Registry->GetComponents<TagComponent, MeshComponent>(entities[0]);
 		tag.tag = "New Tag";
 		mesh.meshID = 1000;
+	}
+
+	// Get all entities with mesh and transform components
+	auto view = m_Registry->Query<MeshComponent, TagComponent>();
+	for (auto e : view)
+	{
+		EB_TRACE("Entity {} has both Mesh and Tag component", e);
 	}
 
 	// Detach test
@@ -76,7 +82,6 @@ void EntityTestLayer::OnAttach()
 	}
 
 	EB_TRACE("Successfully destroyed all entities!");
-
 }
 
 void EntityTestLayer::OnDetatch()
