@@ -16,5 +16,6 @@
 
 #include "Assert.h"
 #include "Logger.h"
+#include "Time.h"
 #include "SharedPointer.h"
 #include "ScopedPointer.h"

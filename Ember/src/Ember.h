@@ -35,3 +35,4 @@
 #include "Ember/Event/Event.h""
 
 #include "Ember/ECS/Registry.h"
+#include "Ember/ECS/Component/Components.h"

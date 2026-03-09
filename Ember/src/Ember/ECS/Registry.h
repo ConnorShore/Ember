@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Types.h"
-#include "Entity.h"
-#include "EntityManager.h"
-#include "ComponentManager.h"
-#include "SystemManager.h"
+#include "Ember/ECS/Entity/Entity.h"
+#include "Ember/ECS/Entity/EntityManager.h"
+#include "Ember/ECS/Component/ComponentManager.h"
+#include "Ember/ECS/System/SystemManager.h"
 
 #include "Ember/Core/Core.h"
 
@@ -75,6 +75,21 @@ namespace Ember {
 		const std::vector<EntityID>& GetActiveEntities()
 		{
 			return m_ComponentManager->GetActiveEntities<T>();
+		}
+
+		inline void RegisterSystem(SharedPtr<System> system)
+		{
+			m_SystemManager->RegisterSystem(system, this);
+		}
+
+		inline void UnregisterSystem(SharedPtr<System> system)
+		{
+			m_SystemManager->UnregisterSystem(system, this);
+		}
+
+		inline void UpdateSystems(TimeStep delta)
+		{
+			m_SystemManager->UpdateSystems(delta, this);
 		}
 
 	private:

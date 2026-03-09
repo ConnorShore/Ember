@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Entity.h"
-#include "Types.h"
+#include "Ember/ECS/Types.h"
 
 #include <queue>
 #include <bitset>

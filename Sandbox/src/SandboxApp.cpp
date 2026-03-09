@@ -9,8 +9,8 @@ class SandboxApp : public Ember::Application
 public:
 	SandboxApp()
 	{
-		//PushLayer(Ember::ScopedPtr<Ember::Layer>(new SandboxLayer()));
-		PushLayer(Ember::ScopedPtr<Ember::Layer>(new EntityTestLayer()));
+		PushLayer(Ember::ScopedPtr<Ember::Layer>(new SandboxLayer()));
+		//PushLayer(Ember::ScopedPtr<Ember::Layer>(new EntityTestLayer()));
 	}
 	~SandboxApp()
 	{

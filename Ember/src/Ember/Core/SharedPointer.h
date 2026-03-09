@@ -21,7 +21,7 @@ namespace Ember {
 		virtual ~SharedResource() = default;
 
 		void IncrementRefCount() const { ++m_RefCount; }
-		void DecrementRefCount() const { --m_RefCount; }
+		size_t DecrementRefCount() const { return --m_RefCount; }
 
 		size_t GetRefCount() const { return m_RefCount.load(); }
 
@@ -114,8 +114,7 @@ namespace Ember {
 
 		T* Ptr() const { return m_Ptr; }
 
-		T* operator->() { return m_Ptr; }
-		const T* operator->() const { return m_Ptr; }
+		T* operator->() const { return m_Ptr; }
 
 		T& operator*() { return *m_Ptr; }
 		const T& operator*() const { return *m_Ptr; }
@@ -141,8 +140,7 @@ namespace Ember {
 		{
 			if (m_Ptr)
 			{
-				m_Ptr->DecrementRefCount();
-				if (m_Ptr->GetRefCount() == 0)
+				if (m_Ptr->DecrementRefCount() == 0)
 				{
 					delete m_Ptr;
 					m_Ptr = nullptr;

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Types.h"
-#include "Entity.h"
-
+#include "Ember/ECS/Entity/Entity.h"
 #include "Ember/Core/Core.h"
 
 #include <vector>
@@ -97,7 +96,7 @@ namespace Ember {
 	{
 	public:
 		ComponentManager() = default;
-		~ComponentManager() = default;
+		~ComponentManager() { m_ComponentArrays.clear(); }
 
 		template<typename T>
 		inline void AttachComponent(Entity entity, T component)

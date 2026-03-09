@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core.h"
-#include "Time.h"
 #include "Ember/Event/Event.h"
 #include "Ember/Render/Shader.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types.h"
+#include "Ember/ECS/Types.h"
 
 #include <vector>
 

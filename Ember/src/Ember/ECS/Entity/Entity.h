@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Types.h"
+#include "Ember/ECS/Types.h"
+
 #include <format>
 
 namespace Ember {
