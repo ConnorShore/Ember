@@ -17,7 +17,7 @@ namespace Ember {
 		static void EndFrame();
 		static void Submit(const SharedPtr<VertexArray>& vertexArray, const SharedPtr<Shader>& shader);
 
-		static void DrawSprite(const SpriteComponent& sprite, const Matrix4f transform);
+		//static void DrawSprite(const SpriteComponent& sprite, const Matrix4f transform);
 
 		static RendererAPI::API GetApi() { return RendererAPI::GetApi(); }
 

@@ -44,7 +44,7 @@ namespace Ember {
 			glBindVertexArray(m_Id);
 		}
 
-		void VertexArray::SetBuffer(const SharedPtr<VertexBufferBase>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer)
+		void VertexArray::SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer)
 		{
 			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
 				"Vertex buffer must have a layout set before being used in a vertex array!");

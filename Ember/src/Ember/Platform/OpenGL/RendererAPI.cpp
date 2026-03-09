@@ -26,10 +26,15 @@ namespace Ember {
 			use ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 		}
 
-		void RendererAPI::DrawInstanced(const SharedPtr<VertexArray>& vertexArray)
+		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray)
 		{
-			glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+			DrawIndexed(vertexArray, vertexArray->GetIndexBuffer()->GetCount());
 		}
 
+		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
+		{
+			vertexArray->Bind();
+			glDrawElements(GL_TRIANGLES, indicesCt, GL_UNSIGNED_INT, nullptr);
+		}
 	}
 }

@@ -33,41 +33,41 @@ namespace Ember {
 	// Vertex Buffer
 	//////////////////////////////////////////////////////////////////////////
 
-	template <VertexDataType T>
-	SharedPtr<VertexBuffer<T>> VertexBuffer<T>::Create(std::span<const T> data)
+	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, unsigned int size)
 	{
 		switch (RendererAPI::GetApi())
 		{
 		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Render API type currently not supported"); return nullptr;
-		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer<T>>::Create(data);
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer>::Create(data, size);
 		}
 
 		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
 		return nullptr;
 	}
 
-
-	template <VertexDataType T>
-	SharedPtr<VertexBuffer<T>> VertexBuffer<T>::Create(std::span<const T> data, const BufferLayout& layout)
+	SharedPtr<VertexBuffer> VertexBuffer::Create(unsigned int size)
 	{
 		switch (RendererAPI::GetApi())
 		{
 		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Render API type currently not supported"); return nullptr;
-		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer<T>>::Create(data, layout);
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer>::Create(size);
 		}
 
 		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
 		return nullptr;
 	}
 
-	// Known vertex buffer types
-	template SharedPtr<VertexBuffer<int>> VertexBuffer<int>::Create(std::span<const int> data);
-	template SharedPtr<VertexBuffer<float>> VertexBuffer<float>::Create(std::span<const float> data);
-	template SharedPtr<VertexBuffer<double>> VertexBuffer<double>::Create(std::span<const double> data);
+	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, unsigned int size, const BufferLayout& layout)
+	{
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Render API type currently not supported"); return nullptr;
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer>::Create(data, size, layout);
+		}
 
-	template SharedPtr<VertexBuffer<int>> VertexBuffer<int>::Create(std::span<const int> data, const BufferLayout& layout);
-	template SharedPtr<VertexBuffer<float>> VertexBuffer<float>::Create(std::span<const float> data, const BufferLayout& layout);
-	template SharedPtr<VertexBuffer<double>> VertexBuffer<double>::Create(std::span<const double> data, const BufferLayout& layout);
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Index Buffer

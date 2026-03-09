@@ -24,10 +24,11 @@ namespace Ember {
 
 	struct TransformComponent
 	{
-		Vector3f Transform;
+		Vector3f Position;
+		Vector3f Size;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(TransformComponent);
-		TransformComponent(const Vector3f transform) : Transform(transform) {}
+		TransformComponent(const Vector3f& position, const Vector3f& size) : Position(position), Size(size) {}
 	};
 
 	struct RigidBodyComponent
@@ -35,25 +36,24 @@ namespace Ember {
 		Vector3f Velocity;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(RigidBodyComponent);
-		RigidBodyComponent(const Vector3f velocity) : Velocity(velocity) {}
+		RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
 	};
 
 	struct SpriteComponent
 	{
-		SharedPtr<VertexArray> VertexArray;
-		SharedPtr<Shader> Shader;
 		Vector4f Color;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(SpriteComponent);
-		SpriteComponent(const SharedPtr<Ember::VertexArray>& vertexArray, const SharedPtr<Ember::Shader>& shader, const Vector4f color) : VertexArray(vertexArray), Shader(shader), Color(color) {}
+		SpriteComponent(const Vector4f color) : Color(color) {}
 	};
 
 	struct CameraComponent
 	{
 		Camera* Camera = nullptr;
+		bool IsPerspective = false;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(CameraComponent);
-		CameraComponent(Ember::Camera* camera) : Camera(camera) {}
+		CameraComponent(Ember::Camera* camera) : Camera(camera), IsPerspective(dynamic_cast<OrthographicCamera*>(camera) == nullptr) {}
 	};
 
 }

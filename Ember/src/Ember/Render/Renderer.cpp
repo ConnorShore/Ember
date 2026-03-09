@@ -21,17 +21,17 @@ namespace Ember {
 		vertexArray->Bind();
 		shader->Bind();
 		shader->SetMatrix4("u_ViewProjection", s_FrameData->ViewProjectionMatrix);
-		RenderAction::DrawInstanced(vertexArray);
+		RenderAction::DrawIndexed(vertexArray);
 	}
 
-	void Renderer::DrawSprite(const SpriteComponent& sprite, const Matrix4f transform)
-	{
-		sprite.VertexArray->Bind();
-		sprite.Shader->Bind();
-		sprite.Shader->SetMatrix4("u_ViewProjection", s_FrameData->ViewProjectionMatrix);
-		sprite.Shader->SetMatrix4("u_Model", transform);
-		sprite.Shader->SetFloat4("u_Color", sprite.Color);
-		RenderAction::DrawInstanced(sprite.VertexArray);
-	}
+	//void Renderer::DrawSprite(const SpriteComponent& sprite, const Matrix4f transform)
+	//{
+	//	sprite.VertexArray->Bind();
+	//	sprite.Shader->Bind();
+	//	sprite.Shader->SetMatrix4("u_ViewProjection", s_FrameData->ViewProjectionMatrix);
+	//	sprite.Shader->SetMatrix4("u_Model", transform);
+	//	sprite.Shader->SetFloat4("u_Color", sprite.Color);
+	//	RenderAction::DrawIndexed(sprite.VertexArray);
+	//}
 
 }

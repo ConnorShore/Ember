@@ -10,39 +10,42 @@ namespace Ember {
 		// Vertex Buffer
 		//////////////////////////////////////////////////////////////////////////
 
-		template <Ember::VertexDataType T>
-		VertexBuffer<T>::VertexBuffer(std::span<const T> data)
-			: m_Id(0), m_Size(data.size_bytes())
+		VertexBuffer::VertexBuffer(const void* data, unsigned int size)
+			: m_Id(0), m_Size(size)
 		{
 			glCreateBuffers(1, &m_Id);
-			glNamedBufferStorage(m_Id, data.size_bytes(), data.data(), GL_DYNAMIC_STORAGE_BIT);
+			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
 		}
 
-		template <Ember::VertexDataType T>
-		VertexBuffer<T>::VertexBuffer(std::span<const T> data, const BufferLayout& layout)
-			: m_Id(0), m_Size(data.size_bytes())
+		VertexBuffer::VertexBuffer(unsigned int size)
+			: m_Id(0), m_Size(size)
+		{
+			glCreateBuffers(1, &m_Id);
+			glNamedBufferStorage(m_Id, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+		}
+
+		VertexBuffer::VertexBuffer(const void* data, unsigned int size, const BufferLayout& layout)
+			: m_Id(0), m_Size(size)
 		{
 			this->m_Layout = layout;
 			glCreateBuffers(1, &m_Id);
-			glNamedBufferStorage(m_Id, data.size_bytes(), data.data(), GL_DYNAMIC_STORAGE_BIT);
+			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
 		}
 
-		template <Ember::VertexDataType T>
-		VertexBuffer<T>::~VertexBuffer()
+		VertexBuffer::~VertexBuffer()
 		{
 			glDeleteBuffers(1, &m_Id);
 		}
 
-		template <Ember::VertexDataType T>
-		void VertexBuffer<T>::Bind() const
+		void VertexBuffer::Bind() const
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_Id);
 		}
 
-		// Known vertex buffer types
-		template class VertexBuffer<int>;
-		template class VertexBuffer<float>;
-		template class VertexBuffer<double>;
+		void VertexBuffer::SetData(const void* data, unsigned int size)
+		{
+			glNamedBufferSubData(m_Id, 0, size, data);
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// Index Buffer

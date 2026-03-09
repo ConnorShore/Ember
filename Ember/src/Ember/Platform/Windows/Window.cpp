@@ -40,7 +40,8 @@ namespace Ember {
 
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
-			SetVSync(true);
+			//SetVSync(true);
+
 			RegisterCallbacks();
 		}
 

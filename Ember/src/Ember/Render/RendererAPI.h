@@ -21,7 +21,8 @@ namespace Ember {
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 
-		virtual void DrawInstanced(const SharedPtr<VertexArray>& vertexArray) = 0;
+		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) = 0;
+		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt) = 0;
 
 	public:
 		static API GetApi() { return s_Api; }

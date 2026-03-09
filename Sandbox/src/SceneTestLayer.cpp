@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "SceneTestLayer.h"
 
+#include <random>
+
 SceneTestLayer::SceneTestLayer()
 	: Layer("Scene Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
@@ -12,30 +14,26 @@ SceneTestLayer::~SceneTestLayer()
 
 void SceneTestLayer::OnAttach()
 {
-	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f,
-	};
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
+	std::uniform_real_distribution<float> posDist(-2.5f, 2.5f);
 
-	unsigned int indices[] = {
-		0, 1, 2,
-		2, 3, 0
-	};
+	m_SpriteEntities.reserve(250);
+	for (int i = 0; i < 250; i++)
+	{
+		auto entity = m_MainScene->AddEntity();
 
-	m_vbo = Ember::VertexBuffer<float>::Create(vertices, {
-		{ Ember::ShaderDataType::Float3, "v_Position" }
-		});
-	m_ibo = Ember::IndexBuffer::Create(indices);
-	m_vao = Ember::VertexArray::Create();
+		Ember::SpriteComponent spriteComp = { Ember::Vector4f(colorDist(rng), colorDist(rng), colorDist(rng), 1.0f) };
+		entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
 
-	m_vao->SetBuffer(m_vbo, m_ibo);
+		auto& transform = entity->GetComponent<Ember::TransformComponent>();
+		transform.Position = Ember::Vector3f(posDist(rng), posDist(rng), 0.0f);
 
-	RegisterShader("assets/shaders/BasicTransform.glsl");
+		m_SpriteEntities.push_back(entity);
+	}
 
 	m_Entity = m_MainScene->AddEntity();
-	Ember::SpriteComponent spriteComp = { m_vao, GetShader("BasicTransform"), Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
+	Ember::SpriteComponent spriteComp = { Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
 	m_Entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
@@ -49,7 +47,7 @@ void SceneTestLayer::OnDetatch()
 
 void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
 {
-	Ember::RigidBodyComponent& rigidComp = m_Entity->GetComponent<Ember::RigidBodyComponent>();
+	auto& rigidComp = m_Entity->GetComponent<Ember::RigidBodyComponent>();
 	rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
 
 	if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
