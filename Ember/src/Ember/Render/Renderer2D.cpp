@@ -25,7 +25,7 @@ namespace Ember {
 
 		// Quads
 		SharedPtr<VertexArray> QuadVertexArray;
-		SharedPtr<VertexBuffer<float>> QuadVertexBuffer;
+		SharedPtr<VertexBuffer> QuadVertexBuffer;
 		SharedPtr<IndexBuffer> QuadIndexBuffer;
 		SharedPtr<Shader> QuadShader;
 
@@ -42,8 +42,6 @@ namespace Ember {
 		unsigned int QuadIndicesInBatch;
 
 		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
-
-		unsigned int DrawCallsPerScene = 0;
 	};
 
 	static ScopedPtr<RendererData> s_RendererData;
@@ -56,7 +54,7 @@ namespace Ember {
 		s_RendererData->QuadBufferStart = new QuadVertex[s_RendererData->MaxVertices];
 
 		s_RendererData->QuadVertexArray = VertexArray::Create();
-		s_RendererData->QuadVertexBuffer = VertexBuffer<float>::Create((unsigned int)(s_RendererData->MaxVertices * sizeof(QuadVertex)));
+		s_RendererData->QuadVertexBuffer = VertexBuffer::Create((unsigned int)(s_RendererData->MaxVertices * sizeof(QuadVertex)));
 		s_RendererData->QuadVertexBuffer->SetLayout({
 			{ ShaderDataType::Float3, "v_Position" },
 			{ ShaderDataType::Float4, "v_Color" }
@@ -99,15 +97,10 @@ namespace Ember {
 
 	void Renderer2D::FlushBatch()
 	{
-		s_RendererData->DrawCallsPerScene++;
-
 		if (s_RendererData->QuadIndicesInBatch)
 		{
-			// TODO: Update VertexBuffer to not be templated and to simplify all of this
-			auto quadCount = s_RendererData->QuadBufferCurrent - s_RendererData->QuadBufferStart;
-			auto floatPtr = reinterpret_cast<const float*>(s_RendererData->QuadBufferStart);
-			auto floatCount = quadCount * sizeof(QuadVertex) / sizeof(float);
-			s_RendererData->QuadVertexBuffer->SetData({ floatPtr, floatCount });
+			auto size = (unsigned int)((char*)s_RendererData->QuadBufferCurrent - (char*)s_RendererData->QuadBufferStart);
+			s_RendererData->QuadVertexBuffer->SetData(s_RendererData->QuadBufferStart, size);
 
 			s_RendererData->QuadShader->Bind();
 			RenderAction::DrawIndexed(s_RendererData->QuadVertexArray, s_RendererData->QuadIndicesInBatch);
@@ -123,8 +116,6 @@ namespace Ember {
 
 	void Renderer2D::BeginFrame(OrthographicCamera& camera)
 	{
-		s_RendererData->DrawCallsPerScene = 0;
-
 		s_RendererData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
 		s_RendererData->QuadShader->Bind();
 		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
@@ -135,7 +126,6 @@ namespace Ember {
 	void Renderer2D::EndFrame()
 	{
 		FlushBatch();
-		EB_CORE_TRACE("Draw calls per scene: {}", s_RendererData->DrawCallsPerScene);
 	}
 
 	void Renderer2D::DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color)

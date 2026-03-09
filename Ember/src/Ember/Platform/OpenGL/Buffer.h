@@ -11,18 +11,17 @@ namespace Ember {
 		// Vertex Buffer
 		//////////////////////////////////////////////////////////////////////////
 
-		template <Ember::VertexDataType T>
-		class VertexBuffer : public Ember::VertexBuffer<T>
+		class VertexBuffer : public Ember::VertexBuffer
 		{
 		public:
-			VertexBuffer(std::span<const T> data);
+			VertexBuffer(const void* data, unsigned int size);
 			VertexBuffer(unsigned int size);
-			VertexBuffer(std::span<const T> data, const BufferLayout& layout);
+			VertexBuffer(const void* data, unsigned int size, const BufferLayout& layout);
 			virtual ~VertexBuffer();
 
 			void Bind() const override;
 
-			virtual void SetData(std::span<const T> data) override;
+			virtual void SetData(const void* data, unsigned int size) override;
 
 			inline virtual const unsigned int GetID() const override { return m_Id; }
 			inline virtual const size_t GetSize() const override { return m_Size; }

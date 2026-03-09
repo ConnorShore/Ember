@@ -15,11 +15,6 @@ public:
 
 private:
 	Ember::SharedPtr<Ember::Scene> m_MainScene;
-
-	Ember::SharedPtr<Ember::VertexArray> m_vao;
-	Ember::SharedPtr<Ember::VertexBufferBase> m_vbo;
-	Ember::SharedPtr<Ember::IndexBuffer> m_ibo;
-
 	Ember::SharedPtr<Ember::SceneEntity> m_Entity;
 	std::vector<Ember::SharedPtr<Ember::SceneEntity>> m_SpriteEntities;
 };

@@ -73,40 +73,25 @@ namespace Ember {
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-	// Vertex Buffer Base
-	//////////////////////////////////////////////////////////////////////////
-	class VertexBufferBase : public Buffer
-	{
-	public:
-		virtual ~VertexBufferBase() = default;
-
-		void SetLayout(const BufferLayout& layout) { m_Layout = layout; }
-		const BufferLayout& GetLayout() const { return m_Layout; }
-
-	protected:
-		BufferLayout m_Layout;
-	};
-
-	//////////////////////////////////////////////////////////////////////////
 	// Vertex Buffer
 	//////////////////////////////////////////////////////////////////////////
 
-	// TODO: Make it so VertexBuffer isn't templated
-
-	template <typename T>
-	concept VertexDataType = std::same_as<T, int> || std::same_as<T, float> || std::same_as<T, double>;
-
-	template <VertexDataType T>
-	class VertexBuffer : public VertexBufferBase
+	class VertexBuffer : public Buffer
 	{
 	public:
 		virtual ~VertexBuffer() = default;
 
-		virtual void SetData(std::span<const T> data) = 0;
+		virtual void SetData(const void* data, unsigned int size) = 0;
 
-		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data);
-		static SharedPtr<VertexBuffer<T>> Create(unsigned int size);
-		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data, const BufferLayout& layout);
+		void SetLayout(const BufferLayout& layout) { m_Layout = layout; }
+		const BufferLayout& GetLayout() const { return m_Layout; }
+
+		static SharedPtr<VertexBuffer> Create(const void* data, unsigned int size);
+		static SharedPtr<VertexBuffer> Create(unsigned int size);
+		static SharedPtr<VertexBuffer> Create(const void* data, unsigned int size, const BufferLayout& layout);
+
+	protected:
+		BufferLayout m_Layout;
 	};
 	
 
