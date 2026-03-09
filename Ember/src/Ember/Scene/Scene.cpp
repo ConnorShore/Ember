@@ -12,11 +12,6 @@ namespace Ember {
 	{
 		m_Registry->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_Registry->RegisterSystem(SharedPtr<RenderSystem>::Create());
-
-		// Temporary camera to render objects
-		Entity cameraEntity = m_Registry->CreateEntity();
-		CameraComponent cameraComp(&m_Camera);
-		m_Registry->AttachComponent(cameraEntity, cameraComp);
 	}
 
 	Scene::~Scene()

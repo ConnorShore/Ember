@@ -88,8 +88,6 @@ namespace Ember {
 			TimeStep delta = currentTime - lastTime;
 			lastTime = currentTime;
 
-			EB_CORE_INFO("DELTA: {}", delta.Milliseconds());
-
 			for (auto& layer : m_LayerStack)
 				layer->OnUpdate(delta);
 

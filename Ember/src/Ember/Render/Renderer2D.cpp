@@ -114,9 +114,9 @@ namespace Ember {
 		StartBatch();
 	}
 
-	void Renderer2D::BeginFrame(OrthographicCamera& camera)
+	void Renderer2D::BeginFrame(CameraComponent& camera, const Matrix4f& transform)
 	{
-		s_RendererData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
+		s_RendererData->ViewProjectionMatrix = camera.ProjectionMatrix * transform;
 		s_RendererData->QuadShader->Bind();
 		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
 

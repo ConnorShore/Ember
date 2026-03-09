@@ -37,21 +37,18 @@ namespace Ember {
 	void Input::SetKeyState(KeyCode key, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key pressed!");
-		EB_CORE_TRACE("Key pressed {}", key);
 		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] = pressed ? 1 : 0;
 	}
 
 	void Input::IncrementKeyRepeat(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key repeated!");
-		EB_CORE_TRACE("Key {} repeat incremented {}", key, GetKeyRepeatCount(key));
 		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)]++;
 	}
 
 	void Input::SetMouseButtonState(MouseButton button, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button toggled!");
-		EB_CORE_TRACE("Mouse button {} state changed. Pressed: {}", button, pressed);
 		s_MouseButtonStates[static_cast<MOUSE_BUTTON_TYPE>(button)] = pressed;
 	}
 

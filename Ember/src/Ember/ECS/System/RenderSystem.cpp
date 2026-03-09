@@ -21,28 +21,34 @@ namespace Ember {
 
 	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry)
 	{
-		Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0));
-		Ember::RenderAction::Clear();
+		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0));
+		RenderAction::Clear();
 
 		// TODO: 3d Render pass
 
 
 		// 2d Render Pass
-		OrthographicCamera* orthoCamera = nullptr;
-		View cameraView = registry->Query<CameraComponent>();
+		bool beginSceneCalled = false;
+		View cameraView = registry->Query<CameraComponent, TransformComponent>();
 		for (EntityID cameraEntity : cameraView)
 		{
-			auto& cameraComp = registry->GetComponent<CameraComponent>(cameraEntity);
-			if (!cameraComp.IsPerspective)
+			auto [camera, transform] = registry->GetComponents<CameraComponent, TransformComponent>(cameraEntity);
+			if (camera.IsActive)
 			{
-				orthoCamera = (OrthographicCamera*)cameraComp.Camera;
+				Matrix4f transformMat = Math::Scale(Vector3f(transform.Size.x, transform.Size.y, 1.0f)) * Math::Translate(transform.Position);
+				Renderer2D::BeginFrame(camera, transformMat);
+				beginSceneCalled = true;
 				break;
 			}
 		}
-		EB_CORE_ASSERT(orthoCamera, "No ortho camera found for 2D Renderer!");
+
+		if (!beginSceneCalled)
+		{
+			EB_CORE_WARN("No camera found! Scene not rendering");
+			return;
+		}
 
 		{
-			Renderer2D::BeginFrame(*orthoCamera);
 
 			View view = registry->Query<SpriteComponent, TransformComponent>();
 			for (EntityID entity : view)
