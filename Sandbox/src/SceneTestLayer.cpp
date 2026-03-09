@@ -36,10 +36,10 @@ void SceneTestLayer::OnAttach()
 
 	m_Entity = m_MainScene->AddEntity();
 	Ember::SpriteComponent spriteComp = { m_vao, GetShader("BasicTransform"), Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
-	m_MainScene->AttachComponent<Ember::SpriteComponent>(m_Entity, spriteComp);
+	m_Entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
-	m_MainScene->AttachComponent<Ember::RigidBodyComponent>(m_Entity, rigidComp);
+	m_Entity->AttachComponent<Ember::RigidBodyComponent>(rigidComp);
 }
 
 void SceneTestLayer::OnDetatch()
@@ -49,7 +49,7 @@ void SceneTestLayer::OnDetatch()
 
 void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
 {
-	Ember::RigidBodyComponent& rigidComp = m_MainScene->GetComponent<Ember::RigidBodyComponent>(m_Entity);
+	Ember::RigidBodyComponent& rigidComp = m_Entity->GetComponent<Ember::RigidBodyComponent>();
 	rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
 
 	if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))

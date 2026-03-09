@@ -7,7 +7,7 @@
 
 namespace Ember {
 
-	Scene::Scene(const std::string name)
+	Scene::Scene(const std::string& name)
 		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name), m_Camera(-3.0f, 3.0f, -3.0f, 3.0f)
 	{
 		m_Registry->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
@@ -28,19 +28,29 @@ namespace Ember {
 		m_Registry->UpdateSystems(delta);
 	}
 
-	Ember::Entity Scene::AddEntity()
+	SharedPtr<SceneEntity> Scene::AddEntity()
 	{
-		Entity entity = m_Registry->CreateEntity();
-		TagComponent tag("New Entity");
-		TransformComponent transform({ 0.0f, 0.0f, 0.0f });
-		m_Registry->AttachComponent(entity, tag);
-		m_Registry->AttachComponent(entity, transform);
-		return entity;
+		std::string name = "Entity " + m_SceneEntities.size();
+		return SharedPtr<SceneEntity>::Create(this, name);
 	}
 
-	void Scene::RemoveEntity(const Entity& entity)
+	SharedPtr<SceneEntity> Scene::GetEntity(const std::string& tag)
 	{
-		m_Registry->DestroyEntity(entity);
+		if (m_SceneEntities.find(tag) == m_SceneEntities.end())
+		{
+			EB_CORE_ASSERT(false, "Scene does not contain entity with tag!");
+			return nullptr;
+		}
+
+		return m_SceneEntities[tag];
+	}
+
+	void Scene::RemoveEntity(const SharedPtr<SceneEntity>& entity)
+	{
+		auto it = m_SceneEntities.find(entity->GetName());
+		EB_CORE_ASSERT(it != m_SceneEntities.end(), "Scene does not contain entity!");
+		m_Registry->DestroyEntity(entity->GetEntityHandle());
+		m_SceneEntities.erase(it);
 	}
 
 }

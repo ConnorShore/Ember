@@ -20,5 +20,5 @@ private:
 	Ember::SharedPtr<Ember::VertexBufferBase> m_vbo;
 	Ember::SharedPtr<Ember::IndexBuffer> m_ibo;
 
-	Ember::Entity m_Entity;
+	Ember::SharedPtr<Ember::SceneEntity> m_Entity;
 };
