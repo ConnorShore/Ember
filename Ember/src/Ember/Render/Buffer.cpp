@@ -46,6 +46,18 @@ namespace Ember {
 		return nullptr;
 	}
 
+	template <VertexDataType T>
+	SharedPtr<VertexBuffer<T>> VertexBuffer<T>::Create(unsigned int size)
+	{
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Render API type currently not supported"); return nullptr;
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexBuffer<T>>::Create(size);
+		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
+	}
 
 	template <VertexDataType T>
 	SharedPtr<VertexBuffer<T>> VertexBuffer<T>::Create(std::span<const T> data, const BufferLayout& layout)
@@ -64,6 +76,10 @@ namespace Ember {
 	template SharedPtr<VertexBuffer<int>> VertexBuffer<int>::Create(std::span<const int> data);
 	template SharedPtr<VertexBuffer<float>> VertexBuffer<float>::Create(std::span<const float> data);
 	template SharedPtr<VertexBuffer<double>> VertexBuffer<double>::Create(std::span<const double> data);
+
+	template SharedPtr<VertexBuffer<int>> VertexBuffer<int>::Create(unsigned int size);
+	template SharedPtr<VertexBuffer<float>> VertexBuffer<float>::Create(unsigned int size);
+	template SharedPtr<VertexBuffer<double>> VertexBuffer<double>::Create(unsigned int size);
 
 	template SharedPtr<VertexBuffer<int>> VertexBuffer<int>::Create(std::span<const int> data, const BufferLayout& layout);
 	template SharedPtr<VertexBuffer<float>> VertexBuffer<float>::Create(std::span<const float> data, const BufferLayout& layout);

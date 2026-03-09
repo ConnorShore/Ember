@@ -91,6 +91,8 @@ namespace Ember {
 	// Vertex Buffer
 	//////////////////////////////////////////////////////////////////////////
 
+	// TODO: Make it so VertexBuffer isn't templated
+
 	template <typename T>
 	concept VertexDataType = std::same_as<T, int> || std::same_as<T, float> || std::same_as<T, double>;
 
@@ -100,7 +102,10 @@ namespace Ember {
 	public:
 		virtual ~VertexBuffer() = default;
 
+		virtual void SetData(std::span<const T> data) = 0;
+
 		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data);
+		static SharedPtr<VertexBuffer<T>> Create(unsigned int size);
 		static SharedPtr<VertexBuffer<T>> Create(std::span<const T> data, const BufferLayout& layout);
 	};
 	

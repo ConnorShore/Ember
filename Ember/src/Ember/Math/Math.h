@@ -31,6 +31,11 @@ namespace Ember {
 	using Matrix3f = Matrix3<float>;
 	using Matrix4f = Matrix4<float>;
 
+	inline Vector3f operator*(const Matrix4f& matrix, const Vector3f& vector)
+	{
+		return Vector3f(matrix * Vector4f(vector, 1.0f));
+	}
+
 	class Math
 	{
 	public:

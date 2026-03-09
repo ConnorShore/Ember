@@ -16,10 +16,13 @@ namespace Ember {
 		{
 		public:
 			VertexBuffer(std::span<const T> data);
+			VertexBuffer(unsigned int size);
 			VertexBuffer(std::span<const T> data, const BufferLayout& layout);
 			virtual ~VertexBuffer();
 
 			void Bind() const override;
+
+			virtual void SetData(std::span<const T> data) override;
 
 			inline virtual const unsigned int GetID() const override { return m_Id; }
 			inline virtual const size_t GetSize() const override { return m_Size; }

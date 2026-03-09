@@ -29,9 +29,14 @@ namespace Ember {
 			m_RendererApi->UseDepthTest(use);
 		}
 
-		static inline void DrawInstanced(const SharedPtr<VertexArray>& vertexArray)
+		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
 		{
-			m_RendererApi->DrawInstanced(vertexArray);
+			m_RendererApi->DrawIndexed(vertexArray, indicesCt);
+		}
+
+		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray)
+		{
+			m_RendererApi->DrawIndexed(vertexArray);
 		}
 
 	private:
