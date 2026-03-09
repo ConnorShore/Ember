@@ -35,7 +35,7 @@ namespace Ember {
 			auto [camera, transform] = registry->GetComponents<CameraComponent, TransformComponent>(cameraEntity);
 			if (camera.IsActive)
 			{
-				Matrix4f transformMat = Math::Scale(Vector3f(transform.Size.x, transform.Size.y, 1.0f)) * Math::Translate(transform.Position);
+				Matrix4f transformMat = Math::Inverse(Math::Translate(transform.Position));
 				Renderer2D::BeginFrame(camera, transformMat);
 				beginSceneCalled = true;
 				break;

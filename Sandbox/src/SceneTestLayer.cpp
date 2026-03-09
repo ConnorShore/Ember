@@ -14,11 +14,6 @@ SceneTestLayer::~SceneTestLayer()
 
 void SceneTestLayer::OnAttach()
 {
-	// Camera
-	auto cameraEntity = m_MainScene->AddEntity();
-	Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
-	cameraEntity->AttachComponent(cameraComp);
-
 	// Entities
 	std::mt19937 rng(std::random_device{}());
 	std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
@@ -46,6 +41,15 @@ void SceneTestLayer::OnAttach()
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
 	m_Entity->AttachComponent<Ember::RigidBodyComponent>(rigidComp);
+
+	// Make a camera follow the player
+	Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
+	m_Entity->AttachComponent(cameraComp);
+
+	// Default Camera
+	//auto cameraEntity = m_MainScene->AddEntity();
+	//Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
+	//cameraEntity->AttachComponent(cameraComp);
 }
 
 void SceneTestLayer::OnDetatch()

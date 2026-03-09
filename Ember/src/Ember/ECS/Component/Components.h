@@ -56,13 +56,4 @@ namespace Ember {
 		CameraComponent(const Matrix4f& projection, bool active = false) : ProjectionMatrix(projection), IsActive(active) {}
 	};
 
-	//struct CameraComponent
-	//{
-	//	Camera* Camera = nullptr;
-	//	bool IsPerspective = false;
-
-	//	EB_DEFAULT_COMPONENT_CONSTRUCT(CameraComponent);
-	//	CameraComponent(Ember::Camera* camera) : Camera(camera), IsPerspective(dynamic_cast<OrthographicCamera*>(camera) == nullptr) {}
-	//};
-
 }
