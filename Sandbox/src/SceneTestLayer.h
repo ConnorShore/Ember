@@ -21,4 +21,5 @@ private:
 	Ember::SharedPtr<Ember::IndexBuffer> m_ibo;
 
 	Ember::SharedPtr<Ember::SceneEntity> m_Entity;
+	std::vector<Ember::SharedPtr<Ember::SceneEntity>> m_SpriteEntities;
 };

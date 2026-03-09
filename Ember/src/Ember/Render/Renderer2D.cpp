@@ -19,7 +19,7 @@ namespace Ember {
 	};
 
 	struct RendererData {
-		static const unsigned int MaxQuads = 1000;
+		static const unsigned int MaxQuads = 1024;
 		static const unsigned int MaxVertices = MaxQuads * 4;
 		static const unsigned int MaxIndices = MaxQuads * 6;
 
@@ -42,6 +42,8 @@ namespace Ember {
 		unsigned int QuadIndicesInBatch;
 
 		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
+
+		unsigned int DrawCallsPerScene = 0;
 	};
 
 	static ScopedPtr<RendererData> s_RendererData;
@@ -97,6 +99,8 @@ namespace Ember {
 
 	void Renderer2D::FlushBatch()
 	{
+		s_RendererData->DrawCallsPerScene++;
+
 		if (s_RendererData->QuadIndicesInBatch)
 		{
 			// TODO: Update VertexBuffer to not be templated and to simplify all of this
@@ -119,6 +123,8 @@ namespace Ember {
 
 	void Renderer2D::BeginFrame(OrthographicCamera& camera)
 	{
+		s_RendererData->DrawCallsPerScene = 0;
+
 		s_RendererData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
 		s_RendererData->QuadShader->Bind();
 		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
@@ -129,6 +135,7 @@ namespace Ember {
 	void Renderer2D::EndFrame()
 	{
 		FlushBatch();
+		EB_CORE_TRACE("Draw calls per scene: {}", s_RendererData->DrawCallsPerScene);
 	}
 
 	void Renderer2D::DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color)
@@ -140,8 +147,9 @@ namespace Ember {
 
 	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color)
 	{
-		if (s_RendererData->QuadIndicesInBatch > s_RendererData->MaxIndices)
+		if (s_RendererData->QuadIndicesInBatch >= s_RendererData->MaxIndices)
 		{
+			EB_CORE_TRACE("Indicie overload, calling next batch!");
 			NextBatch();
 		}
 

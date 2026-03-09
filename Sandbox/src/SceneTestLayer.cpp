@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "SceneTestLayer.h"
 
+#include <random>
+
 SceneTestLayer::SceneTestLayer()
 	: Layer("Scene Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
@@ -12,6 +14,24 @@ SceneTestLayer::~SceneTestLayer()
 
 void SceneTestLayer::OnAttach()
 {
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
+	std::uniform_real_distribution<float> posDist(-2.5f, 2.5f);
+
+	m_SpriteEntities.reserve(250);
+	for (int i = 0; i < 250; i++)
+	{
+		auto entity = m_MainScene->AddEntity();
+
+		Ember::SpriteComponent spriteComp = { Ember::Vector4f(colorDist(rng), colorDist(rng), colorDist(rng), 1.0f) };
+		entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
+
+		auto& transform = entity->GetComponent<Ember::TransformComponent>();
+		transform.Position = Ember::Vector3f(posDist(rng), posDist(rng), 0.0f);
+
+		m_SpriteEntities.push_back(entity);
+	}
+
 	m_Entity = m_MainScene->AddEntity();
 	Ember::SpriteComponent spriteComp = { Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
 	m_Entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
