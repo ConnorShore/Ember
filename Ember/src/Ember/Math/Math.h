@@ -61,7 +61,7 @@ namespace Ember {
 			return glm::scale(matrix, scale);
 		}
 
-		static inline Matrix4f Orthographic(float left, float right, float bottom, float top, float zNear, float zFar) {
+		static inline Matrix4f Orthographic(float left, float right, float bottom, float top, float zNear = -1.0f, float zFar = 1.0f) {
 			return glm::ortho(left, right, bottom, top, zNear, zFar);
 		}
 

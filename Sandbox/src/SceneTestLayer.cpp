@@ -14,9 +14,10 @@ SceneTestLayer::~SceneTestLayer()
 
 void SceneTestLayer::OnAttach()
 {
+	// Entities
 	std::mt19937 rng(std::random_device{}());
 	std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
-	std::uniform_real_distribution<float> posDist(-2.5f, 2.5f);
+	std::uniform_real_distribution<float> posDist(-9.5f, 9.5f);
 
 	m_SpriteEntities.reserve(250);
 	for (int i = 0; i < 250; i++)
@@ -33,11 +34,22 @@ void SceneTestLayer::OnAttach()
 	}
 
 	m_Entity = m_MainScene->AddEntity();
+	auto& entityTransform = m_Entity->GetComponent<Ember::TransformComponent>();
+	entityTransform.Size = Ember::Vector3f(3.0f, 3.0f, 1.0f);
 	Ember::SpriteComponent spriteComp = { Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
 	m_Entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
 	m_Entity->AttachComponent<Ember::RigidBodyComponent>(rigidComp);
+
+	// Make a camera follow the player
+	Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
+	m_Entity->AttachComponent(cameraComp);
+
+	// Default Camera
+	//auto cameraEntity = m_MainScene->AddEntity();
+	//Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
+	//cameraEntity->AttachComponent(cameraComp);
 }
 
 void SceneTestLayer::OnDetatch()

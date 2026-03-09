@@ -28,7 +28,7 @@ namespace Ember {
 		Vector3f Size;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(TransformComponent);
-		TransformComponent(const Vector3f& position, const Vector3f& size) : Position(position), Size(size) {}
+		TransformComponent(const Vector3f& position, const Vector3f& size = Vector3f(1.0f)) : Position(position), Size(size) {}
 	};
 
 	struct RigidBodyComponent
@@ -49,11 +49,11 @@ namespace Ember {
 
 	struct CameraComponent
 	{
-		Camera* Camera = nullptr;
-		bool IsPerspective = false;
+		Matrix4f ProjectionMatrix;
+		bool IsActive;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(CameraComponent);
-		CameraComponent(Ember::Camera* camera) : Camera(camera), IsPerspective(dynamic_cast<OrthographicCamera*>(camera) == nullptr) {}
+		CameraComponent(const Matrix4f& projection, bool active = false) : ProjectionMatrix(projection), IsActive(active) {}
 	};
 
 }

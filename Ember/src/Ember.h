@@ -27,7 +27,7 @@
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/RenderAction.h"
-#include "Ember/Render/Renderer.h"
+#include "Ember/Render/Renderer2D.h"
 #include "Ember/Render/Camera.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"

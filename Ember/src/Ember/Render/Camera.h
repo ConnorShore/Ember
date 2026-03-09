@@ -15,10 +15,6 @@ namespace Ember {
 		virtual ~Camera() = default;
 
 		virtual const Matrix4f& GetProjectionMatrix() const = 0;
-		virtual const Matrix4f& GetViewMatrix() const = 0;
-		virtual const Matrix4f& GetViewProjectionMatrix() const = 0;
-
-		virtual const Vector3f& GetPosition() const = 0;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -32,9 +28,9 @@ namespace Ember {
 		virtual ~OrthographicCamera() = default;
 
 		virtual const Matrix4f& GetProjectionMatrix() const override { return m_ProjectionMatrix; }
-		virtual const Matrix4f& GetViewMatrix() const override { return m_ViewMatrix; }
-		virtual const Matrix4f& GetViewProjectionMatrix() const override { return m_ViewProjectionMatrix; }
-		virtual const Vector3f& GetPosition() const override { return m_Position; }
+		const Matrix4f& GetViewMatrix() const { return m_ViewMatrix; }
+		const Matrix4f& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
+		const Vector3f& GetPosition() const { return m_Position; }
 		float GetRotation() const { return m_Rotation; }
 
 		void SetPosition(const Vector3f& position) { m_Position = position; CalculateViewMatrix(); }

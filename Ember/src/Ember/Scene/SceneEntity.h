@@ -25,7 +25,7 @@ namespace Ember {
 		template<typename T>
 		inline T& GetComponent();
 
-		inline const Entity& GetEntityHandle() const { return m_EntityHandle; }
+		inline Entity GetEntityHandle() const { return m_EntityHandle; }
 		const std::string& GetName() const;
 
 	private:
