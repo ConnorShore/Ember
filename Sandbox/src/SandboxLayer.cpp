@@ -4,7 +4,7 @@
 #include <imgui/imgui_internal.h>
 
 #include <Ember/Core/SharedPointer.h>
-#include <Ember/Event/Event.h>\
+#include <Ember/Event/Event.h>
 
 SandboxLayer::SandboxLayer()
 	: Layer("Sandbox Layer"), u_Color(0.2f, 0.3f, 0.8f, 1.0f), m_Camera(-3.0f, 3.0f, -3.0f, 3.0f)

@@ -22,7 +22,7 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [transform, rigidBody] = registry->GetComponents<TransformComponent, RigidBodyComponent>(entity);
-			transform.Transform += rigidBody.velocity * (float)delta;
+			transform.Transform += rigidBody.Velocity * (float)delta;
 		}
 	}
 

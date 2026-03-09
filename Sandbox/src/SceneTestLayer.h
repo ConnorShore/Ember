@@ -14,5 +14,11 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
+	Ember::SharedPtr<Ember::Scene> m_MainScene;
 
+	Ember::SharedPtr<Ember::VertexArray> m_vao;
+	Ember::SharedPtr<Ember::VertexBufferBase> m_vbo;
+	Ember::SharedPtr<Ember::IndexBuffer> m_ibo;
+
+	Ember::Entity m_Entity;
 };

@@ -26,7 +26,7 @@ namespace Ember {
 		void DestroyEntity(Entity entity);
 
 		template<typename T>
-		inline void AttachComponent(Entity entity, T component)
+		inline void AttachComponent(Entity entity, T& component)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
 
@@ -77,20 +77,9 @@ namespace Ember {
 			return m_ComponentManager->GetActiveEntities<T>();
 		}
 
-		inline void RegisterSystem(SharedPtr<System> system)
-		{
-			m_SystemManager->RegisterSystem(system, this);
-		}
-
-		inline void UnregisterSystem(SharedPtr<System> system)
-		{
-			m_SystemManager->UnregisterSystem(system, this);
-		}
-
-		inline void UpdateSystems(TimeStep delta)
-		{
-			m_SystemManager->UpdateSystems(delta, this);
-		}
+		void RegisterSystem(const SharedPtr<System>& system);
+		void UnregisterSystem(const SharedPtr<System>& system);
+		void UpdateSystems(TimeStep delta);
 
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
