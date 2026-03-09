@@ -21,7 +21,7 @@ namespace Ember {
 		virtual ~SharedResource() = default;
 
 		void IncrementRefCount() const { ++m_RefCount; }
-		void DecrementRefCount() const { --m_RefCount; }
+		size_t DecrementRefCount() const { return --m_RefCount; }
 
 		size_t GetRefCount() const { return m_RefCount.load(); }
 
@@ -112,8 +112,9 @@ namespace Ember {
 			return SharedPtr<T>(new T(std::forward<Args>(args)...));
 		}
 
-		T* operator->() { return m_Ptr; }
-		const T* operator->() const { return m_Ptr; }
+		T* Ptr() const { return m_Ptr; }
+
+		T* operator->() const { return m_Ptr; }
 
 		T& operator*() { return *m_Ptr; }
 		const T& operator*() const { return *m_Ptr; }
@@ -139,8 +140,7 @@ namespace Ember {
 		{
 			if (m_Ptr)
 			{
-				m_Ptr->DecrementRefCount();
-				if (m_Ptr->GetRefCount() == 0)
+				if (m_Ptr->DecrementRefCount() == 0)
 				{
 					delete m_Ptr;
 					m_Ptr = nullptr;
@@ -151,5 +151,12 @@ namespace Ember {
 	private:
 		mutable T* m_Ptr = nullptr;
 	};
+
+	// Static cast implementation
+	template <typename T, typename U>
+	SharedPtr<T> StaticPointerCast(const SharedPtr<U>& ptr)
+	{
+		return SharedPtr<T>(static_cast<T*>(ptr.Ptr()));
+	}
 
 }

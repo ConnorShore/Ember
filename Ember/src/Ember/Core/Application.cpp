@@ -1,7 +1,6 @@
  #include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
-#include "Ember/Core/Time.h"
 #include "Ember/Input/Input.h"
 
 #include <GLFW/glfw3.h>

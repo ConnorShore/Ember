@@ -24,4 +24,14 @@ namespace Ember {
 		RenderAction::DrawInstanced(vertexArray);
 	}
 
+	void Renderer::DrawSprite(const SpriteComponent& sprite, const Matrix4f transform)
+	{
+		sprite.VertexArray->Bind();
+		sprite.Shader->Bind();
+		sprite.Shader->SetMatrix4("u_ViewProjection", s_FrameData->ViewProjectionMatrix);
+		sprite.Shader->SetMatrix4("u_Model", transform);
+		sprite.Shader->SetFloat4("u_Color", sprite.Color);
+		RenderAction::DrawInstanced(sprite.VertexArray);
+	}
+
 }

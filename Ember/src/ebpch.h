@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <queue>
 #include <memory>
 #include <algorithm>
 #include <functional>
@@ -15,6 +16,7 @@
 #include <format>
 #include <fstream>
 #include <sstream>
+#include <tuple>
 
 #include "Ember/Core/Core.h"
 

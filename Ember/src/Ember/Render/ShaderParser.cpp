@@ -51,11 +51,11 @@ namespace Ember {
 	std::string ShaderParser::ExtractFileName(const std::string& filePath)
 	{
 		// Get filename with extension after slashes
-		unsigned int lastSlash = filePath.find_last_of("/\\");
+		size_t lastSlash = filePath.find_last_of("/\\");
 		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
 
 		// Remove last dot
-		unsigned int lastDot = filePath.find_last_of(".");
+		size_t lastDot = filePath.find_last_of(".");
 		lastDot = lastDot == std::string::npos ? filePath.length() : lastDot;
 		return filePath.substr(lastSlash, lastDot - lastSlash);
 	}
