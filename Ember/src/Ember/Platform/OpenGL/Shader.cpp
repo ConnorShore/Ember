@@ -116,8 +116,8 @@ namespace Ember {
 			glLinkProgram(m_Id);
 			glValidateProgram(m_Id);
 
-			for (auto id : shaderIDs)
-				glDeleteShader(id);
+			for (unsigned int i = 0; i < shaderIndex; i++)
+				glDeleteShader(shaderIDs[i]);
 		}
 
 		int Shader::GetUniformLocation(const std::string& name) const

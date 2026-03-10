@@ -56,7 +56,7 @@ void SceneTestLayer::OnAttach()
 	//cameraEntity->AttachComponent(cameraComp);
 }
 
-void SceneTestLayer::OnDetatch()
+void SceneTestLayer::OnDetach()
 {
 
 }

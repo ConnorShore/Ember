@@ -1,7 +1,8 @@
- #include "ebpch.h"
+#include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
 #include "Ember/Input/Input.h"
+#include "Ember/Render/RenderAction.h"
 
 #include <GLFW/glfw3.h>
 
@@ -29,20 +30,21 @@ namespace Ember {
 
 	Application::~Application()
 	{
-		m_ImGuiLayer->OnDetatch();
+		for (auto& layer : m_LayerStack)
+			layer->OnDetach();
+
+		m_ImGuiLayer->OnDetach();
 
 		EB_CORE_INFO("Application destroyed!");
 	}
 
 	void Application::PushLayer(ScopedPtr<Layer> layer)
 	{
-		layer->OnAttach();
 		m_LayerStack.PushLayer(std::move(layer));
 	}
 
 	void Application::PushCanvasLayer(ScopedPtr<Layer> canvas)
 	{
-		canvas->OnAttach();
 		m_LayerStack.PushCanvasLayer(std::move(canvas));
 	}
 
@@ -73,9 +75,9 @@ namespace Ember {
 		EB_CORE_INFO("Application attached!");
 	}
 
-	void Application::OnDetatch()
+	void Application::OnDetach()
 	{
-		EB_CORE_INFO("Application detatched!");
+		EB_CORE_INFO("Application Detached!");
 	}
 
 	void Application::OnEvent(Event& event)
@@ -88,6 +90,9 @@ namespace Ember {
 		EB_DISPATCH_EVENT(KeyRepeatEvent, OnKeyRepeat);
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMousePressed);
 		EB_DISPATCH_EVENT(MouseReleasedEvent, OnMouseReleased);
+
+		for (auto& layer : m_LayerStack)
+			layer->OnEvent(event);
 	}
 
 	void Application::Run()
@@ -125,6 +130,7 @@ namespace Ember {
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
 		EB_CORE_TRACE("Window resized to {}x{}", e.GetWidth(), e.GetHeight());
+		RenderAction::SetViewport(0, 0, e.GetWidth(), e.GetHeight());
 		return true;
 	}
 

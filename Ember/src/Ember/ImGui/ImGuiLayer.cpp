@@ -57,7 +57,7 @@ namespace Ember {
 		ImGui_ImplOpenGL3_Init(OPENGL_VERSION);
 	}
 
-	void ImGuiLayer::OnDetatch()
+	void ImGuiLayer::OnDetach()
 	{
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

@@ -25,8 +25,10 @@ namespace Ember {
 
 	SharedPtr<SceneEntity> Scene::AddEntity()
 	{
-		std::string name = "Entity " + m_SceneEntities.size();
-		return SharedPtr<SceneEntity>::Create(this, name);
+		std::string name = std::format("Entity {}", m_SceneEntities.size());
+		auto entity = SharedPtr<SceneEntity>::Create(this, name);
+		m_SceneEntities[name] = entity;
+		return entity;
 	}
 
 	SharedPtr<SceneEntity> Scene::GetEntity(const std::string& tag)

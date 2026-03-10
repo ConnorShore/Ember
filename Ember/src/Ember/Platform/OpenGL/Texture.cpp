@@ -9,7 +9,7 @@ namespace Ember {
 	namespace OpenGL {
 
 		Texture::Texture()
-			:m_Name("Default"), m_FilePath(), m_Width(1), m_Height(1), m_BytesPerPixel(4)
+			:m_Name("Default"), m_FilePath(), m_Width(1), m_Height(1), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
@@ -45,17 +45,13 @@ namespace Ember {
 
 		Texture::~Texture()
 		{
-			glDeleteTextures(GL_TEXTURE_2D, &m_Id);
+			glDeleteTextures(1, &m_Id);
+			delete m_LocalBuffer;
 		}
 
 		void Texture::Bind(unsigned int slot) const
 		{
 			glBindTextureUnit(slot, m_Id);
-		}
-
-		void Texture::Unbind() const
-		{
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
 		void Texture::SetData(const void* data, unsigned int size)

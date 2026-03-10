@@ -9,7 +9,7 @@ public:
 	virtual ~SceneTestLayer();
 
 	void OnAttach() override;
-	void OnDetatch() override;
+	void OnDetach() override;
 	void OnUpdate(Ember::TimeStep delta) override;
 	void OnImGuiRender(Ember::TimeStep delta) override;
 

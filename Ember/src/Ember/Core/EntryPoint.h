@@ -5,15 +5,14 @@
 
 #ifdef EB_PLATFORM_WINDOWS
 
-extern Ember::Application* Ember::CreateApplication();
+extern Ember::ScopedPtr<Ember::Application> Ember::CreateApplication();
 
 int main(int argc, char** argv)
 {
 	auto app = Ember::CreateApplication();
 	app->OnAttach();
 	app->Run();
-	app->OnDetatch();
-	delete app;
+	app->OnDetach();
 	return 0;
 }
 

@@ -12,7 +12,7 @@ namespace Ember {
 		virtual ~ImGuiLayer();
 
 		virtual void OnAttach() override;
-		virtual void OnDetatch() override;
+		virtual void OnDetach() override;
 
 		void BeginFrame();
 		void EndFrame();

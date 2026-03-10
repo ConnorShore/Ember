@@ -20,7 +20,7 @@ namespace Ember {
 		{
 			if (key < 0 || KeyCode::Last < key)
 			{
-				EB_CORE_ASSERT("Undefined key code: {0}", key);
+				EB_CORE_ASSERT(false, "Undefined key code: {0}", key);
 				return KeyCode::Unknown;
 			}
 
@@ -39,9 +39,11 @@ namespace Ember {
 		{
 			if (MouseButton::Last < button)
 			{
-				EB_CORE_ASSERT("Undefined mouse button code: {0}", button);
+				EB_CORE_ASSERT(false, "Undefined mouse button code: {0}", button);
 				return MouseButton::Unknown;
 			}
+
+			return static_cast<MouseButton>(button);
 		}
 
 	}

@@ -31,7 +31,7 @@ namespace Ember {
 		SharedPtr<Texture> GetTexture(const std::string& name);
 
 		void OnAttach();
-		void OnDetatch();
+		void OnDetach();
 		void OnEvent(Event& event);
 
 		void Run();
@@ -64,6 +64,6 @@ namespace Ember {
 		static Application* s_Instance;
 	};
 
-	Application* CreateApplication();
+	ScopedPtr<Application> CreateApplication();
 }
 

@@ -15,7 +15,7 @@ public:
 	}
 };
 
-Ember::Application* Ember::CreateApplication()
+Ember::ScopedPtr<Ember::Application> Ember::CreateApplication()
 {
-	return new SandboxApp();
+	return Ember::ScopedPtr<SandboxApp>(new SandboxApp());
 }

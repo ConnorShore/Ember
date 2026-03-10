@@ -10,7 +10,7 @@ namespace Ember {
 	{
 		switch (RendererAPI::GetApi())
 		{
-		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API type is currently not supported");
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API type is currently not supported"); return nullptr;
 		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::VertexArray>::Create();
 		}
 

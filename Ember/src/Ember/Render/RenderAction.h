@@ -34,6 +34,11 @@ namespace Ember {
 			m_RendererApi->UseBlending(use);
 		}
 
+		static inline void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+		{
+			m_RendererApi->SetViewport(x, y, width, height);
+		}
+
 		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
 		{
 			m_RendererApi->DrawIndexed(vertexArray, indicesCt);

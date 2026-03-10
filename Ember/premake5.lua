@@ -22,7 +22,9 @@ project "Ember"
    files 
    { 
       "src/**.h",
-      "src/**.cpp" 
+      "src/**.cpp",
+      "vendor/stb/**.h",
+      "vendor/stb/**.cpp"
    }
 
    links

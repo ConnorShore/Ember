@@ -16,7 +16,6 @@ namespace Ember {
 			virtual ~Texture();
 
 			void Bind(unsigned int slot = 0) const override;
-			void Unbind() const override;
 
 			virtual void SetData(const void* data, unsigned int size) override;
 

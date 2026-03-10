@@ -39,6 +39,11 @@ namespace Ember {
 			}
 		}
 
+		void RendererAPI::SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height)
+		{
+			glViewport(x, y, width, height);
+		}
+
 		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray)
 		{
 			DrawIndexed(vertexArray, vertexArray->GetIndexBuffer()->GetCount());
