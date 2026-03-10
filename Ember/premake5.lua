@@ -15,7 +15,8 @@ project "Ember"
       "vendor/GLFW/include",
       "vendor/glad/include",
       "vendor/glm",
-      "vendor/imgui"
+      "vendor/imgui",
+      "vendor/stb"
    }
 
    files 

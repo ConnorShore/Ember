@@ -29,6 +29,11 @@ namespace Ember {
 			m_RendererApi->UseDepthTest(use);
 		}
 
+		static inline void UseBlending(bool use)
+		{
+			m_RendererApi->UseBlending(use);
+		}
+
 		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
 		{
 			m_RendererApi->DrawIndexed(vertexArray, indicesCt);

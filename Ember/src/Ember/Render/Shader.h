@@ -19,6 +19,7 @@ namespace Ember {
 
 		virtual void Bind() const = 0;
 
+		virtual void SetInt(const std::string& name, int value) const = 0;
 		virtual void SetFloat3(const std::string& name, const Vector3f& vec) const = 0;
 		virtual void SetFloat4(const std::string& name, const Vector4f& vec) const = 0;
 		virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const = 0;

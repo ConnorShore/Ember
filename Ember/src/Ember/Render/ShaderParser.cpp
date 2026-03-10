@@ -48,18 +48,6 @@ namespace Ember {
 		return shaderSources;
 	}
 
-	std::string ShaderParser::ExtractFileName(const std::string& filePath)
-	{
-		// Get filename with extension after slashes
-		size_t lastSlash = filePath.find_last_of("/\\");
-		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
-
-		// Remove last dot
-		size_t lastDot = filePath.find_last_of(".");
-		lastDot = lastDot == std::string::npos ? filePath.length() : lastDot;
-		return filePath.substr(lastSlash, lastDot - lastSlash);
-	}
-
 	ShaderType ShaderParser::ShaderTypeFromLine(const std::string& line)
 	{
 		// Remove shader indicator from line and any whitespace after it

@@ -11,6 +11,7 @@
 #include "Ember/ImGui/ImGuiLayer.h"
 
 #include "Ember/Render/Shader.h"
+#include "Ember/Render/Texture.h"
 
 namespace Ember {
 
@@ -25,6 +26,9 @@ namespace Ember {
 
 		void RegisterShader(const std::string& filePath);
 		SharedPtr<Shader> GetShader(const std::string& name);
+
+		void RegisterTexture(const std::string& filePath);
+		SharedPtr<Texture> GetTexture(const std::string& name);
 
 		void OnAttach();
 		void OnDetatch();
@@ -53,7 +57,9 @@ namespace Ember {
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
 
+		// TODO: Probably move these to some AssetManager or something
 		ScopedPtr<ShaderLibrary> m_ShaderLibrary;
+		ScopedPtr<TextureLibrary> m_TextureLibrary;
 
 		static Application* s_Instance;
 	};

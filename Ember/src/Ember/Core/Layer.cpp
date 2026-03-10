@@ -14,4 +14,13 @@ namespace Ember {
 		return Application::Instance().GetShader(name);
 	}
 
+	void Layer::RegisterTexture(const std::string& filePath)
+	{
+		Application::Instance().RegisterTexture(filePath);
+	}
+
+	SharedPtr<Texture> Layer::GetTexture(const std::string& name)
+	{
+		return Application::Instance().GetTexture(name);
+	}
 }

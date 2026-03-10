@@ -33,10 +33,14 @@ void SceneTestLayer::OnAttach()
 		m_SpriteEntities.push_back(entity);
 	}
 
+	RegisterTexture("assets/textures/image.png");
+
+	// Main Entity
+
 	m_Entity = m_MainScene->AddEntity();
 	auto& entityTransform = m_Entity->GetComponent<Ember::TransformComponent>();
 	entityTransform.Size = Ember::Vector3f(3.0f, 3.0f, 1.0f);
-	Ember::SpriteComponent spriteComp = { Ember::Vector4f(1.0f, 0.0f, 0.0f, 1.0f) };
+	Ember::SpriteComponent spriteComp = { GetTexture("image")};
 	m_Entity->AttachComponent<Ember::SpriteComponent>(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };

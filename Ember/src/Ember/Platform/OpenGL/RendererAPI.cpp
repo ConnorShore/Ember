@@ -26,6 +26,19 @@ namespace Ember {
 			use ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 		}
 
+		void RendererAPI::UseBlending(bool use)
+		{
+			if (use)
+			{
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			}
+			else
+			{
+				glDisable(GL_BLEND);
+			}
+		}
+
 		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray)
 		{
 			DrawIndexed(vertexArray, vertexArray->GetIndexBuffer()->GetCount());

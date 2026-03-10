@@ -2,9 +2,10 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
+#include "Ember/Render/Camera.h"
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Shader.h"
-#include "Ember/Render/Camera.h"
+#include "Ember/Render/Texture.h"
 
 #include <string>
 
@@ -42,9 +43,11 @@ namespace Ember {
 	struct SpriteComponent
 	{
 		Vector4f Color;
+		SharedPtr<Texture> Texture;
 
 		EB_DEFAULT_COMPONENT_CONSTRUCT(SpriteComponent);
 		SpriteComponent(const Vector4f color) : Color(color) {}
+		SpriteComponent(const SharedPtr<Ember::Texture>& texture) : Color(Vector4f(1.0f)), Texture(texture) {}
 	};
 
 	struct CameraComponent
