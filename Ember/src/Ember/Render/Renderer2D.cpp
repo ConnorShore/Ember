@@ -105,6 +105,7 @@ namespace Ember {
 
 	void Renderer2D::Shutdown()
 	{
+		s_RendererData.Reset();
 		delete[] s_RendererData->QuadBufferStart;
 	}
 

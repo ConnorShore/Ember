@@ -5,7 +5,9 @@
 
 #include <vector>
 
+#ifdef EB_DEBUG
 #include <iostream>
+#endif
 
 namespace Ember {
 

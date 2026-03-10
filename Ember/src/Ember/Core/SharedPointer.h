@@ -4,6 +4,7 @@
 #include <iostream>
 #include <type_traits>
 #include <utility>
+#include <concepts>
 
 #include "Logger.h"
 
@@ -44,7 +45,7 @@ namespace Ember {
 			m_Ptr->IncrementRefCount();
 		}
 
-		template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+		template<typename U> requires std::convertible_to<U*, T*>
 		SharedPtr(const SharedPtr<U>& other)
 			: m_Ptr(static_cast<T*>(other.m_Ptr))
 		{

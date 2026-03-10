@@ -25,8 +25,8 @@ namespace Ember {
 		EB_EVENT_TYPE_INITIALIZER(WindowResize);
 		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryApplication);
 
-		const int GetWidth() const { return m_Width; }
-		const int GetHeight() const { return m_Height; }
+		const unsigned int GetWidth() const { return m_Width; }
+		const unsigned int GetHeight() const { return m_Height; }
 
 	private:
 		unsigned int m_Width, m_Height;

@@ -40,6 +40,15 @@ namespace Ember {
 			return ScopedPtr<T>(new T(std::forward<Args>(args)...));
 		}
 
+		void Reset()
+		{
+			if (m_Ptr)
+			{
+				delete m_Ptr;
+				m_Ptr = nullptr;
+			}
+		}
+
 		T* Ptr() const { return m_Ptr; }
 
 		ScopedPtr& operator=(const ScopedPtr& ptr) = delete;

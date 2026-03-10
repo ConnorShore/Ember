@@ -1,6 +1,5 @@
 #include "ebpch.h"
 #include "Shader.h"
-#include "Ember/Util/FileUtil.h"
 
 #include <glad/glad.h>
 
@@ -21,7 +20,7 @@ namespace Ember {
 	namespace OpenGL {
 
 		Shader::Shader(const std::string& filePath)
-			: Shader(FileUtil::ExtractFileName(filePath), filePath)
+			: Shader(std::filesystem::path(filePath).stem().string(), filePath)
 		{
 		}
 

@@ -63,29 +63,34 @@ void SceneTestLayer::OnDetach()
 
 void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
 {
-	auto& rigidComp = m_Entity->GetComponent<Ember::RigidBodyComponent>();
-	rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
+	static bool entityAlive = true;
+	if (entityAlive)
+	{
+		auto& rigidComp = m_Entity->GetComponent<Ember::RigidBodyComponent>();
+		rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
 
-	if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
-	{
-		rigidComp.Velocity = Ember::Vector3f(0.0f, 1.5f, 0.0f);
-	}
-	else if (Ember::Input::IsKeyPressed(Ember::KeyCode::S))
-	{
-		rigidComp.Velocity = Ember::Vector3f(0.0f, -1.5f, 0.0f);
-	}
-	if (Ember::Input::IsKeyPressed(Ember::KeyCode::D))
-	{
-		rigidComp.Velocity = Ember::Vector3f(1.5f, 0.0f, 0.0f);
-	}
-	else if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
-	{
-		rigidComp.Velocity = Ember::Vector3f(-1.5f, 0.0f, 0.0f);
-	}
+		if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
+		{
+			rigidComp.Velocity = Ember::Vector3f(0.0f, 1.5f, 0.0f);
+		}
+		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::S))
+		{
+			rigidComp.Velocity = Ember::Vector3f(0.0f, -1.5f, 0.0f);
+		}
+		if (Ember::Input::IsKeyPressed(Ember::KeyCode::D))
+		{
+			rigidComp.Velocity = Ember::Vector3f(1.5f, 0.0f, 0.0f);
+		}
+		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
+		{
+			rigidComp.Velocity = Ember::Vector3f(-1.5f, 0.0f, 0.0f);
+		}
 
-	if (Ember::Input::IsKeyPressed(Ember::KeyCode::Delete))
-	{
-		m_MainScene->RemoveEntity(m_Entity);
+		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Delete))
+		{
+			m_MainScene->RemoveEntity(m_Entity);
+			entityAlive = false;
+		}
 	}
 
 	m_MainScene->OnUpdate(delta);

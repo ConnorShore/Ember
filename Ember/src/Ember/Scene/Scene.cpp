@@ -8,7 +8,7 @@
 namespace Ember {
 
 	Scene::Scene(const std::string& name)
-		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name), m_Camera(-3.0f, 3.0f, -3.0f, 3.0f)
+		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name)
 	{
 		m_Registry->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_Registry->RegisterSystem(SharedPtr<RenderSystem>::Create());
@@ -44,10 +44,9 @@ namespace Ember {
 
 	void Scene::RemoveEntity(const SharedPtr<SceneEntity>& entity)
 	{
-		auto it = m_SceneEntities.find(entity->GetName());
-		EB_CORE_ASSERT(it != m_SceneEntities.end(), "Scene does not contain entity!");
+		EB_CORE_ASSERT(m_SceneEntities.contains(entity->GetName()), "Scene does not contain entity!");
+		m_SceneEntities.erase(entity->GetName());
 		m_Registry->DestroyEntity(entity->GetEntityHandle());
-		m_SceneEntities.erase(it);
 	}
 
 }

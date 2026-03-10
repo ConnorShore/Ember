@@ -61,7 +61,7 @@ namespace Ember {
 
 	bool ShaderLibrary::Exists(const std::string& name)
 	{
-		return m_ShaderMap.find(name) != m_ShaderMap.end();
+		return m_ShaderMap.contains(name);
 	}
 
 	void ShaderLibrary::Add(SharedPtr<Shader> shader)

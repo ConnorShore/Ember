@@ -28,7 +28,7 @@ namespace Ember {
 		static std::array<int, KeyArraySize> s_KeyStates;
 		static std::array<int, MouseButtonArraySize> s_MouseButtonStates;
 
-		static KEY_MODIFIER_TYPE s_ActiveModifiers;
+		static KeyModifierType s_ActiveModifiers;
 
 		// TODO: Vector2 for mouse position, scroll offset, etc.
 	};

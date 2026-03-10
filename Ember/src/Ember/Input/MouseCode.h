@@ -6,9 +6,9 @@
 
 namespace Ember {
 
-#define MOUSE_BUTTON_TYPE uint8_t
+	using MouseButtonType = uint8_t;
 
-	enum class MouseButton : MOUSE_BUTTON_TYPE
+	enum class MouseButton : MouseButtonType
 	{
 		Left = 0,
 		Right = 1,

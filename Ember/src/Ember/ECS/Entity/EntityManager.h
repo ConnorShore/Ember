@@ -26,8 +26,8 @@ namespace Ember {
 		inline const unsigned int GetNumActiveEntities() const { return m_NextEntityId - m_UnusedIds.size(); }
 
 	private:
-		std::bitset<EB_MAX_ENTITIES> m_AliveEntities;
-		std::array<std::bitset<EB_MAX_COMPONENTS>, EB_MAX_ENTITIES> m_EntityComponentMask;
+		std::bitset<MaxEntities> m_AliveEntities;
+		std::array<std::bitset<MaxComponents>, MaxEntities> m_EntityComponentMask;
 		std::queue<EntityID> m_UnusedIds;
 		unsigned int m_NextEntityId;
 	};

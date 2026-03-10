@@ -2,7 +2,6 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Registry.h"
-#include "Ember/Render/Camera.h"
 
 #include <unordered_map>
 
@@ -39,7 +38,6 @@ namespace Ember {
 		std::unordered_map<std::string, SharedPtr<SceneEntity>> m_SceneEntities;
 
 		std::string m_Name;
-		OrthographicCamera m_Camera;
 	};
 
 }

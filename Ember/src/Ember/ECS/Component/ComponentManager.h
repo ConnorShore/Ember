@@ -30,7 +30,7 @@ namespace Ember {
 
 		ComponentMemoryArray()
 		{
-			SparseEntityArray.resize(EB_MAX_ENTITIES, EB_INVALID_COMPONENT_ID);
+			SparseEntityArray.resize(MaxEntities, InvalidComponentID);
 		}
 
 		void InsertComponent(Entity entity, T component)
@@ -48,7 +48,7 @@ namespace Ember {
 
 		T& GetComponent(Entity entity)
 		{
-			EB_CORE_ASSERT(SparseEntityArray[entity] != EB_INVALID_COMPONENT_ID, "Attempting to reetrieve a non-existent component!");
+			EB_CORE_ASSERT(SparseEntityArray[entity] != InvalidComponentID, "Attempting to retrieve a non-existent component!");
 			return DenseComponentArray[SparseEntityArray[entity]];
 		}
 
@@ -57,7 +57,7 @@ namespace Ember {
 			// Get the index of the component in the dense arrays
 			unsigned int componentIndex = SparseEntityArray[entity];
 
-			if (componentIndex == EB_INVALID_COMPONENT_ID)
+			if (componentIndex == InvalidComponentID)
 			{
 				EB_CORE_WARN("Entity {} does not contain component type!", entity);
 				return;
@@ -76,14 +76,14 @@ namespace Ember {
 			SparseEntityArray[entityReplaceId] = componentIndex;
 
 			// Pop the dense arrays
-			SparseEntityArray[entity] = EB_INVALID_COMPONENT_ID;
+			SparseEntityArray[entity] = InvalidComponentID;
 			DenseComponentArray.pop_back();
 			DenseEntityArray.pop_back();
 		}
 
 		virtual void EntityDestroyed(Entity entity) override
 		{
-			if (entity < SparseEntityArray.size() && SparseEntityArray[entity] != EB_INVALID_COMPONENT_ID)
+			if (entity < SparseEntityArray.size() && SparseEntityArray[entity] != InvalidComponentID)
 				RemoveComponent(entity);
 		}
 	};

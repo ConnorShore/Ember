@@ -33,7 +33,7 @@ namespace Ember {
 
 	void LayerStack::PopLayer(Layer* layer)
 	{
-		auto it = std::find_if(m_Layers.begin(), m_Layers.end(),
+		auto it = std::ranges::find_if(m_Layers,
 			[layer](const ScopedPtr<Layer>& l) {
 				return l.Ptr() == layer;
 			});

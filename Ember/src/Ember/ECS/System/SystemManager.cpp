@@ -32,7 +32,7 @@ namespace Ember {
 
 	bool SystemManager::ContainsSystem(const SharedPtr<System>& system)
 	{
-		auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
+		auto it = std::ranges::find(m_Systems, system);
 		return it != m_Systems.end();
 	}
 

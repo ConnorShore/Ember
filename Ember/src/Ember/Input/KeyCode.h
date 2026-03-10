@@ -6,15 +6,15 @@
 
 namespace Ember {
 
-#define KEY_CODE_TYPE uint16_t
-#define KEY_ACTION_TYPE uint8_t
-#define KEY_MODIFIER_TYPE uint8_t
+	using KeyCodeType     = uint16_t;
+	using KeyActionType   = uint8_t;
+	using KeyModifierType = uint8_t;
 
 
 	// -------------------------------------------------------------------------------------
 	// -------- KeyCode --------------------------------------------------------------------
 	// -------------------------------------------------------------------------------------
-	enum class KeyCode : KEY_CODE_TYPE
+	enum class KeyCode : KeyCodeType
 	{
 		Unknown = 0,
 		Space = 32,
@@ -162,7 +162,7 @@ namespace Ember {
 	// -------------------------------------------------------------------------------------
 	// -------- KeyAction ------------------------------------------------------------------
 	// -------------------------------------------------------------------------------------
-	enum class KeyAction : KEY_ACTION_TYPE
+	enum class KeyAction : KeyActionType
 	{
 		Release = 0,
 		Press = 1,
@@ -172,7 +172,7 @@ namespace Ember {
 	// -------------------------------------------------------------------------------------
 	// -------- KeyModifier ----------------------------------------------------------------
 	// -------------------------------------------------------------------------------------
-	enum class KeyModifier : KEY_MODIFIER_TYPE
+	enum class KeyModifier : KeyModifierType
 	{
 		None = 0,
 		Shift = 1 << 0,
@@ -181,8 +181,8 @@ namespace Ember {
 		Super = 1 << 3
 	};
 
-	inline KEY_MODIFIER_TYPE operator|(KEY_MODIFIER_TYPE a, KeyModifier b) { return a | static_cast<KEY_MODIFIER_TYPE>(b); }
-	inline KEY_MODIFIER_TYPE operator&(KEY_MODIFIER_TYPE a, KeyModifier b) { return a & static_cast<KEY_MODIFIER_TYPE>(b); }
+	inline KeyModifierType operator|(KeyModifierType a, KeyModifier b) { return a | static_cast<KeyModifierType>(b); }
+	inline KeyModifierType operator&(KeyModifierType a, KeyModifier b) { return a & static_cast<KeyModifierType>(b); }
 }
 
 template<>

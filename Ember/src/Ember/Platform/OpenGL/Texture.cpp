@@ -1,7 +1,6 @@
 #include "ebpch.h"
 #include "Texture.h"
 #include "stb_image.h"
-#include "Ember/Util/FileUtil.h"
 
 #include <glad/glad.h>
 
@@ -22,7 +21,7 @@ namespace Ember {
 		}
 
 		Texture::Texture(const std::string& filePath)
-			: Texture(FileUtil::ExtractFileName(filePath), filePath)
+			: Texture(std::filesystem::path(filePath).stem().string(), filePath)
 		{
 		}
 

@@ -72,7 +72,7 @@ namespace Ember {
 
 	bool TextureLibrary::Exists(const std::string& name)
 	{
-		return m_TextureMap.find(name) != m_TextureMap.end();
+		return m_TextureMap.contains(name);
 	}
 
 	void TextureLibrary::Add(SharedPtr<Texture> texture)

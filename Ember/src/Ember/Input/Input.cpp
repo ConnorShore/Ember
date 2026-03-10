@@ -9,24 +9,24 @@ namespace Ember {
 
 	std::array<int, static_cast<size_t>(KeyCode::Last)> Input::s_KeyStates = {};
 	std::array<int, static_cast<size_t>(MouseButton::Last)> Input::s_MouseButtonStates = {};
-	KEY_MODIFIER_TYPE Input::s_ActiveModifiers = 0;
+	KeyModifierType Input::s_ActiveModifiers = 0;
 
 	bool Input::IsKeyPressed(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
-		return s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] > 0;
+		return s_KeyStates[static_cast<KeyCodeType>(key)] > 0;
 	}
 
 	bool Input::IsKeyHeld(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
-		return s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] > 1;
+		return s_KeyStates[static_cast<KeyCodeType>(key)] > 1;
 	}
 
 	bool Input::IsMouseButtonPressed(MouseButton button)
 	{
 		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button checked!");
-		return s_MouseButtonStates[static_cast<MOUSE_BUTTON_TYPE>(button)] > 0;
+		return s_MouseButtonStates[static_cast<MouseButtonType>(button)] > 0;
 	}
 
 	bool Input::IsModifierActive(KeyModifier modifier)
@@ -37,32 +37,32 @@ namespace Ember {
 	void Input::SetKeyState(KeyCode key, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key pressed!");
-		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)] = pressed ? 1 : 0;
+		s_KeyStates[static_cast<KeyCodeType>(key)] = pressed ? 1 : 0;
 	}
 
 	void Input::IncrementKeyRepeat(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key repeated!");
-		s_KeyStates[static_cast<KEY_CODE_TYPE>(key)]++;
+		s_KeyStates[static_cast<KeyCodeType>(key)]++;
 	}
 
 	void Input::SetMouseButtonState(MouseButton button, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button toggled!");
-		s_MouseButtonStates[static_cast<MOUSE_BUTTON_TYPE>(button)] = pressed;
+		s_MouseButtonStates[static_cast<MouseButtonType>(button)] = pressed;
 	}
 
 	void Input::SetKeyModifierState(KeyModifier modifier, bool active)
 	{
 		s_ActiveModifiers = active
 			? (s_ActiveModifiers | modifier)
-			: static_cast<KEY_MODIFIER_TYPE>(s_ActiveModifiers & ~static_cast<KEY_MODIFIER_TYPE>(modifier));
+			: static_cast<KeyModifierType>(s_ActiveModifiers & ~static_cast<KeyModifierType>(modifier));
 	}
 
 	int Input::GetKeyRepeatCount(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
-		return s_KeyStates[static_cast<KEY_CODE_TYPE>(key)];
+		return s_KeyStates[static_cast<KeyCodeType>(key)];
 	}
 
 }

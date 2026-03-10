@@ -17,6 +17,7 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <filesystem>
 
 #include "Ember/Core/Core.h"
 
