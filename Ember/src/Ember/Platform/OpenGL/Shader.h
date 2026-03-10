@@ -15,10 +15,12 @@ namespace Ember {
 			Shader(const std::string& name, const std::string& filePath);
 			virtual ~Shader();
 
-			void Bind() const override;
-			void SetFloat3(const std::string& name, const Vector3f& vec) const override;
-			void SetFloat4(const std::string& name, const Vector4f& vec) const override;
-			void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;
+			virtual void Bind() const override;
+
+			virtual void SetInt(const std::string& name, int value) const override;
+			virtual void SetFloat3(const std::string& name, const Vector3f& vec) const override;
+			virtual void SetFloat4(const std::string& name, const Vector4f& vec) const override;
+			virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;
 
 			const std::string& GetName() const override;
 

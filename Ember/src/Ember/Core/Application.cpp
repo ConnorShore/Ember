@@ -22,6 +22,7 @@ namespace Ember {
 		m_ImGuiLayer->OnAttach();
 
 		m_ShaderLibrary = ScopedPtr<ShaderLibrary>::Create();
+		m_TextureLibrary = ScopedPtr<TextureLibrary>::Create();
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -54,6 +55,17 @@ namespace Ember {
 	SharedPtr<Shader> Application::GetShader(const std::string& name)
 	{
 		return m_ShaderLibrary->Get(name);
+	}
+
+	void Application::RegisterTexture(const std::string& filePath)
+	{
+		auto texture = m_TextureLibrary->Register(filePath);
+		EB_CORE_INFO("Successfully registered texture {}", texture->GetName());
+	}
+
+	SharedPtr<Texture> Application::GetTexture(const std::string& name)
+	{
+		return m_TextureLibrary->Get(name);
 	}
 
 	void Application::OnAttach()

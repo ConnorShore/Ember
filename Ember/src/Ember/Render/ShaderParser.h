@@ -11,7 +11,6 @@ namespace Ember {
 	{
 	public:
 		static ShaderSourceMap Parse(const std::string& filePath);
-		static std::string ExtractFileName(const std::string& filePath);
 
 	private:
 		static ShaderType ShaderTypeFromLine(const std::string& type);

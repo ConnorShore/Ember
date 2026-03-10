@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "Shader.h"
+#include "Ember/Util/FileUtil.h"
 
 #include <glad/glad.h>
 
@@ -20,7 +21,7 @@ namespace Ember {
 	namespace OpenGL {
 
 		Shader::Shader(const std::string& filePath)
-			: Shader(ShaderParser::ExtractFileName(filePath), filePath)
+			: Shader(FileUtil::ExtractFileName(filePath), filePath)
 		{
 		}
 
@@ -43,6 +44,11 @@ namespace Ember {
 		void Shader::Bind() const
 		{
 			glUseProgram(m_Id);
+		}
+
+		void Shader::SetInt(const std::string& name, int value) const
+		{
+			glUniform1i(GetUniformLocation(name), value);
 		}
 
 		void Shader::SetFloat3(const std::string& name, const Vector3f& vec) const

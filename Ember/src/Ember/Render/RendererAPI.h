@@ -20,6 +20,7 @@ namespace Ember {
 		virtual void SetClearColor(Vector4<float> color) = 0;
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void UseDepthTest(bool use) = 0;
+		virtual void UseBlending(bool use) = 0;
 
 		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) = 0;
 		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt) = 0;

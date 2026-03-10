@@ -54,8 +54,12 @@ namespace Ember {
 			for (EntityID entity : view)
 			{
 				auto [sprite, transform] = registry->GetComponents<SpriteComponent, TransformComponent>(entity);
-				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Size.x, transform.Size.y), sprite.Color);
+				if (sprite.Texture == nullptr)
+					Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
+						Vector2f(transform.Size.x, transform.Size.y), sprite.Color);
+				else
+					Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
+					Vector2f(transform.Size.x, transform.Size.y), sprite.Color, sprite.Texture);
 			}
 
 			Renderer2D::EndFrame();
