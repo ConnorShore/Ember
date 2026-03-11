@@ -10,12 +10,12 @@ namespace Ember {
 	{
 	}
 
-	Entity Registry::CreateEntity()
+	EntityID Registry::CreateEntity()
 	{
 		return m_EntityManager->CreateEntity();
 	}
 
-	void Registry::DestroyEntity(Entity entity)
+	void Registry::DestroyEntity(EntityID entity)
 	{
 		m_ComponentManager->EntityDestroyed(entity);
 		m_EntityManager->DestroyEntity(entity);

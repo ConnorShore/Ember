@@ -1,9 +1,9 @@
 #include "ebpch.h"
-#include "SceneEntity.h"
+#include "Entity.h"
 
 namespace Ember {
 
-	SceneEntity::SceneEntity(const std::string& tag, Scene* scene)
+	Entity::Entity(const std::string& tag, Scene* scene)
 		: m_SceneHandle(scene)
 	{
 		m_EntityHandle = m_SceneHandle->GetRegistry().CreateEntity();
@@ -16,12 +16,12 @@ namespace Ember {
 	}
 
 
-	SceneEntity::SceneEntity(Entity entity, Scene* scene)
+	Entity::Entity(EntityID entity, Scene* scene)
 		: m_SceneHandle(scene), m_EntityHandle(entity)
 	{
 	}
 
-	const std::string& SceneEntity::GetName() const
+	const std::string& Entity::GetName() const
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<TagComponent>(m_EntityHandle).Tag;
 	}

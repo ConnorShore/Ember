@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Ember/ECS/Types.h"
 #include "Ember/Core/Core.h"
-#include "Ember/ECS/Entity/Entity.h"
 #include "Ember/ECS/Component/Components.h"
 
 #include <string>
@@ -10,14 +10,14 @@ namespace Ember {
 
 	class Scene;
 
-	class SceneEntity
+	class Entity
 	{
 	public:
-		SceneEntity(const std::string& tag, Scene* scene);
-		SceneEntity(Entity entity, Scene* scene);
+		Entity(const std::string& tag, Scene* scene);
+		Entity(EntityID entity, Scene* scene);
 
-		SceneEntity() = default;
-		~SceneEntity() = default;
+		Entity() = default;
+		~Entity() = default;
 
 		template<typename T>
 		inline T& AttachComponent();
@@ -31,14 +31,14 @@ namespace Ember {
 		template<typename T>
 		inline T& GetComponent();
 
-		inline Entity GetEntityHandle() const { return m_EntityHandle; }
+		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
 		const std::string& GetName() const;
 
-		operator Entity() { return m_EntityHandle; }
+		operator EntityID() { return m_EntityHandle; }
 
 	private:
 		Scene* m_SceneHandle;
-		Entity m_EntityHandle;
+		EntityID m_EntityHandle;
 	};
 
 }
@@ -50,26 +50,26 @@ namespace Ember {
 namespace Ember {
 
 	template<typename T>
-	inline void SceneEntity::AttachComponent(T& component)
+	inline void Entity::AttachComponent(T& component)
 	{
 		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
 	}
 
 	template<typename T>
-	T& SceneEntity::AttachComponent()
+	T& Entity::AttachComponent()
 	{
 		T component;
 		return m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
 	}
 
 	template<typename T>
-	inline void SceneEntity::DetachComponent()
+	inline void Entity::DetachComponent()
 	{
 		m_SceneHandle->GetRegistry().DetachComponent<T>(m_EntityHandle);
 	}
 
 	template<typename T>
-	inline T& SceneEntity::GetComponent()
+	inline T& Entity::GetComponent()
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<T>(m_EntityHandle);
 	}

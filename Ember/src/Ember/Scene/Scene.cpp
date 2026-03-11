@@ -31,15 +31,15 @@ namespace Ember {
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
-	SceneEntity Scene::AddEntity()
+	Entity Scene::AddEntity()
 	{
 		std::string name = std::format("Entity {}", m_SceneEntities.size());
-		SceneEntity entity(name, this);
+		Entity entity(name, this);
 		m_SceneEntities[name] = entity;
 		return entity;
 	}
 
-	SceneEntity Scene::GetEntity(const std::string& tag)
+	Entity Scene::GetEntity(const std::string& tag)
 	{
 		if (m_SceneEntities.find(tag) == m_SceneEntities.end())
 		{
@@ -50,7 +50,7 @@ namespace Ember {
 		return { m_SceneEntities[tag], this };
 	}
 
-	void Scene::RemoveEntity(const SceneEntity& entity)
+	void Scene::RemoveEntity(const Entity& entity)
 	{
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");
 		m_SceneEntities.erase(entity.GetName());

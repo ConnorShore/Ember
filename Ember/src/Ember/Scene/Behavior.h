@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SceneEntity.h"
+#include "Entity.h"
 
 namespace Ember {
 
@@ -13,10 +13,7 @@ namespace Ember {
 
 		// API of what can be called by the user
 		template<typename T>
-		T& GetComponent()
-		{
-			return m_SceneEntityHandle.GetComponent<T>();
-		}
+		T& GetComponent() { return m_EntityHandle.GetComponent<T>(); }
 
 		// Standard Component Getters
 		TransformComponent& Transform() { return GetComponent<TransformComponent>(); }
@@ -28,7 +25,7 @@ namespace Ember {
 		virtual void OnDestroy() {}
 
 	private:
-		SceneEntity m_SceneEntityHandle;
+		Entity m_EntityHandle;
 
 		friend class ScriptSystem;
 	};

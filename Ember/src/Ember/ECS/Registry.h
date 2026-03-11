@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Types.h"
-#include "Ember/ECS/Entity/Entity.h"
 #include "Ember/ECS/Entity/EntityManager.h"
 #include "Ember/ECS/Component/ComponentManager.h"
 #include "Ember/ECS/System/SystemManager.h"
@@ -22,11 +21,11 @@ namespace Ember {
 		Registry();
 		~Registry() = default;
 
-		Entity CreateEntity();
-		void DestroyEntity(Entity entity);
+		EntityID CreateEntity();
+		void DestroyEntity(EntityID entity);
 
 		template<typename T>
-		inline T& AttachComponent(Entity entity, T& component)
+		inline T& AttachComponent(EntityID entity, T& component)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
 
@@ -35,7 +34,7 @@ namespace Ember {
 		}
 
 		template<typename T>
-		inline void DetachComponent(Entity entity)
+		inline void DetachComponent(EntityID entity)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
 
@@ -44,26 +43,26 @@ namespace Ember {
 		}
 
 		template<typename T>
-		inline bool ContainsComponent(Entity entity)
+		inline bool ContainsComponent(EntityID entity)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
 			return m_EntityManager->ContainsComponent(entity, type);
 		}
 
 		template<typename... Args>
-		inline bool ContainsComponents(Entity entity)
+		inline bool ContainsComponents(EntityID entity)
 		{
 			return (ContainsComponent<Args>(entity) && ...);
 		}
 
 		template<typename T>
-		inline T& GetComponent(Entity entity)
+		inline T& GetComponent(EntityID entity)
 		{
 			return m_ComponentManager->GetComponent<T>(entity);
 		}
 
 		template<typename... Args>
-		inline std::tuple<Args&...> GetComponents(Entity entity)
+		inline std::tuple<Args&...> GetComponents(EntityID entity)
 		{
 			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}

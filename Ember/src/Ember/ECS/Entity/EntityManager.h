@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Entity.h"
 #include "Ember/ECS/Types.h"
 
 #include <queue>
@@ -15,13 +14,13 @@ namespace Ember {
 		EntityManager();
 		~EntityManager() = default;
 
-		Entity CreateEntity();
-		void DestroyEntity(Entity entity);
+		EntityID CreateEntity();
+		void DestroyEntity(EntityID entity);
 
-		void AttachComponent(Entity entity, ComponentType component);
-		void DetachComponent(Entity entity, ComponentType component);
+		void AttachComponent(EntityID entity, ComponentType component);
+		void DetachComponent(EntityID entity, ComponentType component);
 
-		bool ContainsComponent(Entity entity, ComponentType component);
+		bool ContainsComponent(EntityID entity, ComponentType component);
 
 		inline const unsigned int GetNumActiveEntities() const { return m_NextEntityId - m_UnusedIds.size(); }
 
