@@ -46,14 +46,17 @@ void SceneTestLayer::OnAttach()
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
 	m_Entity->AttachComponent<Ember::RigidBodyComponent>(rigidComp);
 
-	// Make a camera follow the player
-	Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
-	m_Entity->AttachComponent(cameraComp);
+	Ember::Camera camera;
+	camera.SetViewportSize(Ember::Application::Instance().GetWindow().GetWidth(), Ember::Application::Instance().GetWindow().GetHeight());
+	camera.SetProjectionType(Ember::Camera::ProjectionType::Perspective);
+	//camera.SetOrthographic(10.0f, -1.0f, 1.0f);
+	camera.SetPerspective(60.0f, 0.1f, 50.0f);
 
-	// Default Camera
-	//auto cameraEntity = m_MainScene->AddEntity();
-	//Ember::CameraComponent cameraComp(Ember::Math::Orthographic(-10.0f, 10.0f, -10.0f, 10.0f), true);
-	//cameraEntity->AttachComponent(cameraComp);
+	m_CameraEntity = m_MainScene->AddEntity();
+	Ember::CameraComponent cameraComponent(camera, true);
+	m_CameraEntity->AttachComponent<Ember::CameraComponent>(cameraComponent);
+	auto& transform = m_CameraEntity->GetComponent<Ember::TransformComponent>();
+	transform.Position = { 0.0f, 0.0f, 10.0f };
 }
 
 void SceneTestLayer::OnDetach()
@@ -91,6 +94,16 @@ void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
 			m_MainScene->RemoveEntity(m_Entity);
 			entityAlive = false;
 		}
+	}
+
+	float speed = 2.5f * delta;
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::Up))
+	{
+		m_CameraEntity->GetComponent<Ember::TransformComponent>().Position += Ember::Vector3f(0.0f, 0.0f, -speed);
+	}
+	if (Ember::Input::IsKeyPressed(Ember::KeyCode::Down))
+	{
+		m_CameraEntity->GetComponent<Ember::TransformComponent>().Position += Ember::Vector3f(0.0f, 0.0f, speed);
 	}
 
 	m_MainScene->OnUpdate(delta);

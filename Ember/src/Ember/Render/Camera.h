@@ -4,45 +4,44 @@
 
 namespace Ember {
 
-	//////////////////////////////////////////////////////////////////////////
-	// Camera
-	//////////////////////////////////////////////////////////////////////////
-
 	class Camera
 	{
 	public:
-		Camera() = default;
+		enum class ProjectionType { Orthographic = 0, Perspective = 1 };
+
+	public:
+		Camera();
 		virtual ~Camera() = default;
 
-		virtual const Matrix4f& GetProjectionMatrix() const = 0;
-	};
+		void SetPerspective(float fov, float nearClip, float farClip);
+		void SetOrthographic(float size, float nearClip, float farClip);
+		void SetViewportSize(unsigned int width, unsigned int height);
 
-	//////////////////////////////////////////////////////////////////////////
-	// Orthographic Camera
-	//////////////////////////////////////////////////////////////////////////
-
-	class OrthographicCamera : public Camera
-	{
-	public:
-		OrthographicCamera(float left, float right, float bottom, float top, float zNear = -1.0f, float zFar = 1.0f);
-		virtual ~OrthographicCamera() = default;
-
-		virtual const Matrix4f& GetProjectionMatrix() const override { return m_ProjectionMatrix; }
-		const Matrix4f& GetViewMatrix() const { return m_ViewMatrix; }
-		const Matrix4f& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
-		const Vector3f& GetPosition() const { return m_Position; }
-		float GetRotation() const { return m_Rotation; }
-
-		void SetPosition(const Vector3f& position) { m_Position = position; CalculateViewMatrix(); }
-		void SetRotation(float rotation) { m_Rotation = rotation; CalculateViewMatrix(); }
+		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
+		inline const Matrix4f GetProjectionMatrix() const { return m_ProjectionMatrix; }
 
 	private:
-		void CalculateViewMatrix();
+		void CalculateProjectionMatrix();
 
 	private:
-		Matrix4f m_ProjectionMatrix, m_ViewMatrix, m_ViewProjectionMatrix;
-		Vector3f m_Position;
-		float m_Rotation;
+		ProjectionType m_ProjectionType = ProjectionType::Perspective;
+		Matrix4f m_ProjectionMatrix = Matrix4f(1.0f);
+		float m_AspectRatio;	// (height / width)
+
+		struct OrthographicProps
+		{
+			float Size;
+			float NearClip;
+			float FarClip;
+		} m_OrthographicProps;
+
+		struct PerspectiveProps
+		{
+			float FieldOfView;
+			float NearClip;
+			float FarClip;
+		} m_PerspectiveProps;
+
 	};
 
 }

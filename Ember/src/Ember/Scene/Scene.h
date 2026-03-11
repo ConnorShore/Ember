@@ -2,6 +2,8 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Registry.h"
+#include "Ember/Event/Event.h"
+#include "Ember/Event/WindowEvent.h"
 
 #include <unordered_map>
 
@@ -16,6 +18,7 @@ namespace Ember {
 		~Scene();
 
 		void OnUpdate(TimeStep delta);
+		void OnEvent(Event& event);
 
 		SharedPtr<SceneEntity> AddEntity();
 		SharedPtr<SceneEntity> GetEntity(const std::string& tag);
@@ -31,6 +34,9 @@ namespace Ember {
 		inline T& GetComponent(const SceneEntity& entity);
 
 		Registry& GetRegistry() { return *m_Registry; }
+
+	private:
+		bool OnWindowResize(const WindowResizeEvent& event);
 
 	private:
 		ScopedPtr<Registry> m_Registry;

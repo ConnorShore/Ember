@@ -44,10 +44,10 @@ namespace Ember {
 
 	struct CameraComponent
 	{
-		Matrix4f ProjectionMatrix;
+		Camera Camera;
 		bool IsActive;
 
-		CameraComponent(const Matrix4f& projection, bool active = false) : ProjectionMatrix(projection), IsActive(active) {}
+		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
 	};
 
 }

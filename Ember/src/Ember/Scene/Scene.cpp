@@ -23,6 +23,12 @@ namespace Ember {
 		m_Registry->UpdateSystems(delta);
 	}
 
+	void Scene::OnEvent(Event& event)
+	{
+		EB_CREATE_DISPATCHER(event);
+		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
+	}
+
 	SharedPtr<SceneEntity> Scene::AddEntity()
 	{
 		std::string name = std::format("Entity {}", m_SceneEntities.size());
@@ -47,6 +53,17 @@ namespace Ember {
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity->GetName()), "Scene does not contain entity!");
 		m_SceneEntities.erase(entity->GetName());
 		m_Registry->DestroyEntity(entity->GetEntityHandle());
+	}
+
+	bool Scene::OnWindowResize(const WindowResizeEvent& event)
+	{
+		auto view = m_Registry->Query<CameraComponent>();
+		for (auto entity : view)
+		{
+			auto camera = m_Registry->GetComponent<CameraComponent>(entity);
+			camera.Camera.SetViewportSize(event.GetWidth(), event.GetHeight());
+		}
+		return false;
 	}
 
 }

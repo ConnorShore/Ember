@@ -40,29 +40,41 @@ namespace Ember {
 	{
 	public:
 
-		static inline Matrix4f Translate(const Vector3f& translation) {
+		static inline Matrix4f Translate(const Vector3f& translation) 
+		{
 			return glm::translate(Matrix4f(1.0f), translation);
 		}
-		static inline Matrix4f Translate(const Matrix4f& matrix, const Vector3f& translation) {
+		static inline Matrix4f Translate(const Matrix4f& matrix, const Vector3f& translation) 
+		{
 			return glm::translate(matrix, translation);
 		}
 
-		static inline Matrix4f Rotate(float angle, const Vector3f& axis) {
+		static inline Matrix4f Rotate(float angle, const Vector3f& axis) 
+		{
 			return glm::rotate(Matrix4f(1.0f), angle, axis);
 		}
-		static inline Matrix4f Rotate(const Matrix4f& matrix, float angle, const Vector3f& axis) {
+		static inline Matrix4f Rotate(const Matrix4f& matrix, float angle, const Vector3f& axis) 
+		{
 			return glm::rotate(matrix, angle, axis);
 		}
 
-		static inline Matrix4f Scale(const Vector3f& scale) {
+		static inline Matrix4f Scale(const Vector3f& scale) 
+		{
 			return glm::scale(Matrix4f(1.0f), scale);
 		}
-		static inline Matrix4f Scale(const Matrix4f& matrix, const Vector3f& scale) {
+		static inline Matrix4f Scale(const Matrix4f& matrix, const Vector3f& scale) 
+		{
 			return glm::scale(matrix, scale);
 		}
 
-		static inline Matrix4f Orthographic(float left, float right, float bottom, float top, float zNear = -1.0f, float zFar = 1.0f) {
+		static inline Matrix4f Orthographic(float left, float right, float bottom, float top, float zNear = -1.0f, float zFar = 1.0f) 
+		{
 			return glm::ortho(left, right, bottom, top, zNear, zFar);
+		}
+
+		static inline Matrix4f Perspective(float fovDegrees, float aspectRatio, float zNear, float zFar)
+		{
+			return glm::perspective(glm::radians(fovDegrees), aspectRatio, zNear, zFar);
 		}
 
 		static inline Matrix4f Inverse(const Matrix4f& matrix)
