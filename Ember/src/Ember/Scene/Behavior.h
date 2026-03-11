@@ -6,10 +6,10 @@ namespace Ember {
 
 	class ScriptSystem;
 
-	class ScriptableEntity
+	class Behavior
 	{
 	public:
-		virtual ~ScriptableEntity() = default;
+		virtual ~Behavior() = default;
 
 		// API of what can be called by the user
 		template<typename T>

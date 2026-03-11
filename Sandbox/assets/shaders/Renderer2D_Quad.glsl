@@ -8,7 +8,7 @@ layout(location = 3) in float v_TextureIndex;
 
 out vec4 color;
 out vec2 textureCoord;
-out float texIndex;
+flat out float texIndex;
 
 uniform mat4 u_ViewProjection;
 
@@ -25,7 +25,7 @@ void main()
 
 in vec4 color;
 in vec2 textureCoord;
-in float texIndex;
+flat in float texIndex;
 
 out vec4 outColor;
 

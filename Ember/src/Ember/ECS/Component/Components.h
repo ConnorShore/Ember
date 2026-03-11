@@ -9,7 +9,7 @@
 
 namespace Ember {
 	class SceneEntity;
-	class ScriptableEntity;
+	class Behavior;
 }
 
 #include <string>
@@ -66,14 +66,14 @@ namespace Ember {
 		std::function<void(SceneEntity)> OnDestroy = nullptr;
 
 		// Class Binding 
-		ScriptableEntity* Instance = nullptr;
-		ScriptableEntity* (*CreateScript)() = nullptr;
+		Behavior* Instance = nullptr;
+		Behavior* (*CreateScript)() = nullptr;
 		void (*DestroyScript)(ScriptComponent*) = nullptr;
 
 		template<typename T>
 		void Bind()
 		{
-			CreateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
+			CreateScript = []() { return static_cast<Behavior*>(new T()); };
 			DestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}
 

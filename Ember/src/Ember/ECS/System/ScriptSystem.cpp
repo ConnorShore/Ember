@@ -3,7 +3,7 @@
 
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Scene/SceneEntity.h"
-#include "Ember/Scene/ScriptableEntity.h"
+#include "Ember/Scene/Behavior.h"
 
 namespace Ember {
 

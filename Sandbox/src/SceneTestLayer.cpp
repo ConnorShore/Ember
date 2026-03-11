@@ -7,7 +7,7 @@
 // Camera Controller
 //////////////////////////////////////////////////////////////////////////
 
-class CameraController : public Ember::ScriptableEntity
+class CameraController : public Ember::Behavior
 {
 public:
 	void OnUpdate(Ember::TimeStep delta) override
