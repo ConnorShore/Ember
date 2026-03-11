@@ -86,11 +86,13 @@ namespace Ember {
 
 	struct MaterialComponent
 	{
-		SharedPtr<Shader> Shader;	// Will be a material in the future
+		// Will be a single material ptr in the future
+		SharedPtr<Shader> Shader;	
+		SharedPtr<Texture> Texture;
 		Vector4f TintColor;
 
-		MaterialComponent(const SharedPtr<Ember::Shader>& shader, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
-			: Shader(shader), TintColor(tintColor) { }
+		MaterialComponent(const SharedPtr<Ember::Shader>& shader, const SharedPtr<Ember::Texture> texture, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
+			: Shader(shader), Texture(texture), TintColor(tintColor) { }
 	};
 
 	struct CameraComponent

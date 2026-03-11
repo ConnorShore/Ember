@@ -36,6 +36,7 @@ void Test3DLayer::OnAttach()
 {
 	RegisterMesh("assets/mesh/DefaultMesh.obj");
 	RegisterShader("assets/shaders/test3D.glsl");
+	RegisterTexture("assets/textures/Cube.png");
 
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();
@@ -45,7 +46,7 @@ void Test3DLayer::OnAttach()
 	Ember::MeshComponent meshComp = { GetMesh("DefaultMesh") };
 	m_Entity.AttachComponent(meshComp);
 
-	Ember::MaterialComponent matComp = { GetShader("test3D") };
+	Ember::MaterialComponent matComp = { GetShader("test3D"), GetTexture("Cube") };
 	m_Entity.AttachComponent(matComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };

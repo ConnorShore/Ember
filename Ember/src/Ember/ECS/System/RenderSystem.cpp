@@ -57,7 +57,7 @@ namespace Ember {
 			for (EntityID entity : view)
 			{
 				auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material.Shader, transform.GetTransformationMatrix());
+				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
 			}
 
 			Renderer3D::EndFrame();
