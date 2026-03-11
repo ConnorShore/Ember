@@ -38,3 +38,4 @@
 #include "Ember/ECS/Component/Components.h"
 
 #include "Ember/Scene/Scene.h"
+#include "Ember/Scene/ScriptableEntity.h"

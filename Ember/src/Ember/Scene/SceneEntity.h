@@ -10,11 +10,17 @@ namespace Ember {
 
 	class Scene;
 
-	class SceneEntity : public SharedResource
+	class SceneEntity
 	{
 	public:
-		SceneEntity(Scene* scene, const std::string& tag);
+		SceneEntity(const std::string& tag, Scene* scene);
+		SceneEntity(Entity entity, Scene* scene);
+
+		SceneEntity() = default;
 		~SceneEntity() = default;
+
+		template<typename T>
+		inline T& AttachComponent();
 
 		template<typename T>
 		inline void AttachComponent(T& component);
@@ -27,6 +33,8 @@ namespace Ember {
 
 		inline Entity GetEntityHandle() const { return m_EntityHandle; }
 		const std::string& GetName() const;
+
+		operator Entity() { return m_EntityHandle; }
 
 	private:
 		Scene* m_SceneHandle;
@@ -45,6 +53,14 @@ namespace Ember {
 	inline void SceneEntity::AttachComponent(T& component)
 	{
 		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
+	}
+
+	template<typename T>
+	T& SceneEntity::AttachComponent()
+	{
+		T component;
+		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
+		return &component;
 	}
 
 	template<typename T>
