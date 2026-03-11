@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Ember/ECS/Types.h"
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Registry.h"
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
+
 
 #include <unordered_map>
 
@@ -41,7 +43,7 @@ namespace Ember {
 	private:
 		ScopedPtr<Registry> m_Registry;
 
-		std::unordered_map<std::string, Entity> m_SceneEntities;
+		std::unordered_map<std::string, EntityID> m_SceneEntities;
 
 		std::string m_Name;
 	};
@@ -55,21 +57,21 @@ namespace Ember {
 	template<typename T>
 	inline void Scene::AttachComponent(const SceneEntity& entity, T& component)
 	{
-		Entity entityHandle = entity.GetEntityHandle();
+		EntityID entityHandle = entity.GetEntityHandle();
 		m_Registry->AttachComponent<T>(entityHandle, component);
 	}
 
 	template<typename T>
 	inline void Scene::DetachComponent(const SceneEntity& entity)
 	{
-		Entity entityHandle = entity.GetEntityHandle();
+		EntityID entityHandle = entity.GetEntityHandle();
 		m_Registry->DetachComponent<T>(entityHandle);
 	}
 
 	template<typename T>
 	inline T& Scene::GetComponent(const SceneEntity& entity)
 	{
-		Entity entityHandle = entity.GetEntityHandle();
+		EntityID entityHandle = entity.GetEntityHandle();
 		return m_Registry->GetComponent<T>(entityHandle);
 	}
 

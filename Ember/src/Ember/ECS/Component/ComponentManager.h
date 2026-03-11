@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Types.h"
-#include "Ember/ECS/Entity/Entity.h"
 #include "Ember/Core/Core.h"
 
 #include <vector>
@@ -18,7 +17,7 @@ namespace Ember {
 	struct ComponentMemoryArraysBase : public SharedResource
 	{
 		virtual ~ComponentMemoryArraysBase() = default;
-		virtual void EntityDestroyed(Entity entity) = 0;
+		virtual void EntityDestroyed(EntityID entity) = 0;
 	};
 
 	template<typename T>
@@ -33,7 +32,7 @@ namespace Ember {
 			SparseEntityArray.resize(MaxEntities, InvalidComponentID);
 		}
 
-		T& InsertComponent(Entity entity, T component)
+		T& InsertComponent(EntityID entity, T component)
 		{
 			// Add component to the dense component array and get its index
 			unsigned int componentIndex = DenseComponentArray.size();
@@ -47,13 +46,13 @@ namespace Ember {
 			return DenseComponentArray[componentIndex];
 		}
 
-		T& GetComponent(Entity entity)
+		T& GetComponent(EntityID entity)
 		{
 			EB_CORE_ASSERT(SparseEntityArray[entity] != InvalidComponentID, "Attempting to retrieve a non-existent component!");
 			return DenseComponentArray[SparseEntityArray[entity]];
 		}
 
-		void RemoveComponent(Entity entity)
+		void RemoveComponent(EntityID entity)
 		{
 			// Get the index of the component in the dense arrays
 			unsigned int componentIndex = SparseEntityArray[entity];
@@ -82,7 +81,7 @@ namespace Ember {
 			DenseEntityArray.pop_back();
 		}
 
-		virtual void EntityDestroyed(Entity entity) override
+		virtual void EntityDestroyed(EntityID entity) override
 		{
 			if (entity < SparseEntityArray.size() && SparseEntityArray[entity] != InvalidComponentID)
 				RemoveComponent(entity);
@@ -100,7 +99,7 @@ namespace Ember {
 		~ComponentManager() { m_ComponentArrays.clear(); }
 
 		template<typename T>
-		inline T& AttachComponent(Entity entity, T component)
+		inline T& AttachComponent(EntityID entity, T component)
 		{
 			ComponentType type = GetComponentType<T>();
 
@@ -116,7 +115,7 @@ namespace Ember {
 		}
 
 		template<typename T>
-		inline void DetachComponent(Entity entity)
+		inline void DetachComponent(EntityID entity)
 		{
 			ComponentType type = GetComponentType<T>();
 
@@ -133,7 +132,7 @@ namespace Ember {
 		}
 
 		template<typename T>
-		inline T& GetComponent(Entity entity)
+		inline T& GetComponent(EntityID entity)
 		{
 			ComponentType type = GetComponentType<T>();
 
@@ -156,7 +155,7 @@ namespace Ember {
 		}
 
 
-		inline void EntityDestroyed(Entity entity)
+		inline void EntityDestroyed(EntityID entity)
 		{
 			for (auto compArray : m_ComponentArrays)
 			{

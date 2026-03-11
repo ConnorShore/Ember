@@ -16,7 +16,7 @@ namespace Ember {
 	}
 
 
-	SceneEntity::SceneEntity(Entity entity, Scene* scene)
+	SceneEntity::SceneEntity(EntityID entity, Scene* scene)
 		: m_SceneHandle(scene), m_EntityHandle(entity)
 	{
 	}

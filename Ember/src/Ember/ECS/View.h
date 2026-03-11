@@ -34,7 +34,7 @@ namespace Ember {
 				FindValidEntities();
 			}
 
-			Entity operator*() const { return (*m_Entities)[m_Index]; }
+			EntityID operator*() const { return (*m_Entities)[m_Index]; }
 			Iterator& operator++()
 			{
 				m_Index++;
