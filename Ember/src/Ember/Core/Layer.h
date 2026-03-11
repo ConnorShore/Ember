@@ -4,6 +4,7 @@
 #include "Ember/Event/Event.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
+#include "Ember/Render/Mesh.h"
 
 #include <string>
 
@@ -30,6 +31,9 @@ namespace Ember {
 
 		void RegisterTexture(const std::string& filePath);
 		SharedPtr<Texture> GetTexture(const std::string& name);
+
+		void RegisterMesh(const std::string& filePath);
+		SharedPtr<Mesh> GetMesh(const std::string& name);
 
 	private:
 		// TODO: Make m_Name debug only?

@@ -23,4 +23,15 @@ namespace Ember {
 	{
 		return Application::Instance().GetTexture(name);
 	}
+
+	void Layer::RegisterMesh(const std::string& filePath)
+	{
+		Application::Instance().RegisterMesh(filePath);
+	}
+
+	Ember::SharedPtr<Ember::Mesh> Layer::GetMesh(const std::string& name)
+	{
+		return Application::Instance().GetMesh(name);
+	}
+
 }

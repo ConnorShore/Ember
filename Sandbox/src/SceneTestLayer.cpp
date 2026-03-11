@@ -7,7 +7,7 @@
 // Camera Controller
 //////////////////////////////////////////////////////////////////////////
 
-class CameraController : public Ember::Behavior
+class Camera2DController : public Ember::Behavior
 {
 public:
 	void OnUpdate(Ember::TimeStep delta) override
@@ -117,7 +117,7 @@ void SceneTestLayer::OnAttach()
 
 	Ember::CameraComponent cameraComponent(camera, true);
 	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<CameraController>();
+	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera2DController>();
 }
 
 void SceneTestLayer::OnDetach()

@@ -12,6 +12,7 @@
 
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
+#include "Ember/Render/Mesh.h"
 
 namespace Ember {
 
@@ -29,6 +30,9 @@ namespace Ember {
 
 		void RegisterTexture(const std::string& filePath);
 		SharedPtr<Texture> GetTexture(const std::string& name);
+
+		void RegisterMesh(const std::string& filePath);
+		SharedPtr<Mesh> GetMesh(const std::string& name);
 
 		void OnAttach();
 		void OnDetach();
@@ -60,6 +64,7 @@ namespace Ember {
 		// TODO: Probably move these to some AssetManager or something
 		ScopedPtr<ShaderLibrary> m_ShaderLibrary;
 		ScopedPtr<TextureLibrary> m_TextureLibrary;
+		ScopedPtr<MeshLibrary> m_MeshLibrary;
 
 		static Application* s_Instance;
 	};

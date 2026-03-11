@@ -40,15 +40,15 @@ namespace Ember {
 	class TextureLibrary
 	{
 	public:
-		SharedPtr<Texture> Register(const std::string& filePath);
-		SharedPtr<Texture> Register(const std::string& name, const std::string& filePath);
+		const SharedPtr<Texture>& Register(const std::string& filePath);
+		const SharedPtr<Texture>& Register(const std::string& name, const std::string& filePath);
 
-		SharedPtr<Texture> Get(const std::string& name);
+		const SharedPtr<Texture>& Get(const std::string& name);
 		bool Exists(const std::string& name);
 
 	private:
-		void Add(SharedPtr<Texture> texture);
-		void Add(const std::string& name, SharedPtr<Texture> texture);
+		void Add(SharedPtr<Texture>&& texture);
+		void Add(const std::string& name, SharedPtr<Texture>&& texture);
 
 	private:
 		std::unordered_map<std::string, SharedPtr<Texture>> m_TextureMap;

@@ -24,6 +24,7 @@ namespace Ember {
 
 		m_ShaderLibrary = ScopedPtr<ShaderLibrary>::Create();
 		m_TextureLibrary = ScopedPtr<TextureLibrary>::Create();
+		m_MeshLibrary = ScopedPtr<MeshLibrary>::Create();
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -68,6 +69,17 @@ namespace Ember {
 	SharedPtr<Texture> Application::GetTexture(const std::string& name)
 	{
 		return m_TextureLibrary->Get(name);
+	}
+
+	void Application::RegisterMesh(const std::string& filePath)
+	{
+		auto mesh = m_MeshLibrary->Register(filePath);
+		EB_CORE_INFO("Successfully registered mesh {}", mesh->GetName());
+	}
+
+	Ember::SharedPtr<Ember::Mesh> Application::GetMesh(const std::string& name)
+	{
+		return m_MeshLibrary->Get(name);
 	}
 
 	void Application::OnAttach()

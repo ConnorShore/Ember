@@ -6,6 +6,7 @@
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
+#include "Ember/Render/Mesh.h"
 
 namespace Ember {
 	class Entity;
@@ -27,9 +28,37 @@ namespace Ember {
 	struct TransformComponent
 	{
 		Vector3f Position;
+		Vector3f Rotation;
 		Vector3f Size;
 
-		TransformComponent(const Vector3f& position, const Vector3f& size = Vector3f(1.0f)) : Position(position), Size(size) {}
+		TransformComponent(const Vector3f& position = Vector3f(0.0f),
+			const Vector3f& rotation = Vector3f(0.0f),
+			const Vector3f& size = Vector3f(1.0f))
+			: Position(position), Rotation(rotation), Size(size) {
+		}
+
+		Matrix4f GetTransformationMatrix() const
+		{
+			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Size);
+		}
+
+		Vector3f GetForward() const
+		{
+			Ember::Quaternion q(Rotation);
+			return Math::Normalize(q * Ember::Vector3f(0.0f, 0.0f, -1.0f));
+		}
+
+		Vector3f GetRight() const
+		{
+			Ember::Quaternion q(Rotation);
+			return Math::Normalize(q * Ember::Vector3f(1.0f, 0.0f, 0.0f));
+		}
+
+		Vector3f GetUp() const
+		{
+			Ember::Quaternion q(Rotation);
+			return Math::Normalize(q * Ember::Vector3f(0.0f, 1.0f, 0.0f));
+		}
 	};
 
 	struct RigidBodyComponent
@@ -48,11 +77,28 @@ namespace Ember {
 		SpriteComponent(const SharedPtr<Ember::Texture>& texture) : Color(Vector4f(1.0f)), Texture(texture) {}
 	};
 
+	struct MeshComponent
+	{
+		SharedPtr<Mesh> Mesh;
+
+		MeshComponent(const SharedPtr<Ember::Mesh>& mesh) : Mesh(mesh) {}
+	};
+
+	struct MaterialComponent
+	{
+		SharedPtr<Shader> Shader;	// Will be a material in the future
+		Vector4f TintColor;
+
+		MaterialComponent(const SharedPtr<Ember::Shader>& shader, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
+			: Shader(shader), TintColor(tintColor) { }
+	};
+
 	struct CameraComponent
 	{
 		Camera Camera;
 		bool IsActive;
 
+		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
 	};
 

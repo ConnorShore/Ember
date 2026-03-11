@@ -20,7 +20,7 @@ namespace Ember {
 		float TextureIndex;
 	};
 
-	struct RendererData {
+	struct RendererData2D {
 		static const unsigned int MaxQuads = 1024;
 		static const unsigned int MaxVertices = MaxQuads * 4;
 		static const unsigned int MaxIndices = MaxQuads * 6;
@@ -51,12 +51,12 @@ namespace Ember {
 		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
 	};
 
-	static ScopedPtr<RendererData> s_RendererData;
+	static ScopedPtr<RendererData2D> s_RendererData;
 
 
 	void Renderer2D::Init()
 	{
-		s_RendererData = ScopedPtr<RendererData>::Create();
+		s_RendererData = ScopedPtr<RendererData2D>::Create();
 
 		s_RendererData->QuadBufferStart = new QuadVertex[s_RendererData->MaxVertices];
 
@@ -109,6 +109,23 @@ namespace Ember {
 		delete[] s_RendererData->QuadBufferStart;
 	}
 
+	void Renderer2D::BeginFrame(CameraComponent& cameraComponent, const Matrix4f& transform)
+	{
+		RenderAction::UseBlending(true);
+
+		Matrix4f viewMatrix = Math::Inverse(transform);
+		s_RendererData->ViewProjectionMatrix = cameraComponent.Camera.GetProjectionMatrix() * viewMatrix;
+		s_RendererData->QuadShader->Bind();
+		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
+
+		StartBatch();
+	}
+
+	void Renderer2D::EndFrame()
+	{
+		FlushBatch();
+	}
+
 	void Renderer2D::StartBatch()
 	{
 		s_RendererData->QuadIndicesInBatch = 0;
@@ -119,8 +136,6 @@ namespace Ember {
 
 	void Renderer2D::FlushBatch()
 	{
-		RenderAction::UseBlending(true);
-
 		if (s_RendererData->QuadIndicesInBatch)
 		{
 			for (unsigned int i = 0; i < s_RendererData->TextureSlotIndex; i++)
@@ -138,20 +153,6 @@ namespace Ember {
 	{
 		FlushBatch();
 		StartBatch();
-	}
-
-	void Renderer2D::BeginFrame(CameraComponent& cameraComponent, const Matrix4f& transform)
-	{
-		s_RendererData->ViewProjectionMatrix = cameraComponent.Camera.GetProjectionMatrix() * transform;
-		s_RendererData->QuadShader->Bind();
-		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
-
-		StartBatch();
-	}
-
-	void Renderer2D::EndFrame()
-	{
-		FlushBatch();
 	}
 
 	void Renderer2D::DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture>& texture)

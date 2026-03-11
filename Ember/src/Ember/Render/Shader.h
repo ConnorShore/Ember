@@ -37,15 +37,15 @@ namespace Ember {
 	class ShaderLibrary
 	{
 	public:
-		SharedPtr<Shader> Register(const std::string& filePath);
-		SharedPtr<Shader> Register(const std::string& name, std::string& filePath);
+		const SharedPtr<Shader>& Register(const std::string& filePath);
+		const SharedPtr<Shader>& Register(const std::string& name, const std::string& filePath);
 
-		SharedPtr<Shader> Get(const std::string& name);
+		const SharedPtr<Shader>& Get(const std::string& name);
 		bool Exists(const std::string& name);
 
 	private:
-		void Add(SharedPtr<Shader> shader);
-		void Add(const std::string& name, SharedPtr<Shader> shader);
+		void Add(SharedPtr<Shader>&& shader);
+		void Add(const std::string& name, SharedPtr<Shader>&& shader);
 	private:
 		std::unordered_map<std::string, SharedPtr<Shader>> m_ShaderMap;
 	};
