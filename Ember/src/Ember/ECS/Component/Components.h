@@ -7,7 +7,13 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
 
+namespace Ember {
+	class SceneEntity;
+	class ScriptableEntity;
+}
+
 #include <string>
+#include <functional>
 
 namespace Ember {
 
@@ -48,6 +54,36 @@ namespace Ember {
 		bool IsActive;
 
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
+	};
+
+	struct ScriptComponent
+	{
+		bool Initalized = false;
+
+		// Inline Lambda Function //
+		std::function<void(SceneEntity)> OnCreate = nullptr;
+		std::function<void(SceneEntity, TimeStep)> OnUpdate = nullptr;
+		std::function<void(SceneEntity)> OnDestroy = nullptr;
+
+		// Class Binding 
+		ScriptableEntity* Instance = nullptr;
+		ScriptableEntity* (*CreateScript)() = nullptr;
+		void (*DestroyScript)(ScriptComponent*) = nullptr;
+
+		template<typename T>
+		void Bind()
+		{
+			CreateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
+			DestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
+		}
+
+		~ScriptComponent()
+		{
+			if (Instance && DestroyScript)
+			{
+				DestroyScript(this);
+			}
+		}
 	};
 
 }

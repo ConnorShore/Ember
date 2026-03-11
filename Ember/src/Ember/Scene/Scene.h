@@ -20,9 +20,9 @@ namespace Ember {
 		void OnUpdate(TimeStep delta);
 		void OnEvent(Event& event);
 
-		SharedPtr<SceneEntity> AddEntity();
-		SharedPtr<SceneEntity> GetEntity(const std::string& tag);
-		void RemoveEntity(const SharedPtr<SceneEntity>& entity);
+		SceneEntity AddEntity();
+		SceneEntity GetEntity(const std::string& tag);
+		void RemoveEntity(const SceneEntity& entity);
 
 		template<typename T>
 		inline void AttachComponent(const SceneEntity& entity, T& component);
@@ -41,7 +41,7 @@ namespace Ember {
 	private:
 		ScopedPtr<Registry> m_Registry;
 
-		std::unordered_map<std::string, SharedPtr<SceneEntity>> m_SceneEntities;
+		std::unordered_map<std::string, Entity> m_SceneEntities;
 
 		std::string m_Name;
 	};

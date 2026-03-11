@@ -26,12 +26,12 @@ namespace Ember {
 		void DestroyEntity(Entity entity);
 
 		template<typename T>
-		inline void AttachComponent(Entity entity, T& component)
+		inline T& AttachComponent(Entity entity, T& component)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
 
 			m_EntityManager->AttachComponent(entity, type);
-			m_ComponentManager->AttachComponent<T>(entity, component);
+			return m_ComponentManager->AttachComponent<T>(entity, component);
 		}
 
 		template<typename T>

@@ -3,7 +3,7 @@
 
 namespace Ember {
 
-	SceneEntity::SceneEntity(Scene* scene, const std::string& tag)
+	SceneEntity::SceneEntity(const std::string& tag, Scene* scene)
 		: m_SceneHandle(scene)
 	{
 		m_EntityHandle = m_SceneHandle->GetRegistry().CreateEntity();
@@ -13,6 +13,12 @@ namespace Ember {
 
 		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, tagComponent);
 		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, transform);
+	}
+
+
+	SceneEntity::SceneEntity(Entity entity, Scene* scene)
+		: m_SceneHandle(scene), m_EntityHandle(entity)
+	{
 	}
 
 	const std::string& SceneEntity::GetName() const
