@@ -11,7 +11,7 @@
 
 namespace Ember {
 
-	class SceneEntity;
+	class Entity;
 
 	class Scene : public SharedResource
 	{
@@ -22,18 +22,18 @@ namespace Ember {
 		void OnUpdate(TimeStep delta);
 		void OnEvent(Event& event);
 
-		SceneEntity AddEntity();
-		SceneEntity GetEntity(const std::string& tag);
-		void RemoveEntity(const SceneEntity& entity);
+		Entity AddEntity();
+		Entity GetEntity(const std::string& tag);
+		void RemoveEntity(const Entity& entity);
 
 		template<typename T>
-		inline void AttachComponent(const SceneEntity& entity, T& component);
+		inline void AttachComponent(const Entity& entity, T& component);
 
 		template<typename T>
-		inline void DetachComponent(const SceneEntity& entity);
+		inline void DetachComponent(const Entity& entity);
 
 		template<typename T>
-		inline T& GetComponent(const SceneEntity& entity);
+		inline T& GetComponent(const Entity& entity);
 
 		Registry& GetRegistry() { return *m_Registry; }
 
@@ -50,26 +50,26 @@ namespace Ember {
 
 }
 
-#include "SceneEntity.h"
+#include "Entity.h"
 
 namespace Ember {
 
 	template<typename T>
-	inline void Scene::AttachComponent(const SceneEntity& entity, T& component)
+	inline void Scene::AttachComponent(const Entity& entity, T& component)
 	{
 		EntityID entityHandle = entity.GetEntityHandle();
 		m_Registry->AttachComponent<T>(entityHandle, component);
 	}
 
 	template<typename T>
-	inline void Scene::DetachComponent(const SceneEntity& entity)
+	inline void Scene::DetachComponent(const Entity& entity)
 	{
 		EntityID entityHandle = entity.GetEntityHandle();
 		m_Registry->DetachComponent<T>(entityHandle);
 	}
 
 	template<typename T>
-	inline T& Scene::GetComponent(const SceneEntity& entity)
+	inline T& Scene::GetComponent(const Entity& entity)
 	{
 		EntityID entityHandle = entity.GetEntityHandle();
 		return m_Registry->GetComponent<T>(entityHandle);

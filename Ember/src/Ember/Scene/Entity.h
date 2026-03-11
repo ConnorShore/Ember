@@ -10,14 +10,14 @@ namespace Ember {
 
 	class Scene;
 
-	class SceneEntity
+	class Entity
 	{
 	public:
-		SceneEntity(const std::string& tag, Scene* scene);
-		SceneEntity(EntityID entity, Scene* scene);
+		Entity(const std::string& tag, Scene* scene);
+		Entity(EntityID entity, Scene* scene);
 
-		SceneEntity() = default;
-		~SceneEntity() = default;
+		Entity() = default;
+		~Entity() = default;
 
 		template<typename T>
 		inline T& AttachComponent();
@@ -50,26 +50,26 @@ namespace Ember {
 namespace Ember {
 
 	template<typename T>
-	inline void SceneEntity::AttachComponent(T& component)
+	inline void Entity::AttachComponent(T& component)
 	{
 		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
 	}
 
 	template<typename T>
-	T& SceneEntity::AttachComponent()
+	T& Entity::AttachComponent()
 	{
 		T component;
 		return m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
 	}
 
 	template<typename T>
-	inline void SceneEntity::DetachComponent()
+	inline void Entity::DetachComponent()
 	{
 		m_SceneHandle->GetRegistry().DetachComponent<T>(m_EntityHandle);
 	}
 
 	template<typename T>
-	inline T& SceneEntity::GetComponent()
+	inline T& Entity::GetComponent()
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<T>(m_EntityHandle);
 	}

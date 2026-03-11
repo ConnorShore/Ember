@@ -37,5 +37,6 @@
 #include "Ember/ECS/Registry.h"
 #include "Ember/ECS/Component/Components.h"
 
+#include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Scene/Behavior.h"

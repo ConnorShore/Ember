@@ -8,7 +8,7 @@
 #include "Ember/Render/Texture.h"
 
 namespace Ember {
-	class SceneEntity;
+	class Entity;
 	class Behavior;
 }
 
@@ -61,27 +61,27 @@ namespace Ember {
 		bool Initalized = false;
 
 		// Inline Lambda Function //
-		std::function<void(SceneEntity)> OnCreate = nullptr;
-		std::function<void(SceneEntity, TimeStep)> OnUpdate = nullptr;
-		std::function<void(SceneEntity)> OnDestroy = nullptr;
+		std::function<void(Entity)> OnCreate = nullptr;
+		std::function<void(Entity, TimeStep)> OnUpdate = nullptr;
+		std::function<void(Entity)> OnDestroy = nullptr;
 
 		// Class Binding 
 		Behavior* Instance = nullptr;
-		Behavior* (*CreateScript)() = nullptr;
-		void (*DestroyScript)(ScriptComponent*) = nullptr;
+		Behavior* (*OnInitScript)() = nullptr;
+		void (*OnDestroyScript)(ScriptComponent*) = nullptr;
 
 		template<typename T>
 		void Bind()
 		{
-			CreateScript = []() { return static_cast<Behavior*>(new T()); };
-			DestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
+			OnInitScript = []() { return static_cast<Behavior*>(new T()); };
+			OnDestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}
 
 		~ScriptComponent()
 		{
-			if (Instance && DestroyScript)
+			if (Instance && OnDestroyScript)
 			{
-				DestroyScript(this);
+				OnDestroyScript(this);
 			}
 		}
 	};

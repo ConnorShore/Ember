@@ -2,7 +2,7 @@
 #include "ScriptSystem.h"
 
 #include "Ember/ECS/Component/Components.h"
-#include "Ember/Scene/SceneEntity.h"
+#include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Behavior.h"
 
 namespace Ember {
@@ -20,21 +20,21 @@ namespace Ember {
 		auto view = registry->Query<ScriptComponent>();
 		for (auto entity : view)
 		{
-			SceneEntity handle(entity, m_SceneHandle);
+			Entity handle(entity, m_SceneHandle);
 			auto& script = registry->GetComponent<ScriptComponent>(entity);
 
-			// Run Creation scripts if not yet initialized
 			if (!script.Initalized)
 			{
-				if (script.CreateScript)
+				if (script.OnInitScript)
 				{
-					// They bound a script class
-					script.Instance = script.CreateScript();
-					script.Instance->m_SceneEntityHandle = handle;
+					// Behavior class scripts bound
+					script.Instance = script.OnInitScript();
+					script.Instance->m_EntityHandle = handle;
 					script.Instance->OnCreate();
 				}
 				else if (script.OnCreate)
 				{
+					// Inline lambda scripts bound
 					script.OnCreate(handle);
 				}
 

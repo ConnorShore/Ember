@@ -15,7 +15,7 @@ public:
 
 private:
 	Ember::SharedPtr<Ember::Scene> m_MainScene;
-	Ember::SceneEntity m_Entity;
-	Ember::SceneEntity m_CameraEntity;
-	std::vector<Ember::SceneEntity> m_SpriteEntities;
+	Ember::Entity m_Entity;
+	Ember::Entity m_CameraEntity;
+	std::vector<Ember::Entity> m_SpriteEntities;
 };

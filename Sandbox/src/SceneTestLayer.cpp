@@ -80,7 +80,7 @@ void SceneTestLayer::OnAttach()
 	m_Entity.AttachComponent(rigidComp);
 
 	Ember::ScriptComponent entityScript;
-	entityScript.OnUpdate = [](Ember::SceneEntity e, Ember::TimeStep delta)
+	entityScript.OnUpdate = [](Ember::Entity e, Ember::TimeStep delta)
 		{
 			auto& rigidComp = e.GetComponent<Ember::RigidBodyComponent>();
 			rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
