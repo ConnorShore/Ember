@@ -59,8 +59,7 @@ namespace Ember {
 	T& SceneEntity::AttachComponent()
 	{
 		T component;
-		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
-		return &component;
+		return m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
 	}
 
 	template<typename T>

@@ -33,7 +33,7 @@ namespace Ember {
 			SparseEntityArray.resize(MaxEntities, InvalidComponentID);
 		}
 
-		void InsertComponent(Entity entity, T component)
+		T& InsertComponent(Entity entity, T component)
 		{
 			// Add component to the dense component array and get its index
 			unsigned int componentIndex = DenseComponentArray.size();
@@ -44,6 +44,7 @@ namespace Ember {
 
 			// Add entity to spare array to point to the mapper array to eventually point to the component
 			SparseEntityArray[entity] = componentIndex;
+			return DenseComponentArray[componentIndex];
 		}
 
 		T& GetComponent(Entity entity)
@@ -99,7 +100,7 @@ namespace Ember {
 		~ComponentManager() { m_ComponentArrays.clear(); }
 
 		template<typename T>
-		inline void AttachComponent(Entity entity, T component)
+		inline T& AttachComponent(Entity entity, T component)
 		{
 			ComponentType type = GetComponentType<T>();
 
@@ -111,7 +112,7 @@ namespace Ember {
 				m_ComponentArrays[type] = SharedPtr<ComponentMemoryArray<T>>::Create();
 
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
-			memoryArrays->InsertComponent(entity, component);
+			return memoryArrays->InsertComponent(entity, component);
 		}
 
 		template<typename T>

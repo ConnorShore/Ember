@@ -18,6 +18,10 @@ namespace Ember {
 			return m_SceneEntityHandle.GetComponent<T>();
 		}
 
+		// Standard Component Getters
+		TransformComponent& Transform() { return GetComponent<TransformComponent>(); }
+		const std::string& Tag() { return GetComponent<TagComponent>().Tag; }
+
 	protected:
 		virtual void OnCreate() {}
 		virtual void OnUpdate(TimeStep delta) {}

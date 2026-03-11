@@ -3,6 +3,10 @@
 
 #include <random>
 
+//////////////////////////////////////////////////////////////////////////
+// Camera Controller
+//////////////////////////////////////////////////////////////////////////
+
 class CameraController : public Ember::ScriptableEntity
 {
 public:
@@ -11,14 +15,26 @@ public:
 		float speed = 2.5f * delta;
 		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Up))
 		{
-			GetComponent<Ember::TransformComponent>().Position += Ember::Vector3f(0.0f, 0.0f, -speed);
+			Transform().Position += Ember::Vector3f(0.0f, 0.0f, -speed);
 		}
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Down))
+		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::Down))
 		{
-			GetComponent<Ember::TransformComponent>().Position += Ember::Vector3f(0.0f, 0.0f, speed);
+			Transform().Position += Ember::Vector3f(0.0f, 0.0f, speed);
+		}
+		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Right))
+		{
+			Transform().Position += Ember::Vector3f(speed, 0.0f, 0.0f);
+		}
+		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::Left))
+		{
+			Transform().Position += Ember::Vector3f(-speed, 0.0f, 0.0f);
 		}
 	}
 };
+
+//////////////////////////////////////////////////////////////////////////
+// Scene Test Layer
+//////////////////////////////////////////////////////////////////////////
 
 SceneTestLayer::SceneTestLayer()
 	: Layer("Scene Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
@@ -45,7 +61,7 @@ void SceneTestLayer::OnAttach()
 		entity.AttachComponent<Ember::SpriteComponent>(spriteComp);
 
 		auto& transform = entity.GetComponent<Ember::TransformComponent>();
-		transform.Position = Ember::Vector3f(posDist(rng), posDist(rng), posDist(rng));
+		transform.Position = Ember::Vector3f(posDist(rng), posDist(rng), 0.0f);
 
 		m_SpriteEntities.push_back(entity);
 	}
@@ -58,10 +74,10 @@ void SceneTestLayer::OnAttach()
 	entityTransform.Size = Ember::Vector3f(3.0f, 3.0f, 1.0f);
 
 	Ember::SpriteComponent spriteComp = { GetTexture("image")};
-	m_Entity.AttachComponent<Ember::SpriteComponent>(spriteComp);
+	m_Entity.AttachComponent(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
-	m_Entity.AttachComponent<Ember::RigidBodyComponent>(rigidComp);
+	m_Entity.AttachComponent(rigidComp);
 
 	Ember::ScriptComponent entityScript;
 	entityScript.OnUpdate = [](Ember::SceneEntity e, Ember::TimeStep delta)
@@ -97,14 +113,11 @@ void SceneTestLayer::OnAttach()
 	camera.SetViewportSize(Ember::Application::Instance().GetWindow().GetWidth(), Ember::Application::Instance().GetWindow().GetHeight());
 	camera.SetProjectionType(Ember::Camera::ProjectionType::Perspective);
 	//camera.SetOrthographic(10.0f, -1.0f, 1.0f);
-	camera.SetPerspective(60.0f, 0.1f, 50.0f);
+	camera.SetPerspective(60.0f, 0.1f, 120.0f);
 
 	Ember::CameraComponent cameraComponent(camera, true);
-	m_CameraEntity.AttachComponent<Ember::CameraComponent>(cameraComponent);
-
-	Ember::ScriptComponent cameraScript;
-	cameraScript.Bind<CameraController>();
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>(cameraScript);
+	m_CameraEntity.AttachComponent(cameraComponent);
+	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<CameraController>();
 }
 
 void SceneTestLayer::OnDetach()
