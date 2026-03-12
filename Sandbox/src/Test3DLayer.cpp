@@ -34,19 +34,23 @@ Test3DLayer::~Test3DLayer()
 
 void Test3DLayer::OnAttach()
 {
-	RegisterMesh("assets/mesh/DefaultMesh.obj");
-	RegisterShader("assets/shaders/test3D.glsl");
-	RegisterTexture("assets/textures/Cube.png");
+	auto mesh = RegisterMesh("assets/mesh/DefaultMesh.obj");
+	auto shader = RegisterShader("assets/shaders/test3D.glsl");
+	auto texture = RegisterTexture("assets/textures/Cube.png");
+	auto material = RegisterMaterial("basicMaterial", shader, {
+			{ "u_TintColor", Ember::Vector4f(1.0f, 1.0f, 0.0f, 1.0f)},
+			{ "u_Texture", texture}
+		});
 
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();
 	auto& entityTransform = m_Entity.GetComponent<Ember::TransformComponent>();
 	entityTransform.Size = Ember::Vector3f(3.0f);
 
-	Ember::MeshComponent meshComp = { GetMesh("DefaultMesh") };
+	Ember::MeshComponent meshComp = { mesh };
 	m_Entity.AttachComponent(meshComp);
 
-	Ember::MaterialComponent matComp = { GetShader("test3D"), GetTexture("Cube") };
+	Ember::MaterialComponent matComp = { material };
 	m_Entity.AttachComponent(matComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };

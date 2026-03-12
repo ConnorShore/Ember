@@ -5,6 +5,7 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Mesh.h"
+#include "Ember/Render/Material.h"
 
 #include <string>
 
@@ -26,14 +27,19 @@ namespace Ember {
 		inline const std::string& GetName() const { return m_Name; }
 
 	protected:
-		void RegisterShader(const std::string& filePath);
-		SharedPtr<Shader> GetShader(const std::string& name);
+		const SharedPtr<Shader>& RegisterShader(const std::string& filePath);
+		const SharedPtr<Shader>& GetShader(const std::string& name);
 
-		void RegisterTexture(const std::string& filePath);
-		SharedPtr<Texture> GetTexture(const std::string& name);
+		const SharedPtr<Texture>& RegisterTexture(const std::string& filePath);
+		const SharedPtr<Texture>& GetTexture(const std::string& name);
 
-		void RegisterMesh(const std::string& filePath);
-		SharedPtr<Mesh> GetMesh(const std::string& name);
+		const SharedPtr<Mesh>& RegisterMesh(const std::string& filePath);
+		const SharedPtr<Mesh>& GetMesh(const std::string& name);
+
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, SharedPtr<Shader> shader);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, SharedPtr<Shader> shader, std::initializer_list<MaterialUniform> uniforms);
+		const SharedPtr<MaterialInstance>& RegisterMaterial(const std::string& name, SharedPtr<Material> material);
+		const SharedPtr<MaterialBase>& GetMaterial(const std::string& name);
 
 	private:
 		// TODO: Make m_Name debug only?

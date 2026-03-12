@@ -37,18 +37,11 @@ namespace Ember {
 
 	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform)
 	{
-		material.Shader->Bind();
+		material.Material->Bind();
 
-		// TODO: Probably move the uniform setting to the render system or something
-		// u_Transform and u_ViewProjection are required for 3D Shaders
-		//	TODO: Implement validation checking when loading shaders
-		//	Need to find way to throw errors for 3d shaders vs 2d shaders
-		//	(since batch rendering doesn't use u_Transform and bakes transform into vertex position)
-		material.Shader->SetMatrix4("u_Transform", transform);
-		material.Shader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
-		material.Shader->SetFloat4("u_TintColor", material.TintColor);
-		material.Texture->Bind(0);
-		material.Shader->SetInt("u_Texture", 0);
+		// Required Uniforms
+		material.Material->GetShader()->SetMatrix4("u_Transform", transform);
+		material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
 
 		RenderAction::DrawIndexed(vertexArray);
 	}

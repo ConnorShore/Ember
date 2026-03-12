@@ -7,12 +7,14 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Mesh.h"
+#include "Ember/Render/Material.h"
 
 namespace Ember {
 	class Entity;
 	class Behavior;
 }
 
+#include <memory>
 #include <string>
 #include <functional>
 
@@ -86,12 +88,37 @@ namespace Ember {
 
 	struct MaterialComponent
 	{
+		SharedPtr<MaterialBase> Material;
+
+		MaterialComponent(const SharedPtr<Ember::MaterialBase>& material) : Material(material) {}
+
+		SharedPtr<MaterialInstance> GetInstanced()
+		{
+			// If already an instance, return it
+			if (auto instance = DynamicPointerCast<MaterialInstance>(Material))
+				return instance;
+
+			// Convert material to an instance
+			if (auto base = DynamicPointerCast<Ember::Material>(Material))
+			{
+				auto newInstance = SharedPtr<MaterialInstance>::Create(base->GetName(), base);
+				Material = newInstance;
+				return newInstance;
+			}
+
+			EB_CORE_ASSERT(false, "Unknown Material type!");
+			return nullptr;
+		}
+	};
+
+	struct MaterialComponentOld
+	{
 		// Will be a single material ptr in the future
 		SharedPtr<Shader> Shader;	
 		SharedPtr<Texture> Texture;
 		Vector4f TintColor;
 
-		MaterialComponent(const SharedPtr<Ember::Shader>& shader, const SharedPtr<Ember::Texture> texture, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
+		MaterialComponentOld(const SharedPtr<Ember::Shader>& shader, const SharedPtr<Ember::Texture> texture, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
 			: Shader(shader), Texture(texture), TintColor(tintColor) { }
 	};
 

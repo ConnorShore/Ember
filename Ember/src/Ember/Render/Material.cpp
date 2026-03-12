@@ -1,0 +1,43 @@
+#include "ebpch.h"
+#include "Material.h"
+
+namespace Ember {
+
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader)
+	{
+		auto material = SharedPtr<Material>::Create(name, shader);
+		Add(name, std::move(material));
+		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
+	}
+
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
+	{
+		auto material = SharedPtr<Material>::Create(name, shader, uniforms);
+		Add(name, std::move(material));
+		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
+	}
+
+	const SharedPtr<MaterialInstance>& MaterialLibrary::RegisterInstance(const std::string& name, const SharedPtr<Material>& material)
+	{
+		auto instance = SharedPtr<MaterialInstance>::Create(name, material);
+		Add(name, std::move(instance));
+		return reinterpret_cast<const SharedPtr<MaterialInstance>&>(Get(name));
+	}
+
+	const SharedPtr<MaterialBase>& MaterialLibrary::Get(const std::string& name)
+	{
+		return m_MaterialMap[name];
+	}
+
+	bool MaterialLibrary::Exists(const std::string& name)
+	{
+		return m_MaterialMap.contains(name);
+	}
+
+	void MaterialLibrary::Add(const std::string& name, SharedPtr<MaterialBase>&& material)
+	{
+		EB_CORE_ASSERT(!Exists(name), "Material already exists in library!");
+		m_MaterialMap[name] = std::move(material);
+	}
+
+}

@@ -30,6 +30,7 @@
 #include "Ember/Render/Renderer2D.h"
 #include "Ember/Render/Camera.h"
 #include "Ember/Render/Mesh.h"
+#include "Ember/Render/Material.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
 

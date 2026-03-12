@@ -79,6 +79,8 @@ namespace Ember {
 		bool operator!=(const ScopedPtr& other) const { return m_Ptr != other.m_Ptr; }
 		bool operator!() const { return m_Ptr == nullptr; }
 
+		operator bool() const { return m_Ptr != nullptr; }
+
 	private:
 		template <typename U>
 		friend class ScopedPtr;

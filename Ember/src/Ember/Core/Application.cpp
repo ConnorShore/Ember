@@ -25,6 +25,7 @@ namespace Ember {
 		m_ShaderLibrary = ScopedPtr<ShaderLibrary>::Create();
 		m_TextureLibrary = ScopedPtr<TextureLibrary>::Create();
 		m_MeshLibrary = ScopedPtr<MeshLibrary>::Create();
+		m_MaterialLibrary = ScopedPtr<MaterialLibrary>::Create();
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -49,37 +50,64 @@ namespace Ember {
 		m_LayerStack.PushCanvasLayer(std::move(canvas));
 	}
 
-	void Application::RegisterShader(const std::string& filePath)
+	const SharedPtr<Shader>& Application::RegisterShader(const std::string& filePath)
 	{
-		auto shader = m_ShaderLibrary->Register(filePath);
+		const auto& shader = m_ShaderLibrary->Register(filePath);
 		EB_CORE_INFO("Successfully registered shader {}", shader->GetName());
+		return shader;
 	}
 
-	SharedPtr<Shader> Application::GetShader(const std::string& name)
+	const SharedPtr<Shader>& Application::GetShader(const std::string& name)
 	{
 		return m_ShaderLibrary->Get(name);
 	}
 
-	void Application::RegisterTexture(const std::string& filePath)
+	const SharedPtr<Texture>& Application::RegisterTexture(const std::string& filePath)
 	{
-		auto texture = m_TextureLibrary->Register(filePath);
+		const auto& texture = m_TextureLibrary->Register(filePath);
 		EB_CORE_INFO("Successfully registered texture {}", texture->GetName());
+		return texture;
 	}
 
-	SharedPtr<Texture> Application::GetTexture(const std::string& name)
+	const SharedPtr<Texture>& Application::GetTexture(const std::string& name)
 	{
 		return m_TextureLibrary->Get(name);
 	}
 
-	void Application::RegisterMesh(const std::string& filePath)
+	const SharedPtr<Mesh>& Application::RegisterMesh(const std::string& filePath)
 	{
 		auto mesh = m_MeshLibrary->Register(filePath);
 		EB_CORE_INFO("Successfully registered mesh {}", mesh->GetName());
+		return mesh;
 	}
 
-	Ember::SharedPtr<Ember::Mesh> Application::GetMesh(const std::string& name)
+	const SharedPtr<Mesh>& Application::GetMesh(const std::string& name)
 	{
 		return m_MeshLibrary->Get(name);
+	}
+
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader)
+	{
+		auto material = m_MaterialLibrary->RegisterMaterial(name, shader);
+		EB_CORE_INFO("Successfully registered material {}", material->GetName());
+		return material;
+	}
+
+	const SharedPtr<MaterialInstance>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Material>& material)
+	{
+		auto instance = m_MaterialLibrary->RegisterInstance(name, material);
+		EB_CORE_INFO("Successfully registered material instance {}", instance->GetName());
+		return instance;
+	}
+
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
+	{
+		return m_MaterialLibrary->RegisterMaterial(name, shader, uniforms);
+	}
+
+	const SharedPtr<MaterialBase>& Application::GetMaterial(const std::string& name)
+	{
+		return m_MaterialLibrary->Get(name);
 	}
 
 	void Application::OnAttach()
