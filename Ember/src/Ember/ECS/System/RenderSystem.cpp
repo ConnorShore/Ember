@@ -53,11 +53,25 @@ namespace Ember {
 		{
 			Renderer3D::BeginFrame(activeCamera, cameraTransformMatrix);
 
+			// Grab lights (max 4 right now till deferred shading is added)
+			std::array<std::tuple<PointLightComponent, TransformComponent>, 4> lights;
+			unsigned int ct = 0;
+			View lightView = registry->Query<PointLightComponent, TransformComponent>();
+			for (EntityID entity : lightView)
+			{
+				if (ct >= 4)
+					break;
+
+				auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
+				lights[ct++] = std::make_tuple(light, transform);
+			}
+
+			// Render meshes
 			View view = registry->Query<MeshComponent, MaterialComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
+				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix(), lights);
 			}
 
 			Renderer3D::EndFrame();

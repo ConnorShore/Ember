@@ -131,6 +131,17 @@ namespace Ember {
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
 	};
 
+	struct PointLightComponent
+	{
+		Vector3f Color = Vector3f(1.0f);
+		float Intensity = 0.0f;
+		float Radius = 0.0f;
+
+		PointLightComponent() = default;
+		PointLightComponent(const Vector3f& color, float intensity, float radius)
+			: Color(color), Intensity(intensity), Radius(radius) { }
+	};
+
 	struct ScriptComponent
 	{
 		bool Initalized = false;

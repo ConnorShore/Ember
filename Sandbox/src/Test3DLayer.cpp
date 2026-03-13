@@ -36,11 +36,18 @@ void Test3DLayer::OnAttach()
 {
 	auto mesh = RegisterMesh("assets/mesh/DefaultMesh.obj");
 	auto shader = RegisterShader("assets/shaders/test3D.glsl");
-	auto texture = RegisterTexture("assets/textures/Cube.png");
-	auto material = RegisterMaterial("basicMaterial", shader, {
-			{ "u_TintColor", Ember::Vector4f(1.0f, 1.0f, 0.0f, 1.0f)},
-			{ "u_Texture", texture}
-		});
+	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
+	auto texture = RegisterTexture("assets/textures/case.jpg");
+	//auto material = RegisterMaterial("basicMaterial", shader, {
+	//	{ "u_TintColor", Ember::Vector4f(1.0f, 1.0f, 0.0f, 1.0f)},
+	//	{ "u_Texture", texture}
+	//	});
+	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, {
+		{ "u_Albedo", Ember::Vector3f(1.0f, 1.0f, 1.0f) },
+		{ "u_Metallic", 0.9f },
+		{ "u_Roughness", 0.2f },
+		{ "u_AO", 1.0f }
+	});
 
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();
@@ -50,7 +57,7 @@ void Test3DLayer::OnAttach()
 	Ember::MeshComponent meshComp = { mesh };
 	m_Entity.AttachComponent(meshComp);
 
-	Ember::MaterialComponent matComp = { material };
+	Ember::MaterialComponent matComp = { pbrMaterial };
 	m_Entity.AttachComponent(matComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
@@ -104,6 +111,31 @@ void Test3DLayer::OnAttach()
 	Ember::CameraComponent cameraComponent(camera, true);
 	m_CameraEntity.AttachComponent(cameraComponent);
 	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
+
+	// Lights
+	auto light1 = m_MainScene->AddEntity();
+	Ember::PointLightComponent pl1 = {  Ember::Vector3f(1.0f, 0.0f, 0.0f), 200.0f, 10.0f };
+	light1.AttachComponent(pl1);
+	Ember::TransformComponent t1 = { Ember::Vector3f(-5.0f, 5.0f, 2.0f) };
+	light1.AttachComponent(t1);
+
+	auto light2 = m_MainScene->AddEntity();
+	Ember::PointLightComponent pl2 = { Ember::Vector3f(1.0f, 1.0f, 0.0f), 100.0f, 10.0f };
+	light2.AttachComponent(pl2);
+	Ember::TransformComponent t2 = { Ember::Vector3f(5.0f, 5.0f, 2.0f) };
+	light2.AttachComponent(t2);
+
+	auto light3 = m_MainScene->AddEntity();
+	Ember::PointLightComponent pl3 = { Ember::Vector3f(0.0f, 1.0f, 1.0f), 300.0f, 10.0f };
+	light3.AttachComponent(pl3);
+	Ember::TransformComponent t3 = { Ember::Vector3f(5.0f, 5.0f, -10.0f) };
+	light3.AttachComponent(t3);
+
+	auto light4 = m_MainScene->AddEntity();
+	Ember::PointLightComponent pl4 = { Ember::Vector3f(0.0f, 0.0f, 1.0f), 120.0f, 10.0f };
+	light4.AttachComponent(pl4);
+	Ember::TransformComponent t4 = { Ember::Vector3f(-5.0f, 5.0f, -10.0f) };
+	light4.AttachComponent(t4);
 }
 
 void Test3DLayer::OnDetach()
