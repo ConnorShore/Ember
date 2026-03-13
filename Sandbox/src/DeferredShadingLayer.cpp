@@ -9,7 +9,6 @@ DeferredShadingLayer::DeferredShadingLayer()
 
 DeferredShadingLayer::~DeferredShadingLayer()
 {
-
 }
 
 void DeferredShadingLayer::OnAttach()
@@ -21,6 +20,7 @@ void DeferredShadingLayer::OnAttach()
 	specs.AttachmentSpecs = { Ember::FramebufferTextureFormat::RGBA8, Ember::FramebufferTextureFormat::DEPTH24STENCIL8 };
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
+	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
 
@@ -109,6 +109,27 @@ void DeferredShadingLayer::OnAttach()
 	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
 
 	// ------------------------------------------------------------------
+	// Interactive sphere (ImGui-controlled) — placed to the right
+	// ------------------------------------------------------------------
+	m_InteractiveSphere = m_MainScene->AddEntity();
+	auto& interactiveTransform = m_InteractiveSphere.GetComponent<Ember::TransformComponent>();
+	interactiveTransform.Position = { (cols / 2) * spacing + 4.0f, 0.0f, 0.0f };
+	interactiveTransform.Size = { 1.5f, 1.5f, 1.5f };
+
+	Ember::MeshComponent interactiveMeshComp = { mesh };
+	m_InteractiveSphere.AttachComponent(interactiveMeshComp);
+
+	Ember::MaterialComponent interactiveMatComp = { pbrMaterial };
+	m_InteractiveSphere.AttachComponent(interactiveMatComp);
+
+	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
+	m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
+	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
+	m_InteractiveInstance->Set("u_AO", m_AO);
+	m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
+
+	// ------------------------------------------------------------------
 	// Lighting — 4 point lights in a key / fill / rim arrangement
 	//
 	// Key light    – strong warm-white from upper-front-right
@@ -179,12 +200,57 @@ void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 
 	m_Framebuffer->Unbind();
 
+	// Clear the default framebuffer so ImGui doesn't composite on stale pixels
+	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 }
 
 void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
 {
+	ImGui::DockSpaceOverViewport();
+
+	// Main Viewport
 	ImGui::Begin("Scene Viewport");
+
+	// Handle viewport resizing
+	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+	if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+	{
+		// Save the new size
+		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+		m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+	}
+
 	unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
-	ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ 800.0f, 600.0f }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+	ImGui::Image((void*)textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+	ImGui::End();
+
+	// Editor Panel
+	ImGui::Begin("PBR Material Editor");
+
+	ImGui::Text("Interactive Sphere");
+	ImGui::Separator();
+
+	bool changed = false;
+
+	changed |= ImGui::ColorEdit3("Albedo", m_Albedo);
+	changed |= ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f);
+	changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
+	changed |= ImGui::SliderFloat("AO", &m_AO, 0.0f, 1.0f);
+
+	if (changed && m_InteractiveInstance)
+	{
+		m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+		m_InteractiveInstance->Set("u_Metallic", m_Metallic);
+		m_InteractiveInstance->Set("u_Roughness", m_Roughness);
+		m_InteractiveInstance->Set("u_AO", m_AO);
+	}
+
+	ImGui::Separator();
+	ImGui::TextWrapped(
+		"Grid: columns = roughness (0.05 -> 1.0), "
+		"rows = metallic (0.0 -> 1.0)");
+
 	ImGui::End();
 }

@@ -31,6 +31,16 @@ namespace Ember {
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
+	void Scene::OnViewportResize(unsigned int width, unsigned int height)
+	{
+		auto view = m_Registry->Query<CameraComponent>();
+		for (auto entity : view)
+		{
+			auto camera = m_Registry->GetComponent<CameraComponent>(entity);
+			camera.Camera.SetViewportSize(width, height);
+		}
+	}
+
 	Entity Scene::AddEntity()
 	{
 		std::string name = std::format("Entity {}", m_SceneEntities.size());
@@ -59,12 +69,7 @@ namespace Ember {
 
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)
 	{
-		auto view = m_Registry->Query<CameraComponent>();
-		for (auto entity : view)
-		{
-			auto camera = m_Registry->GetComponent<CameraComponent>(entity);
-			camera.Camera.SetViewportSize(event.GetWidth(), event.GetHeight());
-		}
+		OnViewportResize(event.GetWidth(), event.GetHeight());
 		return false;
 	}
 
