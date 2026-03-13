@@ -26,7 +26,7 @@ void main()
 #version 450 core
 
 const float PI = 3.14159265359;
-const float AMBIENT = 0.1;
+const float AMBIENT = 0.03;
 const int MAX_LIGHTS = 4;
 
 struct PointLight {
