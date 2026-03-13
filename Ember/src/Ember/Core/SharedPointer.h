@@ -125,6 +125,8 @@ namespace Ember {
 		bool operator==(std::nullptr_t) const { return m_Ptr == nullptr; }
 		bool operator!=(std::nullptr_t) const { return m_Ptr != nullptr; }
 
+		operator bool() const { return m_Ptr != nullptr; }
+
 	private:
 		template<typename U>
 		friend class SharedPtr;
@@ -158,6 +160,15 @@ namespace Ember {
 	SharedPtr<T> StaticPointerCast(const SharedPtr<U>& ptr)
 	{
 		return SharedPtr<T>(static_cast<T*>(ptr.Ptr()));
+	}
+
+	// Dynamic cast implementation
+	template <typename T, typename U>
+	SharedPtr<T> DynamicPointerCast(const SharedPtr<U>& ptr)
+	{
+		if (T* raw = dynamic_cast<T*>(ptr.Ptr()))
+			return SharedPtr<T>(raw);
+		return SharedPtr<T>(nullptr);
 	}
 
 }

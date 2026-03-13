@@ -50,6 +50,16 @@ namespace Ember {
 			glUniform1i(GetUniformLocation(name), value);
 		}
 
+		void Shader::SetFloat(const std::string& name, float value) const
+		{
+			glUniform1f(GetUniformLocation(name), value);
+		}
+
+		void Shader::SetFloat2(const std::string& name, const Vector2f& vec) const
+		{
+			glUniform2f(GetUniformLocation(name), vec[0], vec[1]);
+		}
+
 		void Shader::SetFloat3(const std::string& name, const Vector3f& vec) const
 		{
 			glUniform3f(GetUniformLocation(name), vec[0], vec[1], vec[2]);

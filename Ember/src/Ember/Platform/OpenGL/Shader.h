@@ -18,6 +18,8 @@ namespace Ember {
 			virtual void Bind() const override;
 
 			virtual void SetInt(const std::string& name, int value) const override;
+			virtual void SetFloat(const std::string& name, float value) const override;
+			virtual void SetFloat2(const std::string& name, const Vector2f& vec) const override;
 			virtual void SetFloat3(const std::string& name, const Vector3f& vec) const override;
 			virtual void SetFloat4(const std::string& name, const Vector4f& vec) const override;
 			virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;

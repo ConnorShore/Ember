@@ -3,6 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
 namespace Ember {
 
 	template<typename T>
@@ -22,6 +26,8 @@ namespace Ember {
 
 	template<typename T>
 	using Matrix4 = glm::mat<4, 4, T>;
+
+	using Quaternion = glm::quat;
 
 	using Vector2f = Vector2<float>;
 	using Vector3f = Vector3<float>;
@@ -80,6 +86,16 @@ namespace Ember {
 		static inline Matrix4f Inverse(const Matrix4f& matrix)
 		{
 			return glm::inverse(matrix);
+		}
+
+		static inline Vector3f Normalize(const Vector3f& vector)
+		{
+			return glm::normalize(vector);
+		}
+
+		static inline Matrix4f GetRotationMatrix(const Vector3f eulerAngles)
+		{
+			return glm::toMat4(Quaternion(eulerAngles));
 		}
 	};
 

@@ -1,14 +1,16 @@
 #include <Ember.h>
 #include <Ember/Core/EntryPoint.h>
 
-#include "SceneTestLayer.h"
+#include "SpriteTestLayer.h"
+#include "PBRTestLayer.h"
 
 class SandboxApp : public Ember::Application
 {
 public:
 	SandboxApp()
 	{
-		PushLayer(Ember::ScopedPtr<Ember::Layer>(new SceneTestLayer()));
+		PushLayer(Ember::ScopedPtr<Ember::Layer>(new PBRTestLayer()));
+		//PushLayer(Ember::ScopedPtr<Ember::Layer>(new SpriteTestLayer()));
 	}
 	~SandboxApp()
 	{

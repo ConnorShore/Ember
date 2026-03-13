@@ -18,7 +18,7 @@ void main()
 	color = v_Color;
 	textureCoord = v_TextureCoord;
 	texIndex = v_TextureIndex;
-};
+}
 
 #shader fragment
 #version 450 core
@@ -34,4 +34,4 @@ uniform sampler2D u_Textures[32];
 void main()
 {	
 	outColor = texture(u_Textures[int(texIndex)], textureCoord) * color;
-};
+}

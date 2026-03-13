@@ -50,21 +50,21 @@ namespace Ember {
 	// Texture Library
 	//////////////////////////////////////////////////////////////////////////
 
-	SharedPtr<Texture> TextureLibrary::Register(const std::string& filePath)
+	const SharedPtr<Texture>& TextureLibrary::Register(const std::string& filePath)
 	{
 		auto texture = Texture::Create(filePath);
-		Add(texture);
-		return texture;
+		Add(std::move(texture));
+		return Get(std::filesystem::path(filePath).stem().string());
 	}
 
-	SharedPtr<Texture> TextureLibrary::Register(const std::string& name, const std::string& filePath)
+	const SharedPtr<Texture>& TextureLibrary::Register(const std::string& name, const std::string& filePath)
 	{
 		auto texture = Texture::Create(name, filePath);
-		Add(texture);
-		return texture;
+		Add(std::move(texture));
+		return Get(name);
 	}
 
-	SharedPtr<Texture> TextureLibrary::Get(const std::string& name)
+	const SharedPtr<Texture>& TextureLibrary::Get(const std::string& name)
 	{
 		EB_CORE_ASSERT(Exists(name), "Texture does not exists in library!");
 		return m_TextureMap.at(name);
@@ -75,15 +75,15 @@ namespace Ember {
 		return m_TextureMap.contains(name);
 	}
 
-	void TextureLibrary::Add(SharedPtr<Texture> texture)
+	void TextureLibrary::Add(SharedPtr<Texture>&& texture)
 	{
-		Add(texture->GetName(), texture);
+		Add(texture->GetName(), std::move(texture));
 	}
 
-	void TextureLibrary::Add(const std::string& name, SharedPtr<Texture> texture)
+	void TextureLibrary::Add(const std::string& name, SharedPtr<Texture>&& texture)
 	{
 		EB_CORE_ASSERT(!Exists(name), "Texture already exists in library!");
-		m_TextureMap[name] = texture;
+		m_TextureMap[name] = std::move(texture);
 	}
 
 }

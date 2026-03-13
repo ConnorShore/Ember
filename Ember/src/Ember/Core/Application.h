@@ -12,6 +12,8 @@
 
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Texture.h"
+#include "Ember/Render/Mesh.h"
+#include "Ember/Render/Material.h"
 
 namespace Ember {
 
@@ -24,11 +26,19 @@ namespace Ember {
 		void PushLayer(ScopedPtr<Layer> layer);
 		void PushCanvasLayer(ScopedPtr<Layer> canvas);
 
-		void RegisterShader(const std::string& filePath);
-		SharedPtr<Shader> GetShader(const std::string& name);
+		const SharedPtr<Shader>& RegisterShader(const std::string& filePath);
+		const SharedPtr<Shader>& GetShader(const std::string& name);
 
-		void RegisterTexture(const std::string& filePath);
-		SharedPtr<Texture> GetTexture(const std::string& name);
+		const SharedPtr<Texture>& RegisterTexture(const std::string& filePath);
+		const SharedPtr<Texture>& GetTexture(const std::string& name);
+
+		const SharedPtr<Mesh>& RegisterMesh(const std::string& filePath);
+		const SharedPtr<Mesh>& GetMesh(const std::string& name);
+
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms);
+		const SharedPtr<MaterialInstance>& RegisterMaterial(const std::string& name, const SharedPtr<Material>& material);
+		const SharedPtr<MaterialBase>& GetMaterial(const std::string& name);
 
 		void OnAttach();
 		void OnDetach();
@@ -60,6 +70,8 @@ namespace Ember {
 		// TODO: Probably move these to some AssetManager or something
 		ScopedPtr<ShaderLibrary> m_ShaderLibrary;
 		ScopedPtr<TextureLibrary> m_TextureLibrary;
+		ScopedPtr<MeshLibrary> m_MeshLibrary;
+		ScopedPtr<MaterialLibrary> m_MaterialLibrary;
 
 		static Application* s_Instance;
 	};

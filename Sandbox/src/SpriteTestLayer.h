@@ -2,11 +2,11 @@
 
 #include <Ember.h>
 
-class SceneTestLayer : public Ember::Layer {
+class SpriteTestLayer : public Ember::Layer {
 public:
 
-	SceneTestLayer();
-	virtual ~SceneTestLayer();
+	SpriteTestLayer();
+	virtual ~SpriteTestLayer();
 
 	void OnAttach() override;
 	void OnDetach() override;

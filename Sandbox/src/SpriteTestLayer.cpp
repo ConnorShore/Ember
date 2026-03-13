@@ -1,5 +1,5 @@
 #include "ebpch.h"
-#include "SceneTestLayer.h"
+#include "SpriteTestLayer.h"
 
 #include <random>
 
@@ -7,7 +7,7 @@
 // Camera Controller
 //////////////////////////////////////////////////////////////////////////
 
-class CameraController : public Ember::Behavior
+class Camera2DController : public Ember::Behavior
 {
 public:
 	void OnUpdate(Ember::TimeStep delta) override
@@ -36,16 +36,16 @@ public:
 // Scene Test Layer
 //////////////////////////////////////////////////////////////////////////
 
-SceneTestLayer::SceneTestLayer()
+SpriteTestLayer::SpriteTestLayer()
 	: Layer("Scene Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
 }
 
-SceneTestLayer::~SceneTestLayer()
+SpriteTestLayer::~SpriteTestLayer()
 {
 }
 
-void SceneTestLayer::OnAttach()
+void SpriteTestLayer::OnAttach()
 {
 	// Entities
 	std::mt19937 rng(std::random_device{}());
@@ -117,20 +117,20 @@ void SceneTestLayer::OnAttach()
 
 	Ember::CameraComponent cameraComponent(camera, true);
 	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<CameraController>();
+	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera2DController>();
 }
 
-void SceneTestLayer::OnDetach()
+void SpriteTestLayer::OnDetach()
 {
 
 }
 
-void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
+void SpriteTestLayer::OnUpdate(Ember::TimeStep delta)
 {
 	m_MainScene->OnUpdate(delta);
 }
 
-void SceneTestLayer::OnImGuiRender(Ember::TimeStep delta)
+void SpriteTestLayer::OnImGuiRender(Ember::TimeStep delta)
 {
 
 }
