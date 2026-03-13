@@ -4,6 +4,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "VertexArray.h"
 #include "Shader.h"
+#include "Texture.h"
 
 #include <tuple>
 
@@ -20,6 +21,8 @@ namespace Ember {
 
 		static void Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform, 
 			const std::array<std::tuple<PointLightComponent, TransformComponent>, 4>& lights);
+
+		static SharedPtr<Texture> GetWhiteTexture();
 	};
 
 }

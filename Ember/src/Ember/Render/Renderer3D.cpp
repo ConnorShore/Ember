@@ -11,10 +11,15 @@ namespace Ember {
 	};
 
 	static ScopedPtr<RendererData3D> s_RendererData;
+	static SharedPtr<Texture> s_WhiteTexture;
 
 	void Renderer3D::Init()
 	{
 		s_RendererData = ScopedPtr<RendererData3D>::Create();
+
+		uint32_t whiteTextureData = 0xffffffff;
+		s_WhiteTexture = Texture::Create();
+		s_WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 	}
 
 	void Renderer3D::Shutdown()
@@ -57,6 +62,11 @@ namespace Ember {
 		}
 
 		RenderAction::DrawIndexed(vertexArray);
+	}
+
+	Ember::SharedPtr<Ember::Texture> Renderer3D::GetWhiteTexture()
+	{
+		return s_WhiteTexture;
 	}
 
 }

@@ -31,6 +31,8 @@
 #include "Ember/Render/Camera.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/Renderer3D.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
 

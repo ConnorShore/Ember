@@ -17,6 +17,7 @@ namespace Ember {
 	public:
 		Mesh(const std::string& filePath);
 		Mesh(const std::string& name, const std::string& filePath);
+		Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 		~Mesh();
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
