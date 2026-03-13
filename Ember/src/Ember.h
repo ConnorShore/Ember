@@ -33,6 +33,7 @@
 #include "Ember/Render/Material.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/Renderer3D.h"
+#include "Ember/Render/Framebuffer.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
 
@@ -44,3 +45,6 @@
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Scene/Behavior.h"
+
+// Vendor includes
+#include <imgui/imgui.h>

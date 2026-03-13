@@ -1,22 +1,27 @@
-#include "PBRTestLayer.h"
+#include "DeferredShadingLayer.h"
 #include "CameraController3D.h"
 
-#include <imgui/imgui.h>
-
-
-// ---------------------------------------------------------------------------
-PBRTestLayer::PBRTestLayer()
-	: Layer("PBR Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
+DeferredShadingLayer::DeferredShadingLayer()
+	: Layer("Deferred Shading Test Layer"), 
+	m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
 }
 
-PBRTestLayer::~PBRTestLayer()
+DeferredShadingLayer::~DeferredShadingLayer()
 {
+
 }
 
-void PBRTestLayer::OnAttach()
+void DeferredShadingLayer::OnAttach()
 {
-	auto mesh      = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
+	// Framebuffer
+	Ember::FramebufferSpecification specs;
+	specs.Width = 800;
+	specs.Height = 600;
+	specs.AttachmentSpecs = { Ember::FramebufferTextureFormat::RGBA8, Ember::FramebufferTextureFormat::DEPTH24STENCIL8 };
+	m_Framebuffer = Ember::Framebuffer::Create(specs);
+
+	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
@@ -26,15 +31,15 @@ void PBRTestLayer::OnAttach()
 		{ "u_Roughness", 0.5f },
 		{ "u_AO",        1.0f },
 		{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
-	});
+		});
 
 	// ------------------------------------------------------------------
 	// Parameter grid:  7 columns (roughness) × 7 rows (metallic)
 	// Roughness ramps left-to-right   0.05 → 1.0
 	// Metallic  ramps bottom-to-top   0.0  → 1.0
 	// ------------------------------------------------------------------
-	constexpr int   cols    = 7;
-	constexpr int   rows    = 7;
+	constexpr int   cols = 7;
+	constexpr int   rows = 7;
 	constexpr float spacing = 2.5f;
 
 	for (int row = 0; row < rows; row++)
@@ -60,8 +65,8 @@ void PBRTestLayer::OnAttach()
 			sphere.AttachComponent(matComp);
 
 			auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-			instance->Set("u_Albedo",    Ember::Vector3f(0.5f, 0.0f, 0.0f));
-			instance->Set("u_Metallic",  metallic);
+			instance->Set("u_Albedo", Ember::Vector3f(0.5f, 0.0f, 0.0f));
+			instance->Set("u_Metallic", metallic);
 			instance->Set("u_Roughness", roughness);
 		}
 	}
@@ -82,36 +87,15 @@ void PBRTestLayer::OnAttach()
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	groundInstance->Set("u_Albedo",    Ember::Vector3f(0.3f, 0.3f, 0.3f));
+	groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
 	groundInstance->Set("u_Roughness", 0.7f);
-
-	// ------------------------------------------------------------------
-	// Interactive sphere (ImGui-controlled) — placed to the right
-	// ------------------------------------------------------------------
-	m_InteractiveSphere = m_MainScene->AddEntity();
-	auto& interactiveTransform = m_InteractiveSphere.GetComponent<Ember::TransformComponent>();
-	interactiveTransform.Position = { (cols / 2) * spacing + 4.0f, 0.0f, 0.0f };
-	interactiveTransform.Size     = { 1.5f, 1.5f, 1.5f };
-
-	Ember::MeshComponent interactiveMeshComp = { mesh };
-	m_InteractiveSphere.AttachComponent(interactiveMeshComp);
-
-	Ember::MaterialComponent interactiveMatComp = { pbrMaterial };
-	m_InteractiveSphere.AttachComponent(interactiveMatComp);
-
-	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	m_InteractiveInstance->Set("u_Albedo",    Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-	m_InteractiveInstance->Set("u_Metallic",  m_Metallic);
-	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-	m_InteractiveInstance->Set("u_AO",        m_AO);
-	m_InteractiveInstance->Set("u_Texture",   Ember::Renderer3D::GetWhiteTexture());
 
 	// ------------------------------------------------------------------
 	// Camera
 	// ------------------------------------------------------------------
 	m_CameraEntity = m_MainScene->AddEntity();
-	auto& camTransform     = m_CameraEntity.GetComponent<Ember::TransformComponent>();
-	camTransform.Position  = { 0.0f, 0.0f, 25.0f };
+	auto& camTransform = m_CameraEntity.GetComponent<Ember::TransformComponent>();
+	camTransform.Position = { 0.0f, 0.0f, 25.0f };
 
 	Ember::Camera camera;
 	camera.SetViewportSize(
@@ -161,7 +145,7 @@ void PBRTestLayer::OnAttach()
 		lightEntity.AttachComponent(plComp);
 		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
 		lt.Position = ld.position;
-		lt.Size     = { 0.3f, 0.3f, 0.3f };
+		lt.Size = { 0.3f, 0.3f, 0.3f };
 
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
@@ -170,46 +154,37 @@ void PBRTestLayer::OnAttach()
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
-		lightCubeInstance->Set("u_Albedo",    Ember::Vector3f(1.0f, 1.0f, 1.0f));
+		lightCubeInstance->Set("u_Albedo", Ember::Vector3f(1.0f, 1.0f, 1.0f));
 		lightCubeInstance->Set("u_Roughness", 1.0f);
 	}
+
 }
 
-void PBRTestLayer::OnDetach()
+void DeferredShadingLayer::OnDetach()
 {
+
 }
 
-void PBRTestLayer::OnUpdate(Ember::TimeStep delta)
+void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 {
+	m_Framebuffer->Bind();
+
+	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);
+
+	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
+	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+	Ember::RenderAction::UseDepthTest(true);
+
 	m_MainScene->OnUpdate(delta);
+
+	m_Framebuffer->Unbind();
+
 }
 
-void PBRTestLayer::OnImGuiRender(Ember::TimeStep delta)
+void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
 {
-	ImGui::Begin("PBR Material Editor");
-
-	ImGui::Text("Interactive Sphere");
-	ImGui::Separator();
-
-	bool changed = false;
-
-	changed |= ImGui::ColorEdit3("Albedo",    m_Albedo);
-	changed |= ImGui::SliderFloat("Metallic",  &m_Metallic,  0.0f, 1.0f);
-	changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
-	changed |= ImGui::SliderFloat("AO",        &m_AO,        0.0f, 1.0f);
-
-	if (changed && m_InteractiveInstance)
-	{
-		m_InteractiveInstance->Set("u_Albedo",    Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-		m_InteractiveInstance->Set("u_Metallic",  m_Metallic);
-		m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-		m_InteractiveInstance->Set("u_AO",        m_AO);
-	}
-
-	ImGui::Separator();
-	ImGui::TextWrapped(
-		"Grid: columns = roughness (0.05 -> 1.0), "
-		"rows = metallic (0.0 -> 1.0)");
-
+	ImGui::Begin("Scene Viewport");
+	unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
+	ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ 800.0f, 600.0f }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 	ImGui::End();
 }

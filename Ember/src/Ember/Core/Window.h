@@ -24,6 +24,10 @@ namespace Ember {
 	class Window
 	{
 	public:
+		static constexpr unsigned int MaxWidth = 8192;
+		static constexpr unsigned int MaxHeight = 8192;
+
+	public:
 		virtual ~Window() = default;
 
 		virtual void OnUpdate() = 0;

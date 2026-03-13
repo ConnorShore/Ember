@@ -3,13 +3,15 @@
 
 #include "SpriteTestLayer.h"
 #include "PBRTestLayer.h"
+#include "DeferredShadingLayer.h"
 
 class SandboxApp : public Ember::Application
 {
 public:
 	SandboxApp()
 	{
-		PushLayer(Ember::ScopedPtr<Ember::Layer>(new PBRTestLayer()));
+		PushLayer(Ember::ScopedPtr<Ember::Layer>(new DeferredShadingLayer()));
+		//PushLayer(Ember::ScopedPtr<Ember::Layer>(new PBRTestLayer()));
 		//PushLayer(Ember::ScopedPtr<Ember::Layer>(new SpriteTestLayer()));
 	}
 	~SandboxApp()

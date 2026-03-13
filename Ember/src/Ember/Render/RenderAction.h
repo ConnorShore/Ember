@@ -14,6 +14,16 @@ namespace Ember {
 			m_RendererApi->Clear();
 		}
 
+		static inline void Clear(RendererAPI::RenderBit bit)
+		{
+			m_RendererApi->Clear(bit);
+		}
+
+		static inline void Clear(RendererAPI::RenderBits bits)
+		{
+			m_RendererApi->Clear(bits);
+		}
+
 		static inline void SetClearColor(Vector4<float> color)
 		{
 			m_RendererApi->SetClearColor(color);
