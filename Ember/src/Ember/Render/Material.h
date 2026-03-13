@@ -86,6 +86,8 @@ namespace Ember {
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");
 		}
 
+		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() { return m_Uniforms; }
+
 		inline const SharedPtr<Shader> GetShader() const { return m_Shader; }
 
 		inline const std::string& GetName() const override { return m_Name; }
@@ -103,7 +105,14 @@ namespace Ember {
 	class MaterialInstance : public MaterialBase
 	{
 	public:
-		MaterialInstance(const std::string& name, const SharedPtr<Material>& material) : m_Name(name), m_Material(material) {}
+		MaterialInstance(const std::string& name, const SharedPtr<Material>& material) 
+			: m_Name(name), m_Material(material) 
+		{
+			for (auto u : material->GetUniforms())
+			{
+				Set(std::get<0>(u), std::get<1>(u));
+			}
+		}
 		MaterialInstance(const std::string& name, const SharedPtr<Material>& material, std::initializer_list<MaterialUniform> uniforms)
 			: m_Name(name), m_Material(material)
 		{

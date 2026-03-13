@@ -1,5 +1,5 @@
 #include "ebpch.h"
-#include "SceneTestLayer.h"
+#include "SpriteTestLayer.h"
 
 #include <random>
 
@@ -36,16 +36,16 @@ public:
 // Scene Test Layer
 //////////////////////////////////////////////////////////////////////////
 
-SceneTestLayer::SceneTestLayer()
+SpriteTestLayer::SpriteTestLayer()
 	: Layer("Scene Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
 }
 
-SceneTestLayer::~SceneTestLayer()
+SpriteTestLayer::~SpriteTestLayer()
 {
 }
 
-void SceneTestLayer::OnAttach()
+void SpriteTestLayer::OnAttach()
 {
 	// Entities
 	std::mt19937 rng(std::random_device{}());
@@ -120,17 +120,17 @@ void SceneTestLayer::OnAttach()
 	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera2DController>();
 }
 
-void SceneTestLayer::OnDetach()
+void SpriteTestLayer::OnDetach()
 {
 
 }
 
-void SceneTestLayer::OnUpdate(Ember::TimeStep delta)
+void SpriteTestLayer::OnUpdate(Ember::TimeStep delta)
 {
 	m_MainScene->OnUpdate(delta);
 }
 
-void SceneTestLayer::OnImGuiRender(Ember::TimeStep delta)
+void SpriteTestLayer::OnImGuiRender(Ember::TimeStep delta)
 {
 
 }

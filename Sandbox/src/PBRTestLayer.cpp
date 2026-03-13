@@ -1,5 +1,5 @@
 #include "ebpch.h"
-#include "Test3DLayer.h"
+#include "PBRTestLayer.h"
 
 #include <imgui/imgui.h>
 
@@ -37,16 +37,16 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-Test3DLayer::Test3DLayer()
+PBRTestLayer::PBRTestLayer()
 	: Layer("3D Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
 }
 
-Test3DLayer::~Test3DLayer()
+PBRTestLayer::~PBRTestLayer()
 {
 }
 
-void Test3DLayer::OnAttach()
+void PBRTestLayer::OnAttach()
 {
 	auto mesh      = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
@@ -95,8 +95,6 @@ void Test3DLayer::OnAttach()
 			instance->Set("u_Albedo",    Ember::Vector3f(0.5f, 0.0f, 0.0f));
 			instance->Set("u_Metallic",  metallic);
 			instance->Set("u_Roughness", roughness);
-			instance->Set("u_AO",        1.0f);
-			instance->Set("u_Texture",   Ember::Renderer3D::GetWhiteTexture());
 		}
 	}
 
@@ -117,10 +115,7 @@ void Test3DLayer::OnAttach()
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
 	groundInstance->Set("u_Albedo",    Ember::Vector3f(0.3f, 0.3f, 0.3f));
-	groundInstance->Set("u_Metallic",  0.0f);
 	groundInstance->Set("u_Roughness", 0.7f);
-	groundInstance->Set("u_AO",        1.0f);
-	groundInstance->Set("u_Texture",   Ember::Renderer3D::GetWhiteTexture());
 
 	// ------------------------------------------------------------------
 	// Interactive sphere (ImGui-controlled) — placed to the right
@@ -189,6 +184,8 @@ void Test3DLayer::OnAttach()
 		{ { -12.0f,   6.0f, -10.0f }, { 1.0f, 1.0f,  1.0f  }, 400.0f, 50.0f },
 	};
 
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+
 	for (auto& ld : lights)
 	{
 		auto lightEntity = m_MainScene->AddEntity();
@@ -196,19 +193,30 @@ void Test3DLayer::OnAttach()
 		lightEntity.AttachComponent(plComp);
 		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
 		lt.Position = ld.position;
+		lt.Size     = { 0.3f, 0.3f, 0.3f };
+
+		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
+		lightEntity.AttachComponent(lightCubeMeshComp);
+
+		Ember::MaterialComponent lightCubeMatComp = { pbrMaterial };
+		lightEntity.AttachComponent(lightCubeMatComp);
+
+		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
+		lightCubeInstance->Set("u_Albedo",    Ember::Vector3f(1.0f, 1.0f, 1.0f));
+		lightCubeInstance->Set("u_Roughness", 1.0f);
 	}
 }
 
-void Test3DLayer::OnDetach()
+void PBRTestLayer::OnDetach()
 {
 }
 
-void Test3DLayer::OnUpdate(Ember::TimeStep delta)
+void PBRTestLayer::OnUpdate(Ember::TimeStep delta)
 {
 	m_MainScene->OnUpdate(delta);
 }
 
-void Test3DLayer::OnImGuiRender(Ember::TimeStep delta)
+void PBRTestLayer::OnImGuiRender(Ember::TimeStep delta)
 {
 	ImGui::Begin("PBR Material Editor");
 

@@ -2,11 +2,11 @@
 
 #include <Ember.h>
 
-class Test3DLayer : public Ember::Layer
+class PBRTestLayer : public Ember::Layer
 {
 public:
-	Test3DLayer();
-	virtual ~Test3DLayer();
+	PBRTestLayer();
+	virtual ~PBRTestLayer();
 
 	void OnAttach() override;
 	void OnDetach() override;
