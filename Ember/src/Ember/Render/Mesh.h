@@ -3,6 +3,7 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Buffer.h"
+#include "Ember/Asset/Asset.h"
 
 #include <unordered_map>
 
@@ -12,12 +13,12 @@ namespace Ember {
 	// Mesh
 	//////////////////////////////////////////////////////////////////////////
 
-	class Mesh : public SharedResource
+	class Mesh : public Asset
 	{
 	public:
 		Mesh(const std::string& filePath);
 		Mesh(const std::string& name, const std::string& filePath);
-		Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
+		Mesh(const std::string& name, std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 		~Mesh();
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
@@ -26,7 +27,6 @@ namespace Ember {
 
 	private:
 		SharedPtr<VertexArray> m_VertexArray;
-		std::string m_Name;
 	};
 
 	//////////////////////////////////////////////////////////////////////////

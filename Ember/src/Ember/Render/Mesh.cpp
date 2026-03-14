@@ -8,7 +8,7 @@ namespace Ember {
 	//////////////////////////////////////////////////////////////////////////
 
 	Mesh::Mesh(const std::string& name, const std::string& filePath)
-		: m_Name(name)
+		: Asset(name, filePath, AssetType::Mesh)
 	{
 		// TODO: Model loading
 		// 
@@ -28,8 +28,8 @@ namespace Ember {
 	{
 	}
 
-	Mesh::Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices)
-		: m_Name("")
+	Mesh::Mesh(const std::string& name, std::vector<float>& vertices, const std::vector<unsigned int>& indices)
+		: Asset(name, "", AssetType::Mesh)
 	{
 		auto vbo = VertexBuffer::Create(&vertices[0], sizeof(float) * vertices.size(), {
 			{ ShaderDataType::Float3, "v_Position" },

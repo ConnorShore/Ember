@@ -21,7 +21,6 @@ namespace Ember {
 
 			inline virtual unsigned int GetWidth() const override { return m_Width; }
 			inline virtual unsigned int GetHeight() const override { return m_Height; }
-			inline virtual const std::string& GetName() const override { return m_Name; }
 			inline virtual unsigned int GetID() const override { return m_Id; }
 
 			virtual bool operator==(const SharedPtr<Ember::Texture>& other) const override { return m_Id == other->GetID(); }
@@ -30,7 +29,6 @@ namespace Ember {
 			unsigned int m_Id;
 			int m_Width, m_Height, m_BytesPerPixel;
 			unsigned char* m_LocalBuffer;
-			std::string m_Name, m_FilePath;
 		};
 
 	}

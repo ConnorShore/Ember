@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ember/Core/Core.h"
+#include "Ember/Asset/Asset.h"
 
 #include <string>
 #include <unordered_map>
@@ -11,9 +12,12 @@ namespace Ember {
 	// Texture
 	//////////////////////////////////////////////////////////////////////////
 
-	class Texture : public SharedResource
+	class Texture : public Asset
 	{
 	public:
+		Texture(const std::string& name, const std::string& filePath)
+			: Asset(name, filePath, AssetType::Texture) { }
+
 		virtual ~Texture() = default;
 
 		virtual void Bind(unsigned int slot = 0) const = 0;
@@ -21,7 +25,6 @@ namespace Ember {
 		virtual unsigned int GetWidth() const = 0;
 		virtual unsigned int GetHeight() const = 0;
 
-		virtual const std::string& GetName() const = 0;
 		virtual void SetData(const void* data, unsigned int size) = 0;
 
 		virtual unsigned int GetID() const = 0;

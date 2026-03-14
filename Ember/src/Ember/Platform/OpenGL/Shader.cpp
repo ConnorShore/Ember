@@ -19,13 +19,8 @@ namespace Utils {
 namespace Ember {
 	namespace OpenGL {
 
-		Shader::Shader(const std::string& filePath, const ShaderMacros& macros)
-			: Shader(std::filesystem::path(filePath).stem().string(), filePath, macros)
-		{
-		}
-
 		Shader::Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
-			: m_Name(name), m_FilePath(filePath)
+			: Ember::Shader(name, filePath, macros)
 		{
 			EB_CORE_INFO("Creating shader with name {} from file: {}", m_Name, m_FilePath);
 
@@ -33,6 +28,11 @@ namespace Ember {
 			CompileShader(sources);
 
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
+		}
+
+		Shader::Shader(const std::string& filePath, const ShaderMacros& macros)
+			: Shader(std::filesystem::path(filePath).stem().string(), filePath, macros)
+		{
 		}
 
 		Shader::~Shader()
@@ -73,11 +73,6 @@ namespace Ember {
 		void Shader::SetMatrix4(const std::string& name, const Matrix4f& mat) const
 		{
 			glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
-		}
-
-		const std::string& Shader::GetName() const
-		{
-			return m_Name;
 		}
 
 		void Shader::CompileShader(const ShaderSourceMap& sources)

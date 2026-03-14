@@ -63,7 +63,7 @@ namespace Ember {
 		}
 
 		// *Note: Adjust this line depending on how your Mesh class accepts raw vector data
-		return SharedPtr<Mesh>::Create(vertices, indices);
+		return SharedPtr<Mesh>::Create("Primitive_Sphere", vertices, indices);
 	}
 
 	SharedPtr<Mesh> PrimitiveGenerator::CreateCube(float size)
@@ -118,7 +118,7 @@ namespace Ember {
 			20, 21, 22, 22, 23, 20  // Bottom
 		};
 
-		return SharedPtr<Mesh>::Create(vertices, indices);
+		return SharedPtr<Mesh>::Create("Primitive_Cube", vertices, indices);
 	}
 
 	SharedPtr<Mesh> PrimitiveGenerator::CreateQuad(float width, float height)
@@ -138,7 +138,7 @@ namespace Ember {
 			0, 1, 2, 2, 3, 0
 		};
 
-		return SharedPtr<Mesh>::Create(vertices, indices);
+		return SharedPtr<Mesh>::Create("Primitive_Quad", vertices, indices);
 	}
 
 }
