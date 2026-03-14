@@ -19,17 +19,17 @@ namespace Utils {
 namespace Ember {
 	namespace OpenGL {
 
-		Shader::Shader(const std::string& filePath)
-			: Shader(std::filesystem::path(filePath).stem().string(), filePath)
+		Shader::Shader(const std::string& filePath, const ShaderMacros& macros)
+			: Shader(std::filesystem::path(filePath).stem().string(), filePath, macros)
 		{
 		}
 
-		Shader::Shader(const std::string& name, const std::string& filePath)
+		Shader::Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
 			: m_Name(name), m_FilePath(filePath)
 		{
 			EB_CORE_INFO("Creating shader with name {} from file: {}", m_Name, m_FilePath);
 
-			ShaderSourceMap sources = ShaderParser::Parse(m_FilePath);
+			ShaderSourceMap sources = ShaderParser::Parse(m_FilePath, macros);
 			CompileShader(sources);
 
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);

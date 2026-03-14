@@ -15,9 +15,6 @@ void main()
 #shader fragment
 #version 450 core
 
-const int MAX_LIGHTS = 32;
-const float AMBIENT = 0.03;
-
 const float PI = 3.14159265359;
 
 struct PointLight {
@@ -37,6 +34,7 @@ layout(binding = 2) uniform sampler2D gPositionAO;
 uniform vec3 u_CameraPos;
 uniform int u_ActiveLights;
 
+// MAX_LIGHTS is injected via ShaderMacros
 uniform PointLight u_PointLights[MAX_LIGHTS];
 
 float NormalDistributionTrowbridgeReitxGGX(vec3 N, vec3 H, float roughness)
@@ -110,7 +108,7 @@ void main()
 	}
 
 	// Ambient light
-	vec3 ambient = vec3(AMBIENT) * actualAlbedo * ao;
+	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
     vec3 color = ambient + L0;
 	
 	// HDR Tonemapping & Gamma Correction

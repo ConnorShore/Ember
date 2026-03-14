@@ -13,6 +13,10 @@ namespace Ember {
 	class Renderer3D
 	{
 	public:
+		static constexpr unsigned int MAX_LIGHTS = 256;
+		static constexpr float DEFAULT_AMBIENT = 0.03;
+
+	public:
 		static void Init();
 		static void Shutdown();
 

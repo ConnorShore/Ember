@@ -14,10 +14,16 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
+	void SetupRandomLights();
+	void SetupStandardLights();
+
+private:
 	Ember::SharedPtr<Ember::Scene> m_MainScene;
 	Ember::SharedPtr<Ember::Framebuffer> m_Framebuffer;
 	Ember::Entity m_CameraEntity;
 	Ember::Vector2f m_ViewportSize;
+
+	Ember::SharedPtr<Ember::Material> m_DefaultSphereMaterial;
 
 	// Interactive sphere controlled via ImGui
 	Ember::Entity m_InteractiveSphere;

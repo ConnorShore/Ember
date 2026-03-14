@@ -24,9 +24,14 @@ namespace Ember {
 		s_RendererData->WhiteTexture = Texture::Create();
 		s_RendererData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
+		// Inject Lighting macros to Standard Lit Shader here
+		ShaderMacros lightMacros;
+		lightMacros["MAX_LIGHTS"] = std::to_string(MAX_LIGHTS);
+		lightMacros["DEFAULT_AMBIENT"] = std::to_string(DEFAULT_AMBIENT);
+
 		// Standard Shaders
 		s_RendererData->StandardGeoShader = Shader::Create("Ember/assets/shaders/StandardGeometry.glsl");
-		s_RendererData->StandardLitShader = Shader::Create("Ember/assets/shaders/StandardLit.glsl");
+		s_RendererData->StandardLitShader = Shader::Create("Ember/assets/shaders/StandardLit.glsl", lightMacros);
 	}
 
 	void Renderer3D::Shutdown()

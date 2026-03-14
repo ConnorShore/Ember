@@ -11,24 +11,24 @@ namespace Ember {
 	// Shader
 	//////////////////////////////////////////////////////////////////////////
 
-	SharedPtr<Shader> Shader::Create(const std::string& filePath)
+	SharedPtr<Shader> Shader::Create(const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
 		switch (RendererAPI::GetApi())
 		{
 		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
-		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(filePath);
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(filePath, macros);
 		}
 
 		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
 		return nullptr;
 	}
 
-	SharedPtr<Shader> Shader::Create(const std::string& name, const std::string& filePath)
+	SharedPtr<Shader> Shader::Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
 		switch (RendererAPI::GetApi())
 		{
 		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported");  return nullptr;
-		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(name, filePath);
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Shader>::Create(name, filePath, macros);
 		}
 
 		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
@@ -39,16 +39,16 @@ namespace Ember {
 	// Shader Library
 	//////////////////////////////////////////////////////////////////////////
 
-	const SharedPtr<Shader>& ShaderLibrary::Register(const std::string& filePath)
+	const SharedPtr<Shader>& ShaderLibrary::Register(const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
-		auto shader = Shader::Create(filePath);
+		auto shader = Shader::Create(filePath, macros);
 		Add(std::move(shader));
 		return Get(std::filesystem::path(filePath).stem().string());
 	}
 
-	const SharedPtr<Shader>& ShaderLibrary::Register(const std::string& name, const std::string& filePath)
+	const SharedPtr<Shader>& ShaderLibrary::Register(const std::string& name, const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
-		auto shader = Shader::Create(name, filePath);
+		auto shader = Shader::Create(name, filePath, macros);
 		Add(std::move(shader));
 		return Get(name);
 	}

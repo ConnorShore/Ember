@@ -1,5 +1,6 @@
 #include "DeferredShadingLayer.h"
 #include "CameraController3D.h"
+#include <random>
 
 DeferredShadingLayer::DeferredShadingLayer()
 	: Layer("Deferred Shading Test Layer"), 
@@ -24,7 +25,7 @@ void DeferredShadingLayer::OnAttach()
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 
 	// Base PBR material (defaults – overridden per-instance)
-	auto defaultSphereMaterial = RegisterMaterial("defaultSphereMaterial", {
+	m_DefaultSphereMaterial = RegisterMaterial("defaultSphereMaterial", {
 		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
 		{ "u_Metallic",  0.0f },
 		{ "u_Roughness", 0.5f },
@@ -60,7 +61,7 @@ void DeferredShadingLayer::OnAttach()
 			Ember::MeshComponent meshComp = { mesh };
 			sphere.AttachComponent(meshComp);
 
-			Ember::MaterialComponent matComp = { defaultSphereMaterial };
+			Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
 			sphere.AttachComponent(matComp);
 
 			auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -82,7 +83,7 @@ void DeferredShadingLayer::OnAttach()
 	Ember::MeshComponent groundMeshComp = { quadMesh };
 	groundPlane.AttachComponent(groundMeshComp);
 
-	Ember::MaterialComponent groundMatComp = { defaultSphereMaterial };
+	Ember::MaterialComponent groundMatComp = { m_DefaultSphereMaterial };
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -118,7 +119,7 @@ void DeferredShadingLayer::OnAttach()
 	Ember::MeshComponent interactiveMeshComp = { mesh };
 	m_InteractiveSphere.AttachComponent(interactiveMeshComp);
 
-	Ember::MaterialComponent interactiveMatComp = { defaultSphereMaterial };
+	Ember::MaterialComponent interactiveMatComp = { m_DefaultSphereMaterial };
 	m_InteractiveSphere.AttachComponent(interactiveMatComp);
 
 	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -128,16 +129,150 @@ void DeferredShadingLayer::OnAttach()
 	m_InteractiveInstance->Set("u_AO", m_AO);
 	m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
 
-	// ------------------------------------------------------------------
-	// Lighting — 4 point lights in a key / fill / rim arrangement
-	//
-	// Key light    – strong warm-white from upper-front-right
-	// Fill light   – softer cool-white from upper-front-left (reduces harsh shadows)
-	// Rim lights   – two behind the grid to create edge highlights
-	//
-	// Asymmetric placement ensures specular highlights shift across
-	// roughness/metallic rows, clearly showing how PBR responds.
-	// ------------------------------------------------------------------
+	// Choose Lights
+	SetupStandardLights();
+	//SetupRandomLights();
+}
+
+void DeferredShadingLayer::OnDetach()
+{
+
+}
+
+void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
+{
+	m_Framebuffer->Bind();
+
+	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);
+
+	m_MainScene->OnUpdate(delta);
+
+	m_Framebuffer->Unbind();
+
+	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
+}
+
+void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
+{
+	ImGui::DockSpaceOverViewport();
+
+	// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
+	static float fps = 0.0f;
+	static float fpsTimer = 0.0f;
+
+	fpsTimer += delta.Seconds();
+	if (fpsTimer >= 1.0f)
+	{
+		fps = 1.0f / delta.Seconds();
+		fpsTimer = 0.0f;
+	}
+
+	// Viewport
+	{
+		ImGui::Begin("Scene Viewport");
+		ImGui::Text("FPS: %.1f", fps);
+
+		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+
+		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+		{
+			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+			m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		}
+
+		unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
+		ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		ImGui::End();
+	}
+	
+
+	// Editor Panel
+	{
+		ImGui::Begin("PBR Material Editor");
+
+		ImGui::Text("Interactive Sphere");
+		ImGui::Separator();
+
+		bool changed = false;
+
+		changed |= ImGui::ColorEdit3("Albedo", m_Albedo);
+		changed |= ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f);
+		changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
+		changed |= ImGui::SliderFloat("AO", &m_AO, 0.0f, 1.0f);
+
+		if (changed && m_InteractiveInstance)
+		{
+			m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+			m_InteractiveInstance->Set("u_Metallic", m_Metallic);
+			m_InteractiveInstance->Set("u_Roughness", m_Roughness);
+			m_InteractiveInstance->Set("u_AO", m_AO);
+		}
+
+		ImGui::Separator();
+		ImGui::TextWrapped(
+			"Grid: columns = roughness (0.05 -> 1.0), "
+			"rows = metallic (0.0 -> 1.0)");
+
+		ImGui::End();
+	}
+}
+
+
+void DeferredShadingLayer::SetupRandomLights()
+{
+	// Setup random number generation
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	// Spread lights across an area roughly matching your 7x7 grid
+	std::uniform_real_distribution<float> randomX(-15.0f, 25.0f);
+	std::uniform_real_distribution<float> randomY(-15.0f, 15.0f);
+	std::uniform_real_distribution<float> randomZ(2.0f, 20.0f);  // Keep them slightly above the ground plane
+
+	// Randomize color and keep them reasonably bright
+	std::uniform_real_distribution<float> randomColor(0.3f, 1.0f);
+
+	// Drop intensity way down so 1000 lights don't blind the camera
+	std::uniform_real_distribution<float> randomIntensity(5.0f, 50.0f);
+
+	int numLights = 256;
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+
+	for (int i = 0; i < numLights; i++)
+	{
+		auto lightEntity = m_MainScene->AddEntity();
+
+		// Generate random values for this specific light
+		Ember::Vector3f color = { randomColor(gen), randomColor(gen), randomColor(gen) };
+		float intensity = randomIntensity(gen);
+		float radius = 15.0f; // Keep the radius somewhat constrained
+
+		Ember::PointLightComponent plComp = { color, intensity, radius };
+		lightEntity.AttachComponent(plComp);
+
+		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
+		lt.Position = { randomX(gen), randomY(gen), randomZ(gen) };
+		lt.Size = { 0.1f, 0.1f, 0.1f }; // Make the debug cubes tiny
+
+		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
+		lightEntity.AttachComponent(lightCubeMeshComp);
+
+		Ember::MaterialComponent lightCubeMatComp = { m_DefaultSphereMaterial }; // Ensure this matches your material variable name
+		lightEntity.AttachComponent(lightCubeMatComp);
+
+		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
+
+		// Set the physical cube to match the color of the light it emits!
+		lightCubeInstance->Set("u_Albedo", color);
+		lightCubeInstance->Set("u_Roughness", 1.0f);
+	}
+}
+
+void DeferredShadingLayer::SetupStandardLights()
+{
 	struct LightDesc {
 		Ember::Vector3f position;
 		Ember::Vector3f color;
@@ -171,79 +306,11 @@ void DeferredShadingLayer::OnAttach()
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
 
-		Ember::MaterialComponent lightCubeMatComp = { defaultSphereMaterial };
+		Ember::MaterialComponent lightCubeMatComp = { m_DefaultSphereMaterial };
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
 		lightCubeInstance->Set("u_Albedo", Ember::Vector3f(1.0f, 1.0f, 1.0f));
 		lightCubeInstance->Set("u_Roughness", 1.0f);
 	}
-
-}
-
-void DeferredShadingLayer::OnDetach()
-{
-
-}
-
-void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
-{
-	m_Framebuffer->Bind();
-
-	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);
-
-	m_MainScene->OnUpdate(delta);
-
-	m_Framebuffer->Unbind();
-
-	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
-	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
-}
-
-void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
-{
-	//ImGui::DockSpaceOverViewport();
-	ImGui::Begin("Scene Viewport");
-
-	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
-	if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-	{
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-		m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-		m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-	}
-
-	unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
-	ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-	ImGui::End();
-
-	//// Editor Panel
-	//ImGui::Begin("PBR Material Editor");
-
-	//ImGui::Text("Interactive Sphere");
-	//ImGui::Separator();
-
-	//bool changed = false;
-
-	//changed |= ImGui::ColorEdit3("Albedo", m_Albedo);
-	//changed |= ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f);
-	//changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
-	//changed |= ImGui::SliderFloat("AO", &m_AO, 0.0f, 1.0f);
-
-	//if (changed && m_InteractiveInstance)
-	//{
-	//	m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-	//	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
-	//	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-	//	m_InteractiveInstance->Set("u_AO", m_AO);
-	//}
-
-	//ImGui::Separator();
-	//ImGui::TextWrapped(
-	//	"Grid: columns = roughness (0.05 -> 1.0), "
-	//	"rows = metallic (0.0 -> 1.0)");
-
-	//ImGui::End();
 }
