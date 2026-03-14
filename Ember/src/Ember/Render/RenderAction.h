@@ -74,6 +74,11 @@ namespace Ember {
 			m_RendererApi->SetViewport(x, y, width, height);
 		}
 
+		static inline void SetViewport(Vector4<int> dimensions)
+		{
+			m_RendererApi->SetViewport(dimensions.x, dimensions.y, dimensions.z, dimensions.w);
+		}
+
 		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
 		{
 			m_RendererApi->DrawIndexed(vertexArray, indicesCt);
