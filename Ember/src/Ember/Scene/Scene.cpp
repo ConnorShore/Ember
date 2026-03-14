@@ -36,8 +36,8 @@ namespace Ember {
 		auto view = m_Registry->Query<CameraComponent>();
 		for (auto entity : view)
 		{
-			auto camera = m_Registry->GetComponent<CameraComponent>(entity);
-			camera.Camera.SetViewportSize(width, height);
+			auto& camera = m_Registry->GetComponent<CameraComponent>(entity);
+				camera.Camera.SetViewportSize(width, height);
 		}
 	}
 

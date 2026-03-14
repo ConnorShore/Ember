@@ -17,15 +17,21 @@ void DeferredShadingLayer::OnAttach()
 	Ember::FramebufferSpecification specs;
 	specs.Width = 800;
 	specs.Height = 600;
-	specs.AttachmentSpecs = { Ember::FramebufferTextureFormat::RGBA8, Ember::FramebufferTextureFormat::DEPTH24STENCIL8 };
+	specs.AttachmentSpecs = { 
+		Ember::FramebufferTextureFormat::RGBA8,
+		Ember::FramebufferTextureFormat::RGBA16F,
+		Ember::FramebufferTextureFormat::RGBA16F,
+		Ember::FramebufferTextureFormat::DEPTH24STENCIL8 
+	};
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
+	auto deferredShaderGeo = RegisterShader("assets/shaders/geometry.glsl");
+	auto deferredShaderLighting = RegisterShader("assets/shaders/lighting.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
-	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, {
+	auto pbrMaterial = RegisterMaterial("pbrMaterial", deferredShaderGeo, {
 		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
 		{ "u_Metallic",  0.0f },
 		{ "u_Roughness", 0.5f },
@@ -207,50 +213,61 @@ void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 
 void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
 {
-	ImGui::DockSpaceOverViewport();
+	//ImGui::DockSpaceOverViewport();
 
-	// Main Viewport
-	ImGui::Begin("Scene Viewport");
+	for (int i = 0; i < 3; i++) {
 
-	// Handle viewport resizing
-	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-	if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-	{
-		// Save the new size
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-		m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-		m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		ImGui::Begin(std::format("Scene Viewport {}", i + 1).c_str());
+
+		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+
+		// FIX: ONLY let the first viewport dictate the G-Buffer resolution!
+		if (i == 0)
+		{
+			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+			{
+				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+				m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			}
+		}
+
+		unsigned int textureID = m_Framebuffer->GetColorAttachmentID(i);
+
+		// To prevent compiler warnings on 64-bit systems, cast the ID like this:
+		void* texID = reinterpret_cast<void*>(static_cast<intptr_t>(textureID));
+
+		// Draw using viewportPanelSize so it scales to fit the debug windows
+		ImGui::Image(texID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		ImGui::End();
 	}
 
-	unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
-	ImGui::Image((void*)textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-	ImGui::End();
+	//// Editor Panel
+	//ImGui::Begin("PBR Material Editor");
 
-	// Editor Panel
-	ImGui::Begin("PBR Material Editor");
+	//ImGui::Text("Interactive Sphere");
+	//ImGui::Separator();
 
-	ImGui::Text("Interactive Sphere");
-	ImGui::Separator();
+	//bool changed = false;
 
-	bool changed = false;
+	//changed |= ImGui::ColorEdit3("Albedo", m_Albedo);
+	//changed |= ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f);
+	//changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
+	//changed |= ImGui::SliderFloat("AO", &m_AO, 0.0f, 1.0f);
 
-	changed |= ImGui::ColorEdit3("Albedo", m_Albedo);
-	changed |= ImGui::SliderFloat("Metallic", &m_Metallic, 0.0f, 1.0f);
-	changed |= ImGui::SliderFloat("Roughness", &m_Roughness, 0.05f, 1.0f);
-	changed |= ImGui::SliderFloat("AO", &m_AO, 0.0f, 1.0f);
+	//if (changed && m_InteractiveInstance)
+	//{
+	//	m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+	//	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
+	//	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
+	//	m_InteractiveInstance->Set("u_AO", m_AO);
+	//}
 
-	if (changed && m_InteractiveInstance)
-	{
-		m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-		m_InteractiveInstance->Set("u_Metallic", m_Metallic);
-		m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-		m_InteractiveInstance->Set("u_AO", m_AO);
-	}
+	//ImGui::Separator();
+	//ImGui::TextWrapped(
+	//	"Grid: columns = roughness (0.05 -> 1.0), "
+	//	"rows = metallic (0.0 -> 1.0)");
 
-	ImGui::Separator();
-	ImGui::TextWrapped(
-		"Grid: columns = roughness (0.05 -> 1.0), "
-		"rows = metallic (0.0 -> 1.0)");
-
-	ImGui::End();
+	//ImGui::End();
 }

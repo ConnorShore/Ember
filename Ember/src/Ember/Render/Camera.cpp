@@ -24,7 +24,6 @@ namespace Ember {
 	{
 		m_AspectRatio = (float)width / (float)height;
 		CalculateProjectionMatrix();
-		EB_CORE_INFO("View port triggered camera recalculation. Aspect ratio {}", m_AspectRatio);
 	}
 
 	void Camera::CalculateProjectionMatrix()
