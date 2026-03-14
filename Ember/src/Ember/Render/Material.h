@@ -23,6 +23,7 @@ namespace Ember {
 		virtual void Bind() const = 0;
 
 		virtual const SharedPtr<Shader> GetShader() const = 0;
+		virtual void SetShader(const SharedPtr<Shader> shader) = 0;	// TESTING ONLY, WILL REMOVE
 		virtual const std::string& GetName() const = 0;
 	};
 
@@ -86,9 +87,10 @@ namespace Ember {
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");
 		}
 
-		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() { return m_Uniforms; }
+		inline virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() { return m_Uniforms; }
 
-		inline const SharedPtr<Shader> GetShader() const { return m_Shader; }
+		inline const SharedPtr<Shader> GetShader() const override { return m_Shader; }
+		inline void SetShader(const SharedPtr<Shader> shader) override { m_Shader = shader; }
 
 		inline const std::string& GetName() const override { return m_Name; }
 
@@ -140,6 +142,7 @@ namespace Ember {
 		inline const std::string& GetName() const override { return m_Name; }
 
 		inline const SharedPtr<Shader> GetShader() const { return m_Material->GetShader(); }
+		inline void SetShader(const SharedPtr<Shader> shader) override { m_Material->SetShader(shader); }
 
 	private:
 		std::string m_Name;

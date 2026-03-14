@@ -14,7 +14,15 @@ namespace Ember {
 			virtual void UseFaceCulling(bool use) override;
 			virtual void UseDepthTest(bool use) override;
 			virtual void UseBlending(bool use) override;
+
+			virtual void SetTextureUnit(unsigned int unit, unsigned int texture) override;
+			virtual void SetFramebuffer(unsigned int framebufferId) override;
+			virtual void GetPreviousFramebuffer(int* outFramebufferId) override;
+
+			virtual void GetViewportDimensions(int* outViewportDims) override;
+
 			virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) override;
+			
 			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) override;
 			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt) override;
 		};

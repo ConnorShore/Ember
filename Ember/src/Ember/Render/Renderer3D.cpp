@@ -42,27 +42,44 @@ namespace Ember {
 		RenderAction::UseDepthTest(false);
 	}
 
-	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, 
-		const Matrix4f& transform, const std::array<std::tuple<PointLightComponent, TransformComponent>, 4>& lights)
+	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material,  const Matrix4f& transform)
 	{
 		material.Material->Bind();
 
 		// Required Uniforms
 		material.Material->GetShader()->SetMatrix4("u_Transform", transform);
 		material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
-		material.Material->GetShader()->SetFloat3("u_CameraPos", s_RendererData->CameraPosition);
-
-		// Temporary lights before deferred shading
-		for (unsigned int i = 0; i < lights.size(); i++) 
-		{
-			auto tup = lights[i];
-			material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Position", i), std::get<1>(tup).Position);
-			material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Color", i), std::get<0>(tup).Color);
-			material.Material->GetShader()->SetFloat(std::format("u_PointLights[{}].Intensity", i), std::get<0>(tup).Intensity);
-		}
+		//material.Material->GetShader()->SetFloat3("u_CameraPos", s_RendererData->CameraPosition);
 
 		RenderAction::DrawIndexed(vertexArray);
 	}
+
+	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray)
+	{
+		RenderAction::DrawIndexed(vertexArray);
+	}
+
+	//void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, 
+	//	const Matrix4f& transform, const std::array<std::tuple<PointLightComponent, TransformComponent>, 4>& lights)
+	//{
+	//	material.Material->Bind();
+
+	//	// Required Uniforms
+	//	material.Material->GetShader()->SetMatrix4("u_Transform", transform);
+	//	material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
+	//	material.Material->GetShader()->SetFloat3("u_CameraPos", s_RendererData->CameraPosition);
+
+	//	// Temporary lights before deferred shading
+	//	for (unsigned int i = 0; i < lights.size(); i++) 
+	//	{
+	//		auto tup = lights[i];
+	//		material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Position", i), std::get<1>(tup).Position);
+	//		material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Color", i), std::get<0>(tup).Color);
+	//		material.Material->GetShader()->SetFloat(std::format("u_PointLights[{}].Intensity", i), std::get<0>(tup).Intensity);
+	//	}s
+
+	//	RenderAction::DrawIndexed(vertexArray);
+	//}
 
 	Ember::SharedPtr<Ember::Texture> Renderer3D::GetWhiteTexture()
 	{

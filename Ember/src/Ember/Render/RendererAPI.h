@@ -31,6 +31,12 @@ namespace Ember {
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
+
+		virtual void SetTextureUnit(unsigned int unit, unsigned int texture) = 0;
+		virtual void SetFramebuffer(unsigned int framebufferId) = 0;
+		virtual void GetPreviousFramebuffer(int* outFramebufferId) = 0;
+
+		virtual void GetViewportDimensions(int* outViewportDims) = 0;
 		
 		virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) = 0;
 

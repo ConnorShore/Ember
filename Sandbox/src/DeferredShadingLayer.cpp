@@ -17,18 +17,13 @@ void DeferredShadingLayer::OnAttach()
 	Ember::FramebufferSpecification specs;
 	specs.Width = 800;
 	specs.Height = 600;
-	specs.AttachmentSpecs = { 
-		Ember::FramebufferTextureFormat::RGBA8,
-		Ember::FramebufferTextureFormat::RGBA16F,
-		Ember::FramebufferTextureFormat::RGBA16F,
-		Ember::FramebufferTextureFormat::DEPTH24STENCIL8 
-	};
+	specs.AttachmentSpecs = { Ember::FramebufferTextureFormat::RGBA8 };
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-	auto deferredShaderGeo = RegisterShader("assets/shaders/geometry.glsl");
-	auto deferredShaderLighting = RegisterShader("assets/shaders/lighting.glsl");
+	auto deferredShaderGeo = RegisterShader("assets/shaders/Geometry.glsl");
+	//auto deferredShaderLighting = RegisterShader("assets/shaders/lighting.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
 	auto pbrMaterial = RegisterMaterial("pbrMaterial", deferredShaderGeo, {
@@ -198,15 +193,10 @@ void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 
 	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);
 
-	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
-	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
-	Ember::RenderAction::UseDepthTest(true);
-
 	m_MainScene->OnUpdate(delta);
 
 	m_Framebuffer->Unbind();
 
-	// Clear the default framebuffer so ImGui doesn't composite on stale pixels
 	Ember::RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 	Ember::RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 }
@@ -214,34 +204,21 @@ void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
 {
 	//ImGui::DockSpaceOverViewport();
+	ImGui::Begin("Scene Viewport");
 
-	for (int i = 0; i < 3; i++) {
+	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 
-		ImGui::Begin(std::format("Scene Viewport {}", i + 1).c_str());
-
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
-		// FIX: ONLY let the first viewport dictate the G-Buffer resolution!
-		if (i == 0)
-		{
-			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-			{
-				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-				m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-			}
-		}
-
-		unsigned int textureID = m_Framebuffer->GetColorAttachmentID(i);
-
-		// To prevent compiler warnings on 64-bit systems, cast the ID like this:
-		void* texID = reinterpret_cast<void*>(static_cast<intptr_t>(textureID));
-
-		// Draw using viewportPanelSize so it scales to fit the debug windows
-		ImGui::Image(texID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-		ImGui::End();
+	if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+	{
+		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+		m_Framebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_MainScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
 	}
+
+	unsigned int textureID = m_Framebuffer->GetColorAttachmentID(0);
+	ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+	ImGui::End();
 
 	//// Editor Panel
 	//ImGui::Begin("PBR Material Editor");

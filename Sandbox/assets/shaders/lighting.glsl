@@ -1,7 +1,21 @@
+#shader vertex
+#version 450 core
+
+layout(location = 0) in vec3 v_Position;
+layout(location = 2) in vec2 v_TextureCoord; // Location 2 is UVs (skip 1)
+
+out vec2 TextureCoord;
+
+void main()
+{
+    TextureCoord = v_TextureCoord;
+    gl_Position = vec4(v_Position, 1.0); 
+}
+
 #shader fragment
 #version 450 core
 
-const int MAX_LIGHTS = 4;
+const int MAX_LIGHTS = 32;
 const float AMBIENT = 0.03;
 
 const float PI = 3.14159265359;
@@ -12,18 +26,16 @@ struct PointLight {
 	float Intensity;
 };
 
-layout(location = 0) in vec3 gPosition;
-layout(location = 1) in vec3 gNormal;
-layout(location = 2) in vec4 gAlbedoSpec;
+in vec2 TextureCoord;
 
 out vec4 OutColor;
 
-uniform vec3 u_Albedo;
-uniform float u_Metallic;
-uniform float u_Roughness;
-uniform float u_AO;
+layout(binding = 0) uniform sampler2D gAlbedoRoughness; 
+layout(binding = 1) uniform sampler2D gNormalMetallic;
+layout(binding = 2) uniform sampler2D gPositionAO;
 
 uniform vec3 u_CameraPos;
+uniform int u_ActiveLights;
 
 uniform PointLight u_PointLights[MAX_LIGHTS];
 
@@ -52,9 +64,16 @@ vec3 Fresnel(vec3 V, vec3 H, vec3 F0)
 
 void main()
 {	
-	// Convert the texture from sRGB to Linear Space
-	vec3 linearTexColor = pow(gAlbedoSpec.rgb, vec3(2.2));
-	vec3 actualAlbedo = linearTexColor * u_Albedo;
+
+	vec3 gPosition = texture(gPositionAO, TextureCoord).rgb;
+	vec3 gNormal = texture(gNormalMetallic, TextureCoord).rgb;
+	vec3 albedo = texture(gAlbedoRoughness, TextureCoord).rgb;
+
+	float metallic = texture(gNormalMetallic, TextureCoord).a;
+	float u_Roughness = texture(gAlbedoRoughness, TextureCoord).a;
+	float ao = texture(gPositionAO, TextureCoord).a;
+
+	vec3 actualAlbedo = albedo;
 
 	vec3 N = normalize(gNormal);
 	vec3 V = normalize(u_CameraPos - gPosition);
@@ -63,7 +82,7 @@ void main()
 	float roughness = max(u_Roughness, 0.05);
 
 	vec3 L0 = vec3(0.0);
-	for (int i = 0; i < MAX_LIGHTS; i++)
+	for (int i = 0; i < u_ActiveLights; i++)
 	{
 		vec3 L = normalize(u_PointLights[i].Position - gPosition);
 		vec3 H = normalize(V + L);
@@ -74,14 +93,14 @@ void main()
 
 		// BRDF (Cook-Torrance)
 		float NdotL = max(dot(N, L), 0.0);
-		vec3 F0 = mix(vec3(0.04), actualAlbedo, u_Metallic);
+		vec3 F0 = mix(vec3(0.04), actualAlbedo, metallic);
 		float D = NormalDistributionTrowbridgeReitxGGX(N, H, roughness);
 		float G = max(GeometrySchlickGGXSub(N, V, roughness), 0.0) * max(GeometrySchlickGGXSub(N, L, roughness), 0.0);
 		vec3 F = Fresnel(V, H, F0);
 
 		vec3 KS = F;				// Specular factor
 		vec3 KD = vec3(1.0) - KS;	// diffuse factor
-		KD *= 1.0f - u_Metallic;
+		KD *= 1.0f - metallic;
 
 		vec3 numerator = D * G * F;
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
@@ -91,7 +110,7 @@ void main()
 	}
 
 	// Ambient light
-	vec3 ambient = vec3(AMBIENT) * actualAlbedo * u_AO;
+	vec3 ambient = vec3(AMBIENT) * actualAlbedo * ao;
     vec3 color = ambient + L0;
 	
 	// HDR Tonemapping & Gamma Correction

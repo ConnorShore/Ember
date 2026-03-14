@@ -52,6 +52,26 @@ namespace Ember {
 			}
 		}
 
+		void RendererAPI::SetTextureUnit(unsigned int unit, unsigned int texture)
+		{
+			glBindTextureUnit(unit, texture);
+		}
+
+		void RendererAPI::SetFramebuffer(unsigned int framebufferId)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+		}
+
+		void RendererAPI::GetPreviousFramebuffer(int* outFramebufferId)
+		{
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING, outFramebufferId);
+		}
+
+		void RendererAPI::GetViewportDimensions(int* outViewportDims)
+		{
+			glGetIntegerv(GL_VIEWPORT, outViewportDims);
+		}
+
 		void RendererAPI::SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height)
 		{
 			glViewport(x, y, width, height);

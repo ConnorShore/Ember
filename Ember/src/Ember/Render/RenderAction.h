@@ -44,6 +44,26 @@ namespace Ember {
 			m_RendererApi->UseBlending(use);
 		}
 
+		static inline void SetTextureUnit(unsigned int unit, unsigned int texture)
+		{
+			m_RendererApi->SetTextureUnit(unit, texture);
+		}
+
+		static inline void SetFramebuffer(unsigned int framebufferId)
+		{
+			m_RendererApi->SetFramebuffer(framebufferId);
+		}
+
+		static inline void GetPreviousFramebuffer(int* outFramebufferId)
+		{
+			m_RendererApi->GetPreviousFramebuffer(outFramebufferId);
+		}
+
+		static inline void GetViewportDimensions(int* outViewportdims)
+		{
+			m_RendererApi->GetViewportDimensions(outViewportdims);
+		}
+
 		static inline void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 		{
 			m_RendererApi->SetViewport(x, y, width, height);
