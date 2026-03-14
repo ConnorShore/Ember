@@ -36,6 +36,8 @@ namespace Ember {
 		virtual void SetFramebuffer(unsigned int framebufferId) = 0;
 		virtual void GetPreviousFramebuffer(int* outFramebufferId) = 0;
 
+		virtual void CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims) = 0;
+
 		virtual void GetViewportDimensions(int* outViewportDims) = 0;
 		
 		virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) = 0;

@@ -12,6 +12,7 @@ namespace Ember {
 		SharedPtr<Texture> WhiteTexture;
 		SharedPtr<Shader> StandardGeoShader;
 		SharedPtr<Shader> StandardLitShader;
+		SharedPtr<Shader> StandardUnlitShader;
 	};
 	static ScopedPtr<RendererData3D> s_RendererData;
 
@@ -32,6 +33,7 @@ namespace Ember {
 		// Standard Shaders
 		s_RendererData->StandardGeoShader = Shader::Create("Ember/assets/shaders/StandardGeometry.glsl");
 		s_RendererData->StandardLitShader = Shader::Create("Ember/assets/shaders/StandardLit.glsl", lightMacros);
+		s_RendererData->StandardUnlitShader = Shader::Create("Ember/assets/shaders/StandardUnlit.glsl");
 	}
 
 	void Renderer3D::Shutdown()
@@ -83,6 +85,11 @@ namespace Ember {
 	SharedPtr<Shader> Renderer3D::GetStandardLitShader()
 	{
 		return s_RendererData->StandardLitShader;
+	}
+
+	Ember::SharedPtr<Ember::Shader> Renderer3D::GetStandardUnlitShader()
+	{
+		return s_RendererData->StandardUnlitShader;
 	}
 
 }

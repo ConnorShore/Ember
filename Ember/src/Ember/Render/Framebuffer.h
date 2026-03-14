@@ -64,6 +64,8 @@ namespace Ember {
 		virtual const unsigned int GetColorAttachmentID(unsigned int id) const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
+		virtual const unsigned int GetID() const = 0;
+
 		static SharedPtr<Framebuffer> Create(const FramebufferSpecification& specification);
 	};
 

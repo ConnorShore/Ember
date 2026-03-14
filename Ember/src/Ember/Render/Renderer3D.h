@@ -29,6 +29,7 @@ namespace Ember {
 		static SharedPtr<Texture> GetWhiteTexture();
 		static SharedPtr<Shader> GetStandardGeometryShader();
 		static SharedPtr<Shader> GetStandardLitShader();
+		static SharedPtr<Shader> GetStandardUnlitShader();
 	};
 
 }

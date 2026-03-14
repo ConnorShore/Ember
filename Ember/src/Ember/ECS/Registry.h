@@ -80,6 +80,12 @@ namespace Ember {
 		void UnregisterSystem(const SharedPtr<System>& system);
 		void UpdateSystems(TimeStep delta);
 
+		template<typename T>
+		SharedPtr<T> GetSystem()
+		{
+			return m_SystemManager->GetSystem<T>();
+		}
+
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
 		ScopedPtr<ComponentManager> m_ComponentManager;

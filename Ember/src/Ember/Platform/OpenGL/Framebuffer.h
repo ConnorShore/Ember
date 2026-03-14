@@ -24,6 +24,8 @@ namespace Ember {
 			}
 			inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 
+			inline const unsigned int GetID() const override { return m_Id; }
+
 		private:
 			void Regenerate();
 

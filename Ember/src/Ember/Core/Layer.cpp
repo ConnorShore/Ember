@@ -34,14 +34,15 @@ namespace Ember {
 		return Application::Instance().GetMesh(name);
 	}
 
-	const SharedPtr<Material>& Layer::RegisterMaterial(const std::string& name, SharedPtr<Shader> shader)
+	const SharedPtr<Material>& Layer::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
-		return Application::Instance().RegisterMaterial(name, shader);
+		return Application::Instance().RegisterMaterial(name, shader, renderQueue);
 	}
 
-	const Ember::SharedPtr<Ember::Material>& Layer::RegisterMaterial(const std::string& name, SharedPtr<Shader> shader, std::initializer_list<MaterialUniform> uniforms)
+	const Ember::SharedPtr<Ember::Material>& Layer::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader,
+		const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 	{
-		return Application::Instance().RegisterMaterial(name, shader, uniforms);
+		return Application::Instance().RegisterMaterial(name, shader, renderQueue, uniforms);
 	}
 
 	const SharedPtr<MaterialInstance>& Layer::RegisterMaterial(const std::string& name, SharedPtr<Material> material)

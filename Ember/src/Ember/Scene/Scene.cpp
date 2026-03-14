@@ -39,6 +39,13 @@ namespace Ember {
 			auto& camera = m_Registry->GetComponent<CameraComponent>(entity);
 				camera.Camera.SetViewportSize(width, height);
 		}
+
+		// Notify the RenderSystem of the viewport resize so it can adjust framebuffer sizes accordingly
+		auto renderSystem = m_Registry->GetSystem<RenderSystem>();
+		if (renderSystem)
+		{
+			renderSystem->OnViewportResize(width, height);
+		}
 	}
 
 	Entity Scene::AddEntity()

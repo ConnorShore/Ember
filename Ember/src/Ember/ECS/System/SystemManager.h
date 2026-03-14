@@ -18,6 +18,19 @@ namespace Ember {
 		void RegisterSystem(const SharedPtr<System>& system, Registry* registry);
 		void UnregisterSystem(const SharedPtr<System>& system, Registry* registry);
 		void UpdateSystems(TimeStep delta, Registry* registry);
+
+		template<typename T>
+		SharedPtr<T> GetSystem()
+		{
+			for (auto system : m_Systems)
+			{
+				if (auto castedSystem = DynamicPointerCast<T>(system))
+				{
+					return castedSystem;
+				}
+			}
+		}
+
 	private:
 		bool ContainsSystem(const SharedPtr<System>& system);
 

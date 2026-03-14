@@ -86,9 +86,9 @@ namespace Ember {
 		return m_MeshLibrary->Get(name);
 	}
 
-	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader)
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
-		auto material = m_MaterialLibrary->RegisterMaterial(name, shader);
+		auto material = m_MaterialLibrary->RegisterMaterial(name, shader, renderQueue);
 		EB_CORE_INFO("Successfully registered material {}", material->GetName());
 		return material;
 	}
@@ -100,9 +100,10 @@ namespace Ember {
 		return instance;
 	}
 
-	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader,
+		const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 	{
-		return m_MaterialLibrary->RegisterMaterial(name, shader, uniforms);
+		return m_MaterialLibrary->RegisterMaterial(name, shader, renderQueue, uniforms);
 	}
 
 	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name)
