@@ -3,6 +3,8 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
 
+#include "ShaderParser.h"
+
 #include <string>
 #include <unordered_map>
 
@@ -28,8 +30,8 @@ namespace Ember {
 
 		virtual const std::string& GetName() const = 0;
 
-		static SharedPtr<Shader> Create(const std::string& filePath);
-		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath);
+		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
+		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -39,8 +41,8 @@ namespace Ember {
 	class ShaderLibrary
 	{
 	public:
-		const SharedPtr<Shader>& Register(const std::string& filePath);
-		const SharedPtr<Shader>& Register(const std::string& name, const std::string& filePath);
+		const SharedPtr<Shader>& Register(const std::string& filePath, const ShaderMacros& macros = {});
+		const SharedPtr<Shader>& Register(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
 
 		const SharedPtr<Shader>& Get(const std::string& name);
 		bool Exists(const std::string& name);

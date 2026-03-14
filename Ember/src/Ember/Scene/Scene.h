@@ -22,6 +22,8 @@ namespace Ember {
 		void OnUpdate(TimeStep delta);
 		void OnEvent(Event& event);
 
+		void OnViewportResize(unsigned int width, unsigned int height);
+
 		Entity AddEntity();
 		Entity GetEntity(const std::string& tag);
 		void RemoveEntity(const Entity& entity);

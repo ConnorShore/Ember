@@ -1,44 +1,12 @@
-#include "ebpch.h"
 #include "PBRTestLayer.h"
+#include "CameraController3D.h"
 
 #include <imgui/imgui.h>
 
-// ---------------------------------------------------------------------------
-// Camera controller:  WASD = translate,  Arrow keys = rotate
-// ---------------------------------------------------------------------------
-class Camera3DController : public Ember::Behavior
-{
-public:
-	void OnUpdate(Ember::TimeStep delta) override
-	{
-		float speed    = 5.0f * delta;
-		float rotSpeed = 1.5f * delta;
-
-		// Movement (WASD)
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
-			Transform().Position += Transform().GetForward() * speed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::S))
-			Transform().Position -= Transform().GetForward() * speed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::D))
-			Transform().Position += Transform().GetRight() * speed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
-			Transform().Position -= Transform().GetRight() * speed;
-
-		// Rotation (Arrow keys)
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Right))
-			Transform().Rotation.y -= rotSpeed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Left))
-			Transform().Rotation.y += rotSpeed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Up))
-			Transform().Rotation.x += rotSpeed;
-		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Down))
-			Transform().Rotation.x -= rotSpeed;
-	}
-};
 
 // ---------------------------------------------------------------------------
 PBRTestLayer::PBRTestLayer()
-	: Layer("3D Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
+	: Layer("PBR Test Layer"), m_MainScene(Ember::SharedPtr<Ember::Scene>::Create("Scene1"))
 {
 }
 
@@ -49,7 +17,7 @@ PBRTestLayer::~PBRTestLayer()
 void PBRTestLayer::OnAttach()
 {
 	auto mesh      = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
+	auto pbrShader = RegisterShader("Sandbox/assets/shaders/pbr.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
 	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, {

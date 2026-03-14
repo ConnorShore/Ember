@@ -1,7 +1,14 @@
 #include "ebpch.h"
 #include "Material.h"
+#include "Renderer3D.h"
 
 namespace Ember {
+
+	Material::Material(const std::string& name)
+		: m_Name(name), m_Shader(Renderer3D::GetStandardGeometryShader()) {}
+
+	Material::Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+		: Material(name, Renderer3D::GetStandardGeometryShader(), uniforms) {}
 
 	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader)
 	{
@@ -13,6 +20,20 @@ namespace Ember {
 	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
 	{
 		auto material = SharedPtr<Material>::Create(name, shader, uniforms);
+		Add(name, std::move(material));
+		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
+	}
+
+	const Ember::SharedPtr<Ember::Material>& MaterialLibrary::RegisterMaterial(const std::string& name)
+	{
+		auto material = SharedPtr<Material>::Create(name);
+		Add(name, std::move(material));
+		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
+	}
+
+	const Ember::SharedPtr<Ember::Material>& MaterialLibrary::RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+	{
+		auto material = SharedPtr<Material>::Create(name, uniforms);
 		Add(name, std::move(material));
 		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
 	}

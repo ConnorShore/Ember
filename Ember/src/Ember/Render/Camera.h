@@ -20,12 +20,15 @@ namespace Ember {
 		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
 		inline const Matrix4f GetProjectionMatrix() const { return m_ProjectionMatrix; }
 
+		inline const Vector2f& GetViewportSize() const { return m_ViewportSize; }
+
 	private:
 		void CalculateProjectionMatrix();
 
 	private:
 		ProjectionType m_ProjectionType = ProjectionType::Perspective;
 		Matrix4f m_ProjectionMatrix = Matrix4f(1.0f);
+		Vector2f m_ViewportSize;
 		float m_AspectRatio;	// (height / width)
 
 		struct OrthographicProps

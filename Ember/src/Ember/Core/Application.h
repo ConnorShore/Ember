@@ -35,8 +35,10 @@ namespace Ember {
 		const SharedPtr<Mesh>& RegisterMesh(const std::string& filePath);
 		const SharedPtr<Mesh>& GetMesh(const std::string& name);
 
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
 		const SharedPtr<MaterialInstance>& RegisterMaterial(const std::string& name, const SharedPtr<Material>& material);
 		const SharedPtr<MaterialBase>& GetMaterial(const std::string& name);
 

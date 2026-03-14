@@ -16,11 +16,27 @@ namespace Ember {
 			OpenGL
 		};
 
+		enum class RenderBit : uint32_t
+		{
+			Color = 1 << 0,
+			Depth = 1 << 1
+		};
+
+		using RenderBits = uint32_t;
+
 		virtual void Clear() = 0;
+		virtual void Clear(RenderBits bits) = 0;
+		void Clear(RenderBit bit) { Clear(static_cast<RenderBits>(bit)); }
 		virtual void SetClearColor(Vector4<float> color) = 0;
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
+
+		virtual void SetTextureUnit(unsigned int unit, unsigned int texture) = 0;
+		virtual void SetFramebuffer(unsigned int framebufferId) = 0;
+		virtual void GetPreviousFramebuffer(int* outFramebufferId) = 0;
+
+		virtual void GetViewportDimensions(int* outViewportDims) = 0;
 		
 		virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) = 0;
 
@@ -34,5 +50,15 @@ namespace Ember {
 	private:
 		static API s_Api;
 	};
+
+	inline RendererAPI::RenderBits operator|(RendererAPI::RenderBit a, RendererAPI::RenderBit b)
+	{
+		return static_cast<RendererAPI::RenderBits>(a) | static_cast<RendererAPI::RenderBits>(b);
+	}
+
+	inline RendererAPI::RenderBits operator|(RendererAPI::RenderBits a, RendererAPI::RenderBit b)
+	{
+		return a | static_cast<RendererAPI::RenderBits>(b);
+	}
 
 }

@@ -90,7 +90,7 @@ namespace Ember {
 		delete[] quadIndexBufferData;
 
 		// Todo add to shader/texture libraries
-		s_RendererData->QuadShader = Shader::Create("assets/shaders/Renderer2D_Quad.glsl");
+		s_RendererData->QuadShader = Shader::Create("Ember/assets/shaders/Renderer2D_Quad.glsl");
 		s_RendererData->QuadShader->Bind();
 		for (unsigned int i = 0; i < s_RendererData->MaxTextureSlots; i++)
 			s_RendererData->QuadShader->SetInt("u_Textures[" + std::to_string(i) + "]", i);

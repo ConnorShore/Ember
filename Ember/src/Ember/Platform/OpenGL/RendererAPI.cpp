@@ -6,9 +6,22 @@
 namespace Ember {
 	namespace OpenGL {
 
+		static GLuint RenderBitsToGLBits(RendererAPI::RenderBits bits)
+		{
+			GLuint result = 0;
+			if (bits & static_cast<RendererAPI::RenderBits>(RendererAPI::RenderBit::Color)) result |= GL_COLOR_BUFFER_BIT;
+			if (bits & static_cast<RendererAPI::RenderBits>(RendererAPI::RenderBit::Depth)) result |= GL_DEPTH_BUFFER_BIT;
+			return result;
+		}
+
 		void RendererAPI::Clear()
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+
+		void RendererAPI::Clear(RenderBits bits)
+		{
+			glClear(RenderBitsToGLBits(bits));
 		}
 
 		void RendererAPI::SetClearColor(Vector4<float> color)
@@ -37,6 +50,26 @@ namespace Ember {
 			{
 				glDisable(GL_BLEND);
 			}
+		}
+
+		void RendererAPI::SetTextureUnit(unsigned int unit, unsigned int texture)
+		{
+			glBindTextureUnit(unit, texture);
+		}
+
+		void RendererAPI::SetFramebuffer(unsigned int framebufferId)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+		}
+
+		void RendererAPI::GetPreviousFramebuffer(int* outFramebufferId)
+		{
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING, outFramebufferId);
+		}
+
+		void RendererAPI::GetViewportDimensions(int* outViewportDims)
+		{
+			glGetIntegerv(GL_VIEWPORT, outViewportDims);
 		}
 
 		void RendererAPI::SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height)

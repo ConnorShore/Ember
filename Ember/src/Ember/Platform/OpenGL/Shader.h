@@ -11,8 +11,8 @@ namespace Ember {
 		class Shader : public Ember::Shader
 		{
 		public:
-			Shader(const std::string& filePath);
-			Shader(const std::string& name, const std::string& filePath);
+			Shader(const std::string& filePath, const ShaderMacros& macros);
+			Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros);
 			virtual ~Shader();
 
 			virtual void Bind() const override;

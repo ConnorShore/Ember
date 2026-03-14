@@ -22,9 +22,9 @@ namespace Ember {
 
 	void Camera::SetViewportSize(unsigned int width, unsigned int height)
 	{
+		m_ViewportSize = Vector2f(width, height);
 		m_AspectRatio = (float)width / (float)height;
 		CalculateProjectionMatrix();
-		EB_CORE_INFO("View port triggered camera recalculation. Aspect ratio {}", m_AspectRatio);
 	}
 
 	void Camera::CalculateProjectionMatrix()
