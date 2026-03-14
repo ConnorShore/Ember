@@ -14,9 +14,6 @@ namespace Ember {
 		Renderer2D::Init();
 		Renderer3D::Init();
 
-		m_GeometryShader = Shader::Create("assets/shaders/Geometry.glsl");
-		m_LightingShader = Shader::Create("assets/shaders/Lighting.glsl");
-
 		// TODO: See if size should be window size or arbitrary value
 		Ember::FramebufferSpecification specs;
 		specs.Width = 1280;
@@ -105,10 +102,9 @@ namespace Ember {
 			int dims[4] = { 0 };
 			RenderAction::GetViewportDimensions(dims);
 			RenderAction::SetViewport(dims[0], dims[1], dims[2], dims[3]);
-			//RenderAction::SetViewport(0, 0, dims[2], dims[3]);
 
-			m_LightingShader->Bind();
-			m_LightingShader->SetFloat3("u_CameraPos", cameraPos);
+			Renderer3D::GetStandardLitShader()->Bind();
+			Renderer3D::GetStandardLitShader()->SetFloat3("u_CameraPos", cameraPos);
 
 			RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 			RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
@@ -122,14 +118,14 @@ namespace Ember {
 					break;
 
 				auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
-				m_LightingShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
-				m_LightingShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
-				m_LightingShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+				Renderer3D::GetStandardLitShader()->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
+				Renderer3D::GetStandardLitShader()->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
+				Renderer3D::GetStandardLitShader()->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
 
 				index++;
 			}
 
-			m_LightingShader->SetInt("u_ActiveLights", index);
+			Renderer3D::GetStandardLitShader()->SetInt("u_ActiveLights", index);
 
 			Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 		}

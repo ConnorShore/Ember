@@ -22,11 +22,9 @@ void DeferredShadingLayer::OnAttach()
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-	auto deferredShaderGeo = RegisterShader("assets/shaders/Geometry.glsl");
-	//auto deferredShaderLighting = RegisterShader("assets/shaders/lighting.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
-	auto pbrMaterial = RegisterMaterial("pbrMaterial", deferredShaderGeo, {
+	auto defaultSphereMaterial = RegisterMaterial("defaultSphereMaterial", {
 		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
 		{ "u_Metallic",  0.0f },
 		{ "u_Roughness", 0.5f },
@@ -62,7 +60,7 @@ void DeferredShadingLayer::OnAttach()
 			Ember::MeshComponent meshComp = { mesh };
 			sphere.AttachComponent(meshComp);
 
-			Ember::MaterialComponent matComp = { pbrMaterial };
+			Ember::MaterialComponent matComp = { defaultSphereMaterial };
 			sphere.AttachComponent(matComp);
 
 			auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -84,7 +82,7 @@ void DeferredShadingLayer::OnAttach()
 	Ember::MeshComponent groundMeshComp = { quadMesh };
 	groundPlane.AttachComponent(groundMeshComp);
 
-	Ember::MaterialComponent groundMatComp = { pbrMaterial };
+	Ember::MaterialComponent groundMatComp = { defaultSphereMaterial };
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -120,7 +118,7 @@ void DeferredShadingLayer::OnAttach()
 	Ember::MeshComponent interactiveMeshComp = { mesh };
 	m_InteractiveSphere.AttachComponent(interactiveMeshComp);
 
-	Ember::MaterialComponent interactiveMatComp = { pbrMaterial };
+	Ember::MaterialComponent interactiveMatComp = { defaultSphereMaterial };
 	m_InteractiveSphere.AttachComponent(interactiveMatComp);
 
 	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -158,6 +156,7 @@ void DeferredShadingLayer::OnAttach()
 		{ { -12.0f,   6.0f, -10.0f }, { 1.0f, 1.0f,  1.0f  }, 400.0f, 50.0f },
 	};
 
+	// TODO: Make light cubes render during forward rendering as they shouldn't be affected by lighting
 	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
 
 	for (auto& ld : lights)
@@ -172,7 +171,7 @@ void DeferredShadingLayer::OnAttach()
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
 
-		Ember::MaterialComponent lightCubeMatComp = { pbrMaterial };
+		Ember::MaterialComponent lightCubeMatComp = { defaultSphereMaterial };
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();

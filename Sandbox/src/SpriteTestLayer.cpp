@@ -66,7 +66,7 @@ void SpriteTestLayer::OnAttach()
 		m_SpriteEntities.push_back(entity);
 	}
 
-	RegisterTexture("assets/textures/image.png");
+	RegisterTexture("Sandbox/assets/textures/image.png");
 
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();

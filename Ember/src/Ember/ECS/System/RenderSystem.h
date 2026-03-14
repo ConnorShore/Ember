@@ -20,8 +20,6 @@ namespace Ember {
 
 	private:
 		SharedPtr<Framebuffer> m_GBuffer;
-		SharedPtr<Shader> m_GeometryShader;
-		SharedPtr<Shader> m_LightingShader;
 		SharedPtr<Mesh> m_ScreenQuad;
 	};
 

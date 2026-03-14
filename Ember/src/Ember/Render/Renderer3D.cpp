@@ -8,18 +8,25 @@ namespace Ember {
 	{
 		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
 		Vector3f CameraPosition = Vector3f(0.0f);
-	};
 
+		SharedPtr<Texture> WhiteTexture;
+		SharedPtr<Shader> StandardGeoShader;
+		SharedPtr<Shader> StandardLitShader;
+	};
 	static ScopedPtr<RendererData3D> s_RendererData;
-	static SharedPtr<Texture> s_WhiteTexture;
 
 	void Renderer3D::Init()
 	{
 		s_RendererData = ScopedPtr<RendererData3D>::Create();
 
+		// White texture
 		uint32_t whiteTextureData = 0xffffffff;
-		s_WhiteTexture = Texture::Create();
-		s_WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
+		s_RendererData->WhiteTexture = Texture::Create();
+		s_RendererData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
+
+		// Standard Shaders
+		s_RendererData->StandardGeoShader = Shader::Create("Ember/assets/shaders/StandardGeometry.glsl");
+		s_RendererData->StandardLitShader = Shader::Create("Ember/assets/shaders/StandardLit.glsl");
 	}
 
 	void Renderer3D::Shutdown()
@@ -49,7 +56,6 @@ namespace Ember {
 		// Required Uniforms
 		material.Material->GetShader()->SetMatrix4("u_Transform", transform);
 		material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
-		//material.Material->GetShader()->SetFloat3("u_CameraPos", s_RendererData->CameraPosition);
 
 		RenderAction::DrawIndexed(vertexArray);
 	}
@@ -59,31 +65,19 @@ namespace Ember {
 		RenderAction::DrawIndexed(vertexArray);
 	}
 
-	//void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, 
-	//	const Matrix4f& transform, const std::array<std::tuple<PointLightComponent, TransformComponent>, 4>& lights)
-	//{
-	//	material.Material->Bind();
-
-	//	// Required Uniforms
-	//	material.Material->GetShader()->SetMatrix4("u_Transform", transform);
-	//	material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
-	//	material.Material->GetShader()->SetFloat3("u_CameraPos", s_RendererData->CameraPosition);
-
-	//	// Temporary lights before deferred shading
-	//	for (unsigned int i = 0; i < lights.size(); i++) 
-	//	{
-	//		auto tup = lights[i];
-	//		material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Position", i), std::get<1>(tup).Position);
-	//		material.Material->GetShader()->SetFloat3(std::format("u_PointLights[{}].Color", i), std::get<0>(tup).Color);
-	//		material.Material->GetShader()->SetFloat(std::format("u_PointLights[{}].Intensity", i), std::get<0>(tup).Intensity);
-	//	}s
-
-	//	RenderAction::DrawIndexed(vertexArray);
-	//}
-
-	Ember::SharedPtr<Ember::Texture> Renderer3D::GetWhiteTexture()
+	SharedPtr<Texture> Renderer3D::GetWhiteTexture()
 	{
-		return s_WhiteTexture;
+		return s_RendererData->WhiteTexture;
+	}
+
+	SharedPtr<Shader> Renderer3D::GetStandardGeometryShader()
+	{
+		return s_RendererData->StandardGeoShader;
+	}
+
+	SharedPtr<Shader> Renderer3D::GetStandardLitShader()
+	{
+		return s_RendererData->StandardLitShader;
 	}
 
 }

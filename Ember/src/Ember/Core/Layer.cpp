@@ -49,9 +49,18 @@ namespace Ember {
 		return Application::Instance().RegisterMaterial(name, material);
 	}
 
+	const SharedPtr<Material>& Layer::RegisterMaterial(const std::string& name)
+	{
+		return Application::Instance().RegisterMaterial(name);
+	}
+
+	const SharedPtr<Material>& Layer::RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+	{
+		return Application::Instance().RegisterMaterial(name, uniforms);
+	}
+
 	const SharedPtr<MaterialBase>& Layer::GetMaterial(const std::string& name)
 	{
 		return Application::Instance().GetMaterial(name);
 	}
-
 }

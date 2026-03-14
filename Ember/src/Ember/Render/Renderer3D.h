@@ -22,10 +22,9 @@ namespace Ember {
 		static void Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform);
 		static void Submit(const SharedPtr<VertexArray>& vertexArray);
 
-		//static void Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform, 
-		//	const std::array<std::tuple<PointLightComponent, TransformComponent>, 4>& lights);
-
 		static SharedPtr<Texture> GetWhiteTexture();
+		static SharedPtr<Shader> GetStandardGeometryShader();
+		static SharedPtr<Shader> GetStandardLitShader();
 	};
 
 }

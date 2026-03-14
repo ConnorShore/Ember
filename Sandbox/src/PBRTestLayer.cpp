@@ -17,7 +17,7 @@ PBRTestLayer::~PBRTestLayer()
 void PBRTestLayer::OnAttach()
 {
 	auto mesh      = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-	auto pbrShader = RegisterShader("assets/shaders/pbr.glsl");
+	auto pbrShader = RegisterShader("Sandbox/assets/shaders/pbr.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
 	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, {

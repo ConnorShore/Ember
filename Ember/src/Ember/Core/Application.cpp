@@ -105,6 +105,16 @@ namespace Ember {
 		return m_MaterialLibrary->RegisterMaterial(name, shader, uniforms);
 	}
 
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name)
+	{
+		return m_MaterialLibrary->RegisterMaterial(name);
+	}
+
+	const SharedPtr<Material>& Application::RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+	{
+		return m_MaterialLibrary->RegisterMaterial(name, uniforms);
+	}
+
 	const SharedPtr<MaterialBase>& Application::GetMaterial(const std::string& name)
 	{
 		return m_MaterialLibrary->Get(name);

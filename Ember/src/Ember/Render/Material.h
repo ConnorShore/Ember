@@ -23,7 +23,6 @@ namespace Ember {
 		virtual void Bind() const = 0;
 
 		virtual const SharedPtr<Shader> GetShader() const = 0;
-		virtual void SetShader(const SharedPtr<Shader> shader) = 0;	// TESTING ONLY, WILL REMOVE
 		virtual const std::string& GetName() const = 0;
 	};
 
@@ -46,6 +45,7 @@ namespace Ember {
 	class Material : public MaterialBase
 	{
 	public:
+		Material(const std::string& name);
 		Material(const std::string& name, const SharedPtr<Shader>& shader) : m_Name(name), m_Shader(shader) {}
 		Material(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
 			: m_Name(name), m_Shader(shader) 
@@ -55,6 +55,9 @@ namespace Ember {
 				Set(std::get<0>(u), std::get<1>(u));
 			}
 		}
+
+		Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
+
 		virtual ~Material() = default;
 
 		inline void Bind() const
@@ -90,7 +93,6 @@ namespace Ember {
 		inline virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() { return m_Uniforms; }
 
 		inline const SharedPtr<Shader> GetShader() const override { return m_Shader; }
-		inline void SetShader(const SharedPtr<Shader> shader) override { m_Shader = shader; }
 
 		inline const std::string& GetName() const override { return m_Name; }
 
@@ -142,7 +144,6 @@ namespace Ember {
 		inline const std::string& GetName() const override { return m_Name; }
 
 		inline const SharedPtr<Shader> GetShader() const { return m_Material->GetShader(); }
-		inline void SetShader(const SharedPtr<Shader> shader) override { m_Material->SetShader(shader); }
 
 	private:
 		std::string m_Name;
@@ -157,8 +158,10 @@ namespace Ember {
 	class MaterialLibrary
 	{
 	public:
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
 		const SharedPtr<MaterialInstance>& RegisterInstance(const std::string& name, const SharedPtr<Material>& material);
 
 		const SharedPtr<MaterialBase>& Get(const std::string& name);
