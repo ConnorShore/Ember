@@ -67,6 +67,20 @@ namespace Ember {
 			glGetIntegerv(GL_FRAMEBUFFER_BINDING, outFramebufferId);
 		}
 
+		void RendererAPI::CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims)
+		{
+			// get viewport dims in x0, y0, x1, y1 (not x,y,width,height)
+			int x0 = viewportDims.x;
+			int y0 = viewportDims.y;
+			int x1 = viewportDims.x + viewportDims.z;
+			int y1 = viewportDims.y + viewportDims.w;
+
+			glBlitNamedFramebuffer(gBufferId, outputBuffer,
+				x0, y0, x1, y1,
+				x0, y0, x1, y1,
+				GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		}
+
 		void RendererAPI::GetViewportDimensions(int* outViewportDims)
 		{
 			glGetIntegerv(GL_VIEWPORT, outViewportDims);

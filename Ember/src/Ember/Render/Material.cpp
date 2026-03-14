@@ -5,21 +5,22 @@
 namespace Ember {
 
 	Material::Material(const std::string& name)
-		: m_Name(name), m_Shader(Renderer3D::GetStandardGeometryShader()) {}
+		: m_Name(name), m_Shader(Renderer3D::GetStandardGeometryShader()), m_RenderQueue(RenderQueue::Opaque) {}
 
 	Material::Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
-		: Material(name, Renderer3D::GetStandardGeometryShader(), uniforms) {}
+		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque, uniforms) {}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader)
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
-		auto material = SharedPtr<Material>::Create(name, shader);
+		auto material = SharedPtr<Material>::Create(name, shader, renderQueue);
 		Add(name, std::move(material));
 		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
 	}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
+		const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 	{
-		auto material = SharedPtr<Material>::Create(name, shader, uniforms);
+		auto material = SharedPtr<Material>::Create(name, shader, renderQueue, uniforms);
 		Add(name, std::move(material));
 		return reinterpret_cast<const SharedPtr<Material>&>(Get(name));
 	}

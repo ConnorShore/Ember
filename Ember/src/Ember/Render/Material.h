@@ -13,6 +13,17 @@
 namespace Ember {
 
 	//////////////////////////////////////////////////////////////////////////
+	// Render Queue Type
+	//////////////////////////////////////////////////////////////////////////
+
+	enum class RenderQueue : uint8_t
+	{
+		Opaque = 0,
+		Forward,
+		Transparent
+	};
+
+	//////////////////////////////////////////////////////////////////////////
 	// Material Base
 	//////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +35,7 @@ namespace Ember {
 
 		virtual const SharedPtr<Shader> GetShader() const = 0;
 		virtual const std::string& GetName() const = 0;
+		virtual const RenderQueue GetRenderQueue() const = 0;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -45,10 +57,12 @@ namespace Ember {
 	class Material : public MaterialBase
 	{
 	public:
+		// TODO: Clean up Material constructors (may force a shader to be specified, even if standard shaders)
 		Material(const std::string& name);
-		Material(const std::string& name, const SharedPtr<Shader>& shader) : m_Name(name), m_Shader(shader) {}
-		Material(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms)
-			: m_Name(name), m_Shader(shader) 
+		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue) 
+			: m_Name(name), m_Shader(shader), m_RenderQueue(renderQueue) {}
+		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
+			: m_Name(name), m_Shader(shader), m_RenderQueue(renderQueue)
 		{
 			for (auto u : uniforms)
 			{
@@ -91,13 +105,13 @@ namespace Ember {
 		}
 
 		inline virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() { return m_Uniforms; }
-
 		inline const SharedPtr<Shader> GetShader() const override { return m_Shader; }
-
 		inline const std::string& GetName() const override { return m_Name; }
+		inline const RenderQueue GetRenderQueue() const override { return m_RenderQueue; }
 
 	private:
 		std::string m_Name;
+		RenderQueue m_RenderQueue;
 		SharedPtr<Shader> m_Shader;
 		std::unordered_map<std::string, MaterialValue> m_Uniforms;
 	};
@@ -142,8 +156,8 @@ namespace Ember {
 		}
 
 		inline const std::string& GetName() const override { return m_Name; }
-
 		inline const SharedPtr<Shader> GetShader() const { return m_Material->GetShader(); }
+		inline const RenderQueue GetRenderQueue() const override { return m_Material->GetRenderQueue(); }
 
 	private:
 		std::string m_Name;
@@ -159,8 +173,9 @@ namespace Ember {
 	{
 	public:
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, std::initializer_list<MaterialUniform> uniforms);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
+		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
+			const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
 		const SharedPtr<MaterialInstance>& RegisterInstance(const std::string& name, const SharedPtr<Material>& material);
 

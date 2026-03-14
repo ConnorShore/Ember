@@ -20,7 +20,7 @@ void PBRTestLayer::OnAttach()
 	auto pbrShader = RegisterShader("Sandbox/assets/shaders/pbr.glsl");
 
 	// Base PBR material (defaults – overridden per-instance)
-	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, {
+	auto pbrMaterial = RegisterMaterial("pbrMaterial", pbrShader, Ember::RenderQueue::Forward, {
 		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
 		{ "u_Metallic",  0.0f },
 		{ "u_Roughness", 0.5f },

@@ -24,6 +24,7 @@ private:
 	Ember::Vector2f m_ViewportSize;
 
 	Ember::SharedPtr<Ember::Material> m_DefaultSphereMaterial;
+	Ember::SharedPtr<Ember::Material> m_DefaultLightCubeMaterial;
 
 	// Interactive sphere controlled via ImGui
 	Ember::Entity m_InteractiveSphere;

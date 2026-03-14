@@ -1,5 +1,6 @@
 #include "DeferredShadingLayer.h"
 #include "CameraController3D.h"
+
 #include <random>
 
 DeferredShadingLayer::DeferredShadingLayer()
@@ -18,13 +19,13 @@ void DeferredShadingLayer::OnAttach()
 	Ember::FramebufferSpecification specs;
 	specs.Width = 800;
 	specs.Height = 600;
-	specs.AttachmentSpecs = { Ember::FramebufferTextureFormat::RGBA8 };
+	specs.AttachmentSpecs = { 
+		Ember::FramebufferTextureFormat::RGBA8,
+		Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+	};
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
-	// Spheres
-	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
-
-	// Base PBR material (defaults – overridden per-instance)
+	// Materials
 	m_DefaultSphereMaterial = RegisterMaterial("defaultSphereMaterial", {
 		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
 		{ "u_Metallic",  0.0f },
@@ -32,6 +33,11 @@ void DeferredShadingLayer::OnAttach()
 		{ "u_AO",        1.0f },
 		{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
 		});
+
+	m_DefaultLightCubeMaterial = RegisterMaterial("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
+
+	// Spheres
+	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 
 	// ------------------------------------------------------------------
 	// Parameter grid:  7 columns (roughness) × 7 rows (metallic)
@@ -130,8 +136,8 @@ void DeferredShadingLayer::OnAttach()
 	m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
 
 	// Choose Lights
-	SetupStandardLights();
-	//SetupRandomLights();
+	//SetupStandardLights();
+	SetupRandomLights();
 }
 
 void DeferredShadingLayer::OnDetach()
@@ -260,14 +266,13 @@ void DeferredShadingLayer::SetupRandomLights()
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
 
-		Ember::MaterialComponent lightCubeMatComp = { m_DefaultSphereMaterial }; // Ensure this matches your material variable name
+		Ember::MaterialComponent lightCubeMatComp = { m_DefaultLightCubeMaterial }; // Ensure this matches your material variable name
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
 
 		// Set the physical cube to match the color of the light it emits!
-		lightCubeInstance->Set("u_Albedo", color);
-		lightCubeInstance->Set("u_Roughness", 1.0f);
+		lightCubeInstance->Set("u_Color", color);
 	}
 }
 
@@ -306,11 +311,10 @@ void DeferredShadingLayer::SetupStandardLights()
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
 
-		Ember::MaterialComponent lightCubeMatComp = { m_DefaultSphereMaterial };
+		Ember::MaterialComponent lightCubeMatComp = { m_DefaultLightCubeMaterial };
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
-		lightCubeInstance->Set("u_Albedo", Ember::Vector3f(1.0f, 1.0f, 1.0f));
-		lightCubeInstance->Set("u_Roughness", 1.0f);
+		lightCubeInstance->Set("u_Color", ld.color);
 	}
 }

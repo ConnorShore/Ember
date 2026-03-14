@@ -67,6 +67,9 @@ namespace Ember {
 			return;
 		}
 
+		// Sort the entities into buckets
+		SortEntitiesByRenderQueue(registry);
+
 		// Save output framebuffer
 		int outputFramebuffer;
 		RenderAction::GetPreviousFramebuffer(&outputFramebuffer);
@@ -82,9 +85,8 @@ namespace Ember {
 
 			Renderer3D::BeginFrame(activeCamera, cameraTransformMatrix);
 
-			// Render meshes
-			View view = registry->Query<MeshComponent, MaterialComponent, TransformComponent>();
-			for (EntityID entity : view)
+			// Render opaque bucket
+			for (EntityID entity : m_RenderQueueBuckets.Opaque)
 			{
 				auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
@@ -93,14 +95,15 @@ namespace Ember {
 			Renderer3D::EndFrame();
 		}
 
+		int dims[4] = { 0 };
+		RenderAction::GetViewportDimensions(dims);
+		Vector4<int> screenDims = Vector4<int>(dims[0], dims[1], dims[2], dims[3]);
+
 		// 3D Lighting Pass
 		{
 			RenderAction::UseDepthTest(false); 
 			RenderAction::UseFaceCulling(false);
 			RenderAction::SetFramebuffer(outputFramebuffer);
-
-			int dims[4] = { 0 };
-			RenderAction::GetViewportDimensions(dims);
 			RenderAction::SetViewport(dims[0], dims[1], dims[2], dims[3]);
 
 			Renderer3D::GetStandardLitShader()->Bind();
@@ -130,6 +133,25 @@ namespace Ember {
 			Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 		}
 
+		// Forward Rendering 
+		{
+			// Copy depth buffer for forward rendering
+			RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), outputFramebuffer, screenDims);
+
+			RenderAction::SetFramebuffer(outputFramebuffer);
+			RenderAction::UseDepthTest(true);
+
+			Renderer3D::BeginFrame(activeCamera, cameraTransformMatrix);
+
+			for (EntityID entity : m_RenderQueueBuckets.Forward)
+			{
+				auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+				Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
+			}
+
+			Renderer3D::EndFrame();
+		}
+
 
 		// 2D Render Pass
 		{
@@ -154,6 +176,32 @@ namespace Ember {
 
 		// Reset state
 		RenderAction::UseDepthTest(true);
+	}
+
+	void RenderSystem::SortEntitiesByRenderQueue(Registry* registry)
+	{
+		m_RenderQueueBuckets.Clear();
+
+		View view = registry->Query<MeshComponent, MaterialComponent, TransformComponent>();
+		for (EntityID entity : view)
+		{
+			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			switch (material.Material->GetRenderQueue())
+			{
+			case RenderQueue::Opaque:
+				m_RenderQueueBuckets.Opaque.push_back(entity);
+				break;
+			case RenderQueue::Forward:
+				m_RenderQueueBuckets.Forward.push_back(entity);
+				break;
+			case RenderQueue::Transparent:
+				m_RenderQueueBuckets.Transparent.push_back(entity);
+				break;
+			default:
+				EB_CORE_ASSERT(false, "Unknown Render Queue type!");
+				break;
+			}
+		}
 	}
 
 }
