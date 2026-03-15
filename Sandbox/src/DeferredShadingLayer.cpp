@@ -26,15 +26,16 @@ void DeferredShadingLayer::OnAttach()
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
 	// Materials
-	m_DefaultSphereMaterial = RegisterMaterial("defaultSphereMaterial", {
-		{ "u_Albedo",    Ember::Vector3f(0.5f, 0.5f, 0.5f) },
-		{ "u_Metallic",  0.0f },
-		{ "u_Roughness", 0.5f },
-		{ "u_AO",        1.0f },
-		{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
+	m_DefaultSphereMaterial = CreateAsset<Ember::Material>("defaultSphereMaterial", 
+		std::initializer_list<Ember::MaterialUniform>{
+			{ "u_Albedo", Ember::Vector3f(0.5f, 0.5f, 0.5f) },
+			{ "u_Metallic",  0.0f },
+			{ "u_Roughness", 0.5f },
+			{ "u_AO",        1.0f },
+			{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
 		});
 
-	m_DefaultLightCubeMaterial = RegisterMaterial("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
+	m_DefaultLightCubeMaterial = CreateAsset<Ember::Material>("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);

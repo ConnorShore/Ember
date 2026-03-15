@@ -10,10 +10,8 @@
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/ImGui/ImGuiLayer.h"
 
-#include "Ember/Render/Shader.h"
-#include "Ember/Render/Texture.h"
-#include "Ember/Render/Mesh.h"
-#include "Ember/Render/Material.h"
+#include "Ember/Asset/AssetManager.h"
+#include "Ember/Asset/Asset.h"
 
 namespace Ember {
 
@@ -26,22 +24,23 @@ namespace Ember {
 		void PushLayer(ScopedPtr<Layer> layer);
 		void PushCanvasLayer(ScopedPtr<Layer> canvas);
 
-		const SharedPtr<Shader>& RegisterShader(const std::string& filePath);
-		const SharedPtr<Shader>& GetShader(const std::string& name);
+		template<IsCoreAsset T, typename... Args>
+		SharedPtr<T> CreateAsset(Args&&... args)
+		{
+			return m_AssetManager->Create<T>(std::forward<Args>(args)...);
+		}
 
-		const SharedPtr<Texture>& RegisterTexture(const std::string& filePath);
-		const SharedPtr<Texture>& GetTexture(const std::string& name);
+		template<IsCoreAsset T>
+		SharedPtr<T> LoadAsset(const std::string& filePath)
+		{
+			return m_AssetManager->Load<T>(filePath);
+		}
 
-		const SharedPtr<Mesh>& RegisterMesh(const std::string& filePath);
-		const SharedPtr<Mesh>& GetMesh(const std::string& name);
-
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
-			const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<MaterialInstance>& RegisterMaterial(const std::string& name, const SharedPtr<Material>& material);
-		const SharedPtr<MaterialBase>& GetMaterial(const std::string& name);
+		template<IsCoreAsset T>
+		SharedPtr<T> LoadAsset(const std::string& name, const std::string& filePath)
+		{
+			return m_AssetManager->Load<T>(name, filePath);
+		}
 
 		void OnAttach();
 		void OnDetach();
@@ -69,12 +68,7 @@ namespace Ember {
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
-
-		// TODO: Probably move these to some AssetManager or something
-		ScopedPtr<ShaderLibrary> m_ShaderLibrary;
-		ScopedPtr<TextureLibrary> m_TextureLibrary;
-		ScopedPtr<MeshLibrary> m_MeshLibrary;
-		ScopedPtr<MaterialLibrary> m_MaterialLibrary;
+		ScopedPtr<AssetManager> m_AssetManager;
 
 		static Application* s_Instance;
 	};

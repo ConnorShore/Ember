@@ -40,20 +40,16 @@ namespace Ember {
 	// Texture Library
 	//////////////////////////////////////////////////////////////////////////
 
-	class TextureLibrary
+	class TextureImporter
 	{
 	public:
-		const SharedPtr<Texture>& Register(const std::string& filePath);
-		const SharedPtr<Texture>& Register(const std::string& name, const std::string& filePath);
-
-		const SharedPtr<Texture>& Get(const std::string& name);
-		bool Exists(const std::string& name);
-
-	private:
-		void Add(SharedPtr<Texture>&& texture);
-		void Add(const std::string& name, SharedPtr<Texture>&& texture);
-
-	private:
-		std::unordered_map<std::string, SharedPtr<Texture>> m_TextureMap;
+		static SharedPtr<Texture> Load(const std::string& filePath)
+		{
+			return Texture::Create(filePath);
+		}
+		static SharedPtr<Texture> Load(const std::string& name, const std::string& filePath)
+		{
+			return Texture::Create(name, filePath);
+		}
 	};
 }

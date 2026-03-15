@@ -40,19 +40,16 @@ namespace Ember {
 	// Shader Library
 	//////////////////////////////////////////////////////////////////////////
 
-	class ShaderLibrary
+	class ShaderImporter
 	{
 	public:
-		const SharedPtr<Shader>& Register(const std::string& filePath, const ShaderMacros& macros = {});
-		const SharedPtr<Shader>& Register(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
-
-		const SharedPtr<Shader>& Get(const std::string& name);
-		bool Exists(const std::string& name);
-
-	private:
-		void Add(SharedPtr<Shader>&& shader);
-		void Add(const std::string& name, SharedPtr<Shader>&& shader);
-	private:
-		std::unordered_map<std::string, SharedPtr<Shader>> m_ShaderMap;
+		static SharedPtr<Shader> Load(const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(filePath, macros);
+		}
+		static SharedPtr<Shader> Load(const std::string& name, std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(name, filePath, macros);
+		}
 	};
 }

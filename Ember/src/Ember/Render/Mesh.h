@@ -33,19 +33,16 @@ namespace Ember {
 	// Mesh Library
 	//////////////////////////////////////////////////////////////////////////
 
-	class MeshLibrary
+	class MeshImporter
 	{
 	public:
-		const SharedPtr<Mesh>& Register(const std::string& filePath);
-		const SharedPtr<Mesh>& Register(const std::string& name, const std::string& filePath);
-
-		const SharedPtr<Mesh>& Get(const std::string& name);
-		bool Exists(const std::string& name);
-
-	private:
-		void Add(SharedPtr<Mesh>&& mesh);
-		void Add(const std::string& name, SharedPtr<Mesh>&& mesh);
-	private:
-		std::unordered_map<std::string, SharedPtr<Mesh>> m_MeshMap;
+		static SharedPtr<Mesh> Load(const std::string& filePath)
+		{
+			return SharedPtr<Mesh>::Create(filePath);
+		}
+		static SharedPtr<Mesh> Load(const std::string& name, const std::string& filePath)
+		{
+			return SharedPtr<Mesh>::Create(name, filePath);
+		}
 	};
 }

@@ -2,10 +2,7 @@
 
 #include "Core.h"
 #include "Ember/Event/Event.h"
-#include "Ember/Render/Shader.h"
-#include "Ember/Render/Texture.h"
-#include "Ember/Render/Mesh.h"
-#include "Ember/Render/Material.h"
+#include "Ember/Asset/AssetManager.h"
 
 #include <string>
 
@@ -26,27 +23,34 @@ namespace Ember {
 
 		inline const std::string& GetName() const { return m_Name; }
 
+		inline void SetAssetManagerHandle(AssetManager* handle) { m_AssetManagerHandle = handle; }
+
 	protected:
-		const SharedPtr<Shader>& RegisterShader(const std::string& filePath);
-		const SharedPtr<Shader>& GetShader(const std::string& name);
+		template<IsCoreAsset T, typename... Args>
+		SharedPtr<T> CreateAsset(Args&&... args)
+		{
+			EB_CORE_ASSERT(m_AssetManagerHandle, "AssetManager is not initialized for this layer!");
+			return m_AssetManagerHandle->Create<T>(std::forward<Args>(args)...);
+		}
 
-		const SharedPtr<Texture>& RegisterTexture(const std::string& filePath);
-		const SharedPtr<Texture>& GetTexture(const std::string& name);
+		template<IsCoreAsset T>
+		SharedPtr<T> LoadAsset(const std::string& filePath)
+		{
+			EB_CORE_ASSERT(m_AssetManagerHandle, "AssetManager is not initialized for this layer!");
+			return m_AssetManagerHandle->Load<T>(filePath);
+		}
 
-		const SharedPtr<Mesh>& RegisterMesh(const std::string& filePath);
-		const SharedPtr<Mesh>& GetMesh(const std::string& name);
-
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader,
-			const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<MaterialInstance>& RegisterMaterial(const std::string& name, SharedPtr<Material> material);
-		const SharedPtr<MaterialBase>& GetMaterial(const std::string& name);
+		template<IsCoreAsset T>
+		SharedPtr<T> LoadAsset(const std::string& name, const std::string& filePath)
+		{
+			EB_CORE_ASSERT(m_AssetManagerHandle, "AssetManager is not initialized for this layer!");
+			return m_AssetManagerHandle->Load<T>(name, filePath);
+		}
 
 	private:
 		// TODO: Make m_Name debug only?
 		std::string m_Name;
+		AssetManager* m_AssetManagerHandle = nullptr;
 	};
 
 }

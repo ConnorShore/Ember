@@ -46,5 +46,9 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Scene/Behavior.h"
 
+#include "Ember/Asset/UUID.h"
+#include "Ember/Asset/Asset.h"
+#include "Ember/Asset/AssetManager.h"
+
 // Vendor includes
 #include <imgui/imgui.h>
