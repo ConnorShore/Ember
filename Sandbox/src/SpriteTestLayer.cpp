@@ -66,14 +66,14 @@ void SpriteTestLayer::OnAttach()
 		m_SpriteEntities.push_back(entity);
 	}
 
-	RegisterTexture("Sandbox/assets/textures/image.png");
+	auto imageTex = LoadAsset<Ember::Texture>("Sandbox/assets/textures/image.png");
 
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();
 	auto& entityTransform = m_Entity.GetComponent<Ember::TransformComponent>();
 	entityTransform.Size = Ember::Vector3f(3.0f, 3.0f, 1.0f);
 
-	Ember::SpriteComponent spriteComp = { GetTexture("image")};
+	Ember::SpriteComponent spriteComp = { imageTex };
 	m_Entity.AttachComponent(spriteComp);
 
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };

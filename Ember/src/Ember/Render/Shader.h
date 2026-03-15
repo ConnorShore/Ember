@@ -2,6 +2,7 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
+#include "Ember/Asset/Asset.h"
 
 #include "ShaderParser.h"
 
@@ -14,9 +15,12 @@ namespace Ember {
 	// Shader
 	//////////////////////////////////////////////////////////////////////////
 
-	class Shader : public SharedResource
+	class Shader : public Asset
 	{
 	public:
+		Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+			: Asset(name, filePath, AssetType::Shader) {}
+
 		virtual ~Shader() = default;
 
 		virtual void Bind() const = 0;
@@ -28,8 +32,6 @@ namespace Ember {
 		virtual void SetFloat4(const std::string& name, const Vector4f& vec) const = 0;
 		virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const = 0;
 
-		virtual const std::string& GetName() const = 0;
-
 		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
 	};
@@ -38,19 +40,16 @@ namespace Ember {
 	// Shader Library
 	//////////////////////////////////////////////////////////////////////////
 
-	class ShaderLibrary
+	class ShaderImporter
 	{
 	public:
-		const SharedPtr<Shader>& Register(const std::string& filePath, const ShaderMacros& macros = {});
-		const SharedPtr<Shader>& Register(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
-
-		const SharedPtr<Shader>& Get(const std::string& name);
-		bool Exists(const std::string& name);
-
-	private:
-		void Add(SharedPtr<Shader>&& shader);
-		void Add(const std::string& name, SharedPtr<Shader>&& shader);
-	private:
-		std::unordered_map<std::string, SharedPtr<Shader>> m_ShaderMap;
+		static SharedPtr<Shader> Load(const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(filePath, macros);
+		}
+		static SharedPtr<Shader> Load(const std::string& name, std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(name, filePath, macros);
+		}
 	};
 }

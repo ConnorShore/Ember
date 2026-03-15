@@ -8,7 +8,7 @@ namespace Ember {
 	//////////////////////////////////////////////////////////////////////////
 
 	Mesh::Mesh(const std::string& name, const std::string& filePath)
-		: m_Name(name)
+		: Asset(name, filePath, AssetType::Mesh)
 	{
 		// TODO: Model loading
 		// 
@@ -28,8 +28,8 @@ namespace Ember {
 	{
 	}
 
-	Mesh::Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices)
-		: m_Name("")
+	Mesh::Mesh(const std::string& name, std::vector<float>& vertices, const std::vector<unsigned int>& indices)
+		: Asset(name, "", AssetType::Mesh)
 	{
 		auto vbo = VertexBuffer::Create(&vertices[0], sizeof(float) * vertices.size(), {
 			{ ShaderDataType::Float3, "v_Position" },
@@ -45,46 +45,6 @@ namespace Ember {
 	Mesh::~Mesh()
 	{
 
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Mesh Library
-	//////////////////////////////////////////////////////////////////////////
-
-	const SharedPtr<Mesh>& MeshLibrary::Register(const std::string& filePath)
-	{
-		auto mesh = SharedPtr<Mesh>::Create(filePath);
-		Add(std::move(mesh));
-		return Get(std::filesystem::path(filePath).stem().string());
-	}
-
-	const SharedPtr<Mesh>& MeshLibrary::Register(const std::string& name, const std::string& filePath)
-	{
-		auto mesh = SharedPtr<Mesh>::Create(name, filePath);
-		Add(std::move(mesh));
-		return Get(name);
-	}
-
-	const SharedPtr<Mesh>& MeshLibrary::Get(const std::string& name)
-	{
-		EB_CORE_ASSERT(Exists(name), "Mesh does not exists in library!");
-		return m_MeshMap.at(name);
-	}
-
-	bool MeshLibrary::Exists(const std::string& name)
-	{
-		return m_MeshMap.contains(name);
-	}
-
-	void MeshLibrary::Add(SharedPtr<Mesh>&& mesh)
-	{
-		Add(mesh->GetName(), std::move(mesh));
-	}
-
-	void MeshLibrary::Add(const std::string& name, SharedPtr<Mesh>&& mesh)
-	{
-		EB_CORE_ASSERT(!Exists(name), "Mesh already exists in library!");
-		m_MeshMap[name] = std::move(mesh);
 	}
 
 }

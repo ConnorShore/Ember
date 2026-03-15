@@ -8,7 +8,7 @@ namespace Ember {
 	namespace OpenGL {
 
 		Texture::Texture()
-			:m_Name("Default"), m_FilePath(), m_Width(1), m_Height(1), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
+			: Ember::Texture("Default", ""), m_Width(1), m_Height(1), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
@@ -26,7 +26,7 @@ namespace Ember {
 		}
 
 		Texture::Texture(const std::string& name, const std::string& filePath)
-			: m_Name(name), m_FilePath(filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0)
+			: Ember::Texture(name, filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0)
 		{
 			stbi_set_flip_vertically_on_load(1);	// Flips texture vertically since OpenGL expects pixels to start on bottom left
 			m_LocalBuffer = stbi_load(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);

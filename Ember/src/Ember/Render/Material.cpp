@@ -5,10 +5,19 @@
 namespace Ember {
 
 	Material::Material(const std::string& name)
-		: m_Name(name), m_Shader(Renderer3D::GetStandardGeometryShader()), m_RenderQueue(RenderQueue::Opaque) {}
+		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque) 
+	{
+	}
+
+	Material::Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+		: Material(name, shader, renderQueue, {})
+	{
+	}
 
 	Material::Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
-		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque, uniforms) {}
+		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque, uniforms)
+	{
+	}
 
 	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
