@@ -10,7 +10,10 @@ out vec4 color;
 out vec2 textureCoord;
 flat out float texIndex;
 
-uniform mat4 u_ViewProjection;
+layout(std140, binding = 0) uniform CameraData
+{
+    mat4 u_ViewProjection;
+};
 
 void main()
 {

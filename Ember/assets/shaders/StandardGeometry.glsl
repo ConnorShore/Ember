@@ -9,8 +9,12 @@ out vec3 WorldPos;
 out vec3 Normal;
 out vec2 TexCoord;
 
+layout(std140, binding = 0) uniform CameraData
+{
+    mat4 u_ViewProjection;
+};
+
 uniform mat4 u_Transform;
-uniform mat4 u_ViewProjection;
 
 void main()
 {

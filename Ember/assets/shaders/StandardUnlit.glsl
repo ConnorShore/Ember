@@ -3,8 +3,12 @@
 
 layout(location = 0) in vec3 v_Position;
 
+layout(std140, binding = 0) uniform CameraData
+{
+    mat4 u_ViewProjection;
+};
+
 uniform mat4 u_Transform;
-uniform mat4 u_ViewProjection;
 
 void main()
 {

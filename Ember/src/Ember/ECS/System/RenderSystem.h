@@ -3,6 +3,7 @@
 #include "System.h"
 #include "Ember/ECS/Registry.h"
 #include "Ember/Render/Framebuffer.h"
+#include "Ember/Render/UniformBuffer.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/ECS/Component/Components.h"
@@ -36,6 +37,7 @@ namespace Ember {
 
 	private:
 		SharedPtr<Framebuffer> m_GBuffer;
+		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<Mesh> m_ScreenQuad;
 
 		struct RenderQueueBuckets

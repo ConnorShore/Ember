@@ -47,8 +47,6 @@ namespace Ember {
 
 		std::array<SharedPtr<Texture>, MaxTextureSlots> TextureSlots;
 		unsigned int TextureSlotIndex = 1;	// 0 is default
-
-		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
 	};
 
 	static ScopedPtr<RendererData2D> s_RendererData;
@@ -109,14 +107,9 @@ namespace Ember {
 		delete[] s_RendererData->QuadBufferStart;
 	}
 
-	void Renderer2D::BeginFrame(CameraComponent& cameraComponent, const Matrix4f& transform)
+	void Renderer2D::BeginFrame()
 	{
 		RenderAction::UseBlending(true);
-
-		Matrix4f viewMatrix = Math::Inverse(transform);
-		s_RendererData->ViewProjectionMatrix = cameraComponent.Camera.GetProjectionMatrix() * viewMatrix;
-		s_RendererData->QuadShader->Bind();
-		s_RendererData->QuadShader->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
 
 		StartBatch();
 	}

@@ -24,6 +24,7 @@ namespace Ember {
 			Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 		};
 		m_GBuffer = Framebuffer::Create(specs);
+		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 
@@ -92,6 +93,11 @@ namespace Ember {
 				m_RenderSceneState.ActiveCamera = camera;
 				m_RenderSceneState.CameraTransform = Math::Translate(transform.Position) * Math::GetRotationMatrix(transform.Rotation);
 				m_RenderSceneState.IsCameraFound = true;
+
+				// set uniform buffer
+				Matrix4f viewProjectionMat = camera.Camera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+				m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
+
 				break;
 			}
 		}
@@ -109,7 +115,7 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
 
-		Renderer3D::BeginFrame(m_RenderSceneState.ActiveCamera, m_RenderSceneState.CameraTransform);
+		Renderer3D::BeginFrame();
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
@@ -166,7 +172,7 @@ namespace Ember {
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 		RenderAction::UseDepthTest(true);
 
-		Renderer3D::BeginFrame(m_RenderSceneState.ActiveCamera, m_RenderSceneState.CameraTransform);
+		Renderer3D::BeginFrame();
 
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
@@ -185,8 +191,8 @@ namespace Ember {
 	void RenderSystem::Render2DEntities(Registry* registry)
 	{
 		RenderAction::UseDepthTest(false);
-
-		Renderer2D::BeginFrame(m_RenderSceneState.ActiveCamera, m_RenderSceneState.CameraTransform);
+		
+		Renderer2D::BeginFrame();
 
 		View view = registry->Query<SpriteComponent, TransformComponent>();
 		for (EntityID entity : view)

@@ -6,9 +6,6 @@ namespace Ember {
 
 	struct RendererData3D
 	{
-		Matrix4f ViewProjectionMatrix = Matrix4f(1.0f);
-		Vector3f CameraPosition = Vector3f(0.0f);
-
 		SharedPtr<Texture> WhiteTexture;
 		SharedPtr<Shader> StandardGeoShader;
 		SharedPtr<Shader> StandardLitShader;
@@ -41,14 +38,10 @@ namespace Ember {
 		s_RendererData.Reset();
 	}
 
-	void Renderer3D::BeginFrame(CameraComponent& camera, const Matrix4f& transform)
+	void Renderer3D::BeginFrame()
 	{
 		RenderAction::UseDepthTest(true);
 		RenderAction::UseBlending(false);
-
-		Matrix4f viewMatrix = Math::Inverse(transform);
-		s_RendererData->ViewProjectionMatrix = camera.Camera.GetProjectionMatrix() * viewMatrix;
-		s_RendererData->CameraPosition = Vector3f(transform[3]);
 	}
 
 	void Renderer3D::EndFrame()
@@ -62,7 +55,6 @@ namespace Ember {
 
 		// Required Uniforms
 		material.Material->GetShader()->SetMatrix4("u_Transform", transform);
-		material.Material->GetShader()->SetMatrix4("u_ViewProjection", s_RendererData->ViewProjectionMatrix);
 
 		RenderAction::DrawIndexed(vertexArray);
 	}
