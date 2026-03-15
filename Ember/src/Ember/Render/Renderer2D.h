@@ -12,7 +12,7 @@ namespace Ember {
 		static void Init();
 		static void Shutdown();
 
-		static void BeginFrame(CameraComponent& camera, const Matrix4f& transform);
+		static void BeginFrame();
 		static void EndFrame();
 
 		static void StartBatch();

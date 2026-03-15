@@ -34,6 +34,7 @@
 #include "Ember/Render/Material.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/Framebuffer.h"
+#include "Ember/Render/UniformBuffer.h"
 
 #include "Ember/ImGui/ImGuiLayer.h"
 
