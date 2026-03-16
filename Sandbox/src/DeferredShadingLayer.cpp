@@ -39,7 +39,7 @@ void DeferredShadingLayer::OnAttach()
 
 	// Add our cube as an entity with deferred rendering components
 
-	auto testCube = LoadAsset<Ember::Model>("TestCube", "Ember/assets/models/Cube.obj");
+	auto testCube = LoadAsset<Ember::Model>("TestCube", "Sandbox/assets/models/Cube.obj");
 
 	if (testCube)
 	{
@@ -51,17 +51,33 @@ void DeferredShadingLayer::OnAttach()
 	{
 		EB_CORE_INFO("Failed to load test cube!");
 	}
-
-	Ember::Entity rootCube = m_MainScene->InstantiateModel(testCube);
-	rootCube.GetComponent<Ember::TransformComponent>().Scale = { 2.5f, 5.0f, 2.5f };
-
 	Ember::MaterialComponent matTest = { m_DefaultSphereMaterial };
-	auto test = m_MainScene->GetEntity("defaultobject");
-	test.AttachComponent(matTest);
 
-	bool transformTest = test.ContainsComponent<Ember::TransformComponent>();
-	bool materialTest = test.ContainsComponent<Ember::MaterialComponent>();
-	bool meshTest = test.ContainsComponent<Ember::MeshComponent>();
+	auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/satellite.obj");
+	m_Satellite = m_MainScene->InstantiateModel(satelliteAsset);
+
+	// 2. Verification
+	// Check if we can find a child deep in the tree
+	Ember::Entity leftWing = m_Satellite.FindEntityInHierarchy("Wing_Left");
+	if (leftWing) {
+		EB_INFO("Found child: {0}", leftWing.GetName());
+	}
+
+	auto children = m_Satellite.GetAllChildren();
+	for (auto child : children)
+	{
+		child.AttachComponent(matTest);
+	}
+
+	//Ember::Entity rootCube = m_MainScene->InstantiateModel(testCube);
+	//rootCube.GetComponent<Ember::TransformComponent>().Scale = { 2.5f, 5.0f, 2.5f };
+
+	//auto test = m_MainScene->GetEntity("defaultobject");
+	//test.AttachComponent(matTest);
+
+	//bool transformTest = test.ContainsComponent<Ember::TransformComponent>();
+	//bool materialTest = test.ContainsComponent<Ember::MaterialComponent>();
+	//bool meshTest = test.ContainsComponent<Ember::MeshComponent>();
 	//auto cubeMesh = testCube->GetAllMeshes()[0];
 	//auto cubeEntity = m_MainScene->AddEntity();
 	//cubeEntity.GetComponent<Ember::TransformComponent>().Scale = { 5.0f, 10.0f, 5.0f };
@@ -183,6 +199,14 @@ void DeferredShadingLayer::OnDetach()
 
 void DeferredShadingLayer::OnUpdate(Ember::TimeStep delta)
 {
+	auto& transform = m_Satellite.GetComponent<Ember::TransformComponent>();
+	transform.Rotation.y += 1.0f * delta;
+
+	// Rotate the "Left Wing" child entity in the opposite direction to demonstrate hierarchical transforms
+	auto leftWing = m_Satellite.FindEntityInHierarchy("Wing_Left");
+	auto& leftWingTransform = leftWing.GetComponent<Ember::TransformComponent>();
+	leftWingTransform.Rotation.x += 1.0f * delta;
+
 	m_Framebuffer->Bind();
 
 	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);

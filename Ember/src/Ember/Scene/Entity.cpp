@@ -23,6 +23,27 @@ namespace Ember {
 	{
 	}
 
+	std::vector<Entity> Entity::GetAllChildren()
+	{
+		std::vector<Entity> ret;
+		auto& relationship = GetComponent<RelationshipComponent>();
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			ret.push_back(childEntity);
+		}
+
+		// Look at children's children
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			std::vector<Entity> childChildren = childEntity.GetAllChildren();
+			ret.insert(ret.end(), childChildren.begin(), childChildren.end());
+		}
+
+		return ret;
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

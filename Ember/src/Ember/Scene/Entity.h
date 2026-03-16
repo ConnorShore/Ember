@@ -35,6 +35,8 @@ namespace Ember {
 		template<typename T>
 		inline T& GetComponent();
 
+		std::vector<Entity> GetAllChildren();
+
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);
 

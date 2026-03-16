@@ -33,4 +33,6 @@ private:
 	float m_Metallic = 0.5f;
 	float m_Roughness = 0.5f;
 	float m_AO = 1.0f;
+
+	Ember::Entity m_Satellite;
 };
