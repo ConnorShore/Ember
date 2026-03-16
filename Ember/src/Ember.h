@@ -53,3 +53,4 @@
 
 // Vendor includes
 #include <imgui/imgui.h>
+#include <assimp/Importer.hpp>

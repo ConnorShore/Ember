@@ -7,3 +7,6 @@
 [submodule "Ember/vendor/imgui"]
 	path = Ember/vendor/imgui
 	url = https://github.com/ConnorShore/imgui.git
+[submodule "Ember/vendor/assimp"]
+	path = Ember/vendor/assimp
+	url = https://github.com/ConnorShore/assimp.git

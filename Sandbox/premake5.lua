@@ -22,7 +22,8 @@ project "Sandbox"
 
    links 
    {
-      "Ember"
+      "Ember",
+      "assimp"
    }
 
    filter "system:windows"

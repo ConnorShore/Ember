@@ -16,7 +16,8 @@ project "Ember"
       "vendor/glad/include",
       "vendor/glm",
       "vendor/imgui",
-      "vendor/stb"
+      "vendor/stb",
+      "vendor/assimp/include"
    }
 
    files 
@@ -32,7 +33,8 @@ project "Ember"
       "GLFW",
       "glad",
       "imgui",
-      "opengl32.lib"
+      "assimp",
+      "opengl32.lib",
    }
 
    defines

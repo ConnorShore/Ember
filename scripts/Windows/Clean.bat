@@ -22,6 +22,7 @@ echo Removing bin and bin-int directories in Ember/vendor subdirectories...
 for /d %%D in ("Ember\vendor\*") do (
     IF EXIST "%%D\bin" rmdir /s /q "%%D\bin"
     IF EXIST "%%D\bin-int" rmdir /s /q "%%D\bin-int"
+    IF EXIST "%%D\obj" rmdir /s /q "%%D\obj"
 )
 
 echo.
