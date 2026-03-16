@@ -5,7 +5,7 @@
 #include "Ember/ECS/Registry.h"
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
-
+#include "Ember/Asset/Model.h"
 
 #include <unordered_map>
 
@@ -25,8 +25,11 @@ namespace Ember {
 		void OnViewportResize(unsigned int width, unsigned int height);
 
 		Entity AddEntity();
+		Entity AddEntity(const std::string& name);
 		Entity GetEntity(const std::string& tag);
 		void RemoveEntity(const Entity& entity);
+
+		Entity InstantiateModel(const SharedPtr<Model>& model, const std::string& name = "");
 
 		template<typename T>
 		inline void AttachComponent(const Entity& entity, T& component);
@@ -41,6 +44,7 @@ namespace Ember {
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
+		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
 
 	private:
 		ScopedPtr<Registry> m_Registry;

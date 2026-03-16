@@ -71,7 +71,7 @@ void SpriteTestLayer::OnAttach()
 	// Main Entity
 	m_Entity = m_MainScene->AddEntity();
 	auto& entityTransform = m_Entity.GetComponent<Ember::TransformComponent>();
-	entityTransform.Size = Ember::Vector3f(3.0f, 3.0f, 1.0f);
+	entityTransform.Scale = Ember::Vector3f(3.0f, 3.0f, 1.0f);
 
 	Ember::SpriteComponent spriteComp = { imageTex };
 	m_Entity.AttachComponent(spriteComp);

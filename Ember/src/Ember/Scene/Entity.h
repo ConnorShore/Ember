@@ -5,6 +5,7 @@
 #include "Ember/ECS/Component/Components.h"
 
 #include <string>
+#include <vector>
 
 namespace Ember {
 
@@ -29,7 +30,13 @@ namespace Ember {
 		inline void DetachComponent();
 
 		template<typename T>
+		inline bool ContainsComponent();
+
+		template<typename T>
 		inline T& GetComponent();
+
+		Entity GetChildByName(const std::string& name);
+		Entity FindEntityInHierarchy(const std::string& name);
 
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
 		const std::string& GetName() const;
@@ -42,8 +49,6 @@ namespace Ember {
 	};
 
 }
-
-// Template implementations included after Scene definition to break circular dependency
 
 #include "Scene.h"
 
@@ -66,6 +71,12 @@ namespace Ember {
 	inline void Entity::DetachComponent()
 	{
 		m_SceneHandle->GetRegistry().DetachComponent<T>(m_EntityHandle);
+	}
+
+	template<typename T>
+	inline bool Entity::ContainsComponent()
+	{
+		return m_SceneHandle->GetRegistry().ContainsComponent<T>(m_EntityHandle);
 	}
 
 	template<typename T>

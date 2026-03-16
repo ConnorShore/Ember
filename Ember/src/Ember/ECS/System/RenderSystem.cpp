@@ -120,7 +120,7 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
+			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
 		Renderer3D::EndFrame();
@@ -177,7 +177,7 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.GetTransformationMatrix());
+			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
 		Renderer3D::EndFrame();
@@ -200,10 +200,10 @@ namespace Ember {
 			auto [sprite, transform] = registry->GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.Texture == nullptr)
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Size.x, transform.Size.y), sprite.Color);
+					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color);
 			else
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Size.x, transform.Size.y), sprite.Color, sprite.Texture);
+					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color, sprite.Texture);
 		}
 
 		Renderer2D::EndFrame();

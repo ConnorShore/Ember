@@ -15,7 +15,6 @@ DeferredShadingLayer::~DeferredShadingLayer()
 
 void DeferredShadingLayer::OnAttach()
 {
-
 	// Framebuffer
 	Ember::FramebufferSpecification specs;
 	specs.Width = 800;
@@ -53,15 +52,25 @@ void DeferredShadingLayer::OnAttach()
 		EB_CORE_INFO("Failed to load test cube!");
 	}
 
-	auto cubeMesh = testCube->GetAllMeshes()[0];
-	auto cubeEntity = m_MainScene->AddEntity();
-	cubeEntity.GetComponent<Ember::TransformComponent>().Size = { 5.0f, 10.0f, 5.0f };
+	Ember::Entity rootCube = m_MainScene->InstantiateModel(testCube);
+	rootCube.GetComponent<Ember::TransformComponent>().Scale = { 2.5f, 5.0f, 2.5f };
 
-	Ember::MeshComponent cubeMeshComp = { cubeMesh };
-	cubeEntity.AttachComponent<Ember::MeshComponent>(cubeMeshComp);
+	Ember::MaterialComponent matTest = { m_DefaultSphereMaterial };
+	auto test = m_MainScene->GetEntity("defaultobject");
+	test.AttachComponent(matTest);
 
-	Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
-	cubeEntity.AttachComponent(matComp);
+	bool transformTest = test.ContainsComponent<Ember::TransformComponent>();
+	bool materialTest = test.ContainsComponent<Ember::MaterialComponent>();
+	bool meshTest = test.ContainsComponent<Ember::MeshComponent>();
+	//auto cubeMesh = testCube->GetAllMeshes()[0];
+	//auto cubeEntity = m_MainScene->AddEntity();
+	//cubeEntity.GetComponent<Ember::TransformComponent>().Scale = { 5.0f, 10.0f, 5.0f };
+
+	//Ember::MeshComponent cubeMeshComp = { cubeMesh };
+	//cubeEntity.AttachComponent<Ember::MeshComponent>(cubeMeshComp);
+
+	//Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
+	//cubeEntity.AttachComponent(matComp);
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
@@ -144,27 +153,27 @@ void DeferredShadingLayer::OnAttach()
 	// ------------------------------------------------------------------
 	// Interactive sphere (ImGui-controlled) — placed to the right
 	// ------------------------------------------------------------------
-	m_InteractiveSphere = m_MainScene->AddEntity();
-	auto& interactiveTransform = m_InteractiveSphere.GetComponent<Ember::TransformComponent>();
-	interactiveTransform.Position = { (cols / 2) * spacing + 4.0f, 0.0f, 0.0f };
-	interactiveTransform.Size = { 1.5f, 1.5f, 1.5f };
+	//m_InteractiveSphere = m_MainScene->AddEntity();
+	//auto& interactiveTransform = m_InteractiveSphere.GetComponent<Ember::TransformComponent>();
+	//interactiveTransform.Position = { (cols / 2) * spacing + 4.0f, 0.0f, 0.0f };
+	//interactiveTransform.Scale = { 1.5f, 1.5f, 1.5f };
 
-	Ember::MeshComponent interactiveMeshComp = { mesh };
-	m_InteractiveSphere.AttachComponent(interactiveMeshComp);
+	//Ember::MeshComponent interactiveMeshComp = { mesh };
+	//m_InteractiveSphere.AttachComponent(interactiveMeshComp);
 
-	Ember::MaterialComponent interactiveMatComp = { m_DefaultSphereMaterial };
-	m_InteractiveSphere.AttachComponent(interactiveMatComp);
+	//Ember::MaterialComponent interactiveMatComp = { m_DefaultSphereMaterial };
+	//m_InteractiveSphere.AttachComponent(interactiveMatComp);
 
-	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
-	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-	m_InteractiveInstance->Set("u_AO", m_AO);
-	m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
+	//m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
+	//m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+	//m_InteractiveInstance->Set("u_Metallic", m_Metallic);
+	//m_InteractiveInstance->Set("u_Roughness", m_Roughness);
+	//m_InteractiveInstance->Set("u_AO", m_AO);
+	//m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
 
 	// Choose Lights
-	//SetupStandardLights();
-	SetupRandomLights();
+	SetupStandardLights();
+	//SetupRandomLights();
 }
 
 void DeferredShadingLayer::OnDetach()
@@ -288,7 +297,7 @@ void DeferredShadingLayer::SetupRandomLights()
 
 		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
 		lt.Position = { randomX(gen), randomY(gen), randomZ(gen) };
-		lt.Size = { 0.1f, 0.1f, 0.1f }; // Make the debug cubes tiny
+		lt.Scale = { 0.1f, 0.1f, 0.1f }; // Make the debug cubes tiny
 
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);
@@ -333,7 +342,7 @@ void DeferredShadingLayer::SetupStandardLights()
 		lightEntity.AttachComponent(plComp);
 		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
 		lt.Position = ld.position;
-		lt.Size = { 0.3f, 0.3f, 0.3f };
+		lt.Scale = { 0.3f, 0.3f, 0.3f };
 
 		Ember::MeshComponent lightCubeMeshComp = { lightCubeMesh };
 		lightEntity.AttachComponent(lightCubeMeshComp);

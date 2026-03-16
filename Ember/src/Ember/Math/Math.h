@@ -6,6 +6,7 @@
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace Ember {
 
@@ -96,6 +97,26 @@ namespace Ember {
 		static inline Matrix4f GetRotationMatrix(const Vector3f eulerAngles)
 		{
 			return glm::toMat4(Quaternion(eulerAngles));
+		}
+
+		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
+		{
+			glm::vec3 scale;
+			glm::quat rotation;
+			glm::vec3 translation;
+			glm::vec3 skew;
+			glm::vec4 perspective;
+
+			bool success = glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+			if (success)
+			{
+				outTranslation = translation;
+				outScale = scale;
+				outRotation = glm::eulerAngles(rotation);
+			}
+
+			return success;
 		}
 	};
 
