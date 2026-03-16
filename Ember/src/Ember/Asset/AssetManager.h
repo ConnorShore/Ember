@@ -3,6 +3,7 @@
 #include "Ember/Core/Core.h"
 #include "UUID.h"
 #include "Asset.h"
+#include "ModelImporter.h"
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
@@ -50,8 +51,10 @@ namespace Ember {
 				newAsset = TextureImporter::Load(name, filePath);
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(name, filePath);
-			else if constexpr (std::same_as<T, Mesh>)
-				newAsset = MeshImporter::Load(name, filePath);
+			else if constexpr (std::same_as<T, Model>)
+				newAsset = ModelImporter::Load(name, filePath);
+			//else if constexpr (std::same_as<T, Mesh>)
+			//	newAsset = MeshImporter::Load(name, filePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
@@ -79,8 +82,10 @@ namespace Ember {
 				return std::format("Texture({})", m_TextureCt++);
 			else if constexpr (std::same_as<T, Shader>)
 				return std::format("Shader({})", m_ShaderCt++);
-			else if constexpr (std::same_as<T, Mesh>)
-				return std::format("Mesh({})", m_MeshCt++);
+			else if constexpr (std::same_as<T, Model>)
+				return std::format("Model({})", m_ModelCt++);
+			//else if constexpr (std::same_as<T, Mesh>)
+			//	return std::format("Mesh({})", m_MeshCt++);
 			else if constexpr (std::same_as<T, Material> || std::same_as<T, MaterialInstance>)
 				return std::format("Material({})", m_MaterialCt++);
 
@@ -93,7 +98,8 @@ namespace Ember {
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
 		unsigned int m_TextureCt = 0;
 		unsigned int m_ShaderCt = 0;
-		unsigned int m_MeshCt = 0;
+		unsigned int m_ModelCt = 0;
+		//unsigned int m_MeshCt = 0;
 		unsigned int m_MaterialCt = 0;
 	};
 

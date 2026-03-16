@@ -4,7 +4,6 @@
 #include "Ember/Input/Input.h"
 #include "Ember/Render/RenderAction.h"
 
-#include <assimp/Importer.hpp>
 #include <GLFW/glfw3.h>
 
 namespace Ember {
@@ -24,9 +23,6 @@ namespace Ember {
 		m_ImGuiLayer->OnAttach();
 
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
-
-		Assimp::Importer testImporter;
-		EB_CORE_INFO("Assimp Successfully Linked! Current Error State: '{0}'", testImporter.GetErrorString());
 
 		EB_CORE_INFO("Application created!");
 	}

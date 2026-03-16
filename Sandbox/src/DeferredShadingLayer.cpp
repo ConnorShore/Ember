@@ -15,6 +15,7 @@ DeferredShadingLayer::~DeferredShadingLayer()
 
 void DeferredShadingLayer::OnAttach()
 {
+
 	// Framebuffer
 	Ember::FramebufferSpecification specs;
 	specs.Width = 800;
@@ -37,6 +38,31 @@ void DeferredShadingLayer::OnAttach()
 
 	m_DefaultLightCubeMaterial = CreateAsset<Ember::Material>("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
 
+	// Add our cube as an entity with deferred rendering components
+
+	auto testCube = LoadAsset<Ember::Model>("TestCube", "Ember/assets/models/Cube.obj");
+
+	if (testCube)
+	{
+		const auto& meshes = testCube->GetAllMeshes();
+		EB_CORE_INFO("Successfully loaded model: {0}", testCube->GetName());
+		EB_CORE_INFO("Total Meshes: {0}", meshes.size());
+	}
+	else
+	{
+		EB_CORE_INFO("Failed to load test cube!");
+	}
+
+	auto cubeMesh = testCube->GetAllMeshes()[0];
+	auto cubeEntity = m_MainScene->AddEntity();
+	cubeEntity.GetComponent<Ember::TransformComponent>().Size = { 5.0f, 10.0f, 5.0f };
+
+	Ember::MeshComponent cubeMeshComp = { cubeMesh };
+	cubeEntity.AttachComponent<Ember::MeshComponent>(cubeMeshComp);
+
+	Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
+	cubeEntity.AttachComponent(matComp);
+
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
 
@@ -49,34 +75,34 @@ void DeferredShadingLayer::OnAttach()
 	constexpr int   rows = 7;
 	constexpr float spacing = 2.5f;
 
-	for (int row = 0; row < rows; row++)
-	{
-		float metallic = (float)row / (float)(rows - 1);
+	//for (int row = 0; row < rows; row++)
+	//{
+	//	float metallic = (float)row / (float)(rows - 1);
 
-		for (int col = 0; col < cols; col++)
-		{
-			float roughness = 0.05f + ((float)col / (float)(cols - 1)) * 0.95f;
+	//	for (int col = 0; col < cols; col++)
+	//	{
+	//		float roughness = 0.05f + ((float)col / (float)(cols - 1)) * 0.95f;
 
-			auto sphere = m_MainScene->AddEntity();
-			auto& transform = sphere.GetComponent<Ember::TransformComponent>();
-			transform.Position = {
-				(col - cols / 2) * spacing,
-				(row - rows / 2) * spacing,
-				0.0f
-			};
+	//		auto sphere = m_MainScene->AddEntity();
+	//		auto& transform = sphere.GetComponent<Ember::TransformComponent>();
+	//		transform.Position = {
+	//			(col - cols / 2) * spacing,
+	//			(row - rows / 2) * spacing,
+	//			0.0f
+	//		};
 
-			Ember::MeshComponent meshComp = { mesh };
-			sphere.AttachComponent(meshComp);
+	//		Ember::MeshComponent meshComp = { mesh };
+	//		sphere.AttachComponent(meshComp);
 
-			Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
-			sphere.AttachComponent(matComp);
+	//		Ember::MaterialComponent matComp = { m_DefaultSphereMaterial };
+	//		sphere.AttachComponent(matComp);
 
-			auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-			instance->Set("u_Albedo", Ember::Vector3f(0.5f, 0.0f, 0.0f));
-			instance->Set("u_Metallic", metallic);
-			instance->Set("u_Roughness", roughness);
-		}
-	}
+	//		auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
+	//		instance->Set("u_Albedo", Ember::Vector3f(0.5f, 0.0f, 0.0f));
+	//		instance->Set("u_Metallic", metallic);
+	//		instance->Set("u_Roughness", roughness);
+	//	}
+	//}
 
 	// ------------------------------------------------------------------
 	// Ground plane — large quad rotated to lie flat beneath the spheres

@@ -12,6 +12,7 @@ namespace Ember {
 	{
 		Texture,
 		Mesh,
+		Model,
 		Shader,
 		Material
 	};

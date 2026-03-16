@@ -28,7 +28,7 @@ namespace Ember {
 	{
 	}
 
-	Mesh::Mesh(const std::string& name, std::vector<float>& vertices, const std::vector<unsigned int>& indices)
+	Mesh::Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices)
 		: Asset(name, "", AssetType::Mesh)
 	{
 		auto vbo = VertexBuffer::Create(&vertices[0], sizeof(float) * vertices.size(), {
