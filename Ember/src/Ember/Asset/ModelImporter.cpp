@@ -17,7 +17,8 @@ namespace Ember {
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
 			aiProcess_JoinIdenticalVertices |
-			aiProcess_GenNormals
+			aiProcess_GenNormals |
+			aiProcess_CalcTangentSpace
 		);
 
 		std::vector<SharedPtr<MaterialBase>> materials;
@@ -82,7 +83,9 @@ namespace Ember {
 		std::vector<float> vertices;
 		std::vector<unsigned int> indices;
 
-		vertices.reserve(aiMesh->mNumVertices * 8);
+		static unsigned int vertexSize = 14; // Position(3) + Normal(3) + TexCoords(2) + Tangent(3) + Bitangent(3)
+		vertices.reserve(aiMesh->mNumVertices * vertexSize);
+
 		for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			vertices.push_back(aiMesh->mVertices[i].x);
@@ -108,6 +111,30 @@ namespace Ember {
 			else
 			{
 				vertices.push_back(0.0f);
+				vertices.push_back(0.0f);
+			}
+			if (aiMesh->mTangents)
+			{
+				vertices.push_back(aiMesh->mTangents[i].x);
+				vertices.push_back(aiMesh->mTangents[i].y);
+				vertices.push_back(aiMesh->mTangents[i].z);
+			}
+			else
+			{
+				vertices.push_back(1.0f);
+				vertices.push_back(0.0f);
+				vertices.push_back(0.0f);
+			}
+			if (aiMesh->mBitangents)
+			{
+				vertices.push_back(aiMesh->mBitangents[i].x);
+				vertices.push_back(aiMesh->mBitangents[i].y);
+				vertices.push_back(aiMesh->mBitangents[i].z);
+			}
+			else
+			{
+				vertices.push_back(0.0f);
+				vertices.push_back(1.0f);
 				vertices.push_back(0.0f);
 			}
 		}
@@ -223,8 +250,24 @@ namespace Ember {
 			matInstance->Set(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
-		// TODO: Later on, this is where you will add:
-		// if (aiMat->GetTextureCount(aiTextureType_NORMALS) > 0) { ... load NormalMap ... }
+		if (aiMat->GetTextureCount(aiTextureType_NORMALS) > 0)
+		{
+			aiString texPath;
+			aiMat->GetTexture(aiTextureType_NORMALS, 0, &texPath);
+
+			std::filesystem::path modelPath(modelFilePath);
+			std::filesystem::path directory = modelPath.parent_path();
+			std::filesystem::path fullTexPath = directory / texPath.C_Str();
+			std::string finalPath = fullTexPath.generic_string();
+
+			std::string texName = matName + "_NormalMap";
+			auto normalMap = assetManager.Load<Texture>(texName, finalPath);
+			matInstance->Set(Constants::Uniforms::NormalMap, normalMap);
+		}
+		else
+		{
+			matInstance->Set(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
+		}
 	}
 
 }

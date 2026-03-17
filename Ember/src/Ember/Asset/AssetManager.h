@@ -38,7 +38,9 @@ namespace Ember {
 			{
 				newAsset = SharedPtr<T>::Create(std::forward<Args>(args)...);
 			}
-			AddCreateAssetToMap(newAsset, newAsset->GetName());
+
+			m_Assets[newAsset->GetUUID()] = newAsset;
+			m_AssetNames[newAsset->GetName()] = newAsset->GetUUID();
 			return newAsset;
 		}
 
@@ -47,7 +49,6 @@ namespace Ember {
 		{
 			return Load<T>(GenerateName<T>(), filePath);
 		}
-
 
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(const std::string& name, const std::string& filePath)
@@ -64,34 +65,48 @@ namespace Ember {
 				newAsset = ShaderImporter::Load(name, filePath);
 			else if constexpr (std::same_as<T, Model>)
 				newAsset = ModelImporter::Load(name, filePath, *this);
-			//else if constexpr (std::same_as<T, Mesh>)
-			//	newAsset = MeshImporter::Load(name, filePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
-			AddLoadAssetToMap(newAsset, filePath);
+			m_Assets[newAsset->GetUUID()] = newAsset;
+			m_AssetNames[name] = newAsset->GetUUID();
+			m_AssetPaths[filePath] = newAsset->GetUUID();
 			return newAsset;
 		}
 
-		template<IsCoreAsset T>
-		SharedPtr<T> GetAsset(UUID id)
+		// Custom Load for Shader that takes macros
+		template<std::same_as<Shader> T>
+		SharedPtr<T> Load(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+		{
+			if (m_AssetPaths.contains(filePath))
+			{
+				return GetAsset<Shader>(m_AssetPaths[filePath]);
+			}
+			auto newShader = ShaderImporter::Load(name, filePath, macros);
+
+			m_Assets[newShader->GetUUID()] = newShader;
+			m_AssetNames[name] = newShader->GetUUID();
+			m_AssetPaths[filePath] = newShader->GetUUID();
+			return newShader;
+		}
+
+        template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(UUID id) const
 		{
 			EB_CORE_ASSERT(m_Assets.contains(id), "Attempted to retrieve asset that doesn't exist!");
-			return DynamicPointerCast<T>(m_Assets[id]);
+			return DynamicPointerCast<T>(m_Assets.at(id));
 		}
 
-		template<IsCoreAsset T>
-		SharedPtr<T> GetAsset(const std::string& name)
+        template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(const std::string& name) const
 		{
 			EB_CORE_ASSERT(m_AssetNames.contains(name), "Attempted to retrieve asset that doesn't exist!");
-			return DynamicPointerCast<T>(m_Assets[m_AssetNames[name]]);
+			return DynamicPointerCast<T>(m_Assets.at(m_AssetNames.at(name)));
 		}
 
-		SharedPtr<Asset> GetAssetBase(UUID id);
+        SharedPtr<Asset> GetAssetBase(UUID id) const;
 		
 	private:
-		void AddCreateAssetToMap(const SharedPtr<Asset>& asset, const std::string& name);
-		void AddLoadAssetToMap(const SharedPtr<Asset>& asset, const std::string& filePath);
 
 		template<IsCoreAsset T>
 		inline std::string GenerateName()
@@ -102,8 +117,6 @@ namespace Ember {
 				return std::format("Shader({})", m_ShaderCt++);
 			else if constexpr (std::same_as<T, Model>)
 				return std::format("Model({})", m_ModelCt++);
-			//else if constexpr (std::same_as<T, Mesh>)
-			//	return std::format("Mesh({})", m_MeshCt++);
 			else if constexpr (std::same_as<T, Material> || std::same_as<T, MaterialInstance>)
 				return std::format("Material({})", m_MaterialCt++);
 
@@ -113,12 +126,11 @@ namespace Ember {
 
 	private:
 		std::unordered_map<UUID, SharedPtr<Asset>> m_Assets;
+		std::unordered_map<std::string, UUID> m_AssetNames;
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
-		std::unordered_map<std::string, UUID> m_AssetNames;	// Only for Create() assets, not Load()
 		unsigned int m_TextureCt = 0;
 		unsigned int m_ShaderCt = 0;
 		unsigned int m_ModelCt = 0;
-		//unsigned int m_MeshCt = 0;
 		unsigned int m_MaterialCt = 0;
 	};
 

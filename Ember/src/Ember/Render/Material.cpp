@@ -4,39 +4,16 @@
 
 namespace Ember {
 
-	Material::Material(const std::string& name)
-		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque)
-	{
-	}
-
-	Material::Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
-		: Material(name, Renderer3D::GetStandardGeometryShader(), RenderQueue::Opaque, uniforms)
-	{
-	}
-
-	Material::Material(const std::string& name, const RenderQueue renderQueue)
-		: Material(name, nullptr, renderQueue, {})
-	{
-		switch (renderQueue)
-		{
-		case RenderQueue::Opaque:
-			m_Shader = Renderer3D::GetStandardGeometryShader();
-			break;
-		case RenderQueue::Forward:
-			m_Shader = Renderer3D::GetStandardUnlitShader();
-			break;
-		case RenderQueue::Transparent:
-		default:
-			EB_CORE_ERROR("RenderQueue type contains no defualt shader");
-		}
-	}
-
 	Material::Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 		: Material(name, shader, renderQueue, {})
 	{
 	}
 
 
+	Material::Material(const std::string& name)
+		: Material(name, nullptr, RenderQueue::None, {})
+	{
+	}
 
 	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{

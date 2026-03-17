@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "RenderSystem.h"
 
+#include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer2D.h"
@@ -137,9 +138,11 @@ namespace Ember {
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
 
-		Renderer3D::GetStandardLitShader()->Bind();
-		Renderer3D::GetStandardLitShader()->SetFloat3("u_CameraPos", m_RenderSceneState.CameraTransform[3]);
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
 
+		litShader->Bind();
+		litShader->SetFloat3("u_CameraPos", m_RenderSceneState.CameraTransform[3]);
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
 		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(2));
@@ -148,18 +151,18 @@ namespace Ember {
 		unsigned int index = 0;
 		for (EntityID entity : lightView)
 		{
-			if (index >= Renderer3D::MAX_LIGHTS)
+			if (index >= Constants::Renderer::MaxLights)
 				break;
 
 			auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
-			Renderer3D::GetStandardLitShader()->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
-			Renderer3D::GetStandardLitShader()->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
-			Renderer3D::GetStandardLitShader()->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+			litShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
+			litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
+			litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
 
 			index++;
 		}
 
-		Renderer3D::GetStandardLitShader()->SetInt("u_ActiveLights", index);
+		litShader->SetInt("u_ActiveLights", index);
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}

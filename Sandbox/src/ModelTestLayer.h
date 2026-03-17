@@ -24,7 +24,7 @@ private:
 	Ember::Vector2f m_ViewportSize;
 
 	Ember::SharedPtr<Ember::Material> m_DefaultLightCubeMaterial;
-	Ember::SharedPtr<Ember::Material> m_DefaultSphereMaterial;
+	Ember::SharedPtr<Ember::Material> m_DefaultMaterial;
 
 	Ember::Entity m_Satellite;
 };

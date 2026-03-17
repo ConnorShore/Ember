@@ -26,16 +26,8 @@ void DeferredShadingLayer::OnAttach()
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
 	// Materials
-	m_DefaultSphereMaterial = CreateAsset<Ember::Material>("defaultSphereMaterial", 
-		std::initializer_list<Ember::MaterialUniform>{
-			{ "u_Albedo", Ember::Vector3f(0.5f, 0.5f, 0.5f) },
-			{ "u_Metallic",  0.0f },
-			{ "u_Roughness", 0.5f },
-			{ "u_AO",        1.0f },
-			{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
-		});
-
-	m_DefaultLightCubeMaterial = CreateAsset<Ember::Material>("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
+	m_DefaultSphereMaterial = GetAsset<Ember::Material>(Ember::Constants::Assets::StandardGeometryMat);
+	m_DefaultLightCubeMaterial = GetAsset<Ember::Material>(Ember::Constants::Assets::StandardUnlitMat);
 
 	// Spheres
 	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
@@ -134,7 +126,7 @@ void DeferredShadingLayer::OnAttach()
 	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
 	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
 	m_InteractiveInstance->Set("u_AO", m_AO);
-	m_InteractiveInstance->Set("u_Texture", Ember::Renderer3D::GetWhiteTexture());
+	m_InteractiveInstance->Set("u_Texture", GetAsset<Ember::Texture>(Ember::Constants::Assets::DefaultWhiteTex));
 
 	// Choose Lights
 	SetupStandardLights();

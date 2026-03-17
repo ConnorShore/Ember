@@ -26,15 +26,8 @@ void ModelTestLayer::OnAttach()
 	m_Framebuffer = Ember::Framebuffer::Create(specs);
 
 	// Materials
-	m_DefaultSphereMaterial = CreateAsset<Ember::Material>("defaultSphereMaterial",
-		std::initializer_list<Ember::MaterialUniform>{
-			{ "u_Albedo", Ember::Vector3f(0.5f, 0.5f, 0.5f) },
-			{ "u_Metallic",  0.0f },
-			{ "u_Roughness", 0.5f },
-			{ "u_AO",        1.0f },
-			{ "u_Texture",   Ember::Renderer3D::GetWhiteTexture() }
-	});
-	m_DefaultLightCubeMaterial = CreateAsset<Ember::Material>("defaultLightCubeMaterial", Ember::Renderer3D::GetStandardUnlitShader(), Ember::RenderQueue::Forward);
+	m_DefaultMaterial = GetAsset<Ember::Material>(Ember::Constants::Assets::StandardGeometryMat);
+	m_DefaultLightCubeMaterial = GetAsset<Ember::Material>(Ember::Constants::Assets::StandardUnlitMat);
 
 
 	// ------------------------------------------------------------------
@@ -49,7 +42,7 @@ void ModelTestLayer::OnAttach()
 	Ember::MeshComponent groundMeshComp = { quadMesh };
 	groundPlane.AttachComponent(groundMeshComp);
 
-	Ember::MaterialComponent groundMatComp = { m_DefaultSphereMaterial };
+	Ember::MaterialComponent groundMatComp = { m_DefaultMaterial };
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
@@ -74,7 +67,7 @@ void ModelTestLayer::OnAttach()
 	// -----------------------------------------------------------------
 	// Model
 	// -----------------------------------------------------------------
-	Ember::MaterialComponent matTest = { m_DefaultSphereMaterial };
+	Ember::MaterialComponent matTest = { m_DefaultMaterial };
 
 	//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
 	auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/satellite.obj");

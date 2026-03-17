@@ -52,6 +52,7 @@ namespace Ember {
 		inline static Application& Instance() { return *s_Instance; }
 
 		inline const Window& GetWindow() const { return *m_Window; }
+		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
 
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);

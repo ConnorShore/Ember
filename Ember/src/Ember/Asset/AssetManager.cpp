@@ -11,13 +11,20 @@ namespace Ember {
 		uint32_t whiteTextureData = 0xffffffff;
 		auto whiteTex = Create<Texture>(Constants::Assets::DefaultWhiteTex, 1, 1, &whiteTextureData);
 
+		uint32_t flatNormalData = 0xffff8080;
+		auto normalTex = Create<Texture>(Constants::Assets::DefaultNormalTex, 1, 1, &flatNormalData);
+
 		uint32_t errorTextureData = 0xff00ffff;
 		auto errorTex = Create<Texture>(Constants::Assets::DefaultErrorTex, 1, 1, &errorTextureData);
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
-		auto litShad = Load<Shader>(Constants::Assets::StandardLitShad, "Ember/assets/shaders/StandardUnlit.glsl");
+		ShaderMacros lightMacros;
+		lightMacros["MAX_LIGHTS"] = std::to_string(Constants::Renderer::MaxLights);
+		lightMacros["DEFAULT_AMBIENT"] = std::to_string(Constants::Renderer::DefaultAmbient);
+		auto litShad = Load<Shader>(Constants::Assets::StandardLitShad, "Ember/assets/shaders/StandardLit.glsl", lightMacros);
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
+		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
@@ -32,26 +39,16 @@ namespace Ember {
 
         auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMat, geometryMaterial);
 		fallbackMat->Set(Constants::Uniforms::Albedo, Vector3f(1.0f));
-		fallbackMat->Set(Constants::Uniforms::AlbedoMap, whiteTex);
 		fallbackMat->Set(Constants::Uniforms::Metallic, 0.0f);
 		fallbackMat->Set(Constants::Uniforms::Roughness, 0.5f);
+		fallbackMat->Set(Constants::Uniforms::AO, 1.0f);
+		fallbackMat->Set(Constants::Uniforms::AlbedoMap, whiteTex);
+		fallbackMat->Set(Constants::Uniforms::NormalMap, normalTex);
 	}
 
-	SharedPtr<Asset> AssetManager::GetAssetBase(UUID id)
+    SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const
 	{
-		return m_Assets[id];
-	}
-
-	void AssetManager::AddCreateAssetToMap(const SharedPtr<Asset>& asset, const std::string& name)
-	{
-		m_Assets[asset->GetUUID()] = asset;
-		m_AssetNames[name] = asset->GetUUID();
-	}
-
-	void AssetManager::AddLoadAssetToMap(const SharedPtr<Asset>& asset, const std::string& filePath)
-	{
-		m_Assets[asset->GetUUID()] = asset;
-		m_AssetPaths[filePath] = asset->GetUUID();
+		return m_Assets.at(id);
 	}
 
 }

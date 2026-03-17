@@ -30,6 +30,11 @@ namespace Ember {
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
 		}
 
+		Shader::Shader(const std::string& name, const std::string& filePath)
+			: Shader(name, filePath, {})
+		{
+		}
+
 		Shader::Shader(const std::string& filePath, const ShaderMacros& macros)
 			: Shader(std::filesystem::path(filePath).stem().string(), filePath, macros)
 		{

@@ -1,8 +1,9 @@
 # PBR Material Library for Satellite
 
-# 1. The Main Body (Shiny Gold Foil)
+# 1. The Main Body (Now with an Albedo Map!)
 newmtl Mat_GoldFoil
-Kd 0.8 0.6 0.1
+Kd 1.0 1.0 1.0
+map_Kd Foil_Albedo.jpg
 Pm 1.0
 Pr 0.25
 illum 2
@@ -14,7 +15,7 @@ Pm 0.0
 Pr 0.1
 illum 2
 
-# 3. The Antenna Tip (Glowing Red - Tests your Unlit/Emissive logic!)
+# 3. The Antenna Tip (Glowing Red)
 newmtl Mat_NeonRed_Unlit
 Kd 1.0 0.0 0.0
 Ke 5.0 0.0 0.0
