@@ -27,6 +27,10 @@ namespace Ember {
 		static void ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene);
 		static SharedPtr<Mesh> ProcessMesh(const std::string& name, const aiMesh* aiMesh);
 		static SharedPtr<MaterialInstance> ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiMaterial* aiMat, AssetManager& assetManager);
+
+		static std::string DetermineBaseMaterial(const aiMaterial* aiMat);
+		static void ExtractPBRUniforms(const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, const std::string& baseMatName);
+		static void ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager);
 	};
 
 }

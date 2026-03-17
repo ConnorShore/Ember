@@ -108,7 +108,9 @@ namespace Ember {
 			MeshComponent mc{ node.Meshes[0].MeshAsset };
 			currentEntity.AttachComponent<MeshComponent>(mc);
 
-			// TODO: Attach MaterialComponent here later!
+			// Attach material
+			MaterialComponent matComp{ model->GetAllMaterials()[node.Meshes[0].MaterialIndex] };
+			currentEntity.AttachComponent<MaterialComponent>(matComp);
 		}
 		else if (node.Meshes.size() > 1)
 		{
@@ -126,7 +128,9 @@ namespace Ember {
 				MeshComponent mc{ node.Meshes[i].MeshAsset };
 				meshPartEntity.AttachComponent<MeshComponent>(mc);
 
-				// TODO: Attach MaterialComponent here later!
+				// Attach material
+				MaterialComponent matComp{ model->GetAllMaterials()[node.Meshes[i].MaterialIndex] };
+				currentEntity.AttachComponent<MaterialComponent>(matComp);
 			}
 		}
 

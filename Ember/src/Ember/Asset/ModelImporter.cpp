@@ -23,7 +23,7 @@ namespace Ember {
 		std::vector<SharedPtr<MaterialBase>> materials;
 		if (scene->HasMaterials())
 		{
-			materials.resize(scene->mNumMaterials);
+			materials.reserve(scene->mNumMaterials);
 			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
 			{
 				aiMaterial* material = scene->mMaterials[i];
@@ -128,62 +128,82 @@ namespace Ember {
 		std::string rawMatName = aiMat->GetName().C_Str();
 		std::string matName = modelName + "_" + rawMatName;
 
-		// Determine if this material should be treated as Unlit or Deferred PBR based on a few heuristics
+		// Figure out what kind of shader this needs
+		std::string baseMatName = DetermineBaseMaterial(aiMat);
+
+		auto matInstance = SharedPtr<MaterialInstance>::Create(matName, assetManager.GetAsset<Material>(baseMatName));
+
+		// Populate uniform overrides
+		ExtractPBRUniforms(aiMat, matInstance, baseMatName);
+		ExtractTextures(matName, modelFilePath, aiMat, matInstance, assetManager);
+
+		return matInstance;
+	}
+
+	std::string ModelImporter::DetermineBaseMaterial(const aiMaterial* aiMat)
+	{
+		std::string rawMatName = aiMat->GetName().C_Str();
 		std::string baseMatName = Constants::Assets::StandardGeometryMat;
 
-		// Heuristic A: Emissive Color (Does it glow?)
 		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
 		if (AI_SUCCESS == aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor))
 		{
 			if (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f)
-				baseMatName = Constants::Assets::StandardUnlitMat;
+				return Constants::Assets::StandardUnlitMat;
 		}
 
-		// Heuristic B: Opacity (Is it transparent/glass?)
 		float opacity = 1.0f;
 		if (AI_SUCCESS == aiGetMaterialFloat(aiMat, AI_MATKEY_OPACITY, &opacity))
 		{
 			if (opacity < 1.0f)
-				baseMatName = Constants::Assets::StandardUnlitMat; // Or StandardTransparentMat when you make one!
+				return Constants::Assets::StandardUnlitMat;
 		}
 
-		// Heuristic C: Explicit Shading Model (glTF Unlit extension, etc.)
 		aiShadingMode shadingMode;
 		if (AI_SUCCESS == aiMat->Get(AI_MATKEY_SHADING_MODEL, shadingMode))
 		{
 			if (shadingMode == aiShadingMode_NoShading)
-				baseMatName = Constants::Assets::StandardUnlitMat;
+				return Constants::Assets::StandardUnlitMat;
 		}
 
-		// Heuristic D: Artist Naming Conventions (The Ultimate Override)
 		if (rawMatName.find("_Unlit") != std::string::npos || rawMatName.find("_Forward") != std::string::npos)
-			baseMatName = Constants::Assets::StandardUnlitMat;
+			return Constants::Assets::StandardUnlitMat;
 		else if (rawMatName.find("_Opaque") != std::string::npos || rawMatName.find("_Deferred") != std::string::npos)
-			baseMatName = Constants::Assets::StandardGeometryMat;
+			return Constants::Assets::StandardGeometryMat;
 
-		// The instance
-		auto matInstance = SharedPtr<MaterialInstance>::Create(matName, assetManager.GetAsset<Material>(baseMatName));
+		return baseMatName;
+	}
 
-		// PBR and Color Props
+	void ModelImporter::ExtractPBRUniforms(const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, const std::string& baseMatName)
+	{
 		aiColor4D diffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
-		if (AI_SUCCESS == aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor))
-			matInstance->Set(Constants::Uniforms::Albedo, Ember::Vector3f(diffuseColor.r, diffuseColor.g, diffuseColor.b));
+		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+		Ember::Vector3f finalColor(diffuseColor.r, diffuseColor.g, diffuseColor.b);
 
-		// If this is an unlit glowing object, prioritize the Emissive color over the Diffuse color!
+		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
+		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor);
+
 		if (baseMatName == Constants::Assets::StandardUnlitMat && (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f))
 		{
-			matInstance->Set(Constants::Uniforms::Albedo, Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b));
+			finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
 		}
 
+		matInstance->Set(Constants::Uniforms::Albedo, finalColor);
+		matInstance->Set(Constants::Uniforms::Color, finalColor);
+
 		float roughness = 0.5f;
-		if (AI_SUCCESS == aiGetMaterialFloat(aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &roughness))
-			matInstance->Set(Constants::Uniforms::Roughness, roughness);
+		aiGetMaterialFloat(aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &roughness);
+		matInstance->Set(Constants::Uniforms::Roughness, roughness);
 
 		float metallic = 0.0f;
-		if (AI_SUCCESS == aiGetMaterialFloat(aiMat, AI_MATKEY_METALLIC_FACTOR, &metallic))
-			matInstance->Set(Constants::Uniforms::Metallic, metallic);
+		aiGetMaterialFloat(aiMat, AI_MATKEY_METALLIC_FACTOR, &metallic);
+		matInstance->Set(Constants::Uniforms::Metallic, metallic);
 
-		// Textures
+		matInstance->Set(Constants::Uniforms::AO, 1.0f);
+	}
+
+	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
+	{
 		if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
 			aiString texPath;
@@ -200,11 +220,11 @@ namespace Ember {
 		}
 		else
 		{
-			// Safe fallback
 			matInstance->Set(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
-		return matInstance;
+		// TODO: Later on, this is where you will add:
+		// if (aiMat->GetTextureCount(aiTextureType_NORMALS) > 0) { ... load NormalMap ... }
 	}
 
 }

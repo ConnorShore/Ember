@@ -80,17 +80,6 @@ void ModelTestLayer::OnAttach()
 	auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/satellite.obj");
 	m_Satellite = m_MainScene->InstantiateModel(satelliteAsset);
 
-	Ember::Entity leftWing = m_Satellite.FindEntityInHierarchy("Wing_Left");
-	if (leftWing) {
-		EB_INFO("Found child: {0}", leftWing.GetName());
-	}
-
-	auto children = m_Satellite.GetAllChildren();
-	for (auto child : children)
-	{
-		child.AttachComponent(matTest);
-	}
-
 	// ------------------------------------------------------------------
 	// Camera
 	// ------------------------------------------------------------------

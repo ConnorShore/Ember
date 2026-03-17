@@ -1,0 +1,23 @@
+# PBR Material Library for Satellite
+
+# 1. The Main Body (Shiny Gold Foil)
+newmtl Mat_GoldFoil
+Kd 0.8 0.6 0.1
+Pm 1.0
+Pr 0.25
+illum 2
+
+# 2. The Solar Panels (Dark, highly glossy dielectric)
+newmtl Mat_SolarPanel
+Kd 0.05 0.1 0.35
+Pm 0.0
+Pr 0.1
+illum 2
+
+# 3. The Antenna Tip (Glowing Red - Tests your Unlit/Emissive logic!)
+newmtl Mat_NeonRed_Unlit
+Kd 1.0 0.0 0.0
+Ke 5.0 0.0 0.0
+Pm 0.0
+Pr 1.0
+illum 0

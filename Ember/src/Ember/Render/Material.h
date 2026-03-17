@@ -103,7 +103,7 @@ namespace Ember {
 			else if (std::holds_alternative<SharedPtr<Texture>>(value))
 			{
 				auto& tex = std::get<SharedPtr<Texture>>(value);
-				tex->Bind();
+				tex->Bind(textureSlot);
 				m_Shader->SetInt(name, textureSlot++);
 			}
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");
