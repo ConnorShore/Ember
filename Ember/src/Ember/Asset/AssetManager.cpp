@@ -18,19 +18,15 @@ namespace Ember {
 		auto errorTex = Create<Texture>(Constants::Assets::DefaultErrorTex, 1, 1, &errorTextureData);
 
 		// Shaders
-		EB_CORE_INFO("Loading Standard Geometry Shader...");
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
-		EB_CORE_INFO("Loading Standard Lit Shader...");
 		ShaderMacros lightMacros;
 		lightMacros["MAX_DIRECTIONAL_LIGHTS"] = std::to_string(Constants::Renderer::MaxDirectionalLights);
+		lightMacros["MAX_SPOT_LIGHTS"] = std::to_string(Constants::Renderer::MaxSpotLights);
 		lightMacros["MAX_POINT_LIGHTS"] = std::to_string(Constants::Renderer::MaxPointLights);
 		lightMacros["DEFAULT_AMBIENT"] = std::to_string(Constants::Renderer::DefaultAmbient);
 		auto litShad = Load<Shader>(Constants::Assets::StandardLitShad, "Ember/assets/shaders/StandardLit.glsl", lightMacros);
-		EB_CORE_INFO("Loading Standard Unlit Shader...");
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
-		EB_CORE_INFO("Loading Standard Quad Shader...");
 		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
-		EB_CORE_INFO("Loading Standard Shadow Shader...");
 		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadow, "Ember/assets/shaders/StandardShadow.glsl");
 
 		// Materials

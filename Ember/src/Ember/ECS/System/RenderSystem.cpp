@@ -29,7 +29,7 @@ namespace Ember {
 			m_GBuffer = Framebuffer::Create(specs);
 		}
 
-		// ShadowMap Buffer
+		// Direction ShadowMap Buffer
 		{
 			Ember::FramebufferSpecification specs;
 			specs.Width = 2048;
@@ -37,7 +37,17 @@ namespace Ember {
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
-			m_ShadowMapBuffer = Framebuffer::Create(specs);
+			m_DirectionalShadowMapBuffer = Framebuffer::Create(specs);
+		}
+		// Spot ShadowMap Buffer
+		{
+			Ember::FramebufferSpecification specs;
+			specs.Width = 2048;
+			specs.Height = 2048;
+			specs.AttachmentSpecs = {
+				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+			};
+			m_SpotShadowMapBuffer = Framebuffer::Create(specs);
 		}
 
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
@@ -71,7 +81,8 @@ namespace Ember {
 		SortEntitiesByRenderQueue(registry);
 
 		// The Deferred Pipeline
-		CreateShadowMap(registry);
+		CreateDirectionalShadowMap(registry);
+		CreateSpotlightShadowMap(registry);
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
@@ -124,7 +135,7 @@ namespace Ember {
 		}
 	}
 
-	void RenderSystem::CreateShadowMap(Registry* registry)
+	void RenderSystem::CreateDirectionalShadowMap(Registry* registry)
 	{
 		// Get directional light view matrix to create shadow map
 		View lightView = registry->Query<DirectionalLightComponent, TransformComponent>();
@@ -136,12 +147,12 @@ namespace Ember {
 
 			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
 
-			// TODO: These props are just hardcoded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
 			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 100.0f);
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(light.Direction) * 40.0f); // Pull back 40 units
 			Matrix4f lightView = Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f));
-			m_RenderSceneState.LightViewMatrix = lightProjection * lightView;
+			m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
 
 			index++;
 		}
@@ -149,17 +160,15 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadow);
 
-		m_ShadowMapBuffer->Bind();
-		RenderAction::SetViewport(0, 0, m_ShadowMapBuffer->GetSpecification().Width, m_ShadowMapBuffer->GetSpecification().Height);
+		m_DirectionalShadowMapBuffer->Bind();
+		RenderAction::SetViewport(0, 0, m_DirectionalShadowMapBuffer->GetSpecification().Width, m_DirectionalShadowMapBuffer->GetSpecification().Height);
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
-		RenderAction::UseFaceCulling(true);
-		RenderAction::CullFace(RendererAPI::Face::Front);
 
 		Renderer3D::BeginFrame();
 
 		shadowShader->Bind();
-		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.LightViewMatrix);	// TODO: Move to UniformBuffer
+		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.DirectionalLightViewMatrix);	// TODO: Move to UniformBuffer
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
@@ -169,13 +178,57 @@ namespace Ember {
 		}
 
 		Renderer3D::EndFrame();
+	}
 
-		RenderAction::CullFace(RendererAPI::Face::Back);
+	void RenderSystem::CreateSpotlightShadowMap(Registry* registry)
+	{
+		// Get spotlight view matrix to create shadow map
+		View lightView = registry->Query<SpotLightComponent, TransformComponent>();
+		unsigned int index = 0;
+		for (EntityID entity : lightView)
+		{
+			// TODO: Will create a 4-layer texture array for spotlight shadow maps to hold multiple shadow maps in the future, 
+			// but for now we will just use one shadow map and overwrite it for each spotlight. This means only one spotlight can cast shadows at a time
+			if (index >= Constants::Renderer::MaxSpotLights)
+				break;
+
+			auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
+
+			// TODO: These props are just hardcoded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+			Matrix4f lightProjection = Math::Perspective(Math::Degrees(light.OuterCutOffAngle) * 2.0f, 1.0f, 1.0f, 100.0f);
+			Vector3f target = light.Direction + transform.Position;	// Look in the direction of the spotlight
+			Vector3f eye = transform.Position;
+			Matrix4f lightView = Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f));
+			m_RenderSceneState.SpotLightViewMatrix = lightProjection * lightView;
+
+			index++;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadow);
+
+		m_SpotShadowMapBuffer->Bind();
+		RenderAction::SetViewport(0, 0, m_SpotShadowMapBuffer->GetSpecification().Width, m_SpotShadowMapBuffer->GetSpecification().Height);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
+		RenderAction::UseDepthTest(true);
+
+		Renderer3D::BeginFrame();
+
+		shadowShader->Bind();
+		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.SpotLightViewMatrix);	// TODO: Move to UniformBuffer
+
+		for (EntityID entity : m_RenderQueueBuckets.Opaque)
+		{
+			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
+			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
+		}
+
+		Renderer3D::EndFrame();
 	}
 
 	void RenderSystem::RenderDeferredGeometry(Registry* registry)
 	{
-
 		m_GBuffer->Bind();
 		RenderAction::SetViewport(0, 0, m_GBuffer->GetSpecification().Width, m_GBuffer->GetSpecification().Height);
 
@@ -210,11 +263,13 @@ namespace Ember {
 
 		litShader->Bind();
 		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
-		litShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.LightViewMatrix);	// TODO: Move to UniformBuffer
+		litShader->SetMatrix4(Constants::Uniforms::DirectionalLightViewMatrix, m_RenderSceneState.DirectionalLightViewMatrix);	// TODO: Move to UniformBuffer
+		litShader->SetMatrix4(Constants::Uniforms::SpotLightViewMatrix, m_RenderSceneState.SpotLightViewMatrix);	// TODO: Move to UniformBuffer
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
 		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(2));
-		RenderAction::SetTextureUnit(3, m_ShadowMapBuffer->GetDepthAttachmentID());
+		RenderAction::SetTextureUnit(3, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
+		RenderAction::SetTextureUnit(4, m_SpotShadowMapBuffer->GetDepthAttachmentID());
 
 		// Set Directional Light
 		{
@@ -236,6 +291,29 @@ namespace Ember {
 			litShader->SetInt(Constants::Uniforms::ActiveDirectionalLights, index);
 		}
 
+		// Set spotlights
+		{
+			View lightView = registry->Query<SpotLightComponent, TransformComponent>();
+			unsigned int index = 0;
+			for (EntityID entity : lightView)
+			{
+				if (index >= Constants::Renderer::MaxSpotLights)
+					break;
+
+				auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
+				litShader->SetFloat3(std::format("u_SpotLights[{}].Position", index), transform.Position);
+				litShader->SetFloat3(std::format("u_SpotLights[{}].Direction", index), light.Direction);
+				litShader->SetFloat3(std::format("u_SpotLights[{}].Color", index), light.Color);
+				litShader->SetFloat(std::format("u_SpotLights[{}].Intensity", index), light.Intensity);
+				litShader->SetFloat(std::format("u_SpotLights[{}].CutOff", index), light.CutOff);
+				litShader->SetFloat(std::format("u_SpotLights[{}].OuterCutOff", index), light.OuterCutOff);
+
+				index++;
+			}
+
+			litShader->SetInt(Constants::Uniforms::ActiveSpotLights, index);
+		}
+
 		// Set Point Lights
 		{
 			View lightView = registry->Query<PointLightComponent, TransformComponent>();
@@ -249,6 +327,7 @@ namespace Ember {
 				litShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
 				litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
 				litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+
 
 				index++;
 			}

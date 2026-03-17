@@ -2,6 +2,13 @@
 
 namespace Ember::Constants {
 
+	namespace Renderer {
+		inline constexpr unsigned int MaxDirectionalLights = 1;
+		inline constexpr unsigned int MaxSpotLights = 4;
+		inline constexpr unsigned int MaxPointLights = 256;
+		inline constexpr float DefaultAmbient = 0.03f;
+	}
+
 	namespace Assets {
 		inline const char* DefaultWhiteTex = "DefaultWhite";
 		inline const char* DefaultErrorTex = "DefaultError";
@@ -37,15 +44,12 @@ namespace Ember::Constants {
 
 		inline const char* CameraPosition = "u_CameraPos";
 		inline const char* ActiveDirectionalLights = "u_ActiveDirectionalLights";
+		inline const char* ActiveSpotLights = "u_ActiveSpotLights";
 		inline const char* ActivePointLights = "u_ActivePointLights";
 
 		inline const char* LightViewMatrix = "u_LightViewMat";
-	}
-
-	namespace Renderer {
-		inline constexpr unsigned int MaxDirectionalLights = 1;
-		inline constexpr unsigned int MaxPointLights = 256;
-		inline constexpr float DefaultAmbient = 0.03f;
+		inline const char* DirectionalLightViewMatrix = "u_DirectionalLightViewMat";
+		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
 	}
 
 }

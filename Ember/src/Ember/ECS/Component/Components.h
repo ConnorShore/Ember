@@ -152,6 +152,29 @@ namespace Ember {
 			: Direction(direction), Color(color), Intensity(intensity) { }
 	};
 
+	struct SpotLightComponent
+	{
+		Vector3f Direction = Vector3f(0.0f, 0.0f, -1.0f);
+		Vector3f Color = Vector3f(1.0f);
+		float Intensity = 0.0f;
+
+		float CutOffAngle = 0.0f; // Stored in Radians for the C++ Camera
+		float OuterCutOffAngle = 0.0f; // Stored in Radians for the C++ Camera
+
+		float CutOff = 0.0f;      // Stored as Cosine for the GLSL Shader
+		float OuterCutOff = 0.0f; // Stored as Cosine for the GLSL Shader
+
+		SpotLightComponent() = default;
+		SpotLightComponent(const Vector3f& direction, const Vector3f& color, float intensity, float cutOffDeg, float outerCutOffDeg)
+			: Direction(direction), Color(color), Intensity(intensity),
+			CutOffAngle(Math::Radians(cutOffDeg)),
+			CutOff(cos(Math::Radians(cutOffDeg))),
+			OuterCutOffAngle(Math::Radians(outerCutOffDeg)),
+			OuterCutOff(cos(Math::Radians(outerCutOffDeg)))
+		{
+		}
+	};
+
 	struct PointLightComponent
 	{
 		Vector3f Color = Vector3f(1.0f);

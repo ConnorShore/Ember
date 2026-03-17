@@ -123,6 +123,16 @@ namespace Ember {
 
 			return success;
 		}
+
+		static inline float Radians(float degrees)
+		{
+			return glm::radians(degrees);
+		}
+
+		static inline float Degrees(float radians)
+		{
+			return glm::degrees(radians);
+		}
 	};
 
 }
