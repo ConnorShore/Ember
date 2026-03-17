@@ -2,11 +2,11 @@
 
 #include <Ember.h>
 
-class DeferredShadingLayer : public Ember::Layer
+class ModelTestLayer : public Ember::Layer
 {
 public:
-	DeferredShadingLayer();
-	virtual ~DeferredShadingLayer();
+	ModelTestLayer();
+	virtual ~ModelTestLayer();
 
 	void OnAttach() override;
 	void OnDetach() override;
@@ -14,8 +14,8 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
-	void SetupRandomLights();
 	void SetupStandardLights();
+	void SetupRandomLights();
 
 private:
 	Ember::SharedPtr<Ember::Scene> m_MainScene;
@@ -23,14 +23,8 @@ private:
 	Ember::Entity m_CameraEntity;
 	Ember::Vector2f m_ViewportSize;
 
-	Ember::SharedPtr<Ember::Material> m_DefaultSphereMaterial;
 	Ember::SharedPtr<Ember::Material> m_DefaultLightCubeMaterial;
+	Ember::SharedPtr<Ember::Material> m_DefaultSphereMaterial;
 
-	// Interactive sphere controlled via ImGui
-	Ember::Entity m_InteractiveSphere;
-	Ember::SharedPtr<Ember::MaterialInstance> m_InteractiveInstance;
-	float m_Albedo[3] = { 1.0f, 0.2f, 0.2f };
-	float m_Metallic = 0.5f;
-	float m_Roughness = 0.5f;
-	float m_AO = 1.0f;
+	Ember::Entity m_Satellite;
 };

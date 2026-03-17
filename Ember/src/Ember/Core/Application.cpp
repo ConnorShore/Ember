@@ -23,6 +23,7 @@ namespace Ember {
 		m_ImGuiLayer->OnAttach();
 
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
+		m_AssetManager->LoadDefaults();
 
 		EB_CORE_INFO("Application created!");
 	}

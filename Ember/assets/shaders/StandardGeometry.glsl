@@ -42,11 +42,11 @@ uniform float u_Metallic;
 uniform float u_Roughness;
 uniform float u_AO;
 
-uniform sampler2D u_Texture;
+uniform sampler2D u_AlbedoMap;
 
 void main()
 {
-    vec4 texColor = texture(u_Texture, TexCoord);
+    vec4 texColor = texture(u_AlbedoMap, TexCoord);
     vec3 linearTexColor = pow(texColor.rgb, vec3(2.2)); // sRGB to Linear
 
     gAlbedoRoughness.rgb = linearTexColor * u_Albedo;

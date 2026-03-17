@@ -64,7 +64,6 @@ namespace Ember {
 	class Material : public MaterialBase
 	{
 	public:
-		// TODO: Clean up Material constructors (may force a shader to be specified, even if standard shaders)
 		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 			: MaterialBase(name, shader, renderQueue)
 		{
@@ -74,8 +73,9 @@ namespace Ember {
 			}
 		}
 		Material(const std::string& name);
-		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
 		Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
+		Material(const std::string& name, const RenderQueue renderQueue);
+		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
 
 		virtual ~Material() = default;
 

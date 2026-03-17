@@ -11,11 +11,10 @@
 
 namespace Ember {
 
-	// TODO: Integrate materials into the model structure
 	struct MeshMaterialNode
 	{
 		SharedPtr<Mesh> MeshAsset;
-		uint32_t MaterialIndex;
+		unsigned int MaterialIndex;
 	};
 
 	struct ModelNode
@@ -23,7 +22,7 @@ namespace Ember {
 		std::string Name;
 		Matrix4f LocalTransform = Matrix4f(1.0f);
 		std::vector<ModelNode> ChildNodes;
-		std::vector<SharedPtr<Mesh>> Meshes;
+		std::vector<MeshMaterialNode> Meshes;
 
 		ModelNode() = default;
 		ModelNode(const ModelNode& other) = default;
@@ -32,8 +31,8 @@ namespace Ember {
 	class Model : public Asset
 	{
 	public:
-		Model(const std::string& name, const std::string& filePath, const ModelNode& rootNode)
-			: Asset(name, filePath, AssetType::Model), m_RootNode(rootNode)
+		Model(const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
+			: Asset(name, filePath, AssetType::Model), m_RootNode(rootNode), m_AllMaterials(materials)
 		{
 			std::vector<const ModelNode*> nodesToVisit = { &m_RootNode };
 			while (!nodesToVisit.empty())
@@ -52,13 +51,13 @@ namespace Ember {
 		~Model() = default;
 
 		const ModelNode& GetRootNode() const { return m_RootNode; }
-		const std::vector<SharedPtr<Mesh>>& GetAllMeshes() const { return m_AllMeshes; }
-		const std::vector<SharedPtr<Material>>& GetAllMaterials() const { return m_AllMaterials; }
+		const std::vector<MeshMaterialNode>& GetAllMeshes() const { return m_AllMeshes; }
+		const std::vector<SharedPtr<MaterialBase>>& GetAllMaterials() const { return m_AllMaterials; }
 
 	private:
 		ModelNode m_RootNode;
-		std::vector<SharedPtr<Mesh>> m_AllMeshes;
-		std::vector<SharedPtr<Material>> m_AllMaterials;
+		std::vector<MeshMaterialNode> m_AllMeshes;
+		std::vector<SharedPtr<MaterialBase>> m_AllMaterials;
 	};
 
 }

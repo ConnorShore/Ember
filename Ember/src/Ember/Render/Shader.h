@@ -47,7 +47,7 @@ namespace Ember {
 		{
 			return Shader::Create(filePath, macros);
 		}
-		static SharedPtr<Shader> Load(const std::string& name, std::string& filePath, const ShaderMacros& macros = {})
+		static SharedPtr<Shader> Load(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {})
 		{
 			return Shader::Create(name, filePath, macros);
 		}

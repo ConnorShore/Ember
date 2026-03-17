@@ -105,7 +105,7 @@ namespace Ember {
 		if (node.Meshes.size() == 1)
 		{
 			// Safe to attach directly!
-			MeshComponent mc{ node.Meshes[0] };
+			MeshComponent mc{ node.Meshes[0].MeshAsset };
 			currentEntity.AttachComponent<MeshComponent>(mc);
 
 			// TODO: Attach MaterialComponent here later!
@@ -123,7 +123,7 @@ namespace Ember {
 				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetEntityHandle());
 
 				// Attach the mesh
-				MeshComponent mc{ node.Meshes[i] };
+				MeshComponent mc{ node.Meshes[i].MeshAsset };
 				meshPartEntity.AttachComponent<MeshComponent>(mc);
 
 				// TODO: Attach MaterialComponent here later!

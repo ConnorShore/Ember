@@ -19,3 +19,4 @@
 #include "Time.h"
 #include "SharedPointer.h"
 #include "ScopedPointer.h"
+#include "Constants.h"
