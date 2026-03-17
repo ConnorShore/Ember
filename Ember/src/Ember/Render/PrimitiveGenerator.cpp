@@ -11,7 +11,7 @@ namespace Ember {
 
 		const float PI = 3.14159265359f;
 
-		// 1. Generate Vertices
+		// 1. Generate Vertices (14 Floats per vertex)
 		for (unsigned int y = 0; y <= ySegments; ++y)
 		{
 			for (unsigned int x = 0; x <= xSegments; ++x)
@@ -37,6 +37,16 @@ namespace Ember {
 				// Texture Coordinates (UV)
 				vertices.push_back(xSegment);
 				vertices.push_back(ySegment);
+
+				// Tangents (Points along the U axis/longitude)
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI));
+				vertices.push_back(0.0f);
+				vertices.push_back(std::cos(xSegment * 2.0f * PI));
+
+				// Bitangents (Points along the V axis/latitude)
+				vertices.push_back(-std::cos(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
+				vertices.push_back(std::sin(ySegment * PI));
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
 			}
 		}
 
@@ -62,7 +72,6 @@ namespace Ember {
 			}
 		}
 
-		// *Note: Adjust this line depending on how your Mesh class accepts raw vector data
 		return SharedPtr<Mesh>::Create("Primitive_Sphere", vertices, indices);
 	}
 
@@ -71,42 +80,43 @@ namespace Ember {
 		float s = size * 0.5f;
 
 		std::vector<float> vertices = {
-			// X, Y, Z             // NX, NY, NZ          // U, V
-			// Front Face
-			-s, -s,  s,    0.0f,  0.0f,  1.0f,    0.0f, 0.0f,
-			 s, -s,  s,    0.0f,  0.0f,  1.0f,    1.0f, 0.0f,
-			 s,  s,  s,    0.0f,  0.0f,  1.0f,    1.0f, 1.0f,
-			-s,  s,  s,    0.0f,  0.0f,  1.0f,    0.0f, 1.0f,
+			// Position    // Normal              // UV         // Tangent            // Bitangent
 
-			// Right Face
-			 s, -s,  s,    1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
-			 s, -s, -s,    1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
-			 s,  s, -s,    1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
-			 s,  s,  s,    1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
+			// Front Face (Normal +Z, U moves +X, V moves +Y)
+			-s, -s,  s,    0.0f,  0.0f,  1.0f,    0.0f, 0.0f,   1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			 s, -s,  s,    0.0f,  0.0f,  1.0f,    1.0f, 0.0f,   1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			 s,  s,  s,    0.0f,  0.0f,  1.0f,    1.0f, 1.0f,   1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			-s,  s,  s,    0.0f,  0.0f,  1.0f,    0.0f, 1.0f,   1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+																					 
+			// Right Face (Normal +X, U moves -Z, V moves +Y)						 
+			 s, -s,  s,    1.0f,  0.0f,  0.0f,    0.0f, 0.0f,   0.0f,  0.0f, -1.0f,   0.0f,  1.0f,  0.0f,
+			 s, -s, -s,    1.0f,  0.0f,  0.0f,    1.0f, 0.0f,   0.0f,  0.0f, -1.0f,   0.0f,  1.0f,  0.0f,
+			 s,  s, -s,    1.0f,  0.0f,  0.0f,    1.0f, 1.0f,   0.0f,  0.0f, -1.0f,   0.0f,  1.0f,  0.0f,
+			 s,  s,  s,    1.0f,  0.0f,  0.0f,    0.0f, 1.0f,   0.0f,  0.0f, -1.0f,   0.0f,  1.0f,  0.0f,
+																					 
+			// Back Face (Normal -Z, U moves -X, V moves +Y)						 
+			 s, -s, -s,    0.0f,  0.0f, -1.0f,    0.0f, 0.0f,  -1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			-s, -s, -s,    0.0f,  0.0f, -1.0f,    1.0f, 0.0f,  -1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			-s,  s, -s,    0.0f,  0.0f, -1.0f,    1.0f, 1.0f,  -1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+			 s,  s, -s,    0.0f,  0.0f, -1.0f,    0.0f, 1.0f,  -1.0f,  0.0f,  0.0f,   0.0f,  1.0f,  0.0f,
+																					 
+			// Left Face (Normal -X, U moves +Z, V moves +Y)						 
+			-s, -s, -s,   -1.0f,  0.0f,  0.0f,    0.0f, 0.0f,   0.0f,  0.0f,  1.0f,   0.0f,  1.0f,  0.0f,
+			-s, -s,  s,   -1.0f,  0.0f,  0.0f,    1.0f, 0.0f,   0.0f,  0.0f,  1.0f,   0.0f,  1.0f,  0.0f,
+			-s,  s,  s,   -1.0f,  0.0f,  0.0f,    1.0f, 1.0f,   0.0f,  0.0f,  1.0f,   0.0f,  1.0f,  0.0f,
+			-s,  s, -s,   -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,   0.0f,  0.0f,  1.0f,   0.0f,  1.0f,  0.0f,
 
-			 // Back Face
-			  s, -s, -s,    0.0f,  0.0f, -1.0f,    0.0f, 0.0f,
-			 -s, -s, -s,    0.0f,  0.0f, -1.0f,    1.0f, 0.0f,
-			 -s,  s, -s,    0.0f,  0.0f, -1.0f,    1.0f, 1.0f,
-			  s,  s, -s,    0.0f,  0.0f, -1.0f,    0.0f, 1.0f,
+			// Top Face (Normal +Y, U moves +X, V moves -Z)
+			-s,  s,  s,    0.0f,  1.0f,  0.0f,    0.0f, 0.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f, -1.0f,
+			 s,  s,  s,    0.0f,  1.0f,  0.0f,    1.0f, 0.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f, -1.0f,
+			 s,  s, -s,    0.0f,  1.0f,  0.0f,    1.0f, 1.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f, -1.0f,
+			-s,  s, -s,    0.0f,  1.0f,  0.0f,    0.0f, 1.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f, -1.0f,
 
-			  // Left Face
-			  -s, -s, -s,   -1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
-			  -s, -s,  s,   -1.0f,  0.0f,  0.0f,    1.0f, 0.0f,
-			  -s,  s,  s,   -1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
-			  -s,  s, -s,   -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
-
-			  // Top Face
-			  -s,  s,  s,    0.0f,  1.0f,  0.0f,    0.0f, 0.0f,
-			   s,  s,  s,    0.0f,  1.0f,  0.0f,    1.0f, 0.0f,
-			   s,  s, -s,    0.0f,  1.0f,  0.0f,    1.0f, 1.0f,
-			  -s,  s, -s,    0.0f,  1.0f,  0.0f,    0.0f, 1.0f,
-
-			  // Bottom Face
-			  -s, -s, -s,    0.0f, -1.0f,  0.0f,    0.0f, 0.0f,
-			   s, -s, -s,    0.0f, -1.0f,  0.0f,    1.0f, 0.0f,
-			   s, -s,  s,    0.0f, -1.0f,  0.0f,    1.0f, 1.0f,
-			  -s, -s,  s,    0.0f, -1.0f,  0.0f,    0.0f, 1.0f
+			// Bottom Face (Normal -Y, U moves +X, V moves +Z)
+			-s, -s, -s,    0.0f, -1.0f,  0.0f,    0.0f, 0.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+			 s, -s, -s,    0.0f, -1.0f,  0.0f,    1.0f, 0.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+			 s, -s,  s,    0.0f, -1.0f,  0.0f,    1.0f, 1.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+			-s, -s,  s,    0.0f, -1.0f,  0.0f,    0.0f, 1.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f
 		};
 
 		std::vector<unsigned int> indices = {
@@ -127,11 +137,11 @@ namespace Ember {
 		float hh = height * 0.5f;
 
 		std::vector<float> vertices = {
-			// Position        // Normal          // UV
-			-hw, -hh, 0.0f,    0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-			 hw, -hh, 0.0f,    0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			 hw,  hh, 0.0f,    0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-hw,  hh, 0.0f,    0.0f, 0.0f, 1.0f,  0.0f, 1.0f
+			// Position         // Normal           // UV         // Tangent           // Bitangent
+			-hw, -hh, 0.0f,     0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+			 hw, -hh, 0.0f,     0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+			 hw,  hh, 0.0f,     0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,
+			-hw,  hh, 0.0f,     0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f
 		};
 
 		std::vector<unsigned int> indices = {

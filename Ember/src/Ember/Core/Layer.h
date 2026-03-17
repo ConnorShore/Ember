@@ -47,6 +47,13 @@ namespace Ember {
 			return m_AssetManagerHandle->Load<T>(name, filePath);
 		}
 
+		template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(const std::string& name)
+		{
+			EB_CORE_ASSERT(m_AssetManagerHandle, "AssetManager is not initialized for this layer!");
+			return m_AssetManagerHandle->GetAsset<T>(name);
+		}
+
 	private:
 		// TODO: Make m_Name debug only?
 		std::string m_Name;

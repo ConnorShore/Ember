@@ -19,7 +19,8 @@ namespace Ember {
 
 	enum class RenderQueue : uint8_t
 	{
-		Opaque = 0,
+		None = 0,
+		Opaque,
 		Forward,
 		Transparent
 	};
@@ -64,8 +65,7 @@ namespace Ember {
 	class Material : public MaterialBase
 	{
 	public:
-		// TODO: Clean up Material constructors (may force a shader to be specified, even if standard shaders)
-		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
+      Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 			: MaterialBase(name, shader, renderQueue)
 		{
 			for (auto u : uniforms)
@@ -73,9 +73,13 @@ namespace Ember {
 				Set(std::get<0>(u), std::get<1>(u));
 			}
 		}
-		Material(const std::string& name);
+
+		Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+			: Material(name, nullptr, RenderQueue::None, uniforms)
+		{
+		}
 		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
-		Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
+		Material(const std::string& name);
 
 		virtual ~Material() = default;
 
@@ -103,7 +107,7 @@ namespace Ember {
 			else if (std::holds_alternative<SharedPtr<Texture>>(value))
 			{
 				auto& tex = std::get<SharedPtr<Texture>>(value);
-				tex->Bind();
+				tex->Bind(textureSlot);
 				m_Shader->SetInt(name, textureSlot++);
 			}
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");

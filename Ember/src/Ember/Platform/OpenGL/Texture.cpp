@@ -8,16 +8,8 @@ namespace Ember {
 	namespace OpenGL {
 
 		Texture::Texture()
-			: Ember::Texture("Default", ""), m_Width(1), m_Height(1), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
+			: Texture("Default", 1, 1, nullptr)
 		{
-			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
-
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-			glTextureStorage2D(m_Id, 1, GL_RGBA8, m_Width, m_Height);
 		}
 
 		Texture::Texture(const std::string& filePath)
@@ -40,12 +32,39 @@ namespace Ember {
 
 			glTextureStorage2D(m_Id, 1, GL_RGBA8, m_Width, m_Height);
 			glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, m_LocalBuffer);
+
+			if (m_LocalBuffer)
+			{
+				stbi_image_free(m_LocalBuffer);
+				m_LocalBuffer = nullptr;
+			}
+		}
+
+		Texture::Texture(const std::string& name, unsigned int width, unsigned int height, const void* data)
+			: Ember::Texture(name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
+		{
+			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
+
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+			glTextureStorage2D(m_Id, 1, GL_RGBA8, m_Width, m_Height);
+			// Upload provided data directly. Do not take ownership of the pointer.
+			if (data)
+				glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
 
 		Texture::~Texture()
 		{
 			glDeleteTextures(1, &m_Id);
-			delete m_LocalBuffer;
+
+			if (m_LocalBuffer)
+			{
+				stbi_image_free(m_LocalBuffer);
+				m_LocalBuffer = nullptr;
+			}
 		}
 
 		void Texture::Bind(unsigned int slot) const

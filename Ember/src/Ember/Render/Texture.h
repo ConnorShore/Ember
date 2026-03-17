@@ -8,6 +8,15 @@
 
 namespace Ember {
 
+	// TODO: integrate texture type into textures
+	enum class TextureType
+	{
+		None = 0,
+		Diffuse,
+		Specular,
+		Normal,
+	};
+
 	//////////////////////////////////////////////////////////////////////////
 	// Texture
 	//////////////////////////////////////////////////////////////////////////
@@ -32,6 +41,7 @@ namespace Ember {
 		static SharedPtr<Texture> Create();
 		static SharedPtr<Texture> Create(const std::string& filePath);
 		static SharedPtr<Texture> Create(const std::string& name, const std::string& filePath);
+		static SharedPtr<Texture> Create(const std::string& name, unsigned int width, unsigned int height, const void* data);
 
 		virtual bool operator==(const SharedPtr<Texture>& other) const = 0;
 	};

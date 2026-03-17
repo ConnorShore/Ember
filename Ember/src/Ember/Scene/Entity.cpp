@@ -10,15 +10,78 @@ namespace Ember {
 
 		TagComponent tagComponent(tag);
 		TransformComponent transform;
+		RelationshipComponent relationship;
 
 		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, tagComponent);
 		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, transform);
+		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, relationship);
 	}
 
 
 	Entity::Entity(EntityID entity, Scene* scene)
 		: m_SceneHandle(scene), m_EntityHandle(entity)
 	{
+	}
+
+	std::vector<Entity> Entity::GetAllChildren()
+	{
+		std::vector<Entity> ret;
+		auto& relationship = GetComponent<RelationshipComponent>();
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			ret.push_back(childEntity);
+		}
+
+		// Look at children's children
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			std::vector<Entity> childChildren = childEntity.GetAllChildren();
+			ret.insert(ret.end(), childChildren.begin(), childChildren.end());
+		}
+
+		return ret;
+	}
+
+	Entity Entity::GetChildByName(const std::string& name)
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+
+			if (childEntity.GetName() == name)
+			{
+				return childEntity;
+			}
+		}
+
+		return Entity();
+	}
+
+	Entity Entity::FindEntityInHierarchy(const std::string& name)
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			if (childEntity.GetName() == name)
+				return childEntity;
+		}
+
+		// Look at children's children
+		for (EntityID childID : relationship.Children)
+		{
+			Entity childEntity(childID, m_SceneHandle);
+			Entity found = childEntity.FindEntityInHierarchy(name);
+
+			if (found.GetEntityHandle() != InvalidEntityID)
+				return found;
+		}
+
+		return Entity();
 	}
 
 	const std::string& Entity::GetName() const

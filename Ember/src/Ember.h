@@ -49,7 +49,9 @@
 
 #include "Ember/Asset/UUID.h"
 #include "Ember/Asset/Asset.h"
+#include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
 
 // Vendor includes
 #include <imgui/imgui.h>
+#include <assimp/Importer.hpp>

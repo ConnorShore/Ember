@@ -22,6 +22,18 @@ namespace Ember {
 		return nullptr;
 	}
 
+	SharedPtr<Texture> Texture::Create(const std::string& name, unsigned int width, unsigned int height, const void* data)
+	{
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:    EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
+		case RendererAPI::API::OpenGL:  return SharedPtr<OpenGL::Texture>::Create(name, width, height, data);
+		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
+	}
+
 	SharedPtr<Texture> Texture::Create(const std::string& filePath)
 	{
 		switch (RendererAPI::GetApi())

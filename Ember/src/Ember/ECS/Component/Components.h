@@ -8,6 +8,7 @@
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/ECS/Types.h"
 
 namespace Ember {
 	class Entity;
@@ -27,39 +28,59 @@ namespace Ember {
 		TagComponent(const std::string& tag) : Tag(tag) {}
 	};
 
+	struct RelationshipComponent
+	{
+		EntityID ParentHandle = InvalidEntityID;
+		std::vector<EntityID> Children;
+
+		RelationshipComponent() = default;
+		RelationshipComponent(const RelationshipComponent&) = default;
+	};
+
 	struct TransformComponent
 	{
 		Vector3f Position;
 		Vector3f Rotation;
-		Vector3f Size;
+		Vector3f Scale;
+
+		Matrix4f WorldTransform = Matrix4f(1.0f);
 
 		TransformComponent(const Vector3f& position = Vector3f(0.0f),
 			const Vector3f& rotation = Vector3f(0.0f),
 			const Vector3f& size = Vector3f(1.0f))
-			: Position(position), Rotation(rotation), Size(size) {
+			: Position(position), Rotation(rotation), Scale(size) {
 		}
 
-		Matrix4f GetTransformationMatrix() const
+		Matrix4f GetLocalTransform() const
 		{
-			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Size);
+			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Scale);
 		}
 
 		Vector3f GetForward() const
 		{
-			Ember::Quaternion q(Rotation);
-			return Math::Normalize(q * Ember::Vector3f(0.0f, 0.0f, -1.0f));
+			return Math::Normalize(Vector3f(
+				-WorldTransform[2][0],
+				-WorldTransform[2][1],
+				-WorldTransform[2][2]
+			));
 		}
 
 		Vector3f GetRight() const
 		{
-			Ember::Quaternion q(Rotation);
-			return Math::Normalize(q * Ember::Vector3f(1.0f, 0.0f, 0.0f));
+			return Math::Normalize(Vector3f(
+				WorldTransform[0][0],
+				WorldTransform[0][1],
+				WorldTransform[0][2]
+			));
 		}
 
 		Vector3f GetUp() const
 		{
-			Ember::Quaternion q(Rotation);
-			return Math::Normalize(q * Ember::Vector3f(0.0f, 1.0f, 0.0f));
+			return Math::Normalize(Vector3f(
+				WorldTransform[1][0],
+				WorldTransform[1][1],
+				WorldTransform[1][2]
+			));
 		}
 	};
 
@@ -109,17 +130,6 @@ namespace Ember {
 			EB_CORE_ASSERT(false, "Unknown Material type!");
 			return nullptr;
 		}
-	};
-
-	struct MaterialComponentOld
-	{
-		// Will be a single material ptr in the future
-		SharedPtr<Shader> Shader;	
-		SharedPtr<Texture> Texture;
-		Vector4f TintColor;
-
-		MaterialComponentOld(const SharedPtr<Ember::Shader>& shader, const SharedPtr<Ember::Texture> texture, Vector4f tintColor = { 1.0f, 1.0f, 1.0f, 1.0f })
-			: Shader(shader), Texture(texture), TintColor(tintColor) { }
 	};
 
 	struct CameraComponent

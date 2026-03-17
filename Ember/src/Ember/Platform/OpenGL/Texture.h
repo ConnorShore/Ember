@@ -13,6 +13,8 @@ namespace Ember {
 			Texture();
 			Texture(const std::string& filePath);
 			Texture(const std::string& name, const std::string& filePath);
+			Texture(const std::string& name, unsigned int width, unsigned int height, const void* data);
+
 			virtual ~Texture();
 
 			void Bind(unsigned int slot = 0) const override;

@@ -2,6 +2,7 @@
 #include "Renderer2D.h"
 
 #include "Ember/Core/Core.h"
+#include "Ember/Core/Application.h"
 #include "Ember/Math/Math.h"
 
 #include "VertexArray.h"
@@ -30,6 +31,7 @@ namespace Ember {
 		SharedPtr<VertexArray> QuadVertexArray;
 		SharedPtr<VertexBuffer> QuadVertexBuffer;
 		SharedPtr<IndexBuffer> QuadIndexBuffer;
+
 		SharedPtr<Shader> QuadShader;
 		SharedPtr<Texture> DefaultTexture;
 
@@ -88,16 +90,13 @@ namespace Ember {
 		delete[] quadIndexBufferData;
 
 		// Todo add to shader/texture libraries
-		s_RendererData->QuadShader = Shader::Create("Ember/assets/shaders/Renderer2D_Quad.glsl");
+		s_RendererData->QuadShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::Standard2dQuadShad);
 		s_RendererData->QuadShader->Bind();
 		for (unsigned int i = 0; i < s_RendererData->MaxTextureSlots; i++)
 			s_RendererData->QuadShader->SetInt("u_Textures[" + std::to_string(i) + "]", i);
 
 		// Default white texture
-		s_RendererData->DefaultTexture = Texture::Create();
-		uint32_t whiteTextureData = 0xffffffff;
-		s_RendererData->DefaultTexture->SetData(&whiteTextureData, sizeof(uint32_t));
-
+		s_RendererData->DefaultTexture = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
 		s_RendererData->TextureSlots[0] = s_RendererData->DefaultTexture;
 	}
 

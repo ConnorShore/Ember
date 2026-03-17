@@ -18,7 +18,7 @@ namespace Ember {
 	public:
 		Mesh(const std::string& filePath);
 		Mesh(const std::string& name, const std::string& filePath);
-		Mesh(const std::string& name, std::vector<float>& vertices, const std::vector<unsigned int>& indices);
+		Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 		~Mesh();
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
@@ -27,22 +27,5 @@ namespace Ember {
 
 	private:
 		SharedPtr<VertexArray> m_VertexArray;
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-	// Mesh Library
-	//////////////////////////////////////////////////////////////////////////
-
-	class MeshImporter
-	{
-	public:
-		static SharedPtr<Mesh> Load(const std::string& filePath)
-		{
-			return SharedPtr<Mesh>::Create(filePath);
-		}
-		static SharedPtr<Mesh> Load(const std::string& name, const std::string& filePath)
-		{
-			return SharedPtr<Mesh>::Create(name, filePath);
-		}
 	};
 }
