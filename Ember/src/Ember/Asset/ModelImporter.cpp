@@ -231,6 +231,7 @@ namespace Ember {
 
 	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
 	{
+		// Check diffuse/albedo
 		if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
 			aiString texPath;
@@ -250,10 +251,17 @@ namespace Ember {
 			matInstance->Set(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
+		// Check normals (can be under either NORMALS or HEIGHT type)
+		aiTextureType normalType = aiTextureType_NONE;
 		if (aiMat->GetTextureCount(aiTextureType_NORMALS) > 0)
+			normalType = aiTextureType_NORMALS;
+		else if (aiMat->GetTextureCount(aiTextureType_HEIGHT) > 0)
+			normalType = aiTextureType_HEIGHT;
+
+		if (normalType != aiTextureType_NONE)
 		{
 			aiString texPath;
-			aiMat->GetTexture(aiTextureType_NORMALS, 0, &texPath);
+			aiMat->GetTexture(normalType, 0, &texPath);
 
 			std::filesystem::path modelPath(modelFilePath);
 			std::filesystem::path directory = modelPath.parent_path();

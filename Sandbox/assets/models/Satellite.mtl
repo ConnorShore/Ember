@@ -4,6 +4,7 @@
 newmtl Mat_GoldFoil
 Kd 1.0 1.0 1.0
 map_Kd Foil_Albedo.jpg
+map_Bump Foil_Normal.png
 Pm 1.0
 Pr 0.25
 illum 2
