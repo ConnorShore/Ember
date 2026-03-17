@@ -20,11 +20,14 @@ namespace Ember {
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
 		ShaderMacros lightMacros;
-		lightMacros["MAX_LIGHTS"] = std::to_string(Constants::Renderer::MaxLights);
+		lightMacros["MAX_DIRECTIONAL_LIGHTS"] = std::to_string(Constants::Renderer::MaxDirectionalLights);
+		lightMacros["MAX_SPOT_LIGHTS"] = std::to_string(Constants::Renderer::MaxSpotLights);
+		lightMacros["MAX_POINT_LIGHTS"] = std::to_string(Constants::Renderer::MaxPointLights);
 		lightMacros["DEFAULT_AMBIENT"] = std::to_string(Constants::Renderer::DefaultAmbient);
 		auto litShad = Load<Shader>(Constants::Assets::StandardLitShad, "Ember/assets/shaders/StandardLit.glsl", lightMacros);
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
 		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
+		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadow, "Ember/assets/shaders/StandardShadow.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

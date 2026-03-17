@@ -62,6 +62,7 @@ namespace Ember {
 		virtual void ViewportResize(unsigned int width, unsigned int height) = 0;
 
 		virtual const unsigned int GetColorAttachmentID(unsigned int id) const = 0;
+		virtual const unsigned int GetDepthAttachmentID() const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
 		virtual const unsigned int GetID() const = 0;

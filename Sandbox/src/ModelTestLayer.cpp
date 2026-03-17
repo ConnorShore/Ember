@@ -36,7 +36,7 @@ void ModelTestLayer::OnAttach()
 	auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
 	auto groundPlane = m_MainScene->AddEntity();
 	auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
-	groundTransform.Position = { 0.0f, -10.0f, 0.0f };
+	groundTransform.Position = { 0.0f, -4.0f, 0.0f };
 	groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
 
 	Ember::MeshComponent groundMeshComp = { quadMesh };
@@ -91,8 +91,14 @@ void ModelTestLayer::OnAttach()
 	m_CameraEntity.AttachComponent(cameraComponent);
 	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
 
+	// Add flashlight entity
+	m_Flashlight = m_MainScene->AddEntity();
+	Ember::SpotLightComponent spotlight(Ember::Vector3f(0.0f, 0.0f, -1.0f), Ember::Vector3f(1.0f, 1.0f, 0.0f), 5000.0f, 12.5f, 17.5f);
+	m_Flashlight.AttachComponent(spotlight);
+
 	// Choose Lights
-	SetupStandardLights();
+	SetupDirectionalLights();
+	//SetupStandardLights();
 	//SetupRandomLights();
 }
 
@@ -103,6 +109,23 @@ void ModelTestLayer::OnDetach()
 
 void ModelTestLayer::OnUpdate(Ember::TimeStep delta)
 {
+	// 1. Get the Camera data
+	auto& camTransform = m_CameraEntity.GetComponent<Ember::TransformComponent>();
+	Ember::Matrix4f camRotMat = Ember::Math::GetRotationMatrix(camTransform.Rotation);
+
+	// 2. Extract the Local Direction Vectors from the Camera's Rotation Matrix
+	Ember::Vector3f forward = Ember::Math::Normalize(Ember::Vector3f(-camRotMat[2][0], -camRotMat[2][1], -camRotMat[2][2]));
+	Ember::Vector3f right = Ember::Math::Normalize(Ember::Vector3f(camRotMat[0][0], camRotMat[0][1], camRotMat[0][2]));
+	Ember::Vector3f up = Ember::Math::Normalize(Ember::Vector3f(camRotMat[1][0], camRotMat[1][1], camRotMat[1][2]));
+
+	// 3. Get the Flashlight data
+	auto& flashTransform = m_Flashlight.GetComponent<Ember::TransformComponent>();
+	auto& flashSpotlight = m_Flashlight.GetComponent<Ember::SpotLightComponent>();
+
+	// 4. Apply the Offset! (2 units right, 1 unit down)
+	flashTransform.Position = camTransform.Position + (right * 1.0f) - (up * 1.0f);
+	flashSpotlight.Direction = forward;
+
 	auto& transform = m_Satellite.GetComponent<Ember::TransformComponent>();
 	transform.Rotation.y += 1.0f * delta;
 
@@ -168,6 +191,16 @@ void ModelTestLayer::OnImGuiRender(Ember::TimeStep delta)
 
 		ImGui::End();
 	}
+}
+
+void ModelTestLayer::SetupDirectionalLights()
+{
+	auto lightEntity = m_MainScene->AddEntity();
+	lightEntity.GetComponent<Ember::TransformComponent>().Position = Ember::Vector3f(0.0f, 20.0f, 0.0f);
+
+	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, -0.8f, -0.25f), Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
+	lightEntity.AttachComponent(dirLightComp);
+
 }
 
 void ModelTestLayer::SetupStandardLights()

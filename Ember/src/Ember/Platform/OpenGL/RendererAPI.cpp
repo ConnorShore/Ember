@@ -34,6 +34,16 @@ namespace Ember {
 			use ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
 		}
 
+		void RendererAPI::CullFace(Face face)
+		{
+			switch (face)
+			{
+			case RendererAPI::Face::Back:	glCullFace(GL_BACK); break;
+			case RendererAPI::Face::Front:	glCullFace(GL_FRONT); break;
+			default: EB_CORE_ASSERT(false, "Unknown face specified!");
+			}
+		}
+
 		void RendererAPI::UseDepthTest(bool use)
 		{
 			use ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);

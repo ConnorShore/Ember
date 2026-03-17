@@ -23,6 +23,11 @@ namespace Ember {
 		RenderAction::UseDepthTest(false);
 	}
 
+	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray)
+	{
+		RenderAction::DrawIndexed(vertexArray);
+	}
+
 	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material,  const Matrix4f& transform)
 	{
 		material.Material->Bind();
@@ -30,11 +35,6 @@ namespace Ember {
 		// Required Uniforms
 		material.Material->GetShader()->SetMatrix4(Constants::Uniforms::Transform, transform);
 
-		RenderAction::DrawIndexed(vertexArray);
-	}
-
-	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray)
-	{
 		RenderAction::DrawIndexed(vertexArray);
 	}
 

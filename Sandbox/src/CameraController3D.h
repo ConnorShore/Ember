@@ -23,6 +23,12 @@ public:
 		if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
 			Transform().Position -= Transform().GetRight() * speed;
 
+
+		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Space))
+			Transform().Position += Ember::Vector3f(0.0f, 1.0f, 0.0f) * speed;
+		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::LeftControl))
+			Transform().Position -= Ember::Vector3f(0.0f, 1.0f, 0.0f) * speed;
+
 		// Rotation (Arrow keys)
 		if (Ember::Input::IsKeyPressed(Ember::KeyCode::Right))
 			Transform().Rotation.y -= rotSpeed;

@@ -27,6 +27,10 @@ namespace Ember {
 	private:
 		void InitializeRenderState();
 		void SetSceneCamera(Registry* registry);
+		void CreateShadowMaps(Registry* registry);
+		void RenderGeometryForShadowMaps(Registry* registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
+		void CreateDirectionalShadowMap(Registry* registry);
+		void CreateSpotlightShadowMap(Registry* registry);
 		void RenderDeferredGeometry(Registry* registry);
 		void RenderDeferredLighting(Registry* registry);
 		void RenderForwardEntities(Registry* registry);
@@ -37,7 +41,10 @@ namespace Ember {
 
 	private:
 		SharedPtr<Framebuffer> m_GBuffer;
+		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;
+		SharedPtr<Framebuffer> m_SpotShadowMapBuffer;
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
+		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<Mesh> m_ScreenQuad;
 
 		struct RenderQueueBuckets
@@ -58,6 +65,8 @@ namespace Ember {
 		{
 			CameraComponent ActiveCamera;
 			Matrix4f CameraTransform;
+			Matrix4f DirectionalLightViewMatrix;
+			Matrix4f SpotLightViewMatrix;
 			bool IsCameraFound;
 			Vector4<int> ViewportDimensions;
 			int OutputFramebufferId;

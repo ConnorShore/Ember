@@ -123,6 +123,24 @@ namespace Ember {
 			m_Id = programId;
 
 			glLinkProgram(m_Id);
+
+			int isLinked;
+			glGetProgramiv(m_Id, GL_LINK_STATUS, &isLinked);
+			if (isLinked == GL_FALSE)
+			{
+				int length;
+				glGetProgramiv(m_Id, GL_INFO_LOG_LENGTH, &length);
+
+				char* message = (char*)_alloca(length * sizeof(char));
+				glGetProgramInfoLog(m_Id, length, &length, message);
+
+				EB_CORE_ERROR("Failed to link shader program: {}", m_Name);
+				EB_CORE_ERROR("\t{}", message);
+
+				glDeleteProgram(m_Id);
+				return;
+			}
+
 			glValidateProgram(m_Id);
 
 			for (unsigned int i = 0; i < shaderIndex; i++)

@@ -14,6 +14,7 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
+	void SetupDirectionalLights();
 	void SetupStandardLights();
 	void SetupRandomLights();
 
@@ -27,4 +28,5 @@ private:
 	Ember::SharedPtr<Ember::Material> m_DefaultMaterial;
 
 	Ember::Entity m_Satellite;
+	Ember::Entity m_Flashlight;
 };

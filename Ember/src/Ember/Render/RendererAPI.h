@@ -22,6 +22,12 @@ namespace Ember {
 			Depth = 1 << 1
 		};
 
+		enum class Face
+		{
+			Front,
+			Back
+		};
+
 		using RenderBits = uint32_t;
 
 		virtual void Clear() = 0;
@@ -29,6 +35,7 @@ namespace Ember {
 		void Clear(RenderBit bit) { Clear(static_cast<RenderBits>(bit)); }
 		virtual void SetClearColor(Vector4<float> color) = 0;
 		virtual void UseFaceCulling(bool use) = 0;
+		virtual void CullFace(Face face) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
 

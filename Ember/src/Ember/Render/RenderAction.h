@@ -34,6 +34,11 @@ namespace Ember {
 			m_RendererApi->UseFaceCulling(use);
 		}
 
+		static inline void CullFace(RendererAPI::Face face)
+		{
+			m_RendererApi->CullFace(face);
+		}
+
 		static inline void UseDepthTest(bool use)
 		{
 			m_RendererApi->UseDepthTest(use);
