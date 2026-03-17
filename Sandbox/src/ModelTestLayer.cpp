@@ -123,7 +123,6 @@ void ModelTestLayer::OnUpdate(Ember::TimeStep delta)
 	auto& flashSpotlight = m_Flashlight.GetComponent<Ember::SpotLightComponent>();
 
 	// 4. Apply the Offset! (2 units right, 1 unit down)
-	//flashTransform.Position = camTransform.Position
 	flashTransform.Position = camTransform.Position + (right * 1.0f) - (up * 1.0f);
 	flashSpotlight.Direction = forward;
 

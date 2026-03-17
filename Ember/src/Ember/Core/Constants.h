@@ -4,7 +4,7 @@ namespace Ember::Constants {
 
 	namespace Renderer {
 		inline constexpr unsigned int MaxDirectionalLights = 1;
-		inline constexpr unsigned int MaxSpotLights = 4;
+		inline constexpr unsigned int MaxSpotLights = 1;
 		inline constexpr unsigned int MaxPointLights = 256;
 		inline constexpr float DefaultAmbient = 0.03f;
 	}

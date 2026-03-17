@@ -49,8 +49,12 @@ layout(binding = 3) uniform sampler2D directionShadowMap;
 layout(binding = 4) uniform sampler2D spotShadowMap;
 
 uniform vec3 u_CameraPos;
-uniform mat4 u_DirectionalLightViewMat;
-uniform mat4 u_SpotLightViewMat;
+
+layout(std140, binding = 1) uniform ShadowData
+{
+	mat4 u_DirectionalLightViewMat;
+	mat4 u_SpotLightViewMat;
+};
 
 uniform int u_ActiveDirectionalLights;
 uniform int u_ActiveSpotLights;
@@ -118,27 +122,9 @@ float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
     return shadow;
 }
 
-void main()
-{	
-	vec3 gPosition = texture(gPositionAO, TextureCoord).rgb;
-	vec3 gNormal = texture(gNormalMetallic, TextureCoord).rgb;
-	vec3 albedo = texture(gAlbedoRoughness, TextureCoord).rgb;
-
-	float metallic = texture(gNormalMetallic, TextureCoord).a;
-	float u_Roughness = texture(gAlbedoRoughness, TextureCoord).a;
-	float ao = texture(gPositionAO, TextureCoord).a;
-
-	vec3 actualAlbedo = albedo;
-
-	vec3 N = normalize(gNormal);
-	vec3 V = normalize(u_CameraPos - gPosition);
-
-	// Clamp roughness to avoid NDF collapsing to 0 (produces flat ambient-only result)
-	float roughness = max(u_Roughness, 0.05);
-
-	vec3 L0 = vec3(0.0);
-
-	// Directional Lights
+vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actualAlbedo, float metallic, float roughness)
+{
+	vec3 result = vec3(0.0);
 	for (int i = 0; i < u_ActiveDirectionalLights; i++)
 	{
 		vec3 L = normalize(-u_DirectionalLights[i].Direction);
@@ -168,8 +154,15 @@ void main()
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 		vec3 specular =  numerator / denomenator;
 
-		L0 += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
+		result += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 	}
+
+	return result;
+}
+
+vec3 ApplySpotLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actualAlbedo, float metallic, float roughness)
+{
+	vec3 result = vec3(0.0);
 
 	// Spot Lights
 	for (int i = 0; i < u_ActiveSpotLights; i++)
@@ -209,9 +202,16 @@ void main()
 			float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 			vec3 specular =  numerator / denomenator;
 			
-			L0 += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
+			result += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 		}
 	}
+
+	return result;
+}
+
+vec3 ApplyPointLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actualAlbedo, float metallic, float roughness)
+{
+	vec3 result = vec3(0.0);
 
 	// Point Lights
 	for (int i = 0; i < u_ActivePointLights; i++)
@@ -238,8 +238,35 @@ void main()
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 		vec3 specular =  numerator / denomenator;
 		
-		L0 += (KD * actualAlbedo / PI + specular) * radiance * NdotL;
+		result += (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 	}
+
+	return result;
+}
+
+void main()
+{	
+	vec3 gPosition = texture(gPositionAO, TextureCoord).rgb;
+	vec3 gNormal = texture(gNormalMetallic, TextureCoord).rgb;
+	vec3 albedo = texture(gAlbedoRoughness, TextureCoord).rgb;
+
+	float metallic = texture(gNormalMetallic, TextureCoord).a;
+	float roughness = texture(gAlbedoRoughness, TextureCoord).a;
+	float ao = texture(gPositionAO, TextureCoord).a;
+
+	vec3 actualAlbedo = albedo;
+
+	vec3 N = normalize(gNormal);
+	vec3 V = normalize(u_CameraPos - gPosition);
+
+	// Clamp roughness to avoid NDF collapsing to 0 (produces flat ambient-only result)
+	roughness = max(roughness, 0.05);
+
+	// Apply lighting from each light type
+	vec3 L0 = vec3(0.0);
+	L0 += ApplyDirectionalLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
+	L0 += ApplySpotLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
+	L0 += ApplyPointLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
 
 	// Ambient light
 	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
