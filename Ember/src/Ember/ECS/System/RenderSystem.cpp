@@ -15,16 +15,31 @@ namespace Ember {
 		Renderer2D::Init();
 		Renderer3D::Init();
 
-		Ember::FramebufferSpecification specs;
-		specs.Width = 1;
-		specs.Height = 1;
-		specs.AttachmentSpecs = {
-			Ember::FramebufferTextureFormat::RGBA8,
-			Ember::FramebufferTextureFormat::RGBA16F,
-			Ember::FramebufferTextureFormat::RGBA16F,
-			Ember::FramebufferTextureFormat::DEPTH24STENCIL8
-		};
-		m_GBuffer = Framebuffer::Create(specs);
+		// GBuffer
+		{
+			Ember::FramebufferSpecification specs;
+			specs.Width = 1;
+			specs.Height = 1;
+			specs.AttachmentSpecs = {
+				Ember::FramebufferTextureFormat::RGBA8,
+				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+			};
+			m_GBuffer = Framebuffer::Create(specs);
+		}
+
+		// ShadowMap Buffer
+		{
+			Ember::FramebufferSpecification specs;
+			specs.Width = 2048;
+			specs.Height = 2048;
+			specs.AttachmentSpecs = {
+				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+			};
+			m_ShadowMapBuffer = Framebuffer::Create(specs);
+		}
+
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
@@ -44,6 +59,10 @@ namespace Ember {
 	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry)
 	{
 		InitializeRenderState();
+
+		// Save output framebuffer
+		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
+
 		SetSceneCamera(registry);
 
 		if (!m_RenderSceneState.IsCameraFound) return;
@@ -52,6 +71,7 @@ namespace Ember {
 		SortEntitiesByRenderQueue(registry);
 
 		// The Deferred Pipeline
+		CreateShadowMap(registry);
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
@@ -104,10 +124,57 @@ namespace Ember {
 		}
 	}
 
+	void RenderSystem::CreateShadowMap(Registry* registry)
+	{
+		// Get directional light view matrix to create shadow map
+		View lightView = registry->Query<DirectionalLightComponent, TransformComponent>();
+		unsigned int index = 0;
+		for (EntityID entity : lightView)
+		{
+			if (index >= Constants::Renderer::MaxDirectionalLights)
+				break;
+
+			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+
+			// TODO: These props are just hardcoded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 100.0f);
+			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
+			Vector3f eye = target - (Math::Normalize(light.Direction) * 40.0f); // Pull back 40 units
+			Matrix4f lightView = Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f));
+			m_RenderSceneState.LightViewMatrix = lightProjection * lightView;
+
+			index++;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadow);
+
+		m_ShadowMapBuffer->Bind();
+		RenderAction::SetViewport(0, 0, m_ShadowMapBuffer->GetSpecification().Width, m_ShadowMapBuffer->GetSpecification().Height);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseFaceCulling(true);
+		RenderAction::CullFace(RendererAPI::Face::Front);
+
+		Renderer3D::BeginFrame();
+
+		shadowShader->Bind();
+		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.LightViewMatrix);	// TODO: Move to UniformBuffer
+
+		for (EntityID entity : m_RenderQueueBuckets.Opaque)
+		{
+			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
+			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
+		}
+
+		Renderer3D::EndFrame();
+
+		RenderAction::CullFace(RendererAPI::Face::Back);
+	}
+
 	void RenderSystem::RenderDeferredGeometry(Registry* registry)
 	{
-		// Save output framebuffer
-		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		m_GBuffer->Bind();
 		RenderAction::SetViewport(0, 0, m_GBuffer->GetSpecification().Width, m_GBuffer->GetSpecification().Height);
@@ -142,27 +209,52 @@ namespace Ember {
 		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
 
 		litShader->Bind();
-		litShader->SetFloat3("u_CameraPos", m_RenderSceneState.CameraTransform[3]);
+		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+		litShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, m_RenderSceneState.LightViewMatrix);	// TODO: Move to UniformBuffer
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
 		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(2));
+		RenderAction::SetTextureUnit(3, m_ShadowMapBuffer->GetDepthAttachmentID());
 
-		View lightView = registry->Query<PointLightComponent, TransformComponent>();
-		unsigned int index = 0;
-		for (EntityID entity : lightView)
+		// Set Directional Light
 		{
-			if (index >= Constants::Renderer::MaxLights)
-				break;
+			View lightView = registry->Query<DirectionalLightComponent, TransformComponent>();
+			unsigned int index = 0;
+			for (EntityID entity : lightView)
+			{
+				if (index >= Constants::Renderer::MaxDirectionalLights)
+					break;
 
-			auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
-			litShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
-			litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
-			litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+				auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Direction", index), light.Direction);
+				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Color", index), light.Color);
+				litShader->SetFloat(std::format("u_DirectionalLights[{}].Intensity", index), light.Intensity);
 
-			index++;
+				index++;
+			}
+
+			litShader->SetInt(Constants::Uniforms::ActiveDirectionalLights, index);
 		}
 
-		litShader->SetInt("u_ActiveLights", index);
+		// Set Point Lights
+		{
+			View lightView = registry->Query<PointLightComponent, TransformComponent>();
+			unsigned int index = 0;
+			for (EntityID entity : lightView)
+			{
+				if (index >= Constants::Renderer::MaxPointLights)
+					break;
+
+				auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
+				litShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
+				litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
+				litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+
+				index++;
+			}
+
+			litShader->SetInt(Constants::Uniforms::ActivePointLights, index);
+		}
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}

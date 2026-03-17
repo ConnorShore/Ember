@@ -36,7 +36,7 @@ void ModelTestLayer::OnAttach()
 	auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
 	auto groundPlane = m_MainScene->AddEntity();
 	auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
-	groundTransform.Position = { 0.0f, -10.0f, 0.0f };
+	groundTransform.Position = { 0.0f, -4.0f, 0.0f };
 	groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
 
 	Ember::MeshComponent groundMeshComp = { quadMesh };
@@ -92,7 +92,8 @@ void ModelTestLayer::OnAttach()
 	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
 
 	// Choose Lights
-	SetupStandardLights();
+	SetupDirectionalLights();
+	//SetupStandardLights();
 	//SetupRandomLights();
 }
 
@@ -168,6 +169,16 @@ void ModelTestLayer::OnImGuiRender(Ember::TimeStep delta)
 
 		ImGui::End();
 	}
+}
+
+void ModelTestLayer::SetupDirectionalLights()
+{
+	auto lightEntity = m_MainScene->AddEntity();
+	lightEntity.GetComponent<Ember::TransformComponent>().Position = Ember::Vector3f(0.0f, 20.0f, 0.0f);
+
+	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, -0.8f, -0.25f), Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
+	lightEntity.AttachComponent(dirLightComp);
+
 }
 
 void ModelTestLayer::SetupStandardLights()

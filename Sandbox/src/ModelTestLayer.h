@@ -14,6 +14,7 @@ public:
 	void OnImGuiRender(Ember::TimeStep delta) override;
 
 private:
+	void SetupDirectionalLights();
 	void SetupStandardLights();
 	void SetupRandomLights();
 

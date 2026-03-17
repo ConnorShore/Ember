@@ -99,6 +99,11 @@ namespace Ember {
 			return glm::toMat4(Quaternion(eulerAngles));
 		}
 
+		static inline Matrix4f LookAt(const Vector3f& eye, const Vector3f& center, const Vector3f& up)
+		{
+			return glm::lookAt(eye, center, up);
+		}
+
 		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
 		{
 			glm::vec3 scale;

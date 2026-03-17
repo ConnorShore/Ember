@@ -5,10 +5,14 @@ layout(location = 0) in vec3 v_Position;
 layout(location = 2) in vec2 v_TextureCoord; // Location 2 is UVs (skip 1)
 
 out vec2 TextureCoord;
+out vec4 PosLightSpace;
+
+uniform mat4 u_LightViewMatrix;
 
 void main()
 {
     TextureCoord = v_TextureCoord;
+	PosLightSpace = u_LightViewMatrix * vec4(v_Position, 1.0);
     gl_Position = vec4(v_Position, 1.0); 
 }
 
@@ -17,6 +21,12 @@ void main()
 
 const float PI = 3.14159265359;
 
+struct DirectionalLight {
+	vec3 Direction;
+	vec3 Color;
+	float Intensity;
+};
+
 struct PointLight {
 	vec3 Position;
 	vec3 Color;
@@ -24,18 +34,24 @@ struct PointLight {
 };
 
 in vec2 TextureCoord;
+in vec4 PosLightSpace;
 
 out vec4 OutColor;
 
 layout(binding = 0) uniform sampler2D gAlbedoRoughness; 
 layout(binding = 1) uniform sampler2D gNormalMetallic;
 layout(binding = 2) uniform sampler2D gPositionAO;
+layout(binding = 3) uniform sampler2D shadowMap;
 
 uniform vec3 u_CameraPos;
-uniform int u_ActiveLights;
+uniform mat4 u_LightViewMat;
 
-// MAX_LIGHTS is injected via ShaderMacros
-uniform PointLight u_PointLights[MAX_LIGHTS];
+uniform int u_ActiveDirectionalLights;
+uniform int u_ActivePointLights;
+
+// MAX_POINT_LIGHTS, MAX_DIRECTIONAL_LIGHTS is injected via ShaderMacros
+uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
+uniform DirectionalLight u_DirectionalLights[MAX_DIRECTIONAL_LIGHTS];
 
 float NormalDistributionTrowbridgeReitxGGX(vec3 N, vec3 H, float roughness)
 {
@@ -60,6 +76,46 @@ vec3 Fresnel(vec3 V, vec3 H, vec3 F0)
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - dot(H, V), 0.0, 1.0), 5.0);
 }
 
+float CalculateShadow(vec4 posLightSpace)
+{
+	// perform perspective divide
+    vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
+
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+	// Add a tiny bias to prevent shadow acne
+    float bias = 0.005;
+
+    // check whether current frag pos is in shadow
+    //float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+	// PCF
+	float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+	
+
+	// If it's outside the light's far plane, it's not in shadow
+	if(projCoords.z > 1.0)
+        return 0.0;
+
+    return shadow;
+}
+
 void main()
 {	
 
@@ -79,8 +135,41 @@ void main()
 	// Clamp roughness to avoid NDF collapsing to 0 (produces flat ambient-only result)
 	float roughness = max(u_Roughness, 0.05);
 
+	// Set shadow value
+	vec4 PosLightSpace = u_LightViewMat * vec4(gPosition, 1.0);
+	float shadow = CalculateShadow(PosLightSpace);
+	
 	vec3 L0 = vec3(0.0);
-	for (int i = 0; i < u_ActiveLights; i++)
+
+	// Directional Lights
+	for (int i = 0; i < u_ActiveDirectionalLights; i++)
+	{
+		vec3 L = normalize(-u_DirectionalLights[i].Direction);
+		vec3 H = normalize(V + L);
+
+		float attenuation = 1.0;
+		vec3 radiance = u_DirectionalLights[i].Color * u_DirectionalLights[i].Intensity * attenuation;
+
+		// BRDF (Cook-Torrance)
+		float NdotL = max(dot(N, L), 0.0);
+		vec3 F0 = mix(vec3(0.04), actualAlbedo, metallic);
+		float D = NormalDistributionTrowbridgeReitxGGX(N, H, roughness);
+		float G = max(GeometrySchlickGGXSub(N, V, roughness), 0.0) * max(GeometrySchlickGGXSub(N, L, roughness), 0.0);
+		vec3 F = Fresnel(V, H, F0);
+
+		vec3 KS = F;				// Specular factor
+		vec3 KD = vec3(1.0) - KS;	// diffuse factor
+		KD *= 1.0f - metallic;
+
+		vec3 numerator = D * G * F;
+		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
+		vec3 specular =  numerator / denomenator;
+
+		L0 += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
+	}
+
+	// Point Lights
+	for (int i = 0; i < u_ActivePointLights; i++)
 	{
 		vec3 L = normalize(u_PointLights[i].Position - gPosition);
 		vec3 H = normalize(V + L);

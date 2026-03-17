@@ -19,8 +19,8 @@ namespace Ember {
 		static void BeginFrame();
 		static void EndFrame();
 
-		static void Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform);
 		static void Submit(const SharedPtr<VertexArray>& vertexArray);
+		static void Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material, const Matrix4f& transform);
 	};
 
 }

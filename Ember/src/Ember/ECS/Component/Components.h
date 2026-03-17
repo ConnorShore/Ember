@@ -141,6 +141,17 @@ namespace Ember {
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
 	};
 
+	struct DirectionalLightComponent
+	{
+		Vector3f Direction = Vector3f(0.0f, -1.0f, 0.0f);
+		Vector3f Color = Vector3f(1.0f);
+		float Intensity = 0.0f;
+
+		DirectionalLightComponent() = default;
+		DirectionalLightComponent(const Vector3f& direction, const Vector3f& color, float intensity)
+			: Direction(direction), Color(color), Intensity(intensity) { }
+	};
+
 	struct PointLightComponent
 	{
 		Vector3f Color = Vector3f(1.0f);

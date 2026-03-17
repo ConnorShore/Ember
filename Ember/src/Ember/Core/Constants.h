@@ -11,6 +11,7 @@ namespace Ember::Constants {
 		inline const char* StandardLitShad = "StandardLit";
 		inline const char* StandardUnlitShad = "StandardUnlit";
 		inline const char* Standard2dQuadShad = "Standard2DQuad";
+		inline const char* StandardShadow = "StandardShadow";
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const char* StandardGeometryMat = "StandardGeometry";
@@ -33,10 +34,17 @@ namespace Ember::Constants {
 		inline const char* NormalMatrix = "u_NormalMatrix";
 
 		inline const char* Color = "u_Color";
+
+		inline const char* CameraPosition = "u_CameraPos";
+		inline const char* ActiveDirectionalLights = "u_ActiveDirectionalLights";
+		inline const char* ActivePointLights = "u_ActivePointLights";
+
+		inline const char* LightViewMatrix = "u_LightViewMat";
 	}
 
 	namespace Renderer {
-		inline constexpr unsigned int MaxLights = 256;
+		inline constexpr unsigned int MaxDirectionalLights = 1;
+		inline constexpr unsigned int MaxPointLights = 256;
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 

@@ -22,6 +22,11 @@ namespace Ember {
 				EB_CORE_ASSERT(id < m_ColorAttachments.size(), "Color attachment id doesn't exist");
 				return m_ColorAttachments[id];
 			}
+			inline const unsigned int GetDepthAttachmentID() const override
+			{
+				return m_DepthAttachment;
+			}
+
 			inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 
 			inline const unsigned int GetID() const override { return m_Id; }
