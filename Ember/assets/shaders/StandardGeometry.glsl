@@ -53,8 +53,8 @@ uniform float u_Metallic;
 uniform float u_Roughness;
 uniform float u_AO;
 
-uniform sampler2D u_AlbedoMap;
-uniform sampler2D u_NormalMap;
+layout(binding = 0) uniform sampler2D u_AlbedoMap;
+layout(binding = 1) uniform sampler2D u_NormalMap;
 
 void main()
 {

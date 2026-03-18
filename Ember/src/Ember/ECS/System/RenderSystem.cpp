@@ -118,6 +118,8 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
+
+		RenderAction::UseDepthTest(false);
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto blurShader = assetManager.GetAsset<Shader>(Constants::Assets::GaussianBlurShad);
 
@@ -125,16 +127,16 @@ namespace Ember {
 		bool horizontalPass = true, firstIter = true;
 		int amount = 10; // Push this back up to 10 so it blurs nicely!
 		blurShader->Bind();
-		blurShader->SetInt("u_Image", 8);
+		blurShader->SetInt("u_Image", 0);
 		for (unsigned int i = 0; i < amount; i++)
 		{
 			m_PingPongBuffers[horizontalPass]->Bind();
 			blurShader->SetInt("u_HorizontalPass", horizontalPass);
 
 			if (firstIter)
-				RenderAction::SetTextureUnit(8, m_HdrFramebuffer->GetColorAttachmentID(1));
+				RenderAction::SetTextureUnit(0, m_HdrFramebuffer->GetColorAttachmentID(1));
 			else
-				RenderAction::SetTextureUnit(8, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
+				RenderAction::SetTextureUnit(0, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
 
 			Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 			horizontalPass = !horizontalPass;
@@ -152,11 +154,11 @@ namespace Ember {
 		bloomShader->Bind();
 		bloomShader->SetFloat("u_Exposure", 1.0f);
 
-		bloomShader->SetInt("u_Scene", 8);     
-		bloomShader->SetInt("u_BloomBlur", 9); 
+		bloomShader->SetInt("u_Scene", 0);     
+		bloomShader->SetInt("u_BloomBlur", 1); 
 
-		RenderAction::SetTextureUnit(8, m_HdrFramebuffer->GetColorAttachmentID(0));
-		RenderAction::SetTextureUnit(9, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, m_HdrFramebuffer->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(1, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 
@@ -226,7 +228,7 @@ namespace Ember {
 			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 100.0f);
+			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(light.Direction) * 40.0f); // Pull back 40 units
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
@@ -278,19 +280,25 @@ namespace Ember {
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
+
 		shadowMapBuffer->Bind();
+
 		RenderAction::SetViewport(0, 0, shadowMapBuffer->GetSpecification().Width, shadowMapBuffer->GetSpecification().Height);
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
+
 		Renderer3D::BeginFrame();
+
 		shadowShader->Bind();
-		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);	// TODO: Move to UniformBuffer
+		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);
+
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
 		}
+
 		Renderer3D::EndFrame();
 	}
 
@@ -302,6 +310,13 @@ namespace Ember {
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
+
+		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
+		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
+		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
+		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
+		RenderAction::SetTextureUnit(1, defaultNormal->GetID());
+		RenderAction::SetTextureUnit(2, defaultWhite->GetID());
 
 		Renderer3D::BeginFrame();
 

@@ -40,17 +40,17 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Registry* registry);
 
 	private:
+		SharedPtr<Mesh> m_ScreenQuad;
+
 		SharedPtr<Framebuffer> m_GBuffer;
 		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;
 		SharedPtr<Framebuffer> m_SpotShadowMapBuffer;
+
 		SharedPtr<Framebuffer> m_HdrFramebuffer;
+		std::array<SharedPtr<Framebuffer>, 2> m_PingPongBuffers;
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
-
-		std::array<SharedPtr<Framebuffer>, 2> m_PingPongBuffers;
-
-		SharedPtr<Mesh> m_ScreenQuad;
 
 		struct RenderQueueBuckets
 		{

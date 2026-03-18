@@ -34,10 +34,11 @@ namespace Ember {
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
 		geometryMaterial->Set(Constants::Uniforms::Albedo, Vector3f(1.0f));
-		geometryMaterial->Set(Constants::Uniforms::AlbedoMap, whiteTex);
 		geometryMaterial->Set(Constants::Uniforms::Metallic, 0.0f);
 		geometryMaterial->Set(Constants::Uniforms::Roughness, 0.5f);
 		geometryMaterial->Set(Constants::Uniforms::AO, 1.0f);
+		geometryMaterial->Set(Constants::Uniforms::AlbedoMap, whiteTex);
+		geometryMaterial->Set(Constants::Uniforms::NormalMap, normalTex);
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
 		unlitMaterial->Set(Constants::Uniforms::Color, Vector3f(1.0f));

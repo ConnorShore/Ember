@@ -282,10 +282,6 @@ void main()
    
     OutColor = vec4(color, 1.0);
 
-	// Extract bright areas for hdr / bloom
-	float brightness = dot(OutColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-	if(brightness > 1.0)
-		BrightColor = vec4(OutColor.rgb, 1.0);
-	else
-		BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+	// Extract bright areas for hdr / bloom. Anthing outside 1.0 will bloom
+	BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);
 }
