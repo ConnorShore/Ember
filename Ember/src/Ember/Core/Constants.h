@@ -51,11 +51,11 @@ namespace Ember::Constants {
 		inline const char* HorizontalPass = "u_HorizontalPass";
 		inline const char* BloomBlur = "u_BloomBlur";
 
-		inline const char* AlbedoRoughness = "gAlbedoRoughness";
-		inline const char* NormalMetallic = "gNormalMetallic";
-		inline const char* PositionAO = "gPositionAO";
-		inline const char* DirectionShadowMap = "directionShadowMap";
-		inline const char* SpotShadowMap = "spotShadowMap";
+		inline const char* AlbedoRoughness = "u_AlbedoRoughness";
+		inline const char* NormalMetallic = "u_NormalMetallic";
+		inline const char* PositionAO = "u_PositionAO";
+		inline const char* DirectionShadowMap = "u_DirectionShadowMap";
+		inline const char* SpotShadowMap = "u_SpotShadowMap";
 
 		inline const char* CameraPosition = "u_CameraPos";
 		inline const char* ActiveDirectionalLights = "u_ActiveDirectionalLights";

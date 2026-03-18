@@ -43,11 +43,11 @@ in vec2 TextureCoord;
 layout(location = 0) out vec4 OutColor;
 layout(location = 1) out vec4 BrightColor;
 
-layout(binding = 0) uniform sampler2D gAlbedoRoughness; 
-layout(binding = 1) uniform sampler2D gNormalMetallic;
-layout(binding = 2) uniform sampler2D gPositionAO;
-layout(binding = 3) uniform sampler2D directionShadowMap;
-layout(binding = 4) uniform sampler2D spotShadowMap;
+layout(binding = 0) uniform sampler2D u_AlbedoRoughness; 
+layout(binding = 1) uniform sampler2D u_NormalMetallic;
+layout(binding = 2) uniform sampler2D u_PositionAO;
+layout(binding = 3) uniform sampler2D u_DirectionShadowMap;
+layout(binding = 4) uniform sampler2D u_SpotShadowMap;
 
 uniform vec3 u_CameraPos;
 
@@ -136,7 +136,7 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		
 		// Set shadow value
 		vec4 PosLightSpace = u_DirectionalLightViewMat * vec4(gPosition, 1.0);
-		float shadow = CalculateShadow(PosLightSpace, directionShadowMap, dirBias);
+		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, dirBias);
 
 		float attenuation = 1.0;
 		vec3 radiance = u_DirectionalLights[i].Color * u_DirectionalLights[i].Intensity * attenuation;
@@ -183,7 +183,7 @@ vec3 ApplySpotLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actual
 			float spotBias = max(0.0005 * (1.0 - dot(N, L)), 0.00005);
 
 			vec4 PosLightSpace = u_SpotLightViewMat * vec4(gPosition, 1.0);
-			float shadow = CalculateShadow(PosLightSpace, spotShadowMap, spotBias);
+			float shadow = CalculateShadow(PosLightSpace, u_SpotShadowMap, spotBias);
 
 			float distance = length(u_SpotLights[i].Position - gPosition);
 			float attenuation = 1.0 / (distance * distance);
@@ -248,19 +248,19 @@ vec3 ApplyPointLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actua
 
 void main()
 {	
-	vec3 gPosition = texture(gPositionAO, TextureCoord).rgb;
-	vec3 gNormal = texture(gNormalMetallic, TextureCoord).rgb;
+	vec3 gPosition = texture(u_PositionAO, TextureCoord).rgb;
+	vec3 gNormal = texture(u_NormalMetallic, TextureCoord).rgb;
 	if (length(gNormal) < 0.1) {
-		OutColor = vec4(texture(gAlbedoRoughness, TextureCoord).rgb, 1.0);
+		OutColor = vec4(texture(u_AlbedoRoughness, TextureCoord).rgb, 1.0);
 		BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 		return;
 	}
 
-	vec3 albedo = texture(gAlbedoRoughness, TextureCoord).rgb;
+	vec3 albedo = texture(u_AlbedoRoughness, TextureCoord).rgb;
 
-	float metallic = texture(gNormalMetallic, TextureCoord).a;
-	float roughness = texture(gAlbedoRoughness, TextureCoord).a;
-	float ao = texture(gPositionAO, TextureCoord).a;
+	float metallic = texture(u_NormalMetallic, TextureCoord).a;
+	float roughness = texture(u_AlbedoRoughness, TextureCoord).a;
+	float ao = texture(u_PositionAO, TextureCoord).a;
 
 	vec3 actualAlbedo = albedo;
 

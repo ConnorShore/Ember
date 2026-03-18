@@ -64,8 +64,6 @@ namespace Ember {
 			RenderAction::UseDepthTest(false);
 
 			m_BloomCompositeShader->Bind();
-			m_BloomCompositeShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
-
 			m_BloomCompositeShader->SetInt(Constants::Uniforms::Scene, 0);
 			m_BloomCompositeShader->SetInt(Constants::Uniforms::BloomBlur, 1);
 
