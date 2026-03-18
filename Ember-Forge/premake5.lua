@@ -1,4 +1,4 @@
-project "Sandbox"
+project "Ember-Forge"
    kind "ConsoleApp"
    language "C++"
    cppdialect "C++23"
@@ -22,7 +22,8 @@ project "Sandbox"
 
    links 
    {
-      "Ember"
+      "Ember",
+      "assimp"
    }
 
    filter "system:windows"
