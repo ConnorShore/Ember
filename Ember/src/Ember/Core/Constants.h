@@ -18,7 +18,9 @@ namespace Ember::Constants {
 		inline const char* StandardLitShad = "StandardLit";
 		inline const char* StandardUnlitShad = "StandardUnlit";
 		inline const char* Standard2dQuadShad = "Standard2DQuad";
-		inline const char* StandardShadow = "StandardShadow";
+		inline const char* StandardShadowShad = "StandardShadow";
+		inline const char* GaussianBlurShad = "GaussianBlur";
+		inline const char* BloomShad = "Bloom";
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const char* StandardGeometryMat = "StandardGeometry";

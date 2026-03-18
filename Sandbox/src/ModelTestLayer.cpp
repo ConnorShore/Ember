@@ -200,7 +200,6 @@ void ModelTestLayer::SetupDirectionalLights()
 
 	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, -0.8f, -0.25f), Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
 	lightEntity.AttachComponent(dirLightComp);
-
 }
 
 void ModelTestLayer::SetupStandardLights()

@@ -40,7 +40,8 @@ struct PointLight {
 
 in vec2 TextureCoord;
 
-out vec4 OutColor;
+layout(location = 0) out vec4 OutColor;
+layout(location = 1) out vec4 BrightColor;
 
 layout(binding = 0) uniform sampler2D gAlbedoRoughness; 
 layout(binding = 1) uniform sampler2D gNormalMetallic;
@@ -113,8 +114,9 @@ float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
     {
         for(int y = -1; y <= 1; ++y)
         {
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+			vec2 clampedUV = clamp(projCoords.xy + vec2(x, y) * texelSize, 0.0, 1.0);
+            float pcfDepth = texture(shadowMap, clampedUV).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
         }    
     }
     shadow /= 9.0;
@@ -248,6 +250,12 @@ void main()
 {	
 	vec3 gPosition = texture(gPositionAO, TextureCoord).rgb;
 	vec3 gNormal = texture(gNormalMetallic, TextureCoord).rgb;
+	if (length(gNormal) < 0.1) {
+		OutColor = vec4(texture(gAlbedoRoughness, TextureCoord).rgb, 1.0);
+		BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+		return;
+	}
+
 	vec3 albedo = texture(gAlbedoRoughness, TextureCoord).rgb;
 
 	float metallic = texture(gNormalMetallic, TextureCoord).a;
@@ -271,10 +279,13 @@ void main()
 	// Ambient light
 	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
     vec3 color = ambient + L0;
-	
-	// HDR Tonemapping & Gamma Correction
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));  
    
     OutColor = vec4(color, 1.0);
+
+	// Extract bright areas for hdr / bloom
+	float brightness = dot(OutColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+	if(brightness > 1.0)
+		BrightColor = vec4(OutColor.rgb, 1.0);
+	else
+		BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

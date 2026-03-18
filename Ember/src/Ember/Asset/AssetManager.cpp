@@ -27,7 +27,9 @@ namespace Ember {
 		auto litShad = Load<Shader>(Constants::Assets::StandardLitShad, "Ember/assets/shaders/StandardLit.glsl", lightMacros);
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
 		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
-		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadow, "Ember/assets/shaders/StandardShadow.glsl");
+		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadowShad, "Ember/assets/shaders/StandardShadow.glsl");
+		auto gaussianBlurShaer = Load<Shader>(Constants::Assets::GaussianBlurShad, "Ember/assets/shaders/GaussianBlur.glsl");
+		auto bloomShader = Load<Shader>(Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
