@@ -10,13 +10,14 @@ namespace Ember {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application()
+	Application::Application(const std::string& name /* = "Ember App"*/, const WindowConfig& config /* = {}*/)
+		: m_Name(name)
 	{
 		EB_CORE_ASSERT(s_Instance == nullptr, "Application instance is alredy created!");
 
 		s_Instance = this;
 
-		m_Window = Window::Create();
+		m_Window = Window::Create(config);
 		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
 
 		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
