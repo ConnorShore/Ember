@@ -18,7 +18,7 @@ namespace Ember {
 	class Application
 	{
 	public:
-		Application();
+		Application(const std::string& name = "Ember App", const WindowConfig& config = {});
 		virtual ~Application();
 
 		void PushLayer(ScopedPtr<Layer> layer);
@@ -65,6 +65,7 @@ namespace Ember {
 
 	private:
 		ScopedPtr<Window> m_Window;
+		std::string m_Name;
 		bool m_Running = true;
 
 		LayerStack m_LayerStack;

@@ -3,19 +3,24 @@
 
 #include "EditorLayer.h"
 
-class EmberForgeApp : public Ember::Application
-{
-public:
-	EmberForgeApp()
-	{
-		PushLayer(Ember::ScopedPtr<Ember::Layer>(new EditorLayer()));
-	}
-	~EmberForgeApp()
-	{
-	}
-};
+namespace Ember {
 
-Ember::ScopedPtr<Ember::Application> Ember::CreateApplication()
-{
-	return Ember::ScopedPtr<EmberForgeApp>(new EmberForgeApp());
+	class EmberForgeApp : public Application
+	{
+	public:
+		EmberForgeApp()
+			: Application("Ember Forge", WindowConfig("Ember Forge", 1600, 900))
+		{
+			PushLayer(ScopedPtr<Layer>(new EditorLayer()));
+		}
+		~EmberForgeApp()
+		{
+		}
+	};
+
+	ScopedPtr<Application> CreateApplication()
+	{
+		return ScopedPtr<EmberForgeApp>(new EmberForgeApp());
+	}
+
 }

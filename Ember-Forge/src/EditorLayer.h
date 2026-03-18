@@ -1,28 +1,37 @@
 #pragma once
 
+#include "Panels/Panel.h"
+
 #include <Ember.h>
+#include <vector>
 
-class EditorLayer : public Ember::Layer
-{
-public:
-	EditorLayer();
-	virtual ~EditorLayer();
+namespace Ember {
 
-	void OnAttach() override;
-	void OnDetach() override;
-	void OnUpdate(Ember::TimeStep delta) override;
-	void OnImGuiRender(Ember::TimeStep delta) override;
+	class EditorLayer : public Layer
+	{
+	public:
+		EditorLayer();
+		virtual ~EditorLayer();
 
-private:
-	void SetupDirectionalLights();
+		void OnAttach() override;
+		void OnDetach() override;
+		void OnEvent(Event& event) override;
+		void OnUpdate(TimeStep delta) override;
+		void OnImGuiRender(TimeStep delta) override;
 
-private:
-	Ember::SharedPtr<Ember::Scene> m_MainScene;
-	Ember::SharedPtr<Ember::Framebuffer> m_Framebuffer;
-	Ember::Entity m_CameraEntity;
-	Ember::Vector2f m_ViewportSize;
+	private:
+		void SetupDirectionalLights();
 
-	Ember::SharedPtr<Ember::Material> m_DefaultMaterial;
+	private:
+		SharedPtr<Scene> m_ActiveScene;
+		SharedPtr<Framebuffer> m_OutputFramebuffer;
+		Vector2f m_ViewportSize;
 
-	Ember::Entity m_Satellite;
-};
+		Entity m_SelectedEntity;
+
+		Entity m_CameraEntity;	// Will be an EditorCamera
+
+		std::vector<SharedPtr<Panel>> m_Panels;
+	};
+
+}
