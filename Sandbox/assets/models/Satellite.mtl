@@ -18,7 +18,7 @@ illum 2
 
 # 3. The Antenna Tip (Glowing Red)
 newmtl Mat_NeonRed_Unlit
-Kd 1.0 0.0 0.0
+Kd 3.0 0.0 0.0
 Ke 5.0 0.0 0.0
 Pm 0.0
 Pr 1.0

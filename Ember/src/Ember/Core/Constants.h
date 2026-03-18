@@ -18,7 +18,10 @@ namespace Ember::Constants {
 		inline const char* StandardLitShad = "StandardLit";
 		inline const char* StandardUnlitShad = "StandardUnlit";
 		inline const char* Standard2dQuadShad = "Standard2DQuad";
-		inline const char* StandardShadow = "StandardShadow";
+		inline const char* StandardShadowShad = "StandardShadow";
+		inline const char* GaussianBlurShad = "GaussianBlur";
+		inline const char* BloomShad = "Bloom";
+		inline const char* FinalCompositeShad = "FinalComposite";
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const char* StandardGeometryMat = "StandardGeometry";
@@ -40,7 +43,19 @@ namespace Ember::Constants {
 		inline const char* ViewProj = "u_ViewProjection";
 		inline const char* NormalMatrix = "u_NormalMatrix";
 
+		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";
+		inline const char* Scene = "u_Scene";
+		inline const char* Exposure = "u_Exposure";
+
+		inline const char* HorizontalPass = "u_HorizontalPass";
+		inline const char* BloomBlur = "u_BloomBlur";
+
+		inline const char* AlbedoRoughness = "u_AlbedoRoughness";
+		inline const char* NormalMetallic = "u_NormalMetallic";
+		inline const char* PositionAO = "u_PositionAO";
+		inline const char* DirectionShadowMap = "u_DirectionShadowMap";
+		inline const char* SpotShadowMap = "u_SpotShadowMap";
 
 		inline const char* CameraPosition = "u_CameraPos";
 		inline const char* ActiveDirectionalLights = "u_ActiveDirectionalLights";

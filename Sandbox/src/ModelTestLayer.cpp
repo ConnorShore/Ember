@@ -93,7 +93,7 @@ void ModelTestLayer::OnAttach()
 
 	// Add flashlight entity
 	m_Flashlight = m_MainScene->AddEntity();
-	Ember::SpotLightComponent spotlight(Ember::Vector3f(0.0f, 0.0f, -1.0f), Ember::Vector3f(1.0f, 1.0f, 0.0f), 5000.0f, 12.5f, 17.5f);
+	Ember::SpotLightComponent spotlight(Ember::Vector3f(0.0f, 0.0f, -1.0f), Ember::Vector3f(1.0f, 1.0f, 0.0f), 2500.0f, 12.5f, 17.5f);
 	m_Flashlight.AttachComponent(spotlight);
 
 	// Choose Lights
@@ -200,7 +200,6 @@ void ModelTestLayer::SetupDirectionalLights()
 
 	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, -0.8f, -0.25f), Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
 	lightEntity.AttachComponent(dirLightComp);
-
 }
 
 void ModelTestLayer::SetupStandardLights()

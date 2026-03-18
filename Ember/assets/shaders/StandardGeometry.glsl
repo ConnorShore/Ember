@@ -44,17 +44,17 @@ in VertexOut {
     mat3 TBN;
 } FragIn;
 
-layout(location = 0) out vec4 gAlbedoRoughness; 
-layout(location = 1) out vec4 gNormalMetallic;
-layout(location = 2) out vec4 gPositionAO;
+layout(location = 0) out vec4 u_AlbedoRoughness; 
+layout(location = 1) out vec4 u_NormalMetallic;
+layout(location = 2) out vec4 u_PositionAO;
 
 uniform vec3 u_Albedo;
 uniform float u_Metallic;
 uniform float u_Roughness;
 uniform float u_AO;
 
-uniform sampler2D u_AlbedoMap;
-uniform sampler2D u_NormalMap;
+layout(binding = 0) uniform sampler2D u_AlbedoMap;
+layout(binding = 1) uniform sampler2D u_NormalMap;
 
 void main()
 {
@@ -62,8 +62,8 @@ void main()
     vec3 linearTexColor = pow(texColor.rgb, vec3(2.2)); // sRGB to Linear
 
     // Albedo / Roughness
-    gAlbedoRoughness.rgb = linearTexColor * u_Albedo;
-    gAlbedoRoughness.a = u_Roughness; 
+    u_AlbedoRoughness.rgb = linearTexColor * u_Albedo;
+    u_AlbedoRoughness.a = u_Roughness; 
 
     // Normal / metallic
     vec3 normalMap = texture(u_NormalMap, FragIn.TexCoord).rgb;
@@ -71,10 +71,10 @@ void main()
     // Transform from [0,1] to [-1,1])
     normalMap = normalMap * 2.0 - 1.0;
     vec3 finalNormal = normalize(FragIn.TBN * normalMap).rgb;
-    gNormalMetallic.rgb = finalNormal;
-    gNormalMetallic.a = u_Metallic; 
+    u_NormalMetallic.rgb = finalNormal;
+    u_NormalMetallic.a = u_Metallic; 
     
     // Position / AO
-    gPositionAO.rgb = FragIn.WorldPos;
-    gPositionAO.a = u_AO; 
+    u_PositionAO.rgb = FragIn.WorldPos;
+    u_PositionAO.a = u_AO; 
 }

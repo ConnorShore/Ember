@@ -18,11 +18,13 @@ void main()
 #shader fragment
 #version 450 core
 
-out vec4 OutColor;
+layout(location = 0) out vec4 OutColor;
+layout(location = 1) out vec4 BrightColor;
 
 uniform vec3 u_Color;
 
 void main()
 {
     OutColor = vec4(u_Color, 1.0);
+    BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);
 }

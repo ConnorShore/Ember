@@ -7,6 +7,7 @@
 #include "Ember/Render/Renderer2D.h"
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/VFX/BloomPass.h"
 
 namespace Ember {
 
@@ -49,11 +50,31 @@ namespace Ember {
 			};
 			m_SpotShadowMapBuffer = Framebuffer::Create(specs);
 		}
+		// Post Process Framebuffers
+		{
+			Ember::FramebufferSpecification specs;
+			specs.Width = 1;
+			specs.Height = 1;
+			specs.AttachmentSpecs = {
+				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+			};
+			m_HdrSceneBuffer = Framebuffer::Create(specs);
+			m_PostProcessBufferA = Framebuffer::Create(specs);
+			m_PostProcessBufferB = Framebuffer::Create(specs);
+		}
 
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
 		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
+
+		// Init post processing stack
+		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
+
+		for (auto& pass : m_PostProcessStack)
+			pass->Init();
 
 		m_RenderSceneState.Reset();
 
@@ -84,6 +105,7 @@ namespace Ember {
 		// The Deferred Pipeline
 		CreateDirectionalShadowMap(registry);
 		CreateSpotlightShadowMap(registry);
+
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
@@ -91,19 +113,23 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
+		HandlePostProcessing();
+
 		// Overlays
 		Render2DEntities(registry);
 
 		ResetRenderState();
 	}
 
-
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
 	{
-		if (m_GBuffer)
-		{
-			m_GBuffer->ViewportResize(width, height);
-		}
+		m_GBuffer->ViewportResize(width, height);
+		m_HdrSceneBuffer->ViewportResize(width, height);
+		m_PostProcessBufferA->ViewportResize(width, height);
+		m_PostProcessBufferB->ViewportResize(width, height);
+
+		for (auto& pass : m_PostProcessStack)
+			pass->OnViewportResize(width, height);
 	}
 
 	void RenderSystem::InitializeRenderState()
@@ -155,10 +181,13 @@ namespace Ember {
 			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 100.0f);
+			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(light.Direction) * 40.0f); // Pull back 40 units
-			Matrix4f lightView = Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f));
+			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+			if (std::abs(light.Direction.y) > 0.99f)
+				up = Vector3f(0.0f, 0.0f, 1.0f);
+			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
 
 			// Set uniform buffer for directional light (offset 0)
@@ -183,11 +212,12 @@ namespace Ember {
 
 			auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
 
-			// TODO: These props are just hardcoded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
 			Matrix4f lightProjection = Math::Perspective(Math::Degrees(light.OuterCutOffAngle) * 2.0f, 1.0f, 1.0f, 100.0f);
 			Vector3f target = light.Direction + transform.Position;	// Look in the direction of the spotlight
 			Vector3f eye = transform.Position;
-			Matrix4f lightView = Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f));
+			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.SpotLightViewMatrix = lightProjection * lightView;
 
 			// Set uniform buffer for spotlight (offset -> 1 mat4)
@@ -199,6 +229,32 @@ namespace Ember {
 		RenderGeometryForShadowMaps(registry, m_RenderSceneState.SpotLightViewMatrix, m_SpotShadowMapBuffer);
 	}
 
+	void RenderSystem::RenderGeometryForShadowMaps(Registry* registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
+
+		shadowMapBuffer->Bind();
+
+		RenderAction::SetViewport(0, 0, shadowMapBuffer->GetSpecification().Width, shadowMapBuffer->GetSpecification().Height);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
+		RenderAction::UseDepthTest(true);
+
+		Renderer3D::BeginFrame();
+
+		shadowShader->Bind();
+		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);
+
+		for (EntityID entity : m_RenderQueueBuckets.Opaque)
+		{
+			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
+			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
+		}
+
+		Renderer3D::EndFrame();
+	}
+
 	void RenderSystem::RenderDeferredGeometry(Registry* registry)
 	{
 		m_GBuffer->Bind();
@@ -207,6 +263,13 @@ namespace Ember {
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
+
+		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
+		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
+		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
+		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
+		RenderAction::SetTextureUnit(1, defaultNormal->GetID());
+		RenderAction::SetTextureUnit(2, defaultWhite->GetID());
 
 		Renderer3D::BeginFrame();
 
@@ -219,26 +282,6 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderGeometryForShadowMaps(Registry* registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
-	{
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadow);
-		shadowMapBuffer->Bind();
-		RenderAction::SetViewport(0, 0, shadowMapBuffer->GetSpecification().Width, shadowMapBuffer->GetSpecification().Height);
-		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
-		RenderAction::UseDepthTest(true);
-		Renderer3D::BeginFrame();
-		shadowShader->Bind();
-		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);	// TODO: Move to UniformBuffer
-		for (EntityID entity : m_RenderQueueBuckets.Opaque)
-		{
-			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
-		}
-		Renderer3D::EndFrame();
-	}
-
 	void RenderSystem::RenderDeferredLighting(Registry* registry)
 	{
 		int dims[4] = { 0 };
@@ -247,14 +290,23 @@ namespace Ember {
 
 		RenderAction::UseDepthTest(false);
 		RenderAction::UseFaceCulling(false);
-		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+
+		m_HdrSceneBuffer->Bind();
 		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
+
+		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
 
 		litShader->Bind();
 		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+		litShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
+		litShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
+		litShader->SetInt(Constants::Uniforms::PositionAO, 2);
+		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 3);
+		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 4);
 
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
@@ -319,7 +371,6 @@ namespace Ember {
 				litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
 				litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
 
-
 				index++;
 			}
 
@@ -332,9 +383,9 @@ namespace Ember {
 	void RenderSystem::RenderForwardEntities(Registry* registry)
 	{
 		// Copy depth buffer for forward rendering
-		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_RenderSceneState.OutputFramebufferId, m_RenderSceneState.ViewportDimensions);
+		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+		m_HdrSceneBuffer->Bind();
 
-		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 		RenderAction::UseDepthTest(true);
 
 		Renderer3D::BeginFrame();
@@ -356,7 +407,7 @@ namespace Ember {
 	void RenderSystem::Render2DEntities(Registry* registry)
 	{
 		RenderAction::UseDepthTest(false);
-		
+
 		Renderer2D::BeginFrame();
 
 		View view = registry->Query<SpriteComponent, TransformComponent>();
@@ -372,6 +423,48 @@ namespace Ember {
 		}
 
 		Renderer2D::EndFrame();
+	}
+
+	void RenderSystem::HandlePostProcessing()
+	{
+		RenderAction::UseDepthTest(false);
+
+		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
+		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
+
+		// Pass over all post processing items
+		for (auto& pass : m_PostProcessStack)
+		{
+			if (pass->Enabled)
+			{
+				pass->Render(currentInput, currentOutput);
+				currentInput = currentOutput;
+				currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+			}
+		}
+
+		RenderFinalComposite(currentInput);
+	}
+
+	void RenderSystem::RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer)
+	{
+		// Final blit targeting the output buffer
+		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
+		RenderAction::UseDepthTest(false);
+
+		// Bind the Final Composite Shader
+		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
+		finalShader->Bind();
+
+		// Set the exposure (hook this up to an ImGui slider later)
+		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
+		finalShader->SetInt(Constants::Uniforms::Scene, 0);
+
+		RenderAction::SetTextureUnit(0, outputBuffer->GetColorAttachmentID(0));
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
 	void RenderSystem::ResetRenderState()
