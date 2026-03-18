@@ -71,6 +71,8 @@ namespace Ember {
 		EB_DISPATCH_EVENT(KeyRepeatEvent, OnKeyRepeat);
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMousePressed);
 		EB_DISPATCH_EVENT(MouseReleasedEvent, OnMouseReleased);
+		EB_DISPATCH_EVENT(MouseScrolledEvent, OnMouseScrolled);
+		EB_DISPATCH_EVENT(MouseMovedEvent, OnMouseMoved);
 
 		for (auto& layer : m_LayerStack)
 			layer->OnEvent(event);
@@ -142,6 +144,18 @@ namespace Ember {
 	bool Application::OnMouseReleased(MouseReleasedEvent& e)
 	{
 		Input::SetMouseButtonState(e.GetMouseButton(), false);
+		return false;
+	}
+
+	bool Application::OnMouseScrolled(MouseScrolledEvent& e)
+	{
+		Input::SetMouseScrollOffset(e.GetScrollOffset());
+		return false;
+	}
+
+	bool Application::OnMouseMoved(MouseMovedEvent& e)
+	{
+		Input::SetMousePosition(e.GetMousePosition());
 		return false;
 	}
 

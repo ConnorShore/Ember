@@ -22,9 +22,18 @@ namespace Ember {
 	{
 	}
 
-	void Scene::OnUpdate(TimeStep delta)
+	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
-		m_Registry->UpdateSystems(delta);
+		m_Registry->GetSystem<ScriptSystem>()->OnUpdate(delta, m_Registry.Ptr());
+		m_Registry->GetSystem<PhysicsSystem>()->OnUpdate(delta, m_Registry.Ptr());
+		m_Registry->GetSystem<TransformSystem>()->OnUpdate(delta, m_Registry.Ptr());
+		m_Registry->GetSystem<RenderSystem>()->OnUpdate(delta, m_Registry.Ptr());
+	}
+
+	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
+	{
+		m_Registry->GetSystem<TransformSystem>()->OnUpdate(delta, m_Registry.Ptr());
+		m_Registry->GetSystem<RenderSystem>()->OnUpdate(delta, m_Registry.Ptr(), camera, Math::Inverse(camera.GetViewMatrix()));
 	}
 
 	void Scene::OnEvent(Event& event)

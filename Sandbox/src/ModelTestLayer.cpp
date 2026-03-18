@@ -138,7 +138,7 @@ void ModelTestLayer::OnUpdate(Ember::TimeStep delta)
 
 	Ember::RenderAction::SetViewport(0, 0, m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height);
 
-	m_MainScene->OnUpdate(delta);
+	m_MainScene->OnUpdateRuntime(delta);
 
 	m_Framebuffer->Unbind();
 

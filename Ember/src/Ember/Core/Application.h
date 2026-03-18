@@ -62,6 +62,8 @@ namespace Ember {
 		bool OnKeyRepeat(KeyRepeatEvent& e);
 		bool OnMousePressed(MousePressedEvent& e);
 		bool OnMouseReleased(MouseReleasedEvent& e);
+		bool OnMouseScrolled(MouseScrolledEvent& e);
+		bool OnMouseMoved(MouseMovedEvent& e);
 
 	private:
 		ScopedPtr<Window> m_Window;

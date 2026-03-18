@@ -140,6 +140,22 @@ namespace Ember {
 					}
 					}
 				});
+
+			// Mouse Move callback
+			glfwSetCursorPosCallback(m_Window, [](GLFWwindow* w, double xpos, double ypos)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+					MouseMovedEvent e(Vector2f((float)xpos, (float)ypos));
+					data.EventCallback(e);
+				});
+
+			// Mouse Scroll callback
+			glfwSetScrollCallback(m_Window, [](GLFWwindow* w, double xoffset, double yoffset)
+				{
+					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
+					MouseScrolledEvent e(Vector2f((float)xoffset, (float)yoffset));
+					data.EventCallback(e);
+				});
 		}
 
 	}

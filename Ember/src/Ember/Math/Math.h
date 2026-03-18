@@ -56,6 +56,11 @@ namespace Ember {
 			return glm::translate(matrix, translation);
 		}
 
+		static inline Vector3f Rotate(const Quaternion& rotation, const Vector3f angle)
+		{
+			return glm::rotate(rotation, angle);
+		}
+
 		static inline Matrix4f Rotate(float angle, const Vector3f& axis) 
 		{
 			return glm::rotate(Matrix4f(1.0f), angle, axis);
@@ -122,6 +127,11 @@ namespace Ember {
 			}
 
 			return success;
+		}
+
+		static inline Matrix4f ToMatrix4f(const Quaternion& quat)
+		{
+			return glm::toMat4(quat);
 		}
 
 		static inline float Radians(float degrees)

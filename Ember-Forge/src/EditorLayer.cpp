@@ -28,6 +28,12 @@ namespace Ember {
 		for (auto& panel : m_Panels)
 			panel->SetContext(m_ActiveScene);
 
+		// Editor Camera Setup
+		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 500.0f);
+		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
+		m_Camera.SetPitch(Math::Radians(30.0f));
+		m_Camera.SetYaw(Math::Radians(45.0f));
+		m_Camera.SetDistance(6.0f);
 
 		// Output Framebuffer
 		FramebufferSpecification specs;
@@ -49,23 +55,20 @@ namespace Ember {
 		MaterialComponent matComponent = { GetAsset<Material>(Constants::Assets::StandardGeometryMat)};
 		cube.AttachComponent(matComponent);
 
-		// ------------------------------------------------------------------
-		// Camera (TODO: Make designated scene camera)
-		// ------------------------------------------------------------------
-		m_CameraEntity = m_ActiveScene->AddEntity();
-		auto& camTransform = m_CameraEntity.GetComponent<TransformComponent>();
-		camTransform.Position = { 0.0f, 0.0f, 10.0f };
+		// Plane for testing
+		auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
+		auto groundPlane = m_ActiveScene->AddEntity();
+		auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
+		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
+		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
 
-		Camera camera;
-		camera.SetViewportSize(
-			Application::Instance().GetWindow().GetWidth(),
-			Application::Instance().GetWindow().GetHeight());
-		camera.SetProjectionType(Camera::ProjectionType::Perspective);
-		camera.SetPerspective(65.0f, 0.1f, 200.0f);
+		Ember::MeshComponent groundMeshComp = { quadMesh };
+		groundPlane.AttachComponent(groundMeshComp);
+		groundPlane.AttachComponent(matComponent);
 
-		CameraComponent cameraComponent(camera, true);
-		m_CameraEntity.AttachComponent(cameraComponent);
-		m_CameraEntity.AttachComponent<ScriptComponent>().Bind<Camera3DController>();
+		auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
+		groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
+		groundInstance->Set("u_Roughness", 0.7f);
 
 		// Choose Lights
 		SetupDirectionalLights();
@@ -79,6 +82,10 @@ namespace Ember {
 	void EditorLayer::OnEvent(Event& event)
 	{
 		// Handle events
+		if (m_ActiveScene->GetSceneState() == SceneState::Edit)
+		{
+			m_Camera.OnEvent(event);
+		}
 
 		// Propagate events to panels
 		for (auto& panel : m_Panels)
@@ -91,7 +98,19 @@ namespace Ember {
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
 
-		m_ActiveScene->OnUpdate(delta);
+		switch (m_ActiveScene->GetSceneState())
+		{
+			case SceneState::Edit:
+				m_Camera.OnUpdate(delta);
+				m_ActiveScene->OnUpdateEdit(delta, m_Camera);
+				break;
+			case SceneState::Play:
+				m_ActiveScene->OnUpdateRuntime(delta);
+				break;
+			case SceneState::Pause:
+			default:
+				EB_CORE_ASSERT(false, "Unhandled scene state!");
+		}
 
 		m_OutputFramebuffer->Unbind();
 
@@ -137,12 +156,12 @@ namespace Ember {
 			ImGui::Text("FPS: %.1f", fps);
 
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
 			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
 			{
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 				m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
 				m_ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			}
 
 			unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);

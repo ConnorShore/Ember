@@ -3,6 +3,7 @@
 #include <array>
 
 #include "InputCode.h"
+#include "Ember/Math/Math.h"
 
 namespace Ember {
 
@@ -18,8 +19,12 @@ namespace Ember {
 		static void IncrementKeyRepeat(KeyCode key);
 		static void SetMouseButtonState(MouseButton button, bool pressed);
 		static void SetKeyModifierState(KeyModifier modifier, bool active);
+		static void SetMousePosition(const Vector2f& position);
+		static void SetMouseScrollOffset(const Vector2f& offset);
 
 		static int GetKeyRepeatCount(KeyCode key);
+		static const Vector2f& GetMousePosition();
+		static const Vector2f& GetMouseScrollOffset();
 
 	private:
 		static constexpr size_t KeyArraySize = static_cast<size_t>(KeyCode::Last);
@@ -31,5 +36,6 @@ namespace Ember {
 		static KeyModifierType s_ActiveModifiers;
 
 		// TODO: Vector2 for mouse position, scroll offset, etc.
+		static Vector2f s_MousePosition, s_ScrollOffset;
 	};
 }

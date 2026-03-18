@@ -88,14 +88,10 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry)
+	void RenderSystem::ExecuteRenderPipeline(Registry* registry)
 	{
-		InitializeRenderState();
-
 		// Save output framebuffer
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
-
-		SetSceneCamera(registry);
 
 		if (!m_RenderSceneState.IsCameraFound) return;
 
@@ -119,6 +115,33 @@ namespace Ember {
 		Render2DEntities(registry);
 
 		ResetRenderState();
+	}
+
+	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry)
+	{
+		InitializeRenderState();
+		SetSceneCamera(registry);
+
+		if (m_RenderSceneState.IsCameraFound)
+		{
+			ExecuteRenderPipeline(registry);
+		}
+	}
+
+	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry, const Camera& camera, const Matrix4f& cameraTransform)
+	{
+		InitializeRenderState();
+
+		// Set render scene state for camera info
+		m_RenderSceneState.ActiveCamera = camera;
+		m_RenderSceneState.CameraTransform = cameraTransform;
+		m_RenderSceneState.IsCameraFound = true;
+
+		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(cameraTransform);
+		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
+
+		// Update the system
+		ExecuteRenderPipeline(registry);
 	}
 
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
@@ -149,7 +172,7 @@ namespace Ember {
 			auto [camera, transform] = registry->GetComponents<CameraComponent, TransformComponent>(cameraEntity);
 			if (camera.IsActive)
 			{
-				m_RenderSceneState.ActiveCamera = camera;
+				m_RenderSceneState.ActiveCamera = camera.Camera;
 				m_RenderSceneState.CameraTransform = Math::Translate(transform.Position) * Math::GetRotationMatrix(transform.Rotation);
 				m_RenderSceneState.IsCameraFound = true;
 

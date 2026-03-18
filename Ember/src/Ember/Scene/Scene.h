@@ -6,6 +6,7 @@
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
 #include "Ember/Asset/Model.h"
+#include "Ember/Tools/EditorCamera.h"
 
 #include <unordered_map>
 
@@ -13,13 +14,21 @@ namespace Ember {
 
 	class Entity;
 
+	enum class SceneState
+	{
+		Edit = 0,
+		Play = 1,
+		Pause = 2
+	};
+
 	class Scene : public SharedResource
 	{
 	public:
 		Scene(const std::string& name);
 		~Scene();
 
-		void OnUpdate(TimeStep delta);
+		void OnUpdateRuntime(TimeStep delta);
+		void OnUpdateEdit(TimeStep delta, EditorCamera& camera);
 		void OnEvent(Event& event);
 
 		void OnViewportResize(unsigned int width, unsigned int height);
@@ -42,12 +51,15 @@ namespace Ember {
 
 		Registry& GetRegistry() { return *m_Registry; }
 
+		SceneState GetSceneState() const { return m_State; }
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
 
 	private:
 		ScopedPtr<Registry> m_Registry;
+		SceneState m_State = SceneState::Edit;
 
 		std::unordered_map<std::string, EntityID> m_SceneEntities;
 

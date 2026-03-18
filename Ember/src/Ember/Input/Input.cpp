@@ -10,6 +10,8 @@ namespace Ember {
 	std::array<int, static_cast<size_t>(KeyCode::Last)> Input::s_KeyStates = {};
 	std::array<int, static_cast<size_t>(MouseButton::Last)> Input::s_MouseButtonStates = {};
 	KeyModifierType Input::s_ActiveModifiers = 0;
+	Vector2f Input::s_MousePosition = { 0.0f, 0.0f };
+	Vector2f Input::s_ScrollOffset = { 0.0f, 0.0f };
 
 	bool Input::IsKeyPressed(KeyCode key)
 	{
@@ -57,6 +59,26 @@ namespace Ember {
 		s_ActiveModifiers = active
 			? (s_ActiveModifiers | modifier)
 			: static_cast<KeyModifierType>(s_ActiveModifiers & ~static_cast<KeyModifierType>(modifier));
+	}
+
+	void Input::SetMousePosition(const Vector2f& position)
+	{
+		s_MousePosition = position;
+	}
+
+	void Input::SetMouseScrollOffset(const Vector2f& offset)
+	{
+		s_ScrollOffset = offset;
+	}
+
+	const Vector2f& Input::GetMousePosition()
+	{
+		return s_MousePosition;
+	}
+
+	const Vector2f& Input::GetMouseScrollOffset()
+	{
+		return s_ScrollOffset;
 	}
 
 	int Input::GetKeyRepeatCount(KeyCode key)

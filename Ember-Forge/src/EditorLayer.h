@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Ember/Tools/EditorCamera.h"
 #include "Panels/Panel.h"
 
 #include <Ember.h>
@@ -29,7 +30,7 @@ namespace Ember {
 
 		Entity m_SelectedEntity;
 
-		Entity m_CameraEntity;	// Will be an EditorCamera
+		EditorCamera m_Camera;	// Will be an EditorCamera
 
 		std::vector<SharedPtr<Panel>> m_Panels;
 	};

@@ -22,10 +22,12 @@ namespace Ember {
 		void OnAttach(Registry* registry) override;
 		void OnDetach(Registry* registry) override;
 		void OnUpdate(TimeStep delta, Registry* registry) override;
+		void OnUpdate(TimeStep delta, Registry* registry, const Camera& camera, const Matrix4f& cameraTransform);
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
 	private:
+		void ExecuteRenderPipeline(Registry* registry);
 		void InitializeRenderState();
 		void SetSceneCamera(Registry* registry);
 		void CreateShadowMaps(Registry* registry);
@@ -73,7 +75,7 @@ namespace Ember {
 
 		struct RenderSceneState
 		{
-			CameraComponent ActiveCamera;
+			Camera ActiveCamera;
 			Matrix4f CameraTransform;
 			Matrix4f DirectionalLightViewMatrix;
 			Matrix4f SpotLightViewMatrix;
@@ -83,9 +85,6 @@ namespace Ember {
 
 			void Reset()
 			{
-				ActiveCamera = CameraComponent();
-				CameraTransform = Matrix4f(1.0f);
-				IsCameraFound = false;
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
 			}
