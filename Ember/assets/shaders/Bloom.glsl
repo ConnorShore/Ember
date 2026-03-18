@@ -26,17 +26,9 @@ uniform float u_Exposure;
 
 void main()
 {           
-    const float gamma = 2.2;
-
     vec3 hdrColor = texture(u_Scene, TexCoord).rgb;      
     vec3 bloomColor = texture(u_BloomBlur, TexCoord).rgb;
-    hdrColor += bloomColor; // additive blending
-
-    // Tone mapping
-    vec3 result = vec3(1.0) - exp(-hdrColor * u_Exposure);
-
-    // Gamma correction     
-    result = pow(result, vec3(1.0 / gamma));
-
-    OutColor = vec4(result, 1.0);
+    
+    // Just additive blending! Keep it in pure HDR space.
+    OutColor = vec4(hdrColor + bloomColor, 1.0);
 } 

@@ -30,6 +30,7 @@ namespace Ember {
 		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadowShad, "Ember/assets/shaders/StandardShadow.glsl");
 		auto gaussianBlurShaer = Load<Shader>(Constants::Assets::GaussianBlurShad, "Ember/assets/shaders/GaussianBlur.glsl");
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
+		auto finalCompositeShader = Load<Shader>(Constants::Assets::FinalCompositeShad, "Ember/assets/shaders/FinalComposite.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

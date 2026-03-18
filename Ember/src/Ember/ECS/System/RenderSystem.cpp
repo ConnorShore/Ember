@@ -7,6 +7,7 @@
 #include "Ember/Render/Renderer2D.h"
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/VFX/BloomPass.h"
 
 namespace Ember {
 
@@ -49,7 +50,7 @@ namespace Ember {
 			};
 			m_SpotShadowMapBuffer = Framebuffer::Create(specs);
 		}
-		// HDR Framebuffer
+		// Post Process Framebuffers
 		{
 			Ember::FramebufferSpecification specs;
 			specs.Width = 1;
@@ -59,27 +60,21 @@ namespace Ember {
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
-			m_HdrFramebuffer = Framebuffer::Create(specs);
-		}
-
-		// Bloom (Ping Pong) Framebuffers
-		{
-
-			Ember::FramebufferSpecification specs;
-			specs.Width = 1;
-			specs.Height = 1;
-			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::RGBA16F,
-				Ember::FramebufferTextureFormat::RGBA16F
-			};
-			for (unsigned int i = 0; i < m_PingPongBuffers.size(); i++)
-				m_PingPongBuffers[i] = Framebuffer::Create(specs);
+			m_HdrSceneBuffer = Framebuffer::Create(specs);
+			m_PostProcessBufferA = Framebuffer::Create(specs);
+			m_PostProcessBufferB = Framebuffer::Create(specs);
 		}
 
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
 		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
+
+		// Init post processing stack
+		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
+
+		for (auto& pass : m_PostProcessStack)
+			pass->Init();
 
 		m_RenderSceneState.Reset();
 
@@ -118,49 +113,7 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
-
-		RenderAction::UseDepthTest(false);
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto blurShader = assetManager.GetAsset<Shader>(Constants::Assets::GaussianBlurShad);
-
-		// Bloom post-processing (horizontal and vertical blur passes)
-		bool horizontalPass = true, firstIter = true;
-		int amount = 10; // Push this back up to 10 so it blurs nicely!
-		blurShader->Bind();
-		blurShader->SetInt("u_Image", 0);
-		for (unsigned int i = 0; i < amount; i++)
-		{
-			m_PingPongBuffers[horizontalPass]->Bind();
-			blurShader->SetInt("u_HorizontalPass", horizontalPass);
-
-			if (firstIter)
-				RenderAction::SetTextureUnit(0, m_HdrFramebuffer->GetColorAttachmentID(1));
-			else
-				RenderAction::SetTextureUnit(0, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
-
-			Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
-			horizontalPass = !horizontalPass;
-			if (firstIter)
-				firstIter = false;
-		}
-
-		// Apply the bloom effect by blending the blurred bright areas back onto the scene
-		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
-		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
-		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
-		RenderAction::UseDepthTest(false);
-
-		auto bloomShader = assetManager.GetAsset<Shader>(Constants::Assets::BloomShad);
-		bloomShader->Bind();
-		bloomShader->SetFloat("u_Exposure", 1.0f);
-
-		bloomShader->SetInt("u_Scene", 0);     
-		bloomShader->SetInt("u_BloomBlur", 1); 
-
-		RenderAction::SetTextureUnit(0, m_HdrFramebuffer->GetColorAttachmentID(0));
-		RenderAction::SetTextureUnit(1, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
-
-		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+		HandlePostProcessing();
 
 		// Overlays
 		Render2DEntities(registry);
@@ -170,13 +123,13 @@ namespace Ember {
 
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
 	{
-		if (m_GBuffer)
-		{
-			m_GBuffer->ViewportResize(width, height);
-			m_HdrFramebuffer->ViewportResize(width, height);
-			m_PingPongBuffers[0]->ViewportResize(width, height);
-			m_PingPongBuffers[1]->ViewportResize(width, height);
-		}
+		m_GBuffer->ViewportResize(width, height);
+		m_HdrSceneBuffer->ViewportResize(width, height);
+		m_PostProcessBufferA->ViewportResize(width, height);
+		m_PostProcessBufferB->ViewportResize(width, height);
+
+		for (auto& pass : m_PostProcessStack)
+			pass->OnViewportResize(width, height);
 	}
 
 	void RenderSystem::InitializeRenderState()
@@ -337,8 +290,8 @@ namespace Ember {
 
 		RenderAction::UseDepthTest(false);
 		RenderAction::UseFaceCulling(false);
-		//RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
-		m_HdrFramebuffer->Bind();
+
+		m_HdrSceneBuffer->Bind();
 		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
 
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
@@ -349,11 +302,11 @@ namespace Ember {
 
 		litShader->Bind();
 		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
-		litShader->SetInt("gAlbedoRoughness", 0);
-		litShader->SetInt("gNormalMetallic", 1);
-		litShader->SetInt("gPositionAO", 2);
-		litShader->SetInt("directionShadowMap", 3);
-		litShader->SetInt("spotShadowMap", 4);
+		litShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
+		litShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
+		litShader->SetInt(Constants::Uniforms::PositionAO, 2);
+		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 3);
+		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 4);
 
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
@@ -430,10 +383,8 @@ namespace Ember {
 	void RenderSystem::RenderForwardEntities(Registry* registry)
 	{
 		// Copy depth buffer for forward rendering
-		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrFramebuffer->GetID(), m_RenderSceneState.ViewportDimensions);
-		m_HdrFramebuffer->Bind();
-		//RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_RenderSceneState.OutputFramebufferId, m_RenderSceneState.ViewportDimensions);
-		//RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+		m_HdrSceneBuffer->Bind();
 
 		RenderAction::UseDepthTest(true);
 
@@ -456,7 +407,7 @@ namespace Ember {
 	void RenderSystem::Render2DEntities(Registry* registry)
 	{
 		RenderAction::UseDepthTest(false);
-		
+
 		Renderer2D::BeginFrame();
 
 		View view = registry->Query<SpriteComponent, TransformComponent>();
@@ -472,6 +423,48 @@ namespace Ember {
 		}
 
 		Renderer2D::EndFrame();
+	}
+
+	void RenderSystem::HandlePostProcessing()
+	{
+		RenderAction::UseDepthTest(false);
+
+		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
+		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
+
+		// Pass over all post processing items
+		for (auto& pass : m_PostProcessStack)
+		{
+			if (pass->Enabled)
+			{
+				pass->Render(currentInput, currentOutput);
+				currentInput = currentOutput;
+				currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+			}
+		}
+
+		RenderFinalComposite(currentInput);
+	}
+
+	void RenderSystem::RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer)
+	{
+		// Final blit targeting the output buffer
+		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
+		RenderAction::UseDepthTest(false);
+
+		// Bind the Final Composite Shader
+		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
+		finalShader->Bind();
+
+		// Set the exposure (hook this up to an ImGui slider later)
+		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
+		finalShader->SetInt(Constants::Uniforms::Scene, 0);
+
+		RenderAction::SetTextureUnit(0, outputBuffer->GetColorAttachmentID(0));
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
 	void RenderSystem::ResetRenderState()

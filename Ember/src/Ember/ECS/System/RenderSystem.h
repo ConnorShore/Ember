@@ -7,6 +7,7 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Render/VFX/PostProcessPass.h"
 
 #include <vector>
 
@@ -36,6 +37,8 @@ namespace Ember {
 		void RenderForwardEntities(Registry* registry);
 		void RenderTransparentEntities(Registry* registry);
 		void Render2DEntities(Registry* registry);
+		void HandlePostProcessing();
+		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Registry* registry);
 
@@ -46,8 +49,10 @@ namespace Ember {
 		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;
 		SharedPtr<Framebuffer> m_SpotShadowMapBuffer;
 
-		SharedPtr<Framebuffer> m_HdrFramebuffer;
-		std::array<SharedPtr<Framebuffer>, 2> m_PingPongBuffers;
+		std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
+		SharedPtr<Framebuffer> m_HdrSceneBuffer;
+		SharedPtr<Framebuffer> m_PostProcessBufferA;
+		SharedPtr<Framebuffer> m_PostProcessBufferB;
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
