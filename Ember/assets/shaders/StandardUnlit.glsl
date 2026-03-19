@@ -20,11 +20,14 @@ void main()
 
 layout(location = 0) out vec4 OutColor;
 layout(location = 1) out vec4 BrightColor;
+layout(location = 2) out int EntityID;
 
 uniform vec3 u_Color;
+uniform int u_EntityID;
 
 void main()
 {
     OutColor = vec4(u_Color, 1.0);
     BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);
+    EntityID = u_EntityID;
 }

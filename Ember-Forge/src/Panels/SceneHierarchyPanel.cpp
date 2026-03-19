@@ -1,4 +1,5 @@
 #include "SceneHierarchyPanel.h"
+#include "Ember/Scene/Entity.h"
 
 namespace Ember {
 
@@ -19,9 +20,108 @@ namespace Ember {
 	{
 		ImGui::Begin(m_Title.c_str());
 
-		ImGui::Button("Create Empty Entity");
+		ImGui::Separator();
+		ImGui::Button("Create Entity");
+		ImGui::Separator();
+
+		RenderEntityTree();
 
 		ImGui::End();
+	}
+
+	void SceneHierarchyPanel::RenderEntityTree()
+	{
+		if (!m_Context->ActiveScene)
+			return;
+
+		auto entities = m_Context->ActiveScene->GetAllEntities();
+
+		if (m_Context->SelectedEntity != m_PreviouslySelectedEntity)
+		{
+			m_PreviouslySelectedEntity = m_Context->SelectedEntity;
+			m_ExpandToSelectedEntity = true;
+		}
+
+        for (auto& entity : entities) {
+			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
+			if (relationshipComp.ParentHandle == Constants::Entities::InvalidEntityID)
+			{
+				DrawTreeNode(entity);
+			}
+		}
+
+		// De-select if clicking blank space in the hierarchy window
+		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+		{
+			SetSelectedEntity(Entity());
+		}
+
+		m_ExpandToSelectedEntity = false;
+	}
+
+    void SceneHierarchyPanel::DrawTreeNode(Entity entity)
+	{
+		ImGuiTreeNodeFlags flags = ((GetSelectedEntity() == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		flags |= ImGuiTreeNodeFlags_SpanAvailWidth; // Makes the selection highlight span the whole window width
+
+		bool hasChildren = !entity.GetComponent<RelationshipComponent>().Children.empty();
+		if (!hasChildren)
+		{
+			flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+		}
+
+		if (m_ExpandToSelectedEntity)
+		{
+			if (IsAncestor(entity, m_Context->SelectedEntity))
+			{
+				ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+			}
+		}
+
+		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity.GetEntityHandle(), flags, "%s", entity.GetName().c_str());
+		if (ImGui::IsItemClicked())
+		{
+			SetSelectedEntity(entity);
+		}
+
+		if (m_ExpandToSelectedEntity && m_Context->SelectedEntity == entity)
+		{
+			ImGui::SetScrollHereY(0.5f); // 0.5f centers the item vertically in the window
+		}
+
+		if (opened && hasChildren)
+		{
+			auto& children = entity.GetComponent<RelationshipComponent>().Children;
+			for (auto childID : children)
+			{
+				Entity child(childID, m_Context->ActiveScene.Ptr());
+				DrawTreeNode(child);
+			}
+
+			// We only pop the tree if it's NOT a leaf node
+			ImGui::TreePop();
+		}
+	}
+
+	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
+	{
+		if (!descendant || descendant.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+			return false;
+
+		Entity current = descendant;
+		while (current != Constants::Entities::InvalidComponentID)
+		{
+			EntityID parentID = current.GetComponent<RelationshipComponent>().ParentHandle;
+			if (parentID == Constants::Entities::InvalidEntityID)
+				break;
+
+			if (parentID == ancestor.GetEntityHandle())
+				return true;
+
+			current = Entity{ parentID, m_Context->ActiveScene.Ptr()};
+		}
+
+		return false;
 	}
 
 }

@@ -1,5 +1,4 @@
 #include "EditorLayer.h"
-#include "CameraController3D.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
@@ -9,8 +8,7 @@
 namespace Ember {
 
 	EditorLayer::EditorLayer()
-		: Layer("Ember Forge"),
-		m_ActiveScene(SharedPtr<Scene>::Create("DefaultScene"))
+		: Layer("Ember Forge"), m_Context({ SharedPtr<Scene>::Create("DefaultScene"), Entity()})
 	{
 	}
 
@@ -26,7 +24,7 @@ namespace Ember {
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create());
 
 		for (auto& panel : m_Panels)
-			panel->SetContext(m_ActiveScene);
+			panel->SetContext(&m_Context);
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 500.0f);
@@ -41,7 +39,6 @@ namespace Ember {
 		specs.Height = 600;
 		specs.AttachmentSpecs = {
 			FramebufferTextureFormat::RGBA8,
-			//FramebufferTextureFormat::RED_INTEGER,	// For mouse picking
 			FramebufferTextureFormat::DEPTH24STENCIL8
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
@@ -49,24 +46,32 @@ namespace Ember {
 		// -----------------------------------------------------------------
 		// Default Cube
 		// -----------------------------------------------------------------
-		auto cube = m_ActiveScene->AddEntity();
-		MeshComponent meshComponent = { PrimitiveGenerator::CreateCube() };
-		cube.AttachComponent(meshComponent);
+		//auto cube = m_Context.ActiveScene->AddEntity();
+		//MeshComponent meshComponent = { PrimitiveGenerator::CreateCube() };
+		//cube.AttachComponent(meshComponent);
 		MaterialComponent matComponent = { GetAsset<Material>(Constants::Assets::StandardGeometryMat)};
-		cube.AttachComponent(matComponent);
+		//cube.AttachComponent(matComponent);
+
+		// -----------------------------------------------------------------
+		// Model
+		// -----------------------------------------------------------------
+
+		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
+		auto satelliteAsset = LoadAsset<Model>("Satellite", "Sandbox/assets/models/satellite.obj");
+		m_Context.ActiveScene->InstantiateModel(satelliteAsset);
 
 		// Plane for testing
-		auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
-		auto groundPlane = m_ActiveScene->AddEntity();
-		auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
+		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
+		auto groundPlane = m_Context.ActiveScene->AddEntity();
+		auto& groundTransform = groundPlane.GetComponent<TransformComponent>();
 		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
 		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
 
-		Ember::MeshComponent groundMeshComp = { quadMesh };
+		MeshComponent groundMeshComp = { quadMesh };
 		groundPlane.AttachComponent(groundMeshComp);
 		groundPlane.AttachComponent(matComponent);
 
-		auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
+		auto groundInstance = groundPlane.GetComponent<MaterialComponent>().GetInstanced();
 		groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
 		groundInstance->Set("u_Roughness", 0.7f);
 
@@ -82,10 +87,13 @@ namespace Ember {
 	void EditorLayer::OnEvent(Event& event)
 	{
 		// Handle events
-		if (m_ActiveScene->GetSceneState() == SceneState::Edit)
-		{
+		EB_CREATE_DISPATCHER(event);
+		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
+
+
+		// Update camera
+		if (m_Context.ActiveScene->GetSceneState() == SceneState::Edit)
 			m_Camera.OnEvent(event);
-		}
 
 		// Propagate events to panels
 		for (auto& panel : m_Panels)
@@ -98,14 +106,14 @@ namespace Ember {
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
 
-		switch (m_ActiveScene->GetSceneState())
+		switch (m_Context.ActiveScene->GetSceneState())
 		{
 			case SceneState::Edit:
 				m_Camera.OnUpdate(delta);
-				m_ActiveScene->OnUpdateEdit(delta, m_Camera);
+				m_Context.ActiveScene->OnUpdateEdit(delta, m_Camera);
 				break;
 			case SceneState::Play:
-				m_ActiveScene->OnUpdateRuntime(delta);
+				m_Context.ActiveScene->OnUpdateRuntime(delta);
 				break;
 			case SceneState::Pause:
 			default:
@@ -120,6 +128,8 @@ namespace Ember {
 
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
+		//ImGui::ShowDemoWindow();
+
 		ImGui::DockSpaceOverViewport();
 
 		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
@@ -155,12 +165,22 @@ namespace Ember {
 			ImGui::Begin("Scene Viewport");
 			ImGui::Text("FPS: %.1f", fps);
 
+			// Save view port info for mouse picking and viewport resizing
+			m_ViewportHovered = ImGui::IsWindowHovered();
+			
+			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+			auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
+
+			m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+			m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
 			{
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 				m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
 				m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			}
 
@@ -177,11 +197,51 @@ namespace Ember {
 
 	void EditorLayer::SetupDirectionalLights()
 	{
-		auto lightEntity = m_ActiveScene->AddEntity();
+		auto lightEntity = m_Context.ActiveScene->AddEntity();
 		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 20.0f, 0.0f);
 
 		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, -0.8f, -0.25f), Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
 		lightEntity.AttachComponent(dirLightComp);
 	}
 
+	bool EditorLayer::OnMouseClick(MousePressedEvent& e)
+	{
+		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
+		{
+			auto [mx, my] = ImGui::GetMousePos();
+
+			// Subtract the top-left corner of the viewport to get local coordinates
+			mx -= m_ViewportBounds[0].x;
+			my -= m_ViewportBounds[0].y;
+
+			// Calculate viewport size from bounds
+			Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+
+			// Flip the Y-Axis (ImGui is Top-Left origin, OpenGL is Bottom-Left origin)
+			my = viewportSize.y - my;
+
+			int mouseX = (int)mx;
+			int mouseY = (int)my;
+
+			// Ensure we are inside the image
+			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+			{
+				// Clear selected entity outline from previously selected entity (if any)
+				if (m_Context.SelectedEntity != m_InvalidEntity && m_Context.SelectedEntity.ContainsComponent<OutlineComponent>())
+					m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+
+				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
+				if (selected != m_InvalidEntity)
+				{
+					// Set the entity
+					m_Context.SelectedEntity = selected;
+					
+					// Add outline component to selected entity
+					m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
+				}
+			}
+		}
+
+		return false;
+	}
 }

@@ -15,9 +15,10 @@ project "Ember-Forge"
 
    includedirs 
    {
-       "%{wks.location}/Ember/src",
-       "%{wks.location}/Ember/vendor",
-       "%{wks.location}/Ember/vendor/glm"
+      "src",
+      "%{wks.location}/Ember/src",
+      "%{wks.location}/Ember/vendor",
+      "%{wks.location}/Ember/vendor/glm"
    }
 
    links 

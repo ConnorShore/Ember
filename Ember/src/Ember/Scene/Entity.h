@@ -17,7 +17,7 @@ namespace Ember {
 		Entity(const std::string& tag, Scene* scene);
 		Entity(EntityID entity, Scene* scene);
 
-		Entity() = default;
+		Entity() : m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {}
 		~Entity() = default;
 
 		template<typename T>
@@ -36,6 +36,7 @@ namespace Ember {
 		inline T& GetComponent();
 
 		std::vector<Entity> GetAllChildren();
+		unsigned int GetNumChildren();
 
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);
@@ -44,6 +45,7 @@ namespace Ember {
 		const std::string& GetName() const;
 
 		operator EntityID() { return m_EntityHandle; }
+		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }
 
 	private:
 		Scene* m_SceneHandle;

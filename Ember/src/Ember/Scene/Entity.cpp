@@ -44,6 +44,11 @@ namespace Ember {
 		return ret;
 	}
 
+	unsigned int Entity::GetNumChildren()
+	{
+		return GetComponent<RelationshipComponent>().Children.size();
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();
@@ -77,7 +82,7 @@ namespace Ember {
 			Entity childEntity(childID, m_SceneHandle);
 			Entity found = childEntity.FindEntityInHierarchy(name);
 
-			if (found.GetEntityHandle() != InvalidEntityID)
+			if (found.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 				return found;
 		}
 

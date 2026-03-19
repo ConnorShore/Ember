@@ -2,6 +2,7 @@
 
 #include "Ember/Tools/EditorCamera.h"
 #include "Panels/Panel.h"
+#include "EditorContext.h"
 
 #include <Ember.h>
 #include <vector>
@@ -22,17 +23,26 @@ namespace Ember {
 
 	private:
 		void SetupDirectionalLights();
+		bool OnMouseClick(MousePressedEvent& e);
 
 	private:
-		SharedPtr<Scene> m_ActiveScene;
+		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
+
+	private:
+		EditorContext m_Context;
+		EditorCamera m_Camera;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
+
+		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
 		Vector2f m_ViewportSize;
-
-		Entity m_SelectedEntity;
-
-		EditorCamera m_Camera;	// Will be an EditorCamera
+		Vector2f m_SceneViewSize;
 
 		std::vector<SharedPtr<Panel>> m_Panels;
+
+		bool m_ViewportHovered = false;
+		bool m_ViewportFocused = false;
+
+		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 	};
 
 }

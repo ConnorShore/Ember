@@ -36,9 +36,14 @@ namespace Ember {
 		Entity AddEntity();
 		Entity AddEntity(const std::string& name);
 		Entity GetEntity(const std::string& tag);
+
+		std::vector<Entity> GetAllEntities() const;
+
 		void RemoveEntity(const Entity& entity);
 
 		Entity InstantiateModel(const SharedPtr<Model>& model, const std::string& name = "");
+
+		Entity GetEntityAtPixel(unsigned int x, unsigned int y);
 
 		template<typename T>
 		inline void AttachComponent(const Entity& entity, T& component);
@@ -49,9 +54,8 @@ namespace Ember {
 		template<typename T>
 		inline T& GetComponent(const Entity& entity);
 
-		Registry& GetRegistry() { return *m_Registry; }
-
-		SceneState GetSceneState() const { return m_State; }
+		inline Registry& GetRegistry() { return *m_Registry; }
+		inline SceneState GetSceneState() const { return m_State; }
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);

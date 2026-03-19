@@ -85,6 +85,15 @@ namespace Ember {
 		return { m_SceneEntities[tag], this };
 	}
 
+	std::vector<Ember::Entity> Scene::GetAllEntities() const
+	{
+		std::vector<Entity> entities;
+		entities.reserve(m_SceneEntities.size());
+		for (const auto& [name, id] : m_SceneEntities)
+			entities.emplace_back(id, const_cast<Scene*>(this));
+		return entities;
+	}
+
 	void Scene::RemoveEntity(const Entity& entity)
 	{
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");
@@ -97,6 +106,13 @@ namespace Ember {
 		Entity rootEntity = AddEntity(name.empty() ? model->GetName() : name);
 		ProcessModelNode(rootEntity, model->GetRootNode(), model);
 		return rootEntity;
+	}
+
+	Entity Scene::GetEntityAtPixel(unsigned int x, unsigned int y)
+	{
+		auto renderSystem = m_Registry->GetSystem<RenderSystem>();
+		EntityID id = renderSystem->GetEntityIDAtPixel(x, y);
+		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
 	}
 
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)

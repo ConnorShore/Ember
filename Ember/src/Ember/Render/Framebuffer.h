@@ -65,6 +65,9 @@ namespace Ember {
 		virtual const unsigned int GetDepthAttachmentID() const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
+		virtual int ReadPixel(unsigned int attachmentIndex, int x, int y) const = 0;
+		virtual void ClearAttachment(unsigned int attachmentIndex, int& clearValue) = 0;
+
 		virtual const unsigned int GetID() const = 0;
 
 		static SharedPtr<Framebuffer> Create(const FramebufferSpecification& specification);

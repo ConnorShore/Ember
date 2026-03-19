@@ -17,6 +17,9 @@ namespace Ember {
 			void Unbind() const override;
 			virtual void ViewportResize(unsigned int width, unsigned int height) override;
 
+			int ReadPixel(unsigned int attachmentIndex, int x, int y) const override;
+			void ClearAttachment(unsigned int attachmentIndex, int& clearValue) override;
+
 			inline const unsigned int GetColorAttachmentID(unsigned int id) const override 
 			{
 				EB_CORE_ASSERT(id < m_ColorAttachments.size(), "Color attachment id doesn't exist");
@@ -28,7 +31,6 @@ namespace Ember {
 			}
 
 			inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
-
 			inline const unsigned int GetID() const override { return m_Id; }
 
 		private:

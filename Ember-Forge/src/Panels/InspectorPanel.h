@@ -2,6 +2,10 @@
 
 #include "Panel.h"
 
+#include "ComponentUI/ComponentUI.h"
+
+#include <vector>
+
 namespace Ember {
 
 	class InspectorPanel : public Panel
@@ -14,6 +18,9 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 	private:
-		Entity m_SelectedEntity;
+		void DrawEntityHeader(Entity entity);
+
+	private:
+		std::vector<ScopedPtr<ComponentUIBase>> m_ComponentUIs;
 	};
 }

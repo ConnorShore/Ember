@@ -39,6 +39,9 @@
 #include "Ember/ImGui/ImGuiLayer.h"
 
 #include "Ember/Event/Event.h"
+#include "Ember/Event/KeyEvent.h"
+#include "Ember/Event/MouseEvent.h"
+#include "Ember/Event/WindowEvent.h"
 
 #include "Ember/ECS/Registry.h"
 #include "Ember/ECS/Component/Components.h"

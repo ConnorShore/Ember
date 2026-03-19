@@ -19,7 +19,7 @@ namespace Ember {
 			return id;
 		}
 		
-		EB_CORE_ASSERT(m_NextEntityId < MaxEntities, "Entity count has reached Ember's max limit!");
+		EB_CORE_ASSERT(m_NextEntityId < Constants::Entities::MaxEntities, "Entity count has reached Ember's max limit!");
 
 		unsigned int newId = m_NextEntityId++;
 		m_AliveEntities.set(newId, true);
@@ -37,19 +37,19 @@ namespace Ember {
 
 	void EntityManager::AttachComponent(EntityID entity, ComponentType component)
 	{
-		EB_CORE_ASSERT(component < MaxComponents, "Entity has already reached it's component count limit!");
+		EB_CORE_ASSERT(component < Constants::Entities::MaxComponents, "Entity has already reached it's component count limit!");
 		m_EntityComponentMask[entity].set(component, true);
 	}
 
 	void EntityManager::DetachComponent(EntityID entity, ComponentType component)
 	{
-		EB_CORE_ASSERT(component < MaxComponents, "Component is out of bounds!");
+		EB_CORE_ASSERT(component < Constants::Entities::MaxComponents, "Component is out of bounds!");
 		m_EntityComponentMask[entity].set(component, false);
 	}
 
 	bool EntityManager::ContainsComponent(EntityID entity, ComponentType component)
 	{
-		EB_CORE_ASSERT(component < MaxComponents, "Component is out of bounds!");
+		EB_CORE_ASSERT(component < Constants::Entities::MaxComponents, "Component is out of bounds!");
 		return m_EntityComponentMask[entity].test(component);
 	}
 

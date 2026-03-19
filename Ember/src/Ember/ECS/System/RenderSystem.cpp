@@ -8,6 +8,7 @@
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
+#include "Ember/Render/VFX/OutlinePass.h"
 
 namespace Ember {
 
@@ -25,6 +26,7 @@ namespace Ember {
 				Ember::FramebufferTextureFormat::RGBA8,
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RED_INTEGER,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
 			m_GBuffer = Framebuffer::Create(specs);
@@ -58,6 +60,7 @@ namespace Ember {
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RED_INTEGER,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
 			m_HdrSceneBuffer = Framebuffer::Create(specs);
@@ -70,8 +73,13 @@ namespace Ember {
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 
-		// Init post processing stack
+		//////////////// Init post processing stack ////////////////////////
 		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
+
+		auto outlinePass = SharedPtr<OutlinePass>::Create();
+		outlinePass->SetGBuffer(m_GBuffer);
+		m_PostProcessStack.emplace_back(outlinePass);
+		////////////////////////////////////////////////////////////////////
 
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
@@ -109,7 +117,7 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
-		HandlePostProcessing();
+		HandlePostProcessing(registry);
 
 		// Overlays
 		Render2DEntities(registry);
@@ -153,6 +161,26 @@ namespace Ember {
 
 		for (auto& pass : m_PostProcessStack)
 			pass->OnViewportResize(width, height);
+	}
+
+	EntityID RenderSystem::GetEntityIDAtPixel(unsigned int x, unsigned int y)
+	{
+		// Check the Forward buffer first (since it is drawn on top of the world)
+		m_HdrSceneBuffer->Bind();
+		int forwardPixelData = m_HdrSceneBuffer->ReadPixel(2, x, y);
+		m_HdrSceneBuffer->Unbind();
+
+		if (forwardPixelData != Constants::Entities::InvalidEntityID)
+		{
+			return (EntityID)forwardPixelData;
+		}
+
+		// If the Forward buffer was empty, fallback to the Opaque G-Buffer!
+		m_GBuffer->Bind();
+		int opaquePixelData = m_GBuffer->ReadPixel(3, x, y);
+		m_GBuffer->Unbind();
+
+		return (EntityID)opaquePixelData;
 	}
 
 	void RenderSystem::InitializeRenderState()
@@ -287,6 +315,10 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
 
+		// Clear EntityId attachment
+		int clearValue = Constants::Entities::InvalidEntityID;
+		m_GBuffer->ClearAttachment(3, clearValue);
+
 		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
 		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
 		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
@@ -299,6 +331,8 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			material.Material->GetShader()->Bind();
+			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
@@ -319,6 +353,10 @@ namespace Ember {
 
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
+
+		// clear entity id attachment
+		int clearValue = Constants::Entities::InvalidEntityID;
+		m_HdrSceneBuffer->ClearAttachment(2, clearValue);
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
@@ -416,6 +454,8 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			material.Material->GetShader()->Bind();
+			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
@@ -448,16 +488,50 @@ namespace Ember {
 		Renderer2D::EndFrame();
 	}
 
-	void RenderSystem::HandlePostProcessing()
+	void RenderSystem::HandlePostProcessing(Registry* registry)
 	{
 		RenderAction::UseDepthTest(false);
 
 		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
 		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
 
+		// TODO: Need a more elegant way to handle these special VFX cases
+		// Grab outline components for selected entities
+		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
+		View view = registry->Query<OutlineComponent>();
+		for (EntityID entity : view)
+		{
+			auto [outline] = registry->GetComponents<OutlineComponent>(entity);
+			outlinedEntityMap[entity] = outline;
+		}
+
+
 		// Pass over all post processing items
 		for (auto& pass : m_PostProcessStack)
 		{
+			// TODO: Come up with solution for handling special cases
+			if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
+			{
+				if (pass->Enabled)
+				{
+					// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
+					for (const auto& [entityID, outline] : outlinedEntityMap)
+					{
+						outlinePass->SetGBuffer(m_GBuffer);
+						outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
+						outlinePass->SetSelectedEntityID(entityID);
+						outlinePass->SetOutlineColor(outline.Color);
+						outlinePass->SetOutlineThickness(outline.Thickness);
+
+						pass->Render(currentInput, currentOutput);
+						currentInput = currentOutput;
+						currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+					}
+				}
+				
+				continue;
+			}
+
 			if (pass->Enabled)
 			{
 				pass->Render(currentInput, currentOutput);

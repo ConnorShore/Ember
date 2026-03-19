@@ -2,11 +2,20 @@
 
 namespace Ember::Constants {
 
+	namespace Entities {
+		constexpr unsigned int MaxEntities = 1024;
+		constexpr unsigned int MaxComponents = 64;
+
+		constexpr unsigned int InvalidEntityID = MaxEntities + 1;
+		constexpr unsigned int InvalidComponentID = MaxEntities + 1;
+	}
+
 	namespace Renderer {
 		inline constexpr unsigned int MaxDirectionalLights = 1;
 		inline constexpr unsigned int MaxSpotLights = 1;
 		inline constexpr unsigned int MaxPointLights = 256;
 		inline constexpr float DefaultAmbient = 0.03f;
+
 	}
 
 	namespace Assets {
@@ -21,6 +30,7 @@ namespace Ember::Constants {
 		inline const char* StandardShadowShad = "StandardShadow";
 		inline const char* GaussianBlurShad = "GaussianBlur";
 		inline const char* BloomShad = "Bloom";
+		inline const char* OutlineShad = "Outline";
 		inline const char* FinalCompositeShad = "FinalComposite";
 
 		inline const char* DefaultMat = "DefaultMaterial";
@@ -65,6 +75,8 @@ namespace Ember::Constants {
 		inline const char* LightViewMatrix = "u_LightViewMat";
 		inline const char* DirectionalLightViewMatrix = "u_DirectionalLightViewMat";
 		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
+
+		inline const char* EntityID = "u_EntityID";
 	}
 
 }

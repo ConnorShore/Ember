@@ -30,7 +30,7 @@ namespace Ember {
 
 	struct RelationshipComponent
 	{
-		EntityID ParentHandle = InvalidEntityID;
+		EntityID ParentHandle = Constants::Entities::InvalidEntityID;
 		std::vector<EntityID> Children;
 
 		RelationshipComponent() = default;
@@ -47,8 +47,8 @@ namespace Ember {
 
 		TransformComponent(const Vector3f& position = Vector3f(0.0f),
 			const Vector3f& rotation = Vector3f(0.0f),
-			const Vector3f& size = Vector3f(1.0f))
-			: Position(position), Rotation(rotation), Scale(size) {
+			const Vector3f& scale = Vector3f(1.0f))
+			: Position(position), Rotation(rotation), Scale(scale) {
 		}
 
 		Matrix4f GetLocalTransform() const
@@ -214,6 +214,16 @@ namespace Ember {
 				OnDestroyScript(this);
 			}
 		}
+	};
+
+	struct OutlineComponent
+	{
+		Vector3f Color = Vector3f(1.0f);
+		float Thickness = 1.0f;
+
+		OutlineComponent() = default;
+		OutlineComponent(const Vector3f& color, float thickness)
+			: Color(color), Thickness(thickness) {}
 	};
 
 }
