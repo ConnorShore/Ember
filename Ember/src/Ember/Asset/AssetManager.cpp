@@ -30,6 +30,9 @@ namespace Ember {
 		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadowShad, "Ember/assets/shaders/StandardShadow.glsl");
 		auto gaussianBlurShaer = Load<Shader>(Constants::Assets::GaussianBlurShad, "Ember/assets/shaders/GaussianBlur.glsl");
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
+		ShaderMacros outlineMacros;
+		outlineMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
+		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
 		auto finalCompositeShader = Load<Shader>(Constants::Assets::FinalCompositeShad, "Ember/assets/shaders/FinalComposite.glsl");
 
 		// Materials

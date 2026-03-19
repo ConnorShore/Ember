@@ -216,4 +216,14 @@ namespace Ember {
 		}
 	};
 
+	struct OutlineComponent
+	{
+		Vector3f Color = Vector3f(1.0f);
+		float Thickness = 1.0f;
+
+		OutlineComponent() = default;
+		OutlineComponent(const Vector3f& color, float thickness)
+			: Color(color), Thickness(thickness) {}
+	};
+
 }

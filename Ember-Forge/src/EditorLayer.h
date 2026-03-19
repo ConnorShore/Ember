@@ -41,6 +41,8 @@ namespace Ember {
 
 		bool m_ViewportHovered = false;
 		bool m_ViewportFocused = false;
+
+		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 	};
 
 }

@@ -51,11 +51,23 @@ namespace Ember {
 		}
 
 		Entity entity = m_Context->SelectedEntity;
+		{
+			ImGui::Begin(m_Title.c_str());
+
+			// Entity Header
+			DrawEntityHeader(entity);
+
+			// Entity Components
+			for (auto& componentUI : m_ComponentUIs)
+				componentUI->Draw(entity);
+
+			ImGui::End();
+		}
+	}
+
+	void InspectorPanel::DrawEntityHeader(Entity entity)
+	{
 		std::string entityName = entity.GetComponent<TagComponent>().Tag;
-
-		ImGui::Begin(m_Title.c_str());
-
-		// Entity Header
 		if (ImGui::BeginTable("Name", 2, ImGuiTableFlags_SizingFixedSame))
 		{
 			ImGui::TableSetupColumn("EntityName", ImGuiTableColumnFlags_WidthFixed);
@@ -79,14 +91,6 @@ namespace Ember {
 
 			ImGui::EndTable();
 		}
-
-		// Draw applicable component UIs
-		for (auto& componentUI : m_ComponentUIs)
-		{
-			componentUI->Draw(entity);
-		}
-
-		ImGui::End();
 	}
 
 }

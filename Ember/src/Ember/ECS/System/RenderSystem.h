@@ -41,7 +41,7 @@ namespace Ember {
 		void RenderForwardEntities(Registry* registry);
 		void RenderTransparentEntities(Registry* registry);
 		void Render2DEntities(Registry* registry);
-		void HandlePostProcessing();
+		void HandlePostProcessing(Registry* registry);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Registry* registry);

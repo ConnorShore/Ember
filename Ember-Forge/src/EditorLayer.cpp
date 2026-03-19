@@ -57,21 +57,21 @@ namespace Ember {
 		// -----------------------------------------------------------------
 
 		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
-		auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/satellite.obj");
+		auto satelliteAsset = LoadAsset<Model>("Satellite", "Sandbox/assets/models/satellite.obj");
 		m_Context.ActiveScene->InstantiateModel(satelliteAsset);
 
 		// Plane for testing
-		auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
+		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
 		auto groundPlane = m_Context.ActiveScene->AddEntity();
-		auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
+		auto& groundTransform = groundPlane.GetComponent<TransformComponent>();
 		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
 		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
 
-		Ember::MeshComponent groundMeshComp = { quadMesh };
+		MeshComponent groundMeshComp = { quadMesh };
 		groundPlane.AttachComponent(groundMeshComp);
 		groundPlane.AttachComponent(matComponent);
 
-		auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
+		auto groundInstance = groundPlane.GetComponent<MaterialComponent>().GetInstanced();
 		groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
 		groundInstance->Set("u_Roughness", 0.7f);
 
@@ -226,7 +226,19 @@ namespace Ember {
 			// Ensure we are inside the image
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				m_Context.SelectedEntity = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
+				// Clear selected entity outline from previously selected entity (if any)
+				if (m_Context.SelectedEntity != m_InvalidEntity && m_Context.SelectedEntity.ContainsComponent<OutlineComponent>())
+					m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+
+				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
+				if (selected != m_InvalidEntity)
+				{
+					// Set the entity
+					m_Context.SelectedEntity = selected;
+					
+					// Add outline component to selected entity
+					m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
+				}
 			}
 		}
 

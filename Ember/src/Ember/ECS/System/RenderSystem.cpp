@@ -8,6 +8,7 @@
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
+#include "Ember/Render/VFX/OutlinePass.h"
 
 namespace Ember {
 
@@ -72,8 +73,13 @@ namespace Ember {
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 
-		// Init post processing stack
+		//////////////// Init post processing stack ////////////////////////
 		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
+
+		auto outlinePass = SharedPtr<OutlinePass>::Create();
+		outlinePass->SetGBuffer(m_GBuffer);
+		m_PostProcessStack.emplace_back(outlinePass);
+		////////////////////////////////////////////////////////////////////
 
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
@@ -111,7 +117,7 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
-		HandlePostProcessing();
+		HandlePostProcessing(registry);
 
 		// Overlays
 		Render2DEntities(registry);
@@ -482,16 +488,50 @@ namespace Ember {
 		Renderer2D::EndFrame();
 	}
 
-	void RenderSystem::HandlePostProcessing()
+	void RenderSystem::HandlePostProcessing(Registry* registry)
 	{
 		RenderAction::UseDepthTest(false);
 
 		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
 		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
 
+		// TODO: Need a more elegant way to handle these special VFX cases
+		// Grab outline components for selected entities
+		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
+		View view = registry->Query<OutlineComponent>();
+		for (EntityID entity : view)
+		{
+			auto [outline] = registry->GetComponents<OutlineComponent>(entity);
+			outlinedEntityMap[entity] = outline;
+		}
+
+
 		// Pass over all post processing items
 		for (auto& pass : m_PostProcessStack)
 		{
+			// TODO: Come up with solution for handling special cases
+			if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
+			{
+				if (pass->Enabled)
+				{
+					// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
+					for (const auto& [entityID, outline] : outlinedEntityMap)
+					{
+						outlinePass->SetGBuffer(m_GBuffer);
+						outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
+						outlinePass->SetSelectedEntityID(entityID);
+						outlinePass->SetOutlineColor(outline.Color);
+						outlinePass->SetOutlineThickness(outline.Thickness);
+
+						pass->Render(currentInput, currentOutput);
+						currentInput = currentOutput;
+						currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+					}
+				}
+				
+				continue;
+			}
+
 			if (pass->Enabled)
 			{
 				pass->Render(currentInput, currentOutput);

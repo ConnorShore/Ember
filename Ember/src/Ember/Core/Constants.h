@@ -30,6 +30,7 @@ namespace Ember::Constants {
 		inline const char* StandardShadowShad = "StandardShadow";
 		inline const char* GaussianBlurShad = "GaussianBlur";
 		inline const char* BloomShad = "Bloom";
+		inline const char* OutlineShad = "Outline";
 		inline const char* FinalCompositeShad = "FinalComposite";
 
 		inline const char* DefaultMat = "DefaultMaterial";

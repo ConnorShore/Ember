@@ -18,6 +18,9 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 	private:
+		void DrawEntityHeader(Entity entity);
+
+	private:
 		std::vector<ScopedPtr<ComponentUIBase>> m_ComponentUIs;
 	};
 }
