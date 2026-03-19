@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Panel.h"
+#include <Ember.h>
 
 namespace Ember {
 
@@ -13,7 +14,17 @@ namespace Ember {
 		void OnEvent(Event& event) override;
 		void OnImGuiRender() override;
 
-	private:
+		inline void SetSelectedEntity(Entity entity) { m_Context->SelectedEntity = entity; m_PreviouslySelectedEntity = entity; }
+		inline Entity GetSelectedEntity() const { return m_Context->SelectedEntity; }
 
+	private:
+		void RenderEntityTree();
+		void DrawTreeNode(Entity entity);
+
+		bool IsAncestor(Entity ancestor, Entity descendant);
+
+	private:
+		Entity m_PreviouslySelectedEntity;
+		bool m_ExpandToSelectedEntity = true;
 	};
 }

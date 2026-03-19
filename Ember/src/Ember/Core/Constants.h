@@ -74,6 +74,8 @@ namespace Ember::Constants {
 		inline const char* LightViewMatrix = "u_LightViewMat";
 		inline const char* DirectionalLightViewMatrix = "u_DirectionalLightViewMat";
 		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
+
+		inline const char* EntityID = "u_EntityID";
 	}
 
 }

@@ -44,6 +44,11 @@ namespace Ember {
 		return ret;
 	}
 
+	unsigned int Entity::GetNumChildren()
+	{
+		return GetComponent<RelationshipComponent>().Children.size();
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

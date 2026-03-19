@@ -12,8 +12,5 @@ namespace Ember {
 
 		void OnEvent(Event& event) override;
 		void OnImGuiRender() override;
-
-	private:
-		Entity m_SelectedEntity;
 	};
 }

@@ -19,7 +19,7 @@ namespace Ember {
 
 	void InspectorPanel::OnImGuiRender()
 	{
-		if (m_SelectedEntity == Constants::Entities::InvalidEntityID)
+		if (m_Context->SelectedEntity == Constants::Entities::InvalidEntityID)
 		{
 			// Blank panel if no entity selected
 			ImGui::Begin(m_Title.c_str());

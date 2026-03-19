@@ -47,7 +47,7 @@ in VertexOut {
 layout(location = 0) out vec4 AlbedoRoughness; 
 layout(location = 1) out vec4 NormalMetallic;
 layout(location = 2) out vec4 PositionAO;
-layout(location = 3) out uint EntityID;
+layout(location = 3) out int EntityID;
 
 uniform vec3 u_Albedo;
 uniform float u_Metallic;

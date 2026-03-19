@@ -159,10 +159,22 @@ namespace Ember {
 
 	EntityID RenderSystem::GetEntityIDAtPixel(unsigned int x, unsigned int y)
 	{
+		// Check the Forward buffer first (since it is drawn on top of the world)
+		m_HdrSceneBuffer->Bind();
+		int forwardPixelData = m_HdrSceneBuffer->ReadPixel(2, x, y);
+		m_HdrSceneBuffer->Unbind();
+
+		if (forwardPixelData != Constants::Entities::InvalidEntityID)
+		{
+			return (EntityID)forwardPixelData;
+		}
+
+		// If the Forward buffer was empty, fallback to the Opaque G-Buffer!
 		m_GBuffer->Bind();
-		int pixelData = m_GBuffer->ReadPixel(3, x, y);
+		int opaquePixelData = m_GBuffer->ReadPixel(3, x, y);
 		m_GBuffer->Unbind();
-		return (EntityID)pixelData;
+
+		return (EntityID)opaquePixelData;
 	}
 
 	void RenderSystem::InitializeRenderState()
@@ -314,7 +326,7 @@ namespace Ember {
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			material.Material->GetShader()->Bind();
-			material.Material->GetShader()->SetInt("u_EntityID", entity);
+			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
@@ -335,6 +347,10 @@ namespace Ember {
 
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
+
+		// clear entity id attachment
+		int clearValue = Constants::Entities::InvalidEntityID;
+		m_HdrSceneBuffer->ClearAttachment(2, clearValue);
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
@@ -432,6 +448,8 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			material.Material->GetShader()->Bind();
+			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 

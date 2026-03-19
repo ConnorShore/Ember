@@ -85,6 +85,15 @@ namespace Ember {
 		return { m_SceneEntities[tag], this };
 	}
 
+	std::vector<Ember::Entity> Scene::GetAllEntities() const
+	{
+		std::vector<Entity> entities;
+		entities.reserve(m_SceneEntities.size());
+		for (const auto& [name, id] : m_SceneEntities)
+			entities.emplace_back(id, const_cast<Scene*>(this));
+		return entities;
+	}
+
 	void Scene::RemoveEntity(const Entity& entity)
 	{
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");

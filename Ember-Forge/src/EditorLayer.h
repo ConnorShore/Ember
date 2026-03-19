@@ -2,6 +2,7 @@
 
 #include "Ember/Tools/EditorCamera.h"
 #include "Panels/Panel.h"
+#include "EditorContext.h"
 
 #include <Ember.h>
 #include <vector>
@@ -28,16 +29,13 @@ namespace Ember {
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
 
 	private:
+		EditorContext m_Context;
 		EditorCamera m_Camera;
-
-		SharedPtr<Scene> m_ActiveScene;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
 
 		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
 		Vector2f m_ViewportSize;
 		Vector2f m_SceneViewSize;
-
-		Entity m_SelectedEntity;
 
 		std::vector<SharedPtr<Panel>> m_Panels;
 
