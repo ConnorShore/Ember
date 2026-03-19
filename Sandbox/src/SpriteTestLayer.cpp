@@ -127,7 +127,7 @@ void SpriteTestLayer::OnDetach()
 
 void SpriteTestLayer::OnUpdate(Ember::TimeStep delta)
 {
-	m_MainScene->OnUpdate(delta);
+	m_MainScene->OnUpdateRuntime(delta);
 }
 
 void SpriteTestLayer::OnImGuiRender(Ember::TimeStep delta)

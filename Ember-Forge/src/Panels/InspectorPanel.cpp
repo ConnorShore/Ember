@@ -1,51 +1,34 @@
 #include "InspectorPanel.h"
 
+#include "ComponentUI/TransformComponentUI.h"
+#include "ComponentUI/CameraComponentUI.h"
+#include "ComponentUI/DirectionalLightComponentUI.h"
+#include "ComponentUI/PointLightComponentUI.h"
+#include "ComponentUI/SpotLightComponentUI.h"
+#include "ComponentUI/RigidBodyComponentUI.h"
+#include "ComponentUI/ScriptComponentUI.h"
+#include "ComponentUI/MeshComponentUI.h"
+#include "ComponentUI/MaterialComponentUI.h"
+
 #include <Ember.h>
 
 #include <format>
 
 namespace Ember {
 
-	//////////////////////////////////////////////////////////////////////////
-	// Draw Component Helper Function
-	//////////////////////////////////////////////////////////////////////////
-
-	template<typename T, typename UIFunction>
-	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
-	{
-		// If the entity doesn't have this component, don't draw anything!
-		if (!entity.ContainsComponent<T>())
-			return;
-
-		const ImGuiTreeNodeFlags treeNodeFlags = 
-			ImGuiTreeNodeFlags_DefaultOpen		| 
-			ImGuiTreeNodeFlags_Framed			| 
-			ImGuiTreeNodeFlags_SpanAvailWidth	| 
-			ImGuiTreeNodeFlags_AllowOverlap		| 
-			ImGuiTreeNodeFlags_FramePadding;
-
-		auto& component = entity.GetComponent<T>();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-
-		bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, std::format("{} Component", name).c_str());
-
-		ImGui::PopStyleVar();
-
-		if (open)
-		{
-			uiFunction(component);
-			ImGui::TreePop();
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Inspector Panel Impl
-	//////////////////////////////////////////////////////////////////////////
-
 	InspectorPanel::InspectorPanel()
 		: Panel ("Inspector")
 	{
+		// Populate the list of Component UIs that this panel will draw for entities
+		m_ComponentUIs.emplace_back(ScopedPtr<TransformComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<CameraComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<PointLightComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<SpotLightComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<MeshComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create());
 	}
 
 	InspectorPanel::~InspectorPanel()
@@ -97,47 +80,11 @@ namespace Ember {
 			ImGui::EndTable();
 		}
 
-		// Go through all possible component types and see if it contains it, if so render the component with values
-		DrawComponent<TransformComponent>("Transform", entity, [](TransformComponent& component) {
-			if (ImGui::BeginTable("TransformProps", 2, ImGuiTableFlags_SizingFixedSame))
-			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
-				// Position
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Position");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Position", &component.Position[0], 0.1f, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
-
-				// Rotation
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Rotation");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Rotation", &component.Rotation[0], 0.1f, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
-
-				// Scale
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Scale");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Scale", &component.Scale[0], 0.1f, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
-
-				ImGui::EndTable();
-			}
-		});
-
-		DrawComponent<MaterialComponent>("Material", entity, [](MaterialComponent& component) {
-			ImGui::Text("Material Component body");
-			});
+		// Draw applicable component UIs
+		for (auto& componentUI : m_ComponentUIs)
+		{
+			componentUI->Draw(entity);
+		}
 
 		ImGui::End();
 	}

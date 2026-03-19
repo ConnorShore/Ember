@@ -2,6 +2,10 @@
 
 #include "Panel.h"
 
+#include "ComponentUI/ComponentUI.h"
+
+#include <vector>
+
 namespace Ember {
 
 	class InspectorPanel : public Panel
@@ -12,5 +16,8 @@ namespace Ember {
 
 		void OnEvent(Event& event) override;
 		void OnImGuiRender() override;
+
+	private:
+		std::vector<ScopedPtr<ComponentUIBase>> m_ComponentUIs;
 	};
 }
