@@ -7,10 +7,10 @@ namespace Ember {
 	class ScriptComponentUI : public ComponentUI<ScriptComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Script Component"; }
+		inline const char* GetName() const override { return "Script Component"; }
 
 	protected:
-		inline void DrawComponentImpl(ScriptComponent& component) override
+		inline void RenderComponentImpl(ScriptComponent& component) override
 		{
 			if (ImGui::Button("Edit Script")) 
 			{

@@ -7,10 +7,10 @@ namespace Ember {
 	class PointLightComponentUI : public ComponentUI<PointLightComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Point Light Component"; }
+		inline const char* GetName() const override { return "Point Light Component"; }
 
 	protected:
-		inline void DrawComponentImpl(PointLightComponent& component) override
+		inline void RenderComponentImpl(PointLightComponent& component) override
 		{
 			ImGui::Text("Point Light Component Data goes here");
 		}

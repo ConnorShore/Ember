@@ -7,10 +7,10 @@ namespace Ember {
 	class MeshComponentUI : public ComponentUI<MeshComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Mesh Component"; }
+		inline const char* GetName() const override { return "Mesh Component"; }
 
 	protected:
-		inline void DrawComponentImpl(MeshComponent& component) override
+		inline void RenderComponentImpl(MeshComponent& component) override
 		{
 			ImGui::Text("Mesh data goes here...");
 		}

@@ -59,7 +59,7 @@ namespace Ember {
 
 			// Entity Components
 			for (auto& componentUI : m_ComponentUIs)
-				componentUI->Draw(entity);
+				componentUI->Render(entity);
 
 			ImGui::End();
 		}

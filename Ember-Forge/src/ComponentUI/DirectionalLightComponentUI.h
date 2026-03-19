@@ -7,10 +7,10 @@ namespace Ember {
 	class DirectionalLightComponentUI : public ComponentUI<DirectionalLightComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Directional Light Component"; }
+		inline const char* GetName() const override { return "Directional Light Component"; }
 
 	protected:
-		inline void DrawComponentImpl(DirectionalLightComponent& component) override
+		inline void RenderComponentImpl(DirectionalLightComponent& component) override
 		{
 			ImGui::Text("Directional Light Component Data goes here");
 		}

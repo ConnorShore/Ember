@@ -117,8 +117,8 @@ namespace Ember {
 			glm::vec3 skew;
 			glm::vec4 perspective;
 
+			// TODO: May want to optimize, glm::decompress does a lot of work that we don't need
 			bool success = glm::decompose(transform, scale, rotation, translation, skew, perspective);
-
 			if (success)
 			{
 				outTranslation = translation;

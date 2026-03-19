@@ -18,13 +18,15 @@ project "Ember-Forge"
       "src",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
-      "%{wks.location}/Ember/vendor/glm"
+      "%{wks.location}/Ember/vendor/glm",
+      "vendor/ImGuizmo"
    }
 
    links 
    {
       "Ember",
-      "assimp"
+      "assimp",
+      "ImGuizmo"
    }
 
    filter "system:windows"
