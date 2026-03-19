@@ -224,7 +224,7 @@ namespace Ember {
 		KeyCode key = e.GetKeyCode();
 		switch (key)
 		{
-			// Gizmos (Translate, Rotate, Scale) -> W, E, R (Q to disable)
+			// Gizmos (Translate, Rotate, Scale) -> W, E, R (Q to disable) (T for all)
 			case KeyCode::Q:
 				m_GizmoType = -1;
 				break;
@@ -236,6 +236,9 @@ namespace Ember {
 				break;
 			case KeyCode::R:
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
+			case KeyCode::T:
+				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
 				break;
 		}
 
@@ -344,6 +347,8 @@ namespace Ember {
 		// Apply the math back to the entity if dragging
 		if (ImGuizmo::IsUsing())
 		{
+			// TODO: Figure out issue when scaling to 0, the position shoots to insane negative numbers.
+			// Maybe with how we decompress the matrix??
 			Vector3f translation, rotation, scale;
 			Math::DecomposeTransform(transform, translation, rotation, scale);
 
