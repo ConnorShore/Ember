@@ -128,6 +128,8 @@ namespace Ember {
 
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
+		//ImGui::ShowDemoWindow();
+
 		ImGui::DockSpaceOverViewport();
 
 		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)

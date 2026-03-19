@@ -47,8 +47,8 @@ namespace Ember {
 
 		TransformComponent(const Vector3f& position = Vector3f(0.0f),
 			const Vector3f& rotation = Vector3f(0.0f),
-			const Vector3f& size = Vector3f(1.0f))
-			: Position(position), Rotation(rotation), Scale(size) {
+			const Vector3f& scale = Vector3f(1.0f))
+			: Position(position), Rotation(rotation), Scale(scale) {
 		}
 
 		Matrix4f GetLocalTransform() const
