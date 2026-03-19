@@ -49,6 +49,11 @@ namespace Ember {
 		return GetComponent<RelationshipComponent>().Children.size();
 	}
 
+	bool Entity::IsRootParent()
+	{
+		return GetComponent<RelationshipComponent>().ParentHandle == Constants::Entities::InvalidEntityID;
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

@@ -7,10 +7,11 @@ namespace Ember {
 	class TransformComponentUI : public ComponentUI<TransformComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Transform Component"; }
+		
+		inline const char* GetName() const override { return "Transform Component"; }
 
 	protected:
-		inline void DrawComponentImpl(TransformComponent& component) override
+		inline void RenderComponentImpl(TransformComponent& component) override
 		{
 			if (ImGui::BeginTable("TransformProps", 2, ImGuiTableFlags_SizingFixedSame))
 			{

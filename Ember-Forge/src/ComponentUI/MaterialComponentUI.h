@@ -7,10 +7,10 @@ namespace Ember {
 	class MaterialComponentUI : public ComponentUI<MaterialComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "Material Component"; }
+		inline const char* GetName() const override { return "Material Component"; }
 
 	protected:
-		inline void DrawComponentImpl(MaterialComponent& component) override
+		inline void RenderComponentImpl(MaterialComponent& component) override
 		{
 			ImGui::Text("Material data goes here...");
 		}

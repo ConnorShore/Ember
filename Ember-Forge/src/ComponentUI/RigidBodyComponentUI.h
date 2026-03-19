@@ -7,10 +7,10 @@ namespace Ember {
 	class RigidBodyComponentUI : public ComponentUI<RigidBodyComponent>
 	{
 	public:
-		inline const std::string& GetName() const override { return "RigidBody Component"; }
+		inline const char* GetName() const override { return "RigidBody Component"; }
 
 	protected:
-		inline void DrawComponentImpl(RigidBodyComponent& component) override
+		inline void RenderComponentImpl(RigidBodyComponent& component) override
 		{
 			ImGui::Text("RigidBody data goes here...");
 		}

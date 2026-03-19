@@ -37,6 +37,7 @@ namespace Ember {
 
 		std::vector<Entity> GetAllChildren();
 		unsigned int GetNumChildren();
+		bool IsRootParent();
 
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);

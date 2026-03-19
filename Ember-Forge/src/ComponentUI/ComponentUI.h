@@ -13,8 +13,8 @@ namespace Ember {
 	{
 	public:
 		virtual ~ComponentUIBase() = default;
-		virtual void Draw(Entity entity) = 0;
-		virtual const std::string& GetName() const = 0;
+		virtual void Render(Entity entity) = 0;
+		virtual const char* GetName() const = 0;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -27,20 +27,20 @@ namespace Ember {
 	public:
 		virtual ~ComponentUI() = default;
 
-		virtual void Draw(Entity entity) override
+		virtual void Render(Entity entity) override
 		{
-			DrawComponent(GetName(), entity, [this](T& component) { DrawComponentImpl(component); });
+			RenderComponent(GetName(), entity, [this](T& component) { RenderComponentImpl(component); });
 		}
 
-		virtual const std::string& GetName() const = 0;
+		virtual const char* GetName() const = 0;
 
 	protected:
-		virtual void DrawComponentImpl(T& component) = 0;
+		virtual void RenderComponentImpl(T& component) = 0;
 
     private:
 
 		template<typename UIFunction>
-		static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
+		static void RenderComponent(const char* name, Entity entity, UIFunction uiFunction)
 		{
 			// If the entity doesn't have this component, don't draw anything!
 			if (!entity.ContainsComponent<T>())
@@ -57,7 +57,7 @@ namespace Ember {
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 
-			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, std::format("{} Component", name).c_str());
+			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name);
 
 			ImGui::PopStyleVar();
 

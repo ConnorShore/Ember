@@ -5,6 +5,7 @@
 #include "EditorContext.h"
 
 #include <Ember.h>
+#include <ImGuizmo.h>
 #include <vector>
 
 namespace Ember {
@@ -23,7 +24,10 @@ namespace Ember {
 
 	private:
 		void SetupDirectionalLights();
+		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
+		void SyncEntitySelectionState();
+		void RenderTransformGizmos();
 
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
@@ -42,7 +46,11 @@ namespace Ember {
 		bool m_ViewportHovered = false;
 		bool m_ViewportFocused = false;
 
+		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
+
+		int m_GizmoType = -1;
+		int m_GizmoMode = ImGuizmo::WORLD;
 	};
 
 }

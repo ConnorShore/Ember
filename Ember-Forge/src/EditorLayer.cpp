@@ -18,6 +18,7 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
+
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create());
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create());
@@ -88,8 +89,8 @@ namespace Ember {
 	{
 		// Handle events
 		EB_CREATE_DISPATCHER(event);
+		EB_DISPATCH_EVENT(KeyPressedEvent, OnKeyPressed);
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
-
 
 		// Update camera
 		if (m_Context.ActiveScene->GetSceneState() == SceneState::Edit)
@@ -102,6 +103,8 @@ namespace Ember {
 
 	void EditorLayer::OnUpdate(TimeStep delta)
 	{
+		SyncEntitySelectionState();
+
 		m_OutputFramebuffer->Bind();
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
@@ -128,6 +131,8 @@ namespace Ember {
 
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
+		ImGuizmo::BeginFrame();
+
 		//ImGui::ShowDemoWindow();
 
 		ImGui::DockSpaceOverViewport();
@@ -187,6 +192,9 @@ namespace Ember {
 			unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
 			ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
+			// Draw Transform Gizmos for selected entity
+			RenderTransformGizmos();
+
 			ImGui::End();
 		}
 
@@ -204,10 +212,45 @@ namespace Ember {
 		lightEntity.AttachComponent(dirLightComp);
 	}
 
+	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
+	{
+		// If ImGui wants to capture keyboard input for a textbox, we should not process shortcuts
+		if (ImGui::GetIO().WantTextInput)
+			return false;
+
+		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+
+		KeyCode key = e.GetKeyCode();
+		switch (key)
+		{
+			// Gizmos (Translate, Rotate, Scale) -> W, E, R (Q to disable)
+			case KeyCode::Q:
+				m_GizmoType = -1;
+				break;
+			case KeyCode::W:
+				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				break;
+			case KeyCode::E:
+				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+				break;
+			case KeyCode::R:
+				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
+		}
+
+		return false;
+	}
+
+
 	bool EditorLayer::OnMouseClick(MousePressedEvent& e)
 	{
 		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
 		{
+			// If the gizmo is being hovered, we should not change selection
+			if (ImGuizmo::IsOver())
+				return false;
+
 			auto [mx, my] = ImGui::GetMousePos();
 
 			// Subtract the top-left corner of the viewport to get local coordinates
@@ -226,22 +269,88 @@ namespace Ember {
 			// Ensure we are inside the image
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				// Clear selected entity outline from previously selected entity (if any)
-				if (m_Context.SelectedEntity != m_InvalidEntity && m_Context.SelectedEntity.ContainsComponent<OutlineComponent>())
-					m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
-
 				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
-				if (selected != m_InvalidEntity)
-				{
-					// Set the entity
-					m_Context.SelectedEntity = selected;
-					
-					// Add outline component to selected entity
-					m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
-				}
+				m_Context.SelectedEntity = selected;
 			}
 		}
 
 		return false;
 	}
+
+	void EditorLayer::SyncEntitySelectionState()
+	{
+		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
+			return;
+
+		if (m_PreviousSelectedEntity != m_InvalidEntity && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
+		{
+			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
+			if (m_PreviousSelectedEntity.IsRootParent())
+			{
+				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
+				{
+					if (child.ContainsComponent<OutlineComponent>())
+						child.DetachComponent<OutlineComponent>();
+				}
+			}
+		}
+
+		// Add outlines to the new selection and its children
+		if (m_Context.SelectedEntity != m_InvalidEntity)
+		{
+			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
+			if (m_Context.SelectedEntity.IsRootParent())
+			{
+				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
+					child.AttachComponent(m_OutlineEntitySelectedComp);
+			}
+		}
+
+		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+	}
+
+	void EditorLayer::RenderTransformGizmos()
+	{
+		if (m_GizmoType == -1)
+			return;
+
+		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
+			return;
+
+		ImGuizmo::SetOrthographic(false);	// TODO: Support orthographic mode for 2D scenes
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+
+		Matrix4f cameraProjection = m_Camera.GetProjectionMatrix();
+		Matrix4f cameraView = m_Camera.GetViewMatrix();
+
+		auto& transformComp = m_Context.SelectedEntity.GetComponent<TransformComponent>();
+		Matrix4f transform = Math::Translate(transformComp.Position) * Math::GetRotationMatrix(transformComp.Rotation) * Math::Scale(transformComp.Scale);
+
+		// Snapping Logic (Hold CTRL)
+		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
+		float snapValue = (m_GizmoType == ImGuizmo::OPERATION::ROTATE) ? 45.0f : 0.5f;
+		float snapValues[3] = { snapValue, snapValue, snapValue };
+
+		// Local vs World mode (Hold Shift for local)
+		bool isLocal = Input::IsKeyPressed(KeyCode::LeftShift);
+		ImGuizmo::MODE currentMode = isLocal ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+
+		// Draw the Gizmo
+		ImGuizmo::Manipulate(&cameraView[0][0], &cameraProjection[0][0],
+			(ImGuizmo::OPERATION)m_GizmoType, (ImGuizmo::MODE)currentMode, &transform[0][0],
+			nullptr, snap ? snapValues : nullptr);
+
+		// Apply the math back to the entity if dragging
+		if (ImGuizmo::IsUsing())
+		{
+			Vector3f translation, rotation, scale;
+			Math::DecomposeTransform(transform, translation, rotation, scale);
+
+			transformComp.Position = translation;
+			transformComp.Rotation = rotation;
+			transformComp.Scale = scale;
+		}
+	}
+
 }

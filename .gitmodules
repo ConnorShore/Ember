@@ -10,3 +10,6 @@
 [submodule "Ember/vendor/assimp"]
 	path = Ember/vendor/assimp
 	url = https://github.com/ConnorShore/assimp.git
+[submodule "Ember-Forge/vendor/ImGuizmo"]
+	path = Ember-Forge/vendor/ImGuizmo
+	url = https://github.com/ConnorShore/ImGuizmo.git
