@@ -17,7 +17,7 @@ namespace Ember {
 		Entity(const std::string& tag, Scene* scene);
 		Entity(EntityID entity, Scene* scene);
 
-		Entity() = default;
+		Entity() : m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {}
 		~Entity() = default;
 
 		template<typename T>

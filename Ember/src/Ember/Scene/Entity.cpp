@@ -77,7 +77,7 @@ namespace Ember {
 			Entity childEntity(childID, m_SceneHandle);
 			Entity found = childEntity.FindEntityInHierarchy(name);
 
-			if (found.GetEntityHandle() != InvalidEntityID)
+			if (found.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 				return found;
 		}
 

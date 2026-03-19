@@ -22,17 +22,27 @@ namespace Ember {
 
 	private:
 		void SetupDirectionalLights();
+		bool OnMouseClick(MousePressedEvent& e);
 
 	private:
+		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
+
+	private:
+		EditorCamera m_Camera;
+
 		SharedPtr<Scene> m_ActiveScene;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
+
+		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
 		Vector2f m_ViewportSize;
+		Vector2f m_SceneViewSize;
 
 		Entity m_SelectedEntity;
 
-		EditorCamera m_Camera;	// Will be an EditorCamera
-
 		std::vector<SharedPtr<Panel>> m_Panels;
+
+		bool m_ViewportHovered = false;
+		bool m_ViewportFocused = false;
 	};
 
 }

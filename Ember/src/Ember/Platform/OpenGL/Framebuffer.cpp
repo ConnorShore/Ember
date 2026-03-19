@@ -14,7 +14,7 @@ namespace Ember {
 			{
 			case FramebufferTextureFormat::RGBA8:			return GL_RGBA8;
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
-			case FramebufferTextureFormat::RED_INTEGER:		return GL_RED_INTEGER;
+			case FramebufferTextureFormat::RED_INTEGER:		return GL_R32I;
 			case FramebufferTextureFormat::DEPTH24STENCIL8:	return GL_DEPTH24_STENCIL8;
 			case FramebufferTextureFormat::None:			return 0;
 			}
@@ -68,6 +68,19 @@ namespace Ember {
 			m_Specification.Width = width;
 			m_Specification.Height = height;
 			Regenerate();
+		}
+
+		int Framebuffer::ReadPixel(unsigned int attachmentIndex, int x, int y) const
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+			int pixelData;
+			glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+			return pixelData;
+		}
+
+		void Framebuffer::ClearAttachment(unsigned int attachmentIndex, int& clearValue)
+		{
+			glClearNamedFramebufferiv(m_Id, GL_COLOR, attachmentIndex, &clearValue);
 		}
 
 		void Framebuffer::Regenerate()

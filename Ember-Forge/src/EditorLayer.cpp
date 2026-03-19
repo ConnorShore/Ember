@@ -1,5 +1,4 @@
 #include "EditorLayer.h"
-#include "CameraController3D.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
@@ -82,10 +81,13 @@ namespace Ember {
 	void EditorLayer::OnEvent(Event& event)
 	{
 		// Handle events
+		EB_CREATE_DISPATCHER(event);
+		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
+
+
+		// Update camera
 		if (m_ActiveScene->GetSceneState() == SceneState::Edit)
-		{
 			m_Camera.OnEvent(event);
-		}
 
 		// Propagate events to panels
 		for (auto& panel : m_Panels)
@@ -155,6 +157,16 @@ namespace Ember {
 			ImGui::Begin("Scene Viewport");
 			ImGui::Text("FPS: %.1f", fps);
 
+			// Save view port info for mouse picking and viewport resizing
+			m_ViewportHovered = ImGui::IsWindowHovered();
+			
+			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+			auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
+
+			m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+			m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
 			{
@@ -184,4 +196,37 @@ namespace Ember {
 		lightEntity.AttachComponent(dirLightComp);
 	}
 
+	bool EditorLayer::OnMouseClick(MousePressedEvent& e)
+	{
+		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
+		{
+			auto [mx, my] = ImGui::GetMousePos();
+
+			// Subtract the top-left corner of the viewport to get local coordinates
+			mx -= m_ViewportBounds[0].x;
+			my -= m_ViewportBounds[0].y;
+
+			// Calculate viewport size from bounds
+			Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+
+			// Flip the Y-Axis (ImGui is Top-Left origin, OpenGL is Bottom-Left origin)
+			my = viewportSize.y - my;
+
+			int mouseX = (int)mx;
+			int mouseY = (int)my;
+
+			// Ensure we are inside the image
+			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+			{
+				m_SelectedEntity = m_ActiveScene->GetEntityAtPixel(mouseX, mouseY);
+
+				if (m_SelectedEntity != Constants::Entities::InvalidEntityID)
+					EB_CORE_TRACE("Selected Entity {}", m_SelectedEntity.GetName());
+				else
+					EB_CORE_TRACE("No entity selected");
+			}
+		}
+
+		return false;
+	}
 }

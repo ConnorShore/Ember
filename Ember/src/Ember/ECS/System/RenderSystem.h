@@ -26,6 +26,8 @@ namespace Ember {
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
+		EntityID GetEntityIDAtPixel(unsigned int x, unsigned int y);
+
 	private:
 		void ExecuteRenderPipeline(Registry* registry);
 		void InitializeRenderState();

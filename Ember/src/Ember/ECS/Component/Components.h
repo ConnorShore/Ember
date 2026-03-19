@@ -30,7 +30,7 @@ namespace Ember {
 
 	struct RelationshipComponent
 	{
-		EntityID ParentHandle = InvalidEntityID;
+		EntityID ParentHandle = Constants::Entities::InvalidEntityID;
 		std::vector<EntityID> Children;
 
 		RelationshipComponent() = default;

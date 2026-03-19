@@ -99,6 +99,13 @@ namespace Ember {
 		return rootEntity;
 	}
 
+	Entity Scene::GetEntityAtPixel(unsigned int x, unsigned int y)
+	{
+		auto renderSystem = m_Registry->GetSystem<RenderSystem>();
+		EntityID id = renderSystem->GetEntityIDAtPixel(x, y);
+		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
+	}
+
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)
 	{
 		OnViewportResize(event.GetWidth(), event.GetHeight());

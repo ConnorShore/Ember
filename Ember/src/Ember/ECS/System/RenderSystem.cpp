@@ -25,6 +25,7 @@ namespace Ember {
 				Ember::FramebufferTextureFormat::RGBA8,
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RED_INTEGER,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
 			m_GBuffer = Framebuffer::Create(specs);
@@ -58,6 +59,7 @@ namespace Ember {
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RED_INTEGER,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
 			m_HdrSceneBuffer = Framebuffer::Create(specs);
@@ -153,6 +155,14 @@ namespace Ember {
 
 		for (auto& pass : m_PostProcessStack)
 			pass->OnViewportResize(width, height);
+	}
+
+	EntityID RenderSystem::GetEntityIDAtPixel(unsigned int x, unsigned int y)
+	{
+		m_GBuffer->Bind();
+		int pixelData = m_GBuffer->ReadPixel(3, x, y);
+		m_GBuffer->Unbind();
+		return (EntityID)pixelData;
 	}
 
 	void RenderSystem::InitializeRenderState()
@@ -287,6 +297,10 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
 
+		// Clear EntityId attachment
+		int clearValue = Constants::Entities::InvalidEntityID;
+		m_GBuffer->ClearAttachment(3, clearValue);
+
 		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
 		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
 		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
@@ -299,6 +313,8 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			material.Material->GetShader()->Bind();
+			material.Material->GetShader()->SetInt("u_EntityID", entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
 		}
 
