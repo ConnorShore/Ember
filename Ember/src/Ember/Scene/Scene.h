@@ -39,7 +39,7 @@ namespace Ember {
 
 		std::vector<Entity> GetAllEntities() const;
 
-		void RemoveEntity(const Entity& entity);
+		void RemoveEntity(Entity entity);
 
 		Entity InstantiateModel(const SharedPtr<Model>& model, const std::string& name = "");
 

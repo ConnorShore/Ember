@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace Ember {
 
@@ -48,12 +49,23 @@ namespace Ember {
 		operator EntityID() { return m_EntityHandle; }
 		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }
 
+
 	private:
 		Scene* m_SceneHandle;
 		EntityID m_EntityHandle;
 	};
 
 }
+
+// Hash function for entity
+template<>
+struct std::hash<Ember::Entity>
+{
+	size_t operator()(const Ember::Entity& e) const noexcept
+	{
+		return std::hash<Ember::EntityID>()(e.GetEntityHandle());
+	}
+};
 
 #include "Scene.h"
 

@@ -94,9 +94,14 @@ namespace Ember {
 		return entities;
 	}
 
-	void Scene::RemoveEntity(const Entity& entity)
+	void Scene::RemoveEntity(Entity entity)
 	{
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");
+
+		// Remove children first
+		for (auto child : entity.GetAllChildren())
+			RemoveEntity(child);
+
 		m_SceneEntities.erase(entity.GetName());
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
 	}

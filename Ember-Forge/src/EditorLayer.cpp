@@ -18,7 +18,6 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
-
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create());
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create());
@@ -32,7 +31,7 @@ namespace Ember {
 		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
 		m_Camera.SetPitch(Math::Radians(30.0f));
 		m_Camera.SetYaw(Math::Radians(45.0f));
-		m_Camera.SetDistance(6.0f);
+		m_Camera.SetDistance(10.0f);
 
 		// Output Framebuffer
 		FramebufferSpecification specs;
@@ -133,7 +132,7 @@ namespace Ember {
 	{
 		ImGuizmo::BeginFrame();
 
-		//ImGui::ShowDemoWindow();
+		ImGui::ShowDemoWindow();
 
 		ImGui::DockSpaceOverViewport();
 
@@ -201,6 +200,9 @@ namespace Ember {
 		// Render Panels
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
+
+		// Delete pending entities
+		RemovePendingEntities();
 	}
 
 	void EditorLayer::SetupDirectionalLights()
@@ -239,6 +241,12 @@ namespace Ember {
 				break;
 			case KeyCode::T:
 				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
+				break;
+
+			// Entity Hot keys
+			case KeyCode::Delete:
+				if (m_Context.SelectedEntity != m_InvalidEntity)
+					RemoveEntity(m_Context.SelectedEntity);
 				break;
 		}
 
@@ -363,4 +371,28 @@ namespace Ember {
 		}
 	}
 
+	void EditorLayer::CreateEntity()
+	{
+		auto entity = m_Context.ActiveScene->AddEntity();
+		m_Context.SelectedEntity = entity;
+	}
+
+	void EditorLayer::RemoveEntity(Entity entity)
+	{
+		if (entity == Constants::Entities::InvalidEntityID)
+			return;
+
+		m_Context.PendingEntityDeletions.insert(entity);
+	}
+
+	void EditorLayer::RemovePendingEntities()
+	{
+		if (m_Context.PendingEntityDeletions.contains(m_Context.SelectedEntity))
+			m_Context.SelectedEntity = m_InvalidEntity;
+
+		for (auto entity : m_Context.PendingEntityDeletions)
+			m_Context.ActiveScene->RemoveEntity(entity);
+
+		m_Context.PendingEntityDeletions.clear();
+	}
 }

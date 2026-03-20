@@ -46,8 +46,8 @@ void ModelTestLayer::OnAttach()
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
-	groundInstance->Set("u_Roughness", 0.7f);
+	groundInstance->SetUniform("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
+	groundInstance->SetUniform("u_Roughness", 0.7f);
 
 	// Add our cube as an entity with deferred rendering components
 
@@ -239,7 +239,7 @@ void ModelTestLayer::SetupStandardLights()
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
-		lightCubeInstance->Set("u_Color", ld.color);
+		lightCubeInstance->SetUniform("u_Color", ld.color);
 	}
 }
 
@@ -288,6 +288,6 @@ void ModelTestLayer::SetupRandomLights()
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
 
 		// Set the physical cube to match the color of the light it emits!
-		lightCubeInstance->Set("u_Color", color);
+		lightCubeInstance->SetUniform("u_Color", color);
 	}
 }

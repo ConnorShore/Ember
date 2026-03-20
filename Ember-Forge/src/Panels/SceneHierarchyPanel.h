@@ -23,6 +23,8 @@ namespace Ember {
 
 		bool IsAncestor(Entity ancestor, Entity descendant);
 
+		void CreateEntity();
+
 	private:
 		Entity m_PreviouslySelectedEntity;
 		bool m_ExpandToSelectedEntity = true;
