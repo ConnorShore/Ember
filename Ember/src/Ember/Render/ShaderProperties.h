@@ -24,7 +24,7 @@ namespace Ember {
 		std::string DisplayName;	// Name for UI
 		float Min = 0.0f;
 		float Max = 1.0f;
-		float Step = 0.1f;
+		float Step = 0.005f;
 		bool Normalize = false;
 	};
 }
