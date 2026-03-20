@@ -55,6 +55,7 @@ namespace Ember::Constants {
 
 		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";
+		inline const char* Emission = "u_Emission";
 		inline const char* Scene = "u_Scene";
 		inline const char* Exposure = "u_Exposure";
 

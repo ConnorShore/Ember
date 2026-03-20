@@ -23,7 +23,6 @@ namespace Ember {
 		ShaderType currentType = ShaderType::None;
 		bool encounteredUIProp = false;
 		ShaderProperty currentProp;
-		// @UIProperty("My Property", Float3)
 		while (getline(stream, line))
 		{
 			if (line.find("#shader") != std::string::npos)
@@ -41,27 +40,72 @@ namespace Ember {
 			{
 				currentProp = {};
 				encounteredUIProp = true;
-				// Extract the type and display name
+
+				// Extract everything between the parentheses
 				size_t start = line.find("(");
-				size_t end = line.find(")");
-				std::string subLine = line.substr(start + 1, end - start - 1);
-				std::string token;
-				std::stringstream propStream(subLine);
-				while(std::getline(propStream, token, ','))
+				size_t end = line.rfind(")");
+
+				if (start != std::string::npos && end != std::string::npos && end > start)
 				{
-					token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());	// Remove whitespace
-					if (currentProp.DisplayName.empty())
-						currentProp.DisplayName = token.substr(1, token.size() - 2); // Remove quotes
-					else
+					std::string subLine = line.substr(start + 1, end - start - 1);
+					std::stringstream propStream(subLine);
+					std::string kvPair;
+
+					// Remove whitespace helper lambda
+					auto trim = [](std::string& s) {
+						s.erase(0, s.find_first_not_of(" \t"));
+						s.erase(s.find_last_not_of(" \t") + 1);
+						};
+
+					while (std::getline(propStream, kvPair, ','))
 					{
-						if (token == "Float") currentProp.Type = ShaderPropertyType::Float;
-						else if (token == "Float2") currentProp.Type = ShaderPropertyType::Float2;
-						else if (token == "Float3") currentProp.Type = ShaderPropertyType::Float3;
-						else if (token == "Float4") currentProp.Type = ShaderPropertyType::Float4;
-						else if (token == "Color3") currentProp.Type = ShaderPropertyType::Color3;
-						else if (token == "Color4") currentProp.Type = ShaderPropertyType::Color4;
-						else if (token == "Slider") currentProp.Type = ShaderPropertyType::Slider;
-						else EB_CORE_ASSERT(false, "Unknown shader property type specified in line: {}", line);
+						// find key pairs
+						size_t eqPos = kvPair.find('=');
+						if (eqPos == std::string::npos) 
+							continue;
+
+						std::string key = kvPair.substr(0, eqPos);
+						std::string val = kvPair.substr(eqPos + 1);
+
+						trim(key);
+						trim(val);
+
+
+						if (key == "Name")
+						{
+							// Strip the quotes from the name
+							if (!val.empty() && val.front() == '"') val.erase(0, 1);
+							if (!val.empty() && val.back() == '"') val.pop_back();
+							currentProp.DisplayName = val;
+						}
+						else if (key == "Type")
+						{
+							if (val == "Float") currentProp.Type = ShaderPropertyType::Float;
+							else if (val == "Float2") currentProp.Type = ShaderPropertyType::Float2;
+							else if (val == "Float3") currentProp.Type = ShaderPropertyType::Float3;
+							else if (val == "Float4") currentProp.Type = ShaderPropertyType::Float4;
+							else if (val == "Color3") currentProp.Type = ShaderPropertyType::Color3;
+							else if (val == "Color4") currentProp.Type = ShaderPropertyType::Color4;
+							else if (val == "Slider") currentProp.Type = ShaderPropertyType::Slider;
+							else EB_CORE_ASSERT(false, "Unknown shader property type: {}", val);
+						}
+						else if (key == "Min")
+						{
+							currentProp.Min = std::stof(val);
+						}
+						else if (key == "Max")
+						{
+							currentProp.Max = std::stof(val);
+						}
+						else if (key == "Step")
+						{
+							currentProp.Step = std::stof(val);
+						}
+						else if (key == "Normalize")
+						{
+							std::transform(val.begin(), val.end(), val.begin(), ::tolower);
+							currentProp.Normalize = (val == "true" || val == "1");
+						}
 					}
 				}
 			}

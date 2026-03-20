@@ -210,13 +210,37 @@ namespace Ember {
 		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
 		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor);
 
-		if (baseMatName == Constants::Assets::StandardUnlitMat && (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f))
+		float emissionIntensity = 0.0f;
+		if (baseMatName == Constants::Assets::StandardUnlitMat)
 		{
-			finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+			// Find the brightest color channel
+			float maxEmission = std::max({ emissiveColor.r, emissiveColor.g, emissiveColor.b });
+			if (maxEmission > 0.0f)
+			{
+				// If the 3D software exported HDR values (e.g., R=5.0)
+				// We extract 5.0 as the intensity, and normalize the color back to 1.0!
+				if (maxEmission > 1.0f)
+				{
+					emissionIntensity = maxEmission;
+					finalColor = Ember::Vector3f(emissiveColor.r / maxEmission, emissiveColor.g / maxEmission, emissiveColor.b / maxEmission);
+				}
+				else
+				{
+					// Standard 0.0 to 1.0 range emission
+					emissionIntensity = 1.0f;
+					finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+				}
+			}
+			else
+			{
+				// It's an unlit shader but has no emissive map, fallback to diffuse color with 1.0 intensity
+				emissionIntensity = 1.0f;
+			}
 		}
 
 		matInstance->SetUniform(Constants::Uniforms::Albedo, finalColor);
 		matInstance->SetUniform(Constants::Uniforms::Color, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Emission, emissionIntensity);
 
 		float roughness = 0.5f;
 		aiGetMaterialFloat(aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &roughness);

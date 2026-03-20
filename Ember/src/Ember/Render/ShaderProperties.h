@@ -19,8 +19,12 @@ namespace Ember {
 
 	struct ShaderProperty
 	{
+		ShaderPropertyType Type = ShaderPropertyType::None;
 		std::string UniformName;	// Name in shader
 		std::string DisplayName;	// Name for UI
-		ShaderPropertyType Type = ShaderPropertyType::None;
+		float Min = 0.0f;
+		float Max = 1.0f;
+		float Step = 0.1f;
+		bool Normalize = false;
 	};
 }

@@ -22,14 +22,18 @@ layout(location = 0) out vec4 OutColor;
 layout(location = 1) out vec4 BrightColor;
 layout(location = 2) out int EntityID;
 
-// @UIProperty("Color", Color3)
+// @UIProperty(Name = "Color", Type = Color3)
 uniform vec3 u_Color;
+
+// @UIProperty(Name="Emission Intensity", Type=Float, Min=1.0, Max=100.0, Step=0.5, Normalize=false)
+uniform float u_Emission;
 
 uniform int u_EntityID;
 
 void main()
 {
-    OutColor = vec4(u_Color, 1.0);
+    vec3 finalColor = u_Color * u_Emission;
+    OutColor = vec4(finalColor, 1.0);
     BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);
     EntityID = u_EntityID;
 }
