@@ -3,8 +3,8 @@
 
 namespace Ember {
 
-	SceneHierarchyPanel::SceneHierarchyPanel()
-		: Panel("Scene Hierarchy")
+	SceneHierarchyPanel::SceneHierarchyPanel(EditorContext* context)
+		: Panel("Scene Hierarchy", context)
 	{
 	}
 
@@ -124,7 +124,7 @@ namespace Ember {
 			}
 			if (ImGui::MenuItem("Delete Entity"))
 			{
-				m_Context->PendingEntityDeletions.insert(entity);
+				m_Context->PendingEntityRemovals.insert(entity);
 			}
 
 			ImGui::EndPopup();

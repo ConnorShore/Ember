@@ -2,8 +2,8 @@
 
 namespace Ember {
 
-	AssetManagerPanel::AssetManagerPanel()
-		: Panel("Asset Manager")
+	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
+		: Panel("Asset Manager", context)
 	{
 	}
 

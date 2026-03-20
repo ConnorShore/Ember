@@ -16,19 +16,19 @@
 
 namespace Ember {
 
-	InspectorPanel::InspectorPanel()
-		: Panel ("Inspector")
+	InspectorPanel::InspectorPanel(EditorContext* context)
+		: Panel ("Inspector", context)
 	{
 		// Populate the list of Component UIs that this panel will draw for entities
-		m_ComponentUIs.emplace_back(ScopedPtr<TransformComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<CameraComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<PointLightComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<SpotLightComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<MeshComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create());
-		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create());
+		m_ComponentUIs.emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<CameraComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<PointLightComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<SpotLightComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<MeshComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
 	}
 
 	InspectorPanel::~InspectorPanel()
@@ -85,8 +85,22 @@ namespace Ember {
 			float posX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonWidth;
 			ImGui::SetCursorPosX(posX);
 
-			if (ImGui::Button("Add Component")) {
-				// Handle click
+			if (ImGui::Button("Add Component"))
+			{
+				ImGui::OpenPopup("AddComponentPopup");
+			}
+
+			if (ImGui::BeginPopup("AddComponentPopup"))
+			{
+				for (auto& comps : m_ComponentUIs)
+				{
+					if (ImGui::MenuItem(comps->GetName()))
+					{
+						EB_CORE_TRACE("Adding component {}", comps->GetName());
+						comps->CreateComponentForEntity(entity);
+					}
+				}
+				ImGui::EndPopup();
 			}
 
 			ImGui::EndTable();

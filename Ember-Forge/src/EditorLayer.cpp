@@ -19,12 +19,9 @@ namespace Ember {
 	void EditorLayer::OnAttach()
 	{
 		// Add Panels
-		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create());
-		m_Panels.push_back(SharedPtr<InspectorPanel>::Create());
-		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create());
-
-		for (auto& panel : m_Panels)
-			panel->SetContext(&m_Context);
+		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 500.0f);
@@ -382,17 +379,17 @@ namespace Ember {
 		if (entity == Constants::Entities::InvalidEntityID)
 			return;
 
-		m_Context.PendingEntityDeletions.insert(entity);
+		m_Context.PendingEntityRemovals.insert(entity);
 	}
 
 	void EditorLayer::RemovePendingEntities()
 	{
-		if (m_Context.PendingEntityDeletions.contains(m_Context.SelectedEntity))
+		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
 			m_Context.SelectedEntity = m_InvalidEntity;
 
-		for (auto entity : m_Context.PendingEntityDeletions)
+		for (auto entity : m_Context.PendingEntityRemovals)
 			m_Context.ActiveScene->RemoveEntity(entity);
 
-		m_Context.PendingEntityDeletions.clear();
+		m_Context.PendingEntityRemovals.clear();
 	}
 }

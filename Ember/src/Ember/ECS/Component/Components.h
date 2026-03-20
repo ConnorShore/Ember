@@ -25,6 +25,7 @@ namespace Ember {
 	{
 		std::string Tag;
 
+		TagComponent() = default;
 		TagComponent(const std::string& tag) : Tag(tag) {}
 	};
 
@@ -86,8 +87,9 @@ namespace Ember {
 
 	struct RigidBodyComponent
 	{
-		Vector3f Velocity;
+		Vector3f Velocity = Vector3f(0.0f);
 
+		RigidBodyComponent() = default;
 		RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
 	};
 
@@ -104,6 +106,7 @@ namespace Ember {
 	{
 		SharedPtr<Mesh> Mesh;
 
+		MeshComponent() = default;
 		MeshComponent(const SharedPtr<Ember::Mesh>& mesh) : Mesh(mesh) {}
 	};
 
@@ -111,6 +114,7 @@ namespace Ember {
 	{
 		SharedPtr<MaterialBase> Material;
 
+		MaterialComponent() = default;
 		MaterialComponent(const SharedPtr<Ember::MaterialBase>& material) : Material(material) {}
 
 		SharedPtr<MaterialInstance> GetInstanced()
@@ -145,7 +149,7 @@ namespace Ember {
 	{
 		Vector3f Direction = Vector3f(0.0f, -1.0f, 0.0f);
 		Vector3f Color = Vector3f(1.0f);
-		float Intensity = 0.0f;
+		float Intensity = 10.0f;
 
 		DirectionalLightComponent() = default;
 		DirectionalLightComponent(const Vector3f& direction, const Vector3f& color, float intensity)
@@ -154,9 +158,9 @@ namespace Ember {
 
 	struct SpotLightComponent
 	{
-		Vector3f Direction = Vector3f(0.0f, 0.0f, -1.0f);
+		Vector3f Direction = Vector3f(0.0f, -1.0f, 0.0f);
 		Vector3f Color = Vector3f(1.0f);
-		float Intensity = 0.0f;
+		float Intensity = 100.0f;
 
 		float CutOffAngle = 0.0f; // Stored in Radians for the C++ Camera
 		float OuterCutOffAngle = 0.0f; // Stored in Radians for the C++ Camera
@@ -178,8 +182,8 @@ namespace Ember {
 	struct PointLightComponent
 	{
 		Vector3f Color = Vector3f(1.0f);
-		float Intensity = 0.0f;
-		float Radius = 0.0f;
+		float Intensity = 100.0f;
+		float Radius = 10.0f;
 
 		PointLightComponent() = default;
 		PointLightComponent(const Vector3f& color, float intensity, float radius)

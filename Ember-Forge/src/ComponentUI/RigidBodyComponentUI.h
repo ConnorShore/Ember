@@ -7,6 +7,7 @@ namespace Ember {
 	class RigidBodyComponentUI : public ComponentUI<RigidBodyComponent>
 	{
 	public:
+		RigidBodyComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "RigidBody Component"; }
 
 	protected:

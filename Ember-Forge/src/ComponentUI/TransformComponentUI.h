@@ -7,7 +7,7 @@ namespace Ember {
 	class TransformComponentUI : public ComponentUI<TransformComponent>
 	{
 	public:
-		
+		TransformComponentUI(EditorContext* context) : ComponentUI(context) { m_CanRemove = false; }
 		inline const char* GetName() const override { return "Transform Component"; }
 
 	protected:

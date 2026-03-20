@@ -8,7 +8,7 @@ namespace Ember {
 	class SceneHierarchyPanel : public Panel
 	{
 	public:
-		SceneHierarchyPanel();
+		SceneHierarchyPanel(EditorContext* context);
 		virtual ~SceneHierarchyPanel();
 
 		void OnEvent(Event& event) override;

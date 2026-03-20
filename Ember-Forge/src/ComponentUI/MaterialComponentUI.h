@@ -7,7 +7,16 @@ namespace Ember {
 	class MaterialComponentUI : public ComponentUI<MaterialComponent>
 	{
 	public:
+		MaterialComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Material Component"; }
+
+		virtual void CreateComponentForEntity(Entity entity) override
+		{
+			auto defaultMaterial = m_Context->ActiveScene->GetAsset<Material>(Constants::Assets::StandardGeometryMat);
+			MaterialComponent comp{ defaultMaterial };
+			m_Context->ActiveScene->AttachComponent(entity, comp);
+		}
+
 
 	protected:
 		inline void RenderComponentImpl(MaterialComponent& component) override

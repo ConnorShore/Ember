@@ -7,6 +7,7 @@ namespace Ember {
 	class DirectionalLightComponentUI : public ComponentUI<DirectionalLightComponent>
 	{
 	public:
+		DirectionalLightComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Directional Light Component"; }
 
 	protected:

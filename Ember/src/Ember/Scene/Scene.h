@@ -5,8 +5,10 @@
 #include "Ember/ECS/Registry.h"
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
+#include "Ember/Asset/Asset.h"
 #include "Ember/Asset/Model.h"
 #include "Ember/Tools/EditorCamera.h"
+#include "Ember/Core/Application.h"
 
 #include <unordered_map>
 
@@ -36,6 +38,12 @@ namespace Ember {
 		Entity AddEntity();
 		Entity AddEntity(const std::string& name);
 		Entity GetEntity(const std::string& tag);
+
+		template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(const std::string& assetName)
+		{
+			return Application::Instance().GetAssetManager().GetAsset<T>(assetName);
+		}
 
 		std::vector<Entity> GetAllEntities() const;
 

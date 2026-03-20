@@ -7,7 +7,7 @@ namespace Ember {
 	class AssetManagerPanel : public Panel
 	{
 	public:
-		AssetManagerPanel();
+		AssetManagerPanel(EditorContext* context);
 		virtual ~AssetManagerPanel();
 
 		void OnImGuiRender() override;
