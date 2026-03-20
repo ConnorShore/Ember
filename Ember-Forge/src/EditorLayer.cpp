@@ -73,8 +73,8 @@ namespace Ember {
 		groundPlane.AttachComponent(matComponent);
 
 		auto groundInstance = groundPlane.GetComponent<MaterialComponent>().GetInstanced();
-		groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
-		groundInstance->Set("u_Roughness", 0.7f);
+		groundInstance->SetUniform("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
+		groundInstance->SetUniform("u_Roughness", 0.7f);
 
 		// Choose Lights
 		SetupDirectionalLights();
@@ -351,6 +351,11 @@ namespace Ember {
 			// Maybe with how we decompress the matrix??
 			Vector3f translation, rotation, scale;
 			Math::DecomposeTransform(transform, translation, rotation, scale);
+
+			float epsilon = 0.001f;
+			if (abs(scale.x) < epsilon) scale.x = epsilon;
+			if (abs(scale.y) < epsilon) scale.y = epsilon;
+			if (abs(scale.z) < epsilon) scale.z = epsilon;
 
 			transformComp.Position = translation;
 			transformComp.Rotation = rotation;

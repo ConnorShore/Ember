@@ -24,8 +24,9 @@ namespace Ember {
 		{
 			EB_CORE_INFO("Creating shader with name {} from file: {}", m_Name, m_FilePath);
 
-			ShaderSourceMap sources = ShaderParser::Parse(m_FilePath, macros);
-			CompileShader(sources);
+			ShaderSourceOutput output = ShaderParser::Parse(m_FilePath, macros);
+			CompileShader(output.Sources);
+			m_Properties = output.Properties;
 
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
 		}

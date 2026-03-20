@@ -25,6 +25,8 @@ namespace Ember {
 			virtual void SetFloat4(const std::string& name, const Vector4f& vec) const override;
 			virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;
 
+			virtual const std::vector<ShaderProperty>& GetProperties() const override { return m_Properties; }
+
 		private:
 			void CompileShader(const ShaderSourceMap& sources);
 			int GetUniformLocation(const std::string& name) const;
@@ -32,6 +34,7 @@ namespace Ember {
 		private:
 			unsigned int m_Id;
 			mutable std::unordered_map<std::string, int> m_UniformLocationCache;
+			std::vector<ShaderProperty> m_Properties;
 		};
 
 	}

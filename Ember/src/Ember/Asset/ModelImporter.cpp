@@ -215,18 +215,18 @@ namespace Ember {
 			finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
 		}
 
-		matInstance->Set(Constants::Uniforms::Albedo, finalColor);
-		matInstance->Set(Constants::Uniforms::Color, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Albedo, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Color, finalColor);
 
 		float roughness = 0.5f;
 		aiGetMaterialFloat(aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &roughness);
-		matInstance->Set(Constants::Uniforms::Roughness, roughness);
+		matInstance->SetUniform(Constants::Uniforms::Roughness, roughness);
 
 		float metallic = 0.0f;
 		aiGetMaterialFloat(aiMat, AI_MATKEY_METALLIC_FACTOR, &metallic);
-		matInstance->Set(Constants::Uniforms::Metallic, metallic);
+		matInstance->SetUniform(Constants::Uniforms::Metallic, metallic);
 
-		matInstance->Set(Constants::Uniforms::AO, 1.0f);
+		matInstance->SetUniform(Constants::Uniforms::AO, 1.0f);
 	}
 
 	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
@@ -244,11 +244,11 @@ namespace Ember {
 
 			std::string texName = matName + "_AlbedoMap";
 			auto albedoMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->Set(Constants::Uniforms::AlbedoMap, albedoMap);
+			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, albedoMap);
 		}
 		else
 		{
-			matInstance->Set(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
+			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
 		// Check normals (can be under either NORMALS or HEIGHT type)
@@ -270,11 +270,11 @@ namespace Ember {
 
 			std::string texName = matName + "_NormalMap";
 			auto normalMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->Set(Constants::Uniforms::NormalMap, normalMap);
+			matInstance->SetUniform(Constants::Uniforms::NormalMap, normalMap);
 		}
 		else
 		{
-			matInstance->Set(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
+			matInstance->SetUniform(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
 		}
 	}
 

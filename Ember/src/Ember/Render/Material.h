@@ -70,7 +70,7 @@ namespace Ember {
 		{
 			for (auto u : uniforms)
 			{
-				Set(std::get<0>(u), std::get<1>(u));
+				SetUniform(std::get<0>(u), std::get<1>(u));
 			}
 		}
 
@@ -95,7 +95,9 @@ namespace Ember {
 		}
 
 		template<typename T>
-		void Set(const std::string& name, const T& value) { m_Uniforms[name] = value; }
+		void SetUniform(const std::string& name, const T& value) { m_Uniforms[name] = value; }
+
+		bool ContainsUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
 
 		inline void UploadUniform(const std::string& name, const MaterialValue& value, unsigned int& textureSlot) const
 		{
@@ -131,7 +133,7 @@ namespace Ember {
 		{
 			for (auto u : uniforms)
 			{
-				Set(std::get<0>(u), std::get<1>(u));
+				SetUniform(std::get<0>(u), std::get<1>(u));
 			}
 		}
 		MaterialInstance(const std::string& name, const SharedPtr<Material>& material)
@@ -143,7 +145,9 @@ namespace Ember {
 		virtual ~MaterialInstance() = default;
 
 		template<typename T>
-		void Set(const std::string& name, const T& value) { m_Uniforms[name] = value; }
+		void SetUniform(const std::string& name, const T& value) { m_Uniforms[name] = value; }
+		bool ContainsUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
+		const std::unordered_map<std::string, MaterialValue>& GetUniforms() const { return m_Uniforms; }
 
 		void Bind() const override
 		{
@@ -155,6 +159,8 @@ namespace Ember {
 				m_Material->UploadUniform(name, value, textureSlot);
 			}
 		}
+
+		inline const SharedPtr<Material> GetMaterial() const { return m_Material; }
 
 	private:
 		SharedPtr<Material> m_Material;

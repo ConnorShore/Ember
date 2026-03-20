@@ -37,23 +37,23 @@ namespace Ember {
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
-		geometryMaterial->Set(Constants::Uniforms::Albedo, Vector3f(1.0f));
-		geometryMaterial->Set(Constants::Uniforms::Metallic, 0.0f);
-		geometryMaterial->Set(Constants::Uniforms::Roughness, 0.5f);
-		geometryMaterial->Set(Constants::Uniforms::AO, 1.0f);
-		geometryMaterial->Set(Constants::Uniforms::AlbedoMap, whiteTex);
-		geometryMaterial->Set(Constants::Uniforms::NormalMap, normalTex);
+		geometryMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(1.0f));
+		geometryMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
+		geometryMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
+		geometryMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);
+		geometryMaterial->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
+		geometryMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
-		unlitMaterial->Set(Constants::Uniforms::Color, Vector3f(1.0f));
+		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));
 
         auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMat, geometryMaterial);
-		fallbackMat->Set(Constants::Uniforms::Albedo, Vector3f(1.0f));
-		fallbackMat->Set(Constants::Uniforms::Metallic, 0.0f);
-		fallbackMat->Set(Constants::Uniforms::Roughness, 0.5f);
-		fallbackMat->Set(Constants::Uniforms::AO, 1.0f);
-		fallbackMat->Set(Constants::Uniforms::AlbedoMap, whiteTex);
-		fallbackMat->Set(Constants::Uniforms::NormalMap, normalTex);
+		fallbackMat->SetUniform(Constants::Uniforms::Albedo, Vector3f(1.0f));
+		fallbackMat->SetUniform(Constants::Uniforms::Metallic, 0.0f);
+		fallbackMat->SetUniform(Constants::Uniforms::Roughness, 0.5f);
+		fallbackMat->SetUniform(Constants::Uniforms::AO, 1.0f);
+		fallbackMat->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
+		fallbackMat->SetUniform(Constants::Uniforms::NormalMap, normalTex);
 	}
 
     SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const

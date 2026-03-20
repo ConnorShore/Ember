@@ -7,7 +7,7 @@
 
 namespace Ember {
 
-	ShaderSourceMap ShaderParser::Parse(const std::string& filePath, const ShaderMacros& macros /* = {} */)
+	ShaderSourceOutput ShaderParser::Parse(const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
 		std::ifstream stream(filePath);
 		if (!stream.is_open())
@@ -17,9 +17,13 @@ namespace Ember {
 		}
 
 		ShaderSourceMap shaderSources;
+		std::vector<ShaderProperty> properties;
 		std::string line;
 		std::stringstream ss;
 		ShaderType currentType = ShaderType::None;
+		bool encounteredUIProp = false;
+		ShaderProperty currentProp;
+		// @UIProperty("My Property", Float3)
 		while (getline(stream, line))
 		{
 			if (line.find("#shader") != std::string::npos)
@@ -33,6 +37,60 @@ namespace Ember {
 				currentType = ShaderTypeFromLine(line);
 
 			}
+			else if (line.find("// @UIProperty(") != std::string::npos)
+			{
+				currentProp = {};
+				encounteredUIProp = true;
+				// Extract the type and display name
+				size_t start = line.find("(");
+				size_t end = line.find(")");
+				std::string subLine = line.substr(start + 1, end - start - 1);
+				std::string token;
+				std::stringstream propStream(subLine);
+				while(std::getline(propStream, token, ','))
+				{
+					token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());	// Remove whitespace
+					if (currentProp.DisplayName.empty())
+						currentProp.DisplayName = token.substr(1, token.size() - 2); // Remove quotes
+					else
+					{
+						if (token == "Float") currentProp.Type = ShaderPropertyType::Float;
+						else if (token == "Float2") currentProp.Type = ShaderPropertyType::Float2;
+						else if (token == "Float3") currentProp.Type = ShaderPropertyType::Float3;
+						else if (token == "Float4") currentProp.Type = ShaderPropertyType::Float4;
+						else if (token == "Color3") currentProp.Type = ShaderPropertyType::Color3;
+						else if (token == "Color4") currentProp.Type = ShaderPropertyType::Color4;
+						else if (token == "Slider") currentProp.Type = ShaderPropertyType::Slider;
+						else EB_CORE_ASSERT(false, "Unknown shader property type specified in line: {}", line);
+					}
+				}
+			}
+			else if (encounteredUIProp)
+			{
+				// The next line after a @UIProperty is expected to be the uniform declaration
+				std::string_view lineView(line);
+				size_t uniformPos = lineView.find("uniform");
+				if (uniformPos != std::string::npos)
+				{
+					lineView.remove_prefix(uniformPos + strlen("uniform"));
+					lineView = lineView.substr(0, lineView.find(";")); // Get everything before the semicolon
+					std::string_view typeAndName = lineView;
+					typeAndName.remove_prefix(typeAndName.find_first_not_of(" \t")); // Remove leading whitespace
+
+					// The last word is the name, everything before that is the type (to support things like "vec3" or "sampler2D")
+					size_t lastSpace = typeAndName.find_last_of(" \t");
+					std::string_view name = typeAndName.substr(lastSpace + 1);
+					currentProp.UniformName = std::string(name);
+					properties.push_back(currentProp);
+
+					// Reset for next property
+					currentProp = {};
+					encounteredUIProp = false;
+
+					// Pass line to shader source as normal so the uniform is declared in the shader
+					ss << line << '\n';
+				}
+            }
 			else
 			{
 				ss << line << '\n';
@@ -46,7 +104,7 @@ namespace Ember {
 			shaderSources[currentType] = shaderSrc;
 		}
 
-		return shaderSources;
+		return { shaderSources, properties };
 	}
 
 	std::string ShaderParser::InjectMacros(const std::string& source, const ShaderMacros& macros)

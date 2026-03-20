@@ -22,7 +22,9 @@ layout(location = 0) out vec4 OutColor;
 layout(location = 1) out vec4 BrightColor;
 layout(location = 2) out int EntityID;
 
+// @UIProperty("Color", Float3)
 uniform vec3 u_Color;
+
 uniform int u_EntityID;
 
 void main()
