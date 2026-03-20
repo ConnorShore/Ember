@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Ember.h>
+#include <unordered_set>
 
 namespace Ember {
 
@@ -8,5 +9,6 @@ namespace Ember {
 	{
 		SharedPtr<Scene> ActiveScene;
 		Entity SelectedEntity;
+		std::unordered_set<Entity> PendingEntityRemovals;
 	};
 }

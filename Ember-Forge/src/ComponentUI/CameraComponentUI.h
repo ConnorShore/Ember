@@ -7,6 +7,7 @@ namespace Ember {
 	class CameraComponentUI : public ComponentUI<CameraComponent>
 	{
 	public:
+		CameraComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Camera Component"; }
 
 	protected:

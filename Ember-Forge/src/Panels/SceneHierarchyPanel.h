@@ -8,7 +8,7 @@ namespace Ember {
 	class SceneHierarchyPanel : public Panel
 	{
 	public:
-		SceneHierarchyPanel();
+		SceneHierarchyPanel(EditorContext* context);
 		virtual ~SceneHierarchyPanel();
 
 		void OnEvent(Event& event) override;
@@ -22,6 +22,8 @@ namespace Ember {
 		void DrawTreeNode(Entity entity);
 
 		bool IsAncestor(Entity ancestor, Entity descendant);
+
+		void CreateEntity();
 
 	private:
 		Entity m_PreviouslySelectedEntity;

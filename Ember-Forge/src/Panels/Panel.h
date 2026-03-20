@@ -11,7 +11,7 @@ namespace Ember {
 	class Panel : public SharedResource
 	{
 	public:
-		Panel(const std::string& title) : m_Title(title) {}
+		Panel(const std::string& title, EditorContext* context) : m_Title(title), m_Context(context) {}
 		virtual ~Panel() = default;
 
 		virtual void OnEvent(Event& event) {};

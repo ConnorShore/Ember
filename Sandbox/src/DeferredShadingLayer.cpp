@@ -64,9 +64,9 @@ void DeferredShadingLayer::OnAttach()
 			sphere.AttachComponent(matComp);
 
 			auto instance = sphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-			instance->Set("u_Albedo", Ember::Vector3f(0.5f, 0.0f, 0.0f));
-			instance->Set("u_Metallic", metallic);
-			instance->Set("u_Roughness", roughness);
+			instance->SetUniform("u_Albedo", Ember::Vector3f(0.5f, 0.0f, 0.0f));
+			instance->SetUniform("u_Metallic", metallic);
+			instance->SetUniform("u_Roughness", roughness);
 		}
 	}
 
@@ -86,8 +86,8 @@ void DeferredShadingLayer::OnAttach()
 	groundPlane.AttachComponent(groundMatComp);
 
 	auto groundInstance = groundPlane.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	groundInstance->Set("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
-	groundInstance->Set("u_Roughness", 0.7f);
+	groundInstance->SetUniform("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
+	groundInstance->SetUniform("u_Roughness", 0.7f);
 
 	// ------------------------------------------------------------------
 	// Camera
@@ -122,11 +122,11 @@ void DeferredShadingLayer::OnAttach()
 	m_InteractiveSphere.AttachComponent(interactiveMatComp);
 
 	m_InteractiveInstance = m_InteractiveSphere.GetComponent<Ember::MaterialComponent>().GetInstanced();
-	m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-	m_InteractiveInstance->Set("u_Metallic", m_Metallic);
-	m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-	m_InteractiveInstance->Set("u_AO", m_AO);
-	m_InteractiveInstance->Set("u_Texture", GetAsset<Ember::Texture>(Ember::Constants::Assets::DefaultWhiteTex));
+	m_InteractiveInstance->SetUniform("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+	m_InteractiveInstance->SetUniform("u_Metallic", m_Metallic);
+	m_InteractiveInstance->SetUniform("u_Roughness", m_Roughness);
+	m_InteractiveInstance->SetUniform("u_AO", m_AO);
+	m_InteractiveInstance->SetUniform("u_Texture", GetAsset<Ember::Texture>(Ember::Constants::Assets::DefaultWhiteTex));
 
 	// Choose Lights
 	SetupStandardLights();
@@ -204,10 +204,10 @@ void DeferredShadingLayer::OnImGuiRender(Ember::TimeStep delta)
 
 		if (changed && m_InteractiveInstance)
 		{
-			m_InteractiveInstance->Set("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
-			m_InteractiveInstance->Set("u_Metallic", m_Metallic);
-			m_InteractiveInstance->Set("u_Roughness", m_Roughness);
-			m_InteractiveInstance->Set("u_AO", m_AO);
+			m_InteractiveInstance->SetUniform("u_Albedo", Ember::Vector3f(m_Albedo[0], m_Albedo[1], m_Albedo[2]));
+			m_InteractiveInstance->SetUniform("u_Metallic", m_Metallic);
+			m_InteractiveInstance->SetUniform("u_Roughness", m_Roughness);
+			m_InteractiveInstance->SetUniform("u_AO", m_AO);
 		}
 
 		ImGui::Separator();
@@ -265,7 +265,7 @@ void DeferredShadingLayer::SetupRandomLights()
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
 
 		// Set the physical cube to match the color of the light it emits!
-		lightCubeInstance->Set("u_Color", color);
+		lightCubeInstance->SetUniform("u_Color", color);
 	}
 }
 
@@ -306,6 +306,6 @@ void DeferredShadingLayer::SetupStandardLights()
 		lightEntity.AttachComponent(lightCubeMatComp);
 
 		auto lightCubeInstance = lightEntity.GetComponent<Ember::MaterialComponent>().GetInstanced();
-		lightCubeInstance->Set("u_Color", ld.color);
+		lightCubeInstance->SetUniform("u_Color", ld.color);
 	}
 }

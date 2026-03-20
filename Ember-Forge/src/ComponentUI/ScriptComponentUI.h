@@ -7,6 +7,7 @@ namespace Ember {
 	class ScriptComponentUI : public ComponentUI<ScriptComponent>
 	{
 	public:
+		ScriptComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Script Component"; }
 
 	protected:

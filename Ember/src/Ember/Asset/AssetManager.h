@@ -15,9 +15,6 @@
 
 namespace Ember {
 
-	template<typename T>
-	concept IsCoreAsset = std::derived_from<T, Asset>;
-
 	class AssetManager
 	{
 	public:

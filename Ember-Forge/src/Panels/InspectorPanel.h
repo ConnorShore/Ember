@@ -11,7 +11,7 @@ namespace Ember {
 	class InspectorPanel : public Panel
 	{
 	public:
-		InspectorPanel();
+		InspectorPanel(EditorContext* context);
 		virtual ~InspectorPanel();
 
 		void OnEvent(Event& event) override;

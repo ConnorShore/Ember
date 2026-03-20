@@ -3,8 +3,8 @@
 
 namespace Ember {
 
-	SceneHierarchyPanel::SceneHierarchyPanel()
-		: Panel("Scene Hierarchy")
+	SceneHierarchyPanel::SceneHierarchyPanel(EditorContext* context)
+		: Panel("Scene Hierarchy", context)
 	{
 	}
 
@@ -21,10 +21,25 @@ namespace Ember {
 		ImGui::Begin(m_Title.c_str());
 
 		ImGui::Separator();
-		ImGui::Button("Create Entity");
+
+		if (ImGui::Button("Create Entity"))
+			CreateEntity();
+
 		ImGui::Separator();
 
 		RenderEntityTree();
+
+
+		// Add right click context to pane
+		if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ImGui::MenuItem("Create Empty Entity"))
+			{
+				CreateEntity();
+			}
+
+			ImGui::EndPopup();
+		}
 
 		ImGui::End();
 	}
@@ -42,7 +57,9 @@ namespace Ember {
 			m_ExpandToSelectedEntity = true;
 		}
 
-        for (auto& entity : entities) {
+        for (auto& entity : entities) 
+		{
+			// Draw the tree node
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
 			if (relationshipComp.ParentHandle == Constants::Entities::InvalidEntityID)
 			{
@@ -78,7 +95,8 @@ namespace Ember {
 			}
 		}
 
-		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity.GetEntityHandle(), flags, "%s", entity.GetName().c_str());
+		auto id = (void*)(uint64_t)(uint32_t)entity.GetEntityHandle();
+		bool opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
 		if (ImGui::IsItemClicked())
 		{
 			SetSelectedEntity(entity);
@@ -87,6 +105,29 @@ namespace Ember {
 		if (m_ExpandToSelectedEntity && m_Context->SelectedEntity == entity)
 		{
 			ImGui::SetScrollHereY(0.5f); // 0.5f centers the item vertically in the window
+		}
+
+		// Entity context menu
+		if (ImGui::BeginPopupContextItem(entity.GetName().c_str(), ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ImGui::MenuItem("Rename Entity"))
+			{
+				// TODO: Add this functionality
+			}
+			if (ImGui::MenuItem("Add Child Entity"))
+			{
+				// TODO: Add this functionality
+			}
+			if (ImGui::MenuItem("Duplicate Entity"))
+			{
+				// TODO: Add this functionality
+			}
+			if (ImGui::MenuItem("Delete Entity"))
+			{
+				m_Context->PendingEntityRemovals.insert(entity);
+			}
+
+			ImGui::EndPopup();
 		}
 
 		if (opened && hasChildren)
@@ -122,6 +163,12 @@ namespace Ember {
 		}
 
 		return false;
+	}
+
+	void SceneHierarchyPanel::CreateEntity()
+	{
+		auto entity = m_Context->ActiveScene->AddEntity();
+		SetSelectedEntity(entity);
 	}
 
 }

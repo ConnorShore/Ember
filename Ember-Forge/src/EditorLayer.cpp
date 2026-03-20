@@ -18,21 +18,17 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
-
 		// Add Panels
-		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create());
-		m_Panels.push_back(SharedPtr<InspectorPanel>::Create());
-		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create());
-
-		for (auto& panel : m_Panels)
-			panel->SetContext(&m_Context);
+		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 500.0f);
 		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
 		m_Camera.SetPitch(Math::Radians(30.0f));
 		m_Camera.SetYaw(Math::Radians(45.0f));
-		m_Camera.SetDistance(6.0f);
+		m_Camera.SetDistance(10.0f);
 
 		// Output Framebuffer
 		FramebufferSpecification specs;
@@ -133,7 +129,7 @@ namespace Ember {
 	{
 		ImGuizmo::BeginFrame();
 
-		//ImGui::ShowDemoWindow();
+		ImGui::ShowDemoWindow();
 
 		ImGui::DockSpaceOverViewport();
 
@@ -201,14 +197,18 @@ namespace Ember {
 		// Render Panels
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
+
+		// Delete pending entities
+		RemovePendingEntities();
 	}
 
 	void EditorLayer::SetupDirectionalLights()
 	{
 		auto lightEntity = m_Context.ActiveScene->AddEntity();
-		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 20.0f, 0.0f);
+		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.0f);
+		lightEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-45.0f), Math::Radians(15.0f), 0.0f);
 
-		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, -0.8f, -0.25f), Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
+		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
 		lightEntity.AttachComponent(dirLightComp);
 	}
 
@@ -239,6 +239,12 @@ namespace Ember {
 				break;
 			case KeyCode::T:
 				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
+				break;
+
+			// Entity Hot keys
+			case KeyCode::Delete:
+				if (m_Context.SelectedEntity != m_InvalidEntity)
+					RemoveEntity(m_Context.SelectedEntity);
 				break;
 		}
 
@@ -328,7 +334,9 @@ namespace Ember {
 		Matrix4f cameraView = m_Camera.GetViewMatrix();
 
 		auto& transformComp = m_Context.SelectedEntity.GetComponent<TransformComponent>();
-		Matrix4f transform = Math::Translate(transformComp.Position) * Math::GetRotationMatrix(transformComp.Rotation) * Math::Scale(transformComp.Scale);
+
+		// Feed ImGuizmo the WORLD transform so it draws in the correct physical location!
+		Matrix4f transform = transformComp.WorldTransform;
 
 		// Snapping Logic (Hold CTRL)
 		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
@@ -347,15 +355,31 @@ namespace Ember {
 		// Apply the math back to the entity if dragging
 		if (ImGuizmo::IsUsing())
 		{
-			// TODO: Figure out issue when scaling to 0, the position shoots to insane negative numbers.
-			// Maybe with how we decompress the matrix??
-			Vector3f translation, rotation, scale;
-			Math::DecomposeTransform(transform, translation, rotation, scale);
+			// 'transform' is now our NEW World Matrix from the mouse drag.
+			// We must convert this back into a Local Matrix before saving it!
+			Matrix4f localTransform = transform;
 
-			float epsilon = 0.001f;
-			if (abs(scale.x) < epsilon) scale.x = epsilon;
-			if (abs(scale.y) < epsilon) scale.y = epsilon;
-			if (abs(scale.z) < epsilon) scale.z = epsilon;
+			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
+			{
+				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
+				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityID)
+				{
+					// Fetch the parent entity
+					Entity parent = { relationshipComp.ParentHandle, m_Context.ActiveScene.Ptr()};
+
+					Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+
+					// Linear Algebra Magic: NewLocal = Inverse(ParentWorld) * NewWorld
+					localTransform = Math::Inverse(parentWorld) * transform;
+				}
+			}
+
+			// Decompose the LOCAL transform back into our component variables
+			Vector3f translation, rotation, scale;
+			ImGuizmo::DecomposeMatrixToComponents(&localTransform[0][0], &translation.x, &rotation.x, &scale.x);
+
+			// TODO: Fix my decompresstransform as it breaks when there is negative scaling involved (it produces NaNs in the rotation output)
+			//Math::DecomposeTransform(localTransform, translation, rotation, scale);
 
 			transformComp.Position = translation;
 			transformComp.Rotation = rotation;
@@ -363,4 +387,28 @@ namespace Ember {
 		}
 	}
 
+	void EditorLayer::CreateEntity()
+	{
+		auto entity = m_Context.ActiveScene->AddEntity();
+		m_Context.SelectedEntity = entity;
+	}
+
+	void EditorLayer::RemoveEntity(Entity entity)
+	{
+		if (entity == Constants::Entities::InvalidEntityID)
+			return;
+
+		m_Context.PendingEntityRemovals.insert(entity);
+	}
+
+	void EditorLayer::RemovePendingEntities()
+	{
+		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
+			m_Context.SelectedEntity = m_InvalidEntity;
+
+		for (auto entity : m_Context.PendingEntityRemovals)
+			m_Context.ActiveScene->RemoveEntity(entity);
+
+		m_Context.PendingEntityRemovals.clear();
+	}
 }

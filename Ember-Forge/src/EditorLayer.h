@@ -29,6 +29,10 @@ namespace Ember {
 		void SyncEntitySelectionState();
 		void RenderTransformGizmos();
 
+		void CreateEntity();
+		void RemoveEntity(Entity entity);
+		void RemovePendingEntities();
+
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
 
@@ -49,8 +53,10 @@ namespace Ember {
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
-		int m_GizmoType = -1;
+		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 		int m_GizmoMode = ImGuizmo::WORLD;
+
+		Entity m_EntityToDelete;
 	};
 
 }

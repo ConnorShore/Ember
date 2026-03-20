@@ -7,6 +7,7 @@ namespace Ember {
 	class PointLightComponentUI : public ComponentUI<PointLightComponent>
 	{
 	public:
+		PointLightComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Point Light Component"; }
 
 	protected:

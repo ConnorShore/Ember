@@ -41,4 +41,7 @@ namespace Ember {
 		std::string m_FilePath;
 	};
 
+	// Concept to constrain template parameters to only be derived from Asset
+	template<typename T>
+	concept IsCoreAsset = std::derived_from<T, Asset>;
 }

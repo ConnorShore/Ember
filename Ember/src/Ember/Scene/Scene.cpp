@@ -6,6 +6,7 @@
 #include "Ember/ECS/System/PhysicsSystem.h"
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/Core/Application.h"
 
 namespace Ember {
 
@@ -85,7 +86,7 @@ namespace Ember {
 		return { m_SceneEntities[tag], this };
 	}
 
-	std::vector<Ember::Entity> Scene::GetAllEntities() const
+	std::vector<Entity> Scene::GetAllEntities() const
 	{
 		std::vector<Entity> entities;
 		entities.reserve(m_SceneEntities.size());
@@ -94,9 +95,14 @@ namespace Ember {
 		return entities;
 	}
 
-	void Scene::RemoveEntity(const Entity& entity)
+	void Scene::RemoveEntity(Entity entity)
 	{
 		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");
+
+		// Remove children first
+		for (auto child : entity.GetAllChildren())
+			RemoveEntity(child);
+
 		m_SceneEntities.erase(entity.GetName());
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
 	}
