@@ -12,87 +12,67 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(MaterialComponent& component) override
 		{
-			SharedPtr<Material> baseMaterial = nullptr;
-			SharedPtr<MaterialInstance> instancedMaterial = nullptr;
-
-			if (auto inst = DynamicPointerCast<MaterialInstance>(component.Material))
-			{
-				instancedMaterial = inst;
-				baseMaterial = inst->GetMaterial();
-			}
-			else if (auto mat = DynamicPointerCast<Material>(component.Material))
-			{
-				baseMaterial = mat;
-			}
-			else
-			{
-				EB_CORE_ASSERT(false, "Unknown Material type in MaterialComponentUI!");
+			auto& material = component.Material;
+			if (!material)
 				return;
-			}
 
-			ImGui::Text("Material: %s", component.Material->GetName().c_str());
-			ImGui::Text("Shader: %s", baseMaterial->GetShader()->GetName().c_str());
+			ImGui::Text("Material: %s", material->GetName().c_str());
+			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
 			ImGui::Separator();
 			ImGui::Text("Shader Properties:");
 			ImGui::Separator();
 
-			auto& shaderProps = baseMaterial->GetShader()->GetProperties();
-
-			// 2. Point to the correct memory dictionary!
-			auto& activeUniforms = instancedMaterial ? instancedMaterial->GetUniforms() : baseMaterial->GetUniforms();
+			auto& shaderProps = material->GetShader()->GetProperties();
 
 			for (auto& prop : shaderProps)
 			{
-				if (activeUniforms.find(prop.UniformName) == activeUniforms.end())
-					continue;
-
 				switch (prop.Type)
 				{
 				case ShaderPropertyType::Float:
 				{
-					RenderProperty<float>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, float* value) {
+					RenderProperty<float>(prop, material, [](const char* name, float* value) {
 						return ImGui::DragFloat(name, value, 0.01f);
 						});
 					break;
 				}
 				case ShaderPropertyType::Float2:
 				{
-					RenderProperty<Vector2f>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, Vector2f* value) {
+					RenderProperty<Vector2f>(prop, material, [](const char* name, Vector2f* value) {
 						return ImGui::DragFloat2(name, &value->x, 0.01f);
 						});
 					break;
 				}
 				case ShaderPropertyType::Float3:
 				{
-					RenderProperty<Vector3f>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, Vector3f* value) {
+					RenderProperty<Vector3f>(prop, material, [](const char* name, Vector3f* value) {
 						return ImGui::DragFloat3(name, &value->x, 0.01f);
 						});
 					break;
 				}
 				case ShaderPropertyType::Float4:
 				{
-					RenderProperty<Vector4f>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, Vector4f* value) {
+					RenderProperty<Vector4f>(prop, material, [](const char* name, Vector4f* value) {
 						return ImGui::DragFloat4(name, &value->x, 0.01f);
 						});
 					break;
 				}
 				case ShaderPropertyType::Color3:
 				{
-					RenderProperty<Vector3f>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, Vector3f* value) {
+					RenderProperty<Vector3f>(prop, material, [](const char* name, Vector3f* value) {
 						return ImGui::ColorEdit3(name, &value->x);
 						});
 					break;
 				}
 				case ShaderPropertyType::Color4:
 				{
-					RenderProperty<Vector4f>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, Vector4f* value) {
+					RenderProperty<Vector4f>(prop, material, [](const char* name, Vector4f* value) {
 						return ImGui::ColorEdit4(name, &value->x);
 						});
 					break;
 				}
 				case ShaderPropertyType::Slider:
 				{
-					RenderProperty<float>(prop, activeUniforms, instancedMaterial, baseMaterial, [](const char* name, float* value) {
+					RenderProperty<float>(prop, material, [](const char* name, float* value) {
 						return ImGui::SliderFloat(name, value, 0.0f, 1.0f);
 						});
 					break;
@@ -103,19 +83,28 @@ namespace Ember {
 
 	private:
 		template<typename T, typename RenderFunc>
-		void RenderProperty(const ShaderProperty& prop,
-			const std::unordered_map<std::string, MaterialValue>& activeUniforms,
-			SharedPtr<MaterialInstance>& instancedMat,
-			SharedPtr<Material>& baseMat,
-			RenderFunc renderFunc)
+		void RenderProperty(const ShaderProperty& prop, const SharedPtr<MaterialBase>& material, float interval, float min, float max, bool normalize, RenderFunc renderFunc)
 		{
-			T value = std::get<T>(activeUniforms.at(prop.UniformName));
+			if (!material->ContainsUniform(prop.UniformName))
+				return;
 
-			if (renderFunc(prop.DisplayName.c_str(), &value))
+			T value = std::get<T>(material->GetUniforms().at(prop.UniformName));
+			if (renderFunc(prop.DisplayName.c_str(), &value, interval, min, max))
 			{
-				if (instancedMat) instancedMat->SetUniform(prop.UniformName, value);
-				else baseMat->SetUniform(prop.UniformName, value);
+				if (normalize)
+					value = Math::Normalize<T>(value, min, max);
+
+				material->SetUniform(prop.UniformName, value);
 			}
+		}
+
+		template<typename T, typename RenderFunc>
+		void RenderProperty(const ShaderProperty& prop, const SharedPtr<MaterialBase>& material, RenderFunc renderFunc)
+		{
+			auto wrappedLambda = [renderFunc](const char* name, T* val, float i, float mn, float mx) {
+				return renderFunc(name, val);
+				};
+			RenderProperty<T>(prop, material, 0.1f, 0.0f, 1.0f, false, wrappedLambda);
 		}
 	};
 

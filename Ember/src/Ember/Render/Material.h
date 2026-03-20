@@ -26,6 +26,20 @@ namespace Ember {
 	};
 
 	//////////////////////////////////////////////////////////////////////////
+	// Material Value
+	//////////////////////////////////////////////////////////////////////////
+
+	using MaterialValue = std::variant<
+		int,
+		float,
+		Vector2f,
+		Vector3f,
+		Vector4f,
+		Matrix4f,
+		SharedPtr<Texture>
+	>;
+
+	//////////////////////////////////////////////////////////////////////////
 	// Material Base
 	//////////////////////////////////////////////////////////////////////////
 
@@ -41,6 +55,10 @@ namespace Ember {
 		inline const RenderQueue GetRenderQueue() const { return m_RenderQueue; }
 		inline const SharedPtr<Shader> GetShader() const { return m_Shader; }
 
+		virtual void SetUniform(const std::string& name, const MaterialValue& value) = 0;
+		virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() const = 0;
+		virtual bool ContainsUniform(const std::string& name) const = 0;
+
 	protected:
 		SharedPtr<Shader> m_Shader;
 		RenderQueue m_RenderQueue;
@@ -49,16 +67,6 @@ namespace Ember {
 	//////////////////////////////////////////////////////////////////////////
 	// Material
 	//////////////////////////////////////////////////////////////////////////
-
-	using MaterialValue = std::variant<
-		int,
-		float,
-		Vector2f,
-		Vector3f,
-		Vector4f,
-		Matrix4f,
-		SharedPtr<Texture>
-	>;
 
 	using MaterialUniform = std::tuple<std::string, MaterialValue>;
 
@@ -94,10 +102,9 @@ namespace Ember {
 			}
 		}
 
-		template<typename T>
-		void SetUniform(const std::string& name, const T& value) { m_Uniforms[name] = value; }
-
-		bool ContainsUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
+		inline void SetUniform(const std::string& name, const MaterialValue& value) override { m_Uniforms[name] = value; }
+		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() const override { return m_Uniforms; }
+		inline bool ContainsUniform(const std::string& name) const override { return m_Uniforms.find(name) != m_Uniforms.end(); }
 
 		inline void UploadUniform(const std::string& name, const MaterialValue& value, unsigned int& textureSlot) const
 		{
@@ -115,7 +122,6 @@ namespace Ember {
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");
 		}
 
-		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() const { return m_Uniforms; }
 
 	private:
 		std::unordered_map<std::string, MaterialValue> m_Uniforms;
@@ -144,10 +150,9 @@ namespace Ember {
 
 		virtual ~MaterialInstance() = default;
 
-		template<typename T>
-		void SetUniform(const std::string& name, const T& value) { m_Uniforms[name] = value; }
-		bool ContainsUniform(const std::string& name) const { return m_Uniforms.find(name) != m_Uniforms.end(); }
-		const std::unordered_map<std::string, MaterialValue>& GetUniforms() const { return m_Uniforms; }
+		void SetUniform(const std::string& name, const MaterialValue& value) override { m_Uniforms[name] = value; }
+		bool ContainsUniform(const std::string& name) const override { return m_Uniforms.find(name) != m_Uniforms.end(); }
+		const std::unordered_map<std::string, MaterialValue>& GetUniforms() const override { return m_Uniforms; }
 
 		void Bind() const override
 		{

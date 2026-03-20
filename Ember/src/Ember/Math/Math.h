@@ -143,6 +143,12 @@ namespace Ember {
 		{
 			return glm::degrees(radians);
 		}
+
+		template<typename T>
+		static inline T Normalize(const T& value, float min, float max)
+		{
+			return (value - min) / (max - min);
+		}
 	};
 
 }
