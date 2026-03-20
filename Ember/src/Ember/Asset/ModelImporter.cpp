@@ -210,23 +210,47 @@ namespace Ember {
 		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
 		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor);
 
-		if (baseMatName == Constants::Assets::StandardUnlitMat && (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f))
+		float emissionIntensity = 0.0f;
+		if (baseMatName == Constants::Assets::StandardUnlitMat)
 		{
-			finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+			// Find the brightest color channel
+			float maxEmission = std::max({ emissiveColor.r, emissiveColor.g, emissiveColor.b });
+			if (maxEmission > 0.0f)
+			{
+				// If the 3D software exported HDR values (e.g., R=5.0)
+				// We extract 5.0 as the intensity, and normalize the color back to 1.0!
+				if (maxEmission > 1.0f)
+				{
+					emissionIntensity = maxEmission;
+					finalColor = Ember::Vector3f(emissiveColor.r / maxEmission, emissiveColor.g / maxEmission, emissiveColor.b / maxEmission);
+				}
+				else
+				{
+					// Standard 0.0 to 1.0 range emission
+					emissionIntensity = 1.0f;
+					finalColor = Ember::Vector3f(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+				}
+			}
+			else
+			{
+				// It's an unlit shader but has no emissive map, fallback to diffuse color with 1.0 intensity
+				emissionIntensity = 1.0f;
+			}
 		}
 
-		matInstance->Set(Constants::Uniforms::Albedo, finalColor);
-		matInstance->Set(Constants::Uniforms::Color, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Albedo, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Color, finalColor);
+		matInstance->SetUniform(Constants::Uniforms::Emission, emissionIntensity);
 
 		float roughness = 0.5f;
 		aiGetMaterialFloat(aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &roughness);
-		matInstance->Set(Constants::Uniforms::Roughness, roughness);
+		matInstance->SetUniform(Constants::Uniforms::Roughness, roughness);
 
 		float metallic = 0.0f;
 		aiGetMaterialFloat(aiMat, AI_MATKEY_METALLIC_FACTOR, &metallic);
-		matInstance->Set(Constants::Uniforms::Metallic, metallic);
+		matInstance->SetUniform(Constants::Uniforms::Metallic, metallic);
 
-		matInstance->Set(Constants::Uniforms::AO, 1.0f);
+		matInstance->SetUniform(Constants::Uniforms::AO, 1.0f);
 	}
 
 	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
@@ -244,11 +268,11 @@ namespace Ember {
 
 			std::string texName = matName + "_AlbedoMap";
 			auto albedoMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->Set(Constants::Uniforms::AlbedoMap, albedoMap);
+			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, albedoMap);
 		}
 		else
 		{
-			matInstance->Set(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
+			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
 		// Check normals (can be under either NORMALS or HEIGHT type)
@@ -270,11 +294,11 @@ namespace Ember {
 
 			std::string texName = matName + "_NormalMap";
 			auto normalMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->Set(Constants::Uniforms::NormalMap, normalMap);
+			matInstance->SetUniform(Constants::Uniforms::NormalMap, normalMap);
 		}
 		else
 		{
-			matInstance->Set(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
+			matInstance->SetUniform(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
 		}
 	}
 

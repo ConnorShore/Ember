@@ -49,10 +49,18 @@ layout(location = 1) out vec4 NormalMetallic;
 layout(location = 2) out vec4 PositionAO;
 layout(location = 3) out int EntityID;
 
+// @UIProperty(Name="Albedo", Type=Color3)
 uniform vec3 u_Albedo;
+
+// @UIProperty(Name="Metallic", Type=Float)
 uniform float u_Metallic;
+
+// @UIProperty(Name="Roughness", Type=Float)
 uniform float u_Roughness;
+
+// @UIProperty(Name="Ambient Occlusion", Type=Float)
 uniform float u_AO;
+
 uniform int u_EntityID;
 
 layout(binding = 0) uniform sampler2D u_AlbedoMap;

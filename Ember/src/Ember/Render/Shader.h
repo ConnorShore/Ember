@@ -7,6 +7,7 @@
 #include "ShaderParser.h"
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 namespace Ember {
@@ -31,6 +32,8 @@ namespace Ember {
 		virtual void SetFloat3(const std::string& name, const Vector3f& vec) const = 0;
 		virtual void SetFloat4(const std::string& name, const Vector4f& vec) const = 0;
 		virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const = 0;
+
+		virtual const std::vector<ShaderProperty>& GetProperties() const = 0;
 
 		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
