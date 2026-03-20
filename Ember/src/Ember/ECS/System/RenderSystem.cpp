@@ -230,13 +230,14 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
 			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
-			Vector3f eye = target - (Math::Normalize(light.Direction) * 40.0f); // Pull back 40 units
+			Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
-			if (std::abs(light.Direction.y) > 0.99f)
+			if (std::abs(lightDirection.y) > 0.99f)
 				up = Vector3f(0.0f, 0.0f, 1.0f);
 			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
@@ -262,10 +263,11 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
+			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
 			Matrix4f lightProjection = Math::Perspective(Math::Degrees(light.OuterCutOffAngle) * 2.0f, 1.0f, 1.0f, 100.0f);
-			Vector3f target = light.Direction + transform.Position;	// Look in the direction of the spotlight
+			Vector3f target = lightDirection + transform.Position;	// Look in the direction of the spotlight
 			Vector3f eye = transform.Position;
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
 			Matrix4f lightView = Math::LookAt(eye, target, up);
@@ -385,7 +387,7 @@ namespace Ember {
 					break;
 
 				auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
-				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Direction", index), light.Direction);
+				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Direction", index), transform.GetForward());
 				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Color", index), light.Color);
 				litShader->SetFloat(std::format("u_DirectionalLights[{}].Intensity", index), light.Intensity);
 
@@ -406,7 +408,7 @@ namespace Ember {
 
 				auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
 				litShader->SetFloat3(std::format("u_SpotLights[{}].Position", index), transform.Position);
-				litShader->SetFloat3(std::format("u_SpotLights[{}].Direction", index), light.Direction);
+				litShader->SetFloat3(std::format("u_SpotLights[{}].Direction", index), transform.GetForward());
 				litShader->SetFloat3(std::format("u_SpotLights[{}].Color", index), light.Color);
 				litShader->SetFloat(std::format("u_SpotLights[{}].Intensity", index), light.Intensity);
 				litShader->SetFloat(std::format("u_SpotLights[{}].CutOff", index), light.CutOff);

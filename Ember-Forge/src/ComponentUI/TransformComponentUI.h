@@ -25,7 +25,7 @@ namespace Ember {
 				ImGui::Text("Position");
 				ImGui::TableNextColumn();
 				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Position", &component.Position[0], m_SliderInterval, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
+				ImGui::DragFloat3("##Position", &component.Position[0], 0.1f, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
 
 				// Rotation
 				ImGui::TableNextRow();
@@ -34,7 +34,20 @@ namespace Ember {
 				ImGui::Text("Rotation");
 				ImGui::TableNextColumn();
 				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Rotation", &component.Rotation[0], m_SliderInterval, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
+
+				Vector3f rotationDegrees = Vector3f(
+					Math::Degrees(component.Rotation.x),
+					Math::Degrees(component.Rotation.y),
+					Math::Degrees(component.Rotation.z)
+				);
+				if (ImGui::DragFloat3("##Rotation", &rotationDegrees[0], 1.0f, 0.0f, 0.0f, "%.1f", ImGuiSliderFlags_ColorMarkers))
+				{
+					component.Rotation = Vector3f(
+						Math::Radians(rotationDegrees.x),
+						Math::Radians(rotationDegrees.y),
+						Math::Radians(rotationDegrees.z)
+					);
+				}
 
 				// Scale
 				ImGui::TableNextRow();
@@ -43,14 +56,11 @@ namespace Ember {
 				ImGui::Text("Scale");
 				ImGui::TableNextColumn();
 				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat3("##Scale", &component.Scale[0], m_SliderInterval, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
+				ImGui::DragFloat3("##Scale", &component.Scale[0], 0.1f, 0.0f, 0.0f, "%.2f", ImGuiSliderFlags_ColorMarkers);
 
 				ImGui::EndTable();
 			}
 		}
-
-	private:
-		float m_SliderInterval = 0.1f;
 	};
 
 }

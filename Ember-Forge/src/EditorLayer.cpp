@@ -205,9 +205,10 @@ namespace Ember {
 	void EditorLayer::SetupDirectionalLights()
 	{
 		auto lightEntity = m_Context.ActiveScene->AddEntity();
-		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 20.0f, 0.0f);
+		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.0f);
+		lightEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-45.0f), Math::Radians(15.0f), 0.0f);
 
-		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, -0.8f, -0.25f), Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
+		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
 		lightEntity.AttachComponent(dirLightComp);
 	}
 
@@ -333,7 +334,9 @@ namespace Ember {
 		Matrix4f cameraView = m_Camera.GetViewMatrix();
 
 		auto& transformComp = m_Context.SelectedEntity.GetComponent<TransformComponent>();
-		Matrix4f transform = Math::Translate(transformComp.Position) * Math::GetRotationMatrix(transformComp.Rotation) * Math::Scale(transformComp.Scale);
+
+		// Feed ImGuizmo the WORLD transform so it draws in the correct physical location!
+		Matrix4f transform = transformComp.WorldTransform;
 
 		// Snapping Logic (Hold CTRL)
 		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
@@ -352,15 +355,31 @@ namespace Ember {
 		// Apply the math back to the entity if dragging
 		if (ImGuizmo::IsUsing())
 		{
-			// TODO: Figure out issue when scaling to 0, the position shoots to insane negative numbers.
-			// Maybe with how we decompress the matrix??
-			Vector3f translation, rotation, scale;
-			Math::DecomposeTransform(transform, translation, rotation, scale);
+			// 'transform' is now our NEW World Matrix from the mouse drag.
+			// We must convert this back into a Local Matrix before saving it!
+			Matrix4f localTransform = transform;
 
-			float epsilon = 0.001f;
-			if (abs(scale.x) < epsilon) scale.x = epsilon;
-			if (abs(scale.y) < epsilon) scale.y = epsilon;
-			if (abs(scale.z) < epsilon) scale.z = epsilon;
+			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
+			{
+				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
+				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityID)
+				{
+					// Fetch the parent entity
+					Entity parent = { relationshipComp.ParentHandle, m_Context.ActiveScene.Ptr()};
+
+					Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+
+					// Linear Algebra Magic: NewLocal = Inverse(ParentWorld) * NewWorld
+					localTransform = Math::Inverse(parentWorld) * transform;
+				}
+			}
+
+			// Decompose the LOCAL transform back into our component variables
+			Vector3f translation, rotation, scale;
+			ImGuizmo::DecomposeMatrixToComponents(&localTransform[0][0], &translation.x, &rotation.x, &scale.x);
+
+			// TODO: Fix my decompresstransform as it breaks when there is negative scaling involved (it produces NaNs in the rotation output)
+			//Math::DecomposeTransform(localTransform, translation, rotation, scale);
 
 			transformComp.Position = translation;
 			transformComp.Rotation = rotation;

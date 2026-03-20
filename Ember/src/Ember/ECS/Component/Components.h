@@ -147,18 +147,16 @@ namespace Ember {
 
 	struct DirectionalLightComponent
 	{
-		Vector3f Direction = Vector3f(0.0f, -1.0f, 0.0f);
 		Vector3f Color = Vector3f(1.0f);
-		float Intensity = 10.0f;
+		float Intensity = 5.0f;
 
 		DirectionalLightComponent() = default;
-		DirectionalLightComponent(const Vector3f& direction, const Vector3f& color, float intensity)
-			: Direction(direction), Color(color), Intensity(intensity) { }
+		DirectionalLightComponent(const Vector3f& color, float intensity)
+			: Color(color), Intensity(intensity) { }
 	};
 
 	struct SpotLightComponent
 	{
-		Vector3f Direction = Vector3f(0.0f, -1.0f, 0.0f);
 		Vector3f Color = Vector3f(1.0f);
 		float Intensity = 100.0f;
 
@@ -169,8 +167,8 @@ namespace Ember {
 		float OuterCutOff = 0.0f; // Stored as Cosine for the GLSL Shader
 
 		SpotLightComponent() = default;
-		SpotLightComponent(const Vector3f& direction, const Vector3f& color, float intensity, float cutOffDeg, float outerCutOffDeg)
-			: Direction(direction), Color(color), Intensity(intensity),
+		SpotLightComponent(const Vector3f& color, float intensity, float cutOffDeg, float outerCutOffDeg)
+			: Color(color), Intensity(intensity),
 			CutOffAngle(Math::Radians(cutOffDeg)),
 			CutOff(cos(Math::Radians(cutOffDeg))),
 			OuterCutOffAngle(Math::Radians(outerCutOffDeg)),
