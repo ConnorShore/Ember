@@ -32,7 +32,7 @@ namespace Ember {
 	{
 	public:
 		Model(const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
-			: Asset(name, filePath, AssetType::Model), m_RootNode(rootNode), m_AllMaterials(materials)
+			: Asset(name, filePath, GetStaticType()), m_RootNode(rootNode), m_AllMaterials(materials)
 		{
 			std::vector<const ModelNode*> nodesToVisit = { &m_RootNode };
 			while (!nodesToVisit.empty())
@@ -53,6 +53,8 @@ namespace Ember {
 		const ModelNode& GetRootNode() const { return m_RootNode; }
 		const std::vector<MeshMaterialNode>& GetAllMeshes() const { return m_AllMeshes; }
 		const std::vector<SharedPtr<MaterialBase>>& GetAllMaterials() const { return m_AllMaterials; }
+
+		static AssetType GetStaticType() { return AssetType::Model; }
 
 	private:
 		ModelNode m_RootNode;

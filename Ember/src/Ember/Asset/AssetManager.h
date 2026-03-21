@@ -101,6 +101,18 @@ namespace Ember {
 			return DynamicPointerCast<T>(m_Assets.at(m_AssetNames.at(name)));
 		}
 
+		template<IsCoreAsset T>
+		std::vector<SharedPtr<T>> GetAssetsOfType() const
+		{
+			std::vector<SharedPtr<T>> assetsOfType;
+			for (auto& [id, asset] : m_Assets)
+			{
+				if (asset->GetType() == T::GetStaticType())
+					assetsOfType.push_back(StaticPointerCast<T>(asset));
+			}
+			return assetsOfType;
+		}
+
         SharedPtr<Asset> GetAssetBase(UUID id) const;
 		
 	private:

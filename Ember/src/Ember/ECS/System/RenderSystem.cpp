@@ -12,6 +12,49 @@
 
 namespace Ember {
 
+	struct DirectionalLightData
+	{
+		Vector3f Direction; // 12 bytes
+		float Intensity;    // 4 bytes
+
+		Vector3f Color;     // 12 bytes
+		float _Padding;     // 4 bytes
+	};
+
+	struct SpotLightData
+	{
+		Vector3f Position;  // 12 bytes
+		float Intensity;    // 4 bytes
+
+		Vector3f Direction; // 12 bytes
+		float CutOff;       // 4 bytes
+
+		Vector3f Color;     // 12 bytes
+		float OuterCutOff;  // 4 bytes
+	};
+
+	struct PointLightData
+	{
+		Vector3f Position;  // 12 bytes
+		float Intensity;    // 4 bytes
+
+		Vector3f Color;     // 12 bytes
+		float Radius;       // 4 bytes
+	};
+
+	// Main block matches shader layout
+	struct LightDataBlock
+	{
+		DirectionalLightData DirectionalLights[Constants::Renderer::MaxDirectionalLights];
+		SpotLightData SpotLights[Constants::Renderer::MaxSpotLights];
+		PointLightData PointLights[Constants::Renderer::MaxPointLights];
+
+		int ActiveDirectionalLights;
+		int ActiveSpotLights;
+		int ActivePointLights;
+		int _Padding; // Pad the final ints to 16 bytes
+	};
+
 	void RenderSystem::OnAttach(Registry* registry)
 	{
 		Renderer2D::Init();
@@ -70,6 +113,7 @@ namespace Ember {
 
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
 		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);
+		m_LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataBlock), 2);
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 
@@ -377,69 +421,70 @@ namespace Ember {
 		RenderAction::SetTextureUnit(3, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
 		RenderAction::SetTextureUnit(4, m_SpotShadowMapBuffer->GetDepthAttachmentID());
 
-		// Set Directional Light
+		LightDataBlock lightData = {};
+
+		// Directional Lights
 		{
-			View lightView = registry->Query<DirectionalLightComponent, TransformComponent>();
-			unsigned int index = 0;
-			for (EntityID entity : lightView)
+			View view = registry->Query<DirectionalLightComponent, TransformComponent>();
+			for (EntityID entity : view)
 			{
-				if (index >= Constants::Renderer::MaxDirectionalLights)
+				if (lightData.ActiveDirectionalLights >= Constants::Renderer::MaxDirectionalLights)
 					break;
 
 				auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
-				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Direction", index), transform.GetForward());
-				litShader->SetFloat3(std::format("u_DirectionalLights[{}].Color", index), light.Color);
-				litShader->SetFloat(std::format("u_DirectionalLights[{}].Intensity", index), light.Intensity);
+				int i = lightData.ActiveDirectionalLights;
 
-				index++;
+				lightData.DirectionalLights[i].Direction = transform.GetForward();
+				lightData.DirectionalLights[i].Color = light.Color;
+				lightData.DirectionalLights[i].Intensity = light.Intensity;
+
+				lightData.ActiveDirectionalLights++;
 			}
-
-			litShader->SetInt(Constants::Uniforms::ActiveDirectionalLights, index);
 		}
 
-		// Set spotlights
+		// Spotlights
 		{
-			View lightView = registry->Query<SpotLightComponent, TransformComponent>();
-			unsigned int index = 0;
-			for (EntityID entity : lightView)
+			View view = registry->Query<SpotLightComponent, TransformComponent>();
+			for (EntityID entity : view)
 			{
-				if (index >= Constants::Renderer::MaxSpotLights)
+				if (lightData.ActiveSpotLights >= Constants::Renderer::MaxSpotLights)
 					break;
 
 				auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
-				litShader->SetFloat3(std::format("u_SpotLights[{}].Position", index), transform.Position);
-				litShader->SetFloat3(std::format("u_SpotLights[{}].Direction", index), transform.GetForward());
-				litShader->SetFloat3(std::format("u_SpotLights[{}].Color", index), light.Color);
-				litShader->SetFloat(std::format("u_SpotLights[{}].Intensity", index), light.Intensity);
-				litShader->SetFloat(std::format("u_SpotLights[{}].CutOff", index), light.CutOff);
-				litShader->SetFloat(std::format("u_SpotLights[{}].OuterCutOff", index), light.OuterCutOff);
+				int i = lightData.ActiveSpotLights;
 
-				index++;
+				lightData.SpotLights[i].Position = transform.Position;
+				lightData.SpotLights[i].Direction = transform.GetForward();
+				lightData.SpotLights[i].Color = light.Color;
+				lightData.SpotLights[i].Intensity = light.Intensity;
+				lightData.SpotLights[i].CutOff = light.CutOff;
+				lightData.SpotLights[i].OuterCutOff = light.OuterCutOff;
+
+				lightData.ActiveSpotLights++;
 			}
-
-			litShader->SetInt(Constants::Uniforms::ActiveSpotLights, index);
 		}
 
-		// Set Point Lights
+		// Point Lights
 		{
-			View lightView = registry->Query<PointLightComponent, TransformComponent>();
-			unsigned int index = 0;
-			for (EntityID entity : lightView)
+			View view = registry->Query<PointLightComponent, TransformComponent>();
+			for (EntityID entity : view)
 			{
-				if (index >= Constants::Renderer::MaxPointLights)
+				if (lightData.ActivePointLights >= Constants::Renderer::MaxPointLights)
 					break;
 
 				auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
-				litShader->SetFloat3(std::format("u_PointLights[{}].Position", index), transform.Position);
-				litShader->SetFloat3(std::format("u_PointLights[{}].Color", index), light.Color);
-				litShader->SetFloat(std::format("u_PointLights[{}].Intensity", index), light.Intensity);
+				int i = lightData.ActivePointLights;
 
-				index++;
+				lightData.PointLights[i].Position = transform.Position;
+				lightData.PointLights[i].Color = light.Color;
+				lightData.PointLights[i].Intensity = light.Intensity;
+				lightData.PointLights[i].Radius = light.Radius;
+
+				lightData.ActivePointLights++;
 			}
-
-			litShader->SetInt(Constants::Uniforms::ActivePointLights, index);
 		}
 
+		m_LightUniformBuffer->SetData(&lightData, sizeof(LightDataBlock), 0);
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 

@@ -25,7 +25,7 @@ namespace Ember {
 	{
 	public:
 		Texture(const std::string& name, const std::string& filePath)
-			: Asset(name, filePath, AssetType::Texture) { }
+			: Asset(name, filePath, GetStaticType()) { }
 
 		virtual ~Texture() = default;
 
@@ -44,6 +44,8 @@ namespace Ember {
 		static SharedPtr<Texture> Create(const std::string& name, unsigned int width, unsigned int height, const void* data);
 
 		virtual bool operator==(const SharedPtr<Texture>& other) const = 0;
+
+		static AssetType GetStaticType() { return AssetType::Texture; }
 	};
 
 	//////////////////////////////////////////////////////////////////////////

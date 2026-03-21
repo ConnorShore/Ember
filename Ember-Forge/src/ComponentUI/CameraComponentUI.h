@@ -13,7 +13,7 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(CameraComponent& component) override
 		{
-			ImGui::Text("Camera Component Data goes here");
+
 		}
 
 	private:

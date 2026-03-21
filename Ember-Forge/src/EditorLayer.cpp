@@ -347,12 +347,10 @@ namespace Ember {
 		bool isLocal = Input::IsKeyPressed(KeyCode::LeftShift);
 		ImGuizmo::MODE currentMode = isLocal ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
 
-		// Draw the Gizmo
 		ImGuizmo::Manipulate(&cameraView[0][0], &cameraProjection[0][0],
 			(ImGuizmo::OPERATION)m_GizmoType, (ImGuizmo::MODE)currentMode, &transform[0][0],
 			nullptr, snap ? snapValues : nullptr);
 
-		// Apply the math back to the entity if dragging
 		if (ImGuizmo::IsUsing())
 		{
 			// 'transform' is now our NEW World Matrix from the mouse drag.
@@ -376,14 +374,51 @@ namespace Ember {
 
 			// Decompose the LOCAL transform back into our component variables
 			Vector3f translation, rotation, scale;
-			ImGuizmo::DecomposeMatrixToComponents(&localTransform[0][0], &translation.x, &rotation.x, &scale.x);
+			//ImGuizmo::DecomposeMatrixToComponents(&localTransform[0][0], &translation.x, &rotation.x, &scale.x);
 
-			// TODO: Fix my decompresstransform as it breaks when there is negative scaling involved (it produces NaNs in the rotation output)
-			//Math::DecomposeTransform(localTransform, translation, rotation, scale);
+			// TODO: Fix my decompress transform as it breaks when there is negative scaling involved (it produces NaNs in the rotation output)
+			Math::DecomposeTransform(localTransform, translation, rotation, scale);
 
-			transformComp.Position = translation;
-			transformComp.Rotation = rotation;
-			transformComp.Scale = scale;
+			switch (m_GizmoType)
+			{
+			case ImGuizmo::OPERATION::TRANSLATE:
+			{
+				transformComp.Position = translation;
+				break;
+			}
+			case ImGuizmo::OPERATION::ROTATE:
+			{
+				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
+					transformComp.Rotation = rotation;
+				break;
+			}
+			case ImGuizmo::OPERATION::SCALE:
+			{
+				float epsilon = 0.001f;
+				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
+				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
+				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
+
+				transformComp.Scale = scale;
+				break;
+			}
+			case ImGuizmo::OPERATION::UNIVERSAL:
+			{
+				// Universal handles all three, so apply them all with protections
+				transformComp.Position = translation;
+
+				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
+					transformComp.Rotation = rotation;
+
+				float epsilon = 0.001f;
+				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
+				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
+				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
+
+				transformComp.Scale = scale;
+				break;
+			}
+			}
 		}
 	}
 
