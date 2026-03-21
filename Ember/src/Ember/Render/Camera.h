@@ -7,7 +7,22 @@ namespace Ember {
 	class Camera
 	{
 	public:
-		enum class ProjectionType { Orthographic = 0, Perspective = 1 };
+		enum class ProjectionType { Orthographic = 0, Perspective = 1, Count };
+		static std::string GetProjectionTypeName(ProjectionType type) { return type == ProjectionType::Orthographic ? "Orthographic" : "Perspective"; }
+
+		struct OrthographicProps
+		{
+			float Size = 5.0f;
+			float NearClip = -1.0f;
+			float FarClip = 1.0f;
+		};
+
+		struct PerspectiveProps
+		{
+			float FieldOfView = 70.0f;
+			float NearClip = 1.0f;
+			float FarClip = 100.0f;
+		};
 
 	public:
 		Camera();
@@ -22,6 +37,10 @@ namespace Ember {
 
 		inline const Vector2f& GetViewportSize() const { return m_ViewportSize; }
 
+		inline ProjectionType GetProjectionType() const { return m_ProjectionType; }
+		inline OrthographicProps& GetOrthographicProps() { return m_OrthographicProps; }
+		inline PerspectiveProps& GetPerspectiveProps() { return m_PerspectiveProps; }
+
 	private:
 		void CalculateProjectionMatrix();
 
@@ -31,19 +50,8 @@ namespace Ember {
 		Vector2f m_ViewportSize;
 		float m_AspectRatio;	// (height / width)
 
-		struct OrthographicProps
-		{
-			float Size;
-			float NearClip;
-			float FarClip;
-		} m_OrthographicProps;
-
-		struct PerspectiveProps
-		{
-			float FieldOfView;
-			float NearClip;
-			float FarClip;
-		} m_PerspectiveProps;
+		OrthographicProps m_OrthographicProps;
+		PerspectiveProps m_PerspectiveProps;
 
 	};
 
