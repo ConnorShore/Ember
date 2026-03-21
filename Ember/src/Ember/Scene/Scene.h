@@ -45,6 +45,12 @@ namespace Ember {
 			return Application::Instance().GetAssetManager().GetAsset<T>(assetName);
 		}
 
+		template<IsCoreAsset T>
+		std::vector<SharedPtr<T>> GetAssetsOfType()
+		{
+			return Application::Instance().GetAssetManager().GetAssetsOfType<T>();
+		}
+
 		std::vector<Entity> GetAllEntities() const;
 
 		void RemoveEntity(Entity entity);

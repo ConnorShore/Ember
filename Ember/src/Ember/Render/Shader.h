@@ -20,7 +20,7 @@ namespace Ember {
 	{
 	public:
 		Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
-			: Asset(name, filePath, AssetType::Shader) {}
+			: Asset(name, filePath, GetStaticType()) {}
 
 		virtual ~Shader() = default;
 
@@ -34,6 +34,8 @@ namespace Ember {
 		virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const = 0;
 
 		virtual const std::vector<ShaderProperty>& GetProperties() const = 0;
+
+		static AssetType GetStaticType() { return AssetType::Shader; }
 
 		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});

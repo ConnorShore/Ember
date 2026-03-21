@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "AssetManager.h"
+#include "Ember/Render/PrimitiveGenerator.h"
 
 namespace Ember {
 
@@ -46,6 +47,7 @@ namespace Ember {
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
 		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));
+		unlitMaterial->SetUniform(Constants::Uniforms::Emission, 2.0f);
 
         auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMat, geometryMaterial);
 		fallbackMat->SetUniform(Constants::Uniforms::Albedo, Vector3f(1.0f));

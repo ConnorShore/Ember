@@ -26,67 +26,141 @@ namespace Ember {
 				return;
 
 			ImGui::Text("Material: %s", material->GetName().c_str());
-			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
-			ImGui::Separator();
-			ImGui::Text("Shader Properties:");
 			ImGui::Separator();
 
-			auto& shaderProps = material->GetShader()->GetProperties();
-
-			for (auto& prop : shaderProps)
+			std::string currentMaterialName = material ? material->GetName() : "None";
+			if (ImGui::BeginCombo("##MaterialCombo", currentMaterialName.c_str()))
 			{
-				switch (prop.Type)
+				auto materials = m_Context->ActiveScene->GetAssetsOfType<Material>();
+				for (auto& mat : materials)
 				{
-				case ShaderPropertyType::Float:
+					// Check if this is the currently active shader
+					bool isSelected = material && (material->GetUUID() == mat->GetUUID());
+					if (ImGui::Selectable(mat->GetName().c_str(), isSelected))
+					{
+						std::string name = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag + "_" + mat->GetName() + "_Instance";
+						material = SharedPtr<MaterialInstance>::Create(name, mat);
+					}
+
+					// Set the initial focus when opening the combo
+					if (isSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
+			ImGui::SameLine();
+
+			if (ImGui::Button("Edit"))
+			{
+				if (material->GetShader())
 				{
-					RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
-						return ImGui::DragFloat(name, value, prop.Step, prop.Min, prop.Max);
-						});
-					break;
+					EB_CORE_TRACE("Opening shader file: {}", material->GetShader()->GetFilePath());
+					// TODO: Launch VS Code / Text Editor via OS system call
 				}
-				case ShaderPropertyType::Float2:
+			}
+
+			//ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+			//if (ImGui::Button("..."))
+			//{
+			//	ImGui::OpenPopup("ShaderPopup");
+			//}
+			//ImGui::PopStyleVar();
+
+			//if (ImGui::BeginPopup("ShaderPopup"))
+			//{
+			//	if (ImGui::MenuItem("Choose Shader"))
+			//	{
+			//		// Make this a popup window maybe? Or a combo box? Not sure how to do this best with ImGui
+			//		ImGui::OpenPopup("ShaderSelectPopup");
+
+			//		if (ImGui::BeginPopup("ShaderSelectPopup"))
+			//		{
+			//			ImGui::Text("Select a shader:");
+			//			ImGui::Separator();
+			//			auto shaders = m_Context->ActiveScene->GetAssetsOfType<Shader>();
+			//			for (auto& shader : shaders)
+			//			{
+			//				if (ImGui::MenuItem(shader->GetName().c_str()))
+			//				{
+			//					material->SetShader(shader);
+			//				}
+			//			}
+			//		}
+			//	}
+			//	if (ImGui::MenuItem("Edit Shader"))
+			//	{
+			//		// TODO: Open text editor with shader source
+			//	}
+			//	ImGui::EndPopup();
+			//}
+
+			ImGui::Separator();
+
+			if (ImGui::BeginTable("MaterialProps", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+
+				auto& shaderProps = material->GetShader()->GetProperties();
+				for (auto& prop : shaderProps)
 				{
-					RenderProperty<Vector2f>(prop, material, [&prop](const char* name, Vector2f* value) {
-						return ImGui::DragFloat2(name, &value->x, prop.Step, prop.Min, prop.Max);
-						});
-					break;
+					switch (prop.Type)
+					{
+					case ShaderPropertyType::Float:
+					{
+						RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
+							return ImGui::DragFloat(name, value, prop.Step, prop.Min, prop.Max);
+							});
+						break;
+					}
+					case ShaderPropertyType::Float2:
+					{
+						RenderProperty<Vector2f>(prop, material, [&prop](const char* name, Vector2f* value) {
+							return ImGui::DragFloat2(name, &value->x, prop.Step, prop.Min, prop.Max);
+							});
+						break;
+					}
+					case ShaderPropertyType::Float3:
+					{
+						RenderProperty<Vector3f>(prop, material, [&prop](const char* name, Vector3f* value) {
+							return ImGui::DragFloat3(name, &value->x, prop.Step, prop.Min, prop.Max);
+							});
+						break;
+					}
+					case ShaderPropertyType::Float4:
+					{
+						RenderProperty<Vector4f>(prop, material, [&prop](const char* name, Vector4f* value) {
+							return ImGui::DragFloat4(name, &value->x, prop.Step, prop.Min, prop.Max);
+							});
+						break;
+					}
+					case ShaderPropertyType::Color3:
+					{
+						RenderProperty<Vector3f>(prop, material, [](const char* name, Vector3f* value) {
+							return ImGui::ColorEdit3(name, &value->x);
+							});
+						break;
+					}
+					case ShaderPropertyType::Color4:
+					{
+						RenderProperty<Vector4f>(prop, material, [](const char* name, Vector4f* value) {
+							return ImGui::ColorEdit4(name, &value->x);
+							});
+						break;
+					}
+					case ShaderPropertyType::Slider:
+					{
+						RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
+							return ImGui::SliderFloat(name, value, prop.Min, prop.Max);
+							});
+						break;
+					}
+					}
 				}
-				case ShaderPropertyType::Float3:
-				{
-					RenderProperty<Vector3f>(prop, material, [&prop](const char* name, Vector3f* value) {
-						return ImGui::DragFloat3(name, &value->x, prop.Step, prop.Min, prop.Max);
-						});
-					break;
-				}
-				case ShaderPropertyType::Float4:
-				{
-					RenderProperty<Vector4f>(prop, material, [&prop](const char* name, Vector4f* value) {
-						return ImGui::DragFloat4(name, &value->x, prop.Step, prop.Min, prop.Max);
-						});
-					break;
-				}
-				case ShaderPropertyType::Color3:
-				{
-					RenderProperty<Vector3f>(prop, material, [](const char* name, Vector3f* value) {
-						return ImGui::ColorEdit3(name, &value->x);
-						});
-					break;
-				}
-				case ShaderPropertyType::Color4:
-				{
-					RenderProperty<Vector4f>(prop, material, [](const char* name, Vector4f* value) {
-						return ImGui::ColorEdit4(name, &value->x);
-						});
-					break;
-				}
-				case ShaderPropertyType::Slider:
-				{
-					RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
-						return ImGui::SliderFloat(name, value, prop.Min, prop.Max);
-						});
-					break;
-				}
-				}
+
+				ImGui::EndTable();
 			}
 		}
 
@@ -97,8 +171,16 @@ namespace Ember {
 			if (!material->ContainsUniform(prop.UniformName))
 				return;
 
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text(prop.DisplayName.c_str());
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+
+			std::string uniformLabel = ("##" + prop.UniformName);
 			T value = std::get<T>(material->GetUniforms().at(prop.UniformName));
-			if (renderFunc(prop.DisplayName.c_str(), &value))
+			if (renderFunc(uniformLabel.c_str(), &value))
 			{
 				if (prop.Normalize)
 					value = Math::Normalize<T>(value, prop.Min, prop.Max);

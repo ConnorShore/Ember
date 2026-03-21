@@ -16,14 +16,14 @@ namespace Ember {
 	class Mesh : public Asset
 	{
 	public:
-		Mesh(const std::string& filePath);
-		Mesh(const std::string& name, const std::string& filePath);
 		Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 		~Mesh();
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
 		inline unsigned int GetIndexCount() const { return m_VertexArray->GetIndexBuffer()->GetCount(); }
 		inline const std::string& GetName() { return m_Name; }
+
+		static AssetType GetStaticType() { return AssetType::Mesh; }
 
 	private:
 		SharedPtr<VertexArray> m_VertexArray;

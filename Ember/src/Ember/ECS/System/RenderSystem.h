@@ -60,6 +60,7 @@ namespace Ember {
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
+		SharedPtr<UniformBuffer> m_LightUniformBuffer;
 
 		struct RenderQueueBuckets
 		{

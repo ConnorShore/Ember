@@ -47,17 +47,20 @@ namespace Ember {
 	{
 	public:
 		MaterialBase(const std::string& name, const SharedPtr<Shader>& shader, RenderQueue renderQueue)
-			: Asset(name, "", AssetType::Material), m_Shader(shader), m_RenderQueue(renderQueue) { }
+			: Asset(name, "", GetStaticType()), m_Shader(shader), m_RenderQueue(renderQueue) { }
 
 		virtual ~MaterialBase() = default;
 		virtual void Bind() const = 0;
 
 		inline const RenderQueue GetRenderQueue() const { return m_RenderQueue; }
 		inline const SharedPtr<Shader> GetShader() const { return m_Shader; }
+		inline void SetShader(const SharedPtr<Shader>& shader) { m_Shader = shader; }
 
 		virtual void SetUniform(const std::string& name, const MaterialValue& value) = 0;
 		virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() const = 0;
 		virtual bool ContainsUniform(const std::string& name) const = 0;
+
+		static AssetType GetStaticType() { return AssetType::Material; }
 
 	protected:
 		SharedPtr<Shader> m_Shader;

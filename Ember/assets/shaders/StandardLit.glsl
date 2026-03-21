@@ -17,25 +17,29 @@ void main()
 
 const float PI = 3.14159265359;
 
+// Alternating values to store in 16 byte aligned manner (vec3 + float)
 struct DirectionalLight {
 	vec3 Direction;
-	vec3 Color;
 	float Intensity;
+	vec3 Color;
 };
 
+// Alternating values to store in 16 byte aligned manner (vec3 + float)
 struct SpotLight {
 	vec3 Position;
-	vec3 Direction;
-	vec3 Color;
 	float Intensity;
+	vec3 Direction;
 	float CutOff;		// Cosine of the cutoff angle
+	vec3 Color;
 	float OuterCutOff;  // Cosine of the outer cutoff angle
 };
 
+// Alternating values to store in 16 byte aligned manner (vec3 + float)
 struct PointLight {
 	vec3 Position;
-	vec3 Color;
 	float Intensity;
+	vec3 Color;
+	float Radius;
 };
 
 in vec2 TextureCoord;
@@ -57,14 +61,16 @@ layout(std140, binding = 1) uniform ShadowData
 	mat4 u_SpotLightViewMat;
 };
 
-uniform int u_ActiveDirectionalLights;
-uniform int u_ActiveSpotLights;
-uniform int u_ActivePointLights;
+layout(std140, binding = 2) uniform LightDataBlock
+{
+	DirectionalLight u_DirectionalLights[MAX_DIRECTIONAL_LIGHTS];
+	SpotLight u_SpotLights[MAX_SPOT_LIGHTS];
+	PointLight u_PointLights[MAX_POINT_LIGHTS];
 
-// MAX values are injected via ShaderMacros
-uniform DirectionalLight u_DirectionalLights[MAX_DIRECTIONAL_LIGHTS];
-uniform SpotLight u_SpotLights[MAX_SPOT_LIGHTS];
-uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
+	int u_ActiveDirectionalLights;
+	int u_ActiveSpotLights;
+	int u_ActivePointLights;
+};
 
 float NormalDistributionTrowbridgeReitxGGX(vec3 N, vec3 H, float roughness)
 {
@@ -222,6 +228,9 @@ vec3 ApplyPointLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actua
 		vec3 H = normalize(V + L);
 
 		float distance = length(u_PointLights[i].Position - gPosition);
+		if (distance > u_PointLights[i].Radius && (u_PointLights[i].Radius > 0)) 
+			continue; // Skip if outside the light's radius (and radius is > 0, otherwise treat as infinite)
+
 		float attenuation = 1.0 / (distance * distance);
 		vec3 radiance = u_PointLights[i].Color * u_PointLights[i].Intensity * attenuation;
 
