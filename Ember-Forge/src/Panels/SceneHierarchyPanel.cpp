@@ -61,7 +61,7 @@ namespace Ember {
 		{
 			// Draw the tree node
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
-			if (relationshipComp.ParentHandle == Constants::Entities::InvalidEntityID)
+			if (relationshipComp.ParentHandle == Constants::Entities::InvalidEntityUUID)
 			{
 				DrawTreeNode(entity);
 			}
@@ -133,9 +133,9 @@ namespace Ember {
 		if (opened && hasChildren)
 		{
 			auto& children = entity.GetComponent<RelationshipComponent>().Children;
-			for (auto childID : children)
+			for (UUID childID : children)
 			{
-				Entity child(childID, m_Context->ActiveScene.Ptr());
+				Entity child(m_Context->ActiveScene->GetEntity(childID).GetEntityHandle(), m_Context->ActiveScene.Ptr());
 				DrawTreeNode(child);
 			}
 
@@ -146,20 +146,20 @@ namespace Ember {
 
 	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
 	{
-		if (!descendant || descendant.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetEntityUUID() == Constants::Entities::InvalidEntityUUID)
 			return false;
 
 		Entity current = descendant;
 		while (current != Constants::Entities::InvalidComponentID)
 		{
-			EntityID parentID = current.GetComponent<RelationshipComponent>().ParentHandle;
-			if (parentID == Constants::Entities::InvalidEntityID)
+			UUID parentID = current.GetComponent<RelationshipComponent>().ParentHandle;
+			if (parentID == Constants::Entities::InvalidEntityUUID)
 				break;
 
-			if (parentID == ancestor.GetEntityHandle())
+			if (parentID == ancestor.GetEntityUUID())
 				return true;
 
-			current = Entity{ parentID, m_Context->ActiveScene.Ptr()};
+			current = m_Context->ActiveScene->GetEntity(parentID);
 		}
 
 		return false;
@@ -167,7 +167,7 @@ namespace Ember {
 
 	void SceneHierarchyPanel::CreateEntity()
 	{
-		auto entity = m_Context->ActiveScene->AddEntity();
+		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
 		SetSelectedEntity(entity);
 	}
 

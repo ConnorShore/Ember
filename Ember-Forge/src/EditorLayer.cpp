@@ -66,7 +66,7 @@ namespace Ember {
 
 		// Plane for testing
 		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
-		auto groundPlane = m_Context.ActiveScene->AddEntity();
+		auto groundPlane = m_Context.ActiveScene->AddEntity("GroundPlane");
 		auto& groundTransform = groundPlane.GetComponent<TransformComponent>();
 		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
 		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
@@ -229,7 +229,7 @@ namespace Ember {
 
 	void EditorLayer::SetupDirectionalLights()
 	{
-		auto lightEntity = m_Context.ActiveScene->AddEntity();
+		auto lightEntity = m_Context.ActiveScene->AddEntity("Light");
 		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.0f);
 		lightEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-45.0f), Math::Radians(15.0f), 0.0f);
 
@@ -325,7 +325,7 @@ namespace Ember {
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
-		if (m_PreviousSelectedEntity != m_InvalidEntity && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
+		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
 		{
 			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
 			if (m_PreviousSelectedEntity.IsRootParent())
@@ -339,7 +339,7 @@ namespace Ember {
 		}
 
 		// Add outlines to the new selection and its children
-		if (m_Context.SelectedEntity != m_InvalidEntity)
+		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 		{
 			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
 			if (m_Context.SelectedEntity.IsRootParent())
@@ -394,15 +394,15 @@ namespace Ember {
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
 			{
 				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityID)
+				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityUUID)
 				{
 					// Fetch the parent entity
-					Entity parent = { relationshipComp.ParentHandle, m_Context.ActiveScene.Ptr()};
-
-					Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
-
-					// Linear Algebra Magic: NewLocal = Inverse(ParentWorld) * NewWorld
-					localTransform = Math::Inverse(parentWorld) * transform;
+					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);
+					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+					{
+						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+						localTransform = Math::Inverse(parentWorld) * transform;
+					}
 				}
 			}
 
@@ -458,7 +458,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntity()
 	{
-		auto entity = m_Context.ActiveScene->AddEntity();
+		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
 		m_Context.SelectedEntity = entity;
 	}
 

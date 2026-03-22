@@ -6,6 +6,7 @@ namespace Ember::Constants {
 		constexpr unsigned int MaxEntities = 1024;
 		constexpr unsigned int MaxComponents = 64;
 
+		constexpr unsigned int InvalidEntityUUID = 0;
 		constexpr unsigned int InvalidEntityID = MaxEntities + 1;
 		constexpr unsigned int InvalidComponentID = MaxEntities + 1;
 	}

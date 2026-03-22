@@ -35,9 +35,9 @@ namespace Ember {
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
-		Entity AddEntity();
 		Entity AddEntity(const std::string& name);
-		Entity GetEntity(const std::string& tag);
+		Entity AddEntity(UUID uuid, const std::string& name);
+		Entity GetEntity(UUID uuid);
 
 		template<IsCoreAsset T>
 		SharedPtr<T> GetAsset(const std::string& assetName)
@@ -80,7 +80,7 @@ namespace Ember {
 		ScopedPtr<Registry> m_Registry;
 		SceneState m_State = SceneState::Edit;
 
-		std::unordered_map<std::string, EntityID> m_SceneEntities;
+		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 
 		std::string m_Name;
 	};

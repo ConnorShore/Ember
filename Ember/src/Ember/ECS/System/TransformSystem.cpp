@@ -3,8 +3,14 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Scene/Scene.h"
 
 namespace Ember {
+
+	TransformSystem::TransformSystem(Scene* scene)
+		: m_SceneHandle(scene)
+	{
+	}
 
 	void TransformSystem::OnAttach(Registry* registry)
 	{
@@ -24,7 +30,7 @@ namespace Ember {
 			auto [relationship, transform] = registry->GetComponents<RelationshipComponent, TransformComponent>(entity);
 
 			// Only process if its the root parent
-			if (relationship.ParentHandle != Constants::Entities::InvalidEntityID)
+			if (relationship.ParentHandle != Constants::Entities::InvalidEntityUUID)
 				continue;
 
 			UpdateTransformTree(entity, Matrix4f(1.0f), registry);
@@ -38,9 +44,9 @@ namespace Ember {
 
 		transform.WorldTransform = parentWorldTransform * transform.GetLocalTransform();
 
-		for (EntityID child : relationship.Children)
+		for (UUID child : relationship.Children)
 		{
-			UpdateTransformTree(child, transform.WorldTransform, registry);
+			UpdateTransformTree(m_SceneHandle->GetEntity(child).GetEntityHandle(), transform.WorldTransform, registry);
 		}
 	}
 

@@ -3,40 +3,22 @@
 
 namespace Ember {
 
-	Entity::Entity(const std::string& tag, Scene* scene)
-		: m_SceneHandle(scene)
-	{
-		m_EntityHandle = m_SceneHandle->GetRegistry().CreateEntity();
-
-		TagComponent tagComponent(tag);
-		TransformComponent transform;
-		RelationshipComponent relationship;
-
-		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, tagComponent);
-		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, transform);
-		m_SceneHandle->GetRegistry().AttachComponent(m_EntityHandle, relationship);
-	}
-
-
-	Entity::Entity(EntityID entity, Scene* scene)
-		: m_SceneHandle(scene), m_EntityHandle(entity)
-	{
-	}
-
 	std::vector<Entity> Entity::GetAllChildren()
 	{
+		// TODO: FIX THIS, may need to get actual entities from the scene registry
+		// instead of creating new ones with the same ID and scene handle
 		std::vector<Entity> ret;
 		auto& relationship = GetComponent<RelationshipComponent>();
-		for (EntityID childID : relationship.Children)
+		for (UUID childID : relationship.Children)
 		{
-			Entity childEntity(childID, m_SceneHandle);
+			Entity childEntity = m_SceneHandle->GetEntity(childID);
 			ret.push_back(childEntity);
 		}
 
 		// Look at children's children
-		for (EntityID childID : relationship.Children)
+		for (UUID childID : relationship.Children)
 		{
-			Entity childEntity(childID, m_SceneHandle);
+			Entity childEntity = m_SceneHandle->GetEntity(childID);
 			std::vector<Entity> childChildren = childEntity.GetAllChildren();
 			ret.insert(ret.end(), childChildren.begin(), childChildren.end());
 		}
@@ -51,17 +33,16 @@ namespace Ember {
 
 	bool Entity::IsRootParent()
 	{
-		return GetComponent<RelationshipComponent>().ParentHandle == Constants::Entities::InvalidEntityID;
+		return GetComponent<RelationshipComponent>().ParentHandle == Constants::Entities::InvalidEntityUUID;
 	}
 
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();
 
-		for (EntityID childID : relationship.Children)
+		for (UUID childID : relationship.Children)
 		{
-			Entity childEntity(childID, m_SceneHandle);
-
+			Entity childEntity = m_SceneHandle->GetEntity(childID);
 			if (childEntity.GetName() == name)
 			{
 				return childEntity;
@@ -74,17 +55,17 @@ namespace Ember {
 	Entity Entity::FindEntityInHierarchy(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();
-		for (EntityID childID : relationship.Children)
+		for (UUID childID : relationship.Children)
 		{
-			Entity childEntity(childID, m_SceneHandle);
+			Entity childEntity = m_SceneHandle->GetEntity(childID);
 			if (childEntity.GetName() == name)
 				return childEntity;
 		}
 
 		// Look at children's children
-		for (EntityID childID : relationship.Children)
+		for (UUID childID : relationship.Children)
 		{
-			Entity childEntity(childID, m_SceneHandle);
+			Entity childEntity = m_SceneHandle->GetEntity(childID);
 			Entity found = childEntity.FindEntityInHierarchy(name);
 
 			if (found.GetEntityHandle() != Constants::Entities::InvalidEntityID)
@@ -97,6 +78,11 @@ namespace Ember {
 	const std::string& Entity::GetName() const
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<TagComponent>(m_EntityHandle).Tag;
+	}
+
+	UUID Entity::GetEntityUUID() const 
+	{ 
+		return m_SceneHandle->GetRegistry().GetComponent<IDComponent>(m_EntityHandle).ID; 
 	}
 
 }
