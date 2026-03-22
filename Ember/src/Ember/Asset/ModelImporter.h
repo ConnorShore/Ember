@@ -22,10 +22,10 @@ namespace Ember {
 	private:
 		static unsigned int m_MeshCounter;
 
-		static ModelNode ProcessScene(const std::string& name, const aiScene* scene);
+		static ModelNode ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager);
 		static Matrix4f ConvertMatrix(const aiMatrix4x4& aiMat);
-		static void ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene);
-		static SharedPtr<Mesh> ProcessMesh(const std::string& name, const aiMesh* aiMesh);
+		static void ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene, AssetManager& assetManager);
+		static SharedPtr<Mesh> ProcessMesh(const std::string& name, const aiMesh* aiMesh, AssetManager& assetManager);
 		static SharedPtr<MaterialInstance> ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiMaterial* aiMat, AssetManager& assetManager);
 
 		static std::string DetermineBaseMaterial(const aiMaterial* aiMat);

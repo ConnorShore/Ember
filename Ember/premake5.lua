@@ -17,7 +17,9 @@ project "Ember"
       "vendor/glm",
       "vendor/imgui",
       "vendor/stb",
-      "vendor/assimp/include"
+      "vendor/assimp/include",
+      "vendor/rapidyaml/src",
+		"vendor/rapidyaml/ext/c4core/src"
    }
 
    files 
@@ -34,6 +36,7 @@ project "Ember"
       "glad",
       "imgui",
       "assimp",
+      "rapidyaml",
       "opengl32.lib",
    }
 

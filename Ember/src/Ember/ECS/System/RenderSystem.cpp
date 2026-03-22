@@ -135,8 +135,8 @@ namespace Ember {
 
 	void RenderSystem::OnDetach(Registry* registry)
 	{
-		Renderer2D::Shutdown();
-		Renderer3D::Shutdown();
+		//Renderer2D::Shutdown();
+		//Renderer3D::Shutdown();
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
@@ -377,6 +377,8 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			if (!mesh.Mesh || !material.Material)
+				continue;
 			material.Material->GetShader()->Bind();
 			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
@@ -622,6 +624,9 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			if (!mesh.Mesh || !material.Material)
+				continue;
+
 			switch (material.Material->GetRenderQueue())
 			{
 			case RenderQueue::Opaque:

@@ -12,7 +12,7 @@ namespace Ember {
 		static SharedPtr<Mesh> CreateSphere(const std::string& name = "Primitive_Sphere", float radius = 1.0f, unsigned int xSegments = 64, unsigned int ySegments = 64);
 		static SharedPtr<Mesh> CreateCube(const std::string& name = "Primitive_Cube", float size = 1.0f);
 		static SharedPtr<Mesh> CreateQuad(const std::string& name = "Primitive_Quad", float width = 1.0f, float height = 1.0f);
-		static SharedPtr<Mesh> CreateQuad(float width = 1.0f, float height = 1.0f);
+		static SharedPtr<Mesh> CreateQuad(float width, float height);
 	};
 
 }

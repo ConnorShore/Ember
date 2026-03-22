@@ -208,6 +208,7 @@ namespace Ember {
 
 	struct ScriptComponent
 	{
+		std::string ClassName = "";
 		bool Initalized = false;
 
 		// Inline Lambda Function //
@@ -221,8 +222,9 @@ namespace Ember {
 		void (*OnDestroyScript)(ScriptComponent*) = nullptr;
 
 		template<typename T>
-		void Bind()
+		void Bind(const std::string& className)
 		{
+			ClassName = className;
 			OnInitScript = []() { return static_cast<Behavior*>(new T()); };
 			OnDestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}

@@ -72,6 +72,8 @@ namespace Ember {
 		inline SceneState GetSceneState() const { return m_State; }
 		inline void SetSceneState(SceneState state) { m_State = state; }
 
+		inline const std::string& GetName() const { return m_Name; }
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);

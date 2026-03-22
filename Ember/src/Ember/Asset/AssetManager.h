@@ -87,6 +87,22 @@ namespace Ember {
 			return newShader;
 		}
 
+		template<IsCoreAsset T>
+		void Register(const SharedPtr<T>& asset)
+		{
+			if (!asset)
+			{
+				EB_CORE_WARN("Attempted to register a null asset!");
+				return;
+			}
+
+			UUID id = asset->GetUUID();
+			std::string name = asset->GetName();
+
+			m_Assets[id] = asset;
+			m_AssetNames[name] = id;
+		}
+
         template<IsCoreAsset T>
 		SharedPtr<T> GetAsset(UUID id) const
 		{

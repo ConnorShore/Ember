@@ -33,16 +33,16 @@ namespace Ember {
 		}
 
 		m_MeshCounter = 0;
-		auto rootModelNode = ProcessScene(name, scene);
+		auto rootModelNode = ProcessScene(name, scene, assetManager);
 		return SharedPtr<Model>::Create(name, filePath, rootModelNode, materials);
 	}
 
-	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene)
+	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager)
 	{
 		ModelNode rootNode;
 		rootNode.Name = scene->mRootNode->mName.C_Str();
 		rootNode.LocalTransform = ConvertMatrix(scene->mRootNode->mTransformation);
-		ProcessNode(name, scene->mRootNode, rootNode, scene);
+		ProcessNode(name, scene->mRootNode, rootNode, scene, assetManager);
 		return rootNode;
 	}
 
@@ -56,14 +56,14 @@ namespace Ember {
 		);
 	}
 
-	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene)
+	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene, AssetManager& assetManager)
 	{
 		for (unsigned int i = 0; i < aiNode->mNumMeshes; i++)
 		{
 			aiMesh* mesh = scene->mMeshes[aiNode->mMeshes[i]];
 			MeshMaterialNode meshMaterialNode;
 			meshMaterialNode.MaterialIndex = mesh->mMaterialIndex;
-			meshMaterialNode.MeshAsset = ProcessMesh(name, mesh);
+			meshMaterialNode.MeshAsset = ProcessMesh(name, mesh, assetManager);
 			modelNode.Meshes.push_back(meshMaterialNode);
 		}
 
@@ -73,12 +73,12 @@ namespace Ember {
 			ModelNode childNode;
 			childNode.Name = aiNode->mChildren[i]->mName.C_Str();
 			childNode.LocalTransform = ConvertMatrix(aiNode->mChildren[i]->mTransformation);
-			ProcessNode(name, aiNode->mChildren[i], childNode, scene);
+			ProcessNode(name, aiNode->mChildren[i], childNode, scene, assetManager);
 			modelNode.ChildNodes.push_back(childNode);
 		}
 	}
 
-	SharedPtr<Mesh> ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh)
+	SharedPtr<Mesh> ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, AssetManager& assetManager)
 	{
 		std::vector<float> vertices;
 		std::vector<unsigned int> indices;
@@ -146,8 +146,10 @@ namespace Ember {
 			}
 		}
 
-		std::string meshName = name + "_Mesh_" + std::to_string(m_MeshCounter++);
-		return SharedPtr<Mesh>::Create(meshName, vertices, indices);
+		std::string meshName = name + "_" + aiMesh->mName.C_Str();
+		auto ret = SharedPtr<Mesh>::Create(meshName, vertices, indices);
+		assetManager.Register(ret);
+		return ret;
 	}
 
 	SharedPtr<MaterialInstance> ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiMaterial* aiMat, AssetManager& assetManager)
@@ -163,6 +165,8 @@ namespace Ember {
 		// Populate uniform overrides
 		ExtractPBRUniforms(aiMat, matInstance, baseMatName);
 		ExtractTextures(matName, modelFilePath, aiMat, matInstance, assetManager);
+
+		assetManager.Register(matInstance);
 
 		return matInstance;
 	}

@@ -56,6 +56,14 @@ namespace Ember {
 		fallbackMat->SetUniform(Constants::Uniforms::AO, 1.0f);
 		fallbackMat->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
 		fallbackMat->SetUniform(Constants::Uniforms::NormalMap, normalTex);
+
+		// Basic Meshes
+		auto sphereMesh = PrimitiveGenerator::CreateSphere();
+		auto cubeMesh = PrimitiveGenerator::CreateCube();
+		auto quadMesh = PrimitiveGenerator::CreateQuad();
+		Register(sphereMesh);
+		Register(cubeMesh);
+		Register(quadMesh);
 	}
 
     SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const

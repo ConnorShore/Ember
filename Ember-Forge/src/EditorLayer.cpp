@@ -159,7 +159,43 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
 				{
-					EB_CORE_TRACE("New Scene menu item clicked!");
+					m_Context.ActiveScene = SharedPtr<Scene>::Create("New Scene");
+					m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+					m_Context.SelectedEntity = {};
+					m_PreviousSelectedEntity = {};
+
+					EB_CORE_TRACE("New Scene created!");
+				}
+
+				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+				{
+					if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
+						m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+					}
+					SceneSerializer serializer(m_Context.ActiveScene);
+					serializer.Serialize("Ember-Forge/assets/scenes/TestScene.ebs");
+					EB_CORE_TRACE("Scene saved!");
+				}
+
+				if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
+				{
+					SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+
+					SceneSerializer serializer(newScene);
+					if (serializer.Deserialize("Ember-Forge/assets/scenes/TestScene.ebs"))
+					{
+						m_Context.ActiveScene = newScene;
+						m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+
+						m_Context.SelectedEntity = {};
+						m_PreviousSelectedEntity = {};
+
+						EB_CORE_TRACE("Scene loaded successfully!");
+					}
+					else
+					{
+						EB_CORE_ERROR("Failed to load scene!");
+					}
 				}
 
 				ImGui::EndMenu();
@@ -325,6 +361,7 @@ namespace Ember {
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
+		// 1. Clean up the old selection safely
 		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
 		{
 			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
@@ -332,20 +369,24 @@ namespace Ember {
 			{
 				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
 				{
-					if (child.ContainsComponent<OutlineComponent>())
+					// DEFENSIVE CHECK: Make sure the child exists before detaching!
+					if (child && child.ContainsComponent<OutlineComponent>())
 						child.DetachComponent<OutlineComponent>();
 				}
 			}
 		}
 
-		// Add outlines to the new selection and its children
+		// 2. Add outlines to the new selection safely
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 		{
 			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
 			if (m_Context.SelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
-					child.AttachComponent(m_OutlineEntitySelectedComp);
+				{
+					if (child != Constants::Entities::InvalidEntityID)
+						child.AttachComponent(m_OutlineEntitySelectedComp);
+				}
 			}
 		}
 

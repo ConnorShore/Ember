@@ -13,3 +13,6 @@
 [submodule "Ember-Forge/vendor/ImGuizmo"]
 	path = Ember-Forge/vendor/ImGuizmo
 	url = https://github.com/ConnorShore/ImGuizmo.git
+[submodule "Ember/vendor/rapidyaml"]
+	path = Ember/vendor/rapidyaml
+	url = https://github.com/ConnorShore/rapidyaml.git

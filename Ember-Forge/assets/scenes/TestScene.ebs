@@ -1,0 +1,47 @@
+Scene: New Scene
+Entities:
+  - Entity: 5364716630912594265
+    TagComponent:
+      Tag: Empty_Entity
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [2.1563869,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,2.1563869,0,0,1]
+    MeshComponent:
+      Mesh: Primitive_Cube
+    MaterialComponent:
+      Material: StandardGeometry
+  - Entity: 6553978702009658296
+    TagComponent:
+      Tag: Empty_Entity
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    PointLightComponent:
+      Color: [1,1,1]
+      Intensity: 50
+      Radius: 0
+  - Entity: 11873513326868301923
+    TagComponent:
+      Tag: Empty_Entity
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [0,0,-2.9776506]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,-2.9776506,1]
+    MeshComponent:
+      Mesh: Primitive_Sphere
+    MaterialComponent:
+      Material: StandardGeometry
