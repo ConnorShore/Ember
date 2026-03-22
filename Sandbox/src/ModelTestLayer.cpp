@@ -93,7 +93,7 @@ void ModelTestLayer::OnAttach()
 
 	// Add flashlight entity
 	m_Flashlight = m_MainScene->AddEntity();
-	Ember::SpotLightComponent spotlight(Ember::Vector3f(0.0f, 0.0f, -1.0f), Ember::Vector3f(1.0f, 1.0f, 0.0f), 2500.0f, 12.5f, 17.5f);
+	Ember::SpotLightComponent spotlight(Ember::Vector3f(1.0f, 1.0f, 0.0f), 2500.0f, 12.5f, 17.5f);
 	m_Flashlight.AttachComponent(spotlight);
 
 	// Choose Lights
@@ -124,7 +124,7 @@ void ModelTestLayer::OnUpdate(Ember::TimeStep delta)
 
 	// 4. Apply the Offset! (2 units right, 1 unit down)
 	flashTransform.Position = camTransform.Position + (right * 1.0f) - (up * 1.0f);
-	flashSpotlight.Direction = forward;
+	flashTransform.Rotation = forward;
 
 	auto& transform = m_Satellite.GetComponent<Ember::TransformComponent>();
 	transform.Rotation.y += 1.0f * delta;
@@ -197,8 +197,9 @@ void ModelTestLayer::SetupDirectionalLights()
 {
 	auto lightEntity = m_MainScene->AddEntity();
 	lightEntity.GetComponent<Ember::TransformComponent>().Position = Ember::Vector3f(0.0f, 20.0f, 0.0f);
+	lightEntity.GetComponent<Ember::TransformComponent>().Rotation = Ember::Vector3f(1.0f, -0.8f, -0.25f);
 
-	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, -0.8f, -0.25f), Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
+	Ember::DirectionalLightComponent dirLightComp = { Ember::Vector3f(1.0f, 0.8f, 0.8f), 15.0f};
 	lightEntity.AttachComponent(dirLightComp);
 }
 
@@ -222,7 +223,7 @@ void ModelTestLayer::SetupStandardLights()
 		{ { -12.0f,   6.0f, -10.0f }, { 1.0f, 1.0f,  1.0f  }, 400.0f, 50.0f },
 	};
 
-	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube();
 	for (auto& ld : lights)
 	{
 		auto lightEntity = m_MainScene->AddEntity();
@@ -261,7 +262,7 @@ void ModelTestLayer::SetupRandomLights()
 	std::uniform_real_distribution<float> randomIntensity(5.0f, 50.0f);
 
 	int numLights = 256;
-	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube();
 
 	for (int i = 0; i < numLights; i++)
 	{

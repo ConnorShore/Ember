@@ -70,6 +70,7 @@ namespace Ember {
 
 		inline Registry& GetRegistry() { return *m_Registry; }
 		inline SceneState GetSceneState() const { return m_State; }
+		inline void SetSceneState(SceneState state) { m_State = state; }
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
