@@ -55,7 +55,14 @@ namespace Ember {
 
 		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
 		auto satelliteAsset = LoadAsset<Model>("Satellite", "Sandbox/assets/models/satellite.obj");
-		m_Context.ActiveScene->InstantiateModel(satelliteAsset);
+		auto entity = m_Context.ActiveScene->InstantiateModel(satelliteAsset);
+
+		ScriptComponent script;
+		script.OnUpdate = [](Entity entity, TimeStep step) {
+			auto& transform = entity.GetComponent<TransformComponent>();
+			transform.Rotation += Vector3f(0.0f, 1.0f * step, 0.0f);
+		};
+		entity.AttachComponent(script);
 
 		// Plane for testing
 		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
@@ -147,7 +154,7 @@ namespace Ember {
 		// Menu Bar
 		{
 			ImGui::BeginMainMenuBar();
-
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
 			if (ImGui::BeginMenu("File"))
 			{
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
@@ -158,6 +165,24 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
+			// Add play/pause button in center of main menu bar
+			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 50); // Center the button (assuming button width ~100)
+			if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
+			{
+				if (ImGui::Button("Pause"))
+				{
+					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+				}
+			}
+			else
+			{
+				if (ImGui::Button("Resume"))
+				{
+					m_Context.ActiveScene->SetSceneState(SceneState::Play);
+				}
+			}
+
+			ImGui::PopStyleVar();
 			ImGui::EndMainMenuBar();
 		}
 
@@ -245,6 +270,15 @@ namespace Ember {
 			case KeyCode::Delete:
 				if (m_Context.SelectedEntity != m_InvalidEntity)
 					RemoveEntity(m_Context.SelectedEntity);
+				break;
+
+			case KeyCode::Space:
+				if (m_Context.ActiveScene->GetSceneState() == SceneState::Play) {
+					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+				}
+				else {
+					m_Context.ActiveScene->SetSceneState(SceneState::Play);
+				}
 				break;
 		}
 

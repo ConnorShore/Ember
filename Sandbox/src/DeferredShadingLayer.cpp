@@ -30,7 +30,7 @@ void DeferredShadingLayer::OnAttach()
 	m_DefaultLightCubeMaterial = GetAsset<Ember::Material>(Ember::Constants::Assets::StandardUnlitMat);
 
 	// Spheres
-	auto mesh = Ember::PrimitiveGenerator::CreateSphere(1.0f, 64, 64);
+	auto mesh = Ember::PrimitiveGenerator::CreateSphere("TestSphere", 1.0f, 64, 64);
 
 	// ------------------------------------------------------------------
 	// Parameter grid:  7 columns (roughness) × 7 rows (metallic)
@@ -238,7 +238,7 @@ void DeferredShadingLayer::SetupRandomLights()
 	std::uniform_real_distribution<float> randomIntensity(5.0f, 50.0f);
 
 	int numLights = 256;
-	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube();
 
 	for (int i = 0; i < numLights; i++)
 	{
@@ -289,7 +289,7 @@ void DeferredShadingLayer::SetupStandardLights()
 		{ { -12.0f,   6.0f, -10.0f }, { 1.0f, 1.0f,  1.0f  }, 400.0f, 50.0f },
 	};
 
-	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube(1.0f);
+	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube();
 	for (auto& ld : lights)
 	{
 		auto lightEntity = m_MainScene->AddEntity();
