@@ -54,7 +54,7 @@ namespace Ember {
 		// -----------------------------------------------------------------
 
 		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
-		auto satelliteAsset = LoadAsset<Model>("Satellite", "Sandbox/assets/models/satellite.obj");
+		auto satelliteAsset = LoadAsset<Model>("Satellite", "Ember-Forge/assets/models/satellite.obj");
 		auto entity = m_Context.ActiveScene->InstantiateModel(satelliteAsset);
 
 		ScriptComponent script;
@@ -159,43 +159,22 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
 				{
-					m_Context.ActiveScene = SharedPtr<Scene>::Create("New Scene");
-					m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-					m_Context.SelectedEntity = {};
-					m_PreviousSelectedEntity = {};
+					NewScene();
+				}
 
-					EB_CORE_TRACE("New Scene created!");
+				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S"))
+				{
+					SaveScene(true);
 				}
 
 				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
 				{
-					if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
-						m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
-					}
-					SceneSerializer serializer(m_Context.ActiveScene);
-					serializer.Serialize("Ember-Forge/assets/scenes/TestScene.ebs");
-					EB_CORE_TRACE("Scene saved!");
+					SaveScene(false);
 				}
 
 				if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
 				{
-					SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
-
-					SceneSerializer serializer(newScene);
-					if (serializer.Deserialize("Ember-Forge/assets/scenes/TestScene.ebs"))
-					{
-						m_Context.ActiveScene = newScene;
-						m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-
-						m_Context.SelectedEntity = {};
-						m_PreviousSelectedEntity = {};
-
-						EB_CORE_TRACE("Scene loaded successfully!");
-					}
-					else
-					{
-						EB_CORE_ERROR("Failed to load scene!");
-					}
+					OpenScene();
 				}
 
 				ImGui::EndMenu();
@@ -205,14 +184,14 @@ namespace Ember {
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 50); // Center the button (assuming button width ~100)
 			if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
 			{
-				if (ImGui::Button("Pause"))
+				if (ImGui::Button("Stop"))
 				{
 					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
 				}
 			}
 			else
 			{
-				if (ImGui::Button("Resume"))
+				if (ImGui::Button("Play"))
 				{
 					m_Context.ActiveScene->SetSceneState(SceneState::Play);
 				}
@@ -300,6 +279,22 @@ namespace Ember {
 				break;
 			case KeyCode::T:
 				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
+				break;
+
+			// Scene Hot keys
+			case KeyCode::N:
+				if (control)
+					NewScene();
+				break;
+			case KeyCode::O:
+				if (control)
+					OpenScene();
+				break;
+			case KeyCode::S:
+				if (control && shift)
+					SaveScene(true);
+				else if (control)
+					SaveScene(false);
 				break;
 
 			// Entity Hot keys
@@ -521,5 +516,60 @@ namespace Ember {
 			m_Context.ActiveScene->RemoveEntity(entity);
 
 		m_Context.PendingEntityRemovals.clear();
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Context.ActiveScene = SharedPtr<Scene>::Create("New Scene");
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.SelectedEntity = {};
+		m_PreviousSelectedEntity = {};
+
+		EB_CORE_TRACE("New Scene created!");
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string sceneFile = FileDialog::OpenFile("Ember-Forge/assets/scenes", "Ember Scene (*.ebs)", "*.ebs");
+		if (!sceneFile.empty())
+		{
+			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+			SceneSerializer serializer(newScene);
+			if (serializer.Deserialize(sceneFile))
+			{
+				m_Context.ActiveScene = newScene;
+				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Context.ActiveScene->SetFilePath(sceneFile);
+
+				m_Context.SelectedEntity = {};
+				m_PreviousSelectedEntity = {};
+
+				EB_CORE_TRACE("Scene loaded successfully!");
+			}
+			else
+			{
+				EB_CORE_ERROR("Failed to load scene!");
+			}
+		}
+	}
+
+	void EditorLayer::SaveScene(bool saveAs /* = false */)
+	{
+		std::string sceneName = saveAs 
+			? FileDialog::SaveFile("Ember-Forge/assets/scenes/", "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
+			: m_Context.ActiveScene->GetFilePath();
+
+		if (!sceneName.empty())
+		{
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
+				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+			}
+
+			SceneSerializer serializer(m_Context.ActiveScene);
+			serializer.Serialize(sceneName);
+
+			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
+			EB_CORE_TRACE("Scene saved!");
+		}
 	}
 }

@@ -1,0 +1,108 @@
+Scene: Loaded Scene
+Entities:
+  - Entity: 6496035395709027109
+    TagComponent:
+      Tag: Satellite
+    RelationshipComponent:
+      Parent: 0
+      Children:
+        - 6059280584862514608
+        - 3785212517617535944
+        - 9906222971715400302
+        - 15912349724268800864
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,-0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    ScriptComponent:
+      ClassName: ''
+  - Entity: 6059280584862514608
+    TagComponent:
+      Tag: Main_Body
+    RelationshipComponent:
+      Parent: 6496035395709027109
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,-0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    MeshComponent:
+      Mesh: Satellite_Main_Body
+    MaterialComponent:
+      Material: Satellite_Mat_GoldFoil
+  - Entity: 3785212517617535944
+    TagComponent:
+      Tag: Wing_Left
+    RelationshipComponent:
+      Parent: 6496035395709027109
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,-0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    MeshComponent:
+      Mesh: Satellite_Wing_Left
+    MaterialComponent:
+      Material: Satellite_Mat_SolarPanel
+  - Entity: 9906222971715400302
+    TagComponent:
+      Tag: Wing_Right
+    RelationshipComponent:
+      Parent: 6496035395709027109
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,-0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    MeshComponent:
+      Mesh: Satellite_Wing_Right
+    MaterialComponent:
+      Material: Satellite_Mat_SolarPanel
+  - Entity: 15912349724268800864
+    TagComponent:
+      Tag: Antenna_Unlit
+    RelationshipComponent:
+      Parent: 6496035395709027109
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [0,-0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    MeshComponent:
+      Mesh: Satellite_Antenna_Unlit
+    MaterialComponent:
+      Material: Satellite_Mat_NeonRed_Unlit
+  - Entity: 17237613903298665482
+    TagComponent:
+      Tag: GroundPlane
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [0.84315485,-3.4518127,0.39549246]
+      Rotation: [-1.5708,0,0]
+      Scale: [40.275764,40.275764,40.275764]
+      WorldTransform: [40.275764,0,0,0,0,-0.0001488386,-40.275764,0,0,40.275764,-0.0001488386,0,0.84315485,-3.4518127,0.39549246,1]
+    MeshComponent:
+      Mesh: Primitive_Quad
+    MaterialComponent:
+      Material: StandardGeometry
+  - Entity: 11696594928587533873
+    TagComponent:
+      Tag: Light
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [0,0,0]
+      Rotation: [-0.78539896,0.2618002,-0.5350678]
+      Scale: [1,1,1]
+      WorldTransform: [0.8309221,-0.49252492,-0.2588198,0,0.2031187,0.70159525,-0.6830131,0,0.5179877,0.5149596,0.683012,0,0,0,0,1]
+    DirectionalLightComponent:
+      Color: [1,0.8,0.8]
+      Intensity: 5.2

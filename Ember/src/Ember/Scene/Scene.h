@@ -74,6 +74,9 @@ namespace Ember {
 
 		inline const std::string& GetName() const { return m_Name; }
 
+		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
+		inline const std::string& GetFilePath() const { return m_FilePath; }
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
@@ -85,6 +88,7 @@ namespace Ember {
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 
 		std::string m_Name;
+		std::string m_FilePath;
 	};
 
 }

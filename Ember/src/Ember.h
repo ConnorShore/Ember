@@ -56,6 +56,8 @@
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
 
+#include "Ember/Utils/PlatformUtil.h"
+
 // Vendor includes
 #include <imgui/imgui.h>
 #include <assimp/Importer.hpp>

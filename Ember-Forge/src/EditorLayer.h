@@ -33,6 +33,10 @@ namespace Ember {
 		void RemoveEntity(Entity entity);
 		void RemovePendingEntities();
 
+		void NewScene();
+		void OpenScene();
+		void SaveScene(bool saveAs = false);
+
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
 
