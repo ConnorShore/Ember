@@ -76,10 +76,10 @@ namespace Ember {
 		m_ExpandToSelectedEntity = false;
 	}
 
-    void SceneHierarchyPanel::DrawTreeNode(Entity entity)
+	void SceneHierarchyPanel::DrawTreeNode(Entity entity)
 	{
 		ImGuiTreeNodeFlags flags = ((GetSelectedEntity() == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
-		flags |= ImGuiTreeNodeFlags_SpanAvailWidth; // Makes the selection highlight span the whole window width
+		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 
 		bool hasChildren = !entity.GetComponent<RelationshipComponent>().Children.empty();
 		if (!hasChildren)
@@ -87,32 +87,81 @@ namespace Ember {
 			flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 		}
 
-		if (m_ExpandToSelectedEntity)
+		if (m_ExpandToSelectedEntity && IsAncestor(entity, m_Context->SelectedEntity))
 		{
-			if (IsAncestor(entity, m_Context->SelectedEntity))
-			{
-				ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-			}
+			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 		}
 
+		// Renaming state
+		bool isRenaming = (m_RenamingEntity == entity);
 		auto id = (void*)(uint64_t)(uint32_t)entity.GetEntityHandle();
-		bool opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
+
+		bool opened;
+		if (isRenaming)
+		{
+			opened = ImGui::TreeNodeEx(id, flags, "");
+		}
+		else
+		{
+			opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
+		}
+
 		if (ImGui::IsItemClicked())
 		{
 			SetSelectedEntity(entity);
 		}
 
-		if (m_ExpandToSelectedEntity && m_Context->SelectedEntity == entity)
+		// Double-Click Rename Trigger
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 		{
-			ImGui::SetScrollHereY(0.5f); // 0.5f centers the item vertically in the window
+			RenameEntity(entity);
 		}
 
-		// Entity context menu
-		if (ImGui::BeginPopupContextItem(entity.GetName().c_str(), ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		if (isRenaming)
+		{
+			ImGui::SameLine();
+
+			if (m_SetRenameFocus)
+			{
+				ImGui::SetKeyboardFocusHere();
+				m_SetRenameFocus = false;
+			}
+
+			ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+
+			// If the user hits Enter, apply the name
+			if (ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+			{
+				entity.GetComponent<TagComponent>().Tag = std::string(m_RenameBuffer);
+				m_RenamingEntity = {};
+			}
+			ImGui::PopItemWidth();
+
+			if (ImGui::IsItemDeactivated())
+			{
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				{
+					m_RenamingEntity = {};
+				}
+				else
+				{
+					entity.GetComponent<TagComponent>().Tag = std::string(m_RenameBuffer); // Apply
+					m_RenamingEntity = {};
+				}
+			}
+		}
+
+		if (m_ExpandToSelectedEntity && m_Context->SelectedEntity == entity)
+		{
+			ImGui::SetScrollHereY(0.5f);
+		}
+
+		std::string popupId = entity.GetName() + "##" + std::to_string((uint32_t)entity.GetEntityHandle());
+		if (ImGui::BeginPopupContextItem(popupId.c_str(), ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
 			if (ImGui::MenuItem("Rename Entity"))
 			{
-				// TODO: Add this functionality
+				RenameEntity(entity);
 			}
 			if (ImGui::MenuItem("Add Child Entity"))
 			{
@@ -130,17 +179,19 @@ namespace Ember {
 			ImGui::EndPopup();
 		}
 
-		if (opened && hasChildren)
+		if (opened)
 		{
-			auto& children = entity.GetComponent<RelationshipComponent>().Children;
-			for (UUID childID : children)
+			if (hasChildren)
 			{
-				Entity child(m_Context->ActiveScene->GetEntity(childID).GetEntityHandle(), m_Context->ActiveScene.Ptr());
-				DrawTreeNode(child);
+				auto& children = entity.GetComponent<RelationshipComponent>().Children;
+				for (UUID childID : children)
+				{
+					Entity child = m_Context->ActiveScene->GetEntity(childID);
+					if (child != Constants::Entities::InvalidEntityID)
+						DrawTreeNode(child);
+				}
+				ImGui::TreePop();
 			}
-
-			// We only pop the tree if it's NOT a leaf node
-			ImGui::TreePop();
 		}
 	}
 
@@ -169,6 +220,14 @@ namespace Ember {
 	{
 		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
 		SetSelectedEntity(entity);
+		RenameEntity(entity);
+	}
+
+	void SceneHierarchyPanel::RenameEntity(Entity entity)
+	{
+		m_RenamingEntity = entity;
+		strncpy(m_RenameBuffer, "Empty_Entity", sizeof(m_RenameBuffer));
+		m_SetRenameFocus = true;
 	}
 
 }

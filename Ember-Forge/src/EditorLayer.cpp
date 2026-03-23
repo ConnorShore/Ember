@@ -309,11 +309,12 @@ namespace Ember {
 				break;
 
 			case KeyCode::Space:
-				if (m_Context.ActiveScene->GetSceneState() == SceneState::Play) {
-					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
-				}
-				else {
-					m_Context.ActiveScene->SetSceneState(SceneState::Play);
+				if (control)
+				{
+					if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
+						m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+					else
+						m_Context.ActiveScene->SetSceneState(SceneState::Play);
 				}
 				break;
 		}

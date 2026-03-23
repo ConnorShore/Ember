@@ -1,21 +1,21 @@
 Scene: New Scene
 Entities:
-  - Entity: 5364716630912594265
+  - Entity: 12205638781165981
     TagComponent:
       Tag: Empty_Entity
     RelationshipComponent:
       Parent: 0
       Children: []
     TransformComponent:
-      Position: [2.1563869,0,0]
-      Rotation: [0,0,0]
-      Scale: [1,1,1]
-      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,2.1563869,0,0,1]
+      Position: [0,-1.5372782,0]
+      Rotation: [-1.5707964,0,0]
+      Scale: [15.6078,15.607658,15.607658]
+      WorldTransform: [15.6078,0,0,0,0,9.3028893e-07,-15.607657,0,0,15.607657,9.3028893e-07,0,0,-1.5372782,0,1]
     MeshComponent:
-      Mesh: Primitive_Cube
+      Mesh: Primitive_Quad
     MaterialComponent:
       Material: StandardGeometry
-  - Entity: 6553978702009658296
+  - Entity: 10258832949817049224
     TagComponent:
       Tag: Empty_Entity
     RelationshipComponent:
@@ -23,25 +23,37 @@ Entities:
       Children: []
     TransformComponent:
       Position: [0,0,0]
-      Rotation: [0,0,0]
+      Rotation: [-2.9593263,0.5032095,-1.8013725]
       Scale: [1,1,1]
-      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
-    PointLightComponent:
-      Color: [1,1,1]
-      Intensity: 50
-      Radius: 0
-  - Entity: 11873513326868301923
+      WorldTransform: [-0.2002089,-0.8528549,-0.48223966,0,-0.9374321,0.3098498,-0.15878989,0,0.2848466,0.4202758,-0.8615283,0,0,0,0,1]
+    DirectionalLightComponent:
+      Color: [0.7205882,0.25079295,0.25079295]
+      Intensity: 5
+  - Entity: 6570267491787135098
     TagComponent:
       Tag: Empty_Entity
     RelationshipComponent:
       Parent: 0
       Children: []
     TransformComponent:
-      Position: [0,0,-2.9776506]
+      Position: [0,0.28834945,0]
       Rotation: [0,0,0]
       Scale: [1,1,1]
-      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,-2.9776506,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0.28834945,0,1]
+    RigidBodyComponent:
+      Velocity: [0,0,0]
     MeshComponent:
-      Mesh: Primitive_Sphere
+      Mesh: Primitive_Cube
     MaterialComponent:
       Material: StandardGeometry
+    SpotLightComponent:
+      Color: [1,1,1]
+      Intensity: 100
+      CutOffAngle: 0.30368727
+      OuterCutOffAngle: 1.3962634
+    PointLightComponent:
+      Color: [0.07497116,0.3995522,0.7647059]
+      Intensity: 50
+      Radius: 0
+    ScriptComponent:
+      ClassName: ''
