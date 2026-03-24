@@ -24,9 +24,14 @@ namespace Ember {
 		bool IsAncestor(Entity ancestor, Entity descendant);
 
 		void CreateEntity();
+		void RenameEntity(Entity entity);
 
 	private:
 		Entity m_PreviouslySelectedEntity;
 		bool m_ExpandToSelectedEntity = true;
+
+		Entity m_RenamingEntity;
+		char m_RenameBuffer[256] = "";
+		bool m_SetRenameFocus = false;
 	};
 }

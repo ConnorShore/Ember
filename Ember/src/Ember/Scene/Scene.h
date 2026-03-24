@@ -35,9 +35,9 @@ namespace Ember {
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
-		Entity AddEntity();
 		Entity AddEntity(const std::string& name);
-		Entity GetEntity(const std::string& tag);
+		Entity AddEntity(UUID uuid, const std::string& name);
+		Entity GetEntity(UUID uuid);
 
 		template<IsCoreAsset T>
 		SharedPtr<T> GetAsset(const std::string& assetName)
@@ -72,6 +72,11 @@ namespace Ember {
 		inline SceneState GetSceneState() const { return m_State; }
 		inline void SetSceneState(SceneState state) { m_State = state; }
 
+		inline const std::string& GetName() const { return m_Name; }
+
+		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
+		inline const std::string& GetFilePath() const { return m_FilePath; }
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
@@ -80,9 +85,10 @@ namespace Ember {
 		ScopedPtr<Registry> m_Registry;
 		SceneState m_State = SceneState::Edit;
 
-		std::unordered_map<std::string, EntityID> m_SceneEntities;
+		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 
 		std::string m_Name;
+		std::string m_FilePath;
 	};
 
 }

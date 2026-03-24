@@ -9,6 +9,7 @@
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
 #include "Ember/ECS/Types.h"
+#include "Ember/Core/Constants.h"
 
 namespace Ember {
 	class Entity;
@@ -21,18 +22,26 @@ namespace Ember {
 
 namespace Ember {
 
+	struct IDComponent
+	{
+		UUID ID;
+		IDComponent() : ID(UUID()) {}
+		IDComponent(const UUID& id) : ID(id) {}
+	};
+
 	struct TagComponent
 	{
 		std::string Tag;
 
 		TagComponent() = default;
 		TagComponent(const std::string& tag) : Tag(tag) {}
+		TagComponent(const TagComponent&) = default;
 	};
 
 	struct RelationshipComponent
 	{
-		EntityID ParentHandle = Constants::Entities::InvalidEntityID;
-		std::vector<EntityID> Children;
+		UUID ParentHandle = Constants::Entities::InvalidEntityUUID;
+		std::vector<UUID> Children;
 
 		RelationshipComponent() = default;
 		RelationshipComponent(const RelationshipComponent&) = default;
@@ -51,6 +60,7 @@ namespace Ember {
 			const Vector3f& scale = Vector3f(1.0f))
 			: Position(position), Rotation(rotation), Scale(scale) {
 		}
+		TransformComponent(const TransformComponent&) = default;
 
 		Matrix4f GetLocalTransform() const
 		{
@@ -91,6 +101,7 @@ namespace Ember {
 
 		RigidBodyComponent() = default;
 		RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
+		RigidBodyComponent(const RigidBodyComponent&) = default;
 	};
 
 	struct SpriteComponent
@@ -100,6 +111,7 @@ namespace Ember {
 
 		SpriteComponent(const Vector4f color) : Color(color) {}
 		SpriteComponent(const SharedPtr<Ember::Texture>& texture) : Color(Vector4f(1.0f)), Texture(texture) {}
+		SpriteComponent(const Vector4f color, const SharedPtr<Ember::Texture>& texture) : Color(color), Texture(texture) {}
 	};
 
 	struct MeshComponent
@@ -108,6 +120,7 @@ namespace Ember {
 
 		MeshComponent() = default;
 		MeshComponent(const SharedPtr<Ember::Mesh>& mesh) : Mesh(mesh) {}
+		MeshComponent(const MeshComponent&) = default;
 	};
 
 	struct MaterialComponent
@@ -116,6 +129,7 @@ namespace Ember {
 
 		MaterialComponent() = default;
 		MaterialComponent(const SharedPtr<Ember::MaterialBase>& material) : Material(material) {}
+		MaterialComponent(const MaterialComponent&) = default;
 
 		SharedPtr<MaterialInstance> GetInstanced()
 		{
@@ -143,6 +157,7 @@ namespace Ember {
 
 		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
+		CameraComponent(const CameraComponent&) = default;
 	};
 
 	struct DirectionalLightComponent
@@ -153,6 +168,7 @@ namespace Ember {
 		DirectionalLightComponent() = default;
 		DirectionalLightComponent(const Vector3f& color, float intensity)
 			: Color(color), Intensity(intensity) { }
+		DirectionalLightComponent(const DirectionalLightComponent&) = default;
 	};
 
 	struct SpotLightComponent
@@ -175,6 +191,7 @@ namespace Ember {
 			OuterCutOff(cos(Math::Radians(outerCutOffDeg)))
 		{
 		}
+		SpotLightComponent(const SpotLightComponent&) = default;
 	};
 
 	struct PointLightComponent
@@ -186,10 +203,12 @@ namespace Ember {
 		PointLightComponent() = default;
 		PointLightComponent(const Vector3f& color, float intensity, float radius)
 			: Color(color), Intensity(intensity), Radius(radius) { }
+		PointLightComponent(const PointLightComponent&) = default;
 	};
 
 	struct ScriptComponent
 	{
+		std::string ClassName = "";
 		bool Initalized = false;
 
 		// Inline Lambda Function //
@@ -199,21 +218,24 @@ namespace Ember {
 
 		// Class Binding 
 		Behavior* Instance = nullptr;
-		Behavior* (*OnInitScript)() = nullptr;
-		void (*OnDestroyScript)(ScriptComponent*) = nullptr;
+		Behavior* (*OnInitFunc)() = nullptr;
+		void (*OnDestroyFunc)(ScriptComponent*) = nullptr;
 
 		template<typename T>
-		void Bind()
+		void Bind(const std::string& className)
 		{
-			OnInitScript = []() { return static_cast<Behavior*>(new T()); };
-			OnDestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
+			ClassName = className;
+			OnInitFunc = []() { return static_cast<Behavior*>(new T()); };
+			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}
 
+		ScriptComponent() = default;
+		ScriptComponent(const ScriptComponent&) = default;
 		~ScriptComponent()
 		{
-			if (Instance && OnDestroyScript)
+			if (Instance && OnDestroyFunc)
 			{
-				OnDestroyScript(this);
+				OnDestroyFunc(this);
 			}
 		}
 	};
@@ -226,6 +248,7 @@ namespace Ember {
 		OutlineComponent() = default;
 		OutlineComponent(const Vector3f& color, float thickness)
 			: Color(color), Thickness(thickness) {}
+		OutlineComponent(const OutlineComponent&) = default;
 	};
 
 }

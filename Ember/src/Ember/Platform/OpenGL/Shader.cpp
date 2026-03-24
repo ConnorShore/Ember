@@ -19,8 +19,8 @@ namespace Utils {
 namespace Ember {
 	namespace OpenGL {
 
-		Shader::Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
-			: Ember::Shader(name, filePath, macros)
+		Shader::Shader(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+			: Ember::Shader(uuid, name, filePath, macros)
 		{
 			EB_CORE_INFO("Creating shader with name {} from file: {}", m_Name, m_FilePath);
 
@@ -31,13 +31,28 @@ namespace Ember {
 			EB_CORE_INFO("Shader created with ID: {}", m_Id);
 		}
 
+		Shader::Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+			: Shader(UUID(), name, filePath, macros)
+		{
+		}
+
 		Shader::Shader(const std::string& name, const std::string& filePath)
 			: Shader(name, filePath, {})
 		{
 		}
 
 		Shader::Shader(const std::string& filePath, const ShaderMacros& macros)
-			: Shader(std::filesystem::path(filePath).stem().string(), filePath, macros)
+			: Shader(UUID(), std::filesystem::path(filePath).stem().string(), filePath, macros)
+		{
+		}
+
+		Shader::Shader(UUID uuid, const std::string& name, const std::string& filePath)
+			: Shader(uuid, name, filePath, {})
+		{
+		}
+
+		Shader::Shader(UUID uuid, const std::string& filePath, const ShaderMacros& macros)
+			: Shader(uuid, std::filesystem::path(filePath).stem().string(), filePath, macros)
 		{
 		}
 

@@ -25,10 +25,10 @@ namespace Ember {
 
 			if (!script.Initalized)
 			{
-				if (script.OnInitScript)
+				if (script.OnInitFunc)
 				{
 					// Behavior class scripts bound
-					script.Instance = script.OnInitScript();
+					script.Instance = script.OnInitFunc();
 					script.Instance->m_EntityHandle = handle;
 					script.Instance->OnCreate();
 				}

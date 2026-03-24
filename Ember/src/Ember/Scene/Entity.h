@@ -15,10 +15,15 @@ namespace Ember {
 	class Entity
 	{
 	public:
-		Entity(const std::string& tag, Scene* scene);
-		Entity(EntityID entity, Scene* scene);
+		Entity(EntityID entityHandle, Scene* scene)
+			: m_EntityHandle(entityHandle), m_SceneHandle(scene) {
+		}
 
-		Entity() : m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {}
+		Entity()
+			: m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {
+		}
+		Entity(const Entity&) = default;
+
 		~Entity() = default;
 
 		template<typename T>
@@ -44,11 +49,12 @@ namespace Ember {
 		Entity FindEntityInHierarchy(const std::string& name);
 
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
+		UUID GetEntityUUID() const;
 		const std::string& GetName() const;
 
 		operator EntityID() { return m_EntityHandle; }
-		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }
-
+		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }// Returns true if the entity has a valid handle and points to a valid scene
+		operator bool() const { return m_EntityHandle != Constants::Entities::InvalidEntityID && m_SceneHandle != nullptr; }
 
 	private:
 		Scene* m_SceneHandle;
@@ -70,6 +76,12 @@ struct std::hash<Ember::Entity>
 #include "Scene.h"
 
 namespace Ember {
+
+	//template<typename T>
+	//inline void Entity::AttachComponent(T& component)
+	//{
+	//	m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
+	//}
 
 	template<typename T>
 	inline void Entity::AttachComponent(T& component)

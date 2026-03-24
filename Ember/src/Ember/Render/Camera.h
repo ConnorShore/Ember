@@ -33,7 +33,9 @@ namespace Ember {
 		void SetViewportSize(unsigned int width, unsigned int height);
 
 		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
+
 		inline const Matrix4f GetProjectionMatrix() const { return m_ProjectionMatrix; }
+		inline void SetProjectionMatrix(const Matrix4f& matrix) { m_ProjectionMatrix = matrix; }
 
 		inline const Vector2f& GetViewportSize() const { return m_ViewportSize; }
 

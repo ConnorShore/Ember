@@ -25,7 +25,11 @@ namespace Ember {
 	{
 	public:
 		Texture(const std::string& name, const std::string& filePath)
-			: Asset(name, filePath, GetStaticType()) { }
+			: Asset(name, filePath, GetStaticType()) {
+		}
+		Texture(UUID uuid, const std::string& name, const std::string& filePath)
+			: Asset(uuid, name, filePath, GetStaticType()) {
+		}
 
 		virtual ~Texture() = default;
 
@@ -41,7 +45,9 @@ namespace Ember {
 		static SharedPtr<Texture> Create();
 		static SharedPtr<Texture> Create(const std::string& filePath);
 		static SharedPtr<Texture> Create(const std::string& name, const std::string& filePath);
+		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, const std::string& filePath);
 		static SharedPtr<Texture> Create(const std::string& name, unsigned int width, unsigned int height, const void* data);
+		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data);
 
 		virtual bool operator==(const SharedPtr<Texture>& other) const = 0;
 
@@ -62,6 +68,10 @@ namespace Ember {
 		static SharedPtr<Texture> Load(const std::string& name, const std::string& filePath)
 		{
 			return Texture::Create(name, filePath);
+		}
+		static SharedPtr<Texture> Load(UUID uuid, const std::string& name, const std::string& filePath)
+		{
+			return Texture::Create(uuid, name, filePath);
 		}
 	};
 }

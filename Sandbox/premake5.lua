@@ -17,7 +17,7 @@ project "Sandbox"
    {
        "%{wks.location}/Ember/src",
        "%{wks.location}/Ember/vendor",
-       "%{wks.location}/Ember/vendor/glm"
+       "%{wks.location}/Ember/vendor/glm",
    }
 
    links 

@@ -6,6 +6,7 @@ namespace Ember::Constants {
 		constexpr unsigned int MaxEntities = 1024;
 		constexpr unsigned int MaxComponents = 64;
 
+		constexpr unsigned int InvalidEntityUUID = 0;
 		constexpr unsigned int InvalidEntityID = MaxEntities + 1;
 		constexpr unsigned int InvalidComponentID = MaxEntities + 1;
 	}
@@ -20,22 +21,41 @@ namespace Ember::Constants {
 
 	namespace Assets {
 		inline const char* DefaultWhiteTex = "DefaultWhite";
+		inline const uint64_t DefaultWhiteTexUUID = 1;
 		inline const char* DefaultErrorTex = "DefaultError";
+		inline const uint64_t DefaultErrorTexUUID = 2;
 		inline const char* DefaultNormalTex = "DefaultNormal";
+		inline const uint64_t DefaultNormalTexUUID = 3;
 
 		inline const char* StandardGeometryShad = "StandardGeometry";
+		inline const uint64_t StandardGeometryShadUUID = 4;
 		inline const char* StandardLitShad = "StandardLit";
+		inline const uint64_t StandardLitShadUUID = 5;
 		inline const char* StandardUnlitShad = "StandardUnlit";
+		inline const uint64_t StandardUnlitShadUUID = 6;
 		inline const char* Standard2dQuadShad = "Standard2DQuad";
+		inline const uint64_t Standard2dQuadShadUUID = 7;
 		inline const char* StandardShadowShad = "StandardShadow";
+		inline const uint64_t StandardShadowShadUUID = 8;
 		inline const char* GaussianBlurShad = "GaussianBlur";
+		inline const uint64_t GaussianBlurShadUUID = 9;
 		inline const char* BloomShad = "Bloom";
+		inline const uint64_t BloomShadUUID = 10;
 		inline const char* OutlineShad = "Outline";
+		inline const uint64_t OutlineShadUUID = 11;
 		inline const char* FinalCompositeShad = "FinalComposite";
+		inline const uint64_t FinalCompositeShadUUID = 12;
 
 		inline const char* DefaultMat = "DefaultMaterial";
+		inline const uint64_t DefaultMatUUID = 13;
 		inline const char* StandardGeometryMat = "StandardGeometry";
+		inline const uint64_t StandardGeometryMatUUID = 14;
 		inline const char* StandardUnlitMat = "StandardUnlit";
+		inline const uint64_t StandardUnlitMatUUID = 15;
+
+		inline const uint64_t SphereMeshUUID = 16;
+		inline const uint64_t CubeMeshUUID = 17;
+		inline const uint64_t QuadMeshUUID = 18;
 	}
 
 	namespace Uniforms {

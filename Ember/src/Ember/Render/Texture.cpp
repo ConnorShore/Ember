@@ -34,6 +34,18 @@ namespace Ember {
 		return nullptr;
 	}
 
+	SharedPtr<Texture> Texture::Create(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data)
+	{
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:    EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
+		case RendererAPI::API::OpenGL:  return SharedPtr<OpenGL::Texture>::Create(uuid, name, width, height, data);
+		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
+	}
+
 	SharedPtr<Texture> Texture::Create(const std::string& filePath)
 	{
 		switch (RendererAPI::GetApi())
@@ -52,6 +64,18 @@ namespace Ember {
 		{
 		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
 		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Texture>::Create(name, filePath);
+		}
+
+		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");
+		return nullptr;
+	}
+
+	SharedPtr<Texture> Texture::Create(UUID uuid, const std::string& name, const std::string& filePath)
+	{
+		switch (RendererAPI::GetApi())
+		{
+		case RendererAPI::API::None:	EB_CORE_ASSERT(false, "No Renderer API specified. This is currently unsupported"); return nullptr;
+		case RendererAPI::API::OpenGL:	return SharedPtr<OpenGL::Texture>::Create(uuid, name, filePath);
 		}
 
 		EB_CORE_ASSERT(false, "Unknown Renderer API selected!");

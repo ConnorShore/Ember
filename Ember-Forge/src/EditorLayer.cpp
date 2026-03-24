@@ -39,48 +39,6 @@ namespace Ember {
 			FramebufferTextureFormat::DEPTH24STENCIL8
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
-
-		// -----------------------------------------------------------------
-		// Default Cube
-		// -----------------------------------------------------------------
-		//auto cube = m_Context.ActiveScene->AddEntity();
-		//MeshComponent meshComponent = { PrimitiveGenerator::CreateCube() };
-		//cube.AttachComponent(meshComponent);
-		MaterialComponent matComponent = { GetAsset<Material>(Constants::Assets::StandardGeometryMat)};
-		//cube.AttachComponent(matComponent);
-
-		// -----------------------------------------------------------------
-		// Model
-		// -----------------------------------------------------------------
-
-		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
-		auto satelliteAsset = LoadAsset<Model>("Satellite", "Sandbox/assets/models/satellite.obj");
-		auto entity = m_Context.ActiveScene->InstantiateModel(satelliteAsset);
-
-		ScriptComponent script;
-		script.OnUpdate = [](Entity entity, TimeStep step) {
-			auto& transform = entity.GetComponent<TransformComponent>();
-			transform.Rotation += Vector3f(0.0f, 1.0f * step, 0.0f);
-		};
-		entity.AttachComponent(script);
-
-		// Plane for testing
-		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
-		auto groundPlane = m_Context.ActiveScene->AddEntity();
-		auto& groundTransform = groundPlane.GetComponent<TransformComponent>();
-		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
-		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
-
-		MeshComponent groundMeshComp = { quadMesh };
-		groundPlane.AttachComponent(groundMeshComp);
-		groundPlane.AttachComponent(matComponent);
-
-		auto groundInstance = groundPlane.GetComponent<MaterialComponent>().GetInstanced();
-		groundInstance->SetUniform("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
-		groundInstance->SetUniform("u_Roughness", 0.7f);
-
-		// Choose Lights
-		SetupDirectionalLights();
 	}
 
 	void EditorLayer::OnDetach()
@@ -159,7 +117,22 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
 				{
-					EB_CORE_TRACE("New Scene menu item clicked!");
+					NewScene();
+				}
+
+				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S"))
+				{
+					SaveScene(true);
+				}
+
+				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+				{
+					SaveScene(false);
+				}
+
+				if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
+				{
+					OpenScene();
 				}
 
 				ImGui::EndMenu();
@@ -169,14 +142,14 @@ namespace Ember {
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 50); // Center the button (assuming button width ~100)
 			if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
 			{
-				if (ImGui::Button("Pause"))
+				if (ImGui::Button("Stop"))
 				{
 					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
 				}
 			}
 			else
 			{
-				if (ImGui::Button("Resume"))
+				if (ImGui::Button("Play"))
 				{
 					m_Context.ActiveScene->SetSceneState(SceneState::Play);
 				}
@@ -227,16 +200,6 @@ namespace Ember {
 		RemovePendingEntities();
 	}
 
-	void EditorLayer::SetupDirectionalLights()
-	{
-		auto lightEntity = m_Context.ActiveScene->AddEntity();
-		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.0f);
-		lightEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-45.0f), Math::Radians(15.0f), 0.0f);
-
-		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
-		lightEntity.AttachComponent(dirLightComp);
-	}
-
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
 	{
 		// If ImGui wants to capture keyboard input for a textbox, we should not process shortcuts
@@ -266,6 +229,22 @@ namespace Ember {
 				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
 				break;
 
+			// Scene Hot keys
+			case KeyCode::N:
+				if (control)
+					NewScene();
+				break;
+			case KeyCode::O:
+				if (control)
+					OpenScene();
+				break;
+			case KeyCode::S:
+				if (control && shift)
+					SaveScene(true);
+				else if (control)
+					SaveScene(false);
+				break;
+
 			// Entity Hot keys
 			case KeyCode::Delete:
 				if (m_Context.SelectedEntity != m_InvalidEntity)
@@ -273,11 +252,12 @@ namespace Ember {
 				break;
 
 			case KeyCode::Space:
-				if (m_Context.ActiveScene->GetSceneState() == SceneState::Play) {
-					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
-				}
-				else {
-					m_Context.ActiveScene->SetSceneState(SceneState::Play);
+				if (control)
+				{
+					if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
+						m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+					else
+						m_Context.ActiveScene->SetSceneState(SceneState::Play);
 				}
 				break;
 		}
@@ -325,27 +305,32 @@ namespace Ember {
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
-		if (m_PreviousSelectedEntity != m_InvalidEntity && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
+		// 1. Clean up the old selection safely
+		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
 		{
 			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
 			if (m_PreviousSelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
 				{
-					if (child.ContainsComponent<OutlineComponent>())
+					// DEFENSIVE CHECK: Make sure the child exists before detaching!
+					if (child && child.ContainsComponent<OutlineComponent>())
 						child.DetachComponent<OutlineComponent>();
 				}
 			}
 		}
 
-		// Add outlines to the new selection and its children
-		if (m_Context.SelectedEntity != m_InvalidEntity)
+		// 2. Add outlines to the new selection safely
+		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 		{
 			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
 			if (m_Context.SelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
-					child.AttachComponent(m_OutlineEntitySelectedComp);
+				{
+					if (child != Constants::Entities::InvalidEntityID)
+						child.AttachComponent(m_OutlineEntitySelectedComp);
+				}
 			}
 		}
 
@@ -394,15 +379,15 @@ namespace Ember {
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
 			{
 				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityID)
+				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityUUID)
 				{
 					// Fetch the parent entity
-					Entity parent = { relationshipComp.ParentHandle, m_Context.ActiveScene.Ptr()};
-
-					Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
-
-					// Linear Algebra Magic: NewLocal = Inverse(ParentWorld) * NewWorld
-					localTransform = Math::Inverse(parentWorld) * transform;
+					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);
+					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+					{
+						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+						localTransform = Math::Inverse(parentWorld) * transform;
+					}
 				}
 			}
 
@@ -458,7 +443,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntity()
 	{
-		auto entity = m_Context.ActiveScene->AddEntity();
+		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
 		m_Context.SelectedEntity = entity;
 	}
 
@@ -479,5 +464,60 @@ namespace Ember {
 			m_Context.ActiveScene->RemoveEntity(entity);
 
 		m_Context.PendingEntityRemovals.clear();
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Context.ActiveScene = SharedPtr<Scene>::Create("New Scene");
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.SelectedEntity = {};
+		m_PreviousSelectedEntity = {};
+
+		EB_CORE_TRACE("New Scene created!");
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string sceneFile = FileDialog::OpenFile("Ember-Forge/assets/scenes", "Ember Scene (*.ebs)", "*.ebs");
+		if (!sceneFile.empty())
+		{
+			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+			SceneSerializer serializer(newScene);
+			if (serializer.Deserialize(sceneFile))
+			{
+				m_Context.ActiveScene = newScene;
+				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Context.ActiveScene->SetFilePath(sceneFile);
+
+				m_Context.SelectedEntity = {};
+				m_PreviousSelectedEntity = {};
+
+				EB_CORE_TRACE("Scene loaded successfully!");
+			}
+			else
+			{
+				EB_CORE_ERROR("Failed to load scene!");
+			}
+		}
+	}
+
+	void EditorLayer::SaveScene(bool saveAs /* = false */)
+	{
+		std::string sceneName = saveAs 
+			? FileDialog::SaveFile("Ember-Forge/assets/scenes/", "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
+			: m_Context.ActiveScene->GetFilePath();
+
+		if (!sceneName.empty())
+		{
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
+				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+			}
+
+			SceneSerializer serializer(m_Context.ActiveScene);
+			serializer.Serialize(sceneName);
+
+			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
+			EB_CORE_TRACE("Scene saved!");
+		}
 	}
 }

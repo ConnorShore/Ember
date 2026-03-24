@@ -46,18 +46,23 @@ namespace Ember {
 	class MaterialBase : public Asset
 	{
 	public:
+		MaterialBase(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, RenderQueue renderQueue)
+			: Asset(uuid, name, "", GetStaticType()), m_Shader(shader), m_RenderQueue(renderQueue) {}
 		MaterialBase(const std::string& name, const SharedPtr<Shader>& shader, RenderQueue renderQueue)
-			: Asset(name, "", GetStaticType()), m_Shader(shader), m_RenderQueue(renderQueue) { }
+			: Asset(name, "", GetStaticType()), m_Shader(shader), m_RenderQueue(renderQueue) {}
 
 		virtual ~MaterialBase() = default;
 		virtual void Bind() const = 0;
 
 		inline const RenderQueue GetRenderQueue() const { return m_RenderQueue; }
+		inline void SetRenderQueue(const RenderQueue renderQueue) { m_RenderQueue = renderQueue; }
+
 		inline const SharedPtr<Shader> GetShader() const { return m_Shader; }
 		inline void SetShader(const SharedPtr<Shader>& shader) { m_Shader = shader; }
 
 		virtual void SetUniform(const std::string& name, const MaterialValue& value) = 0;
 		virtual const std::unordered_map<std::string, MaterialValue>& GetUniforms() const = 0;
+
 		virtual bool ContainsUniform(const std::string& name) const = 0;
 
 		static AssetType GetStaticType() { return AssetType::Material; }
@@ -76,17 +81,27 @@ namespace Ember {
 	class Material : public MaterialBase
 	{
 	public:
-      Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
-			: MaterialBase(name, shader, renderQueue)
+		Material(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
+			: MaterialBase(uuid, name, shader, renderQueue)
 		{
 			for (auto u : uniforms)
 			{
 				SetUniform(std::get<0>(u), std::get<1>(u));
 			}
 		}
+		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
+			: Material(UUID(), name, shader, renderQueue, uniforms)
+		{
+		}
+
+		Material(UUID uuid, const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+			: Material(uuid, name, nullptr, RenderQueue::None, uniforms)
+		{
+		}
+		Material(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
 
 		Material(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
-			: Material(name, nullptr, RenderQueue::None, uniforms)
+			: Material(UUID(), name, nullptr, RenderQueue::None, uniforms)
 		{
 		}
 		Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
@@ -145,11 +160,13 @@ namespace Ember {
 				SetUniform(std::get<0>(u), std::get<1>(u));
 			}
 		}
-		MaterialInstance(const std::string& name, const SharedPtr<Material>& material)
-			: MaterialBase(name, material->GetShader(), material->GetRenderQueue()),
+		MaterialInstance(UUID uuid, const std::string& name, const SharedPtr<Material>& material)
+			: MaterialBase(uuid, name, material->GetShader(), material->GetRenderQueue()),
 			m_Material(material),
 			m_Uniforms(material->GetUniforms()) {
 		}
+		MaterialInstance(const std::string& name, const SharedPtr<Material>& material)
+			: MaterialInstance(UUID(), name, material) {}
 
 		virtual ~MaterialInstance() = default;
 
@@ -183,6 +200,7 @@ namespace Ember {
 	{
 	public:
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
+		const SharedPtr<Material>& RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
 		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
 			const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms);

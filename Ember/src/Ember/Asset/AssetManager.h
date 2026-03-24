@@ -50,6 +50,12 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(const std::string& name, const std::string& filePath)
 		{
+			return Load<T>(UUID(), name, filePath);
+		}
+
+		template<IsCoreAsset T>
+		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath)
+		{
 			if (m_AssetPaths.contains(filePath))
 			{
 				return GetAsset<T>(m_AssetPaths[filePath]);
@@ -57,11 +63,11 @@ namespace Ember {
 
 			SharedPtr<T> newAsset;
 			if constexpr (std::same_as<T, Texture>)
-				newAsset = TextureImporter::Load(name, filePath);
+				newAsset = TextureImporter::Load(uuid, name, filePath);
 			else if constexpr (std::same_as<T, Shader>)
-				newAsset = ShaderImporter::Load(name, filePath);
+				newAsset = ShaderImporter::Load(uuid, name, filePath);
 			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelImporter::Load(name, filePath, *this);
+				newAsset = ModelImporter::Load(uuid, name, filePath, *this);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
@@ -71,20 +77,59 @@ namespace Ember {
 			return newAsset;
 		}
 
-		// Custom Load for Shader that takes macros
+		// Custom Loads for Shader that takes macros
 		template<std::same_as<Shader> T>
 		SharedPtr<T> Load(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+		{
+			return Load<Shader>(UUID(), name, filePath, macros);
+		}
+
+		template<std::same_as<Shader> T>
+		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
 		{
 			if (m_AssetPaths.contains(filePath))
 			{
 				return GetAsset<Shader>(m_AssetPaths[filePath]);
 			}
-			auto newShader = ShaderImporter::Load(name, filePath, macros);
+			auto newShader = ShaderImporter::Load(uuid, name, filePath, macros);
 
 			m_Assets[newShader->GetUUID()] = newShader;
 			m_AssetNames[name] = newShader->GetUUID();
 			m_AssetPaths[filePath] = newShader->GetUUID();
 			return newShader;
+		}
+
+		// Custom load for model that takes mesh/material UUIDs (for deserialization)
+		template<std::same_as<Model> T>
+		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
+		{
+			auto model = ModelImporter::Load(uuid, name, filePath, *this, meshUUIDs, materialUUIDs);
+			
+			m_Assets[model->GetUUID()] = model;
+			m_AssetNames[name] = model->GetUUID();
+			m_AssetPaths[filePath] = model->GetUUID();
+			return model;
+		}
+
+		template<IsCoreAsset T>
+		void Register(UUID uuid, const SharedPtr<T>& asset)
+		{
+			if (!asset)
+			{
+				EB_CORE_WARN("Attempted to register a null asset!");
+				return;
+			}
+
+			std::string name = asset->GetName();
+
+			m_Assets[uuid] = asset;
+			m_AssetNames[name] = uuid;
+		}
+
+		template<IsCoreAsset T>
+		void Register(const SharedPtr<T>& asset)
+		{
+			Register(UUID(), asset);
 		}
 
         template<IsCoreAsset T>

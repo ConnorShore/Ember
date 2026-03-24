@@ -49,11 +49,14 @@
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Scene/Behavior.h"
+#include "Ember/Scene/SceneSerializer.h"
 
 #include "Ember/Asset/UUID.h"
 #include "Ember/Asset/Asset.h"
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
+
+#include "Ember/Utils/PlatformUtil.h"
 
 // Vendor includes
 #include <imgui/imgui.h>

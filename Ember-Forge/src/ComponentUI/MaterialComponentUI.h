@@ -14,6 +14,7 @@ namespace Ember {
 		{
 			auto defaultMaterial = m_Context->ActiveScene->GetAsset<Material>(Constants::Assets::StandardGeometryMat);
 			MaterialComponent comp{ defaultMaterial };
+			auto ret = comp.GetInstanced();
 			m_Context->ActiveScene->AttachComponent(entity, comp);
 		}
 

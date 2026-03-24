@@ -23,7 +23,6 @@ namespace Ember {
 		void OnImGuiRender(TimeStep delta) override;
 
 	private:
-		void SetupDirectionalLights();
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
@@ -32,6 +31,10 @@ namespace Ember {
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
 		void RemovePendingEntities();
+
+		void NewScene();
+		void OpenScene();
+		void SaveScene(bool saveAs = false);
 
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);

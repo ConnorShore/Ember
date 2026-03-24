@@ -10,6 +10,7 @@ include "Ember/vendor/GLFW"
 include "Ember/vendor/glad"
 include "Ember/vendor/imgui"
 include "Ember/vendor/assimp"
+include "Ember/vendor/rapidyaml"
 
 include "Ember-Forge/vendor/ImGuizmo"
 

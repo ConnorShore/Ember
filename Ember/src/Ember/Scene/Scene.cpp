@@ -15,7 +15,7 @@ namespace Ember {
 	{
 		m_Registry->RegisterSystem(SharedPtr<ScriptSystem>::Create(this));
 		m_Registry->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
-		m_Registry->RegisterSystem(SharedPtr<TransformSystem>::Create());
+		m_Registry->RegisterSystem(SharedPtr<TransformSystem>::Create(this));
 		m_Registry->RegisterSystem(SharedPtr<RenderSystem>::Create());
 	}
 
@@ -60,51 +60,61 @@ namespace Ember {
 		}
 	}
 
-	Entity Scene::AddEntity()
-	{
-		std::string name = std::format("Entity {}", m_SceneEntities.size());
-		Entity entity(name, this);
-		m_SceneEntities[name] = entity;
-		return entity;
-	}
-
 	Entity Scene::AddEntity(const std::string& name)
 	{
-		Entity entity(name, this);
-		m_SceneEntities[name] = entity;
+		return AddEntity(UUID(), name);
+	}
+
+	Entity Scene::AddEntity(UUID uuid, const std::string& name)
+	{
+		EntityID handle = m_Registry->CreateEntity();
+		Entity entity = { handle, this };
+
+		auto& id = entity.AttachComponent<IDComponent>();
+		id.ID = uuid;
+
+		auto& tag = entity.AttachComponent<TagComponent>();
+		tag.Tag = name.empty() ? "Entity" : name;
+
+		entity.AttachComponent<TransformComponent>();
+		entity.AttachComponent<RelationshipComponent>();
+
+		m_EntityUUIDMap[uuid] = handle;
+
 		return entity;
 	}
 
-	Entity Scene::GetEntity(const std::string& tag)
+	Entity Scene::GetEntity(UUID uuid)
 	{
-		if (m_SceneEntities.find(tag) == m_SceneEntities.end())
-		{
-			EB_CORE_ASSERT(false, "Scene does not contain entity with tag!");
-			return {};
-		}
+		if (m_EntityUUIDMap.find(uuid) != m_EntityUUIDMap.end())
+			return { m_EntityUUIDMap.at(uuid), this };
 
-		return { m_SceneEntities[tag], this };
+		return Entity();
 	}
 
 	std::vector<Entity> Scene::GetAllEntities() const
 	{
 		std::vector<Entity> entities;
-		entities.reserve(m_SceneEntities.size());
-		for (const auto& [name, id] : m_SceneEntities)
+		entities.reserve(m_EntityUUIDMap.size());
+
+		for (const auto& [uuid, id] : m_EntityUUIDMap)
 			entities.emplace_back(id, const_cast<Scene*>(this));
+
 		return entities;
 	}
 
 	void Scene::RemoveEntity(Entity entity)
 	{
-		EB_CORE_ASSERT(m_SceneEntities.contains(entity.GetName()), "Scene does not contain entity!");
+		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetEntityUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
 
 		// Remove children first
 		for (auto child : entity.GetAllChildren())
 			RemoveEntity(child);
 
-		m_SceneEntities.erase(entity.GetName());
+		// Remove from ECS and our Map
+		UUID entityUUID = entity.GetEntityUUID();
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
+		m_EntityUUIDMap.erase(entityUUID);
 	}
 
 	Entity Scene::InstantiateModel(const SharedPtr<Model>& model, const std::string& name /*= ""*/)
@@ -152,8 +162,8 @@ namespace Ember {
 
 				// Link the relationship!
 				auto& partRc = meshPartEntity.GetComponent<RelationshipComponent>();
-				partRc.ParentHandle = currentEntity.GetEntityHandle();
-				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetEntityHandle());
+				partRc.ParentHandle = currentEntity.GetEntityUUID();
+				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetEntityUUID());
 
 				// Attach the mesh
 				MeshComponent mc{ node.Meshes[i].MeshAsset };
@@ -173,8 +183,8 @@ namespace Ember {
 
 			// Link the relationship to the current entity
 			auto& childRc = childEntity.GetComponent<RelationshipComponent>();
-			childRc.ParentHandle = currentEntity.GetEntityHandle();
-			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetEntityHandle());
+			childRc.ParentHandle = currentEntity.GetEntityUUID();
+			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetEntityUUID());
 
 			// Recurse deeper into the tree
 			ProcessModelNode(childEntity, childNode, model);

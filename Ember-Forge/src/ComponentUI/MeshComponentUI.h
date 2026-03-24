@@ -12,6 +12,7 @@ namespace Ember {
 		MeshComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Mesh Component"; }
 
+
 	protected:
 		inline void RenderComponentImpl(MeshComponent& component) override
 		{
@@ -42,15 +43,15 @@ namespace Ember {
 					std::string name = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag + "_Mesh";
 					if (ImGui::MenuItem("Cube"))
 					{
-						component.Mesh = PrimitiveGenerator::CreateCube(name);
+						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Cube");
 					}
 					if (ImGui::MenuItem("Quad"))
 					{
-						component.Mesh = PrimitiveGenerator::CreateQuad(name);
+						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Quad");
 					}
 					if (ImGui::MenuItem("Sphere"))
 					{
-						component.Mesh = PrimitiveGenerator::CreateSphere(name);
+						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Sphere");
 					}
 
 					ImGui::EndPopup();

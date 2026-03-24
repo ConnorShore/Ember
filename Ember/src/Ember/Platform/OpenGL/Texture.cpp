@@ -17,8 +17,8 @@ namespace Ember {
 		{
 		}
 
-		Texture::Texture(const std::string& name, const std::string& filePath)
-			: Ember::Texture(name, filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0)
+		Texture::Texture(UUID uuid, const std::string& name, const std::string& filePath)
+			: Ember::Texture(uuid, name, filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0)
 		{
 			stbi_set_flip_vertically_on_load(1);	// Flips texture vertically since OpenGL expects pixels to start on bottom left
 			m_LocalBuffer = stbi_load(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);
@@ -40,8 +40,18 @@ namespace Ember {
 			}
 		}
 
+		Texture::Texture(const std::string& name, const std::string& filePath)
+			: Texture(UUID(), name, filePath)
+		{
+		}
+
 		Texture::Texture(const std::string& name, unsigned int width, unsigned int height, const void* data)
-			: Ember::Texture(name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
+			: Texture(UUID(), name, width, height, data)
+		{
+		}
+
+		Texture::Texture(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data)
+			: Ember::Texture(uuid, name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
