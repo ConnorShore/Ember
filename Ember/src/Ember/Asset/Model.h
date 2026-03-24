@@ -31,8 +31,8 @@ namespace Ember {
 	class Model : public Asset
 	{
 	public:
-		Model(const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
-			: Asset(name, filePath, GetStaticType()), m_RootNode(rootNode), m_AllMaterials(materials)
+		Model(UUID uuid, const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
+			: Asset(uuid, name, filePath, GetStaticType()), m_RootNode(rootNode), m_AllMaterials(materials)
 		{
 			std::vector<const ModelNode*> nodesToVisit = { &m_RootNode };
 			while (!nodesToVisit.empty())
@@ -46,6 +46,10 @@ namespace Ember {
 				for (const auto& childNode : currentNode->ChildNodes)
 					nodesToVisit.push_back(&childNode);
 			}
+		}
+		Model(const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
+			: Model(UUID(), name, filePath, rootNode, materials)
+		{
 		}
 
 		~Model() = default;

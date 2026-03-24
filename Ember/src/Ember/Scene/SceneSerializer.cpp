@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -8,96 +9,7 @@
 #include <sstream>
 
 namespace Ember {
-
-	//////////////////////////////////////////////////////////////////////////
-	// Utility functions for serializing and deserializing math types
-	//////////////////////////////////////////////////////////////////////////
-
-	namespace Util {
-
-		static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-		}
-		static void SerializeVector3f(ryml::NodeRef node, const Vector3f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-			node.append_child() << vec.z;
-		}
-		static void SerializeVector4f(ryml::NodeRef node, const Vector4f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-			node.append_child() << vec.z;
-			node.append_child() << vec.w;
-		}
-
-		static void SerializeMatrix4f(ryml::NodeRef node, const Matrix4f& mat)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			for (int i = 0; i < 4; i++)
-			{
-				for (int j = 0; j < 4; j++)
-				{
-					node.append_child() << mat[i][j];
-				}
-			}
-		}
-
-		static void DeserializeVector2f(ryml::NodeRef node, Vector2f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 2)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-			}
-		}
-
-		static void DeserializeVector3f(ryml::NodeRef node, Vector3f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 3)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-				node[2] >> vec.z;
-			}
-		}
-
-		static void DeserializeVector4f(ryml::NodeRef node, Vector4f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 4)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-				node[2] >> vec.z;
-				node[3] >> vec.w;
-			}
-		}
-
-		static void DeserializeMatrix4f(ryml::NodeRef node, Matrix4f& mat)
-		{
-			if (node.is_seq() && node.num_children() == 16)
-			{
-				for (int i = 0; i < 4; i++)
-				{
-					for (int j = 0; j < 4; j++)
-					{
-						node[i * 4 + j] >> mat[i][j];
-					}
-				}
-			}
-		}
-	}
 	
-	//////////////////////////////////////////////////////////////////////////
-	// Scene Serializer
-	//////////////////////////////////////////////////////////////////////////
-
 	bool SceneSerializer::Serialize(const std::string& filepath)
 	{
 		ryml::Tree tree;

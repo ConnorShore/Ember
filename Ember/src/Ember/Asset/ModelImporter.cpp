@@ -10,7 +10,8 @@ namespace Ember {
 
 	unsigned int ModelImporter::m_MeshCounter = 0;
 
-	SharedPtr<Model> ModelImporter::Load(const std::string& name, const std::string& filePath, AssetManager& assetManager)
+	SharedPtr<Model> ModelImporter::Load(UUID uuid, const std::string& name, const std::string& filePath, AssetManager& assetManager,
+		const std::vector<UUID>& meshUUIDs /*= {}*/, const std::vector<UUID>& materialUUIDs /*= {}*/)
 	{
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(filePath,
@@ -27,22 +28,35 @@ namespace Ember {
 			materials.reserve(scene->mNumMaterials);
 			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
 			{
-				aiMaterial* material = scene->mMaterials[i];
-				materials.push_back(ProcessMaterial(name, filePath, material, assetManager));
+				if (i < materialUUIDs.size())
+				{
+					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUIDs[i]));
+				}
+				else
+				{
+					// We are importing for the very first time. Extract from Assimp.
+					aiMaterial* material = scene->mMaterials[i];
+					materials.push_back(ProcessMaterial(name, filePath, material, assetManager));
+				}
 			}
 		}
 
 		m_MeshCounter = 0;
-		auto rootModelNode = ProcessScene(name, scene, assetManager);
-		return SharedPtr<Model>::Create(name, filePath, rootModelNode, materials);
+		auto rootModelNode = ProcessScene(name, scene, assetManager, meshUUIDs);
+		return SharedPtr<Model>::Create(uuid, name, filePath, rootModelNode, materials);
 	}
 
-	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager)
+	SharedPtr<Model> ModelImporter::Load(const std::string& name, const std::string& filePath, AssetManager& assetManager)
+	{
+		return Load(UUID(), name, filePath, assetManager);
+	}
+
+	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
 	{
 		ModelNode rootNode;
 		rootNode.Name = scene->mRootNode->mName.C_Str();
 		rootNode.LocalTransform = ConvertMatrix(scene->mRootNode->mTransformation);
-		ProcessNode(name, scene->mRootNode, rootNode, scene, assetManager);
+		ProcessNode(name, scene->mRootNode, rootNode, scene, assetManager, meshUUIDs);
 		return rootNode;
 	}
 
@@ -56,14 +70,14 @@ namespace Ember {
 		);
 	}
 
-	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene, AssetManager& assetManager)
+	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
 	{
 		for (unsigned int i = 0; i < aiNode->mNumMeshes; i++)
 		{
 			aiMesh* mesh = scene->mMeshes[aiNode->mMeshes[i]];
 			MeshMaterialNode meshMaterialNode;
 			meshMaterialNode.MaterialIndex = mesh->mMaterialIndex;
-			meshMaterialNode.MeshAsset = ProcessMesh(name, mesh, assetManager);
+			meshMaterialNode.MeshAsset = ProcessMesh(name, mesh, assetManager, meshUUIDs);
 			modelNode.Meshes.push_back(meshMaterialNode);
 		}
 
@@ -73,12 +87,12 @@ namespace Ember {
 			ModelNode childNode;
 			childNode.Name = aiNode->mChildren[i]->mName.C_Str();
 			childNode.LocalTransform = ConvertMatrix(aiNode->mChildren[i]->mTransformation);
-			ProcessNode(name, aiNode->mChildren[i], childNode, scene, assetManager);
+			ProcessNode(name, aiNode->mChildren[i], childNode, scene, assetManager, meshUUIDs);
 			modelNode.ChildNodes.push_back(childNode);
 		}
 	}
 
-	SharedPtr<Mesh> ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, AssetManager& assetManager)
+	SharedPtr<Mesh> ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
 	{
 		std::vector<float> vertices;
 		std::vector<unsigned int> indices;
@@ -147,7 +161,14 @@ namespace Ember {
 		}
 
 		std::string meshName = name + "_" + aiMesh->mName.C_Str();
-		auto ret = SharedPtr<Mesh>::Create(meshName, vertices, indices);
+		UUID currentMeshUUID = UUID();
+		if (m_MeshCounter < meshUUIDs.size())
+		{
+			currentMeshUUID = meshUUIDs[m_MeshCounter];
+		}
+		m_MeshCounter++;
+
+		auto ret = SharedPtr<Mesh>::Create(currentMeshUUID, meshName, vertices, indices);
 		assetManager.Register(ret);
 		return ret;
 	}

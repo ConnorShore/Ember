@@ -4,8 +4,13 @@
 
 namespace Ember {
 
+	Material::Material(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+		: Material(uuid, name, shader, renderQueue, {})
+	{
+	}
+
 	Material::Material(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
-		: Material(name, shader, renderQueue, {})
+		: Material(UUID(), name, shader, renderQueue, {})
 	{
 	}
 
@@ -15,11 +20,16 @@ namespace Ember {
 	{
 	}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
-		auto material = SharedPtr<Material>::Create(name, shader, renderQueue);
+		auto material = SharedPtr<Material>::Create(uuid, name, shader, renderQueue);
 		Add(name, std::move(material));
 		return DynamicPointerCast<Material>(Get(name));
+	}
+
+	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+	{
+		return RegisterMaterial(UUID(), name, shader, renderQueue);
 	}
 
 	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 

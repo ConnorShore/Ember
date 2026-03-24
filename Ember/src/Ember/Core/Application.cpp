@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Ember/Input/Input.h"
 #include "Ember/Render/RenderAction.h"
+#include "Ember/Asset/AssetRegistrySerializer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -26,6 +27,9 @@ namespace Ember {
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
 		m_AssetManager->LoadDefaults();
 
+		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
+		serializer.Deserialize("Ember/assets/assets.eba");
+
 		EB_CORE_INFO("Application created!");
 	}
 
@@ -35,6 +39,9 @@ namespace Ember {
 			layer->OnDetach();
 
 		m_ImGuiLayer->OnDetach();
+
+		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
+		serializer.Serialize("Ember/assets/assets.eba");
 
 		EB_CORE_INFO("Application destroyed!");
 	}

@@ -14,6 +14,7 @@ namespace Ember {
 		Panel(const std::string& title, EditorContext* context) : m_Title(title), m_Context(context) {}
 		virtual ~Panel() = default;
 
+		virtual void OnAttach() {};
 		virtual void OnEvent(Event& event) {};
 		virtual void OnImGuiRender() = 0;
 

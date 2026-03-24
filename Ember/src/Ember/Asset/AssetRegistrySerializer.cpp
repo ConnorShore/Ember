@@ -1,0 +1,159 @@
+#include "ebpch.h"
+#include "AssetRegistrySerializer.h"
+
+#include "Model.h"
+#include "Ember/Render/Texture.h"
+#include "Ember/Render/Shader.h"
+#include "Ember/Render/Mesh.h"
+#include "Ember/Render/Material.h"
+
+#include "Ember/Utils/SerializationUtils.h"
+
+#include <ryml.hpp>
+#include <ryml_std.hpp>
+#include <fstream>
+#include <sstream>
+
+namespace Ember {
+
+	bool AssetRegistrySerializer::Serialize(const std::string& filePath)
+	{
+		ryml::Tree tree;
+		ryml::NodeRef root = tree.rootref();
+		root |= ryml::MAP;
+
+		root["AssetRegistry"];
+		ryml::NodeRef assetsNode = root["Assets"];
+		assetsNode |= ryml::SEQ;
+
+		auto textures = m_AssetManagerHandle->GetAssetsOfType<Texture>();
+		for (auto texture : textures) {
+			if (texture->GetFilePath().empty())
+				continue;
+			ryml::NodeRef textureNode = assetsNode.append_child();
+			Util::SerializeGeneralAsset(textureNode, texture);
+		}
+
+		auto shaders = m_AssetManagerHandle->GetAssetsOfType<Shader>();
+		for (auto shader : shaders) {
+			if (shader->GetFilePath().empty())
+				continue;
+			ryml::NodeRef shaderNode = assetsNode.append_child();
+			Util::SerializeGeneralAsset(shaderNode, shader);
+		}
+
+		auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
+		for (auto material : materials) {
+			ryml::NodeRef materialNode = assetsNode.append_child();
+			Util::SerializeMaterial(materialNode, material);
+		}
+
+		auto models = m_AssetManagerHandle->GetAssetsOfType<Model>();
+		for (auto model : models) {
+			ryml::NodeRef modelNode = assetsNode.append_child();
+			Util::SerializeModel(modelNode, model);
+		}
+		
+		// Write out to disk
+		std::ofstream fout(filePath);
+		fout << tree;
+		fout.close();
+
+		return true;
+	}
+
+	bool AssetRegistrySerializer::Deserialize(const std::string& filePath)
+	{
+		std::ifstream stream(filePath);
+		if (!stream.is_open())
+		{
+			EB_CORE_WARN("No Asset Registry found at {0}. Starting with defaults.", filePath);
+			return false;
+		}
+
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+		std::string yamlData = strStream.str();
+
+		ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(yamlData));
+		ryml::NodeRef root = tree.rootref();
+
+		// Check for the "Assets" node to match your output file
+		if (!root.has_child("Assets"))
+		{
+			EB_CORE_ERROR("Asset Registry is malformed! Missing 'Assets' node.");
+			return false;
+		}
+
+		EB_CORE_INFO("Deserializing Asset Registry...");
+
+		ryml::NodeRef assetsNode = root["Assets"];
+		for (ryml::NodeRef assetNode : assetsNode.children())
+		{
+			std::string type;
+			assetNode["Type"] >> type;
+
+			// Special handling for Materials since they have a more complex structure
+			if (type == "Material")
+			{
+				SharedPtr<MaterialBase> material = Util::DeserializeMaterial(assetNode, m_AssetManagerHandle);
+
+				bool instanced = false;
+				assetNode["Instanced"] >> instanced;
+
+				m_AssetManagerHandle->Register(material->GetUUID(), material);
+				EB_CORE_TRACE("  Loaded Material: {0}", material->GetName());
+				continue;
+			}
+
+			uint64_t uuid;
+			std::string name, path;
+
+			assetNode["UUID"] >> uuid;
+			assetNode["Name"] >> name;
+			assetNode["FilePath"] >> path;
+
+			if (path.empty())
+				continue;
+
+			if (type == "Texture")
+			{
+				m_AssetManagerHandle->Load<Texture>(uuid, name, path);
+				EB_CORE_TRACE("  Loaded Texture: {0}", name);
+			}
+			else if (type == "Shader")
+			{
+				m_AssetManagerHandle->Load<Shader>(uuid, name, path);
+				EB_CORE_TRACE("  Loaded Shader: {0}", name);
+			}
+			else if (type == "Model")
+			{
+				std::vector<UUID> meshUUIDs;
+				if (assetNode.has_child("Meshes"))
+				{
+					for (ryml::NodeRef meshNode : assetNode["Meshes"].children())
+					{
+						uint64_t meshID; meshNode >> meshID;
+						meshUUIDs.push_back(meshID);
+					}
+				}
+
+				std::vector<UUID> materialUUIDs;
+				if (assetNode.has_child("Materials"))
+				{
+					for (ryml::NodeRef matNode : assetNode["Materials"].children())
+					{
+						uint64_t matID; matNode >> matID;
+						materialUUIDs.push_back(matID);
+					}
+				}
+
+				m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
+				EB_CORE_TRACE("  Loaded Model: {0}", name);
+			}
+		}
+
+		return true;
+	}
+
+}

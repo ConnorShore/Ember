@@ -31,6 +31,7 @@ namespace Ember {
 		inline UUID GetUUID() const { return m_UUID; }
 		inline AssetType GetType() const { return m_Type; }
 		inline const std::string& GetName() const { return m_Name; }
+		inline void SetName(const std::string& name) { m_Name = name; }
 
 		inline const std::string& GetFilePath() const { return m_FilePath; }
 		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }

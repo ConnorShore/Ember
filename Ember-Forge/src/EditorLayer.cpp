@@ -39,48 +39,6 @@ namespace Ember {
 			FramebufferTextureFormat::DEPTH24STENCIL8
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
-
-		// -----------------------------------------------------------------
-		// Default Cube
-		// -----------------------------------------------------------------
-		//auto cube = m_Context.ActiveScene->AddEntity();
-		//MeshComponent meshComponent = { PrimitiveGenerator::CreateCube() };
-		//cube.AttachComponent(meshComponent);
-		MaterialComponent matComponent = { GetAsset<Material>(Constants::Assets::StandardGeometryMat)};
-		//cube.AttachComponent(matComponent);
-
-		// -----------------------------------------------------------------
-		// Model
-		// -----------------------------------------------------------------
-
-		//auto satelliteAsset = LoadAsset<Ember::Model>("Satellite", "Sandbox/assets/models/Cube.obj");	// This one worked with lighting
-		auto satelliteAsset = LoadAsset<Model>("Satellite", "Ember-Forge/assets/models/satellite.obj");
-		auto entity = m_Context.ActiveScene->InstantiateModel(satelliteAsset);
-
-		ScriptComponent script;
-		script.OnUpdate = [](Entity entity, TimeStep step) {
-			auto& transform = entity.GetComponent<TransformComponent>();
-			transform.Rotation += Vector3f(0.0f, 1.0f * step, 0.0f);
-		};
-		entity.AttachComponent(script);
-
-		// Plane for testing
-		auto quadMesh = PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
-		auto groundPlane = m_Context.ActiveScene->AddEntity("GroundPlane");
-		auto& groundTransform = groundPlane.GetComponent<TransformComponent>();
-		groundTransform.Position = { 0.0f, -4.0f, 0.0f };
-		groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
-
-		MeshComponent groundMeshComp = { quadMesh };
-		groundPlane.AttachComponent(groundMeshComp);
-		groundPlane.AttachComponent(matComponent);
-
-		auto groundInstance = groundPlane.GetComponent<MaterialComponent>().GetInstanced();
-		groundInstance->SetUniform("u_Albedo", Ember::Vector3f(0.3f, 0.3f, 0.3f));
-		groundInstance->SetUniform("u_Roughness", 0.7f);
-
-		// Choose Lights
-		SetupDirectionalLights();
 	}
 
 	void EditorLayer::OnDetach()
@@ -240,16 +198,6 @@ namespace Ember {
 
 		// Delete pending entities
 		RemovePendingEntities();
-	}
-
-	void EditorLayer::SetupDirectionalLights()
-	{
-		auto lightEntity = m_Context.ActiveScene->AddEntity("Light");
-		lightEntity.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.0f);
-		lightEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-45.0f), Math::Radians(15.0f), 0.0f);
-
-		DirectionalLightComponent dirLightComp = { Vector3f(1.0f, 0.8f, 0.8f), 5.0f };
-		lightEntity.AttachComponent(dirLightComp);
 	}
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)

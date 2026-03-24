@@ -23,7 +23,6 @@ namespace Ember {
 		void OnImGuiRender(TimeStep delta) override;
 
 	private:
-		void SetupDirectionalLights();
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();

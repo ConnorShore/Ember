@@ -21,6 +21,9 @@ namespace Ember {
 	public:
 		Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
 			: Asset(name, filePath, GetStaticType()) {}
+		Shader(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
+			: Asset(uuid, name, filePath, GetStaticType()) {
+		}
 
 		virtual ~Shader() = default;
 
@@ -39,6 +42,8 @@ namespace Ember {
 
 		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
+		static SharedPtr<Shader> Create(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {});
+		static SharedPtr<Shader> Create(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -48,6 +53,14 @@ namespace Ember {
 	class ShaderImporter
 	{
 	public:
+		static SharedPtr<Shader> Load(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(uuid, filePath, macros);
+		}
+		static SharedPtr<Shader> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			return Shader::Create(uuid, name, filePath, macros);
+		}
 		static SharedPtr<Shader> Load(const std::string& filePath, const ShaderMacros& macros = {})
 		{
 			return Shader::Create(filePath, macros);

@@ -14,6 +14,9 @@ namespace Ember {
 			Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros);
 			Shader(const std::string& name, const std::string& filePath);
 			Shader(const std::string& filePath, const ShaderMacros& macros);
+			Shader(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros);
+			Shader(UUID uuid, const std::string& name, const std::string& filePath);
+			Shader(UUID uuid, const std::string& filePath, const ShaderMacros& macros);
 			virtual ~Shader();
 
 			virtual void Bind() const override;

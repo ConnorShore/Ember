@@ -2,6 +2,8 @@
 
 #include "Panel.h"
 
+#include <string>
+
 namespace Ember {
 
 	class AssetManagerPanel : public Panel
@@ -10,9 +12,11 @@ namespace Ember {
 		AssetManagerPanel(EditorContext* context);
 		virtual ~AssetManagerPanel();
 
+		void OnAttach() override;
 		void OnImGuiRender() override;
 
 	private:
-
+		static std::string m_AssetDirectory;
+		static std::string m_CurrentDirectory;
 	};
 }
