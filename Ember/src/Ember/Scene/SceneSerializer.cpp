@@ -145,11 +145,12 @@ namespace Ember {
 			}
 			if (entity.ContainsComponent<ScriptComponent>())
 			{
-				ryml::NodeRef scNode = entityNode["ScriptComponent"];
-				scNode |= ryml::MAP;
+				auto& script = entity.GetComponent<ScriptComponent>();
 
-				auto& sc = entity.GetComponent<ScriptComponent>();
-				scNode["ClassName"] << sc.ClassName;
+				auto scriptNode = entityNode.append_child();
+				scriptNode |= ryml::MAP;
+				scriptNode << ryml::key("ScriptComponent");
+				scriptNode["FilePath"] << script.FilePath;
 			}
 			if (entity.ContainsComponent<OutlineComponent>())
 			{
@@ -378,23 +379,13 @@ namespace Ember {
 
 				if (entityNode.has_child("ScriptComponent"))
 				{
-					ryml::NodeRef scriptNode = entityNode["ScriptComponent"];
-					std::string className;
-					scriptNode["ClassName"] >> className;
+					auto scriptNode = entityNode["ScriptComponent"];
 
-					auto& sc = deserializedEntity.AttachComponent<ScriptComponent>();
-					sc.ClassName = className;
+					std::string filePath;
+					scriptNode["FilePath"] >> filePath;
 
-					ScriptRegistry::ScriptFunctions functions;
-					if (ScriptRegistry::GetScriptFunctions(className, functions))
-					{
-						sc.OnInitFunc = functions.Instantiate;
-						sc.OnDestroyFunc = functions.Destroy;
-					}
-					else
-					{
-						EB_CORE_WARN("Failed to deserialize script! Class '{}' is not registered.", className);
-					}
+					ScriptComponent sc(filePath);
+					deserializedEntity.AttachComponent<ScriptComponent>(sc);
 				}
 
 				if (entityNode.has_child("OutlineComponent"))

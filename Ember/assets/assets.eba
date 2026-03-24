@@ -8,6 +8,10 @@ Assets:
     Name: Satellite_Mat_GoldFoil_AlbedoMap
     FilePath: Ember-Forge/assets/models/Foil_Albedo.jpg
   - Type: Shader
+    UUID: 7475106115865381442
+    Name: FinalComposite
+    FilePath: Ember/assets/shaders/FinalComposite.glsl
+  - Type: Shader
     UUID: 4
     Name: StandardGeometry
     FilePath: Ember/assets/shaders/StandardGeometry.glsl
@@ -36,13 +40,9 @@ Assets:
     Name: Bloom
     FilePath: Ember/assets/shaders/Bloom.glsl
   - Type: Shader
-    UUID: 4827325111681510284
+    UUID: 7668884795464841915
     Name: Outline
     FilePath: Ember/assets/shaders/Outline.glsl
-  - Type: Shader
-    UUID: 14752836335332047610
-    Name: FinalComposite
-    FilePath: Ember/assets/shaders/FinalComposite.glsl
   - Type: Material
     UUID: 13632041686402470657
     Name: Satellite_Mat_SolarPanel
@@ -109,39 +109,6 @@ Assets:
       u_NormalMap:
         Type: Texture
         Value: 7928838905715077773
-  - Type: Material
-    UUID: 15444675400192976268
-    Name: Satellite_Mat_SolarPanel
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 4
-    Instanced: true
-    BaseMaterialUUID: 14
-    Uniforms:
-      u_Color:
-        Type: Vector3f
-        Value: [0.05,0.1,0.35]
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Albedo:
-        Type: Vector3f
-        Value: [0.031526335,0.16025947,0.8039216]
-      u_Roughness:
-        Type: float
-        Value: 0.1
-      u_AO:
-        Type: float
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
   - Type: Material
     UUID: 14
     Name: StandardGeometry
@@ -309,39 +276,6 @@ Assets:
         Type: Texture
         Value: 3
   - Type: Material
-    UUID: 7389732899617943699
-    Name: Satellite_Mat_SolarPanel
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 4
-    Instanced: true
-    BaseMaterialUUID: 14
-    Uniforms:
-      u_Color:
-        Type: Vector3f
-        Value: [0.05,0.1,0.35]
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Albedo:
-        Type: Vector3f
-        Value: [0.05,0.1,0.35]
-      u_Roughness:
-        Type: float
-        Value: 0.1
-      u_AO:
-        Type: float
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-  - Type: Material
     UUID: 6976097131881085871
     Name: Satellite_Mat_GoldFoil
     FilePath: ''
@@ -374,6 +308,72 @@ Assets:
       u_NormalMap:
         Type: Texture
         Value: 7928838905715077773
+  - Type: Material
+    UUID: 15444675400192976268
+    Name: Satellite_Mat_SolarPanel
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 4
+    Instanced: true
+    BaseMaterialUUID: 14
+    Uniforms:
+      u_Color:
+        Type: Vector3f
+        Value: [0.05,0.1,0.35]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [0.031526335,0.16025947,0.8039216]
+      u_Roughness:
+        Type: float
+        Value: 0.1
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+  - Type: Material
+    UUID: 7389732899617943699
+    Name: Satellite_Mat_SolarPanel
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 4
+    Instanced: true
+    BaseMaterialUUID: 14
+    Uniforms:
+      u_Color:
+        Type: Vector3f
+        Value: [0.05,0.1,0.35]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [0.05,0.1,0.35]
+      u_Roughness:
+        Type: float
+        Value: 0.1
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
   - Type: Material
     UUID: 3164976726364686121
     Name: Satellite_DefaultMaterial

@@ -86,10 +86,11 @@ namespace Ember {
 		std::string m_Name;
 		bool m_Running = true;
 
-		LayerStack m_LayerStack;
-		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
 		ScopedPtr<AssetManager> m_AssetManager;
 		ScopedPtr<SystemManager> m_SystemManager;
+
+		LayerStack m_LayerStack;
+		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
 
 		static Application* s_Instance;
 	};
