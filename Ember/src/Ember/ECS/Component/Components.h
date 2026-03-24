@@ -230,7 +230,19 @@ namespace Ember {
 		}
 
 		ScriptComponent() = default;
-		ScriptComponent(const ScriptComponent&) = default;
+		ScriptComponent(const ScriptComponent& other)
+		{
+			ClassName = other.ClassName;
+			Initalized = false;
+			Instance = nullptr;
+
+			OnInitFunc = other.OnInitFunc;
+			OnDestroyFunc = other.OnDestroyFunc;
+			OnCreate = other.OnCreate;
+			OnUpdate = other.OnUpdate;
+			OnDestroy = other.OnDestroy;
+		}
+
 		~ScriptComponent()
 		{
 			if (Instance && OnDestroyFunc)

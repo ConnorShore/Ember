@@ -14,6 +14,8 @@ namespace Ember {
 
 	void SceneHierarchyPanel::OnEvent(Event& event)
 	{
+		EB_CREATE_DISPATCHER(event);
+		EB_DISPATCH_EVENT(KeyPressedEvent, OnKeyPressed);
 	}
 
 	void SceneHierarchyPanel::OnImGuiRender()
@@ -159,7 +161,7 @@ namespace Ember {
 		std::string popupId = entity.GetName() + "##" + std::to_string((uint32_t)entity.GetEntityHandle());
 		if (ImGui::BeginPopupContextItem(popupId.c_str(), ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
-			if (ImGui::MenuItem("Rename Entity"))
+			if (ImGui::MenuItem("Rename Entity", "F2"))
 			{
 				RenameEntity(entity);
 			}
@@ -167,11 +169,11 @@ namespace Ember {
 			{
 				// TODO: Add this functionality
 			}
-			if (ImGui::MenuItem("Duplicate Entity"))
+			if (ImGui::MenuItem("Duplicate Entity", "CTRL+D"))
 			{
-				// TODO: Add this functionality
+				DuplicateEntity(entity);
 			}
-			if (ImGui::MenuItem("Delete Entity"))
+			if (ImGui::MenuItem("Delete Entity", "DEL"))
 			{
 				m_Context->PendingEntityRemovals.insert(entity);
 			}
@@ -197,7 +199,7 @@ namespace Ember {
 
 	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
 	{
-		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetEntityUUID() == Constants::Entities::InvalidEntityUUID)
+		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetUUID() == Constants::Entities::InvalidEntityUUID)
 			return false;
 
 		Entity current = descendant;
@@ -207,7 +209,7 @@ namespace Ember {
 			if (parentID == Constants::Entities::InvalidEntityUUID)
 				break;
 
-			if (parentID == ancestor.GetEntityUUID())
+			if (parentID == ancestor.GetUUID())
 				return true;
 
 			current = m_Context->ActiveScene->GetEntity(parentID);
@@ -223,11 +225,46 @@ namespace Ember {
 		RenameEntity(entity);
 	}
 
+	void SceneHierarchyPanel::DuplicateEntity(Entity entity)
+	{
+		if (entity == Constants::Entities::InvalidEntityID)
+			return;
+
+		auto newEntity = m_Context->ActiveScene->DuplicateEntity(entity);
+		SetSelectedEntity(newEntity);
+	}
+
 	void SceneHierarchyPanel::RenameEntity(Entity entity)
 	{
 		m_RenamingEntity = entity;
 		strncpy(m_RenameBuffer, "Empty_Entity", sizeof(m_RenameBuffer));
 		m_SetRenameFocus = true;
+	}
+
+	bool SceneHierarchyPanel::OnKeyPressed(const KeyPressedEvent& e)
+	{
+		if (ImGui::GetIO().WantTextInput)
+			return false;
+
+		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+
+		KeyCode key = e.GetKeyCode();
+		switch (key)
+		{
+		case KeyCode::D:
+			if (control) DuplicateEntity(m_Context->SelectedEntity);
+			break;
+		case KeyCode::F2:
+			RenameEntity(m_Context->SelectedEntity);
+			break;
+		case KeyCode::Delete:
+			if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID)
+				m_Context->PendingEntityRemovals.insert(m_Context->SelectedEntity);
+			break;
+		}
+
+		return false;
 	}
 
 }

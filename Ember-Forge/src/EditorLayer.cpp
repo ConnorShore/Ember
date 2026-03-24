@@ -120,9 +120,9 @@ namespace Ember {
 					NewScene();
 				}
 
-				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S"))
+				if (ImGui::MenuItem("Open Scene", "Ctrl+O"))
 				{
-					SaveScene(true);
+					OpenScene();
 				}
 
 				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
@@ -130,9 +130,9 @@ namespace Ember {
 					SaveScene(false);
 				}
 
-				if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
+				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S"))
 				{
-					OpenScene();
+					SaveScene(true);
 				}
 
 				ImGui::EndMenu();
