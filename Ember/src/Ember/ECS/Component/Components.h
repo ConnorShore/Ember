@@ -218,24 +218,24 @@ namespace Ember {
 
 		// Class Binding 
 		Behavior* Instance = nullptr;
-		Behavior* (*OnInitScript)() = nullptr;
-		void (*OnDestroyScript)(ScriptComponent*) = nullptr;
+		Behavior* (*OnInitFunc)() = nullptr;
+		void (*OnDestroyFunc)(ScriptComponent*) = nullptr;
 
 		template<typename T>
 		void Bind(const std::string& className)
 		{
 			ClassName = className;
-			OnInitScript = []() { return static_cast<Behavior*>(new T()); };
-			OnDestroyScript = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
+			OnInitFunc = []() { return static_cast<Behavior*>(new T()); };
+			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}
 
 		ScriptComponent() = default;
 		ScriptComponent(const ScriptComponent&) = default;
 		~ScriptComponent()
 		{
-			if (Instance && OnDestroyScript)
+			if (Instance && OnDestroyFunc)
 			{
-				OnDestroyScript(this);
+				OnDestroyFunc(this);
 			}
 		}
 	};

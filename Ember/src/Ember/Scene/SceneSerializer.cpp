@@ -2,6 +2,7 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
+#include "Ember/Asset/ScriptRegistry.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -377,12 +378,23 @@ namespace Ember {
 
 				if (entityNode.has_child("ScriptComponent"))
 				{
-					ryml::NodeRef scNode = entityNode["ScriptComponent"];
-					ScriptComponent sc;
-					scNode["ClassName"] >> sc.ClassName;
+					ryml::NodeRef scriptNode = entityNode["ScriptComponent"];
+					std::string className;
+					scriptNode["ClassName"] >> className;
 
-					// TODO: ScriptEngine::BindScriptByName(sc, sc.ClassName);
-					deserializedEntity.AttachComponent<ScriptComponent>(sc);
+					auto& sc = deserializedEntity.AttachComponent<ScriptComponent>();
+					sc.ClassName = className;
+
+					ScriptRegistry::ScriptFunctions functions;
+					if (ScriptRegistry::GetScriptFunctions(className, functions))
+					{
+						sc.OnInitFunc = functions.Instantiate;
+						sc.OnDestroyFunc = functions.Destroy;
+					}
+					else
+					{
+						EB_CORE_WARN("Failed to deserialize script! Class '{}' is not registered.", className);
+					}
 				}
 
 				if (entityNode.has_child("OutlineComponent"))
