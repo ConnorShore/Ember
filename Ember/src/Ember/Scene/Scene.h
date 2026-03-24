@@ -35,10 +35,16 @@ namespace Ember {
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
-		Entity AddEntity(const std::string& name);
+        Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
 		Entity DuplicateEntity(Entity entity);
+
+		template<IsCoreAsset T>
+		void RegisterAsset(const SharedPtr<T>& asset)
+		{
+			Application::Instance().GetAssetManager().Register<T>(asset);
+		}
 
 		template<IsCoreAsset T>
 		SharedPtr<T> GetAsset(const std::string& assetName)
