@@ -9,6 +9,7 @@
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
+#include "Ember/Scene/Scene.h"
 
 namespace Ember {
 
@@ -55,7 +56,7 @@ namespace Ember {
 		int _Padding; // Pad the final ints to 16 bytes
 	};
 
-	void RenderSystem::OnAttach(Registry* registry)
+	void RenderSystem::OnAttach()
 	{
 		Renderer2D::Init();
 		Renderer3D::Init();
@@ -133,14 +134,14 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is attached!");
 	}
 
-	void RenderSystem::OnDetach(Registry* registry)
+	void RenderSystem::OnDetach()
 	{
-		//Renderer2D::Shutdown();
-		//Renderer3D::Shutdown();
+		Renderer2D::Shutdown();
+		Renderer3D::Shutdown();
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::ExecuteRenderPipeline(Registry* registry)
+	void RenderSystem::ExecuteRenderPipeline(Registry& registry)
 	{
 		// Save output framebuffer
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
@@ -169,18 +170,18 @@ namespace Ember {
 		ResetRenderState();
 	}
 
-	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry)
+	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		InitializeRenderState();
-		SetSceneCamera(registry);
+		SetSceneCamera(scene->GetRegistry());
 
 		if (m_RenderSceneState.IsCameraFound)
 		{
-			ExecuteRenderPipeline(registry);
+			ExecuteRenderPipeline(scene->GetRegistry());
 		}
 	}
 
-	void RenderSystem::OnUpdate(TimeStep delta, Registry* registry, const Camera& camera, const Matrix4f& cameraTransform)
+	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform)
 	{
 		InitializeRenderState();
 
@@ -193,7 +194,7 @@ namespace Ember {
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
-		ExecuteRenderPipeline(registry);
+		ExecuteRenderPipeline(scene->GetRegistry());
 	}
 
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
@@ -236,12 +237,12 @@ namespace Ember {
 		m_RenderSceneState.Reset();
 	}
 
-	void RenderSystem::SetSceneCamera(Registry* registry)
+	void RenderSystem::SetSceneCamera(Registry& registry)
 	{
-		View cameraView = registry->Query<CameraComponent, TransformComponent>();
+		View cameraView = registry.Query<CameraComponent, TransformComponent>();
 		for (EntityID cameraEntity : cameraView)
 		{
-			auto [camera, transform] = registry->GetComponents<CameraComponent, TransformComponent>(cameraEntity);
+			auto [camera, transform] = registry.GetComponents<CameraComponent, TransformComponent>(cameraEntity);
 			if (camera.IsActive)
 			{
 				m_RenderSceneState.ActiveCamera = camera.Camera;
@@ -257,23 +258,23 @@ namespace Ember {
 		}
 	}
 
-	void RenderSystem::CreateShadowMaps(Registry* registry)
+	void RenderSystem::CreateShadowMaps(Registry& registry)
 	{
 		CreateDirectionalShadowMap(registry);
 		CreateSpotlightShadowMap(registry);
 	}
 
-	void RenderSystem::CreateDirectionalShadowMap(Registry* registry)
+	void RenderSystem::CreateDirectionalShadowMap(Registry& registry)
 	{
 		// Get directional light view matrix to create shadow map
-		View lightView = registry->Query<DirectionalLightComponent, TransformComponent>();
+		View lightView = registry.Query<DirectionalLightComponent, TransformComponent>();
 		unsigned int index = 0;
 		for (EntityID entity : lightView)
 		{
 			if (index >= Constants::Renderer::MaxDirectionalLights)
 				break;
 
-			auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+			auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
@@ -294,10 +295,10 @@ namespace Ember {
 		RenderGeometryForShadowMaps(registry, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
 	}
 
-	void RenderSystem::CreateSpotlightShadowMap(Registry* registry)
+	void RenderSystem::CreateSpotlightShadowMap(Registry& registry)
 	{
 		// Get spotlight view matrix to create shadow map
-		View lightView = registry->Query<SpotLightComponent, TransformComponent>();
+		View lightView = registry.Query<SpotLightComponent, TransformComponent>();
 		unsigned int index = 0;
 		for (EntityID entity : lightView)
 		{
@@ -306,7 +307,7 @@ namespace Ember {
 			if (index >= Constants::Renderer::MaxSpotLights)
 				break;
 
-			auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
+			auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
@@ -326,7 +327,7 @@ namespace Ember {
 		RenderGeometryForShadowMaps(registry, m_RenderSceneState.SpotLightViewMatrix, m_SpotShadowMapBuffer);
 	}
 
-	void RenderSystem::RenderGeometryForShadowMaps(Registry* registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
+	void RenderSystem::RenderGeometryForShadowMaps(Registry& registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
@@ -344,7 +345,7 @@ namespace Ember {
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
-			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
 		}
@@ -352,7 +353,7 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderDeferredGeometry(Registry* registry)
+	void RenderSystem::RenderDeferredGeometry(Registry& registry)
 	{
 		m_GBuffer->Bind();
 		RenderAction::SetViewport(0, 0, m_GBuffer->GetSpecification().Width, m_GBuffer->GetSpecification().Height);
@@ -376,7 +377,7 @@ namespace Ember {
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
-			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			if (!mesh.Mesh || !material.Material)
 				continue;
 			material.Material->GetShader()->Bind();
@@ -387,7 +388,7 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderDeferredLighting(Registry* registry)
+	void RenderSystem::RenderDeferredLighting(Registry& registry)
 	{
 		int dims[4] = { 0 };
 		RenderAction::GetViewportDimensions(dims);
@@ -427,13 +428,13 @@ namespace Ember {
 
 		// Directional Lights
 		{
-			View view = registry->Query<DirectionalLightComponent, TransformComponent>();
+			View view = registry.Query<DirectionalLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActiveDirectionalLights >= Constants::Renderer::MaxDirectionalLights)
 					break;
 
-				auto [light, transform] = registry->GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+				auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
 				int i = lightData.ActiveDirectionalLights;
 
 				lightData.DirectionalLights[i].Direction = transform.GetForward();
@@ -446,13 +447,13 @@ namespace Ember {
 
 		// Spotlights
 		{
-			View view = registry->Query<SpotLightComponent, TransformComponent>();
+			View view = registry.Query<SpotLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActiveSpotLights >= Constants::Renderer::MaxSpotLights)
 					break;
 
-				auto [light, transform] = registry->GetComponents<SpotLightComponent, TransformComponent>(entity);
+				auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
 				int i = lightData.ActiveSpotLights;
 
 				lightData.SpotLights[i].Position = transform.Position;
@@ -468,13 +469,13 @@ namespace Ember {
 
 		// Point Lights
 		{
-			View view = registry->Query<PointLightComponent, TransformComponent>();
+			View view = registry.Query<PointLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActivePointLights >= Constants::Renderer::MaxPointLights)
 					break;
 
-				auto [light, transform] = registry->GetComponents<PointLightComponent, TransformComponent>(entity);
+				auto [light, transform] = registry.GetComponents<PointLightComponent, TransformComponent>(entity);
 				int i = lightData.ActivePointLights;
 
 				lightData.PointLights[i].Position = transform.Position;
@@ -490,7 +491,7 @@ namespace Ember {
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
-	void RenderSystem::RenderForwardEntities(Registry* registry)
+	void RenderSystem::RenderForwardEntities(Registry& registry)
 	{
 		// Copy depth buffer for forward rendering
 		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
@@ -502,7 +503,7 @@ namespace Ember {
 
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
-			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			material.Material->GetShader()->Bind();
 			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
@@ -511,21 +512,21 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderTransparentEntities(Registry* registry)
+	void RenderSystem::RenderTransparentEntities(Registry& registry)
 	{
 
 	}
 
-	void RenderSystem::Render2DEntities(Registry* registry)
+	void RenderSystem::Render2DEntities(Registry& registry)
 	{
 		RenderAction::UseDepthTest(false);
 
 		Renderer2D::BeginFrame();
 
-		View view = registry->Query<SpriteComponent, TransformComponent>();
+		View view = registry.Query<SpriteComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
-			auto [sprite, transform] = registry->GetComponents<SpriteComponent, TransformComponent>(entity);
+			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.Texture == nullptr)
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
 					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color);
@@ -537,7 +538,7 @@ namespace Ember {
 		Renderer2D::EndFrame();
 	}
 
-	void RenderSystem::HandlePostProcessing(Registry* registry)
+	void RenderSystem::HandlePostProcessing(Registry& registry)
 	{
 		RenderAction::UseDepthTest(false);
 
@@ -547,10 +548,10 @@ namespace Ember {
 		// TODO: Need a more elegant way to handle these special VFX cases
 		// Grab outline components for selected entities
 		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
-		View view = registry->Query<OutlineComponent>();
+		View view = registry.Query<OutlineComponent>();
 		for (EntityID entity : view)
 		{
-			auto [outline] = registry->GetComponents<OutlineComponent>(entity);
+			auto [outline] = registry.GetComponents<OutlineComponent>(entity);
 			outlinedEntityMap[entity] = outline;
 		}
 
@@ -618,12 +619,12 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 	}
 
-	void RenderSystem::SortEntitiesByRenderQueue(Registry* registry)
+	void RenderSystem::SortEntitiesByRenderQueue(Registry& registry)
 	{
-		View view = registry->Query<MeshComponent, MaterialComponent, TransformComponent>();
+		View view = registry.Query<MeshComponent, MaterialComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
-			auto [mesh, material, transform] = registry->GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			if (!mesh.Mesh || !material.Material)
 				continue;
 

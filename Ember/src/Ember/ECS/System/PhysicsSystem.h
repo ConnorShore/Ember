@@ -11,9 +11,9 @@ namespace Ember {
 		PhysicsSystem() = default;
 		virtual ~PhysicsSystem() = default;
 
-		void OnAttach(Registry* registry) override;
-		void OnDetach(Registry* registry) override;
-		void OnUpdate(TimeStep delta, Registry* registry) override;
+		void OnAttach() override;
+		void OnDetach() override;
+		void OnUpdate(TimeStep delta, Scene* scene) override;
 	};
 
 }

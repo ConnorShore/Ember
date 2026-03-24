@@ -15,6 +15,9 @@ namespace Ember {
 		{
 			auto& camera = component.Camera;
 
+			// Checkbox for active state
+			ImGui::Checkbox("Active", &component.IsActive);
+
 			// Dropdown for projection type
 			ImGui::Text("Projection:");
 			ImGui::SameLine();

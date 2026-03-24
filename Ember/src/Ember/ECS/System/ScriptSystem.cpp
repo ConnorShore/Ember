@@ -4,24 +4,25 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Behavior.h"
+#include "Ember/Scene/Scene.h"
 
 namespace Ember {
 
-	void ScriptSystem::OnAttach(Registry* registry)
+	void ScriptSystem::OnAttach()
 	{
 	}
 
-	void ScriptSystem::OnDetach(Registry* registry)
+	void ScriptSystem::OnDetach()
 	{
 	}
 
-	void ScriptSystem::OnUpdate(TimeStep delta, Registry* registry)
+	void ScriptSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
-		auto view = registry->Query<ScriptComponent>();
+		auto view = scene->GetRegistry().Query<ScriptComponent>();
 		for (auto entity : view)
 		{
-			Entity handle(entity, m_SceneHandle);
-			auto& script = registry->GetComponent<ScriptComponent>(entity);
+			Entity handle(entity, scene);
+			auto& script = scene->GetRegistry().GetComponent<ScriptComponent>(entity);
 
 			if (!script.Initalized)
 			{

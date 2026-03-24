@@ -8,8 +8,12 @@
 namespace Ember {
 
 	EditorLayer::EditorLayer()
-		: Layer("Ember Forge"), m_Context({ SharedPtr<Scene>::Create("DefaultScene"), Entity()})
+		: Layer("Ember Forge"), m_EditorScene(SharedPtr<Scene>::Create("DefaultScene"))
 	{
+		m_Context = {
+			.ActiveScene = m_EditorScene,
+			.SelectedEntity = m_InvalidEntity
+		};
 	}
 
 	EditorLayer::~EditorLayer()
@@ -54,7 +58,7 @@ namespace Ember {
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
 
 		// Update camera
-		if (m_Context.ActiveScene->GetSceneState() == SceneState::Edit)
+		if (m_SceneState == SceneState::Edit)
 			m_Camera.OnEvent(event);
 
 		// Propagate events to panels
@@ -70,7 +74,7 @@ namespace Ember {
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
 
-		switch (m_Context.ActiveScene->GetSceneState())
+		switch (m_SceneState)
 		{
 			case SceneState::Edit:
 				m_Camera.OnUpdate(delta);
@@ -140,18 +144,19 @@ namespace Ember {
 
 			// Add play/pause button in center of main menu bar
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 50); // Center the button (assuming button width ~100)
-			if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
+			if (m_SceneState == SceneState::Play)
 			{
 				if (ImGui::Button("Stop"))
 				{
-					m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+					OnRuntimeStop();
+					m_SceneState = SceneState::Edit;
 				}
 			}
 			else
 			{
 				if (ImGui::Button("Play"))
 				{
-					m_Context.ActiveScene->SetSceneState(SceneState::Play);
+					OnRuntimeStart();
 				}
 			}
 
@@ -198,6 +203,28 @@ namespace Ember {
 
 		// Delete pending entities
 		RemovePendingEntities();
+	}
+
+	void EditorLayer::OnRuntimeStart()
+	{
+		m_Context.SelectedEntity = m_InvalidEntity;
+		m_PreviousSelectedEntity = m_InvalidEntity;
+
+		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnRuntimeStart();
+		m_SceneState = SceneState::Play;
+	}
+
+	void EditorLayer::OnRuntimeStop()
+	{
+		m_Context.SelectedEntity = m_InvalidEntity;
+		m_PreviousSelectedEntity = m_InvalidEntity;
+
+		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnRuntimeStop();
+		m_SceneState = SceneState::Edit;
 	}
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
@@ -254,10 +281,10 @@ namespace Ember {
 			case KeyCode::Space:
 				if (control)
 				{
-					if (m_Context.ActiveScene->GetSceneState() == SceneState::Play)
-						m_Context.ActiveScene->SetSceneState(SceneState::Edit);
+					if (m_SceneState == SceneState::Play)
+						m_SceneState = SceneState::Edit;
 					else
-						m_Context.ActiveScene->SetSceneState(SceneState::Play);
+						m_SceneState = SceneState::Play;
 				}
 				break;
 		}
@@ -339,7 +366,7 @@ namespace Ember {
 
 	void EditorLayer::RenderTransformGizmos()
 	{
-		if (m_GizmoType == -1)
+		if (m_GizmoType == -1 || m_SceneState != SceneState::Edit)
 			return;
 
 		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
@@ -468,7 +495,9 @@ namespace Ember {
 
 	void EditorLayer::NewScene()
 	{
-		m_Context.ActiveScene = SharedPtr<Scene>::Create("New Scene");
+		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
+		m_Context.ActiveScene = m_EditorScene;
+
 		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
@@ -485,7 +514,8 @@ namespace Ember {
 			SceneSerializer serializer(newScene);
 			if (serializer.Deserialize(sceneFile))
 			{
-				m_Context.ActiveScene = newScene;
+				m_EditorScene = newScene;
+				m_Context.ActiveScene = m_EditorScene;
 				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
 				m_Context.ActiveScene->SetFilePath(sceneFile);
 

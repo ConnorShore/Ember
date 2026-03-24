@@ -10,6 +10,8 @@
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/ImGui/ImGuiLayer.h"
 
+#include "Ember/ECS/System/SystemManager.h"
+
 #include "Ember/Asset/AssetManager.h"
 #include "Ember/Asset/Asset.h"
 
@@ -42,6 +44,16 @@ namespace Ember {
 			return m_AssetManager->Load<T>(name, filePath);
 		}
 
+		//void RegisterSystem(const SharedPtr<System>& system, Registry* registry);
+		//void UnregisterSystem(const SharedPtr<System>& system, Registry* registry);
+		//void UpdateSystems(TimeStep delta, Registry* registry);
+
+		template<typename T>
+		SharedPtr<T> GetSystem()
+		{
+			return m_SystemManager->GetSystem<T>();
+		}
+
 		void OnAttach();
 		void OnDetach();
 		void OnEvent(Event& event);
@@ -54,6 +66,9 @@ namespace Ember {
         inline const Window& GetWindow() const { return *m_Window; }
 		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
 		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
+
+		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
+		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
 
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
@@ -74,6 +89,7 @@ namespace Ember {
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
 		ScopedPtr<AssetManager> m_AssetManager;
+		ScopedPtr<SystemManager> m_SystemManager;
 
 		static Application* s_Instance;
 	};

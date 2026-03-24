@@ -12,18 +12,15 @@ namespace Ember {
 	class TransformSystem : public System
 	{
 	public:
-		TransformSystem(Scene* scene);
+		TransformSystem() = default;
 		virtual ~TransformSystem() = default;
 
-		void OnAttach(Registry* registry) override;
-		void OnDetach(Registry* registry) override;
-		void OnUpdate(TimeStep delta, Registry* registry) override;
+		void OnAttach() override;
+		void OnDetach() override;
+		void OnUpdate(TimeStep delta, Scene* scene) override;
 
 	private:
-		void UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, Registry* registry);
-		
-	private:
-		Scene* m_SceneHandle;
+		void UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, Scene* scene);
 	};
 
 }

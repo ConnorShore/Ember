@@ -9,15 +9,12 @@ namespace Ember {
 	class ScriptSystem : public System
 	{
 	public:
-		ScriptSystem(Scene* scene) : m_SceneHandle(scene) {}
+		ScriptSystem() = default;
 		virtual ~ScriptSystem() = default;
 
-		void OnAttach(Registry* registry) override;
-		void OnDetach(Registry* registry) override;
-		void OnUpdate(TimeStep delta, Registry* registry) override;
-
-	private:
-		Scene* m_SceneHandle;
+		void OnAttach() override;
+		void OnDetach() override;
+		void OnUpdate(TimeStep delta, Scene* scene) override;
 	};
 
 }

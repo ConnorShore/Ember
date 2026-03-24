@@ -15,9 +15,9 @@ namespace Ember {
 		SystemManager() = default;
 		~SystemManager();
 
-		void RegisterSystem(const SharedPtr<System>& system, Registry* registry);
-		void UnregisterSystem(const SharedPtr<System>& system, Registry* registry);
-		void UpdateSystems(TimeStep delta, Registry* registry);
+		void RegisterSystem(const SharedPtr<System>& system);
+		void UnregisterSystem(const SharedPtr<System>& system);
+		void UpdateSystems(TimeStep delta, Scene* scene);
 
 		template<typename T>
 		SharedPtr<T> GetSystem()

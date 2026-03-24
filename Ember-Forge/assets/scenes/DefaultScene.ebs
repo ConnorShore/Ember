@@ -86,8 +86,8 @@ Entities:
     TransformComponent:
       Position: [-2.9802322e-08,-4,0]
       Rotation: [-1.5708,0,0]
-      Scale: [39.67075,39.67075,39.67075]
-      WorldTransform: [39.67075,0,0,0,0,-0.00014660278,-39.67075,0,0,39.67075,-0.00014660278,0,-2.9802322e-08,-4,0,1]
+      Scale: [2792.1255,2792.1255,2792.1255]
+      WorldTransform: [2792.1255,0,0,0,0,-0.010318266,-2792.1255,0,0,2792.1255,-0.010318266,0,-2.9802322e-08,-4,0,1]
     MeshComponent:
       Mesh: Primitive_Quad
     MaterialComponent:
@@ -106,3 +106,26 @@ Entities:
     DirectionalLightComponent:
       Color: [1,0.8,0.8]
       Intensity: 5
+  - Entity: 2881502087864267604
+    TagComponent:
+      Tag: Camera
+    RelationshipComponent:
+      Parent: 0
+      Children: []
+    TransformComponent:
+      Position: [0,-0.16902828,5.2763157]
+      Rotation: [0,0,0]
+      Scale: [1,1,1]
+      WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,-0.16902828,5.2763157,1]
+    CameraComponent:
+      Projection: [1.0052978,0,0,0,0,1.428148,0,0,0,0,-1.020202,-1,0,0,-2.020202,0]
+      Type: 1
+      IsActive: 1
+      OrthographicProperties:
+        Size: 5
+        NearClip: -1
+        FarClip: 1
+      PerspectiveProperties:
+        FOV: 70
+        NearClip: 1
+        FarClip: 100

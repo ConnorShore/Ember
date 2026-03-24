@@ -4,16 +4,16 @@
 
 namespace Ember {
 
-	class Registry;
+	class Scene;
 
 	class System : public SharedResource
 	{
 	public:
 		virtual ~System() = default;
 
-		virtual void OnAttach(Registry* registry) = 0;
-		virtual void OnDetach(Registry* registry) = 0;
-		virtual void OnUpdate(TimeStep delta, Registry* registry) = 0;
+		virtual void OnAttach() = 0;
+		virtual void OnDetach() = 0;
+		virtual void OnUpdate(TimeStep delta, Scene* scene) = 0;
 	};
 
 }

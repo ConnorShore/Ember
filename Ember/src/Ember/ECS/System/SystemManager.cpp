@@ -10,24 +10,24 @@ namespace Ember {
 		m_Systems.clear();
 	}
 
-	void SystemManager::RegisterSystem(const SharedPtr<System>& system, Registry* registry)
+	void SystemManager::RegisterSystem(const SharedPtr<System>& system)
 	{
 		EB_CORE_ASSERT(!ContainsSystem(system), "System already is registered!");
-		system->OnAttach(registry);
+		system->OnAttach();
 		m_Systems.push_back(system);
 	}
 
-	void SystemManager::UnregisterSystem(const SharedPtr<System>& system, Registry* registry)
+	void SystemManager::UnregisterSystem(const SharedPtr<System>& system)
 	{
 		EB_CORE_ASSERT(ContainsSystem(system), "System is not currently registered!");
-		system->OnDetach(registry);
+		system->OnDetach();
 		std::erase(m_Systems, system);
 	}
 
-	void SystemManager::UpdateSystems(TimeStep delta, Registry* registry)
+	void SystemManager::UpdateSystems(TimeStep delta, Scene* scene)
 	{
 		for (const auto& s : m_Systems)
-			s->OnUpdate(delta, registry);
+			s->OnUpdate(delta, scene);
 	}
 
 	bool SystemManager::ContainsSystem(const SharedPtr<System>& system)
