@@ -35,9 +35,16 @@ namespace Ember {
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
-		Entity AddEntity(const std::string& name);
+        Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
+		Entity DuplicateEntity(Entity entity);
+
+		template<IsCoreAsset T>
+		void RegisterAsset(const SharedPtr<T>& asset)
+		{
+			Application::Instance().GetAssetManager().Register<T>(asset);
+		}
 
 		template<IsCoreAsset T>
 		SharedPtr<T> GetAsset(const std::string& assetName)
@@ -80,6 +87,7 @@ namespace Ember {
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
+		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot);
 
 	private:
 		ScopedPtr<Registry> m_Registry;

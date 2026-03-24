@@ -49,6 +49,11 @@ namespace Ember {
 			return m_EntityManager->ContainsComponent(entity, type);
 		}
 
+		inline bool ContainsComponent(EntityID entity, ComponentType type)
+		{
+			return m_EntityManager->ContainsComponent(entity, type);
+		}
+
 		template<typename... Args>
 		inline bool ContainsComponents(EntityID entity)
 		{

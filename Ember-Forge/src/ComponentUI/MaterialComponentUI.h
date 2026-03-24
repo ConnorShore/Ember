@@ -49,6 +49,16 @@ namespace Ember {
 				}
 				ImGui::EndCombo();
 			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clone"))
+			{
+				std::string entityName = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
+				std::string cloneName = entityName + "_" + material->GetName() + "_Clone";
+
+				auto clonedMaterial = component.CloneMaterial(cloneName);
+				if (clonedMaterial)
+					m_Context->ActiveScene->RegisterAsset(clonedMaterial);
+			}
 
 			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
 			ImGui::SameLine();
@@ -61,41 +71,6 @@ namespace Ember {
 					// TODO: Launch VS Code / Text Editor via OS system call
 				}
 			}
-
-			//ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-			//if (ImGui::Button("..."))
-			//{
-			//	ImGui::OpenPopup("ShaderPopup");
-			//}
-			//ImGui::PopStyleVar();
-
-			//if (ImGui::BeginPopup("ShaderPopup"))
-			//{
-			//	if (ImGui::MenuItem("Choose Shader"))
-			//	{
-			//		// Make this a popup window maybe? Or a combo box? Not sure how to do this best with ImGui
-			//		ImGui::OpenPopup("ShaderSelectPopup");
-
-			//		if (ImGui::BeginPopup("ShaderSelectPopup"))
-			//		{
-			//			ImGui::Text("Select a shader:");
-			//			ImGui::Separator();
-			//			auto shaders = m_Context->ActiveScene->GetAssetsOfType<Shader>();
-			//			for (auto& shader : shaders)
-			//			{
-			//				if (ImGui::MenuItem(shader->GetName().c_str()))
-			//				{
-			//					material->SetShader(shader);
-			//				}
-			//			}
-			//		}
-			//	}
-			//	if (ImGui::MenuItem("Edit Shader"))
-			//	{
-			//		// TODO: Open text editor with shader source
-			//	}
-			//	ImGui::EndPopup();
-			//}
 
 			ImGui::Separator();
 

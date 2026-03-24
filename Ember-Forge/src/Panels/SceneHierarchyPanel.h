@@ -24,7 +24,10 @@ namespace Ember {
 		bool IsAncestor(Entity ancestor, Entity descendant);
 
 		void CreateEntity();
+		void DuplicateEntity(Entity entity);
 		void RenameEntity(Entity entity);
+
+		bool OnKeyPressed(const KeyPressedEvent& event);
 
 	private:
 		Entity m_PreviouslySelectedEntity;

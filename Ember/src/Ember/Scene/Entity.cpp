@@ -80,7 +80,7 @@ namespace Ember {
 		return m_SceneHandle->GetRegistry().GetComponent<TagComponent>(m_EntityHandle).Tag;
 	}
 
-	UUID Entity::GetEntityUUID() const 
+	UUID Entity::GetUUID() const 
 	{ 
 		return m_SceneHandle->GetRegistry().GetComponent<IDComponent>(m_EntityHandle).ID; 
 	}

@@ -148,6 +148,31 @@ namespace Ember {
 			EB_CORE_ASSERT(false, "Unknown Material type!");
 			return nullptr;
 		}
+
+		SharedPtr<MaterialInstance> CloneMaterial(const std::string& newName)
+		{
+			if (auto base = DynamicPointerCast<Ember::Material>(Material))
+			{
+				auto newInstance = SharedPtr<MaterialInstance>::Create(newName, base);
+				Material = newInstance;
+				return newInstance;
+			}
+
+			if (auto instance = DynamicPointerCast<MaterialInstance>(Material))
+			{
+				auto baseMaterial = instance->GetMaterial();
+				auto newInstance = SharedPtr<MaterialInstance>::Create(newName, baseMaterial);
+
+				for (const auto& [uniformName, value] : instance->GetUniforms())
+					newInstance->SetUniform(uniformName, value);
+
+				Material = newInstance;
+				return newInstance;
+			}
+
+			EB_CORE_ASSERT(false, "Unknown Material type!");
+			return nullptr;
+		}
 	};
 
 	struct CameraComponent
@@ -229,8 +254,29 @@ namespace Ember {
 			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
 		}
 
+		template<typename T>
+		void Bind()
+		{
+			// Derive a class name automatically from the type name when not provided
+			ClassName = typeid(T).name();
+			OnInitFunc = []() { return static_cast<Behavior*>(new T()); };
+			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
+		}
+
 		ScriptComponent() = default;
-		ScriptComponent(const ScriptComponent&) = default;
+		ScriptComponent(const ScriptComponent& other)
+		{
+			ClassName = other.ClassName;
+			Initalized = false;
+			Instance = nullptr;
+
+			OnInitFunc = other.OnInitFunc;
+			OnDestroyFunc = other.OnDestroyFunc;
+			OnCreate = other.OnCreate;
+			OnUpdate = other.OnUpdate;
+			OnDestroy = other.OnDestroy;
+		}
+
 		~ScriptComponent()
 		{
 			if (Instance && OnDestroyFunc)

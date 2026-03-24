@@ -10,6 +10,21 @@
 
 namespace Ember {
 
+	namespace Utils {
+
+		template<typename... Component>
+		static void CopyComponents(Entity src, Entity dst)
+		{
+			([&]()
+				{
+					if (src.ContainsComponent<Component>())
+					{
+						dst.AttachComponent<Component>(src.GetComponent<Component>());
+					}
+				}(), ...);
+		}
+	}
+
 	Scene::Scene(const std::string& name)
 		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name)
 	{
@@ -92,6 +107,66 @@ namespace Ember {
 		return Entity();
 	}
 
+	Entity Scene::DuplicateEntity(Entity entity)
+	{
+		return DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
+	}
+
+	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot)
+	{
+		std::string name = entity.GetName();
+		Entity newEntity = AddEntity(name + " (Copy)");
+
+		Utils::CopyComponents<
+			TransformComponent,
+			MeshComponent,
+			MaterialComponent,
+			SpriteComponent,
+			CameraComponent,
+			ScriptComponent,
+			RigidBodyComponent,
+			DirectionalLightComponent,
+			SpotLightComponent,
+			PointLightComponent
+		>(entity, newEntity);
+
+		if (entity.ContainsComponent<RelationshipComponent>())
+		{
+			auto oldRels = entity.GetComponent<RelationshipComponent>();
+			RelationshipComponent newRels;
+
+			if (isRoot)
+			{
+				newRels.ParentHandle = oldRels.ParentHandle;
+
+				if (newParentId != Constants::Entities::InvalidEntityUUID)
+				{
+					Entity newParent = GetEntity(newParentId);
+					if (newParent)
+						newParent.GetComponent<RelationshipComponent>().Children.push_back(newEntity.GetUUID());
+				}
+			}
+			else
+			{
+				newRels.ParentHandle = newParentId;
+			}
+
+			for (UUID childUUID : oldRels.Children)
+			{
+				Entity childEntity = GetEntity(childUUID);
+				if (childEntity != Constants::Entities::InvalidEntityID)
+				{
+					Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false);
+					newRels.Children.push_back(duplicatedChild.GetUUID());
+				}
+			}
+
+			newEntity.AttachComponent(newRels);
+		}
+
+		return newEntity;
+	}
+
 	std::vector<Entity> Scene::GetAllEntities() const
 	{
 		std::vector<Entity> entities;
@@ -105,14 +180,14 @@ namespace Ember {
 
 	void Scene::RemoveEntity(Entity entity)
 	{
-		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetEntityUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
+		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
 
 		// Remove children first
 		for (auto child : entity.GetAllChildren())
 			RemoveEntity(child);
 
 		// Remove from ECS and our Map
-		UUID entityUUID = entity.GetEntityUUID();
+		UUID entityUUID = entity.GetUUID();
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
 		m_EntityUUIDMap.erase(entityUUID);
 	}
@@ -162,8 +237,8 @@ namespace Ember {
 
 				// Link the relationship!
 				auto& partRc = meshPartEntity.GetComponent<RelationshipComponent>();
-				partRc.ParentHandle = currentEntity.GetEntityUUID();
-				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetEntityUUID());
+				partRc.ParentHandle = currentEntity.GetUUID();
+				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetUUID());
 
 				// Attach the mesh
 				MeshComponent mc{ node.Meshes[i].MeshAsset };
@@ -183,8 +258,8 @@ namespace Ember {
 
 			// Link the relationship to the current entity
 			auto& childRc = childEntity.GetComponent<RelationshipComponent>();
-			childRc.ParentHandle = currentEntity.GetEntityUUID();
-			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetEntityUUID());
+			childRc.ParentHandle = currentEntity.GetUUID();
+			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetUUID());
 
 			// Recurse deeper into the tree
 			ProcessModelNode(childEntity, childNode, model);

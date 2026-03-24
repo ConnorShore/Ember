@@ -49,7 +49,7 @@ namespace Ember {
 		Entity FindEntityInHierarchy(const std::string& name);
 
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
-		UUID GetEntityUUID() const;
+		UUID GetUUID() const;
 		const std::string& GetName() const;
 
 		operator EntityID() { return m_EntityHandle; }

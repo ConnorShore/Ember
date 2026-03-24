@@ -49,7 +49,7 @@ void DeferredShadingLayer::OnAttach()
 		{
 			float roughness = 0.05f + ((float)col / (float)(cols - 1)) * 0.95f;
 
-			auto sphere = m_MainScene->AddEntity();
+			auto sphere = m_MainScene->AddEntity("Sphere");
 			auto& transform = sphere.GetComponent<Ember::TransformComponent>();
 			transform.Position = {
 				(col - cols / 2) * spacing,
@@ -74,7 +74,7 @@ void DeferredShadingLayer::OnAttach()
 	// Ground plane — large quad rotated to lie flat beneath the spheres
 	// ------------------------------------------------------------------
 	auto quadMesh = Ember::PrimitiveGenerator::CreateQuad(35.0f, 35.0f);
-	auto groundPlane = m_MainScene->AddEntity();
+	auto groundPlane = m_MainScene->AddEntity("Ground");
 	auto& groundTransform = groundPlane.GetComponent<Ember::TransformComponent>();
 	groundTransform.Position = { 0.0f, -(rows / 2) * spacing - 1.5f, 0.0f };
 	groundTransform.Rotation = { -1.5708f, 0.0f, 0.0f };
@@ -92,7 +92,7 @@ void DeferredShadingLayer::OnAttach()
 	// ------------------------------------------------------------------
 	// Camera
 	// ------------------------------------------------------------------
-	m_CameraEntity = m_MainScene->AddEntity();
+	m_CameraEntity = m_MainScene->AddEntity("Camera");
 	auto& camTransform = m_CameraEntity.GetComponent<Ember::TransformComponent>();
 	camTransform.Position = { 0.0f, 0.0f, 25.0f };
 
@@ -105,12 +105,12 @@ void DeferredShadingLayer::OnAttach()
 
 	Ember::CameraComponent cameraComponent(camera, true);
 	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
+	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>("Camera3DController");
 
 	// ------------------------------------------------------------------
 	// Interactive sphere (ImGui-controlled) — placed to the right
 	// ------------------------------------------------------------------
-	m_InteractiveSphere = m_MainScene->AddEntity();
+	m_InteractiveSphere = m_MainScene->AddEntity("InteractiveSphere");
 	auto& interactiveTransform = m_InteractiveSphere.GetComponent<Ember::TransformComponent>();
 	interactiveTransform.Position = { (cols / 2) * spacing + 4.0f, 0.0f, 0.0f };
 	interactiveTransform.Scale = { 1.5f, 1.5f, 1.5f };
@@ -242,7 +242,7 @@ void DeferredShadingLayer::SetupRandomLights()
 
 	for (int i = 0; i < numLights; i++)
 	{
-		auto lightEntity = m_MainScene->AddEntity();
+		auto lightEntity = m_MainScene->AddEntity("Light");
 
 		// Generate random values for this specific light
 		Ember::Vector3f color = { randomColor(gen), randomColor(gen), randomColor(gen) };
@@ -292,7 +292,7 @@ void DeferredShadingLayer::SetupStandardLights()
 	auto lightCubeMesh = Ember::PrimitiveGenerator::CreateCube();
 	for (auto& ld : lights)
 	{
-		auto lightEntity = m_MainScene->AddEntity();
+		auto lightEntity = m_MainScene->AddEntity("light");
 		Ember::PointLightComponent plComp = { ld.color, ld.intensity, ld.radius };
 		lightEntity.AttachComponent(plComp);
 		auto& lt = lightEntity.GetComponent<Ember::TransformComponent>();
