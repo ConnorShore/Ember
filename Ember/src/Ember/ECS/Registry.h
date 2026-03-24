@@ -81,20 +81,9 @@ namespace Ember {
 			return m_ComponentManager->GetActiveEntities<T>();
 		}
 
-		void RegisterSystem(const SharedPtr<System>& system);
-		void UnregisterSystem(const SharedPtr<System>& system);
-		void UpdateSystems(TimeStep delta);
-
-		template<typename T>
-		SharedPtr<T> GetSystem()
-		{
-			return m_SystemManager->GetSystem<T>();
-		}
-
 	private:
 		ScopedPtr<EntityManager> m_EntityManager;
 		ScopedPtr<ComponentManager> m_ComponentManager;
-		ScopedPtr<SystemManager> m_SystemManager;
 	};
 }
 

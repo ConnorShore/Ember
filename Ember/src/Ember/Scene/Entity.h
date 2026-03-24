@@ -16,12 +16,9 @@ namespace Ember {
 	{
 	public:
 		Entity(EntityID entityHandle, Scene* scene)
-			: m_EntityHandle(entityHandle), m_SceneHandle(scene) {
-		}
-
+			: m_EntityHandle(entityHandle), m_SceneHandle(scene) {}
 		Entity()
-			: m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {
-		}
+			: m_EntityHandle(Constants::Entities::InvalidEntityID), m_SceneHandle(nullptr) {}
 		Entity(const Entity&) = default;
 
 		~Entity() = default;

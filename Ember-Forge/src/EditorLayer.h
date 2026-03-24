@@ -23,6 +23,9 @@ namespace Ember {
 		void OnImGuiRender(TimeStep delta) override;
 
 	private:
+		void OnRuntimeStart();
+		void OnRuntimeStop();
+
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
@@ -41,6 +44,15 @@ namespace Ember {
 
 	private:
 		EditorContext m_Context;
+		SharedPtr<Scene> m_EditorScene;
+
+		enum class SceneState
+		{
+			Edit = 0,
+			Play = 1,
+			Pause = 2
+		} m_SceneState = SceneState::Edit;
+
 		EditorCamera m_Camera;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
 

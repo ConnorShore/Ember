@@ -16,18 +16,16 @@ namespace Ember {
 
 	class Entity;
 
-	enum class SceneState
-	{
-		Edit = 0,
-		Play = 1,
-		Pause = 2
-	};
-
 	class Scene : public SharedResource
 	{
 	public:
-		Scene(const std::string& name);
+		Scene(const std::string& name = "");
 		~Scene();
+
+		static SharedPtr<Scene> CopyScene(SharedPtr<Scene> other);
+
+		void OnRuntimeStart();
+		void OnRuntimeStop();
 
 		void OnUpdateRuntime(TimeStep delta);
 		void OnUpdateEdit(TimeStep delta, EditorCamera& camera);
@@ -76,8 +74,6 @@ namespace Ember {
 		inline T& GetComponent(const Entity& entity);
 
 		inline Registry& GetRegistry() { return *m_Registry; }
-		inline SceneState GetSceneState() const { return m_State; }
-		inline void SetSceneState(SceneState state) { m_State = state; }
 
 		inline const std::string& GetName() const { return m_Name; }
 
@@ -88,10 +84,10 @@ namespace Ember {
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
 		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot);
+		
 
 	private:
 		ScopedPtr<Registry> m_Registry;
-		SceneState m_State = SceneState::Edit;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 

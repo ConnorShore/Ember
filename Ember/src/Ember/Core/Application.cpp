@@ -5,6 +5,11 @@
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
 
+#include "Ember/ECS/System/ScriptSystem.h"
+#include "Ember/ECS/System/PhysicsSystem.h"
+#include "Ember/ECS/System/Rendersystem.h"
+#include "Ember/ECS/System/TransformSystem.h"
+
 #include <GLFW/glfw3.h>
 
 namespace Ember {
@@ -29,6 +34,12 @@ namespace Ember {
 
 		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
 		serializer.Deserialize("Ember/assets/assets.eba");
+
+		m_SystemManager = ScopedPtr<SystemManager>::Create();
+		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<RenderSystem>::Create());
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -110,6 +121,21 @@ namespace Ember {
 
 		EB_CORE_INFO("Application stopped running!");
 	}
+
+	//void Application::RegisterSystem(const SharedPtr<System>& system, Registry* registry)
+	//{
+	//	m_SystemManager->RegisterSystem(system, registry);
+	//}
+
+	//void Application::UnregisterSystem(const SharedPtr<System>& system, Registry* registry)
+	//{
+	//	m_SystemManager->UnregisterSystem(system, registry);
+	//}
+
+	//void Application::UpdateSystems(TimeStep delta, Registry* registry)
+	//{
+	//	m_SystemManager->UpdateSystems(delta, registry);
+	//}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{

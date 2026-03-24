@@ -2,11 +2,12 @@
 #include "Scene.h"
 
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Core/Application.h"
+
 #include "Ember/ECS/System/ScriptSystem.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
-#include "Ember/Core/Application.h"
 
 namespace Ember {
 
@@ -28,28 +29,71 @@ namespace Ember {
 	Scene::Scene(const std::string& name)
 		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name)
 	{
-		m_Registry->RegisterSystem(SharedPtr<ScriptSystem>::Create(this));
-		m_Registry->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
-		m_Registry->RegisterSystem(SharedPtr<TransformSystem>::Create(this));
-		m_Registry->RegisterSystem(SharedPtr<RenderSystem>::Create());
 	}
 
 	Scene::~Scene()
 	{
 	}
 
+	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
+	{
+		auto newScene = SharedPtr<Scene>::Create();
+		auto view = other->GetRegistry().Query<IDComponent>();
+		for (auto entity : view)
+		{
+			// We need the raw entity handle from the other scene to extract its data
+			Entity srcEntity = { entity, other.Ptr() };
+
+			// 2. Create a new entity in THIS scene using the EXACT SAME UUID and Name
+			UUID id = srcEntity.GetComponent<IDComponent>().ID;
+			std::string name = srcEntity.GetName();
+			Entity destEntity = newScene->AddEntity(id, name);
+
+			// 3. Use your amazing fold expression to copy all the data!
+			// NOTE: Do not copy IDComponent here, we just set it above.
+			Utils::CopyComponents<
+				TransformComponent,
+				MeshComponent,
+				MaterialComponent,
+				SpriteComponent,
+				CameraComponent,
+				ScriptComponent,
+				RigidBodyComponent,
+				DirectionalLightComponent,
+				SpotLightComponent,
+				PointLightComponent,
+				RelationshipComponent // We CAN copy this blindly here because we are preserving all UUIDs perfectly!
+			>(srcEntity, destEntity);
+		}
+
+		// Copy registry assets and systems to new scene
+
+		return newScene;
+	}
+
+	void Scene::OnRuntimeStart()
+	{
+	}
+
+	void Scene::OnRuntimeStop()
+	{
+
+	}
+
 	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
-		m_Registry->GetSystem<ScriptSystem>()->OnUpdate(delta, m_Registry.Ptr());
-		m_Registry->GetSystem<PhysicsSystem>()->OnUpdate(delta, m_Registry.Ptr());
-		m_Registry->GetSystem<TransformSystem>()->OnUpdate(delta, m_Registry.Ptr());
-		m_Registry->GetSystem<RenderSystem>()->OnUpdate(delta, m_Registry.Ptr());
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
 	}
 
 	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
 	{
-		m_Registry->GetSystem<TransformSystem>()->OnUpdate(delta, m_Registry.Ptr());
-		m_Registry->GetSystem<RenderSystem>()->OnUpdate(delta, m_Registry.Ptr(), camera, Math::Inverse(camera.GetViewMatrix()));
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
 
 	void Scene::OnEvent(Event& event)
@@ -60,6 +104,7 @@ namespace Ember {
 
 	void Scene::OnViewportResize(unsigned int width, unsigned int height)
 	{
+		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
 		for (auto entity : view)
 		{
@@ -68,7 +113,7 @@ namespace Ember {
 		}
 
 		// Notify the RenderSystem of the viewport resize so it can adjust framebuffer sizes accordingly
-		auto renderSystem = m_Registry->GetSystem<RenderSystem>();
+		auto renderSystem = systemManager.GetSystem<RenderSystem>();
 		if (renderSystem)
 		{
 			renderSystem->OnViewportResize(width, height);
@@ -201,7 +246,8 @@ namespace Ember {
 
 	Entity Scene::GetEntityAtPixel(unsigned int x, unsigned int y)
 	{
-		auto renderSystem = m_Registry->GetSystem<RenderSystem>();
+		auto& systemManager = Application::Instance().GetSystemManager();
+		auto renderSystem = systemManager.GetSystem<RenderSystem>();
 		EntityID id = renderSystem->GetEntityIDAtPixel(x, y);
 		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
 	}

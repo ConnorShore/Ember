@@ -19,32 +19,32 @@ namespace Ember {
 		RenderSystem() = default;
 		virtual ~RenderSystem() = default;
 
-		void OnAttach(Registry* registry) override;
-		void OnDetach(Registry* registry) override;
-		void OnUpdate(TimeStep delta, Registry* registry) override;
-		void OnUpdate(TimeStep delta, Registry* registry, const Camera& camera, const Matrix4f& cameraTransform);
+		void OnAttach() override;
+		void OnDetach() override;
+		void OnUpdate(TimeStep delta, Scene* scene) override;
+		void OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform);
 
 		void OnViewportResize(unsigned int width, unsigned int height);
 
 		EntityID GetEntityIDAtPixel(unsigned int x, unsigned int y);
 
 	private:
-		void ExecuteRenderPipeline(Registry* registry);
+		void ExecuteRenderPipeline(Registry& registry);
 		void InitializeRenderState();
-		void SetSceneCamera(Registry* registry);
-		void CreateShadowMaps(Registry* registry);
-		void RenderGeometryForShadowMaps(Registry* registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
-		void CreateDirectionalShadowMap(Registry* registry);
-		void CreateSpotlightShadowMap(Registry* registry);
-		void RenderDeferredGeometry(Registry* registry);
-		void RenderDeferredLighting(Registry* registry);
-		void RenderForwardEntities(Registry* registry);
-		void RenderTransparentEntities(Registry* registry);
-		void Render2DEntities(Registry* registry);
-		void HandlePostProcessing(Registry* registry);
+		void SetSceneCamera(Registry& registry);
+		void CreateShadowMaps(Registry& registry);
+		void RenderGeometryForShadowMaps(Registry& registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
+		void CreateDirectionalShadowMap(Registry& registry);
+		void CreateSpotlightShadowMap(Registry& registry);
+		void RenderDeferredGeometry(Registry& registry);
+		void RenderDeferredLighting(Registry& registry);
+		void RenderForwardEntities(Registry& registry);
+		void RenderTransparentEntities(Registry& registry);
+		void Render2DEntities(Registry& registry);
+		void HandlePostProcessing(Registry& registry);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
 		void ResetRenderState();
-		void SortEntitiesByRenderQueue(Registry* registry);
+		void SortEntitiesByRenderQueue(Registry& registry);
 
 	private:
 		SharedPtr<Mesh> m_ScreenQuad;
