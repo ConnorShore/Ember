@@ -18,5 +18,7 @@ namespace Ember {
 	private:
 		std::filesystem::path m_AssetDirectory, m_CurrentDirectory;
 		ImTextureID m_FileTexID, m_DirectoryTexID;
+
+		int m_IconSize = 100;
 	};
 }

@@ -4,13 +4,13 @@ Assets:
     Name: Texture(1)
     FilePath: Ember-Forge/assets/icons/Directory.png
   - Type: Texture
-    UUID: 7928838905715077773
-    Name: Satellite_Mat_GoldFoil_NormalMap
-    FilePath: Ember-Forge/assets/models/Foil_Normal.png
-  - Type: Texture
     UUID: 13035608088938641954
     Name: Satellite_Mat_GoldFoil_AlbedoMap
     FilePath: Ember-Forge/assets/models/Foil_Albedo.jpg
+  - Type: Texture
+    UUID: 7928838905715077773
+    Name: Satellite_Mat_GoldFoil_NormalMap
+    FilePath: Ember-Forge/assets/models/Foil_Normal.png
   - Type: Texture
     UUID: 11187159757068695040
     Name: Texture(0)
@@ -44,11 +44,11 @@ Assets:
     Name: Bloom
     FilePath: Ember/assets/shaders/Bloom.glsl
   - Type: Shader
-    UUID: 6210114273092391100
+    UUID: 6163131646857964349
     Name: Outline
     FilePath: Ember/assets/shaders/Outline.glsl
   - Type: Shader
-    UUID: 17087723088966971279
+    UUID: 3035384096608388962
     Name: FinalComposite
     FilePath: Ember/assets/shaders/FinalComposite.glsl
   - Type: Script
@@ -122,19 +122,38 @@ Assets:
         Type: Texture
         Value: 7928838905715077773
   - Type: Material
-    UUID: 15
-    Name: StandardUnlit
+    UUID: 15520266819695590242
+    Name: Satellite_Mat_NeonRed_Unlit
     FilePath: ''
     RenderQueue: 2
     Shader: 6
-    Instanced: false
+    Instanced: true
+    BaseMaterialUUID: 15
     Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,0,0]
+      u_Metallic:
+        Type: float
+        Value: 0
       u_Color:
         Type: Vector3f
-        Value: [1,1,1]
+        Value: [1,0,0]
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
-        Value: 2
+        Value: 5
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_AO:
+        Type: float
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
   - Type: Material
     UUID: 14
     Name: StandardGeometry
@@ -161,6 +180,20 @@ Assets:
       u_NormalMap:
         Type: Texture
         Value: 3
+  - Type: Material
+    UUID: 15
+    Name: StandardUnlit
+    FilePath: ''
+    RenderQueue: 2
+    Shader: 6
+    Instanced: false
+    Uniforms:
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Emission:
+        Type: float
+        Value: 2
   - Type: Material
     UUID: 13
     Name: DefaultMaterial
@@ -255,40 +288,7 @@ Assets:
         Type: Texture
         Value: 3
   - Type: Material
-    UUID: 15520266819695590242
-    Name: Satellite_Mat_NeonRed_Unlit
-    FilePath: ''
-    RenderQueue: 2
-    Shader: 6
-    Instanced: true
-    BaseMaterialUUID: 15
-    Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Color:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 5
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_AO:
-        Type: float
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-  - Type: Material
-    UUID: 11544122038272591901
+    UUID: 3164976726364686121
     Name: Satellite_DefaultMaterial
     FilePath: ''
     RenderQueue: 1
@@ -320,72 +320,6 @@ Assets:
       u_NormalMap:
         Type: Texture
         Value: 3
-  - Type: Material
-    UUID: 7546609592570669610
-    Name: Satellite_Mat_NeonRed_Unlit
-    FilePath: ''
-    RenderQueue: 2
-    Shader: 6
-    Instanced: true
-    BaseMaterialUUID: 15
-    Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Color:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 5
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_AO:
-        Type: float
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-  - Type: Material
-    UUID: 6976097131881085871
-    Name: Satellite_Mat_GoldFoil
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 4
-    Instanced: true
-    BaseMaterialUUID: 14
-    Uniforms:
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Metallic:
-        Type: float
-        Value: 1
-      u_Roughness:
-        Type: float
-        Value: 0.25
-      u_AO:
-        Type: float
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_AlbedoMap:
-        Type: Texture
-        Value: 13035608088938641954
-      u_NormalMap:
-        Type: Texture
-        Value: 7928838905715077773
   - Type: Material
     UUID: 15444675400192976268
     Name: Satellite_Mat_SolarPanel
@@ -453,7 +387,40 @@ Assets:
         Type: Texture
         Value: 3
   - Type: Material
-    UUID: 3164976726364686121
+    UUID: 6976097131881085871
+    Name: Satellite_Mat_GoldFoil
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 4
+    Instanced: true
+    BaseMaterialUUID: 14
+    Uniforms:
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Metallic:
+        Type: float
+        Value: 1
+      u_Roughness:
+        Type: float
+        Value: 0.25
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_AlbedoMap:
+        Type: Texture
+        Value: 13035608088938641954
+      u_NormalMap:
+        Type: Texture
+        Value: 7928838905715077773
+  - Type: Material
+    UUID: 11544122038272591901
     Name: Satellite_DefaultMaterial
     FilePath: ''
     RenderQueue: 1
@@ -481,6 +448,39 @@ Assets:
         Value: 0
       u_AlbedoMap:
         Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+  - Type: Material
+    UUID: 7546609592570669610
+    Name: Satellite_Mat_NeonRed_Unlit
+    FilePath: ''
+    RenderQueue: 2
+    Shader: 6
+    Instanced: true
+    BaseMaterialUUID: 15
+    Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,0,0]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Color:
+        Type: Vector3f
+        Value: [1,0,0]
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 5
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_AO:
+        Type: float
         Value: 1
       u_NormalMap:
         Type: Texture

@@ -47,6 +47,26 @@ namespace Ember {
 	{
 	public:
 
+		static inline int Max(int a, int b)
+		{
+			return (a > b) ? a : b;
+		}
+
+		static inline int Min(int a, int b)
+		{
+			return (a < b) ? a : b;
+		}
+
+		static inline float Max(float a, float b)
+		{
+			return (a > b) ? a : b;
+		}
+
+		static inline float Min(float a, float b)
+		{
+			return (a < b) ? a : b;
+		}
+
 		static inline Matrix4f Translate(const Vector3f& translation) 
 		{
 			return glm::translate(Matrix4f(1.0f), translation);

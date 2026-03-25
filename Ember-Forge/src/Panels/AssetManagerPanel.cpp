@@ -27,6 +27,15 @@ namespace Ember {
 	{
 		ImGui::Begin(m_Title.c_str());
 
+		ImGui::BeginTable("##SliderTable", 2, ImGuiTableFlags_SizingFixedFit);
+		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("Icon Size");
+		ImGui::TableNextColumn();
+		ImGui::SliderInt("##IconSize", &m_IconSize, 20, 400);
+		ImGui::EndTable();
 
 		if (m_CurrentDirectory != m_AssetDirectory)
 		{
@@ -37,33 +46,55 @@ namespace Ember {
 		}
 
 		std::filesystem::directory_iterator it(m_CurrentDirectory);
-		int size = 50;
-		float padding = 10.0f;
-		float currentPos = ImGui::GetCursorPosX();
+		int numColumns = Math::Max((int)(ImGui::GetWindowContentRegionMax().x / (m_IconSize)), 1);
+
+		ImGui::Columns(numColumns, nullptr, false);
 		for (const auto& entry : it)
 		{
+			//float currentPos = ImGui::GetCursorPosX();
+			std::string filePath = entry.path().string();
+			std::filesystem::path fileName = entry.path().filename();
+			std::string fileNameStr = entry.path().filename().string();
+
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
 			if (entry.is_directory())
 			{
-				if (ImGui::ImageButton(entry.path().filename().string().c_str(), m_DirectoryTexID, ImVec2(size, size), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
-					m_CurrentDirectory = entry.path();
+					m_CurrentDirectory /= fileName;
 				}
 			}
 			else
 			{
-				if (ImGui::ImageButton(entry.path().filename().string().c_str(), m_FileTexID, ImVec2(size, size), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
 				{
 				}
 			}
 
 			ImGui::PopStyleColor(3);
-			ImGui::Text(entry.path().stem().string().c_str());
+
+			// Center text in column
+			ImVec2 textSize = ImGui::CalcTextSize(fileNameStr.c_str());
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (m_IconSize - textSize.x) / 2);
+			ImGui::TextWrapped(fileNameStr.c_str());
+
+			// Decide if we should wrap to next line or not
+			if (ImGui::GetColumnIndex() == numColumns - 1)
+			{
+				ImGui::NewLine();
+				ImGui::NextColumn();
+			}
+			else
+			{
+				ImGui::NextColumn();
+			}
 		}
 
+		ImGui::Columns(1);
 
 		ImGui::End();
 	}
