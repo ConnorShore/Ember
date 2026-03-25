@@ -25,7 +25,7 @@ namespace Ember {
 			auto [relationship, transform] = scene->GetRegistry().GetComponents<RelationshipComponent, TransformComponent>(entity);
 
 			// Only process if its the root parent
-			if (relationship.ParentHandle != Constants::Entities::InvalidEntityUUID)
+			if (relationship.ParentHandle != Constants::InvalidUUID)
 				continue;
 
 			UpdateTransformTree(entity, Matrix4f(1.0f), scene);

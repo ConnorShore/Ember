@@ -1,7 +1,7 @@
 #pragma once
 
 #include "System.h"
-#include "Ember/Asset/ScriptImporter.h"
+#include "Ember/Script/ScriptImporter.h"
 
 #include <sol/sol.hpp>
 

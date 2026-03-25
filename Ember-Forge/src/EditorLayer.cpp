@@ -405,7 +405,7 @@ namespace Ember {
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
 			{
 				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityUUID)
+				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
 				{
 					// Fetch the parent entity
 					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);

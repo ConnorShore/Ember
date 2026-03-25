@@ -9,6 +9,8 @@
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 
+#include "Ember/Script/ScriptEngine.h"
+
 namespace Ember {
 
 	namespace Utils {
@@ -73,11 +75,12 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
+		ScriptEngine::OnRuntimeStart();
 	}
 
 	void Scene::OnRuntimeStop()
 	{
-
+		ScriptEngine::OnRuntimeStop();
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
@@ -184,7 +187,7 @@ namespace Ember {
 			{
 				newRels.ParentHandle = oldRels.ParentHandle;
 
-				if (newParentId != Constants::Entities::InvalidEntityUUID)
+				if (newParentId != Constants::InvalidUUID)
 				{
 					Entity newParent = GetEntity(newParentId);
 					if (newParent)

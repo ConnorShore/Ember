@@ -4,11 +4,12 @@
 
 namespace Ember::Constants {
 
+	constexpr unsigned int InvalidUUID = 0;
+
 	namespace Entities {
 		constexpr unsigned int MaxEntities = 1024;
 		constexpr unsigned int MaxComponents = 64;
 
-		constexpr unsigned int InvalidEntityUUID = 0;
 		constexpr unsigned int InvalidEntityID = MaxEntities + 1;
 		constexpr unsigned int InvalidComponentID = MaxEntities + 1;
 	}
@@ -21,6 +22,7 @@ namespace Ember::Constants {
 	}
 
 	namespace Assets {
+
 		inline const char* DefaultWhiteTex = "DefaultWhite";
 		inline const uint64_t DefaultWhiteTexUUID = 1;
 		inline const char* DefaultErrorTex = "DefaultError";

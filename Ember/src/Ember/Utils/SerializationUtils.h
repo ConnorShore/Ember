@@ -91,6 +91,7 @@ namespace Ember {
 			case AssetType::Shader: return "Shader";
 			case AssetType::Model: return "Model";
 			case AssetType::Material: return "Material";
+			case AssetType::Script: return "Script";
 			default: return "Unknown";
 			}
 		}
@@ -101,6 +102,7 @@ namespace Ember {
 			if (typeStr == "Shader") return AssetType::Shader;
 			if (typeStr == "Model") return AssetType::Model;
 			if (typeStr == "Material") return AssetType::Material;
+			if (typeStr == "Script") return AssetType::Script;
 			return AssetType::Texture; // Default to Texture if unknown
 		}
 
@@ -150,7 +152,7 @@ namespace Ember {
 				if (instance->GetMaterial())
 					node["BaseMaterialUUID"] << instance->GetMaterial()->GetUUID();
 				else
-					node["BaseMaterialUUID"] << Constants::Entities::InvalidEntityUUID;
+					node["BaseMaterialUUID"] << Constants::InvalidUUID;
 			}
 
 			ryml::NodeRef uniformsNode = node["Uniforms"];
@@ -200,7 +202,7 @@ namespace Ember {
 						if (arg)
 							uniformNode["Value"] << arg->GetUUID();
 						else
-							uniformNode["Value"] << Constants::Entities::InvalidEntityUUID;
+							uniformNode["Value"] << Constants::InvalidUUID;
 					}
 				}, value);
 			}

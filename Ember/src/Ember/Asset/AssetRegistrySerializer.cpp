@@ -42,6 +42,14 @@ namespace Ember {
 			Util::SerializeGeneralAsset(shaderNode, shader);
 		}
 
+		auto scripts = m_AssetManagerHandle->GetAssetsOfType<Script>();
+		for (auto script : scripts) {
+			if (script->GetFilePath().empty())
+				continue;
+			ryml::NodeRef scriptNode = assetsNode.append_child();
+			Util::SerializeGeneralAsset(scriptNode, script);
+		}
+
 		auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
 		for (auto material : materials) {
 			ryml::NodeRef materialNode = assetsNode.append_child();
@@ -125,6 +133,11 @@ namespace Ember {
 			{
 				m_AssetManagerHandle->Load<Shader>(uuid, name, path);
 				EB_CORE_TRACE("  Loaded Shader: {0}", name);
+			}
+			else if (type == "Script")
+			{
+				m_AssetManagerHandle->Load<Script>(uuid, name, path);
+				EB_CORE_TRACE("  Loaded Script: {0}", name);
 			}
 			else if (type == "Model")
 			{

@@ -2,7 +2,6 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
-#include "Ember/Asset/ScriptImporter.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -150,7 +149,7 @@ namespace Ember {
 				auto scriptNode = entityNode.append_child();
 				scriptNode |= ryml::MAP;
 				scriptNode << ryml::key("ScriptComponent");
-				scriptNode["FilePath"] << script.FilePath;
+				scriptNode["UUID"] << (uint64_t)script.ScriptHandle;
 			}
 			if (entity.ContainsComponent<OutlineComponent>())
 			{
@@ -381,10 +380,11 @@ namespace Ember {
 				{
 					auto scriptNode = entityNode["ScriptComponent"];
 
-					std::string filePath;
-					scriptNode["FilePath"] >> filePath;
+					uint64_t uuidVal;
+					scriptNode["UUID"] >> uuidVal;
 
-					ScriptComponent sc(filePath);
+					UUID uuid = (UUID)uuidVal;
+					ScriptComponent sc(uuid);
 					deserializedEntity.AttachComponent<ScriptComponent>(sc);
 				}
 

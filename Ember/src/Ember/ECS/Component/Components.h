@@ -37,7 +37,7 @@ namespace Ember {
 
 	struct RelationshipComponent
 	{
-		UUID ParentHandle = Constants::Entities::InvalidEntityUUID;
+		UUID ParentHandle = Constants::InvalidUUID;
 		std::vector<UUID> Children;
 
 		RelationshipComponent() = default;
@@ -230,12 +230,13 @@ namespace Ember {
 
 	struct ScriptComponent
 	{
+		UUID ScriptHandle = Constants::InvalidUUID;
+
 		sol::table Instance;
-		std::string FilePath = "";
 		bool Initialized = false;
 
 		ScriptComponent() = default;
-		ScriptComponent(const std::string& path) : FilePath(path) {}
+		ScriptComponent(UUID scriptUUID) : ScriptHandle(scriptUUID) {}
 		ScriptComponent(const ScriptComponent&) = default;
 	};
 

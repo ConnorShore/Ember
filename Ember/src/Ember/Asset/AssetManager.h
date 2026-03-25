@@ -4,8 +4,8 @@
 #include "UUID.h"
 #include "Asset.h"
 #include "ModelImporter.h"
-#include "Script.h"
-#include "ScriptImporter.h"
+#include "Ember/Script/Script.h"
+#include "Ember/Script/ScriptImporter.h"
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
@@ -69,9 +69,9 @@ namespace Ember {
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(uuid, name, filePath);
 			else if constexpr (std::same_as<T, Model>)
-				newAsset = ScriptImporter::Load(uuid, name, filePath, *this);
+				newAsset = ModelImporter::Load(uuid, name, filePath, *this);
 			else if constexpr (std::same_as<T, Script>)
-				EB_CORE_ASSERT(false, "Scripts must be loaded with a lua state")
+				newAsset = ScriptImporter::LoadScript(uuid, name, filePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
@@ -113,17 +113,6 @@ namespace Ember {
 			m_AssetNames[name] = model->GetUUID();
 			m_AssetPaths[filePath] = model->GetUUID();
 			return model;
-		}
-
-		// Custom load for Script that takes a sol::table
-		template<std::same_as<Script> T>
-		SharedPtr<T> Load(const std::string& filePath, sol::state& luaState)
-		{
-			auto script = ScriptImporter::LoadScript(filePath, luaState);
-			m_Assets[script->GetUUID()] = script;
-			m_AssetNames[script->GetName()] = script->GetUUID();
-			m_AssetPaths[filePath] = script->GetUUID();
-			return script;
 		}
 
 		template<IsCoreAsset T>
@@ -177,6 +166,7 @@ namespace Ember {
 		
 	private:
 
+		// TODO: See if this ever actually gets used
 		template<IsCoreAsset T>
 		inline std::string GenerateName()
 		{
@@ -186,6 +176,8 @@ namespace Ember {
 				return std::format("Shader({})", m_ShaderCt++);
 			else if constexpr (std::same_as<T, Model>)
 				return std::format("Model({})", m_ModelCt++);
+			else if constexpr (std::same_as<T, Script>)
+				return std::format("Script({})", m_ScriptCt++);
 			else if constexpr (std::same_as<T, Material> || std::same_as<T, MaterialInstance>)
 				return std::format("Material({})", m_MaterialCt++);
 
@@ -201,6 +193,7 @@ namespace Ember {
 		unsigned int m_ShaderCt = 0;
 		unsigned int m_ModelCt = 0;
 		unsigned int m_MaterialCt = 0;
+		unsigned int m_ScriptCt = 0;
 	};
 
 }

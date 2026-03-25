@@ -32,17 +32,21 @@ Assets:
     Name: GaussianBlur
     FilePath: Ember/assets/shaders/GaussianBlur.glsl
   - Type: Shader
-    UUID: 12569371113416226122
-    Name: Outline
-    FilePath: Ember/assets/shaders/Outline.glsl
-  - Type: Shader
     UUID: 10
     Name: Bloom
     FilePath: Ember/assets/shaders/Bloom.glsl
   - Type: Shader
-    UUID: 16998973283870529422
+    UUID: 7126557889809410214
+    Name: Outline
+    FilePath: Ember/assets/shaders/Outline.glsl
+  - Type: Shader
+    UUID: 1738349873317952874
     Name: FinalComposite
     FilePath: Ember/assets/shaders/FinalComposite.glsl
+  - Type: Script
+    UUID: 442444767959617892
+    Name: Script(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\scripts\CameraController.lua'
   - Type: Material
     UUID: 13632041686402470657
     Name: Satellite_Mat_SolarPanel
@@ -109,6 +113,39 @@ Assets:
       u_NormalMap:
         Type: Texture
         Value: 7928838905715077773
+  - Type: Material
+    UUID: 7546609592570669610
+    Name: Satellite_Mat_NeonRed_Unlit
+    FilePath: ''
+    RenderQueue: 2
+    Shader: 6
+    Instanced: true
+    BaseMaterialUUID: 15
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,0,0]
+      u_Color:
+        Type: Vector3f
+        Value: [1,0,0]
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 5
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_AO:
+        Type: float
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
   - Type: Material
     UUID: 14
     Name: StandardGeometry
@@ -436,39 +473,6 @@ Assets:
         Value: 0
       u_AlbedoMap:
         Type: Texture
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-  - Type: Material
-    UUID: 7546609592570669610
-    Name: Satellite_Mat_NeonRed_Unlit
-    FilePath: ''
-    RenderQueue: 2
-    Shader: 6
-    Instanced: true
-    BaseMaterialUUID: 15
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_Color:
-        Type: Vector3f
-        Value: [1,0,0]
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 5
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_AO:
-        Type: float
         Value: 1
       u_NormalMap:
         Type: Texture

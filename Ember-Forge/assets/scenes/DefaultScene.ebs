@@ -128,4 +128,7 @@ Entities:
         NearClip: 1
         FarClip: 100
     ScriptComponent:
-      FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\scripts\CameraController.lua'
+      UUID: 442444767959617892
+    OutlineComponent:
+      Color: [0.89,0.25,0.07]
+      Thickness: 2

@@ -1,108 +1,57 @@
 #include "ebpch.h"
-#include "ScriptSystem.h"
+#include "ScriptEngine.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/Input/Input.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Scene/Entity.h"
-#include "Ember/Scene/Behavior.h"
 #include "Ember/Scene/Scene.h"
-#include "Ember/Script/Script.h"
-#include "Ember/Script/ScriptEngine.h"
 
 namespace Ember {
 
-	void ScriptSystem::OnAttach()
+	static sol::state* s_LuaState = nullptr;
+
+	void ScriptEngine::Init()
 	{
-		m_LuaState.open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::string);
+		EB_CORE_INFO("Initializing Script Engine...");
+	}
+
+	void ScriptEngine::Shutdown()
+	{
+		if (s_LuaState)
+			OnRuntimeStart();
+
+		EB_CORE_INFO("Shutdown Script Engine...");
+	}
+
+	void ScriptEngine::OnRuntimeStart()
+	{
+		s_LuaState = new sol::state();
+		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::string);
 		BindAPI();
-		EB_CORE_INFO("ScriptSystem attached!");
+
+		EB_CORE_INFO("Started Script Engine runtime!");
 	}
 
-	void ScriptSystem::OnDetach()
+	void ScriptEngine::OnRuntimeStop()
 	{
+		delete s_LuaState;
+		s_LuaState = nullptr;
+		EB_CORE_INFO("Stopped Script Engine runtime!");
 	}
 
-	void ScriptSystem::OnUpdate(TimeStep delta, Scene* scene)
+	sol::state& ScriptEngine::GetState()
 	{
-		auto view = scene->GetRegistry().Query<ScriptComponent>();
-
-		// 1. Grab the active runtime Virtual Machine!
-		sol::state& luaState = ScriptEngine::GetState();
-
-		for (auto entityID : view)
-		{
-			Entity entity{ entityID, scene };
-			auto& script = entity.GetComponent<ScriptComponent>();
-
-			if (script.ScriptHandle == Constants::InvalidUUID)
-				continue;
-
-			if (!script.Initialized)
-			{
-				auto scriptAsset = Application::Instance().GetAssetManager().GetAsset<Script>(script.ScriptHandle);
-				if (scriptAsset)
-				{
-					std::string filepath = scriptAsset->GetFilePath();
-					sol::protected_function_result result = luaState.script_file(filepath);
-					if (result.valid())
-					{
-						sol::table scriptClass = result;
-
-						// Create the instance and set up inheritance
-						script.Instance = luaState.create_table();
-						script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
-
-						// Call OnCreate
-						sol::protected_function onCreate = scriptClass["OnCreate"];
-						if (onCreate.valid())
-						{
-							sol::protected_function_result createResult = onCreate(script.Instance, entity);
-							if (!createResult.valid())
-							{
-								sol::error err = createResult;
-								EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
-							}
-						}
-					}
-					else
-					{
-						sol::error err = result;
-						EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
-					}
-				}
-				else
-				{
-					EB_CORE_ERROR("ScriptSystem: Invalid ScriptHandle ID");
-				}
-
-				// Initialize no matter what so errors don't loop infinitely
-				script.Initialized = true;
-			}
-
-			if (script.Initialized && script.Instance.valid())
-			{
-				sol::protected_function onUpdate = script.Instance["OnUpdate"];
-				if (onUpdate.valid())
-				{
-					sol::protected_function_result updateResult = onUpdate(script.Instance, delta.Seconds());
-
-					if (!updateResult.valid())
-					{
-						sol::error err = updateResult;
-						EB_CORE_ERROR("Lua OnUpdate Error: {0}", err.what());
-					}
-				}
-			}
-		}
+		EB_CORE_ASSERT(s_LuaState, "Attempted to access Lua State while it is dead! Are you in Play Mode?");
+		return *s_LuaState;
 	}
 
-	void ScriptSystem::BindAPI()
+	void ScriptEngine::BindAPI()
 	{
-		m_LuaState.new_usertype<Entity>("Entity",
+		s_LuaState->new_usertype<Entity>("Entity",
 			"GetTransform", [](Entity& e) -> TransformComponent& { return e.GetComponent<TransformComponent>(); },
-			"GetName", & Entity::GetName,
-			"GetUUID", & Entity::GetUUID
+			"GetName", &Entity::GetName,
+			"GetUUID", &Entity::GetUUID
 		);
 
 		BindInput();
@@ -110,9 +59,9 @@ namespace Ember {
 		BindComponents();
 	}
 
-	void ScriptSystem::BindInput()
+	void ScriptEngine::BindInput()
 	{
-		m_LuaState.new_enum("KeyCode",
+		s_LuaState->new_enum("KeyCode",
 			"Unknown", KeyCode::Unknown,
 			"Space", KeyCode::Space,
 			"Apostrophe", KeyCode::Apostrophe,
@@ -231,13 +180,13 @@ namespace Ember {
 		// ------------------------------------------------------------------------
 		// KEY ACTIONS
 		// ------------------------------------------------------------------------
-		m_LuaState.new_enum("KeyAction",
+		s_LuaState->new_enum("KeyAction",
 			"Release", KeyAction::Release,
 			"Press", KeyAction::Press,
 			"Repeat", KeyAction::Repeat
 		);
 
-		m_LuaState.new_enum("KeyModifier",
+		s_LuaState->new_enum("KeyModifier",
 			"None", KeyModifier::None,
 			"Shift", KeyModifier::Shift,
 			"Control", KeyModifier::Control,
@@ -245,22 +194,22 @@ namespace Ember {
 			"Super", KeyModifier::Super
 		);
 
-		m_LuaState.set_function("IsKeyPressed", &Input::IsKeyPressed);
-		m_LuaState.set_function("IsKeyHeld", &Input::IsKeyHeld);
+		s_LuaState->set_function("IsKeyPressed", &Input::IsKeyPressed);
+		s_LuaState->set_function("IsKeyHeld", &Input::IsKeyHeld);
 	}
 
-	void ScriptSystem::BindMath()
+	void ScriptEngine::BindMath()
 	{
-		m_LuaState.new_usertype<Vector3f>("Vector3f",
+		s_LuaState->new_usertype<Vector3f>("Vector3f",
 			"x", &Vector3f::x,
 			"y", &Vector3f::y,
 			"z", &Vector3f::z
 		);
 	}
 
-	void ScriptSystem::BindComponents()
+	void ScriptEngine::BindComponents()
 	{
-		m_LuaState.new_usertype<TransformComponent>("TransformComponent",
+		s_LuaState->new_usertype<TransformComponent>("TransformComponent",
 			"Position", &TransformComponent::Position,
 			"Rotation", &TransformComponent::Rotation,
 			"Scale", &TransformComponent::Scale

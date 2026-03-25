@@ -33,7 +33,7 @@ namespace Ember {
 
 	bool Entity::IsRootParent()
 	{
-		return GetComponent<RelationshipComponent>().ParentHandle == Constants::Entities::InvalidEntityUUID;
+		return GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID;
 	}
 
 	Entity Entity::GetChildByName(const std::string& name)
