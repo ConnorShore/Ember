@@ -14,7 +14,8 @@ namespace Ember {
 		Float4,
 		Color3,
 		Color4,
-		Slider
+		Slider,
+		Texture,
 	};
 
 	struct ShaderProperty

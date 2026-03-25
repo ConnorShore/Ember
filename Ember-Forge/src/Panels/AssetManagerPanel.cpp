@@ -70,8 +70,16 @@ namespace Ember {
 			}
 			else
 			{
-				if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 				{
+					if (ImGui::GetDragDropPayload() == NULL)
+					{
+						auto filePathAbs = std::filesystem::absolute(filePath).string();
+						ImGui::SetDragDropPayload("ASSET_FILE", filePathAbs.c_str(), filePathAbs.size() + 1);
+					}
+					ImGui::EndDragDropSource();
 				}
 			}
 
