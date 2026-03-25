@@ -347,7 +347,8 @@ namespace Ember {
 		{
 			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
 			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray());
+			auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
+			Renderer3D::Submit(meshAsset->GetVertexArray());
 		}
 
 		Renderer3D::EndFrame();
@@ -378,11 +379,14 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
 			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			if (!mesh.Mesh || !material.Material)
+			if (mesh.MeshHandle == Constants::InvalidUUID || material.MaterialHandle == Constants::InvalidUUID)
 				continue;
-			material.Material->GetShader()->Bind();
-			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
+
+			auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+			materialAsset->GetShader()->Bind();
+			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
+			Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
 		}
 
 		Renderer3D::EndFrame();
@@ -504,9 +508,11 @@ namespace Ember {
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
 			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			material.Material->GetShader()->Bind();
-			material.Material->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
-			Renderer3D::Submit(mesh.Mesh->GetVertexArray(), material, transform.WorldTransform);
+			auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+			materialAsset->GetShader()->Bind();
+			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
+			Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
 		}
 
 		Renderer3D::EndFrame();
@@ -527,12 +533,17 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
-			if (sprite.Texture == nullptr)
+			if (sprite.TextureHandle == Constants::InvalidUUID)
+			{
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
 					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color);
+			}
 			else
+			{
+				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture>(sprite.TextureHandle);
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color, sprite.Texture);
+					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color, textureAsset);
+			}
 		}
 
 		Renderer2D::EndFrame();
@@ -625,10 +636,11 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			if (!mesh.Mesh || !material.Material)
+			if (mesh.MeshHandle == Constants::InvalidUUID || material.MaterialHandle == Constants::InvalidUUID)
 				continue;
 
-			switch (material.Material->GetRenderQueue())
+			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+			switch (materialAsset->GetRenderQueue())
 			{
 			case RenderQueue::Opaque:
 				m_RenderQueueBuckets.Opaque.push_back(entity);

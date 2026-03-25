@@ -64,9 +64,9 @@ namespace Ember {
 				ryml::NodeRef spriteNode = entityNode["SpriteComponent"];
 				spriteNode |= ryml::MAP;
 				Util::SerializeVector4f(spriteNode["Color"], entity.GetComponent<SpriteComponent>().Color);
-				if (entity.GetComponent<SpriteComponent>().Texture)
+				if (entity.GetComponent<SpriteComponent>().TextureHandle != Constants::InvalidUUID)
 				{
-					spriteNode["Texture"] << entity.GetComponent<SpriteComponent>().Texture->GetName();
+					spriteNode["TextureUUID"] << entity.GetComponent<SpriteComponent>().TextureHandle;
 				}
 			}
 			if (entity.ContainsComponent<RigidBodyComponent>())
@@ -79,18 +79,18 @@ namespace Ember {
 			{
 				ryml::NodeRef meshNode = entityNode["MeshComponent"];
 				meshNode |= ryml::MAP;
-				if (entity.GetComponent<MeshComponent>().Mesh)
+				if (entity.GetComponent<MeshComponent>().MeshHandle != Constants::InvalidUUID)
 				{
-					meshNode["Mesh"] << entity.GetComponent<MeshComponent>().Mesh->GetName();
+					meshNode["MeshUUID"] << entity.GetComponent<MeshComponent>().MeshHandle;
 				}
 			}
 			if (entity.ContainsComponent<MaterialComponent>())
 			{
 				ryml::NodeRef materialNode = entityNode["MaterialComponent"];
 				materialNode |= ryml::MAP;
-				if (entity.GetComponent<MaterialComponent>().Material)
+				if (entity.GetComponent<MaterialComponent>().MaterialHandle != Constants::InvalidUUID)
 				{
-					materialNode["Material"] << entity.GetComponent<MaterialComponent>().Material->GetName();
+					materialNode["MaterialUUID"] << entity.GetComponent<MaterialComponent>().MaterialHandle;
 				}
 			}
 			if (entity.ContainsComponent<CameraComponent>())
@@ -149,7 +149,7 @@ namespace Ember {
 				auto scriptNode = entityNode.append_child();
 				scriptNode |= ryml::MAP;
 				scriptNode << ryml::key("ScriptComponent");
-				scriptNode["UUID"] << (uint64_t)script.ScriptHandle;
+				scriptNode["ScriptUUID"] << (uint64_t)script.ScriptHandle;
 			}
 			if (entity.ContainsComponent<OutlineComponent>())
 			{
@@ -249,13 +249,12 @@ namespace Ember {
 					Vector4f color;
 					Util::DeserializeVector4f(spriteNode["Color"], color);
 
+					uint64_t texId;
+					spriteNode["TextureUUID"] >> texId;
+					UUID textureUUID = (UUID)texId;
+
 					SpriteComponent sc(color);
-					if (spriteNode.has_child("Texture"))
-					{
-						std::string textureName;
-						spriteNode["Texture"] >> textureName;
-						sc.Texture = m_Scene->GetAsset<Texture>(textureName);
-					}
+					sc.TextureHandle = textureUUID;
 					deserializedEntity.AttachComponent<SpriteComponent>(sc);
 				}
 
@@ -272,33 +271,29 @@ namespace Ember {
 				if (entityNode.has_child("MeshComponent"))
 				{
 					ryml::NodeRef meshNode = entityNode["MeshComponent"];
+					uint64_t meshId;
+					meshNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
 					MeshComponent mc;
-					if (meshNode.has_child("Mesh"))
-					{
-						std::string meshName;
-						meshNode["Mesh"] >> meshName;
-						mc.Mesh = m_Scene->GetAsset<Mesh>(meshName);
-					}
+					mc.MeshHandle = meshUUID;
 					deserializedEntity.AttachComponent<MeshComponent>(mc);
 				}
 
-				// TODO: FIx material loading
 				if (entityNode.has_child("MaterialComponent"))
 				{
 					ryml::NodeRef materialNode = entityNode["MaterialComponent"];
+
+					uint64_t materialId;
+					materialNode["MaterialUUID"] >> materialId;
+					UUID materialUUID = (UUID)materialId;
+
 					MaterialComponent matComp;
-					if (materialNode.has_child("Material"))
+					matComp.MaterialHandle = materialUUID;
+					if (matComp.MaterialHandle == Constants::InvalidUUID)
 					{
-						std::string matName;
-						materialNode["Material"] >> matName;
-
-						matComp.Material = m_Scene->GetAsset<MaterialBase>(matName);
-
-						if (!matComp.Material)
-						{
-							EB_CORE_ERROR("Deserializer failed to load Material: {0}. Assigning Fallback.", matName);
-							matComp.Material = m_Scene->GetAsset<MaterialBase>(Constants::Assets::DefaultMat);
-						}
+						EB_CORE_ERROR("Deserializer failed to load Material. Assigning Fallback.");
+						matComp.MaterialHandle = Constants::Assets::DefaultMatUUID;
 					}
 					deserializedEntity.AttachComponent<MaterialComponent>(matComp);
 				}
@@ -381,7 +376,7 @@ namespace Ember {
 					auto scriptNode = entityNode["ScriptComponent"];
 
 					uint64_t uuidVal;
-					scriptNode["UUID"] >> uuidVal;
+					scriptNode["ScriptUUID"] >> uuidVal;
 
 					UUID uuid = (UUID)uuidVal;
 					ScriptComponent sc(uuid);

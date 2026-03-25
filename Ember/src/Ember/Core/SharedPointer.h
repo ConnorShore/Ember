@@ -168,7 +168,7 @@ namespace Ember {
 	{
 		if (T* raw = dynamic_cast<T*>(ptr.Ptr()))
 			return SharedPtr<T>(raw);
-		return SharedPtr<T>(nullptr);
+		return nullptr;
 	}
 
 }

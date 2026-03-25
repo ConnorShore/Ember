@@ -135,9 +135,10 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
-		void Register(const SharedPtr<T>& asset)
+		UUID Register(const SharedPtr<T>& asset)
 		{
-			Register(UUID(), asset);
+			Register(asset->GetUUID(), asset);
+			return asset->GetUUID();
 		}
 
         template<IsCoreAsset T>

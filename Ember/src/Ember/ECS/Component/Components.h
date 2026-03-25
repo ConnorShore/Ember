@@ -10,6 +10,7 @@
 #include "Ember/Render/Material.h"
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
+#include "Ember/Core/Application.h"
 
 #include <sol/sol.hpp>
 
@@ -103,42 +104,54 @@ namespace Ember {
 
 	struct SpriteComponent
 	{
-		Vector4f Color;
-		SharedPtr<Texture> Texture;
+		Vector4f Color = Vector4f(1.0f);
+		UUID TextureHandle = Constants::InvalidUUID;;
 
 		SpriteComponent(const Vector4f color) : Color(color) {}
-		SpriteComponent(const SharedPtr<Ember::Texture>& texture) : Color(Vector4f(1.0f)), Texture(texture) {}
-		SpriteComponent(const Vector4f color, const SharedPtr<Ember::Texture>& texture) : Color(color), Texture(texture) {}
+		SpriteComponent(UUID texId) : TextureHandle(texId) {}
+		SpriteComponent(const Vector4f color, UUID texId) : Color(color), TextureHandle(texId) {}
 	};
 
 	struct MeshComponent
 	{
-		SharedPtr<Mesh> Mesh;
+		UUID MeshHandle = Constants::InvalidUUID;
 
 		MeshComponent() = default;
-		MeshComponent(const SharedPtr<Ember::Mesh>& mesh) : Mesh(mesh) {}
+		MeshComponent(UUID meshId) : MeshHandle(meshId) {}
 		MeshComponent(const MeshComponent&) = default;
 	};
 
 	struct MaterialComponent
 	{
-		SharedPtr<MaterialBase> Material;
+		UUID MaterialHandle = Constants::InvalidUUID;
 
 		MaterialComponent() = default;
-		MaterialComponent(const SharedPtr<Ember::MaterialBase>& material) : Material(material) {}
+		MaterialComponent(UUID handle) : MaterialHandle(handle) {}
 		MaterialComponent(const MaterialComponent&) = default;
 
-		SharedPtr<MaterialInstance> GetInstanced()
+		SharedPtr<MaterialInstance> GetInstanced(const std::string& materialInstanceName)
 		{
-			// If already an instance, return it
-			if (auto instance = DynamicPointerCast<MaterialInstance>(Material))
-				return instance;
+			if (MaterialHandle == Constants::InvalidUUID)
+				return nullptr;
 
-			// Convert material to an instance
-			if (auto base = DynamicPointerCast<Ember::Material>(Material))
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto materialAsset = assetManager.GetAsset<MaterialBase>(MaterialHandle);
+
+			if (!materialAsset)
+				return nullptr;
+
+			// If already an instance, just return it
+			if (DynamicPointerCast<MaterialInstance>(materialAsset) != nullptr)
+				return DynamicPointerCast<MaterialInstance>(materialAsset);
+
+			if (DynamicPointerCast<Ember::Material>(materialAsset) != nullptr)
 			{
-				auto newInstance = SharedPtr<MaterialInstance>::Create(base->GetName(), base);
-				Material = newInstance;
+				auto base = DynamicPointerCast<Material>(materialAsset);
+				auto newInstance = SharedPtr<MaterialInstance>::Create(materialInstanceName, base);
+				// TODO: Find way to avoid name clashing if multiple instances of the same material are created with the same name
+				assetManager.Register(newInstance);
+
+				MaterialHandle = newInstance->GetUUID();
 				return newInstance;
 			}
 
@@ -148,27 +161,38 @@ namespace Ember {
 
 		SharedPtr<MaterialInstance> CloneMaterial(const std::string& newName)
 		{
-			if (auto base = DynamicPointerCast<Ember::Material>(Material))
-			{
-				auto newInstance = SharedPtr<MaterialInstance>::Create(newName, base);
-				Material = newInstance;
-				return newInstance;
-			}
+			if (MaterialHandle == Constants::InvalidUUID)
+				return nullptr;
 
-			if (auto instance = DynamicPointerCast<MaterialInstance>(Material))
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto materialAsset = assetManager.GetAsset<MaterialBase>(MaterialHandle);
+
+			SharedPtr<MaterialInstance> newInstance = nullptr;
+
+			if (auto base = DynamicPointerCast<Material>(materialAsset))
+			{
+				newInstance = SharedPtr<MaterialInstance>::Create(newName, base);
+			}
+			else if (auto instance = DynamicPointerCast<MaterialInstance>(materialAsset))
 			{
 				auto baseMaterial = instance->GetMaterial();
-				auto newInstance = SharedPtr<MaterialInstance>::Create(newName, baseMaterial);
+				newInstance = SharedPtr<MaterialInstance>::Create(newName, baseMaterial);
 
+				// Copy uniforms over
 				for (const auto& [uniformName, value] : instance->GetUniforms())
 					newInstance->SetUniform(uniformName, value);
-
-				Material = newInstance;
-				return newInstance;
+			}
+			else
+			{
+				EB_CORE_ASSERT(false, "Unknown Material type!");
+				return nullptr;
 			}
 
-			EB_CORE_ASSERT(false, "Unknown Material type!");
-			return nullptr;
+			assetManager.Register(newInstance);
+
+			MaterialHandle = newInstance->GetUUID();
+
+			return newInstance;
 		}
 	};
 
