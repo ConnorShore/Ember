@@ -86,8 +86,8 @@ namespace Ember {
 		std::string m_Name;
 		bool m_Running = true;
 
-		ScopedPtr<AssetManager> m_AssetManager;
 		ScopedPtr<SystemManager> m_SystemManager;
+		ScopedPtr<AssetManager> m_AssetManager;
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;

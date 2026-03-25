@@ -4,6 +4,8 @@
 #include "UUID.h"
 #include "Asset.h"
 #include "ModelImporter.h"
+#include "Script.h"
+#include "ScriptImporter.h"
 #include "Ember/Render/Texture.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
@@ -67,7 +69,9 @@ namespace Ember {
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(uuid, name, filePath);
 			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelImporter::Load(uuid, name, filePath, *this);
+				newAsset = ScriptImporter::Load(uuid, name, filePath, *this);
+			else if constexpr (std::same_as<T, Script>)
+				EB_CORE_ASSERT(false, "Scripts must be loaded with a lua state")
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
@@ -109,6 +113,17 @@ namespace Ember {
 			m_AssetNames[name] = model->GetUUID();
 			m_AssetPaths[filePath] = model->GetUUID();
 			return model;
+		}
+
+		// Custom load for Script that takes a sol::table
+		template<std::same_as<Script> T>
+		SharedPtr<T> Load(const std::string& filePath, sol::state& luaState)
+		{
+			auto script = ScriptImporter::LoadScript(filePath, luaState);
+			m_Assets[script->GetUUID()] = script;
+			m_AssetNames[script->GetName()] = script->GetUUID();
+			m_AssetPaths[filePath] = script->GetUUID();
+			return script;
 		}
 
 		template<IsCoreAsset T>

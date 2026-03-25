@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sol/sol.hpp>
+
 namespace Ember::Constants {
 
 	namespace Entities {
@@ -16,7 +18,6 @@ namespace Ember::Constants {
 		inline constexpr unsigned int MaxSpotLights = 1;
 		inline constexpr unsigned int MaxPointLights = 256;
 		inline constexpr float DefaultAmbient = 0.03f;
-
 	}
 
 	namespace Assets {

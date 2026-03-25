@@ -32,15 +32,15 @@ Assets:
     Name: GaussianBlur
     FilePath: Ember/assets/shaders/GaussianBlur.glsl
   - Type: Shader
+    UUID: 12569371113416226122
+    Name: Outline
+    FilePath: Ember/assets/shaders/Outline.glsl
+  - Type: Shader
     UUID: 10
     Name: Bloom
     FilePath: Ember/assets/shaders/Bloom.glsl
   - Type: Shader
-    UUID: 4758048714628986518
-    Name: Outline
-    FilePath: Ember/assets/shaders/Outline.glsl
-  - Type: Shader
-    UUID: 13921580693674997821
+    UUID: 16998973283870529422
     Name: FinalComposite
     FilePath: Ember/assets/shaders/FinalComposite.glsl
   - Type: Material

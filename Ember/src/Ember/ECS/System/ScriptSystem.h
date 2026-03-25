@@ -1,7 +1,7 @@
 #pragma once
 
 #include "System.h"
-#include "Ember/Asset/ScriptRegistry.h"
+#include "Ember/Asset/ScriptImporter.h"
 
 #include <sol/sol.hpp>
 
@@ -12,7 +12,7 @@ namespace Ember {
 	class ScriptSystem : public System
 	{
 	public:
-		ScriptSystem() : m_ScriptRegistry(SharedPtr<ScriptRegistry>::Create()) {}
+		ScriptSystem() = default;
 		virtual ~ScriptSystem() = default;
 
 		void OnAttach() override;
@@ -29,7 +29,6 @@ namespace Ember {
 
 	private:
 		sol::state m_LuaState;
-		SharedPtr<ScriptRegistry> m_ScriptRegistry;
 	};
 
 }

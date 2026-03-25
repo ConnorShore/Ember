@@ -1,11 +1,13 @@
 #include "ebpch.h"
 #include "ScriptSystem.h"
 
+#include "Ember/Core/Application.h"
 #include "Ember/Input/Input.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Behavior.h"
 #include "Ember/Scene/Scene.h"
+#include "Ember/Asset/Script.h"
 
 namespace Ember {
 
@@ -34,37 +36,32 @@ namespace Ember {
 
 			if (!script.Initialized)
 			{
-				sol::table scriptClass = m_ScriptRegistry->LoadScript(script.FilePath, m_LuaState);
-				if (scriptClass.valid())
+				auto scriptAsset = Application::Instance().GetAssetManager().Load<Script>(script.FilePath, m_LuaState);
+				if (scriptAsset)
 				{
+					sol::table scriptClass = scriptAsset->GetClassTable();
+
 					script.Instance = m_LuaState.create_table();
 					script.Instance[sol::metatable_key] = m_LuaState.create_table_with("__index", scriptClass);
 
-					// Call OnCreate (Lua uses ':' syntax, so we must explicitly pass 'self' as the first arg)
 					sol::protected_function onCreate = scriptClass["OnCreate"];
 					if (onCreate.valid())
 					{
-						// Call it: OnCreate(self, entity)
-						sol::protected_function_result createResult = onCreate(script.Instance, entity);
-						if (!createResult.valid())
-						{
-							sol::error err = createResult;
-							EB_CORE_ERROR("Lua OnCreate Error: {0}", err.what());
-						}
+						onCreate(script.Instance, entity);
 					}
+
+					script.Initialized = true;
 				}
 
 				// Initialize no matter what so errors don't loop
 				script.Initialized = true;
 			}
 
-			// 2. UPDATE LOOP (Runs every frame)
 			if (script.Initialized && script.Instance.valid())
 			{
 				sol::protected_function onUpdate = script.Instance["OnUpdate"];
 				if (onUpdate.valid())
 				{
-					// Call it: OnUpdate(self, delta)
 					sol::protected_function_result updateResult = onUpdate(script.Instance, delta.Seconds());
 
 					if (!updateResult.valid())

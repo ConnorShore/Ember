@@ -2,7 +2,7 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
-#include "Ember/Asset/ScriptRegistry.h"
+#include "Ember/Asset/ScriptImporter.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
