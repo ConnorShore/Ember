@@ -1,13 +1,12 @@
 #include "AssetManagerPanel.h"
-#include <filesystem>
 
 namespace Ember {
 
-	std::string AssetManagerPanel::m_AssetDirectory = "Ember-Forge/assets";
-	std::string AssetManagerPanel::m_CurrentDirectory = "Ember-Forge/assets";
 
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
-		: Panel("Asset Manager", context)
+		: Panel("Asset Manager", context), 
+		m_AssetDirectory(std::filesystem::path("Ember-Forge/assets")), 
+		m_CurrentDirectory(std::filesystem::path("Ember-Forge/assets"))
 	{
 	}
 
@@ -17,36 +16,85 @@ namespace Ember {
 
 	void AssetManagerPanel::OnAttach()
 	{
-		// Loop through all assets in the asset directory and load them into the AssetManager
-		//auto& assetManager = Application::Instance().GetAssetManager();
-		//std::filesystem::path assetDir(m_AssetDirectory);
-		//for (const auto& entry : std::filesystem::recursive_directory_iterator(assetDir))
-		//{
-		//	if (entry.is_regular_file())
-		//	{
-		//		std::string filePath = entry.path().string();
-		//		std::string extension = entry.path().extension().string();
-		//		std::string fileName = entry.path().stem().string();
-		//		// Load assets based on their file extension
-		//		if (extension == ".obj" || extension == ".fbx")
-		//		{
-		//			assetManager.Load<Model>(fileName, filePath);
-		//		}
-		//		else if (extension == ".png" || extension == ".jpg" || extension == ".jpeg")
-		//		{
-		//			assetManager.Load<Texture>(fileName, filePath);
-		//		}
-		//		else if (extension == ".mat")
-		//		{
-		//			assetManager.Load<Material>(fileName, filePath);
-		//		}
-		//	}
-		//}
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto fileIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/File.png");
+		auto dirIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/Directory.png");
+		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
+		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();
 	}
 
 	void AssetManagerPanel::OnImGuiRender()
 	{
 		ImGui::Begin(m_Title.c_str());
+
+		ImGui::BeginTable("##SliderTable", 2, ImGuiTableFlags_SizingFixedFit);
+		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("Icon Size");
+		ImGui::TableNextColumn();
+		ImGui::SliderInt("##IconSize", &m_IconSize, 20, 400);
+		ImGui::EndTable();
+
+		if (m_CurrentDirectory != m_AssetDirectory)
+		{
+			if (ImGui::Button("<-"))
+			{
+				m_CurrentDirectory = m_CurrentDirectory.parent_path();
+			}
+		}
+
+		std::filesystem::directory_iterator it(m_CurrentDirectory);
+		int numColumns = Math::Max((int)(ImGui::GetWindowContentRegionMax().x / (m_IconSize)), 1);
+
+		ImGui::Columns(numColumns, nullptr, false);
+		for (const auto& entry : it)
+		{
+			//float currentPos = ImGui::GetCursorPosX();
+			std::string filePath = entry.path().string();
+			std::filesystem::path fileName = entry.path().filename();
+			std::string fileNameStr = entry.path().filename().string();
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
+
+			if (entry.is_directory())
+			{
+				ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					m_CurrentDirectory /= fileName;
+				}
+			}
+			else
+			{
+				if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				{
+				}
+			}
+
+			ImGui::PopStyleColor(3);
+
+			// Center text in column
+			ImVec2 textSize = ImGui::CalcTextSize(fileNameStr.c_str());
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (m_IconSize - textSize.x) / 2);
+			ImGui::TextWrapped(fileNameStr.c_str());
+
+			// Decide if we should wrap to next line or not
+			if (ImGui::GetColumnIndex() == numColumns - 1)
+			{
+				ImGui::NewLine();
+				ImGui::NextColumn();
+			}
+			else
+			{
+				ImGui::NextColumn();
+			}
+		}
+
+		ImGui::Columns(1);
 
 		ImGui::End();
 	}

@@ -43,6 +43,9 @@ namespace Ember {
 			FramebufferTextureFormat::DEPTH24STENCIL8
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
+
+		for (auto& panel : m_Panels)
+			panel->OnAttach();
 	}
 
 	void EditorLayer::OnDetach()
@@ -142,27 +145,11 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
-			// Add play/pause button in center of main menu bar
-			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 50); // Center the button (assuming button width ~100)
-			if (m_SceneState == SceneState::Play)
-			{
-				if (ImGui::Button("Stop"))
-				{
-					OnRuntimeStop();
-					m_SceneState = SceneState::Edit;
-				}
-			}
-			else
-			{
-				if (ImGui::Button("Play"))
-				{
-					OnRuntimeStart();
-				}
-			}
-
 			ImGui::PopStyleVar();
 			ImGui::EndMainMenuBar();
 		}
+
+		DrawToolbar(fps);
 
 		// Viewport
 		{
@@ -465,6 +452,61 @@ namespace Ember {
 			}
 			}
 		}
+	}
+
+	void EditorLayer::DrawToolbar(float fps)
+	{
+		ImGuiWindowClass window_class;
+		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+		ImGui::SetNextWindowClass(&window_class);
+
+		// Tighten up the padding so it feels like a sleek toolbar
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 4));
+
+		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		float windowWidth = ImGui::GetWindowContentRegionMax().x;
+
+		//Center the Play/Stop button
+		float buttonWidth = 60.0f;
+		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonWidth * 0.5f));
+
+		if (m_SceneState == SceneState::Play)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.2f, 0.2f, 1.0f));
+			if (ImGui::Button("Stop", ImVec2(buttonWidth, 0)))
+			{
+				OnRuntimeStop();
+				m_SceneState = SceneState::Edit;
+			}
+			ImGui::PopStyleColor();
+		}
+		else
+		{
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
+		if (ImGui::Button("Play", ImVec2(buttonWidth, 0)))
+		{
+			OnRuntimeStart();
+		}
+		ImGui::PopStyleColor();
+		}
+
+		ImGui::SameLine();
+
+		// Format the text and calculate how much horizontal space it takes
+		char fpsBuf[32];
+		snprintf(fpsBuf, sizeof(fpsBuf), "FPS: %.1f", fps);
+		float fpsTextWidth = ImGui::CalcTextSize(fpsBuf).x;
+
+		// Push the cursor to the far right edge, minus the text width and a small margin
+		ImGui::SetCursorPosX(windowWidth - fpsTextWidth - 10.0f);
+
+		// Vertically align the text slightly so it sits nicely next to the button
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
+		ImGui::TextDisabled("%s", fpsBuf); // TextDisabled makes it a subtle gray!
+
+		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	void EditorLayer::CreateEntity()
