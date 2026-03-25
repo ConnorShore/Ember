@@ -10,9 +10,17 @@ end
 function CameraController:OnUpdate(delta)
     local transform = self.Entity:GetTransform()
 
-    -- 87 is the W key (Assuming your KeyCodes match standard ASCII)
-    if IsKeyPressed(87) then 
+    if IsKeyPressed(KeyCode.W) then 
         transform.Position.z = transform.Position.z - (self.Speed * delta)
+    end
+    if IsKeyPressed(KeyCode.S) then 
+        transform.Position.z = transform.Position.z + (self.Speed * delta)
+    end
+    if IsKeyPressed(KeyCode.D) then 
+        transform.Position.x = transform.Position.x + (self.Speed * delta)
+    end
+    if IsKeyPressed(KeyCode.A) then 
+        transform.Position.x = transform.Position.x - (self.Speed * delta)
     end
 end
 

@@ -8,10 +8,6 @@ Assets:
     Name: Satellite_Mat_GoldFoil_AlbedoMap
     FilePath: Ember-Forge/assets/models/Foil_Albedo.jpg
   - Type: Shader
-    UUID: 7475106115865381442
-    Name: FinalComposite
-    FilePath: Ember/assets/shaders/FinalComposite.glsl
-  - Type: Shader
     UUID: 4
     Name: StandardGeometry
     FilePath: Ember/assets/shaders/StandardGeometry.glsl
@@ -40,9 +36,13 @@ Assets:
     Name: Bloom
     FilePath: Ember/assets/shaders/Bloom.glsl
   - Type: Shader
-    UUID: 7668884795464841915
+    UUID: 4758048714628986518
     Name: Outline
     FilePath: Ember/assets/shaders/Outline.glsl
+  - Type: Shader
+    UUID: 13921580693674997821
+    Name: FinalComposite
+    FilePath: Ember/assets/shaders/FinalComposite.glsl
   - Type: Material
     UUID: 13632041686402470657
     Name: Satellite_Mat_SolarPanel
