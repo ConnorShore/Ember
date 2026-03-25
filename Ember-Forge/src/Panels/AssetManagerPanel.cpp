@@ -1,13 +1,12 @@
 #include "AssetManagerPanel.h"
-#include <filesystem>
 
 namespace Ember {
 
-	std::string AssetManagerPanel::m_AssetDirectory = "Ember-Forge/assets";
-	std::string AssetManagerPanel::m_CurrentDirectory = "Ember-Forge/assets";
 
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
-		: Panel("Asset Manager", context)
+		: Panel("Asset Manager", context), 
+		m_AssetDirectory(std::filesystem::path("Ember-Forge/assets")), 
+		m_CurrentDirectory(std::filesystem::path("Ember-Forge/assets"))
 	{
 	}
 
@@ -17,36 +16,54 @@ namespace Ember {
 
 	void AssetManagerPanel::OnAttach()
 	{
-		// Loop through all assets in the asset directory and load them into the AssetManager
-		//auto& assetManager = Application::Instance().GetAssetManager();
-		//std::filesystem::path assetDir(m_AssetDirectory);
-		//for (const auto& entry : std::filesystem::recursive_directory_iterator(assetDir))
-		//{
-		//	if (entry.is_regular_file())
-		//	{
-		//		std::string filePath = entry.path().string();
-		//		std::string extension = entry.path().extension().string();
-		//		std::string fileName = entry.path().stem().string();
-		//		// Load assets based on their file extension
-		//		if (extension == ".obj" || extension == ".fbx")
-		//		{
-		//			assetManager.Load<Model>(fileName, filePath);
-		//		}
-		//		else if (extension == ".png" || extension == ".jpg" || extension == ".jpeg")
-		//		{
-		//			assetManager.Load<Texture>(fileName, filePath);
-		//		}
-		//		else if (extension == ".mat")
-		//		{
-		//			assetManager.Load<Material>(fileName, filePath);
-		//		}
-		//	}
-		//}
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto fileIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/File.png");
+		auto dirIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/Directory.png");
+		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
+		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();
 	}
 
 	void AssetManagerPanel::OnImGuiRender()
 	{
 		ImGui::Begin(m_Title.c_str());
+
+
+		if (m_CurrentDirectory != m_AssetDirectory)
+		{
+			if (ImGui::Button("<-"))
+			{
+				m_CurrentDirectory = m_CurrentDirectory.parent_path();
+			}
+		}
+
+		std::filesystem::directory_iterator it(m_CurrentDirectory);
+		int size = 50;
+		float padding = 10.0f;
+		float currentPos = ImGui::GetCursorPosX();
+		for (const auto& entry : it)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
+
+			if (entry.is_directory())
+			{
+				if (ImGui::ImageButton(entry.path().filename().string().c_str(), m_DirectoryTexID, ImVec2(size, size), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				{
+					m_CurrentDirectory = entry.path();
+				}
+			}
+			else
+			{
+				if (ImGui::ImageButton(entry.path().filename().string().c_str(), m_FileTexID, ImVec2(size, size), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				{
+				}
+			}
+
+			ImGui::PopStyleColor(3);
+			ImGui::Text(entry.path().stem().string().c_str());
+		}
+
 
 		ImGui::End();
 	}

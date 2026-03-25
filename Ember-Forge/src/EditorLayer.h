@@ -31,6 +31,8 @@ namespace Ember {
 		void SyncEntitySelectionState();
 		void RenderTransformGizmos();
 
+		void DrawToolbar(float fps);
+
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
 		void RemovePendingEntities();

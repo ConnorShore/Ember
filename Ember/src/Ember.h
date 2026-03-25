@@ -60,4 +60,5 @@
 
 // Vendor includes
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <assimp/Importer.hpp>

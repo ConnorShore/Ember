@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Panel.h"
+#include <filesystem>
 
-#include <string>
 
 namespace Ember {
 
@@ -16,7 +16,7 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 	private:
-		static std::string m_AssetDirectory;
-		static std::string m_CurrentDirectory;
+		std::filesystem::path m_AssetDirectory, m_CurrentDirectory;
+		ImTextureID m_FileTexID, m_DirectoryTexID;
 	};
 }
