@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <concepts>
 #include <vector>
+#include <filesystem>
 
 namespace Ember {
 
@@ -58,26 +59,27 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath)
 		{
-			if (m_AssetPaths.contains(filePath))
+			auto absolutePath = std::filesystem::absolute(filePath).string();
+			if (m_AssetPaths.contains(absolutePath))
 			{
-				return GetAsset<T>(m_AssetPaths[filePath]);
+				return GetAsset<T>(m_AssetPaths[absolutePath]);
 			}
 
 			SharedPtr<T> newAsset;
 			if constexpr (std::same_as<T, Texture>)
-				newAsset = TextureImporter::Load(uuid, name, filePath);
+				newAsset = TextureImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Shader>)
-				newAsset = ShaderImporter::Load(uuid, name, filePath);
+				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelImporter::Load(uuid, name, filePath, *this);
+				newAsset = ModelImporter::Load(uuid, name, absolutePath, *this);
 			else if constexpr (std::same_as<T, Script>)
-				newAsset = ScriptImporter::LoadScript(uuid, name, filePath);
+				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
 			m_Assets[newAsset->GetUUID()] = newAsset;
 			m_AssetNames[name] = newAsset->GetUUID();
-			m_AssetPaths[filePath] = newAsset->GetUUID();
+			m_AssetPaths[absolutePath] = newAsset->GetUUID();
 			return newAsset;
 		}
 
@@ -91,15 +93,16 @@ namespace Ember {
 		template<std::same_as<Shader> T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
 		{
-			if (m_AssetPaths.contains(filePath))
+			auto absolutePath = std::filesystem::absolute(filePath).string();
+			if (m_AssetPaths.contains(absolutePath))
 			{
-				return GetAsset<Shader>(m_AssetPaths[filePath]);
+				return GetAsset<Shader>(m_AssetPaths[absolutePath]);
 			}
-			auto newShader = ShaderImporter::Load(uuid, name, filePath, macros);
+			auto newShader = ShaderImporter::Load(uuid, name, absolutePath, macros);
 
 			m_Assets[newShader->GetUUID()] = newShader;
 			m_AssetNames[name] = newShader->GetUUID();
-			m_AssetPaths[filePath] = newShader->GetUUID();
+			m_AssetPaths[absolutePath] = newShader->GetUUID();
 			return newShader;
 		}
 
@@ -107,11 +110,12 @@ namespace Ember {
 		template<std::same_as<Model> T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
 		{
-			auto model = ModelImporter::Load(uuid, name, filePath, *this, meshUUIDs, materialUUIDs);
+			auto absolutePath = std::filesystem::absolute(filePath).string();
+			auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
 			
 			m_Assets[model->GetUUID()] = model;
 			m_AssetNames[name] = model->GetUUID();
-			m_AssetPaths[filePath] = model->GetUUID();
+			m_AssetPaths[absolutePath] = model->GetUUID();
 			return model;
 		}
 
@@ -163,6 +167,26 @@ namespace Ember {
 		}
 
         SharedPtr<Asset> GetAssetBase(UUID id) const;
+
+		void RemoveAsset(const std::string& file)
+		{
+			auto absolutePath = std::filesystem::absolute(file).string();
+			if (m_AssetPaths.contains(absolutePath)) {
+				RemoveAsset(m_AssetPaths[absolutePath]);
+			}
+			else if (m_AssetNames.contains(absolutePath)) {
+				RemoveAsset(m_AssetNames[absolutePath]);
+			}
+		}
+
+		void RemoveAsset(UUID uuid)
+		{
+			if (m_Assets.contains(uuid)) {
+				m_AssetNames.erase(m_Assets[uuid]->GetName());
+				m_AssetPaths.erase(m_Assets[uuid]->GetFilePath());
+				m_Assets.erase(uuid);
+			}
+		}
 		
 	private:
 

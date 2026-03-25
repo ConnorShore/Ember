@@ -133,6 +133,21 @@ namespace Ember {
 							});
 						break;
 					}
+					case ShaderPropertyType::Texture:
+					{
+						ImGui::Button("Drop texture here");
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_FILE"))
+							{
+								EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
+								auto filePath = (const char*)payload->Data;
+								auto texture = Application::Instance().GetAssetManager().Load<Texture>(filePath);
+								material->SetUniform(prop.UniformName, texture);
+							}
+							ImGui::EndDragDropTarget();
+						}
+					}
 					}
 				}
 

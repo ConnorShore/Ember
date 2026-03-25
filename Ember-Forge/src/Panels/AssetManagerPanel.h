@@ -16,6 +16,9 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 	private:
+		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
+
+	private:
 		std::filesystem::path m_AssetDirectory, m_CurrentDirectory;
 		ImTextureID m_FileTexID, m_DirectoryTexID;
 

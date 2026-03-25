@@ -87,6 +87,7 @@ namespace Ember {
 							else if (val == "Color3") currentProp.Type = ShaderPropertyType::Color3;
 							else if (val == "Color4") currentProp.Type = ShaderPropertyType::Color4;
 							else if (val == "Slider") currentProp.Type = ShaderPropertyType::Slider;
+							else if (val == "Texture") currentProp.Type = ShaderPropertyType::Texture;
 							else EB_CORE_ASSERT(false, "Unknown shader property type: {}", val);
 						}
 						else if (key == "Min")
