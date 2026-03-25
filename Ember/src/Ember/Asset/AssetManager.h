@@ -167,6 +167,26 @@ namespace Ember {
 		}
 
         SharedPtr<Asset> GetAssetBase(UUID id) const;
+
+		void RemoveAsset(const std::string& file)
+		{
+			auto absolutePath = std::filesystem::absolute(file).string();
+			if (m_AssetPaths.contains(absolutePath)) {
+				RemoveAsset(m_AssetPaths[absolutePath]);
+			}
+			else if (m_AssetNames.contains(absolutePath)) {
+				RemoveAsset(m_AssetNames[absolutePath]);
+			}
+		}
+
+		void RemoveAsset(UUID uuid)
+		{
+			if (m_Assets.contains(uuid)) {
+				m_AssetNames.erase(m_Assets[uuid]->GetName());
+				m_AssetPaths.erase(m_Assets[uuid]->GetFilePath());
+				m_Assets.erase(uuid);
+			}
+		}
 		
 	private:
 

@@ -51,7 +51,6 @@ namespace Ember {
 		ImGui::Columns(numColumns, nullptr, false);
 		for (const auto& entry : it)
 		{
-			//float currentPos = ImGui::GetCursorPosX();
 			std::string filePath = entry.path().string();
 			std::filesystem::path fileName = entry.path().filename();
 			std::string fileNameStr = entry.path().filename().string();
@@ -70,15 +69,36 @@ namespace Ember {
 			}
 			else
 			{
-				ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+				{
+					// TODO: Select the item
+				}
+				if (ImGui::BeginPopupContextItem())
+				{
+					if (ImGui::MenuItem("Delete"))
+					{
+						Application::Instance().GetAssetManager().RemoveAsset(filePath);
+						std::error_code ec;
+						std::filesystem::remove(filePath, ec);
+
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to delete asset '{0}': {1}", fileNameStr, ec.message());
+						}
+						else
+						{
+							EB_CORE_INFO("Successfully deleted asset: {0}", fileNameStr);
+						}
+					}
+
+					ImGui::EndPopup();
+				}
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 				{
-					if (ImGui::GetDragDropPayload() == NULL)
-					{
-						auto filePathAbs = std::filesystem::absolute(filePath).string();
-						ImGui::SetDragDropPayload("ASSET_FILE", filePathAbs.c_str(), filePathAbs.size() + 1);
-					}
+					auto filePathAbs = std::filesystem::absolute(filePath).string();
+					ImGui::SetDragDropPayload("ASSET_FILE", filePathAbs.c_str(), filePathAbs.size() + 1);
+					ImGui::Image(m_FileTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					ImGui::EndDragDropSource();
 				}
 			}
@@ -104,7 +124,62 @@ namespace Ember {
 
 		ImGui::Columns(1);
 
+		if (ImGui::BeginPopupContextWindow("AssetManagerPanelContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ImGui::BeginMenu("Import Asset"))
+			{
+				if (ImGui::MenuItem("Model"))
+				{
+					std::string file = SelectAndLoadFile("Model Files (*.obj)", "*.obj");
+					if (!file.empty())
+						Application::Instance().GetAssetManager().Load<Model>(file);
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::MenuItem("Texture"))
+				{
+					std::string file = SelectAndLoadFile("Image Files (*.png;*.jpg;*.jpeg)", "*.png;*.jpg;*.jpeg");
+					if (!file.empty())
+						Application::Instance().GetAssetManager().Load<Texture>(file);
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::MenuItem("Shader"))
+				{
+					std::string file = SelectAndLoadFile("Shader Files (*.glsl)", "*.glsl");
+					if (!file.empty())
+						Application::Instance().GetAssetManager().Load<Shader>(file);
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::MenuItem("Script"))
+				{
+					std::string file = SelectAndLoadFile("Script Files (*.lua)", "*.lua");
+					if (!file.empty())
+						Application::Instance().GetAssetManager().Load<Texture>(file);
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndPopup();
+		}
+
 		ImGui::End();
+	}
+
+	std::string AssetManagerPanel::SelectAndLoadFile(const std::string& name, const std::string& type)
+	{
+		std::string file = FileDialog::OpenFile(m_CurrentDirectory.string().c_str(), name.c_str(), type.c_str());
+		if (file.empty())
+			return "";
+
+		// If file already exists in this directory, just return the path
+		if (std::filesystem::exists(m_CurrentDirectory / std::filesystem::path(file).filename()))
+			return file;
+
+		// Copy the file to the current directory
+		std::filesystem::path destPath = m_CurrentDirectory / std::filesystem::path(file).filename();
+		std::filesystem::copy_file(file, destPath, std::filesystem::copy_options::overwrite_existing);
+		return destPath.string();
 	}
 
 }

@@ -1,16 +1,12 @@
 Assets:
   - Type: Texture
-    UUID: 8917777488429239540
-    Name: Texture(0)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
-  - Type: Texture
-    UUID: 12211886067464235811
+    UUID: 3380493631760952820
     Name: Texture(1)
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Directory.png'
   - Type: Texture
-    UUID: 11323258709922665785
-    Name: Texture(2)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\textures\case.jpg'
+    UUID: 16958778991737986399
+    Name: Texture(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
   - Type: Shader
     UUID: 4
     Name: StandardGeometry
@@ -40,13 +36,25 @@ Assets:
     Name: Bloom
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Bloom.glsl'
   - Type: Shader
-    UUID: 10676007373894046859
+    UUID: 10178721696009894137
     Name: Outline
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Outline.glsl'
   - Type: Shader
-    UUID: 427099342145965797
+    UUID: 3598783851344882093
     Name: FinalComposite
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\FinalComposite.glsl'
+  - Type: Script
+    UUID: 2023451129828807364
+    Name: Script(1)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\scripts\NewScript(2).lua'
+  - Type: Script
+    UUID: 17986335501669333830
+    Name: Script(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\scripts\NewScript(1).lua'
+  - Type: Script
+    UUID: 4178991511279791224
+    Name: Script(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\scripts\NewScript.lua'
   - Type: Material
     UUID: 14
     Name: StandardGeometry
