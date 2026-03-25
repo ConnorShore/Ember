@@ -10,6 +10,8 @@
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 
+#include "Ember/Script/ScriptEngine.h"
+
 #include <GLFW/glfw3.h>
 
 namespace Ember {
@@ -32,6 +34,8 @@ namespace Ember {
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
 		m_AssetManager->LoadDefaults();
 
+		ScriptEngine::Init();
+
 		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
 		serializer.Deserialize("Ember/assets/assets.eba");
 
@@ -53,6 +57,8 @@ namespace Ember {
 
 		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
 		serializer.Serialize("Ember/assets/assets.eba");
+
+		ScriptEngine::Shutdown();
 
 		EB_CORE_INFO("Application destroyed!");
 	}

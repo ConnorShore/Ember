@@ -19,7 +19,9 @@ project "Ember"
       "vendor/stb",
       "vendor/assimp/include",
       "vendor/rapidyaml/src",
-		"vendor/rapidyaml/ext/c4core/src"
+		"vendor/rapidyaml/ext/c4core/src",
+      "vendor/lua/src",
+      "vendor/sol2/include"
    }
 
    files 
@@ -37,6 +39,7 @@ project "Ember"
       "imgui",
       "assimp",
       "rapidyaml",
+      "lua",
       "opengl32.lib",
    }
 
@@ -44,7 +47,8 @@ project "Ember"
    {
       "EB_ENGINE",
 	  "_CRT_SECURE_NO_WARNINGS",
-      "GLFW_INCLUDE_NONE"
+      "GLFW_INCLUDE_NONE",
+      "SOL_ALL_SAFETIES_ON=1"
    }
 
    filter "system:windows"

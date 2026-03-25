@@ -14,7 +14,8 @@ namespace Ember {
 		Mesh,
 		Model,
 		Shader,
-		Material
+		Material,
+		Script
 	};
 
 	class Asset : public SharedResource

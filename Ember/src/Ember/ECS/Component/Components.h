@@ -11,10 +11,7 @@
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 
-namespace Ember {
-	class Entity;
-	class Behavior;
-}
+#include <sol/sol.hpp>
 
 #include <memory>
 #include <string>
@@ -40,7 +37,7 @@ namespace Ember {
 
 	struct RelationshipComponent
 	{
-		UUID ParentHandle = Constants::Entities::InvalidEntityUUID;
+		UUID ParentHandle = Constants::InvalidUUID;
 		std::vector<UUID> Children;
 
 		RelationshipComponent() = default;
@@ -233,57 +230,14 @@ namespace Ember {
 
 	struct ScriptComponent
 	{
-		std::string ClassName = "";
-		bool Initalized = false;
+		UUID ScriptHandle = Constants::InvalidUUID;
 
-		// Inline Lambda Function //
-		std::function<void(Entity)> OnCreate = nullptr;
-		std::function<void(Entity, TimeStep)> OnUpdate = nullptr;
-		std::function<void(Entity)> OnDestroy = nullptr;
-
-		// Class Binding 
-		Behavior* Instance = nullptr;
-		Behavior* (*OnInitFunc)() = nullptr;
-		void (*OnDestroyFunc)(ScriptComponent*) = nullptr;
-
-		template<typename T>
-		void Bind(const std::string& className)
-		{
-			ClassName = className;
-			OnInitFunc = []() { return static_cast<Behavior*>(new T()); };
-			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
-		}
-
-		template<typename T>
-		void Bind()
-		{
-			// Derive a class name automatically from the type name when not provided
-			ClassName = typeid(T).name();
-			OnInitFunc = []() { return static_cast<Behavior*>(new T()); };
-			OnDestroyFunc = [](ScriptComponent* sc) { delete sc->Instance; sc->Instance = nullptr; };
-		}
+		sol::table Instance;
+		bool Initialized = false;
 
 		ScriptComponent() = default;
-		ScriptComponent(const ScriptComponent& other)
-		{
-			ClassName = other.ClassName;
-			Initalized = false;
-			Instance = nullptr;
-
-			OnInitFunc = other.OnInitFunc;
-			OnDestroyFunc = other.OnDestroyFunc;
-			OnCreate = other.OnCreate;
-			OnUpdate = other.OnUpdate;
-			OnDestroy = other.OnDestroy;
-		}
-
-		~ScriptComponent()
-		{
-			if (Instance && OnDestroyFunc)
-			{
-				OnDestroyFunc(this);
-			}
-		}
+		ScriptComponent(UUID scriptUUID) : ScriptHandle(scriptUUID) {}
+		ScriptComponent(const ScriptComponent&) = default;
 	};
 
 	struct OutlineComponent

@@ -63,7 +63,7 @@ namespace Ember {
 		{
 			// Draw the tree node
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
-			if (relationshipComp.ParentHandle == Constants::Entities::InvalidEntityUUID)
+			if (relationshipComp.ParentHandle == Constants::InvalidUUID)
 			{
 				DrawTreeNode(entity);
 			}
@@ -199,14 +199,14 @@ namespace Ember {
 
 	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
 	{
-		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetUUID() == Constants::Entities::InvalidEntityUUID)
+		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetUUID() == Constants::InvalidUUID)
 			return false;
 
 		Entity current = descendant;
 		while (current != Constants::Entities::InvalidComponentID)
 		{
 			UUID parentID = current.GetComponent<RelationshipComponent>().ParentHandle;
-			if (parentID == Constants::Entities::InvalidEntityUUID)
+			if (parentID == Constants::InvalidUUID)
 				break;
 
 			if (parentID == ancestor.GetUUID())

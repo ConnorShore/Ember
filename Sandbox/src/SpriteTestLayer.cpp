@@ -79,30 +79,30 @@ void SpriteTestLayer::OnAttach()
 	Ember::RigidBodyComponent rigidComp = { Ember::Vector3f(0.0f, 0.0f, 0.0f) };
 	m_Entity.AttachComponent(rigidComp);
 
-	Ember::ScriptComponent entityScript;
-	entityScript.OnUpdate = [](Ember::Entity e, Ember::TimeStep delta)
-		{
-			auto& rigidComp = e.GetComponent<Ember::RigidBodyComponent>();
-			rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
+	//Ember::ScriptComponent entityScript;
+	//entityScript.OnUpdate = [](Ember::Entity e, Ember::TimeStep delta)
+	//	{
+	//		auto& rigidComp = e.GetComponent<Ember::RigidBodyComponent>();
+	//		rigidComp.Velocity = Ember::Vector3f(0.0f, 0.0f, 0.0f);
 
-			if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
-			{
-				rigidComp.Velocity = Ember::Vector3f(0.0f, 1.5f, 0.0f);
-			}
-			else if (Ember::Input::IsKeyPressed(Ember::KeyCode::S))
-			{
-				rigidComp.Velocity = Ember::Vector3f(0.0f, -1.5f, 0.0f);
-			}
-			if (Ember::Input::IsKeyPressed(Ember::KeyCode::D))
-			{
-				rigidComp.Velocity = Ember::Vector3f(1.5f, 0.0f, 0.0f);
-			}
-			else if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
-			{
-				rigidComp.Velocity = Ember::Vector3f(-1.5f, 0.0f, 0.0f);
-			}
-		};
-	m_Entity.AttachComponent(entityScript);
+	//		if (Ember::Input::IsKeyPressed(Ember::KeyCode::W))
+	//		{
+	//			rigidComp.Velocity = Ember::Vector3f(0.0f, 1.5f, 0.0f);
+	//		}
+	//		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::S))
+	//		{
+	//			rigidComp.Velocity = Ember::Vector3f(0.0f, -1.5f, 0.0f);
+	//		}
+	//		if (Ember::Input::IsKeyPressed(Ember::KeyCode::D))
+	//		{
+	//			rigidComp.Velocity = Ember::Vector3f(1.5f, 0.0f, 0.0f);
+	//		}
+	//		else if (Ember::Input::IsKeyPressed(Ember::KeyCode::A))
+	//		{
+	//			rigidComp.Velocity = Ember::Vector3f(-1.5f, 0.0f, 0.0f);
+	//		}
+	//	};
+	//m_Entity.AttachComponent(entityScript);
 
 	// Camera Entity
 	m_CameraEntity = m_MainScene->AddEntity();
@@ -115,9 +115,9 @@ void SpriteTestLayer::OnAttach()
 	//camera.SetOrthographic(10.0f, -1.0f, 1.0f);
 	camera.SetPerspective(60.0f, 0.1f, 120.0f);
 
-	Ember::CameraComponent cameraComponent(camera, true);
-	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera2DController>();
+	//Ember::CameraComponent cameraComponent(camera, true);
+	//m_CameraEntity.AttachComponent(cameraComponent);
+	//m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera2DController>();
 }
 
 void SpriteTestLayer::OnDetach()

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "System.h"
+#include "Ember/Script/ScriptImporter.h"
+
+#include <sol/sol.hpp>
 
 namespace Ember {
 
@@ -15,6 +18,17 @@ namespace Ember {
 		void OnAttach() override;
 		void OnDetach() override;
 		void OnUpdate(TimeStep delta, Scene* scene) override;
+
+	private:
+		void BindAPI();
+
+		// Helpers
+		void BindInput();
+		void BindMath();
+		void BindComponents();
+
+	private:
+		sol::state m_LuaState;
 	};
 
 }

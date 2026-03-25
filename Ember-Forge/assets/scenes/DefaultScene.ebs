@@ -15,8 +15,6 @@ Entities:
       Rotation: [0,-0,0]
       Scale: [1,1,1]
       WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
-    ScriptComponent:
-      ClassName: ''
   - Entity: 12640232409647126883
     TagComponent:
       Tag: Main_Body
@@ -118,7 +116,7 @@ Entities:
       Scale: [1,1,1]
       WorldTransform: [1,0,0,0,0,1,0,0,0,0,1,0,0,-0.16902828,5.2763157,1]
     CameraComponent:
-      Projection: [1.0052978,0,0,0,0,1.428148,0,0,0,0,-1.020202,-1,0,0,-2.020202,0]
+      Projection: [1.0654438,0,0,0,0,1.428148,0,0,0,0,-1.020202,-1,0,0,-2.020202,0]
       Type: 1
       IsActive: 1
       OrthographicProperties:
@@ -129,3 +127,8 @@ Entities:
         FOV: 70
         NearClip: 1
         FarClip: 100
+    ScriptComponent:
+      UUID: 442444767959617892
+    OutlineComponent:
+      Color: [0.89,0.25,0.07]
+      Thickness: 2

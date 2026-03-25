@@ -297,20 +297,19 @@ namespace Ember {
 	{
 		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
 		{
+			if (m_SceneState != SceneState::Edit)
+				return false;
+
 			// If the gizmo is being hovered, we should not change selection
 			if (ImGuizmo::IsOver())
 				return false;
 
 			auto [mx, my] = ImGui::GetMousePos();
 
-			// Subtract the top-left corner of the viewport to get local coordinates
 			mx -= m_ViewportBounds[0].x;
 			my -= m_ViewportBounds[0].y;
 
-			// Calculate viewport size from bounds
 			Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-
-			// Flip the Y-Axis (ImGui is Top-Left origin, OpenGL is Bottom-Left origin)
 			my = viewportSize.y - my;
 
 			int mouseX = (int)mx;
@@ -406,7 +405,7 @@ namespace Ember {
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
 			{
 				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::Entities::InvalidEntityUUID)
+				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
 				{
 					// Fetch the parent entity
 					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);

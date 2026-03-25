@@ -16,10 +16,12 @@ project "Ember-Forge"
    includedirs 
    {
       "src",
+      "vendor/ImGuizmo",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
-      "vendor/ImGuizmo"
+      "%{wks.location}/Ember/vendor/lua/src",
+      "%{wks.location}/Ember/vendor/sol2/include"
    }
 
    links 

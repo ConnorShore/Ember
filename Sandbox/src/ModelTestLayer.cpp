@@ -87,9 +87,9 @@ void ModelTestLayer::OnAttach()
 	camera.SetProjectionType(Ember::Camera::ProjectionType::Perspective);
 	camera.SetPerspective(65.0f, 0.1f, 200.0f);
 
-	Ember::CameraComponent cameraComponent(camera, true);
-	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
+	//Ember::CameraComponent cameraComponent(camera, true);
+	//m_CameraEntity.AttachComponent(cameraComponent);
+	//m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>();
 
 	// Add flashlight entity
 	m_Flashlight = m_MainScene->AddEntity();

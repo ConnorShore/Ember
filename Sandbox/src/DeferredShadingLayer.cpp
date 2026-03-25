@@ -105,7 +105,7 @@ void DeferredShadingLayer::OnAttach()
 
 	Ember::CameraComponent cameraComponent(camera, true);
 	m_CameraEntity.AttachComponent(cameraComponent);
-	m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>("Camera3DController");
+	//m_CameraEntity.AttachComponent<Ember::ScriptComponent>().Bind<Camera3DController>("Camera3DController");
 
 	// ------------------------------------------------------------------
 	// Interactive sphere (ImGui-controlled) — placed to the right

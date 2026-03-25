@@ -22,7 +22,6 @@ namespace Ember {
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
 		inline unsigned int GetIndexCount() const { return m_VertexArray->GetIndexBuffer()->GetCount(); }
-		inline const std::string& GetName() { return m_Name; }
 
 		static AssetType GetStaticType() { return AssetType::Mesh; }
 

@@ -2,7 +2,6 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
-#include "Ember/Asset/ScriptRegistry.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -145,11 +144,12 @@ namespace Ember {
 			}
 			if (entity.ContainsComponent<ScriptComponent>())
 			{
-				ryml::NodeRef scNode = entityNode["ScriptComponent"];
-				scNode |= ryml::MAP;
+				auto& script = entity.GetComponent<ScriptComponent>();
 
-				auto& sc = entity.GetComponent<ScriptComponent>();
-				scNode["ClassName"] << sc.ClassName;
+				auto scriptNode = entityNode.append_child();
+				scriptNode |= ryml::MAP;
+				scriptNode << ryml::key("ScriptComponent");
+				scriptNode["UUID"] << (uint64_t)script.ScriptHandle;
 			}
 			if (entity.ContainsComponent<OutlineComponent>())
 			{
@@ -378,23 +378,14 @@ namespace Ember {
 
 				if (entityNode.has_child("ScriptComponent"))
 				{
-					ryml::NodeRef scriptNode = entityNode["ScriptComponent"];
-					std::string className;
-					scriptNode["ClassName"] >> className;
+					auto scriptNode = entityNode["ScriptComponent"];
 
-					auto& sc = deserializedEntity.AttachComponent<ScriptComponent>();
-					sc.ClassName = className;
+					uint64_t uuidVal;
+					scriptNode["UUID"] >> uuidVal;
 
-					ScriptRegistry::ScriptFunctions functions;
-					if (ScriptRegistry::GetScriptFunctions(className, functions))
-					{
-						sc.OnInitFunc = functions.Instantiate;
-						sc.OnDestroyFunc = functions.Destroy;
-					}
-					else
-					{
-						EB_CORE_WARN("Failed to deserialize script! Class '{}' is not registered.", className);
-					}
+					UUID uuid = (UUID)uuidVal;
+					ScriptComponent sc(uuid);
+					deserializedEntity.AttachComponent<ScriptComponent>(sc);
 				}
 
 				if (entityNode.has_child("OutlineComponent"))
