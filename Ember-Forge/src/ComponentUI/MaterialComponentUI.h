@@ -12,35 +12,34 @@ namespace Ember {
 
 		virtual void CreateComponentForEntity(Entity entity) override
 		{
-			auto defaultMaterial = m_Context->ActiveScene->GetAsset<Material>(Constants::Assets::StandardGeometryMat);
-			MaterialComponent comp{ defaultMaterial };
-			auto ret = comp.GetInstanced();
+			MaterialComponent comp{ Constants::Assets::StandardGeometryMatUUID };
+			auto ret = comp.GetInstanced(entity.GetName() + "_Material");
 			m_Context->ActiveScene->AttachComponent(entity, comp);
 		}
-
 
 	protected:
 		inline void RenderComponentImpl(MaterialComponent& component) override
 		{
-			auto& material = component.Material;
-			if (!material)
+			if (component.MaterialHandle == Constants::InvalidUUID)
 				return;
 
+			auto material = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(component.MaterialHandle);
 			ImGui::Text("Material: %s", material->GetName().c_str());
 			ImGui::Separator();
 
 			std::string currentMaterialName = material ? material->GetName() : "None";
 			if (ImGui::BeginCombo("##MaterialCombo", currentMaterialName.c_str()))
 			{
-				auto materials = m_Context->ActiveScene->GetAssetsOfType<Material>();
+				auto materials = m_Context->ActiveScene->GetAssetsOfType<MaterialBase>();
 				for (auto& mat : materials)
 				{
 					// Check if this is the currently active shader
 					bool isSelected = material && (material->GetUUID() == mat->GetUUID());
 					if (ImGui::Selectable(mat->GetName().c_str(), isSelected))
 					{
-						std::string name = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag + "_" + mat->GetName() + "_Instance";
-						material = SharedPtr<MaterialInstance>::Create(name, mat);
+						std::string name = mat->GetName() + "_" + m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
+						component.MaterialHandle = mat->GetUUID();
+						component.GetInstanced(name);
 					}
 
 					// Set the initial focus when opening the combo

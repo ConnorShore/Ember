@@ -39,7 +39,7 @@ namespace Ember {
 
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{
-		auto newScene = SharedPtr<Scene>::Create();
+		auto newScene = SharedPtr<Scene>::Create(other->GetName());
 		auto view = other->GetRegistry().Query<IDComponent>();
 		for (auto entity : view)
 		{
@@ -270,11 +270,13 @@ namespace Ember {
 		if (node.Meshes.size() == 1)
 		{
 			// Safe to attach directly!
-			MeshComponent mc{ node.Meshes[0].MeshAsset };
+			UUID meshId = Application::Instance().GetAssetManager().Register(node.Meshes[0].MeshAsset);
+			MeshComponent mc{ meshId };
 			currentEntity.AttachComponent<MeshComponent>(mc);
 
 			// Attach material
-			MaterialComponent matComp{ model->GetAllMaterials()[node.Meshes[0].MaterialIndex] };
+			UUID materialId = Application::Instance().GetAssetManager().Register(model->GetAllMaterials()[node.Meshes[0].MaterialIndex]);
+			MaterialComponent matComp{ materialId };
 			currentEntity.AttachComponent<MaterialComponent>(matComp);
 		}
 		else if (node.Meshes.size() > 1)
@@ -290,11 +292,14 @@ namespace Ember {
 				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetUUID());
 
 				// Attach the mesh
-				MeshComponent mc{ node.Meshes[i].MeshAsset };
+
+				UUID meshId = Application::Instance().GetAssetManager().Register(node.Meshes[i].MeshAsset);
+				MeshComponent mc{ meshId };
 				meshPartEntity.AttachComponent<MeshComponent>(mc);
 
 				// Attach material
-				MaterialComponent matComp{ model->GetAllMaterials()[node.Meshes[i].MaterialIndex] };
+				UUID materialId = Application::Instance().GetAssetManager().Register(model->GetAllMaterials()[node.Meshes[i].MaterialIndex]);
+				MaterialComponent matComp{ materialId };
 				currentEntity.AttachComponent<MaterialComponent>(matComp);
 			}
 		}

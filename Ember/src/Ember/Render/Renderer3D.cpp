@@ -28,12 +28,12 @@ namespace Ember {
 		RenderAction::DrawIndexed(vertexArray);
 	}
 
-	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const MaterialComponent& material,  const Matrix4f& transform)
+	void Renderer3D::Submit(const SharedPtr<VertexArray>& vertexArray, const SharedPtr<MaterialBase>& material,  const Matrix4f& transform)
 	{
-		material.Material->Bind();
+		material->Bind();
 
 		// Required Uniforms
-		material.Material->GetShader()->SetMatrix4(Constants::Uniforms::Transform, transform);
+		material->GetShader()->SetMatrix4(Constants::Uniforms::Transform, transform);
 
 		RenderAction::DrawIndexed(vertexArray);
 	}

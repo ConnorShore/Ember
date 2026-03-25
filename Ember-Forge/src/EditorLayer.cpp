@@ -153,8 +153,7 @@ namespace Ember {
 
 		// Viewport
 		{
-			ImGui::Begin("Scene Viewport");
-			ImGui::Text("FPS: %.1f", fps);
+			ImGui::Begin("Scene");
 
 			// Save view port info for mouse picking and viewport resizing
 			m_ViewportHovered = ImGui::IsWindowHovered();

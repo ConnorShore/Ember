@@ -29,7 +29,10 @@ namespace Ember {
 				ImGui::TableNextColumn();
 				ImGui::PushItemWidth(-FLT_MIN);
 
-				const char* meshName = component.Mesh ? component.Mesh->GetName().c_str() : "None";
+				const char* meshName = component.MeshHandle != Constants::InvalidUUID 
+					? Application::Instance().GetAssetManager().GetAsset<Mesh>(component.MeshHandle)->GetName().c_str() 
+					: "None";
+
 				ImGui::Text(meshName);
 				ImGui::SameLine();
 
@@ -43,15 +46,15 @@ namespace Ember {
 					std::string name = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag + "_Mesh";
 					if (ImGui::MenuItem("Cube"))
 					{
-						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Cube");
+						component.MeshHandle = Constants::Assets::CubeMeshUUID;
 					}
 					if (ImGui::MenuItem("Quad"))
 					{
-						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Quad");
+						component.MeshHandle = Constants::Assets::QuadMeshUUID;
 					}
 					if (ImGui::MenuItem("Sphere"))
 					{
-						component.Mesh = m_Context->ActiveScene->GetAsset<Mesh>("Primitive_Sphere");
+						component.MeshHandle = Constants::Assets::SphereMeshUUID;
 					}
 
 					ImGui::EndPopup();
