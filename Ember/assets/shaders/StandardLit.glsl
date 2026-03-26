@@ -50,8 +50,9 @@ layout(location = 1) out vec4 BrightColor;
 layout(binding = 0) uniform sampler2D u_AlbedoRoughness; 
 layout(binding = 1) uniform sampler2D u_NormalMetallic;
 layout(binding = 2) uniform sampler2D u_PositionAO;
-layout(binding = 3) uniform sampler2D u_DirectionShadowMap;
-layout(binding = 4) uniform sampler2D u_SpotShadowMap;
+layout(binding = 3) uniform sampler2D u_EmissionOut;
+layout(binding = 4) uniform sampler2D u_DirectionShadowMap;
+layout(binding = 5) uniform sampler2D u_SpotShadowMap;
 
 uniform vec3 u_CameraPos;
 
@@ -289,7 +290,12 @@ void main()
 	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
     vec3 color = ambient + L0;
    
-    OutColor = vec4(color, 1.0);
+	vec3 emission = texture(u_EmissionOut, TextureCoord).rgb;
+    
+    // 3. Add them together! Light doesn't care about shadows, it just adds on top.
+    vec3 finalColor = color + emission;
+    
+    OutColor = vec4(finalColor, 1.0);
 
 	// Extract bright areas for hdr / bloom. Anthing outside 1.0 will bloom
 	BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);

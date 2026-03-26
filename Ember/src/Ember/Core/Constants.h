@@ -71,8 +71,8 @@ namespace Ember::Constants {
 
 		inline const char* AlbedoMap = "u_AlbedoMap";
 		inline const char* NormalMap = "u_NormalMap";
-		inline const char* MetallicMap = "u_MetallicMap";
-		inline const char* RoughnessMap = "u_RoughnessMap";
+		inline const char* MetallicRoughnessMap = "u_MetallicRoughnessMap";
+		inline const char* EmissiveMap = "u_EmissiveMap";
 
 		inline const char* Transform = "u_Transform";
 		inline const char* ViewProj = "u_ViewProjection";
@@ -90,6 +90,7 @@ namespace Ember::Constants {
 		inline const char* AlbedoRoughness = "u_AlbedoRoughness";
 		inline const char* NormalMetallic = "u_NormalMetallic";
 		inline const char* PositionAO = "u_PositionAO";
+		inline const char* EmissionOut = "u_EmissionOut";
 		inline const char* DirectionShadowMap = "u_DirectionShadowMap";
 		inline const char* SpotShadowMap = "u_SpotShadowMap";
 

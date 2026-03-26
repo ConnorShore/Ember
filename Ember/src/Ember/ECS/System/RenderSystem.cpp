@@ -67,11 +67,12 @@ namespace Ember {
 			specs.Width = 1;
 			specs.Height = 1;
 			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::RGBA8,
-				Ember::FramebufferTextureFormat::RGBA16F,
-				Ember::FramebufferTextureFormat::RGBA16F,
-				Ember::FramebufferTextureFormat::RED_INTEGER,
-				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+				Ember::FramebufferTextureFormat::RGBA8,				// AlbedoRoughness
+				Ember::FramebufferTextureFormat::RGBA16F,			// NormalMetallic
+				Ember::FramebufferTextureFormat::RGBA16F,			// PositionAO
+				Ember::FramebufferTextureFormat::RGBA16F,			// Emission
+				Ember::FramebufferTextureFormat::RED_INTEGER,		// EntityID
+				Ember::FramebufferTextureFormat::DEPTH24STENCIL8	// Depth
 			};
 			m_GBuffer = Framebuffer::Create(specs);
 		}
@@ -103,7 +104,7 @@ namespace Ember {
 			specs.Height = 1;
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::RGBA16F,
-				Ember::FramebufferTextureFormat::RGBA16F,
+				Ember::FramebufferTextureFormat::RGBA16F,	// Do I need an extra slot for the new emissions?
 				Ember::FramebufferTextureFormat::RED_INTEGER,
 				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
 			};
@@ -222,7 +223,7 @@ namespace Ember {
 
 		// If the Forward buffer was empty, fallback to the Opaque G-Buffer!
 		m_GBuffer->Bind();
-		int opaquePixelData = m_GBuffer->ReadPixel(3, x, y);
+		int opaquePixelData = m_GBuffer->ReadPixel(4, x, y);
 		m_GBuffer->Unbind();
 
 		return (EntityID)opaquePixelData;
@@ -365,14 +366,16 @@ namespace Ember {
 
 		// Clear EntityId attachment
 		int clearValue = Constants::Entities::InvalidEntityID;
-		m_GBuffer->ClearAttachment(3, clearValue);
+		m_GBuffer->ClearAttachment(4, clearValue);
 
 		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
 		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
+		auto defaultBlack = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultBlackTex);
 		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
 		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
 		RenderAction::SetTextureUnit(1, defaultNormal->GetID());
 		RenderAction::SetTextureUnit(2, defaultWhite->GetID());
+		RenderAction::SetTextureUnit(3, defaultBlack->GetID());
 
 		Renderer3D::BeginFrame();
 
@@ -419,14 +422,16 @@ namespace Ember {
 		litShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
 		litShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
 		litShader->SetInt(Constants::Uniforms::PositionAO, 2);
-		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 3);
-		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 4);
+		litShader->SetInt(Constants::Uniforms::EmissionOut, 3);
+		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 4);
+		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 5);
 
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
 		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(2));
-		RenderAction::SetTextureUnit(3, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
-		RenderAction::SetTextureUnit(4, m_SpotShadowMapBuffer->GetDepthAttachmentID());
+		RenderAction::SetTextureUnit(3, m_GBuffer->GetColorAttachmentID(3));
+		RenderAction::SetTextureUnit(4, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
+		RenderAction::SetTextureUnit(5, m_SpotShadowMapBuffer->GetDepthAttachmentID());
 
 		LightDataBlock lightData = {};
 

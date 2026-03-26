@@ -47,7 +47,8 @@ in VertexOut {
 layout(location = 0) out vec4 AlbedoRoughness; 
 layout(location = 1) out vec4 NormalMetallic;
 layout(location = 2) out vec4 PositionAO;
-layout(location = 3) out int EntityID;
+layout(location = 3) out vec4 EmissionOut;
+layout(location = 4) out int EntityID;
 
 // @UIProperty(Name="Albedo", Type=Color3)
 uniform vec3 u_Albedo;
@@ -61,6 +62,9 @@ uniform float u_Roughness;
 // @UIProperty(Name="Ambient Occlusion", Type=Float)
 uniform float u_AO;
 
+// @UIProperty(Name="Emission Factor", Type=Float, Min=0.0, Max=100.0, Step=0.1, Normalize=false)
+uniform float u_Emission;
+
 uniform int u_EntityID;
 
 // @UIProperty(Name="Albedo Texture", Type=Texture)
@@ -69,28 +73,50 @@ layout(binding = 0) uniform sampler2D u_AlbedoMap;
 // @UIProperty(Name="Normal Texture", Type=Texture)
 layout(binding = 1) uniform sampler2D u_NormalMap;
 
+// @UIProperty(Name="Metallic/Roughness Texture", Type=Texture)
+layout(binding = 2) uniform sampler2D u_MetallicRoughnessMap;
+
+// @UIProperty(Name="Emissive Texture", Type=Texture)
+layout(binding = 3) uniform sampler2D u_EmissiveMap;
+
 void main()
 {
+    // Albedo (sRGB -> Linear)
     vec4 texColor = texture(u_AlbedoMap, FragIn.TexCoord);
-    vec3 linearTexColor = pow(texColor.rgb, vec3(2.2)); // sRGB to Linear
+    vec3 linearTexColor = pow(texColor.rgb, vec3(2.2));
 
-    // Albedo / Roughness
-    AlbedoRoughness.rgb = linearTexColor * u_Albedo;
-    AlbedoRoughness.a = u_Roughness; 
+    // ORM Data (Already Linear! Do NOT pow() this!)
+    // Red = AO, Green = Roughness, Blue = Metallic
+    vec3 orm = texture(u_MetallicRoughnessMap, FragIn.TexCoord).rgb;
+    
+    float finalAO        = orm.r * u_AO;
+    float finalRoughness = orm.g * u_Roughness;
+    float finalMetallic  = orm.b * u_Metallic;
 
-    // Normal / metallic
+    // Normal Map
     vec3 normalMap = texture(u_NormalMap, FragIn.TexCoord).rgb;
-    
-    // Transform from [0,1] to [-1,1])
-    normalMap = normalMap * 2.0 - 1.0;
+    normalMap = normalMap * 2.0 - 1.0; // Transform from [0,1] to [-1,1]
     vec3 finalNormal = normalize(FragIn.TBN * normalMap).rgb;
-    NormalMetallic.rgb = finalNormal;
-    NormalMetallic.a = u_Metallic; 
     
-    // Position / AO
-    PositionAO.rgb = FragIn.WorldPos;
-    PositionAO.a = u_AO; 
+    // Emission (sRGB -> Linear)
+    vec3 emissionMap = texture(u_EmissiveMap, FragIn.TexCoord).rgb;
+    vec3 finalEmission = pow(emissionMap, vec3(2.2)) * u_Emission;
+    
+    // RGB = Albedo, Alpha = Roughness
+    AlbedoRoughness.rgb = linearTexColor * u_Albedo;
+    AlbedoRoughness.a = finalRoughness; 
 
-    // Code entity id into the entity ID buffer
+    // RGB = Normal, Alpha = Metallic
+    NormalMetallic.rgb = finalNormal;
+    NormalMetallic.a = finalMetallic; 
+    
+    // RGB = Position, Alpha = AO
+    PositionAO.rgb = FragIn.WorldPos;
+    PositionAO.a = finalAO; 
+    
+    // Emissions
+    EmissionOut = vec4(finalEmission, 1.0);
+
+    // Entity ID Buffer
     EntityID = u_EntityID;
 }
