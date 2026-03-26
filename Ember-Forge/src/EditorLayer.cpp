@@ -12,7 +12,8 @@ namespace Ember {
 	{
 		m_Context = {
 			.ActiveScene = m_EditorScene,
-			.SelectedEntity = m_InvalidEntity
+			.SelectedEntity = m_InvalidEntity,
+			.EditorCamera = &m_Camera
 		};
 	}
 

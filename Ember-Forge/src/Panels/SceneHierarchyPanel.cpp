@@ -1,5 +1,6 @@
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
+#include "Utils/Presets.h"
 
 namespace Ember {
 
@@ -16,6 +17,7 @@ namespace Ember {
 	{
 		EB_CREATE_DISPATCHER(event);
 		EB_DISPATCH_EVENT(KeyPressedEvent, OnKeyPressed);
+		EB_DISPATCH_EVENT(MousePressedEvent, OnMousePressed);
 	}
 
 	void SceneHierarchyPanel::OnImGuiRender()
@@ -25,25 +27,103 @@ namespace Ember {
 		ImGui::Separator();
 
 		if (ImGui::Button("Create Entity"))
-			CreateEntity();
+		{
+			CreateEmptyEntity();
+		}
 
 		ImGui::Separator();
 
 		RenderEntityTree();
+		RenderContextMenu();
 
+		ImGui::End();
+	}
+
+	void SceneHierarchyPanel::RenderContextMenu()
+	{
+		if (Input::IsKeyPressed(KeyCode::Space))
+		{
+			ImGui::OpenPopup("SceneHierarchyContextWindow");
+		}
 
 		// Add right click context to pane
 		if (ImGui::BeginPopupContextWindow("SceneHierarchyContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
 			if (ImGui::MenuItem("Create Empty Entity"))
 			{
-				CreateEntity();
+				CreateEmptyEntity();
+			}
+
+			if (ImGui::BeginMenu("Create Primitive"))
+			{
+				if (ImGui::MenuItem("Cube"))
+				{
+					auto entity = Presets::CreateCube(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Sphere"))
+				{
+					auto entity = Presets::CreateSphere(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Quad"))
+				{
+					auto entity = Presets::CreateQuad(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Create Light"))
+			{
+				if (ImGui::MenuItem("Point Light"))
+				{
+					auto entity = Presets::CreatePointLight(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Directional Light"))
+				{
+					auto entity = Presets::CreateDirectionalLight(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Spot Light"))
+				{
+					auto entity = Presets::CreateSpotLight(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Create Camera"))
+			{
+				if (ImGui::MenuItem("3D Camera"))
+				{
+					auto entity = Presets::Create3DCamera(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Camera From View"))
+				{
+					Quaternion orientation = m_Context->EditorCamera->GetOrientation();
+					Vector3f position = m_Context->EditorCamera->GetPosition();
+					auto entity = Presets::Create3DCamera(m_Context->ActiveScene, position, orientation);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+
+				ImGui::EndMenu();
 			}
 
 			ImGui::EndPopup();
 		}
-
-		ImGui::End();
 	}
 
 	void SceneHierarchyPanel::RenderEntityTree()
@@ -218,7 +298,7 @@ namespace Ember {
 		return false;
 	}
 
-	void SceneHierarchyPanel::CreateEntity()
+	void SceneHierarchyPanel::CreateEmptyEntity()
 	{
 		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
 		SetSelectedEntity(entity);
@@ -237,7 +317,7 @@ namespace Ember {
 	void SceneHierarchyPanel::RenameEntity(Entity entity)
 	{
 		m_RenamingEntity = entity;
-		strncpy(m_RenameBuffer, "Empty_Entity", sizeof(m_RenameBuffer));
+		strncpy(m_RenameBuffer, entity.GetName().c_str(), sizeof(m_RenameBuffer));
 		m_SetRenameFocus = true;
 	}
 
@@ -262,6 +342,19 @@ namespace Ember {
 			if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID)
 				m_Context->PendingEntityRemovals.insert(m_Context->SelectedEntity);
 			break;
+		}
+
+		return false;
+	}
+
+	bool SceneHierarchyPanel::OnMousePressed(const MousePressedEvent& event)
+	{
+		auto mb = event.GetMouseButton();
+		switch (mb)
+		{
+			case MouseButton::Left:
+				m_SetRenameFocus = false;
+				break;
 		}
 
 		return false;

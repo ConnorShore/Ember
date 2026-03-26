@@ -119,6 +119,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Vector3f ToEulerAngles(const Quaternion& quat)
+		{
+			return glm::eulerAngles(quat);
+		}
+
 		static inline Matrix4f GetRotationMatrix(const Vector3f eulerAngles)
 		{
 			return glm::toMat4(Quaternion(eulerAngles));
