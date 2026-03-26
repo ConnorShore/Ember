@@ -66,6 +66,11 @@ namespace Ember {
 			glUseProgram(m_Id);
 		}
 
+		void Shader::SetBool(const std::string& name, bool value) const
+		{
+			glUniform1i(GetUniformLocation(name), value);
+		}
+
 		void Shader::SetInt(const std::string& name, int value) const
 		{
 			glUniform1i(GetUniformLocation(name), value);

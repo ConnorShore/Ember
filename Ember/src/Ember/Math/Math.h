@@ -119,6 +119,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Quaternion ToQuaternion(const Matrix4f& matrix)
+		{
+			return glm::quat(matrix);
+		}
+
 		static inline Vector3f ToEulerAngles(const Quaternion& quat)
 		{
 			return glm::eulerAngles(quat);

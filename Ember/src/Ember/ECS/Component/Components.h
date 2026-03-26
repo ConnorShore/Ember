@@ -275,4 +275,14 @@ namespace Ember {
 		OutlineComponent(const OutlineComponent&) = default;
 	};
 
+	struct BillboardComponent
+	{
+		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
+		Vector4f Tint = Vector4f(1.0f);
+		bool IsSpherical = true;
+
+		BillboardComponent() = default;
+		BillboardComponent(const BillboardComponent&) = default;
+	};
+
 }

@@ -167,6 +167,8 @@ namespace Ember {
 		if (renderInfiniteGrid)
 			RenderInfiniteGrid();
 
+		RenderBillboards(registry);
+
 		HandlePostProcessing(registry);
 
 		// Overlays
@@ -555,6 +557,60 @@ namespace Ember {
 		RenderAction::UseBlending(false);
 		RenderAction::UseDepthMask(true);
 		m_HdrSceneBuffer->Unbind();
+	}
+
+	void RenderSystem::RenderBillboards(Registry& registry)
+	{
+		RenderAction::UseBlending(true);
+
+		m_HdrSceneBuffer->Bind();
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto billboardShader = assetManager.GetAsset<Shader>(Constants::Assets::BillboardShad);
+
+		billboardShader->Bind();
+
+		View view = registry.Query<BillboardComponent, TransformComponent>();
+		for (EntityID entity : view)
+		{
+			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
+			auto texture = assetManager.GetAsset<Texture>(billboard.TextureHandle);
+
+			// TODO: Eventually may be able to move all this math to the GPU in the shader
+
+			Matrix4f cameraRotation = m_RenderSceneState.CameraTransform;
+			cameraRotation[3] = Vector4f(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation from camera transform to only get rotation for the billboard shader
+			
+			Matrix4f billboardTransform;
+			if (billboard.IsSpherical)
+			{
+				// Always faces the camera, but keeps its own position
+				billboardTransform = Math::Translate(transform.Position) * cameraRotation * Math::Scale(Vector3f(0.5f));
+			}
+			else 
+			{
+				// Only want the camera's rotation on the Y axis for cylindrical billboards
+				auto quat = Math::ToQuaternion(cameraRotation);
+				auto euler = Math::ToEulerAngles(quat);
+				float yaw = euler.y;
+				billboardTransform = Math::Translate(transform.Position) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(Vector3f(0.5f));
+			}
+
+			Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+			billboardShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
+			billboardShader->SetMatrix4(Constants::Uniforms::Transform, billboardTransform);
+
+			billboardShader->SetFloat4(Constants::Uniforms::Color, billboard.Tint);
+			billboardShader->SetInt(Constants::Uniforms::EntityID, entity);
+
+			billboardShader->SetInt(Constants::Uniforms::Image, 0);
+			RenderAction::SetTextureUnit(0, texture->GetID());
+
+			Renderer3D::Submit(PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray());
+		}
+
+		m_HdrSceneBuffer->Unbind();
+
+		RenderAction::UseBlending(false);
 	}
 
 	void RenderSystem::Render2DEntities(Registry& registry)

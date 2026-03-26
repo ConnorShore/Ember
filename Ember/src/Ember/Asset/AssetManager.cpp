@@ -41,6 +41,7 @@ namespace Ember {
 		ShaderMacros infiniteGridMacros;
 		infiniteGridMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
 		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
+		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
