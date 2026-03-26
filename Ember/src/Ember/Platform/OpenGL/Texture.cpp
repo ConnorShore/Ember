@@ -25,8 +25,8 @@ namespace Ember {
 
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -55,8 +55,8 @@ namespace Ember {
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 

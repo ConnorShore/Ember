@@ -5,6 +5,8 @@
 #include "Ember/Render/Renderer3D.h"
 
 #include <filesystem>
+#include <stb_image.h>
+#include <stb_image_write.h>
 
 namespace Ember {
 
@@ -14,13 +16,21 @@ namespace Ember {
 		const std::vector<UUID>& meshUUIDs /*= {}*/, const std::vector<UUID>& materialUUIDs /*= {}*/)
 	{
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(filePath,
+
+		unsigned int importFlags =
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_GenNormals |
-			aiProcess_CalcTangentSpace
-		);
+			aiProcess_CalcTangentSpace;
+
+		std::string extension = std::filesystem::path(filePath).extension().string();
+		if (extension != ".glb" && extension != ".gltf")
+		{
+			importFlags |= aiProcess_FlipUVs;
+		}
+
+		const aiScene* scene = importer.ReadFile(filePath, importFlags);
 
 		std::vector<SharedPtr<MaterialBase>> materials;
 		if (scene->HasMaterials())
@@ -36,7 +46,7 @@ namespace Ember {
 				{
 					// We are importing for the very first time. Extract from Assimp.
 					aiMaterial* material = scene->mMaterials[i];
-					materials.push_back(ProcessMaterial(name, filePath, material, assetManager));
+					materials.push_back(ProcessMaterial(name, filePath, scene, material, assetManager));
 				}
 			}
 		}
@@ -173,7 +183,7 @@ namespace Ember {
 		return ret;
 	}
 
-	SharedPtr<MaterialInstance> ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiMaterial* aiMat, AssetManager& assetManager)
+	SharedPtr<MaterialInstance> ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, AssetManager& assetManager)
 	{
 		std::string rawMatName = aiMat->GetName().C_Str();
 		std::string matName = modelName + "_" + rawMatName;
@@ -185,7 +195,7 @@ namespace Ember {
 
 		// Populate uniform overrides
 		ExtractPBRUniforms(aiMat, matInstance, baseMatName);
-		ExtractTextures(matName, modelFilePath, aiMat, matInstance, assetManager);
+		ExtractTextures(matName, modelFilePath, scene, aiMat, matInstance, assetManager);
 
 		assetManager.Register(matInstance);
 
@@ -195,22 +205,11 @@ namespace Ember {
 	std::string ModelImporter::DetermineBaseMaterial(const aiMaterial* aiMat)
 	{
 		std::string rawMatName = aiMat->GetName().C_Str();
+
+		// Default to standard PBR geometry
 		std::string baseMatName = Constants::Assets::StandardGeometryMat;
 
-		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
-		if (AI_SUCCESS == aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor))
-		{
-			if (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f)
-				return Constants::Assets::StandardUnlitMat;
-		}
-
-		float opacity = 1.0f;
-		if (AI_SUCCESS == aiGetMaterialFloat(aiMat, AI_MATKEY_OPACITY, &opacity))
-		{
-			if (opacity < 1.0f)
-				return Constants::Assets::StandardUnlitMat;
-		}
-
+		// Only use Unlit if the model explicitly requests no shading
 		aiShadingMode shadingMode;
 		if (AI_SUCCESS == aiMat->Get(AI_MATKEY_SHADING_MODEL, shadingMode))
 		{
@@ -218,6 +217,7 @@ namespace Ember {
 				return Constants::Assets::StandardUnlitMat;
 		}
 
+		// Fallback name-based checks
 		if (rawMatName.find("_Unlit") != std::string::npos || rawMatName.find("_Forward") != std::string::npos)
 			return Constants::Assets::StandardUnlitMat;
 		else if (rawMatName.find("_Opaque") != std::string::npos || rawMatName.find("_Deferred") != std::string::npos)
@@ -229,7 +229,10 @@ namespace Ember {
 	void ModelImporter::ExtractPBRUniforms(const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, const std::string& baseMatName)
 	{
 		aiColor4D diffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
-		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+		if (AI_SUCCESS != aiGetMaterialColor(aiMat, AI_MATKEY_BASE_COLOR, &diffuseColor))
+		{
+			aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+		}
 		Ember::Vector3f finalColor(diffuseColor.r, diffuseColor.g, diffuseColor.b);
 
 		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -278,29 +281,96 @@ namespace Ember {
 		matInstance->SetUniform(Constants::Uniforms::AO, 1.0f);
 	}
 
-	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
+	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, SharedPtr<MaterialInstance>& matInstance, AssetManager& assetManager)
 	{
-		// Check diffuse/albedo
-		if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		// =========================================================================
+		// 1. ALBEDO / BASE COLOR
+		// =========================================================================
+		aiTextureType albedoType = aiTextureType_NONE;
+		if (aiMat->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
+			albedoType = aiTextureType_BASE_COLOR; // Modern .glb PBR
+		else if (aiMat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+			albedoType = aiTextureType_DIFFUSE; // Legacy .obj
+
+		if (albedoType != aiTextureType_NONE)
 		{
 			aiString texPath;
-			aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
-
-			std::filesystem::path modelPath(modelFilePath);
-			std::filesystem::path directory = modelPath.parent_path();
-			std::filesystem::path fullTexPath = directory / texPath.C_Str();
-			std::string finalPath = fullTexPath.generic_string();
-
+			aiMat->GetTexture(albedoType, 0, &texPath);
 			std::string texName = matName + "_AlbedoMap";
-			auto albedoMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, albedoMap);
+
+			const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(texPath.C_Str());
+
+			if (embeddedTexture)
+			{
+				// We want to save the raw PNG exactly as it is in the GLB to the hard drive. 
+				// Our Texture Importer will flip it naturally when it loads the new file.
+				stbi_set_flip_vertically_on_load(false);
+
+				int width, height, channels;
+				unsigned char* image_data = nullptr;
+
+				// Check if the embedded texture is compressed (PNG/JPG) or raw pixels
+				if (embeddedTexture->mHeight == 0)
+				{
+					image_data = stbi_load_from_memory(
+						reinterpret_cast<unsigned char*>(embeddedTexture->pcData),
+						embeddedTexture->mWidth,
+						&width, &height, &channels, 4);
+				}
+				else
+				{
+					width = embeddedTexture->mWidth;
+					height = embeddedTexture->mHeight;
+					image_data = reinterpret_cast<unsigned char*>(embeddedTexture->pcData);
+				}
+
+				if (image_data)
+				{
+					// Generate a file path right next to the model file
+					std::filesystem::path modelPath(modelFilePath);
+					std::filesystem::path directory = modelPath.parent_path();
+					std::filesystem::path outTexPath = directory / (texName + ".png");
+
+					// Write the embedded texture to the hard drive if it hasn't been extracted yet
+					if (!std::filesystem::exists(outTexPath))
+					{
+						EB_CORE_TRACE("Extracting embedded Albedo texture to: {}", outTexPath.string());
+						stbi_write_png(outTexPath.string().c_str(), width, height, 4, image_data, width * 4);
+					}
+
+					// Now load it through the Asset Manager like a normal file! (This fixes serialization)
+					auto albedoMap = assetManager.Load<Texture>(texName, outTexPath.string());
+					matInstance->SetUniform(Constants::Uniforms::AlbedoMap, albedoMap);
+
+					if (embeddedTexture->mHeight == 0)
+						stbi_image_free(image_data);
+				}
+				else
+				{
+					EB_CORE_ERROR("Failed to decode embedded Albedo texture!");
+					matInstance->SetUniform(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
+				}
+			}
+			else
+			{
+				// External texture on disk (e.g. from an .obj)
+				std::filesystem::path modelPath(modelFilePath);
+				std::filesystem::path directory = modelPath.parent_path();
+				std::filesystem::path fullTexPath = directory / texPath.C_Str();
+
+				auto albedoMap = assetManager.Load<Texture>(texName, fullTexPath.generic_string());
+				matInstance->SetUniform(Constants::Uniforms::AlbedoMap, albedoMap);
+			}
 		}
 		else
 		{
+			// No texture found, use engine fallback
 			matInstance->SetUniform(Constants::Uniforms::AlbedoMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex));
 		}
 
-		// Check normals (can be under either NORMALS or HEIGHT type)
+		// =========================================================================
+		// 2. NORMAL MAPS
+		// =========================================================================
 		aiTextureType normalType = aiTextureType_NONE;
 		if (aiMat->GetTextureCount(aiTextureType_NORMALS) > 0)
 			normalType = aiTextureType_NORMALS;
@@ -311,15 +381,64 @@ namespace Ember {
 		{
 			aiString texPath;
 			aiMat->GetTexture(normalType, 0, &texPath);
-
-			std::filesystem::path modelPath(modelFilePath);
-			std::filesystem::path directory = modelPath.parent_path();
-			std::filesystem::path fullTexPath = directory / texPath.C_Str();
-			std::string finalPath = fullTexPath.generic_string();
-
 			std::string texName = matName + "_NormalMap";
-			auto normalMap = assetManager.Load<Texture>(texName, finalPath);
-			matInstance->SetUniform(Constants::Uniforms::NormalMap, normalMap);
+
+			const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(texPath.C_Str());
+
+			if (embeddedTexture)
+			{
+				stbi_set_flip_vertically_on_load(false);
+
+				int width, height, channels;
+				unsigned char* image_data = nullptr;
+
+				if (embeddedTexture->mHeight == 0)
+				{
+					image_data = stbi_load_from_memory(
+						reinterpret_cast<unsigned char*>(embeddedTexture->pcData),
+						embeddedTexture->mWidth,
+						&width, &height, &channels, 4);
+				}
+				else
+				{
+					width = embeddedTexture->mWidth;
+					height = embeddedTexture->mHeight;
+					image_data = reinterpret_cast<unsigned char*>(embeddedTexture->pcData);
+				}
+
+				if (image_data)
+				{
+					std::filesystem::path modelPath(modelFilePath);
+					std::filesystem::path directory = modelPath.parent_path();
+					std::filesystem::path outTexPath = directory / (texName + ".png");
+
+					if (!std::filesystem::exists(outTexPath))
+					{
+						EB_CORE_TRACE("Extracting embedded Normal texture to: {}", outTexPath.string());
+						stbi_write_png(outTexPath.string().c_str(), width, height, 4, image_data, width * 4);
+					}
+
+					auto normalMap = assetManager.Load<Texture>(texName, outTexPath.string());
+					matInstance->SetUniform(Constants::Uniforms::NormalMap, normalMap);
+
+					if (embeddedTexture->mHeight == 0)
+						stbi_image_free(image_data);
+				}
+				else
+				{
+					EB_CORE_ERROR("Failed to decode embedded Normal texture!");
+					matInstance->SetUniform(Constants::Uniforms::NormalMap, assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex));
+				}
+			}
+			else
+			{
+				std::filesystem::path modelPath(modelFilePath);
+				std::filesystem::path directory = modelPath.parent_path();
+				std::filesystem::path fullTexPath = directory / texPath.C_Str();
+
+				auto normalMap = assetManager.Load<Texture>(texName, fullTexPath.generic_string());
+				matInstance->SetUniform(Constants::Uniforms::NormalMap, normalMap);
+			}
 		}
 		else
 		{

@@ -18,6 +18,9 @@ namespace Ember {
 		uint32_t errorTextureData = 0xff00ffff;
 		auto errorTex = Create<Texture>(Constants::Assets::DefaultErrorTexUUID, Constants::Assets::DefaultErrorTex, 1, 1, &errorTextureData);
 
+		uint32_t blackTextureData = 0x00000000;
+		auto blackTex = Create<Texture>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
+
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
 		ShaderMacros lightMacros;

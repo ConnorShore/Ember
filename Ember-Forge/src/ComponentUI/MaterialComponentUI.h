@@ -134,10 +134,38 @@ namespace Ember {
 					}
 					case ShaderPropertyType::Texture:
 					{
-						ImGui::Button("Drop texture here");
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn(); 
+
+						// Prop name
+						ImGui::AlignTextToFramePadding();
+						ImGui::Text("%s", prop.DisplayName.c_str());
+
+						ImGui::TableNextColumn();
+
+						// Check if there is a current texture
+						bool hasTexture = material->ContainsUniform(prop.UniformName);
+						SharedPtr<Texture> currentTexture = nullptr;
+						if (hasTexture)
+						{
+							currentTexture = std::get<SharedPtr<Texture>>(material->GetUniforms().at(prop.UniformName));
+						}
+
+						// Big square are for texture preview
+						auto emptyImage = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Empty.png");
+
+						// If texture doesn't exist or is default, show the empty texture
+						bool hasValidTexture = currentTexture 
+							&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
+							&& currentTexture->GetName() != Constants::Assets::DefaultNormalTex
+							&& currentTexture->GetName() != Constants::Assets::DefaultErrorTex;
+						auto id = (void*)(intptr_t)(hasValidTexture ? currentTexture->GetID() : emptyImage->GetID());
+							
+						ImGui::Image(id, ImVec2(48, 48), ImVec2(0, 1), ImVec2(1, 0));
 						if (ImGui::BeginDragDropTarget())
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_FILE"))
+							std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 							{
 								EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
 								auto filePath = (const char*)payload->Data;
@@ -146,6 +174,30 @@ namespace Ember {
 							}
 							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::SameLine();
+
+						ImGui::BeginGroup();
+
+						std::string textureName = hasValidTexture 
+							? std::filesystem::path(currentTexture->GetFilePath()).filename().string() 
+							: "No Texture Selected";
+
+						ImGui::AlignTextToFramePadding();
+						ImGui::TextWrapped(textureName.c_str());
+						
+						if (hasValidTexture)
+						{
+							ImGui::PushID(id);
+							if (ImGui::Button("Clear"))
+							{
+								auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
+								material->SetUniform(prop.UniformName, defaultTex);
+							}
+							ImGui::PopID();
+						}
+
+						ImGui::EndGroup();
 					}
 					}
 				}
@@ -176,6 +228,30 @@ namespace Ember {
 					value = Math::Normalize<T>(value, prop.Min, prop.Max);
 
 				material->SetUniform(prop.UniformName, value);
+			}
+		}
+
+		// Helper to determine default texture to apply
+		SharedPtr<Texture> GetDefaultTextureForUniform(const std::string& uniformName)
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+
+			std::string nameLower = uniformName;
+			std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
+
+			if (nameLower.find("normal") != std::string::npos || nameLower.find("bump") != std::string::npos)
+			{
+				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
+			}
+			else if (nameLower.find("emiss") != std::string::npos || nameLower.find("ao") != std::string::npos)
+			{
+				// Emission and AO use black texture
+				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultBlackTex);
+			}
+			else
+			{
+				// Albedo, Metallic, Roughness, and general masks default to White
+				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
 			}
 		}
 	};

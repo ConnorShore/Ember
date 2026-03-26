@@ -2,6 +2,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
+#include "Utils/DragDropTypes.h"
 
 #include <random>
 
@@ -177,6 +178,18 @@ namespace Ember {
 
 			unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
 			ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+			// Drag drop zone for models
+			if (ImGui::BeginDragDropTarget())
+			{
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					CreateEntityFromModel(filePath);
+				}
+				ImGui::EndDragDropTarget();
+			}
 
 			// Draw Transform Gizmos for selected entity
 			RenderTransformGizmos();
@@ -532,6 +545,15 @@ namespace Ember {
 			m_Context.ActiveScene->RemoveEntity(entity);
 
 		m_Context.PendingEntityRemovals.clear();
+	}
+
+	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		SharedPtr<Model> model = assetManager.Load<Model>(modelFilePath);
+
+		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(model, model->GetName());
+		m_Context.SelectedEntity = modelEntity;
 	}
 
 	void EditorLayer::NewScene()

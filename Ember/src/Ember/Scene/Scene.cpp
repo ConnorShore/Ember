@@ -300,7 +300,7 @@ namespace Ember {
 				// Attach material
 				UUID materialId = Application::Instance().GetAssetManager().Register(model->GetAllMaterials()[node.Meshes[i].MaterialIndex]);
 				MaterialComponent matComp{ materialId };
-				currentEntity.AttachComponent<MaterialComponent>(matComp);
+				meshPartEntity.AttachComponent<MaterialComponent>(matComp);
 			}
 		}
 
