@@ -134,17 +134,39 @@ namespace Ember {
 					}
 					case ShaderPropertyType::Texture:
 					{
-						ImGui::Button("Drop texture here");
-						if (ImGui::BeginDragDropTarget())
+						// TODO: Clean this up to look more like unities (need a clear button as well)
+						if (ImGui::BeginTable("TextureDropTable", 2, ImGuiTableFlags_SizingFixedSame))
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_FILE"))
+							ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+							ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+							ImGui::TableNextRow();
+							ImGui::TableNextColumn();
+
+							// Big square are for texture preview
+							auto emptyImage = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Empty.png");
+							auto id = (void*)(intptr_t)(material->ContainsUniform(prop.UniformName)
+								? std::get<SharedPtr<Texture>>(material->GetUniforms().at(prop.UniformName))->GetID()
+								: emptyImage->GetID());
+							ImGui::Image(id, ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+							if (ImGui::BeginDragDropTarget())
 							{
-								EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
-								auto filePath = (const char*)payload->Data;
-								auto texture = Application::Instance().GetAssetManager().Load<Texture>(filePath);
-								material->SetUniform(prop.UniformName, texture);
+								std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
+								if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+								{
+									EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
+									auto filePath = (const char*)payload->Data;
+									auto texture = Application::Instance().GetAssetManager().Load<Texture>(filePath);
+									material->SetUniform(prop.UniformName, texture);
+								}
+								ImGui::EndDragDropTarget();
 							}
-							ImGui::EndDragDropTarget();
+
+							//ImGui::PopID();
+							ImGui::TableNextColumn();
+							ImGui::AlignTextToFramePadding();
+							ImGui::Text("Test text for now"); // TODO: Show texture name or "None" if no texture is set
+
+							ImGui::EndTable();
 						}
 					}
 					}

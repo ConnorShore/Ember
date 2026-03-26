@@ -1,4 +1,7 @@
 #include "AssetManagerPanel.h"
+#include "Utils/DragDropTypes.h"
+
+#include <format>
 
 namespace Ember {
 
@@ -96,8 +99,11 @@ namespace Ember {
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 				{
-					auto filePathAbs = std::filesystem::absolute(filePath).string();
-					ImGui::SetDragDropPayload("ASSET_FILE", filePathAbs.c_str(), filePathAbs.size() + 1);
+					auto filePathAbs = std::filesystem::absolute(filePath);
+					auto payloadType = DragDropUtils::ExtensionToDragDropPayloadType(filePathAbs.extension().string());
+					auto payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
+					EB_CORE_INFO("Dragging asset '{}' with payload type '{}'", fileNameStr, payloadStr);
+					ImGui::SetDragDropPayload(payloadStr.c_str(), filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
 					ImGui::Image(m_FileTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					ImGui::EndDragDropSource();
 				}
@@ -130,28 +136,32 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Model"))
 				{
-					std::string file = SelectAndLoadFile("Model Files (*.obj)", "*.obj");
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
+					std::string file = SelectAndLoadFile(std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 						Application::Instance().GetAssetManager().Load<Model>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))
 				{
-					std::string file = SelectAndLoadFile("Image Files (*.png;*.jpg;*.jpeg)", "*.png;*.jpg;*.jpeg");
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
+					std::string file = SelectAndLoadFile(std::format("Texture Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 						Application::Instance().GetAssetManager().Load<Texture>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Shader"))
 				{
-					std::string file = SelectAndLoadFile("Shader Files (*.glsl)", "*.glsl");
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetShader);
+					std::string file = SelectAndLoadFile(std::format("Shader Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 						Application::Instance().GetAssetManager().Load<Shader>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Script"))
 				{
-					std::string file = SelectAndLoadFile("Script Files (*.lua)", "*.lua");
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetScript);
+					std::string file = SelectAndLoadFile(std::format("Script Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 						Application::Instance().GetAssetManager().Load<Texture>(file);
 					ImGui::CloseCurrentPopup();

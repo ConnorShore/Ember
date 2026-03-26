@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "Utils/DragDropTypes.h"
 
 #include <filesystem>
 #include <fstream>
@@ -47,7 +48,8 @@ namespace Ember {
 
 			if (ImGui::BeginDragDropTarget())
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_FILE"))
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetScript);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 				{
 					EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
 					auto filePath = (const char*)payload->Data;

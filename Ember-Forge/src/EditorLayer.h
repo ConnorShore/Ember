@@ -37,6 +37,8 @@ namespace Ember {
 		void RemoveEntity(Entity entity);
 		void RemovePendingEntities();
 
+		void CreateEntityFromModel(const std::string& modelFilePath);
+
 		void NewScene();
 		void OpenScene();
 		void SaveScene(bool saveAs = false);
