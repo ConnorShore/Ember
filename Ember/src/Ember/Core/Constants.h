@@ -79,6 +79,7 @@ namespace Ember::Constants {
 		inline const char* EmissiveMap = "u_EmissiveMap";
 
 		inline const char* Transform = "u_Transform";
+		inline const char* Projection = "u_Projection";
 		inline const char* ViewProj = "u_ViewProjection";
 		inline const char* NormalMatrix = "u_NormalMatrix";
 		inline const char* InverseView = "u_InverseView";
@@ -110,7 +111,6 @@ namespace Ember::Constants {
 		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
 
 		inline const char* EntityID = "u_EntityID";
-		inline const char* IsSpherical = "u_IsSpherical";
 	}
 
 }

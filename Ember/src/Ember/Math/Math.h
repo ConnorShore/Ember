@@ -139,6 +139,11 @@ namespace Ember {
 			return glm::lookAt(eye, center, up);
 		}
 
+		static inline float Length(const Vector3f& vector)
+		{
+			return glm::length(vector);
+		}
+
 		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
 		{
 			glm::vec3 scale;

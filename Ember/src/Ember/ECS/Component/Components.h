@@ -279,7 +279,9 @@ namespace Ember {
 	{
 		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
 		Vector4f Tint = Vector4f(1.0f);
-		bool IsSpherical = true;
+		bool Spherical = true;
+		bool StaticSize = true;
+		float Size = 1.0f;
 
 		BillboardComponent() = default;
 		BillboardComponent(const BillboardComponent&) = default;

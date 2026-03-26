@@ -54,7 +54,9 @@ namespace Ember {
 		newEntity.AttachComponent<PointLightComponent>(plc);
 
 		BillboardComponent bc;
-		bc.IsSpherical = true;
+		bc.Spherical = true;
+		bc.StaticSize = true;
+		bc.Size = 0.5f;
 		bc.Tint = Vector4f(1.0f, 1.0f, 0.0f, 1.0f);
 		newEntity.AttachComponent<BillboardComponent>(bc);
 
@@ -70,7 +72,8 @@ namespace Ember {
 		newEntity.AttachComponent<DirectionalLightComponent>(dlc);
 
 		BillboardComponent bc;
-		bc.IsSpherical = false;
+		bc.Spherical = false;
+		bc.StaticSize = false;
 		bc.Tint = Vector4f(1.0f, 0.0f, 1.0f, 1.0f);
 		newEntity.AttachComponent<BillboardComponent>(bc);
 

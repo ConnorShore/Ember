@@ -35,6 +35,9 @@ uniform int u_EntityID;
 void main()
 {
     vec4 texColor = texture(u_Image, TexCoord);
+    if (texColor.a < 0.1)
+        discard;
+
     OutColor = texColor * u_Color;
     BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
     EntityID = u_EntityID;

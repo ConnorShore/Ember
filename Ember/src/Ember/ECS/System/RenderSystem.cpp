@@ -562,6 +562,7 @@ namespace Ember {
 	void RenderSystem::RenderBillboards(Registry& registry)
 	{
 		RenderAction::UseBlending(true);
+		RenderAction::UseDepthTest(false);
 
 		m_HdrSceneBuffer->Bind();
 		auto& assetManager = Application::Instance().GetAssetManager();
@@ -575,25 +576,37 @@ namespace Ember {
 			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
 			auto texture = assetManager.GetAsset<Texture>(billboard.TextureHandle);
 
-			// TODO: Eventually may be able to move all this math to the GPU in the shader
-
+			// Find the billboards transform //
 			Matrix4f cameraRotation = m_RenderSceneState.CameraTransform;
 			cameraRotation[3] = Vector4f(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation from camera transform to only get rotation for the billboard shader
+
+			// Scale billboard depending on if its static or not
+			float distanceScale = billboard.Size;
+			if (billboard.StaticSize)
+			{
+				float distance = Math::Length(transform.Position - Vector3f(m_RenderSceneState.CameraTransform[3]));
+				distanceScale = distance / 10.0f;
+			}
+			Vector3f finalScale = transform.Scale * distanceScale;
 			
 			Matrix4f billboardTransform;
-			if (billboard.IsSpherical)
+			if (billboard.Spherical)
 			{
 				// Always faces the camera, but keeps its own position
-				billboardTransform = Math::Translate(transform.Position) * cameraRotation * Math::Scale(Vector3f(0.5f));
+				billboardTransform = Math::Translate(transform.Position) * cameraRotation * Math::Scale(finalScale);
 			}
 			else 
 			{
 				// Only want the camera's rotation on the Y axis for cylindrical billboards
-				auto quat = Math::ToQuaternion(cameraRotation);
-				auto euler = Math::ToEulerAngles(quat);
-				float yaw = euler.y;
-				billboardTransform = Math::Translate(transform.Position) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(Vector3f(0.5f));
+				Vector3f cameraPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
+				Vector3f dirToCamera = cameraPos - transform.Position;
+
+				// Use atan2 to get the exact angle on the XZ plane
+				float yaw = std::atan2(dirToCamera.x, dirToCamera.z);
+
+				billboardTransform = Math::Translate(transform.Position) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(finalScale);
 			}
+			///////////////////////////////////////
 
 			Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 			billboardShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
@@ -610,6 +623,7 @@ namespace Ember {
 
 		m_HdrSceneBuffer->Unbind();
 
+		RenderAction::UseDepthTest(false);
 		RenderAction::UseBlending(false);
 	}
 
