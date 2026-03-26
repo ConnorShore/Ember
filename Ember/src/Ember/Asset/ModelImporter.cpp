@@ -205,22 +205,11 @@ namespace Ember {
 	std::string ModelImporter::DetermineBaseMaterial(const aiMaterial* aiMat)
 	{
 		std::string rawMatName = aiMat->GetName().C_Str();
+
+		// Default to standard PBR geometry
 		std::string baseMatName = Constants::Assets::StandardGeometryMat;
 
-		aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
-		if (AI_SUCCESS == aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor))
-		{
-			if (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f)
-				return Constants::Assets::StandardUnlitMat;
-		}
-
-		float opacity = 1.0f;
-		if (AI_SUCCESS == aiGetMaterialFloat(aiMat, AI_MATKEY_OPACITY, &opacity))
-		{
-			if (opacity < 1.0f)
-				return Constants::Assets::StandardUnlitMat;
-		}
-
+		// Only use Unlit if the model explicitly requests no shading
 		aiShadingMode shadingMode;
 		if (AI_SUCCESS == aiMat->Get(AI_MATKEY_SHADING_MODEL, shadingMode))
 		{
@@ -228,6 +217,7 @@ namespace Ember {
 				return Constants::Assets::StandardUnlitMat;
 		}
 
+		// Fallback name-based checks
 		if (rawMatName.find("_Unlit") != std::string::npos || rawMatName.find("_Forward") != std::string::npos)
 			return Constants::Assets::StandardUnlitMat;
 		else if (rawMatName.find("_Opaque") != std::string::npos || rawMatName.find("_Deferred") != std::string::npos)
