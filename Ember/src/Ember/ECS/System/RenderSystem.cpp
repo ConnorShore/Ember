@@ -142,7 +142,7 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::ExecuteRenderPipeline(Registry& registry)
+	void RenderSystem::ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid)
 	{
 		// Save output framebuffer
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
@@ -163,6 +163,10 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
+		// Render Editor Grid
+		if (renderInfiniteGrid)
+			RenderInfiniteGrid();
+
 		HandlePostProcessing(registry);
 
 		// Overlays
@@ -178,7 +182,7 @@ namespace Ember {
 
 		if (m_RenderSceneState.IsCameraFound)
 		{
-			ExecuteRenderPipeline(scene->GetRegistry());
+			ExecuteRenderPipeline(scene->GetRegistry(), false);
 		}
 	}
 
@@ -195,7 +199,7 @@ namespace Ember {
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
-		ExecuteRenderPipeline(scene->GetRegistry());
+		ExecuteRenderPipeline(scene->GetRegistry(), true);
 	}
 
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
@@ -526,6 +530,31 @@ namespace Ember {
 	void RenderSystem::RenderTransparentEntities(Registry& registry)
 	{
 
+	}
+
+	void RenderSystem::RenderInfiniteGrid()
+	{
+		m_HdrSceneBuffer->Bind();
+
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseDepthMask(false);
+		RenderAction::UseBlending(true);	// For fading away the grid lines as they get further from the camera
+
+		auto gridShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::InfiniteGridShad);
+		gridShader->Bind();
+
+		// The shader needs the inverse matrices to un-project the screen pixels back into 3D world space
+		Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+		gridShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
+		gridShader->SetMatrix4(Constants::Uniforms::InverseView, m_RenderSceneState.CameraTransform); // CameraTransform already is the inverse view
+		gridShader->SetMatrix4(Constants::Uniforms::InverseProjection, Math::Inverse(m_RenderSceneState.ActiveCamera.GetProjectionMatrix()));
+		gridShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+
+		RenderAction::UseBlending(false);
+		RenderAction::UseDepthMask(true);
+		m_HdrSceneBuffer->Unbind();
 	}
 
 	void RenderSystem::Render2DEntities(Registry& registry)

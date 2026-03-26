@@ -49,6 +49,11 @@ namespace Ember {
 			m_RendererApi->UseBlending(use);
 		}
 
+		static inline void UseDepthMask(bool use)
+		{
+			m_RendererApi->UseDepthMask(use);
+		}
+
 		static inline void SetTextureUnit(unsigned int unit, unsigned int texture)
 		{
 			m_RendererApi->SetTextureUnit(unit, texture);

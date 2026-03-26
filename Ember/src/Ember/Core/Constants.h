@@ -50,6 +50,8 @@ namespace Ember::Constants {
 		inline const uint64_t OutlineShadUUID = 17;
 		inline const char* FinalCompositeShad = "FinalComposite";
 		inline const uint64_t FinalCompositeShadUUID = 18;
+		inline const char* InfiniteGridShad = "InfiniteGrid";
+		inline const uint64_t InfiniteGridShadUUID = 19;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -77,6 +79,8 @@ namespace Ember::Constants {
 		inline const char* Transform = "u_Transform";
 		inline const char* ViewProj = "u_ViewProjection";
 		inline const char* NormalMatrix = "u_NormalMatrix";
+		inline const char* InverseView = "u_InverseView";
+		inline const char* InverseProjection = "u_InverseProjection";
 
 		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";

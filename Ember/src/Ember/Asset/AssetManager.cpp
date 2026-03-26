@@ -38,6 +38,9 @@ namespace Ember {
 		outlineMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
 		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
 		auto finalCompositeShader = Load<Shader>(Constants::Assets::FinalCompositeShad, "Ember/assets/shaders/FinalComposite.glsl");
+		ShaderMacros infiniteGridMacros;
+		infiniteGridMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
+		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

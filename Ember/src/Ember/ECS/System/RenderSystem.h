@@ -29,7 +29,7 @@ namespace Ember {
 		EntityID GetEntityIDAtPixel(unsigned int x, unsigned int y);
 
 	private:
-		void ExecuteRenderPipeline(Registry& registry);
+		void ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid);
 		void InitializeRenderState();
 		void SetSceneCamera(Registry& registry);
 		void CreateShadowMaps(Registry& registry);
@@ -40,6 +40,7 @@ namespace Ember {
 		void RenderDeferredLighting(Registry& registry);
 		void RenderForwardEntities(Registry& registry);
 		void RenderTransparentEntities(Registry& registry);
+		void RenderInfiniteGrid();
 		void Render2DEntities(Registry& registry);
 		void HandlePostProcessing(Registry& registry);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);

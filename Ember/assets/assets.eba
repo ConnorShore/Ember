@@ -1,9 +1,5 @@
 Assets:
   - Type: Texture
-    UUID: 3993648002694878630
-    Name: Texture(0)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
-  - Type: Texture
     UUID: 11451176064510677599
     Name: Model(0)_Material_MR_NormalMap
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_NormalMap.png'
@@ -12,6 +8,14 @@ Assets:
     Name: Model(0)_Material_MR_ORMMap
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_ORMMap.png'
   - Type: Texture
+    UUID: 2316527086353751452
+    Name: Model(0)_Material_MR_AlbedoMap
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_AlbedoMap.png'
+  - Type: Texture
+    UUID: 3993648002694878630
+    Name: Texture(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
+  - Type: Texture
     UUID: 6354218658515357886
     Name: Texture(1)
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Directory.png'
@@ -19,10 +23,6 @@ Assets:
     UUID: 3877574165543191126
     Name: Texture(2)
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Empty.png'
-  - Type: Texture
-    UUID: 2316527086353751452
-    Name: Model(0)_Material_MR_AlbedoMap
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_AlbedoMap.png'
   - Type: Texture
     UUID: 17853250338520004470
     Name: Model(0)_Material_MR_EmissiveMap
@@ -56,13 +56,53 @@ Assets:
     Name: Bloom
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Bloom.glsl'
   - Type: Shader
-    UUID: 3417167969365594150
+    UUID: 18237636565950699423
     Name: Outline
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Outline.glsl'
   - Type: Shader
-    UUID: 13456947442311315461
+    UUID: 8157162292179787239
     Name: FinalComposite
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\FinalComposite.glsl'
+  - Type: Shader
+    UUID: 16175762379361498872
+    Name: InfiniteGrid
+    FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\InfiniteGrid.glsl'
+  - Type: Material
+    UUID: 4050733886953475780
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
   - Type: Material
     UUID: 31
     Name: StandardGeometry
@@ -71,30 +111,30 @@ Assets:
     Shader: 10
     Instanced: false
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 0.5
       u_AO:
         Type: float
         Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
         Value: 1
-      u_AlbedoMap:
+      u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
       u_NormalMap:
         Type: Texture
         Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
       u_EmissiveMap:
         Type: Texture
         Value: 4
@@ -121,30 +161,30 @@ Assets:
     Instanced: true
     BaseMaterialUUID: 31
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 0.5
       u_AO:
         Type: float
         Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
         Value: 1
-      u_AlbedoMap:
+      u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
       u_NormalMap:
         Type: Texture
         Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
       u_EmissiveMap:
         Type: Texture
         Value: 4
@@ -157,30 +197,30 @@ Assets:
     Instanced: true
     BaseMaterialUUID: 31
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 0.99
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 0.18
       u_AO:
         Type: float
         Value: 1
-      u_Emission:
-        Type: float
-        Value: 52.6
       u_AlbedoMap:
         Type: Texture
         Value: 2316527086353751452
-      u_NormalMap:
-        Type: Texture
-        Value: 11451176064510677599
+      u_Emission:
+        Type: float
+        Value: 52.6
       u_MetallicRoughnessMap:
         Type: Texture
         Value: 1926120100638591218
+      u_NormalMap:
+        Type: Texture
+        Value: 11451176064510677599
       u_Color:
         Type: Vector3f
         Value: [1,1,1]
@@ -188,38 +228,38 @@ Assets:
         Type: Texture
         Value: 17853250338520004470
   - Type: Material
-    UUID: 8892262596601424199
-    Name: Quad_Material
+    UUID: 14866323030200648598
+    Name: Cube_Material
     FilePath: ''
     RenderQueue: 1
     Shader: 10
     Instanced: true
     BaseMaterialUUID: 31
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 0.5
       u_AO:
         Type: float
         Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
         Value: 1
-      u_AlbedoMap:
+      u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
       u_NormalMap:
         Type: Texture
         Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
       u_EmissiveMap:
         Type: Texture
         Value: 4
@@ -232,30 +272,66 @@ Assets:
     Instanced: true
     BaseMaterialUUID: 31
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 0.5
       u_AO:
         Type: float
         Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
         Value: 1
-      u_AlbedoMap:
+      u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
       u_NormalMap:
         Type: Texture
         Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 8892262596601424199
+    Name: Quad_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
       u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
       u_EmissiveMap:
         Type: Texture
         Value: 4
@@ -268,33 +344,177 @@ Assets:
     Instanced: true
     BaseMaterialUUID: 31
     Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
       u_Metallic:
         Type: float
         Value: 1
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
       u_Roughness:
         Type: float
         Value: 1
       u_AO:
         Type: float
         Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
       u_Emission:
         Type: float
         Value: 0
-      u_AlbedoMap:
+      u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
       u_NormalMap:
         Type: Texture
         Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
       u_Color:
         Type: Vector3f
         Value: [1,1,1]
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 17153640648595496658
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 17761090066299784553
+    Name: Sphere_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 3540349767404919261
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 17518729251075802697
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
       u_EmissiveMap:
         Type: Texture
         Value: 4

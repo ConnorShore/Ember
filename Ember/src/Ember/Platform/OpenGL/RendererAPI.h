@@ -14,6 +14,7 @@ namespace Ember {
 			virtual void UseFaceCulling(bool use) override;
 			virtual void CullFace(Face face) override;
 			virtual void UseDepthTest(bool use) override;
+			virtual void UseDepthMask(bool use) override;
 			virtual void UseBlending(bool use) override;
 
 			virtual void SetTextureUnit(unsigned int unit, unsigned int texture) override;

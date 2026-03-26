@@ -62,6 +62,18 @@ namespace Ember {
 			}
 		}
 
+		void RendererAPI::UseDepthMask(bool use)
+		{
+			if (use)
+			{
+				glDepthMask(GL_TRUE);
+			}
+			else
+			{
+				glDepthMask(GL_FALSE);
+			}
+		}
+
 		void RendererAPI::SetTextureUnit(unsigned int unit, unsigned int texture)
 		{
 			glBindTextureUnit(unit, texture);
