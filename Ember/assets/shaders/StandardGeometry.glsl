@@ -63,9 +63,10 @@ uniform float u_AO;
 
 uniform int u_EntityID;
 
-// @UIProperty(Name="Texture", Type=Texture)
+// @UIProperty(Name="Albedo Texture", Type=Texture)
 layout(binding = 0) uniform sampler2D u_AlbedoMap;
 
+// @UIProperty(Name="Normal Texture", Type=Texture)
 layout(binding = 1) uniform sampler2D u_NormalMap;
 
 void main()
