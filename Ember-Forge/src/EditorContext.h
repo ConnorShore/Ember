@@ -10,5 +10,6 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene;
 		Entity SelectedEntity;
 		std::unordered_set<Entity> PendingEntityRemovals;
+		EditorCamera* EditorCamera;
 	};
 }

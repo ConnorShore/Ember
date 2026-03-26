@@ -18,16 +18,18 @@ namespace Ember {
 		inline Entity GetSelectedEntity() const { return m_Context->SelectedEntity; }
 
 	private:
+		void RenderContextMenu();
 		void RenderEntityTree();
 		void DrawTreeNode(Entity entity);
 
 		bool IsAncestor(Entity ancestor, Entity descendant);
 
-		void CreateEntity();
+		void CreateEmptyEntity();
 		void DuplicateEntity(Entity entity);
 		void RenameEntity(Entity entity);
 
 		bool OnKeyPressed(const KeyPressedEvent& event);
+		bool OnMousePressed(const MousePressedEvent& event);
 
 	private:
 		Entity m_PreviouslySelectedEntity;

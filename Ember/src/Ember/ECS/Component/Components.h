@@ -243,7 +243,7 @@ namespace Ember {
 	struct PointLightComponent
 	{
 		Vector3f Color = Vector3f(1.0f);
-		float Intensity = 50.0f;
+		float Intensity = 25.0f;
 		float Radius = 0.0f;
 
 		PointLightComponent() = default;
