@@ -56,19 +56,19 @@ Assets:
     Name: Bloom
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Bloom.glsl'
   - Type: Shader
-    UUID: 14600463168265479737
+    UUID: 4503993654986609528
     Name: Outline
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Outline.glsl'
   - Type: Shader
-    UUID: 8606830786762523400
+    UUID: 17866871383357351429
     Name: FinalComposite
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\FinalComposite.glsl'
   - Type: Shader
-    UUID: 14588525815194728609
+    UUID: 11072272278121742384
     Name: InfiniteGrid
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\InfiniteGrid.glsl'
   - Type: Shader
-    UUID: 16055152957602534048
+    UUID: 9863505701883316582
     Name: Billboard
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Billboard.glsl'
   - Type: Shader
@@ -117,6 +117,44 @@ Assets:
       u_EmissiveMap:
         Type: Texture
         Value: 4
+  - Type: Material
+    UUID: 31
+    Name: StandardGeometry
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: false
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_EmissionColor:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_EmissiveMap:
+        Type: Texture
+        Value: 1
   - Type: Material
     UUID: 8791861205164705888
     Name: Model(0)_Material_MR
@@ -173,44 +211,6 @@ Assets:
       u_Emission:
         Type: float
         Value: 2
-  - Type: Material
-    UUID: 31
-    Name: StandardGeometry
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 10
-    Instanced: false
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Roughness:
-        Type: float
-        Value: 0.5
-      u_EmissionColor:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_AO:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
-      u_EmissiveMap:
-        Type: Texture
-        Value: 1
   - Type: Material
     UUID: 30
     Name: DefaultMaterial
