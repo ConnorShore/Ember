@@ -54,10 +54,7 @@ namespace Ember {
 		newEntity.AttachComponent<PointLightComponent>(plc);
 
 		BillboardComponent bc;
-		bc.Spherical = true;
-		bc.StaticSize = true;
-		bc.Size = 0.5f;
-		bc.Tint = Vector4f(1.0f, 1.0f, 0.0f, 1.0f);
+		bc.TextureHandle = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/PointLight.png")->GetUUID();
 		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
@@ -72,9 +69,8 @@ namespace Ember {
 		newEntity.AttachComponent<DirectionalLightComponent>(dlc);
 
 		BillboardComponent bc;
-		bc.Spherical = false;
-		bc.StaticSize = false;
-		bc.Tint = Vector4f(1.0f, 0.0f, 1.0f, 1.0f);
+		bc.TextureHandle = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/DirectionalLight.png")->GetUUID();
+		bc.Size = 1.5f;
 		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
@@ -88,6 +84,10 @@ namespace Ember {
 		SpotLightComponent slc;
 		newEntity.AttachComponent<SpotLightComponent>(slc);
 
+		BillboardComponent bc;
+		bc.TextureHandle = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/SpotLight.png")->GetUUID();
+		newEntity.AttachComponent<BillboardComponent>(bc);
+
 		return newEntity;
 	}
 
@@ -100,6 +100,10 @@ namespace Ember {
 
 		CameraComponent cc;
 		newEntity.AttachComponent<CameraComponent>(cc);
+
+		BillboardComponent bc;
+		bc.TextureHandle = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Camera.png")->GetUUID();
+		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
 	}
