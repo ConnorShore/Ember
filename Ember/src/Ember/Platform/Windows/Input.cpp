@@ -20,7 +20,7 @@ namespace Ember {
 		{
 			if (key < 0 || KeyCode::Last < key)
 			{
-				EB_CORE_ASSERT(false, "Undefined key code: {0}", key);
+				EB_CORE_ASSERT(false, "Undefined key code: {}", key);
 				return KeyCode::Unknown;
 			}
 

@@ -27,18 +27,17 @@ namespace Ember {
 
 		if (open)
 		{
-			auto bloomPass = Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>();
+			auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
 			ImGui::Checkbox("Enable", &bloomPass->Enabled);
 			ImGui::BeginDisabled(!bloomPass->Enabled);
 
 			// TODO: Get this hooked up
 
 			float test;
-			ImGui::DragFloat("Threshold", &test, 0.01f, 0.0f, 10.0f, "%.2f");
-			//ImGui::DragFloat("Threshold", &bloomPass->Threshold, 0.01f, 0.0f, 10.0f, "%.2f");
-			//ImGui::DragFloat("Soft Knee", &bloomPass->Knee, 0.01f, 0.0f, 1.0f, "%.2f");
-			//ImGui::DragFloat("Intensity", &bloomPass->Intensity, 0.01f, 0.0f, 5.0f, "%.2f");
-			//ImGui::DragFloat("Blur Radius", &bloomPass->BlurRadius, 0.01f, 0.1f, 5.0f, "%.2f");
+			ImGui::DragFloat("Threshold", &bloomPass->Threshold, 0.01f, 0.0f, 10.0f, "%.2f");
+			ImGui::DragFloat("Soft Knee", &bloomPass->Knee, 0.01f, 0.0f, 1.0f, "%.2f");
+			ImGui::DragFloat("Intensity", &bloomPass->Intensity, 0.01f, 0.0f, 5.0f, "%.2f");
+			ImGui::DragFloat("Blur Radius", &bloomPass->BlurRadius, 0.01f, 0.1f, 5.0f, "%.2f");
 			
 			ImGui::EndDisabled();
 			
