@@ -32,6 +32,7 @@ namespace Ember {
 			ImGui::BeginDisabled(!bloomPass->Enabled);
 
 			// TODO: Get this hooked up
+
 			float test;
 			ImGui::DragFloat("Threshold", &test, 0.01f, 0.0f, 10.0f, "%.2f");
 			//ImGui::DragFloat("Threshold", &bloomPass->Threshold, 0.01f, 0.0f, 10.0f, "%.2f");
