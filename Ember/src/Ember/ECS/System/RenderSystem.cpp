@@ -142,7 +142,7 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::ExecuteRenderPipeline(Registry& registry)
+	void RenderSystem::ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid)
 	{
 		// Save output framebuffer
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
@@ -163,6 +163,12 @@ namespace Ember {
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
+		// Render Editor Grid
+		if (renderInfiniteGrid)
+			RenderInfiniteGrid();
+
+		RenderBillboards(registry);
+
 		HandlePostProcessing(registry);
 
 		// Overlays
@@ -178,7 +184,7 @@ namespace Ember {
 
 		if (m_RenderSceneState.IsCameraFound)
 		{
-			ExecuteRenderPipeline(scene->GetRegistry());
+			ExecuteRenderPipeline(scene->GetRegistry(), false);
 		}
 	}
 
@@ -195,7 +201,7 @@ namespace Ember {
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
-		ExecuteRenderPipeline(scene->GetRegistry());
+		ExecuteRenderPipeline(scene->GetRegistry(), true);
 	}
 
 	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
@@ -526,6 +532,99 @@ namespace Ember {
 	void RenderSystem::RenderTransparentEntities(Registry& registry)
 	{
 
+	}
+
+	void RenderSystem::RenderInfiniteGrid()
+	{
+		m_HdrSceneBuffer->Bind();
+
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseDepthMask(false);
+		RenderAction::UseBlending(true);	// For fading away the grid lines as they get further from the camera
+
+		auto gridShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::InfiniteGridShad);
+		gridShader->Bind();
+
+		// The shader needs the inverse matrices to un-project the screen pixels back into 3D world space
+		Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+		gridShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
+		gridShader->SetMatrix4(Constants::Uniforms::InverseView, m_RenderSceneState.CameraTransform); // CameraTransform already is the inverse view
+		gridShader->SetMatrix4(Constants::Uniforms::InverseProjection, Math::Inverse(m_RenderSceneState.ActiveCamera.GetProjectionMatrix()));
+		gridShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+
+		RenderAction::UseBlending(false);
+		RenderAction::UseDepthMask(true);
+		m_HdrSceneBuffer->Unbind();
+	}
+
+	void RenderSystem::RenderBillboards(Registry& registry)
+	{
+		RenderAction::UseBlending(true);
+		RenderAction::UseDepthTest(false);
+
+		m_HdrSceneBuffer->Bind();
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto billboardShader = assetManager.GetAsset<Shader>(Constants::Assets::BillboardShad);
+
+		billboardShader->Bind();
+
+		View view = registry.Query<BillboardComponent, TransformComponent>();
+		for (EntityID entity : view)
+		{
+			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
+			auto texture = assetManager.GetAsset<Texture>(billboard.TextureHandle);
+
+			// Find the billboards transform //
+			Matrix4f cameraRotation = m_RenderSceneState.CameraTransform;
+			cameraRotation[3] = Vector4f(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation from camera transform to only get rotation for the billboard shader
+
+			// Scale billboard depending on if its static or not
+			float distanceScale = billboard.Size;
+			if (billboard.StaticSize)
+			{
+				float distance = Math::Length(transform.Position - Vector3f(m_RenderSceneState.CameraTransform[3]));
+				distanceScale = distance / 10.0f;
+			}
+			Vector3f finalScale = transform.Scale * distanceScale;
+			
+			Matrix4f billboardTransform;
+			if (billboard.Spherical)
+			{
+				// Always faces the camera, but keeps its own position
+				billboardTransform = Math::Translate(transform.Position) * cameraRotation * Math::Scale(finalScale);
+			}
+			else 
+			{
+				// Only want the camera's rotation on the Y axis for cylindrical billboards
+				Vector3f cameraPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
+				Vector3f dirToCamera = cameraPos - transform.Position;
+
+				// Use atan2 to get the exact angle on the XZ plane
+				float yaw = std::atan2(dirToCamera.x, dirToCamera.z);
+
+				billboardTransform = Math::Translate(transform.Position) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(finalScale);
+			}
+			///////////////////////////////////////
+
+			Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+			billboardShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
+			billboardShader->SetMatrix4(Constants::Uniforms::Transform, billboardTransform);
+
+			billboardShader->SetFloat4(Constants::Uniforms::Color, billboard.Tint);
+			billboardShader->SetInt(Constants::Uniforms::EntityID, entity);
+
+			billboardShader->SetInt(Constants::Uniforms::Image, 0);
+			RenderAction::SetTextureUnit(0, texture->GetID());
+
+			Renderer3D::Submit(PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray());
+		}
+
+		m_HdrSceneBuffer->Unbind();
+
+		RenderAction::UseDepthTest(false);
+		RenderAction::UseBlending(false);
 	}
 
 	void RenderSystem::Render2DEntities(Registry& registry)

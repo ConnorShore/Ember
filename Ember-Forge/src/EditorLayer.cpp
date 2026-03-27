@@ -300,8 +300,9 @@ namespace Ember {
 			if (m_SceneState != SceneState::Edit)
 				return false;
 
-			// If the gizmo is being hovered, we should not change selection
-			if (ImGuizmo::IsOver())
+			// If a gizmo is drawn and the mouse is over it, we should not change the selected entity
+			bool isGizmoDrawn = m_Context.SelectedEntity != m_InvalidEntity && m_GizmoType != -1;
+			if (isGizmoDrawn && ImGuizmo::IsOver())
 				return false;
 
 			auto [mx, my] = ImGui::GetMousePos();
@@ -320,6 +321,7 @@ namespace Ember {
 			{
 				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
 				m_Context.SelectedEntity = selected;
+				EB_CORE_INFO("Clicked Entity: {}", (uint64_t)selected);
 			}
 		}
 

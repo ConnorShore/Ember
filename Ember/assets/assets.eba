@@ -1,32 +1,32 @@
 Assets:
   - Type: Texture
-    UUID: 3993648002694878630
-    Name: Texture(0)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
-  - Type: Texture
-    UUID: 11451176064510677599
-    Name: Model(0)_Material_MR_NormalMap
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_NormalMap.png'
-  - Type: Texture
-    UUID: 1926120100638591218
-    Name: Model(0)_Material_MR_ORMMap
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_ORMMap.png'
-  - Type: Texture
-    UUID: 6354218658515357886
-    Name: Texture(1)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Directory.png'
-  - Type: Texture
-    UUID: 3877574165543191126
+    UUID: 1514634928931506116
     Name: Texture(2)
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Empty.png'
   - Type: Texture
-    UUID: 2316527086353751452
-    Name: Model(0)_Material_MR_AlbedoMap
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_AlbedoMap.png'
+    UUID: 7266404664358999073
+    Name: Texture(2)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Camera.png'
   - Type: Texture
-    UUID: 17853250338520004470
-    Name: Model(0)_Material_MR_EmissiveMap
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Model(0)_Material_MR_EmissiveMap.png'
+    UUID: 15650314087614137374
+    Name: Texture(0)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\File.png'
+  - Type: Texture
+    UUID: 14436830641202477531
+    Name: Texture(1)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\Directory.png'
+  - Type: Texture
+    UUID: 11133373031783743336
+    Name: Texture(2)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\PointLight.png'
+  - Type: Texture
+    UUID: 5185830905878444650
+    Name: Texture(2)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\DirectionalLight.png'
+  - Type: Texture
+    UUID: 10343456833965454473
+    Name: Texture(2)
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\icons\SpotLight.png'
   - Type: Shader
     UUID: 11
     Name: StandardLit
@@ -52,17 +52,61 @@ Assets:
     Name: GaussianBlur
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\GaussianBlur.glsl'
   - Type: Shader
+    UUID: 6470665356195686608
+    Name: Outline
+    FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Outline.glsl'
+  - Type: Shader
     UUID: 16
     Name: Bloom
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Bloom.glsl'
   - Type: Shader
-    UUID: 3417167969365594150
-    Name: Outline
-    FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Outline.glsl'
-  - Type: Shader
-    UUID: 13456947442311315461
+    UUID: 3371661268076063086
     Name: FinalComposite
     FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\FinalComposite.glsl'
+  - Type: Shader
+    UUID: 11168673459158045593
+    Name: InfiniteGrid
+    FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\InfiniteGrid.glsl'
+  - Type: Shader
+    UUID: 14841967616830435745
+    Name: Billboard
+    FilePath: 'C:\Development\Projects\Ember\Ember\assets\shaders\Billboard.glsl'
+  - Type: Material
+    UUID: 18092432601548539585
+    Name: Sphere_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
   - Type: Material
     UUID: 31
     Name: StandardGeometry
@@ -149,82 +193,7 @@ Assets:
         Type: Texture
         Value: 4
   - Type: Material
-    UUID: 10949354262859407026
-    Name: Model(0)_Material_MR
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Metallic:
-        Type: float
-        Value: 0.99
-      u_Roughness:
-        Type: float
-        Value: 0.18
-      u_AO:
-        Type: float
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 52.6
-      u_AlbedoMap:
-        Type: Texture
-        Value: 2316527086353751452
-      u_NormalMap:
-        Type: Texture
-        Value: 11451176064510677599
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1926120100638591218
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_EmissiveMap:
-        Type: Texture
-        Value: 17853250338520004470
-  - Type: Material
-    UUID: 8892262596601424199
-    Name: Quad_Material
-    FilePath: ''
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Roughness:
-        Type: float
-        Value: 0.5
-      u_AO:
-        Type: float
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
-      u_EmissiveMap:
-        Type: Texture
-        Value: 4
-  - Type: Material
-    UUID: 3346088615055270356
+    UUID: 2518526307448056167
     Name: Cube_Material
     FilePath: ''
     RenderQueue: 1
@@ -260,8 +229,8 @@ Assets:
         Type: Texture
         Value: 4
   - Type: Material
-    UUID: 14599419436992979639
-    Name: Model(0)_
+    UUID: 9783316293695378750
+    Name: Cube_Material
     FilePath: ''
     RenderQueue: 1
     Shader: 10
@@ -273,16 +242,16 @@ Assets:
         Value: [1,1,1]
       u_Metallic:
         Type: float
-        Value: 1
+        Value: 0
       u_Roughness:
         Type: float
-        Value: 1
+        Value: 0.5
       u_AO:
         Type: float
         Value: 1
       u_Emission:
         Type: float
-        Value: 0
+        Value: 1
       u_AlbedoMap:
         Type: Texture
         Value: 1
@@ -292,18 +261,150 @@ Assets:
       u_MetallicRoughnessMap:
         Type: Texture
         Value: 1
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
       u_EmissiveMap:
         Type: Texture
         Value: 4
-  - Type: Model
-    UUID: 15414866000120720922
-    Name: Model(0)
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\DamagedHelmet.glb'
-    Meshes:
-      - 9573551985135396003
-    Materials:
-      - 10949354262859407026
-      - 14599419436992979639
+  - Type: Material
+    UUID: 13726845509420706679
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 4540887461285933809
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 1449143378639981675
+    Name: Cube_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4
+  - Type: Material
+    UUID: 15016327731755107591
+    Name: Quad_Material
+    FilePath: ''
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Roughness:
+        Type: float
+        Value: 0.5
+      u_AO:
+        Type: float
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4

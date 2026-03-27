@@ -21,6 +21,7 @@ namespace Ember {
 
 			virtual void Bind() const override;
 
+			virtual void SetBool(const std::string& name, bool value) const override;
 			virtual void SetInt(const std::string& name, int value) const override;
 			virtual void SetFloat(const std::string& name, float value) const override;
 			virtual void SetFloat2(const std::string& name, const Vector2f& vec) const override;

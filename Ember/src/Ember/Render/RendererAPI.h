@@ -37,6 +37,7 @@ namespace Ember {
 		virtual void UseFaceCulling(bool use) = 0;
 		virtual void CullFace(Face face) = 0;
 		virtual void UseDepthTest(bool use) = 0;
+		virtual void UseDepthMask(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
 
 		virtual void SetTextureUnit(unsigned int unit, unsigned int texture) = 0;
