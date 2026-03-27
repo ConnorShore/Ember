@@ -139,7 +139,7 @@ namespace Ember {
 
 						// Prop name
 						ImGui::AlignTextToFramePadding();
-						ImGui::Text("%s", prop.DisplayName.c_str());
+						ImGui::TextWrapped("%s", prop.DisplayName.c_str());
 
 						ImGui::TableNextColumn();
 

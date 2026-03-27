@@ -22,13 +22,11 @@ in vec2 TexCoord;
 uniform sampler2D u_Scene;
 uniform sampler2D u_BloomBlur;
 
-uniform float u_Exposure;
+uniform float u_BloomIntensity;
 
 void main()
-{           
+{
     vec3 hdrColor = texture(u_Scene, TexCoord).rgb;      
     vec3 bloomColor = texture(u_BloomBlur, TexCoord).rgb;
-    
-    // Just additive blending! Keep it in pure HDR space.
-    OutColor = vec4(hdrColor + bloomColor, 1.0);
+    OutColor = vec4(hdrColor + (bloomColor * u_BloomIntensity), 1.0);
 } 

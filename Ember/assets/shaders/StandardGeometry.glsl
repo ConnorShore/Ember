@@ -62,6 +62,9 @@ uniform float u_Roughness;
 // @UIProperty(Name="Ambient Occlusion", Type=Float)
 uniform float u_AO;
 
+// @UIProperty(Name="Emission Color", Type=Color3)
+uniform vec3 u_EmissionColor;
+
 // @UIProperty(Name="Emission Factor", Type=Float, Min=0.0, Max=100.0, Step=0.1, Normalize=false)
 uniform float u_Emission;
 
@@ -100,7 +103,7 @@ void main()
     
     // Emission (sRGB -> Linear)
     vec3 emissionMap = texture(u_EmissiveMap, FragIn.TexCoord).rgb;
-    vec3 finalEmission = pow(emissionMap, vec3(2.2)) * u_Emission;
+    vec3 finalEmission = pow(emissionMap, vec3(2.2)) * u_EmissionColor * u_Emission;
     
     // RGB = Albedo, Alpha = Roughness
     AlbedoRoughness.rgb = linearTexColor * u_Albedo;

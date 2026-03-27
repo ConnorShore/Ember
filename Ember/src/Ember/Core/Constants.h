@@ -54,6 +54,8 @@ namespace Ember::Constants {
 		inline const uint64_t InfiniteGridShadUUID = 19;
 		inline const char* BillboardShad = "Billboard";
 		inline const uint64_t BillboardShadUUID = 20;
+		inline const char* BloomPrefilterShad = "BloomPrefilter";
+		inline const uint64_t BloomPrefilterShadUUID = 21;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -88,11 +90,16 @@ namespace Ember::Constants {
 		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";
 		inline const char* Emission = "u_Emission";
+		inline const char* EmissionColor = "u_EmissionColor";
 		inline const char* Scene = "u_Scene";
 		inline const char* Exposure = "u_Exposure";
 
 		inline const char* HorizontalPass = "u_HorizontalPass";
 		inline const char* BloomBlur = "u_BloomBlur";
+		inline const char* BlurRadius = "u_BlurRadius";
+		inline const char* BloomIntensity = "u_BloomIntensity";
+		inline const char* Threshold = "u_Threshold";
+		inline const char* Knee = "u_Knee";
 
 		inline const char* AlbedoRoughness = "u_AlbedoRoughness";
 		inline const char* NormalMetallic = "u_NormalMetallic";

@@ -42,6 +42,7 @@ namespace Ember {
 		infiniteGridMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
 		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
 		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
+		auto bloomPrefilter = Load<Shader>(Constants::Assets::BloomPrefilterShadUUID, Constants::Assets::BloomPrefilterShad, "Ember/assets/shaders/BloomPrefilter.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
@@ -49,26 +50,18 @@ namespace Ember {
 		geometryMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
 		geometryMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
 		geometryMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);
-		geometryMaterial->SetUniform(Constants::Uniforms::Emission, 1.0f);
+		geometryMaterial->SetUniform(Constants::Uniforms::Emission, 0.0f);
+		geometryMaterial->SetUniform(Constants::Uniforms::EmissionColor, Vector3f(1.0f));
 		geometryMaterial->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
-		geometryMaterial->SetUniform(Constants::Uniforms::EmissiveMap, blackTex);
+		geometryMaterial->SetUniform(Constants::Uniforms::EmissiveMap, whiteTex);
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMatUUID, Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
 		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));
 		unlitMaterial->SetUniform(Constants::Uniforms::Emission, 2.0f);
 
         auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMatUUID, Constants::Assets::DefaultMat, geometryMaterial);
-		geometryMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(1.0f));
-		geometryMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
-		geometryMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
-		geometryMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);
-		geometryMaterial->SetUniform(Constants::Uniforms::Emission, 1.0f);
-		geometryMaterial->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
-		geometryMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
-		geometryMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
-		geometryMaterial->SetUniform(Constants::Uniforms::EmissiveMap, blackTex);
 
 		// Basic Meshes
 		auto sphereMesh = PrimitiveGenerator::CreateSphere();

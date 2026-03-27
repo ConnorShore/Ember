@@ -28,6 +28,21 @@ namespace Ember {
 
 		EntityID GetEntityIDAtPixel(unsigned int x, unsigned int y);
 
+		template<std::derived_from<PostProcessPass> T>
+		SharedPtr<PostProcessPass> GetPostProcessPass() const
+		{
+			for (const auto& pass : m_PostProcessStack)
+			{
+				if (auto postProcessPass = DynamicPointerCast<T>(pass))
+				{
+					return postProcessPass;
+				}
+			}
+
+			EB_CORE_ERROR("System of type {0} not found in RenderSystem!", typeid(T).name());
+			return nullptr;
+		}
+
 	private:
 		void ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid);
 		void InitializeRenderState();

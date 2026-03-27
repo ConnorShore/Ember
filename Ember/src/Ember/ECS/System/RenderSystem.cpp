@@ -655,6 +655,14 @@ namespace Ember {
 
 	void RenderSystem::HandlePostProcessing(Registry& registry)
 	{
+		// TODO: Down the line, passing textures between shaders is slow so eventually want to 
+		//  move to only a ping pong shader pass and a final composite shader.
+		//  The ping pong pass will handle every post processing effect that needs the ping pong approach
+		//  and the final composite shader will be an "uber shader" contain logic for every post processing effect
+		//  that doesn't need the ping pong approach (i.e. outline, bloom, vignette, etc)
+		//  This will drastically improve performance but will require a bit of an architectural change in how post processing passes are handled, 
+		//  so for now we will just handle each post process effect as its own pass and optimize later
+
 		RenderAction::UseDepthTest(false);
 
 		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
@@ -720,6 +728,7 @@ namespace Ember {
 		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
 		finalShader->Bind();
 
+		// TODO: Move FinalComposite to a PostProcessPass and handle these uniforms there instead of hardcoding them here
 		// Set the exposure (hook this up to an ImGui slider later)
 		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
 		finalShader->SetInt(Constants::Uniforms::Scene, 0);

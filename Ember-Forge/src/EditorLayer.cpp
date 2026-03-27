@@ -2,6 +2,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
+#include "Panels/EnvironmentPanel.h"
 #include "Utils/DragDropTypes.h"
 
 #include <random>
@@ -26,8 +27,9 @@ namespace Ember {
 	{
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
-		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);
@@ -508,17 +510,19 @@ namespace Ember {
 
 		ImGui::SameLine();
 
+		// TODO: Add a debug window you can open that shows this kind of info so imgui.ini doesn't save a new entry for each fps value change
+		// 
 		// Format the text and calculate how much horizontal space it takes
-		char fpsBuf[32];
-		snprintf(fpsBuf, sizeof(fpsBuf), "FPS: %.1f", fps);
-		float fpsTextWidth = ImGui::CalcTextSize(fpsBuf).x;
+		//char fpsBuf[32];
+		//snprintf(fpsBuf, sizeof(fpsBuf), "FPS: %.1f", fps);
+		//float fpsTextWidth = ImGui::CalcTextSize(fpsBuf).x;
 
-		// Push the cursor to the far right edge, minus the text width and a small margin
-		ImGui::SetCursorPosX(windowWidth - fpsTextWidth - 10.0f);
+		//// Push the cursor to the far right edge, minus the text width and a small margin
+		//ImGui::SetCursorPosX(windowWidth - fpsTextWidth - 10.0f);
 
-		// Vertically align the text slightly so it sits nicely next to the button
-		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
-		ImGui::TextDisabled("%s", fpsBuf); // TextDisabled makes it a subtle gray!
+		//// Vertically align the text slightly so it sits nicely next to the button
+		//ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
+		//ImGui::TextDisabled("%s", fpsBuf); // TextDisabled makes it a subtle gray!
 
 		ImGui::End();
 		ImGui::PopStyleVar();
