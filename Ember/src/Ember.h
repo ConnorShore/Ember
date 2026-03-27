@@ -12,6 +12,8 @@
 #include "Ember/Core/Window.h"
 #include "Ember/Core/Layer.h"
 
+#include "Ember/ImGui/ImGuiLayer.h"
+
 #include "Ember/Core/Logger.h"
 #include "Ember/Core/Time.h"
 
@@ -36,7 +38,9 @@
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/UniformBuffer.h"
 
-#include "Ember/ImGui/ImGuiLayer.h"
+#include "Ember/Render/VFX/PostProcessPass.h"
+#include "Ember/Render/VFX/BloomPass.h"
+#include "Ember/Render/VFX/OutlinePass.h"
 
 #include "Ember/Event/Event.h"
 #include "Ember/Event/KeyEvent.h"
@@ -45,6 +49,7 @@
 
 #include "Ember/ECS/Registry.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/System/RenderSystem.h"
 
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"

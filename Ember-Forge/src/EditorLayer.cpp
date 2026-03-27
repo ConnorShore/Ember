@@ -2,6 +2,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
+#include "Panels/EnvironmentPanel.h"
 #include "Utils/DragDropTypes.h"
 
 #include <random>
@@ -28,6 +29,7 @@ namespace Ember {
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);

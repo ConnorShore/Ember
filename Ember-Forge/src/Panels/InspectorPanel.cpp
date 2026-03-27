@@ -17,7 +17,7 @@
 namespace Ember {
 
 	InspectorPanel::InspectorPanel(EditorContext* context)
-		: Panel ("Inspector", context)
+		: Panel("Inspector", context)
 	{
 		// Populate the list of Component UIs that this panel will draw for entities
 		m_ComponentUIs.emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
