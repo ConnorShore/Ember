@@ -39,8 +39,10 @@ namespace Ember {
 
 		void CreateEntityFromModel(const std::string& modelFilePath);
 
+		void NewProject();
+		void OpenProject();
 		void NewScene();
-		void OpenScene();
+		void OpenScene(const std::string& scenePath = "");
 		void SaveScene(bool saveAs = false);
 
 	private:
@@ -76,6 +78,13 @@ namespace Ember {
 		int m_GizmoMode = ImGuizmo::WORLD;
 
 		Entity m_EntityToDelete;
+
+		struct NewProjectSettings
+		{
+			bool ShowProjectSettingsPopup = false;
+			std::string ProjectName;
+			std::string ProjectDirectory;
+		} m_NewProjectSettings;
 	};
 
 }

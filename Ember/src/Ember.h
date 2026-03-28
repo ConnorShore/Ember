@@ -63,6 +63,9 @@
 
 #include "Ember/Utils/PlatformUtil.h"
 
+#include "Ember/Core/Project.h"
+#include "Ember/Core/ProjectManager.h"
+
 // Vendor includes
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
