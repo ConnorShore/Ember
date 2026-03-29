@@ -45,6 +45,20 @@ namespace Ember {
 		void OpenScene(const std::string& scenePath = "");
 		void SaveScene(bool saveAs = false);
 
+		template<std::derived_from<Panel> T>
+		SharedPtr<T> GetPanel()
+		{
+			for (auto panel : m_Panels)
+			{
+				if (DynamicPointerCast<T>(panel) != nullptr)
+				{
+					return DynamicPointerCast<T>(panel);
+				}
+			}
+
+			return nullptr;
+		}
+
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
 

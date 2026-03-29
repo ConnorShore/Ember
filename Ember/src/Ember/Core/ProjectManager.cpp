@@ -15,8 +15,17 @@ namespace Ember {
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(filepath);
 
+		// Create Assets folder and sub-asset folders
 		std::filesystem::create_directories(project->GetAssetDirectory());
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Models");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Materials");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Shaders");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Textures");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Scripts");
+
+
 		// TODO: Probably should copy default engine assets into this directory
+		//  - Then update AssetManagerPanel to the new project 's asset directory (In editor layer)
 
 		std::filesystem::create_directories(project->GetProjectDirectory() / "Scenes");
 

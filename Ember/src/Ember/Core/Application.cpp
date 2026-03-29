@@ -36,8 +36,8 @@ namespace Ember {
 
 		ScriptEngine::Init();
 
-		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
-		serializer.Deserialize("Ember/assets/assets.eba");
+		//AssetRegistrySerializer serializer(m_AssetManager.Ptr());
+		//serializer.Deserialize("Ember/assets/assets.eba");
 
 		m_SystemManager = ScopedPtr<SystemManager>::Create();
 		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());

@@ -6,6 +6,7 @@ namespace Ember {
 
 	void AssetManager::LoadDefaults()
 	{
+		// TODO: Clean this up and split out defaults to different seections (i.e. LoadDefaultMeshes, LoadDefaultTextures, etc.)
 		EB_CORE_INFO("Loading default engine assets...");
 
 		// Textures
@@ -61,7 +62,7 @@ namespace Ember {
 		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));
 		unlitMaterial->SetUniform(Constants::Uniforms::Emission, 2.0f);
 
-        auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMatUUID, Constants::Assets::DefaultMat, geometryMaterial);
+		auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMatUUID, Constants::Assets::DefaultMat, geometryMaterial);
 
 		// Basic Meshes
 		auto sphereMesh = PrimitiveGenerator::CreateSphere();
@@ -71,8 +72,35 @@ namespace Ember {
 		Register(Constants::Assets::CubeMeshUUID, cubeMesh);
 		Register(Constants::Assets::QuadMeshUUID, quadMesh);
 	}
+	
+	void AssetManager::ClearAssets()
+	{
+		// Clear all assets except engine assets
+		for (auto it = m_AssetNames.begin(); it != m_AssetNames.end(); )
+		{
+			auto name = it->first;
+			auto uuid = it->second;
+			auto asset = m_Assets.at(uuid);
+			if (!asset->IsEngineAsset())
+			{
+				it = m_AssetNames.erase(it);
+				m_AssetPaths.erase(asset->GetFilePath());
+				m_Assets.erase(uuid);
+			}
+			else 
+			{
+				it++;
+			}
+		}
 
-    SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const
+		m_TextureCt = 0;
+		m_ShaderCt = 0;
+		m_ModelCt = 0;
+		m_MaterialCt = 0;
+		m_ScriptCt = 0;
+	}
+
+	SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const
 	{
 		return m_Assets.at(id);
 	}

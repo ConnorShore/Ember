@@ -28,7 +28,7 @@ namespace Ember {
 
 		auto textures = m_AssetManagerHandle->GetAssetsOfType<Texture>();
 		for (auto texture : textures) {
-			if (texture->GetFilePath().empty())
+			if (texture->GetFilePath().empty() || texture->IsEngineAsset())
 				continue;
 			ryml::NodeRef textureNode = assetsNode.append_child();
 			Util::SerializeGeneralAsset(textureNode, texture);
@@ -36,7 +36,7 @@ namespace Ember {
 
 		auto shaders = m_AssetManagerHandle->GetAssetsOfType<Shader>();
 		for (auto shader : shaders) {
-			if (shader->GetFilePath().empty())
+			if (shader->GetFilePath().empty() || shader->IsEngineAsset())
 				continue;
 			ryml::NodeRef shaderNode = assetsNode.append_child();
 			Util::SerializeGeneralAsset(shaderNode, shader);
@@ -44,7 +44,7 @@ namespace Ember {
 
 		auto scripts = m_AssetManagerHandle->GetAssetsOfType<Script>();
 		for (auto script : scripts) {
-			if (script->GetFilePath().empty())
+			if (script->GetFilePath().empty() || script->IsEngineAsset())
 				continue;
 			ryml::NodeRef scriptNode = assetsNode.append_child();
 			Util::SerializeGeneralAsset(scriptNode, script);
@@ -52,12 +52,16 @@ namespace Ember {
 
 		auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
 		for (auto material : materials) {
+			if (material->IsEngineAsset())
+				continue;
 			ryml::NodeRef materialNode = assetsNode.append_child();
 			Util::SerializeMaterial(materialNode, material);
 		}
 
 		auto models = m_AssetManagerHandle->GetAssetsOfType<Model>();
 		for (auto model : models) {
+			if (model->IsEngineAsset())
+				continue;
 			ryml::NodeRef modelNode = assetsNode.append_child();
 			Util::SerializeModel(modelNode, model);
 		}
@@ -105,6 +109,7 @@ namespace Ember {
 			if (type == "Material")
 			{
 				SharedPtr<MaterialBase> material = Util::DeserializeMaterial(assetNode, m_AssetManagerHandle);
+				material->SetIsEngineAsset(false);
 
 				bool instanced = false;
 				assetNode["Instanced"] >> instanced;
@@ -126,17 +131,20 @@ namespace Ember {
 
 			if (type == "Texture")
 			{
-				m_AssetManagerHandle->Load<Texture>(uuid, name, path);
+				auto texture = m_AssetManagerHandle->Load<Texture>(uuid, name, path);
+				texture->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Texture: {0}", name);
 			}
 			else if (type == "Shader")
 			{
-				m_AssetManagerHandle->Load<Shader>(uuid, name, path);
+				auto shader = m_AssetManagerHandle->Load<Shader>(uuid, name, path);
+				shader->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Shader: {0}", name);
 			}
 			else if (type == "Script")
 			{
-				m_AssetManagerHandle->Load<Script>(uuid, name, path);
+				auto script = m_AssetManagerHandle->Load<Script>(uuid, name, path);
+				script->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Script: {0}", name);
 			}
 			else if (type == "Model")
@@ -161,7 +169,8 @@ namespace Ember {
 					}
 				}
 
-				m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
+				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
+				model->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Model: {0}", name);
 			}
 		}

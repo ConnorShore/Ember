@@ -36,11 +36,16 @@ namespace Ember {
 
 		inline const std::string& GetFilePath() const { return m_FilePath; }
 		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
+
+		inline bool IsEngineAsset() const { return m_IsEngineAsset; }
+		inline void SetIsEngineAsset(bool isEngineAsset) { m_IsEngineAsset = isEngineAsset; }
+
 	protected:
 		UUID m_UUID;
 		AssetType m_Type;
 		std::string m_Name;
 		std::string m_FilePath;
+		bool m_IsEngineAsset = true;
 	};
 
 	// Concept to constrain template parameters to only be derived from Asset

@@ -60,6 +60,7 @@
 #include "Ember/Asset/Asset.h"
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
+#include "Ember/Asset/AssetRegistrySerializer.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 

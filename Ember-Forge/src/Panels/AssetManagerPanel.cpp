@@ -5,7 +5,6 @@
 
 namespace Ember {
 
-
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
 		: Panel("Asset Manager", context), 
 		m_AssetDirectory(std::filesystem::path("Ember-Forge/assets")), 
@@ -22,6 +21,7 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto fileIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/File.png");
 		auto dirIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/Directory.png");
+
 		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
 		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();
 	}
@@ -58,10 +58,15 @@ namespace Ember {
 			std::filesystem::path fileName = entry.path().filename();
 			std::string fileNameStr = entry.path().filename().string();
 
+			if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
+				continue;
+
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
+			EB_CORE_WARN("Comparing exact bytes: [{0}] vs [{1}]", m_HiddenFiles[0], fileNameStr);
+			EB_CORE_WARN("Lengths - Array: {0}, OS: {1}", m_HiddenFiles[0].length(), fileNameStr.length());
 			if (entry.is_directory())
 			{
 				ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
@@ -134,12 +139,13 @@ namespace Ember {
 		{
 			if (ImGui::BeginMenu("Import Asset"))
 			{
+				SharedPtr<Asset> asset = nullptr;
 				if (ImGui::MenuItem("Model"))
 				{
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
 					std::string file = SelectAndLoadFile(std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						Application::Instance().GetAssetManager().Load<Model>(file);
+						asset = Application::Instance().GetAssetManager().Load<Model>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))
@@ -147,7 +153,7 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
 					std::string file = SelectAndLoadFile(std::format("Texture Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						Application::Instance().GetAssetManager().Load<Texture>(file);
+						asset = Application::Instance().GetAssetManager().Load<Texture>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Shader"))
@@ -155,7 +161,7 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetShader);
 					std::string file = SelectAndLoadFile(std::format("Shader Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						Application::Instance().GetAssetManager().Load<Shader>(file);
+						asset = Application::Instance().GetAssetManager().Load<Shader>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Script"))
@@ -163,8 +169,14 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetScript);
 					std::string file = SelectAndLoadFile(std::format("Script Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						Application::Instance().GetAssetManager().Load<Texture>(file);
+						asset = Application::Instance().GetAssetManager().Load<Script>(file);
 					ImGui::CloseCurrentPopup();
+				}
+
+				if (asset != nullptr)
+				{
+					asset->SetIsEngineAsset(false);
+					EB_CORE_INFO("Successfully imported asset: {0}", asset->GetName());
 				}
 
 				ImGui::EndMenu();
@@ -174,6 +186,12 @@ namespace Ember {
 		}
 
 		ImGui::End();
+	}
+
+	void AssetManagerPanel::UpdateAssetDirectory(const std::filesystem::path& newDirectory)
+	{
+		m_AssetDirectory = newDirectory;
+		m_CurrentDirectory = newDirectory;
 	}
 
 	std::string AssetManagerPanel::SelectAndLoadFile(const std::string& name, const std::string& type)
