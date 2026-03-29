@@ -752,7 +752,8 @@ namespace Ember {
 			if (mesh.MeshHandle == Constants::InvalidUUID || material.MaterialHandle == Constants::InvalidUUID)
 				continue;
 
-			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto materialAsset = assetManager.GetAsset<MaterialBase>(material.MaterialHandle);
 			switch (materialAsset->GetRenderQueue())
 			{
 			case RenderQueue::Opaque:

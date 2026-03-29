@@ -15,6 +15,7 @@
 #include <concepts>
 #include <vector>
 #include <filesystem>
+#include <string>
 
 namespace Ember {
 
@@ -25,6 +26,7 @@ namespace Ember {
 		~AssetManager() = default;
 
 		void LoadDefaults();
+		void ClearAssets();
 
 		template<IsCoreAsset T, typename... Args>
 		SharedPtr<T> Create(Args&&... args)
@@ -47,7 +49,8 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(const std::string& filePath)
 		{
-			return Load<T>(GenerateName<T>(), filePath);
+			std::string fileName = std::filesystem::path(filePath).stem().string();
+			return Load<T>(fileName, filePath);
 		}
 
 		template<IsCoreAsset T>

@@ -15,6 +15,8 @@ namespace Ember {
 		void OnAttach() override;
 		void OnImGuiRender() override;
 
+		void UpdateAssetDirectory(const std::filesystem::path& newDirectory);
+
 	private:
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
@@ -23,5 +25,7 @@ namespace Ember {
 		ImTextureID m_FileTexID, m_DirectoryTexID;
 
 		int m_IconSize = 100;
+
+		std::array<std::string, 1> m_HiddenFiles = { "Assets.eba" };
 	};
 }

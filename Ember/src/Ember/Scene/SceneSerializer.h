@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "Ember/Core/Core.h"
@@ -11,6 +12,8 @@ namespace Ember {
 	{
 	public:
 		SceneSerializer(const SharedPtr<Scene>& scene) : m_Scene(scene) {}
+		~SceneSerializer() = default;
+
 		bool Serialize(const std::string& filepath);
 		bool Deserialize(const std::string& filepath);
 

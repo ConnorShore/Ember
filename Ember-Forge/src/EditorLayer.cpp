@@ -126,22 +126,34 @@ namespace Ember {
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
+				if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
+				{
+					NewProject();
+				}
+				if (ImGui::MenuItem("Open Project", "Ctrl+Shift+O"))
+				{
+					OpenProject();
+				}
+
+				ImGui::Separator();
+				bool projectExists = ProjectManager::GetActive() != nullptr;
+
+				if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
 				{
 					NewScene();
 				}
 
-				if (ImGui::MenuItem("Open Scene", "Ctrl+O"))
+				if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
 				{
 					OpenScene();
 				}
 
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+				if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
 				{
 					SaveScene(false);
 				}
 
-				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S"))
+				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
 				{
 					SaveScene(true);
 				}
@@ -203,6 +215,63 @@ namespace Ember {
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
 
+		// Pop up for new project
+		if (m_NewProjectSettings.ShowProjectSettingsPopup) 
+		{
+			ImGui::OpenPopup("NewProject");
+			m_NewProjectSettings.ShowProjectSettingsPopup = false;
+			m_NewProjectSettings.ProjectName = "";
+		}
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		if (ImGui::BeginPopupModal("NewProject", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("Project Name");
+			ImGui::Separator();
+
+			char buffer[128] = "";
+			strncpy_s(buffer, sizeof(buffer), m_NewProjectSettings.ProjectName.c_str(), _TRUNCATE);
+
+			if (ImGui::InputText("##ProjectName", buffer, sizeof(buffer)))
+			{
+				m_NewProjectSettings.ProjectName = std::string(buffer);
+			}
+
+			if (ImGui::Button("OK", ImVec2(120, 0)))
+			{
+				// Create directory for ProjectDirectory
+				std::filesystem::path projectDirPath = std::filesystem::path(m_NewProjectSettings.ProjectDirectory) / m_NewProjectSettings.ProjectName;
+				std::filesystem::create_directories(projectDirPath);
+
+				std::string projectNameFinal = m_NewProjectSettings.ProjectName += ".ebproj";
+				std::filesystem::path fullProjectPath = projectDirPath / projectNameFinal;
+				auto project = ProjectManager::NewProject(fullProjectPath.string());
+
+				// Open default scene
+				OpenScene(project->GetStartScenePath().string());
+				auto assetPanel = GetPanel<AssetManagerPanel>();
+				if (assetPanel != nullptr)
+				{
+					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
+				}
+
+				// Clear existing project assets
+				auto& assetManager = Application::Instance().GetAssetManager();
+				assetManager.ClearAssets();
+
+
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+			{
+				m_NewProjectSettings.ProjectName = "";
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
 		// Delete pending entities
 		RemovePendingEntities();
 	}
@@ -259,6 +328,7 @@ namespace Ember {
 				break;
 
 			// Scene Hot keys
+			// TODO: Disable if no project is active
 			case KeyCode::N:
 				if (control)
 					NewScene();
@@ -562,6 +632,41 @@ namespace Ember {
 		m_Context.SelectedEntity = modelEntity;
 	}
 
+	void EditorLayer::NewProject()
+	{
+		m_NewProjectSettings.ProjectDirectory = FileDialog::OpenDirectory();
+		if (m_NewProjectSettings.ProjectDirectory.empty())
+			return;
+		
+		m_NewProjectSettings.ShowProjectSettingsPopup = true;
+	}
+
+	void EditorLayer::OpenProject()
+	{
+		std::string projectFile = FileDialog::OpenFile("", "Ember Project (*.ebproj)", "*.ebproj");
+		if (projectFile.empty())
+			return;
+
+		auto project = ProjectManager::LoadProject(projectFile);
+
+		// Load the default scene for the project
+		OpenScene(project->GetStartScenePath().string());
+
+		// Load assets for project
+		auto assetPanel = GetPanel<AssetManagerPanel>();
+		if (assetPanel != nullptr)
+			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
+
+		// Clear and reload default engine assets
+		auto& assetManager = Application::Instance().GetAssetManager();
+		assetManager.ClearAssets();
+
+		// Deserialize project assets
+		std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
+		AssetRegistrySerializer assetSerializer(&assetManager);
+		assetSerializer.Deserialize(assetFilePath);
+	}
+
 	void EditorLayer::NewScene()
 	{
 		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
@@ -574,9 +679,15 @@ namespace Ember {
 		EB_CORE_TRACE("New Scene created!");
 	}
 
-	void EditorLayer::OpenScene()
+	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
 	{
-		std::string sceneFile = FileDialog::OpenFile("Ember-Forge/assets/scenes", "Ember Scene (*.ebs)", "*.ebs");
+		std::string sceneFile = scenePath;
+		if (sceneFile.empty())
+		{
+			const char* sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string().c_str();
+			sceneFile = FileDialog::OpenFile(sceneDirectory, "Ember Scene (*.ebs)", "*.ebs");
+		}
+
 		if (!sceneFile.empty())
 		{
 			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
@@ -602,8 +713,9 @@ namespace Ember {
 
 	void EditorLayer::SaveScene(bool saveAs /* = false */)
 	{
-		std::string sceneName = saveAs 
-			? FileDialog::SaveFile("Ember-Forge/assets/scenes/", "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
+		const char* sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string().c_str();
+		std::string sceneName = saveAs
+			? FileDialog::SaveFile(sceneDirectory, "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
 			: m_Context.ActiveScene->GetFilePath();
 
 		if (!sceneName.empty())
@@ -612,8 +724,14 @@ namespace Ember {
 				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 			}
 
-			SceneSerializer serializer(m_Context.ActiveScene);
-			serializer.Serialize(sceneName);
+			// Serialize scene
+			SceneSerializer sceneSerializer(m_Context.ActiveScene);
+			sceneSerializer.Serialize(sceneName);
+
+			// Serialize assets
+			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
+			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
 			EB_CORE_TRACE("Scene saved!");

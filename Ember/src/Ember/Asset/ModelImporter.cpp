@@ -53,12 +53,16 @@ namespace Ember {
 
 		m_MeshCounter = 0;
 		auto rootModelNode = ProcessScene(name, scene, assetManager, meshUUIDs);
-		return SharedPtr<Model>::Create(uuid, name, filePath, rootModelNode, materials);
+		auto model = SharedPtr<Model>::Create(uuid, name, filePath, rootModelNode, materials);
+		model->SetIsEngineAsset(false);
+		return model;
 	}
 
 	SharedPtr<Model> ModelImporter::Load(const std::string& name, const std::string& filePath, AssetManager& assetManager)
 	{
-		return Load(UUID(), name, filePath, assetManager);
+		auto model = Load(UUID(), name, filePath, assetManager);
+		model->SetIsEngineAsset(false);
+		return model;
 	}
 
 	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
@@ -179,6 +183,7 @@ namespace Ember {
 		m_MeshCounter++;
 
 		auto ret = SharedPtr<Mesh>::Create(currentMeshUUID, meshName, vertices, indices);
+		ret->SetIsEngineAsset(false);
 		assetManager.Register(ret);
 		return ret;
 	}
@@ -192,6 +197,7 @@ namespace Ember {
 		std::string baseMatName = DetermineBaseMaterial(aiMat);
 
 		auto matInstance = SharedPtr<MaterialInstance>::Create(matName, assetManager.GetAsset<Material>(baseMatName));
+		matInstance->SetIsEngineAsset(false);
 
 		// Populate uniform overrides
 		ExtractPBRUniforms(aiMat, matInstance, baseMatName);
@@ -362,6 +368,7 @@ namespace Ember {
 						stbi_write_png(outTexPath.string().c_str(), width, height, 4, image_data, width * 4);
 
 					auto map = assetManager.Load<Texture>(texName, outTexPath.string());
+					map->SetIsEngineAsset(false);
 					matInstance->SetUniform(uniformName, map);
 
 					if (embeddedTexture->mHeight == 0) stbi_image_free(image_data);
@@ -376,6 +383,7 @@ namespace Ember {
 				std::filesystem::path modelPath(modelFilePath);
 				std::filesystem::path fullTexPath = modelPath.parent_path() / texPath.C_Str();
 				auto map = assetManager.Load<Texture>(texName, fullTexPath.generic_string());
+				map->SetIsEngineAsset(false);
 				matInstance->SetUniform(uniformName, map);
 			}
 		}

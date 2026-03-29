@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef NOMINMAX
+	#define NOMINMAX // Kills the Windows min/max macros globally for ryml
+#endif
+
 #include <iostream>
 #include <print>
 #include <string>
