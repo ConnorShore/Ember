@@ -65,8 +65,6 @@ namespace Ember {
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
-			EB_CORE_WARN("Comparing exact bytes: [{0}] vs [{1}]", m_HiddenFiles[0], fileNameStr);
-			EB_CORE_WARN("Lengths - Array: {0}, OS: {1}", m_HiddenFiles[0].length(), fileNameStr.length());
 			if (entry.is_directory())
 			{
 				ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
@@ -107,7 +105,7 @@ namespace Ember {
 					auto filePathAbs = std::filesystem::absolute(filePath);
 					auto payloadType = DragDropUtils::ExtensionToDragDropPayloadType(filePathAbs.extension().string());
 					auto payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
-					EB_CORE_INFO("Dragging asset '{}' with payload type '{}'", fileNameStr, payloadStr);
+
 					ImGui::SetDragDropPayload(payloadStr.c_str(), filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
 					ImGui::Image(m_FileTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					ImGui::EndDragDropSource();

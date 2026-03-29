@@ -1,6 +1,7 @@
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
+#include "utils/DragDropTypes.h"
 
 namespace Ember {
 
@@ -188,6 +189,45 @@ namespace Ember {
 			opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
 		}
 
+		// Drag drop for parent/child relationships
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+			if (ImGui::BeginDragDropSource())
+			{
+				UUID payloadUUID = entity.GetUUID();
+				ImGui::SetDragDropPayload(payloadType.c_str(), &payloadUUID, sizeof(UUID));
+				ImGui::Text("Move %s", entity.GetName().c_str());
+				ImGui::EndDragDropSource();
+			}
+
+			bool isValidPayload = true;
+			if (const ImGuiPayload* payload = ImGui::GetDragDropPayload())
+			{
+				if (payload->IsDataType(payloadType.c_str()))
+				{
+					UUID payloadUUID = *(const UUID*)payload->Data;
+					bool isSameEntity = payloadUUID == entity.GetUUID();
+					bool isAncestor = IsAncestor(entity, m_Context->ActiveScene->GetEntity(payloadUUID));
+					isValidPayload = !isSameEntity && !isAncestor;
+				}
+			}
+
+			if (isValidPayload)
+			{
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+					{
+						UUID payloadUUID = *(const UUID*)payload->Data;
+						m_Context->ActiveScene->SetEntityParent(payloadUUID, entity);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+		}
+
+		// Select if click
 		if (ImGui::IsItemClicked())
 		{
 			SetSelectedEntity(entity);

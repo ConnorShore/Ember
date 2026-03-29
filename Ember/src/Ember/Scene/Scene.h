@@ -37,6 +37,7 @@ namespace Ember {
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
 		Entity DuplicateEntity(Entity entity);
+		void SetEntityParent(UUID childUUID, Entity newParent);
 
 		template<IsCoreAsset T>
 		void RegisterAsset(const SharedPtr<T>& asset)

@@ -160,6 +160,29 @@ namespace Ember {
 		return DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
 	}
 
+	void Scene::SetEntityParent(UUID childUUID, Entity newParent)
+	{
+		EB_CORE_ASSERT(newParent.ContainsComponent<RelationshipComponent>(), "New parent entity must have a RelationshipComponent!");
+		auto& parentRelationship = newParent.GetComponent<RelationshipComponent>();
+		parentRelationship.Children.push_back(childUUID);
+
+		// Set parent handle
+		auto childEntity = GetEntity(childUUID);
+		auto& childRelationship = childEntity.GetComponent<RelationshipComponent>();
+		childRelationship.ParentHandle = newParent.GetUUID();
+
+		// Set child local transform
+		auto& parentTransform = newParent.GetComponent<TransformComponent>();
+		auto& childTransform = childEntity.GetComponent<TransformComponent>();
+		auto parentInverseWorldTransform = Math::Inverse(parentTransform.GetWorldTransform());
+		Vector3f outPos, outRot, outScale;
+		Math::DecomposeTransform(parentInverseWorldTransform, outPos, outRot, outScale);
+
+		childTransform.Position = outPos + childTransform.Position;
+		childTransform.Rotation = outRot + childTransform.Rotation;
+		childTransform.Scale = outScale * childTransform.Scale;
+	}
+
 	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot)
 	{
 		std::string name = entity.GetName();
