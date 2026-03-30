@@ -23,6 +23,7 @@ namespace Ember {
 		void DrawTreeNode(Entity entity);
 
 		bool IsAncestor(Entity ancestor, Entity descendant);
+		bool IsDescendant(Entity descendant, Entity ancestor);
 
 		void CreateEmptyEntity();
 		void DuplicateEntity(Entity entity);

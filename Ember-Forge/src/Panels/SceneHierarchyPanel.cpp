@@ -1,6 +1,7 @@
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
+#include "utils/DragDropTypes.h"
 
 namespace Ember {
 
@@ -143,6 +144,7 @@ namespace Ember {
 		{
 			// Draw the tree node
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
+			// Want to avoid drawing if they are siblings (but not at the root)
 			if (relationshipComp.ParentHandle == Constants::InvalidUUID)
 			{
 				DrawTreeNode(entity);
@@ -188,6 +190,46 @@ namespace Ember {
 			opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
 		}
 
+		// Drag drop for parent/child relationships
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+			if (ImGui::BeginDragDropSource())
+			{
+				UUID payloadUUID = entity.GetUUID();
+				ImGui::SetDragDropPayload(payloadType.c_str(), &payloadUUID, sizeof(UUID));
+				ImGui::Text("Move %s", entity.GetName().c_str());
+				ImGui::EndDragDropSource();
+			}
+
+			bool isValidPayload = true;
+			if (const ImGuiPayload* payload = ImGui::GetDragDropPayload())
+			{
+				if (payload->IsDataType(payloadType.c_str()))
+				{
+					UUID payloadUUID = *(const UUID*)payload->Data;
+					bool isSameEntity = payloadUUID == entity.GetUUID();
+					bool isDescendant = IsAncestor(m_Context->ActiveScene->GetEntity(payloadUUID), entity);
+					bool isParent = entity.GetUUID() == m_Context->ActiveScene->GetEntity(payloadUUID).GetComponent<RelationshipComponent>().ParentHandle;
+					isValidPayload = !isSameEntity && !isDescendant && !isParent;
+				}
+			}
+
+			if (isValidPayload)
+			{
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+					{
+						UUID payloadUUID = *(const UUID*)payload->Data;
+						m_Context->ActiveScene->SetEntityParent(payloadUUID, entity);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+		}
+
+		// Select if click
 		if (ImGui::IsItemClicked())
 		{
 			SetSelectedEntity(entity);
@@ -257,6 +299,17 @@ namespace Ember {
 			{
 				m_Context->PendingEntityRemovals.insert(entity);
 			}
+			ImGui::Separator();
+
+			bool hasParent = entity.GetComponent<RelationshipComponent>().ParentHandle != Constants::InvalidUUID;
+			if (ImGui::MenuItem("Remove Parent", nullptr, false, hasParent))
+			{
+				auto& relationship = entity.GetComponent<RelationshipComponent>();
+				auto parentEntity = m_Context->ActiveScene->GetEntity(relationship.ParentHandle);
+				auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
+				parentRelationship.Children.erase(std::remove(parentRelationship.Children.begin(), parentRelationship.Children.end(), entity.GetUUID()), parentRelationship.Children.end());
+				relationship.ParentHandle = Constants::InvalidUUID;
+			}
 
 			ImGui::EndPopup();
 		}
@@ -283,7 +336,7 @@ namespace Ember {
 			return false;
 
 		Entity current = descendant;
-		while (current != Constants::Entities::InvalidComponentID)
+		while (current != Constants::Entities::InvalidEntityID)
 		{
 			UUID parentID = current.GetComponent<RelationshipComponent>().ParentHandle;
 			if (parentID == Constants::InvalidUUID)
@@ -293,6 +346,30 @@ namespace Ember {
 				return true;
 
 			current = m_Context->ActiveScene->GetEntity(parentID);
+		}
+
+		return false;
+	}
+
+	bool SceneHierarchyPanel::IsDescendant(Entity descendant, Entity ancestor)
+	{
+		if (ancestor == Constants::Entities::InvalidEntityID || ancestor.GetUUID() == Constants::InvalidUUID)
+			return false;
+
+		std::vector<UUID> queue;
+		queue.push_back(ancestor.GetUUID());
+		while (!queue.empty())
+		{
+			UUID currentUUID = queue[0];
+			queue.erase(queue.begin());
+
+			if (currentUUID == descendant.GetUUID())
+				return true;
+
+			auto currentEntity = m_Context->ActiveScene->GetEntity(currentUUID);
+			auto& children = currentEntity.GetComponent<RelationshipComponent>().Children;
+			for (auto& child : children)
+				queue.push_back(child);
 		}
 
 		return false;

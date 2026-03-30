@@ -65,6 +65,11 @@ namespace Ember {
 			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Scale);
 		}
 
+		const Matrix4f& GetWorldTransform() const
+		{
+			return WorldTransform;
+		}
+
 		Vector3f GetForward() const
 		{
 			return Math::Normalize(Vector3f(
