@@ -166,9 +166,21 @@ namespace Ember {
 		auto& parentRelationship = newParent.GetComponent<RelationshipComponent>();
 		parentRelationship.Children.push_back(childUUID);
 
-		// Set parent handle
 		auto childEntity = GetEntity(childUUID);
 		auto& childRelationship = childEntity.GetComponent<RelationshipComponent>();
+
+		// If the child had a previous parent, we need to remove it from that parent's children list
+		if (childRelationship.ParentHandle != Constants::InvalidUUID)
+		{
+			Entity oldParent = GetEntity(childRelationship.ParentHandle);
+			if (oldParent != Constants::Entities::InvalidEntityID)
+			{
+				auto& oldParentRelationship = oldParent.GetComponent<RelationshipComponent>();
+				oldParentRelationship.Children.erase(std::remove(oldParentRelationship.Children.begin(), oldParentRelationship.Children.end(), childUUID), oldParentRelationship.Children.end());
+			}
+		}
+
+		// Set new parent handle
 		childRelationship.ParentHandle = newParent.GetUUID();
 
 		// Set child local transform
