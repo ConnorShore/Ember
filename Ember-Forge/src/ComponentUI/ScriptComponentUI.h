@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
-#include "Utils/DragDropTypes.h"
+#include "UI/DragDropTypes.h"
 
 #include <filesystem>
 #include <fstream>

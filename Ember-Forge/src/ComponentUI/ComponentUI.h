@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EditorContext.h"
+#include "Ui/Nodes.h"
 
 #include <Ember.h>
 #include <string>
@@ -57,7 +58,6 @@ namespace Ember {
 		bool m_CanRemove = true;
 
     private:
-
 		template<typename UIFunction>
 		inline void RenderComponent(const char* name, Entity entity, UIFunction uiFunction)
 		{
@@ -65,41 +65,13 @@ namespace Ember {
 			if (!entity.ContainsComponent<T>())
 				return;
 
-			const ImGuiTreeNodeFlags treeNodeFlags =
-				ImGuiTreeNodeFlags_DefaultOpen |
-				ImGuiTreeNodeFlags_Framed |
-				ImGuiTreeNodeFlags_SpanAvailWidth |
-				ImGuiTreeNodeFlags_AllowOverlap |
-				ImGuiTreeNodeFlags_FramePadding;
-
 			auto& component = entity.GetComponent<T>();
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name);
-			ImGui::PopStyleVar();
-
-			if (m_CanRemove)
-			{
-				// Draw Remove Button
-				float buttonWidth = ImGui::CalcTextSize("Remove").x + ImGui::GetStyle().FramePadding.x * 2.0f;
-				ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - buttonWidth - 5.0f);
-
-				// Center button vertically with the header text
-				float currentCursorY = ImGui::GetCursorPosY();
-				ImGui::SetCursorPosY(currentCursorY + 2.0f);
-
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 2 });
-				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-				if (ImGui::Button("Remove"))
-					entity.DetachComponent<T>();
-				ImGui::PopStyleVar();
-				ImGui::PopStyleVar();
-			}
-
-			if (open)
+			if (UI::Nodes::BeginExpandableNode(std::string(name), true, [&]() {
+				entity.DetachComponent<T>();
+				}))
 			{
 				uiFunction(component);
-				ImGui::TreePop();
+				UI::Nodes::EndExpandableNode();
 			}
 		}
 	};

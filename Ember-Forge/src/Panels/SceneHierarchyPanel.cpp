@@ -1,7 +1,7 @@
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
-#include "utils/DragDropTypes.h"
+#include "UI/DragDropTypes.h"
 
 namespace Ember {
 
@@ -164,6 +164,7 @@ namespace Ember {
 	{
 		ImGuiTreeNodeFlags flags = ((GetSelectedEntity() == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+		flags |= ImGuiTreeNodeFlags_FramePadding;
 
 		bool hasChildren = !entity.GetComponent<RelationshipComponent>().Children.empty();
 		if (!hasChildren)

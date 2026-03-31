@@ -1,5 +1,7 @@
 #pragma once
 #include "ComponentUI.h"
+#include "UI/UIWidgets.h"
+
 #include <variant>
 
 namespace Ember {
@@ -28,14 +30,14 @@ namespace Ember {
 			ImGui::Separator();
 
 			std::string currentMaterialName = material ? material->GetName() : "None";
-			if (ImGui::BeginCombo("##MaterialCombo", currentMaterialName.c_str()))
+			if (UI::BeginComboBox("##MaterialCombo", currentMaterialName.c_str()))
 			{
 				auto materials = m_Context->ActiveScene->GetAssetsOfType<MaterialBase>();
 				for (auto& mat : materials)
 				{
 					// Check if this is the currently active shader
 					bool isSelected = material && (material->GetUUID() == mat->GetUUID());
-					if (ImGui::Selectable(mat->GetName().c_str(), isSelected))
+					if (UI::ComboBoxItem(mat->GetName().c_str(), isSelected))
 					{
 						std::string name = mat->GetName() + "_" + m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
 						component.MaterialHandle = mat->GetUUID();
@@ -46,7 +48,7 @@ namespace Ember {
 					if (isSelected)
 						ImGui::SetItemDefaultFocus();
 				}
-				ImGui::EndCombo();
+				UI::EndComboBox();
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Clone"))
@@ -67,17 +69,16 @@ namespace Ember {
 				if (material->GetShader())
 				{
 					EB_CORE_TRACE("Opening shader file: {}", material->GetShader()->GetFilePath());
-					// TODO: Launch VS Code / Text Editor via OS system call
+					std::string shaderPath = material->GetShader()->GetFilePath();
+					std::string command = "code " + shaderPath;
+					system(command.c_str());
 				}
 			}
 
 			ImGui::Separator();
 
-			if (ImGui::BeginTable("MaterialProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("MaterialProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
 				auto& shaderProps = material->GetShader()->GetProperties();
 				for (auto& prop : shaderProps)
 				{
@@ -85,124 +86,82 @@ namespace Ember {
 					{
 					case ShaderPropertyType::Float:
 					{
-						RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
-							return ImGui::DragFloat(name, value, prop.Step, prop.Min, prop.Max);
+						RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
+							return UI::PropertyGrid::Float(name, *value, prop.Step, prop.Min, prop.Max);
 							});
 						break;
 					}
 					case ShaderPropertyType::Float2:
 					{
-						RenderProperty<Vector2f>(prop, material, [&prop](const char* name, Vector2f* value) {
-							return ImGui::DragFloat2(name, &value->x, prop.Step, prop.Min, prop.Max);
+						RenderProperty<Vector2f>(prop, material, [&prop](const std::string& name, Vector2f* value) {
+							return UI::PropertyGrid::Float2(name, *value, prop.Step, prop.Min, prop.Max);
 							});
 						break;
 					}
 					case ShaderPropertyType::Float3:
 					{
-						RenderProperty<Vector3f>(prop, material, [&prop](const char* name, Vector3f* value) {
-							return ImGui::DragFloat3(name, &value->x, prop.Step, prop.Min, prop.Max);
+						RenderProperty<Vector3f>(prop, material, [&prop](const std::string& name, Vector3f* value) {
+							return UI::PropertyGrid::Float3(name, *value, prop.Step, prop.Min, prop.Max);
 							});
 						break;
 					}
 					case ShaderPropertyType::Float4:
 					{
-						RenderProperty<Vector4f>(prop, material, [&prop](const char* name, Vector4f* value) {
-							return ImGui::DragFloat4(name, &value->x, prop.Step, prop.Min, prop.Max);
+						RenderProperty<Vector4f>(prop, material, [&prop](const std::string& name, Vector4f* value) {
+							return UI::PropertyGrid::Float4(name, *value, prop.Step, prop.Min, prop.Max);
 							});
 						break;
 					}
 					case ShaderPropertyType::Color3:
 					{
-						RenderProperty<Vector3f>(prop, material, [](const char* name, Vector3f* value) {
-							return ImGui::ColorEdit3(name, &value->x);
+						RenderProperty<Vector3f>(prop, material, [](const std::string& name, Vector3f* value) {
+							return UI::PropertyGrid::Color3(name, *value);
 							});
 						break;
 					}
 					case ShaderPropertyType::Color4:
 					{
-						RenderProperty<Vector4f>(prop, material, [](const char* name, Vector4f* value) {
-							return ImGui::ColorEdit4(name, &value->x);
+						RenderProperty<Vector4f>(prop, material, [](const std::string& name, Vector4f* value) {
+							return UI::PropertyGrid::Color4(name, *value);
 							});
 						break;
 					}
 					case ShaderPropertyType::Slider:
 					{
-						RenderProperty<float>(prop, material, [&prop](const char* name, float* value) {
-							return ImGui::SliderFloat(name, value, prop.Min, prop.Max);
+						RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
+							return UI::PropertyGrid::Slider(name, *value, prop.Min, prop.Max);
 							});
 						break;
 					}
 					case ShaderPropertyType::Texture:
 					{
-						ImGui::TableNextRow();
-						ImGui::TableNextColumn(); 
-
-						// Prop name
-						ImGui::AlignTextToFramePadding();
-						ImGui::TextWrapped("%s", prop.DisplayName.c_str());
-
-						ImGui::TableNextColumn();
-
-						// Check if there is a current texture
-						bool hasTexture = material->ContainsUniform(prop.UniformName);
 						SharedPtr<Texture> currentTexture = nullptr;
+						bool hasTexture = material->ContainsUniform(prop.UniformName);
 						if (hasTexture)
-						{
 							currentTexture = std::get<SharedPtr<Texture>>(material->GetUniforms().at(prop.UniformName));
-						}
 
-						// Big square are for texture preview
-						auto emptyImage = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Empty.png");
-
-						// If texture doesn't exist or is default, show the empty texture
-						bool hasValidTexture = currentTexture 
+						bool hasValidTexture = currentTexture
 							&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
 							&& currentTexture->GetName() != Constants::Assets::DefaultNormalTex
 							&& currentTexture->GetName() != Constants::Assets::DefaultErrorTex;
-						auto id = (void*)(intptr_t)(hasValidTexture ? currentTexture->GetID() : emptyImage->GetID());
-							
-						ImGui::Image(id, ImVec2(48, 48), ImVec2(0, 1), ImVec2(1, 0));
-						if (ImGui::BeginDragDropTarget())
+						UUID texUUID = hasValidTexture ? currentTexture->GetUUID() : UUID(Constants::InvalidUUID);
+						std::string droppedFilePath;
+						if (UI::PropertyGrid::DragDropTexture(prop.DisplayName, texUUID, droppedFilePath, [&]() {
+							auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
+							material->SetUniform(prop.UniformName, defaultTex);
+							})
+						)
 						{
-							std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-							{
-								EB_CORE_TRACE("Received payload with data: {}", (const char*)payload->Data);
-								auto filePath = (const char*)payload->Data;
-								auto texture = Application::Instance().GetAssetManager().Load<Texture>(filePath);
-								material->SetUniform(prop.UniformName, texture);
-							}
-							ImGui::EndDragDropTarget();
+							EB_CORE_TRACE("Received payload with data: {}", droppedFilePath);
+							auto newTexture = Application::Instance().GetAssetManager().Load<Texture>(droppedFilePath);
+							material->SetUniform(prop.UniformName, newTexture);
 						}
-
-						ImGui::SameLine();
-
-						ImGui::BeginGroup();
-
-						std::string textureName = hasValidTexture 
-							? std::filesystem::path(currentTexture->GetFilePath()).filename().string() 
-							: "No Texture Selected";
-
-						ImGui::AlignTextToFramePadding();
-						ImGui::TextWrapped(textureName.c_str());
-						
-						if (hasValidTexture)
-						{
-							ImGui::PushID(id);
-							if (ImGui::Button("Clear"))
-							{
-								auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
-								material->SetUniform(prop.UniformName, defaultTex);
-							}
-							ImGui::PopID();
-						}
-
-						ImGui::EndGroup();
+						break;
 					}
 					}
 				}
 
-				ImGui::EndTable();
+				UI::PropertyGrid::End();
 			}
 		}
 
@@ -213,16 +172,8 @@ namespace Ember {
 			if (!material->ContainsUniform(prop.UniformName))
 				return;
 
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text(prop.DisplayName.c_str());
-			ImGui::TableNextColumn();
-			ImGui::PushItemWidth(-FLT_MIN);
-
-			std::string uniformLabel = ("##" + prop.UniformName);
 			T value = std::get<T>(material->GetUniforms().at(prop.UniformName));
-			if (renderFunc(uniformLabel.c_str(), &value))
+			if (renderFunc(prop.UniformName, &value))
 			{
 				if (prop.Normalize)
 					value = Math::Normalize<T>(value, prop.Min, prop.Max);

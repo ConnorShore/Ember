@@ -45,6 +45,8 @@ namespace Ember {
 		void OpenScene(const std::string& scenePath = "");
 		void SaveScene(bool saveAs = false);
 
+		void SetupImGuiTheme();
+
 		template<std::derived_from<Panel> T>
 		SharedPtr<T> GetPanel()
 		{

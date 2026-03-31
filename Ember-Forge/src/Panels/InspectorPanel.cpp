@@ -67,25 +67,9 @@ namespace Ember {
 
 	void InspectorPanel::DrawEntityHeader(Entity entity)
 	{
-		std::string entityName = entity.GetComponent<TagComponent>().Tag;
-		if (ImGui::BeginTable("Name", 2, ImGuiTableFlags_SizingFixedSame))
+		if (UI::PropertyGrid::Begin("EntityHeader"))
 		{
-			ImGui::TableSetupColumn("EntityName", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthStretch);
-
-			// Entity name
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(entityName.c_str());
-
-			// Actions
-			ImGui::TableNextColumn();
-			float buttonWidth = ImGui::CalcTextSize("Add Component").x + ImGui::GetStyle().FramePadding.x * 2.0f;
-			float posX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonWidth;
-			ImGui::SetCursorPosX(posX);
-
-			if (ImGui::Button("Add Component"))
+			if (UI::PropertyGrid::HeaderWithActionButton(entity.GetName().c_str(), "Add Component"))
 			{
 				ImGui::OpenPopup("AddComponentPopup");
 			}
@@ -103,7 +87,7 @@ namespace Ember {
 				ImGui::EndPopup();
 			}
 
-			ImGui::EndTable();
+			UI::PropertyGrid::End();
 		}
 	}
 

@@ -3,7 +3,7 @@
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
-#include "Utils/DragDropTypes.h"
+#include "UI/DragDropTypes.h"
 
 #include <random>
 
@@ -25,6 +25,9 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
+		// Setup theme
+		SetupImGuiTheme();
+
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
@@ -737,4 +740,106 @@ namespace Ember {
 			EB_CORE_TRACE("Scene saved!");
 		}
 	}
+
+	void EditorLayer::SetupImGuiTheme()
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->AddFontFromFileTTF("Ember-Forge/assets/fonts/Roboto-Regular.ttf", 16.0f);
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		ImVec4* colors = style.Colors;
+
+		// --- Sizing & Spacing (Spacious & Modern) ---
+		style.WindowPadding = ImVec2(12.0f, 12.0f);
+		style.FramePadding = ImVec2(8.0f, 6.0f);
+		style.ItemSpacing = ImVec2(10.0f, 8.0f);
+		style.ItemInnerSpacing = ImVec2(6.0f, 6.0f);
+		style.IndentSpacing = 20.0f;
+		style.ScrollbarSize = 14.0f;
+		style.GrabMinSize = 12.0f;
+
+		// --- Borders & Rounding (Flat, subtle rounding) ---
+		style.WindowRounding = 4.0f;
+		style.ChildRounding = 4.0f;
+		style.FrameRounding = 3.0f;
+		style.PopupRounding = 4.0f;
+		style.ScrollbarRounding = 3.0f;
+		style.GrabRounding = 3.0f;
+		style.TabRounding = 3.0f;
+
+		style.WindowBorderSize = 1.0f;
+		style.FrameBorderSize = 0.0f;
+		style.PopupBorderSize = 1.0f;
+
+		// --- Base Colors (Deep Greys) ---
+		ImVec4 textBase = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
+		ImVec4 textMuted = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+
+		ImVec4 bgDarkest = ImVec4(0.08f, 0.08f, 0.08f, 1.00f); // Main window backgrounds
+		ImVec4 bgMid = ImVec4(0.12f, 0.12f, 0.12f, 1.00f); // Child windows
+		ImVec4 bgLight = ImVec4(0.16f, 0.16f, 0.16f, 1.00f); // Input fields, empty frames
+
+		ImVec4 borderCol = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+
+		// --- Accent Colors (Industrial Orange) ---
+		ImVec4 accentBase = ImVec4(0.88f, 0.40f, 0.10f, 1.00f); // #E2681B
+		ImVec4 accentHovered = ImVec4(0.95f, 0.47f, 0.15f, 1.00f); // Brighter on hover
+		ImVec4 accentActive = ImVec4(0.80f, 0.35f, 0.08f, 1.00f); // Darker on click
+
+		// --- Apply Colors ---
+		colors[ImGuiCol_Text] = textBase;
+		colors[ImGuiCol_TextDisabled] = textMuted;
+
+		// Backgrounds
+		colors[ImGuiCol_WindowBg] = bgDarkest;
+		colors[ImGuiCol_ChildBg] = bgMid;
+		colors[ImGuiCol_PopupBg] = bgDarkest;
+		colors[ImGuiCol_Border] = borderCol;
+		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+		// Frames (Inputs, Checkboxes)
+		colors[ImGuiCol_FrameBg] = bgLight;
+		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
+		colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+
+		// Titles
+		colors[ImGuiCol_TitleBg] = bgDarkest;
+		colors[ImGuiCol_TitleBgActive] = bgDarkest;
+		colors[ImGuiCol_TitleBgCollapsed] = bgDarkest;
+
+		// Buttons (Keep grey base, tint orange on hover for a cleaner look)
+		colors[ImGuiCol_Button] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_ButtonHovered] = accentHovered;
+		colors[ImGuiCol_ButtonActive] = accentActive;
+
+		// Headers (TreeNodes, Selectables)
+		colors[ImGuiCol_Header] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_HeaderHovered] = accentHovered;
+		colors[ImGuiCol_HeaderActive] = accentActive;
+
+		// Tabs
+		colors[ImGuiCol_Tab] = bgMid;
+		colors[ImGuiCol_TabHovered] = accentHovered;
+		colors[ImGuiCol_TabActive] = accentBase;
+		colors[ImGuiCol_TabUnfocused] = bgDarkest;
+		colors[ImGuiCol_TabUnfocusedActive] = bgMid;
+
+		// Sliders & Grabs
+		colors[ImGuiCol_SliderGrab] = accentBase;
+		colors[ImGuiCol_SliderGrabActive] = accentActive;
+
+		// Drag Drop
+		colors[ImGuiCol_DragDropTarget] = accentHovered;
+
+		// Separators
+		colors[ImGuiCol_Separator] = borderCol;
+		colors[ImGuiCol_SeparatorHovered] = accentBase;
+		colors[ImGuiCol_SeparatorActive] = accentActive;
+
+		// Resize Grips
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
+		colors[ImGuiCol_ResizeGripActive] = accentActive;
+	}
+
 }
