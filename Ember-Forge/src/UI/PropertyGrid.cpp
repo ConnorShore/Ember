@@ -70,7 +70,18 @@ namespace Ember {
 
 		// Property Grid Widgets
 
-		bool Slider(const std::string& label, float& value, float min /* = 0.0f */, float max /* = 0.0f */)
+		bool SliderInt(const std::string& label, int& value, int min /* = 0 */, int max /* = 0 */)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text(label.c_str());
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+			return ImGui::SliderInt(std::format("##{}", label).c_str(), &value, min, max);
+		}
+
+		bool SliderFloat(const std::string& label, float& value, float min /* = 0.0f */, float max /* = 0.0f */)
 		{
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();

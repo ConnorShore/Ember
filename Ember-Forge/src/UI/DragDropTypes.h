@@ -8,6 +8,7 @@ namespace Ember {
 	{
 		None = 0,
 		AssetTexture,
+		AssetMesh,
 		AssetModel,
 		AssetScript,
 		AssetShader,
@@ -23,6 +24,7 @@ namespace Ember {
 			{
 			case DragDropPayloadType::None: return "None";
 			case DragDropPayloadType::AssetTexture: return "ASSET_TEXTURE";
+			case DragDropPayloadType::AssetMesh: return "ASSET_MESH";
 			case DragDropPayloadType::AssetModel: return "ASSET_MODEL";
 			case DragDropPayloadType::AssetScript: return "ASSET_SCRIPT";
 			case DragDropPayloadType::AssetShader: return "ASSET_SHADER";
@@ -34,6 +36,7 @@ namespace Ember {
 		static DragDropPayloadType StringToDragDropPayloadType(const std::string& str)
 		{
 			if (str == "ASSET_TEXTURE") return DragDropPayloadType::AssetTexture;
+			if (str == "ASSET_MESH") return DragDropPayloadType::AssetMesh;
 			if (str == "ASSET_MODEL") return DragDropPayloadType::AssetModel;
 			if (str == "ASSET_SCRIPT") return DragDropPayloadType::AssetScript;
 			if (str == "ASSET_SHADER") return DragDropPayloadType::AssetShader;
@@ -41,11 +44,13 @@ namespace Ember {
 			return DragDropPayloadType::None;
 		}
 
+		// TODO: Add mesh as distinct type and differentiate meshes/models
 		static std::string DragDropPayloadTypeToExtension(DragDropPayloadType type)
 		{
 			switch (type)
 			{
 			case DragDropPayloadType::AssetTexture: return "*.png;*.jpg;*.jpeg;*.bmp";
+			//case DragDropPayloadType::AssetMesh: return "*.obj;*.fbx;";
 			case DragDropPayloadType::AssetModel: return "*.obj;*.fbx;*.gltf;*.glb";
 			case DragDropPayloadType::AssetShader: return "*.glsl;";
 			case DragDropPayloadType::AssetScript: return "*.lua;";
@@ -57,6 +62,8 @@ namespace Ember {
 		{
 			if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
 				return DragDropPayloadType::AssetTexture;
+			//if (extension == ".obj" || extension == ".fbx")
+			//	return DragDropPayloadType::AssetMesh;
 			if (extension == ".obj" || extension == ".fbx" || extension == ".gltf" || extension == ".glb")
 				return DragDropPayloadType::AssetModel;
 			if (extension == ".glsl")

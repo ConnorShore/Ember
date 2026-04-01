@@ -17,7 +17,8 @@ namespace Ember {
 		bool Checkbox(const std::string& label, bool& value);
 
 		// Property Grid Widgets
-		bool Slider(const std::string& label, float& value, float min = 0.0f, float max = 0.0f);
+		bool SliderInt(const std::string& label, int& value, int min = 0, int max = 0);
+		bool SliderFloat(const std::string& label, float& value, float min = 0.0f, float max = 0.0f);
 		bool Float(const std::string& label, float& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);
 		bool Float2(const std::string& label, Vector2f& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);
 		bool Float3(const std::string& label, Vector3f& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);

@@ -231,7 +231,7 @@ namespace Ember {
 		}
 
 		// Select if click
-		if (ImGui::IsItemClicked())
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
 		{
 			SetSelectedEntity(entity);
 		}
@@ -255,11 +255,7 @@ namespace Ember {
 			ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 
 			// If the user hits Enter, apply the name
-			if (ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
-			{
-				entity.GetComponent<TagComponent>().Tag = std::string(m_RenameBuffer);
-				m_RenamingEntity = {};
-			}
+			ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 			ImGui::PopItemWidth();
 
 			if (ImGui::IsItemDeactivated())

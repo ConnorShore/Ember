@@ -1,5 +1,6 @@
 #include "AssetManagerPanel.h"
 #include "UI/DragDropTypes.h"
+#include "UI/PropertyGrid.h"
 
 #include <format>
 
@@ -30,109 +31,177 @@ namespace Ember {
 	{
 		ImGui::Begin(m_Title.c_str());
 
-		ImGui::BeginTable("##SliderTable", 2, ImGuiTableFlags_SizingFixedFit);
-		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::Text("Icon Size");
-		ImGui::TableNextColumn();
-		ImGui::SliderInt("##IconSize", &m_IconSize, 20, 400);
-		ImGui::EndTable();
+		RenderSizeSelector();
+		RenderDirectoryContents();
+		RenderAssetPanelContextMenu();
 
+		ImGui::End();
+	}
+
+	void AssetManagerPanel::UpdateAssetDirectory(const std::filesystem::path& newDirectory)
+	{
+		m_AssetDirectory = newDirectory;
+		m_CurrentDirectory = newDirectory;
+	}
+
+	void AssetManagerPanel::RenderSizeSelector()
+	{
+		if (UI::PropertyGrid::Begin("##AssetManagerPropertyGrid"))
+		{
+			UI::PropertyGrid::SliderInt("Icon Size", m_IconSize, 20, 400);
+			UI::PropertyGrid::End();
+		}
+	}
+
+	void AssetManagerPanel::RenderDirectoryContents()
+	{
+		// Navigation bar
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		if (m_CurrentDirectory != m_AssetDirectory)
 		{
-			if (ImGui::Button("<-"))
+			if (ImGui::Button("<- Back"))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
 		}
-
-		std::filesystem::directory_iterator it(m_CurrentDirectory);
-		int numColumns = Math::Max((int)(ImGui::GetWindowContentRegionMax().x / (m_IconSize)), 1);
-
-		ImGui::Columns(numColumns, nullptr, false);
-		for (const auto& entry : it)
+		else
 		{
-			std::string filePath = entry.path().string();
-			std::filesystem::path fileName = entry.path().filename();
-			std::string fileNameStr = entry.path().filename().string();
-
-			if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
-				continue;
-
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
-
-			if (entry.is_directory())
-			{
-				ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				{
-					m_CurrentDirectory /= fileName;
-				}
-			}
-			else
-			{
-				if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
-				{
-					// TODO: Select the item
-				}
-				if (ImGui::BeginPopupContextItem())
-				{
-					if (ImGui::MenuItem("Delete"))
-					{
-						Application::Instance().GetAssetManager().RemoveAsset(filePath);
-						std::error_code ec;
-						std::filesystem::remove(filePath, ec);
-
-						if (ec)
-						{
-							EB_CORE_ERROR("Failed to delete asset '{0}': {1}", fileNameStr, ec.message());
-						}
-						else
-						{
-							EB_CORE_INFO("Successfully deleted asset: {0}", fileNameStr);
-						}
-					}
-
-					ImGui::EndPopup();
-				}
-
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-				{
-					auto filePathAbs = std::filesystem::absolute(filePath);
-					auto payloadType = DragDropUtils::ExtensionToDragDropPayloadType(filePathAbs.extension().string());
-					auto payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
-
-					ImGui::SetDragDropPayload(payloadStr.c_str(), filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
-					ImGui::Image(m_FileTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-					ImGui::EndDragDropSource();
-				}
-			}
-
-			ImGui::PopStyleColor(3);
-
-			// Center text in column
-			ImVec2 textSize = ImGui::CalcTextSize(fileNameStr.c_str());
-			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (m_IconSize - textSize.x) / 2);
-			ImGui::TextWrapped(fileNameStr.c_str());
-
-			// Decide if we should wrap to next line or not
-			if (ImGui::GetColumnIndex() == numColumns - 1)
-			{
-				ImGui::NewLine();
-				ImGui::NextColumn();
-			}
-			else
-			{
-				ImGui::NextColumn();
-			}
+			ImGui::BeginDisabled();
+			ImGui::Button("<- Back");
+			ImGui::EndDisabled();
 		}
+		ImGui::PopStyleColor();
 
-		ImGui::Columns(1);
+		ImGui::SameLine();
 
+		// Display the current path
+		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, "Ember-Forge").string();
+		ImGui::TextDisabled("%s", relativePath.c_str());
+
+		ImGui::Separator();
+
+		// Calculate how many columns we can fit
+		float padding = 16.0f;
+		float cellSize = m_IconSize + padding;
+		float panelWidth = ImGui::GetContentRegionAvail().x;
+		int numColumns = Math::Max((int)(panelWidth / cellSize), 1);
+
+		if (ImGui::BeginTable("AssetBrowserTable", numColumns, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedFit))
+		{
+			std::filesystem::directory_iterator it(m_CurrentDirectory);
+
+			for (const auto& entry : it)
+			{
+				std::string filePath = entry.path().string();
+				std::filesystem::path fileName = entry.path().filename();
+				std::string fileNameStr = fileName.string();
+
+				if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
+					continue;
+
+				ImGui::TableNextColumn();
+
+				// Push the unique file path as an ID to prevent ImGui button conflicts
+				ImGui::PushID(filePath.c_str());
+
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+
+				if (entry.is_directory())
+				{
+					RenderDirectoryEntry(entry);
+				}
+				else
+				{
+					RenderFileEntry(entry);
+				}
+
+				ImGui::PopStyleColor(3);
+
+				float textWidth = ImGui::CalcTextSize(fileNameStr.c_str()).x;
+
+				// Only shift right if the text is smaller than the icon
+				if (textWidth < m_IconSize)
+				{
+					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (m_IconSize - textWidth) * 0.5f);
+				}
+
+				ImGui::TextWrapped("%s", fileNameStr.c_str());
+
+				ImGui::PopID();
+			}
+
+			ImGui::EndTable();
+		}
+	}
+
+	void AssetManagerPanel::RenderFileEntry(const std::filesystem::directory_entry& entry)
+	{
+		const std::filesystem::path filePath = entry.path();
+		const std::filesystem::path fileName = entry.path().filename();
+		const std::string fileNameStr = fileName.string();
+
+		if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+		{
+			// TODO: Select the item
+		}
+		
+		RenderFileEntryContextMenu(entry);
+
+		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+		{
+			auto filePathAbs = std::filesystem::absolute(filePath);
+			auto payloadType = DragDropUtils::ExtensionToDragDropPayloadType(filePathAbs.extension().string());
+			auto payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
+
+			ImGui::SetDragDropPayload(payloadStr.c_str(), filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
+			ImGui::Image(m_FileTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::EndDragDropSource();
+		}
+	}
+
+	void AssetManagerPanel::RenderDirectoryEntry(const std::filesystem::directory_entry& entry)
+	{
+		const std::filesystem::path fileName = entry.path().filename();
+		const std::string fileNameStr = fileName.string();
+
+		ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+		{
+			m_CurrentDirectory /= fileName;
+		}
+	}
+
+	void AssetManagerPanel::RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry)
+	{
+		const std::filesystem::path filePath = entry.path();
+		const std::filesystem::path fileName = entry.path().filename();
+
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::MenuItem("Delete"))
+			{
+				Application::Instance().GetAssetManager().RemoveAsset(filePath.string());
+				std::error_code ec;
+				std::filesystem::remove(filePath, ec);
+
+				if (ec)
+				{
+					EB_CORE_ERROR("Failed to delete asset '{0}': {1}", fileName.string(), ec.message());
+				}
+				else
+				{
+					EB_CORE_INFO("Successfully deleted asset: {0}", fileName.string());
+				}
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenderAssetPanelContextMenu()
+	{
 		if (ImGui::BeginPopupContextWindow("AssetManagerPanelContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
 			if (ImGui::BeginMenu("Import Asset"))
@@ -182,14 +251,6 @@ namespace Ember {
 
 			ImGui::EndPopup();
 		}
-
-		ImGui::End();
-	}
-
-	void AssetManagerPanel::UpdateAssetDirectory(const std::filesystem::path& newDirectory)
-	{
-		m_AssetDirectory = newDirectory;
-		m_CurrentDirectory = newDirectory;
 	}
 
 	std::string AssetManagerPanel::SelectAndLoadFile(const std::string& name, const std::string& type)

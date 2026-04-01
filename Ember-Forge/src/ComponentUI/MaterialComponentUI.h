@@ -129,7 +129,7 @@ namespace Ember {
 					case ShaderPropertyType::Slider:
 					{
 						RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
-							return UI::PropertyGrid::Slider(name, *value, prop.Min, prop.Max);
+							return UI::PropertyGrid::SliderFloat(name, *value, prop.Min, prop.Max);
 							});
 						break;
 					}
