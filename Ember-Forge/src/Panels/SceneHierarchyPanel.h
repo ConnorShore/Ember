@@ -21,6 +21,7 @@ namespace Ember {
 		void RenderContextMenu();
 		void RenderEntityTree();
 		void DrawTreeNode(Entity entity);
+		void RenderRootParentDragDropZone();
 
 		bool IsAncestor(Entity ancestor, Entity descendant);
 		bool IsDescendant(Entity descendant, Entity ancestor);

@@ -36,6 +36,7 @@ namespace Ember {
 
 		RenderEntityTree();
 		RenderContextMenu();
+		RenderRootParentDragDropZone();
 
 		ImGui::End();
 	}
@@ -152,7 +153,7 @@ namespace Ember {
 		}
 
 		// De-select if clicking blank space in the hierarchy window
-		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
 		{
 			SetSelectedEntity(Entity());
 		}
@@ -324,6 +325,25 @@ namespace Ember {
 				}
 				ImGui::TreePop();
 			}
+		}
+	}
+
+	void SceneHierarchyPanel::RenderRootParentDragDropZone()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::Dummy(ImGui::GetContentRegionAvail());
+		ImGui::PopStyleVar();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			{
+				UUID payloadUUID = *(const UUID*)payload->Data;
+				Entity payloadEntity = m_Context->ActiveScene->GetEntity(payloadUUID);
+				m_Context->ActiveScene->RemoveParent(payloadEntity);
+			}
+			ImGui::EndDragDropTarget();
 		}
 	}
 

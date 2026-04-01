@@ -26,12 +26,18 @@ namespace Ember {
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
+		void RenderMenuBar();
+		void RenderSceneViewport();
+		void RenderNewProjectPopup();
+
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
 		void RenderTransformGizmos();
 
 		void DrawToolbar(float fps);
+
+		void CalculateFPS(TimeStep delta);
 
 		void CreateEntity();
 		void RemoveEntity(Entity entity);

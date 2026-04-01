@@ -107,119 +107,143 @@ namespace Ember {
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
 		ImGuizmo::BeginFrame();
-
-		ImGui::ShowDemoWindow();
-
 		ImGui::DockSpaceOverViewport();
 
-		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
-		static float fps = 0.0f;
-		static float fpsTimer = 0.0f;
+		//ImGui::ShowDemoWindow();
 
-		fpsTimer += delta.Seconds();
-		if (fpsTimer >= 1.0f)
-		{
-			fps = 1.0f / delta.Seconds();
-			fpsTimer = 0.0f;
-		}
+		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
+		CalculateFPS(delta);
 
 		// Menu Bar
-		{
-			ImGui::BeginMainMenuBar();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
-				{
-					NewProject();
-				}
-				if (ImGui::MenuItem("Open Project", "Ctrl+Shift+O"))
-				{
-					OpenProject();
-				}
-
-				ImGui::Separator();
-				bool projectExists = ProjectManager::GetActive() != nullptr;
-
-				if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
-				{
-					NewScene();
-				}
-
-				if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
-				{
-					OpenScene();
-				}
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
-				{
-					SaveScene(false);
-				}
-
-				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
-				{
-					SaveScene(true);
-				}
-
-				ImGui::EndMenu();
-			}
-
-			ImGui::PopStyleVar();
-			ImGui::EndMainMenuBar();
-		}
-
+		RenderMenuBar();
 		DrawToolbar(fps);
-
-		// Viewport
-		{
-			ImGui::Begin("Scene");
-
-			// Save view port info for mouse picking and viewport resizing
-			m_ViewportHovered = ImGui::IsWindowHovered();
-			
-			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-			auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
-
-			m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-			m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
-
-			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-			{
-				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-				m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-			}
-
-			unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
-			ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-			// Drag drop zone for models
-			if (ImGui::BeginDragDropTarget())
-			{
-				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
-					CreateEntityFromModel(filePath);
-				}
-				ImGui::EndDragDropTarget();
-			}
-
-			// Draw Transform Gizmos for selected entity
-			RenderTransformGizmos();
-
-			ImGui::End();
-		}
+		RenderSceneViewport();
 
 		// Render Panels
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
 
 		// Pop up for new project
-		if (m_NewProjectSettings.ShowProjectSettingsPopup) 
+		RenderNewProjectPopup();
+
+		// Delete pending entities
+		RemovePendingEntities();
+	}
+
+	void EditorLayer::OnRuntimeStart()
+	{
+		m_Context.SelectedEntity = m_InvalidEntity;
+		m_PreviousSelectedEntity = m_InvalidEntity;
+
+		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnRuntimeStart();
+		m_SceneState = SceneState::Play;
+	}
+
+	void EditorLayer::OnRuntimeStop()
+	{
+		m_Context.SelectedEntity = m_InvalidEntity;
+		m_PreviousSelectedEntity = m_InvalidEntity;
+
+		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
+		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnRuntimeStop();
+		m_SceneState = SceneState::Edit;
+	}
+
+	void EditorLayer::RenderMenuBar()
+	{
+		ImGui::BeginMainMenuBar();
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
+			{
+				NewProject();
+			}
+			if (ImGui::MenuItem("Open Project", "Ctrl+Shift+O"))
+			{
+				OpenProject();
+			}
+
+			ImGui::Separator();
+			bool projectExists = ProjectManager::GetActive() != nullptr;
+
+			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
+			{
+				NewScene();
+			}
+
+			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
+			{
+				OpenScene();
+			}
+
+			if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
+			{
+				SaveScene(false);
+			}
+
+			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
+			{
+				SaveScene(true);
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::PopStyleVar();
+		ImGui::EndMainMenuBar();
+	}
+
+	void EditorLayer::RenderSceneViewport()
+	{
+		ImGui::Begin("Scene");
+
+		// Save view port info for mouse picking and viewport resizing
+		m_ViewportHovered = ImGui::IsWindowHovered();
+
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+		auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
+
+		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+
+		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+		{
+			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+			m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+		}
+
+		unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
+		ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		// Drag drop zone for models
+		if (ImGui::BeginDragDropTarget())
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			{
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+				CreateEntityFromModel(filePath);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		// Draw Transform Gizmos for selected entity
+		RenderTransformGizmos();
+
+		ImGui::End();
+	}
+
+	void EditorLayer::RenderNewProjectPopup()
+	{
+		if (m_NewProjectSettings.ShowProjectSettingsPopup)
 		{
 			ImGui::OpenPopup("NewProject");
 			m_NewProjectSettings.ShowProjectSettingsPopup = false;
@@ -274,31 +298,6 @@ namespace Ember {
 
 			ImGui::EndPopup();
 		}
-
-		// Delete pending entities
-		RemovePendingEntities();
-	}
-
-	void EditorLayer::OnRuntimeStart()
-	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
-		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-		m_Context.ActiveScene->OnRuntimeStart();
-		m_SceneState = SceneState::Play;
-	}
-
-	void EditorLayer::OnRuntimeStop()
-	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
-		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-		m_Context.ActiveScene->OnRuntimeStop();
-		m_SceneState = SceneState::Edit;
 	}
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
@@ -599,6 +598,20 @@ namespace Ember {
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+	}
+
+	void EditorLayer::CalculateFPS(TimeStep delta)
+	{
+		// TODO: Move to a debug window with this kind of info
+		static float fps = 0.0f;
+		static float fpsTimer = 0.0f;
+
+		fpsTimer += delta.Seconds();
+		if (fpsTimer >= 1.0f)
+		{
+			fps = 1.0f / delta.Seconds();
+			fpsTimer = 0.0f;
+		}
 	}
 
 	void EditorLayer::CreateEntity()
