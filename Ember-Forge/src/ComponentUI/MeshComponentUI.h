@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "UI/PropertyGrid.h"
 
 #include <Ember.h>
 
@@ -12,31 +13,12 @@ namespace Ember {
 		MeshComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Mesh Component"; }
 
-
 	protected:
 		inline void RenderComponentImpl(MeshComponent& component) override
 		{
-			if (ImGui::BeginTable("TransformProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("MeshComponentProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
-				// Mesh
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Mesh:");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-
-				const char* meshName = component.MeshHandle != Constants::InvalidUUID 
-					? Application::Instance().GetAssetManager().GetAsset<Mesh>(component.MeshHandle)->GetName().c_str() 
-					: "None";
-
-				ImGui::Text(meshName);
-				ImGui::SameLine();
-
-				if (ImGui::Button("Select Mesh"))
+				if (UI::PropertyGrid::HeaderWithActionButton("Mesh", "Select Mesh", m_SelectedMeshName))
 				{
 					ImGui::OpenPopup("ChooseMeshPopup");
 				}
@@ -47,24 +29,28 @@ namespace Ember {
 					if (ImGui::MenuItem("Cube"))
 					{
 						component.MeshHandle = Constants::Assets::CubeMeshUUID;
+						m_SelectedMeshName = "Cube";
 					}
 					if (ImGui::MenuItem("Quad"))
 					{
 						component.MeshHandle = Constants::Assets::QuadMeshUUID;
+						m_SelectedMeshName = "Quad";
 					}
 					if (ImGui::MenuItem("Sphere"))
 					{
 						component.MeshHandle = Constants::Assets::SphereMeshUUID;
+						m_SelectedMeshName = "Sphere";
 					}
 
 					ImGui::EndPopup();
 				}
 
-				ImGui::EndTable();
+				UI::PropertyGrid::End();
 			}
 		}
 
 	private:
+		std::string m_SelectedMeshName = "None";
 	};
 
 }

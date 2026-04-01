@@ -13,7 +13,8 @@ namespace Ember {
 		void End();
 
 		// Property Grid Items
-		bool HeaderWithActionButton(const std::string& headerLabel, const std::string& buttonLabel);
+		bool HeaderWithActionButton(const std::string& headerLabel, const std::string& buttonLabel, const std::string& caption = "");
+		bool Checkbox(const std::string& label, bool& value);
 
 		// Property Grid Widgets
 		bool Slider(const std::string& label, float& value, float min = 0.0f, float max = 0.0f);
@@ -25,6 +26,14 @@ namespace Ember {
 		bool Color3(const std::string& label, Vector3f& color);
 		bool Color4(const std::string& label, Vector4f& color);
 
+		// Returns true if a payload was dropped. 
+		// Pass nullptr to browseFunc or clearFunc to hide those respective buttons.
+		bool AssetReference(const std::string& label, const std::string& assetName, const std::string& payloadType, std::string& outDroppedPayload, UICallbackFunc browseFunc = nullptr, UICallbackFunc clearFunc = nullptr);
+
+		// A flexible row for action buttons. Leave btn2 empty to draw a single full-width button.
+		void ActionRow(const std::string& label, const std::string& btn1Label, UICallbackFunc btn1Func, const std::string& btn2Label = "", UICallbackFunc btn2Func = nullptr);
+
+		// Drag Drop Items
 		bool DragDropTexture(const std::string& label, UUID textureID, std::string& outDroppedPath, UICallbackFunc clearButtonFunc);
 	}
 

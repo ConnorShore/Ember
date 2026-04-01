@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "UI/PropertyGrid.h"
 
 namespace Ember {
 
@@ -13,61 +14,23 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(SpotLightComponent& component) override
 		{
-			if (ImGui::BeginTable("SpotLightProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("SpotLightProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
-				// Color
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Color");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::ColorEdit3("##Color", &component.Color[0]);
-
-				// Intensity
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Intensity");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat("##Intensity", &component.Intensity, 1.0f, 0.0f, m_MaxValue, "%.2f");
-
+				UI::PropertyGrid::Color3("Color", component.Color);
+				UI::PropertyGrid::Float("Intensity", component.Intensity, 1.0f, 0.0f, m_MaxValue);
 				float innerCutDegrees = Math::Degrees(component.CutOffAngle);
 				float outerCutDegrees = Math::Degrees(component.OuterCutOffAngle);
-
-				// Inner Cut Off Angle
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Inner Cut Off Angle");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-
-				if (ImGui::DragFloat("##InnerCutOffAngle", &innerCutDegrees, 0.5f, 0.0f, outerCutDegrees - 0.1f, "%.2f"))
+				if (UI::PropertyGrid::Float("Inner Cut Off Angle", innerCutDegrees, 0.5f, 0.0f, outerCutDegrees - 0.1f))
 				{
 					component.CutOffAngle = Math::Radians(innerCutDegrees);
 					component.CutOff = cos(component.CutOffAngle);
 				}
-
-				// Outer Cut Off Angle
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Outer Cut Off Angle");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-
-				if (ImGui::DragFloat("##OuterCutOffAngle", &outerCutDegrees, 0.5f, innerCutDegrees + 0.1f, 89.9f, "%.2f"))
+				if (UI::PropertyGrid::Float("Outer Cut Off Angle", outerCutDegrees, 0.5f, innerCutDegrees + 0.1f, 89.9f))
 				{
 					component.OuterCutOffAngle = Math::Radians(outerCutDegrees);
 					component.OuterCutOff = cos(component.OuterCutOffAngle);
 				}
-
-				ImGui::EndTable();
+				UI::PropertyGrid::End();
 			}
 		}
 
