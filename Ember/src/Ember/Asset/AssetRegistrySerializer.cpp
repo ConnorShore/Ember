@@ -169,6 +169,7 @@ namespace Ember {
 					}
 				}
 
+				// TODO: Update this to use .ebmodel files
 				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
 				model->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Model: {0}", name);

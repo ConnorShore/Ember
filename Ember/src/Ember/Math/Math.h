@@ -67,6 +67,16 @@ namespace Ember {
 			return (a < b) ? a : b;
 		}
 
+		static inline Vector3f Min(const Vector3f& a, const Vector3f& b)
+		{
+			return Vector3f(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z));
+		}
+
+		static inline Vector3f Max(const Vector3f& a, const Vector3f& b)
+		{
+			return Vector3f(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z));
+		}
+
 		static inline Matrix4f Translate(const Vector3f& translation) 
 		{
 			return glm::translate(Matrix4f(1.0f), translation);

@@ -27,7 +27,7 @@ project "Ember-Forge"
    links 
    {
       "Ember",
-      "assimp",
+      "Ember-Tools",
       "ImGuizmo"
    }
 

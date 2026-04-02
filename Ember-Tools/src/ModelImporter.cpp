@@ -1,171 +1,162 @@
-#include "ebpch.h"
 #include "ModelImporter.h"
-#include "AssetManager.h"
 
-#include "Ember/Render/Renderer3D.h"
+#include <Ember/Asset/MeshHeader.h>
 
 #include <filesystem>
-#include <stb_image.h>
-#include <stb_image_write.h>
+#include <fstream>
+#include <ryml.hpp>
 
 namespace Ember {
 
 	unsigned int ModelImporter::m_MeshCounter = 0;
 
-	SharedPtr<Model> ModelImporter::Load(UUID uuid, const std::string& name, const std::string& filePath, AssetManager& assetManager,
-		const std::vector<UUID>& meshUUIDs /*= {}*/, const std::vector<UUID>& materialUUIDs /*= {}*/)
+	bool ModelImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory)
 	{
-		Assimp::Importer importer;
+		// ... [Assimp import and ProcessScene logic] ...
 
-		unsigned int importFlags =
-			aiProcess_Triangulate |
-			aiProcess_FlipUVs |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_GenNormals |
-			aiProcess_CalcTangentSpace;
+		std::string modelName = std::filesystem::path(inputFile).stem().string();
+		std::filesystem::path manifestPath = std::filesystem::path(outputDirectory) / (modelName + ".ebmodel");
 
-		std::string extension = std::filesystem::path(filePath).extension().string();
-		if (extension != ".glb" && extension != ".gltf")
+		// --- ryml Tree Construction ---
+		ryml::Tree tree;
+		ryml::NodeRef root = tree.rootref();
+		root |= ryml::MAP; // Set root as a map
+
+		root["Model"] << modelName;
+
+		// RootNode Map
+		ryml::NodeRef rootNodeRef = root["RootNode"];
+		rootNodeRef |= ryml::MAP;
+		rootNodeRef["Name"] << rootNode.Name;
+
+		// TODO: Serialize your Matrix4f Transform here
+
+		// Meshes Sequence
+		ryml::NodeRef meshesRef = rootNodeRef["Meshes"];
+		meshesRef |= ryml::SEQ;
+
+		for (const auto& meshNode : rootNode.Meshes)
 		{
-			importFlags |= aiProcess_FlipUVs;
+			ryml::NodeRef meshMap = meshesRef.append_child();
+			meshMap |= ryml::MAP;
+
+			// Cast UUID to uint64_t so ryml knows how to format it as a number
+			meshMap["MeshID"] << (uint64_t)meshNode.MeshID;
+			meshMap["MaterialIndex"] << meshNode.MaterialIndex;
 		}
 
-		const aiScene* scene = importer.ReadFile(filePath, importFlags);
+		// --- Emit and Write ---
+		// ryml::emitrs_yaml emits the tree directly to an std::string
+		std::string yamlOutput = ryml::emitrs_yaml<std::string>(tree);
 
-		std::vector<SharedPtr<MaterialBase>> materials;
-		if (scene->HasMaterials())
+		std::ofstream fout(manifestPath);
+		fout << yamlOutput;
+		fout.close();
+
+		return true;
+	}
+
+	bool ModelImporter::CookMesh(const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath)
+	{
+		// Open the output file in binary mode
+		std::ofstream file(outputFilePath, std::ios::binary | std::ios::trunc);
+		if (!file.is_open())
 		{
-			materials.reserve(scene->mNumMaterials);
-			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
-			{
-				if (i < materialUUIDs.size())
-				{
-					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUIDs[i]));
-				}
-				else
-				{
-					// We are importing for the very first time. Extract from Assimp.
-					aiMaterial* material = scene->mMaterials[i];
-					materials.push_back(ProcessMaterial(name, filePath, scene, material, assetManager));
-				}
-			}
+			EB_CORE_ERROR("Failed to open file for cooking: {}", outputFilePath);
+			return false;
 		}
 
-		m_MeshCounter = 0;
-		auto rootModelNode = ProcessScene(name, scene, assetManager, meshUUIDs);
-		auto model = SharedPtr<Model>::Create(uuid, name, filePath, rootModelNode, materials);
-		model->SetIsEngineAsset(false);
-		return model;
-	}
+		// Write the Mesh Header
+		MeshHeader header;
+		header.VertexCount = static_cast<uint32_t>(vertices.size());
+		header.IndexCount = static_cast<uint32_t>(indices.size());
 
-	SharedPtr<Model> ModelImporter::Load(const std::string& name, const std::string& filePath, AssetManager& assetManager)
-	{
-		auto model = Load(UUID(), name, filePath, assetManager);
-		model->SetIsEngineAsset(false);
-		return model;
-	}
-
-	ModelNode ModelImporter::ProcessScene(const std::string& name, const aiScene* scene, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
-	{
-		ModelNode rootNode;
-		rootNode.Name = scene->mRootNode->mName.C_Str();
-		rootNode.LocalTransform = ConvertMatrix(scene->mRootNode->mTransformation);
-		ProcessNode(name, scene->mRootNode, rootNode, scene, assetManager, meshUUIDs);
-		return rootNode;
-	}
-
-	Matrix4f ModelImporter::ConvertMatrix(const aiMatrix4x4& aiMat)
-	{
-		return Matrix4f(
-			aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1, // Column 1
-			aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2, // Column 2
-			aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3, // Column 3
-			aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4  // Column 4
-		);
-	}
-
-	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, ModelNode& modelNode, const aiScene* scene, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
-	{
-		for (unsigned int i = 0; i < aiNode->mNumMeshes; i++)
+		// Calculate Bounding Box
+		Vector3f minBounds(FLT_MAX);
+		Vector3f maxBounds(-FLT_MAX);
+		for (const auto& v : vertices)
 		{
-			aiMesh* mesh = scene->mMeshes[aiNode->mMeshes[i]];
-			MeshMaterialNode meshMaterialNode;
-			meshMaterialNode.MaterialIndex = mesh->mMaterialIndex;
-			meshMaterialNode.MeshAsset = ProcessMesh(name, mesh, assetManager, meshUUIDs);
-			modelNode.Meshes.push_back(meshMaterialNode);
+			minBounds = Math::Min(minBounds, v.Position);
+			maxBounds = Math::Max(maxBounds, v.Position);
 		}
 
-		modelNode.ChildNodes.reserve(aiNode->mNumChildren);
-		for (unsigned int i = 0; i < aiNode->mNumChildren; i++)
-		{
-			ModelNode childNode;
-			childNode.Name = aiNode->mChildren[i]->mName.C_Str();
-			childNode.LocalTransform = ConvertMatrix(aiNode->mChildren[i]->mTransformation);
-			ProcessNode(name, aiNode->mChildren[i], childNode, scene, assetManager, meshUUIDs);
-			modelNode.ChildNodes.push_back(childNode);
-		}
+		header.Bounds.Min[0] = minBounds.x; header.Bounds.Min[1] = minBounds.y; header.Bounds.Min[2] = minBounds.z;
+		header.Bounds.Max[0] = maxBounds.x; header.Bounds.Max[1] = maxBounds.y; header.Bounds.Max[2] = maxBounds.z;
+
+		// Write the header
+		file.write((const char*)&header, sizeof(MeshHeader));
+
+		// Write vertices and indices
+		size_t vertexDataSize = vertices.size() * sizeof(MeshVertex);
+		file.write((const char*)vertices.data(), vertexDataSize);
+
+		size_t indexDataSize = indices.size() * sizeof(uint32_t);
+		file.write((const char*)indices.data(), indexDataSize);
+
+		file.close();
+
+		EB_CORE_INFO("Successfully cooked mesh to {}!", outputFilePath);
+		return true;
 	}
 
-	SharedPtr<Mesh> ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, AssetManager& assetManager, const std::vector<UUID>& meshUUIDs)
+	UUID ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory)
 	{
-		std::vector<float> vertices;
+		std::vector<MeshVertex> vertices;
 		std::vector<unsigned int> indices;
 
-		static unsigned int vertexSize = 14; // Position(3) + Normal(3) + TexCoords(2) + Tangent(3) + Bitangent(3)
-		vertices.reserve(aiMesh->mNumVertices * vertexSize);
+		vertices.reserve(aiMesh->mNumVertices);
 
 		for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
 		{
-			vertices.push_back(aiMesh->mVertices[i].x);
-			vertices.push_back(aiMesh->mVertices[i].y);
-			vertices.push_back(aiMesh->mVertices[i].z);
+			MeshVertex vertex;
+
+			// Position
+			vertex.Position = { aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z };
+
+			// Normal
 			if (aiMesh->mNormals)
 			{
-				vertices.push_back(aiMesh->mNormals[i].x);
-				vertices.push_back(aiMesh->mNormals[i].y);
-				vertices.push_back(aiMesh->mNormals[i].z);
+				vertex.Normal = { aiMesh->mNormals[i].x, aiMesh->mNormals[i].y, aiMesh->mNormals[i].z };
 			}
 			else
 			{
-				vertices.push_back(0.0f);
-				vertices.push_back(0.0f);
-				vertices.push_back(0.0f);
+				vertex.Normal = { 0.0f, 0.0f, 0.0f };
 			}
+
+			// Texture Coordinates
 			if (aiMesh->mTextureCoords[0])
 			{
-				vertices.push_back(aiMesh->mTextureCoords[0][i].x);
-				vertices.push_back(aiMesh->mTextureCoords[0][i].y);
+				vertex.TexCoords = { aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y };
 			}
 			else
 			{
-				vertices.push_back(0.0f);
-				vertices.push_back(0.0f);
+				vertex.TexCoords = { 0.0f, 0.0f };
 			}
+
+			// Tangent
 			if (aiMesh->mTangents)
 			{
-				vertices.push_back(aiMesh->mTangents[i].x);
-				vertices.push_back(aiMesh->mTangents[i].y);
-				vertices.push_back(aiMesh->mTangents[i].z);
+				vertex.Tangent = { aiMesh->mTangents[i].x, aiMesh->mTangents[i].y, aiMesh->mTangents[i].z };
 			}
 			else
 			{
-				vertices.push_back(1.0f);
-				vertices.push_back(0.0f);
-				vertices.push_back(0.0f);
+				vertex.Tangent = { 1.0f, 0.0f, 0.0f };
 			}
+
+			// Bitangent
 			if (aiMesh->mBitangents)
 			{
-				vertices.push_back(aiMesh->mBitangents[i].x);
-				vertices.push_back(aiMesh->mBitangents[i].y);
-				vertices.push_back(aiMesh->mBitangents[i].z);
+				vertex.Bitangent = { aiMesh->mBitangents[i].x, aiMesh->mBitangents[i].y, aiMesh->mBitangents[i].z };
 			}
 			else
 			{
-				vertices.push_back(0.0f);
-				vertices.push_back(1.0f);
-				vertices.push_back(0.0f);
+				vertex.Bitangent = { 0.0f, 1.0f, 0.0f };
 			}
+
+			vertices.push_back(vertex);
 		}
+
+		// Indices
 		for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
 		{
 			for (unsigned int j = 0; j < aiMesh->mFaces[i].mNumIndices; j++)
@@ -174,18 +165,19 @@ namespace Ember {
 			}
 		}
 
-		std::string meshName = name + "_" + aiMesh->mName.C_Str();
-		UUID currentMeshUUID = UUID();
-		if (m_MeshCounter < meshUUIDs.size())
-		{
-			currentMeshUUID = meshUUIDs[m_MeshCounter];
-		}
-		m_MeshCounter++;
+		// Cook the mesh
+		UUID meshUUID = UUID();
+		std::string meshFileName = name + "_" + aiMesh->mName.C_Str() + ".ebmesh";
+		std::filesystem::path outputPath = std::filesystem::path(outputDirectory) / meshFileName;
 
-		auto ret = SharedPtr<Mesh>::Create(currentMeshUUID, meshName, vertices, indices);
-		ret->SetIsEngineAsset(false);
-		assetManager.Register(ret);
-		return ret;
+		// Let CookMesh do the heavy lifting
+		if (CookMesh(vertices, indices, outputPath.string()))
+		{
+			return meshUUID;
+		}
+
+		EB_CORE_ERROR("Failed to cook mesh: {0}", meshFileName);
+		return Constants::InvalidUUID;
 	}
 
 	SharedPtr<MaterialInstance> ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, AssetManager& assetManager)

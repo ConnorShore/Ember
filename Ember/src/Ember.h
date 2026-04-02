@@ -72,4 +72,6 @@
 // Vendor includes
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <assimp/Importer.hpp>
+
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>

@@ -9,12 +9,13 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 include "Ember/vendor/GLFW"
 include "Ember/vendor/glad"
 include "Ember/vendor/imgui"
-include "Ember/vendor/assimp"
 include "Ember/vendor/rapidyaml"
 include "Ember/vendor/lua"
 
 include "Ember-Forge/vendor/ImGuizmo"
 
+include "Ember-Tools/vendor/assimp"
+
 include "Ember"
+include "Ember-Tools"
 include "Ember-Forge"
-include "Sandbox"

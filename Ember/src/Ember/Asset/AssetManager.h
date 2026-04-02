@@ -3,7 +3,7 @@
 #include "Ember/Core/Core.h"
 #include "UUID.h"
 #include "Asset.h"
-#include "ModelImporter.h"
+#include "Model.h"
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptImporter.h"
 #include "Ember/Render/Texture.h"
@@ -73,8 +73,8 @@ namespace Ember {
 				newAsset = TextureImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
-			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelImporter::Load(uuid, name, absolutePath, *this);
+			//else if constexpr (std::same_as<T, Model>)
+			//	newAsset = ModelImporter::Load(uuid, name, absolutePath, *this);
 			else if constexpr (std::same_as<T, Script>)
 				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
@@ -113,13 +113,14 @@ namespace Ember {
 		template<std::same_as<Model> T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
 		{
-			auto absolutePath = std::filesystem::absolute(filePath).string();
-			auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
-			
-			m_Assets[model->GetUUID()] = model;
-			m_AssetNames[name] = model->GetUUID();
-			m_AssetPaths[absolutePath] = model->GetUUID();
-			return model;
+			//auto absolutePath = std::filesystem::absolute(filePath).string();
+			//auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
+			//
+			//m_Assets[model->GetUUID()] = model;
+			//m_AssetNames[name] = model->GetUUID();
+			//m_AssetPaths[absolutePath] = model->GetUUID();
+			//return model;
+			return nullptr;	// TODO: Implement this
 		}
 
 		template<IsCoreAsset T>

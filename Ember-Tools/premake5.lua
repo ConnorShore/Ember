@@ -1,5 +1,5 @@
-project "Sandbox"
-   kind "ConsoleApp"
+project "Ember-Tools"
+   kind "StaticLib"
    language "C++"
    cppdialect "C++23"
 
@@ -15,16 +15,21 @@ project "Sandbox"
 
    includedirs 
    {
+      "src",
+      "%{wks.location}/Ember-Tools/vendor/assimp",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
       "%{wks.location}/Ember/vendor/lua/src",
-      "%{wks.location}/Ember/vendor/sol2/include"
+      "%{wks.location}/Ember/vendor/sol2/include",
+      "%{wks.location}/Ember/vendor/rapidyaml/src",
+		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
    }
 
    links 
    {
-      "Ember"
+      "Ember",
+      "assimp"
    }
 
    filter "system:windows"

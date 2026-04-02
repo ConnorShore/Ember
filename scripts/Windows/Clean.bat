@@ -32,6 +32,13 @@ for /d %%D in ("Ember-Forge\vendor\*") do (
     IF EXIST "%%D\obj" rmdir /s /q "%%D\obj"
 )
 
+echo Removing bin and bin-int directories in Ember-Tools/vendor subdirectories...
+for /d %%D in ("Ember-Tools\vendor\*") do (
+    IF EXIST "%%D\bin" rmdir /s /q "%%D\bin"
+    IF EXIST "%%D\bin-int" rmdir /s /q "%%D\bin-int"
+    IF EXIST "%%D\obj" rmdir /s /q "%%D\obj"
+)
+
 
 echo.
 echo Clean complete!
