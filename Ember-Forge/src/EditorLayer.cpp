@@ -56,6 +56,10 @@ namespace Ember {
 
 		for (auto& panel : m_Panels)
 			panel->OnAttach();
+
+		// Load play / pause textures
+		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Play.png")->GetID();
+		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Stop.png")->GetID();
 	}
 
 	void EditorLayer::OnDetach()
@@ -584,43 +588,51 @@ namespace Ember {
 
 	void EditorLayer::DrawToolbar()
 	{
+		// Prevent the user from resizing the dock node itself
 		ImGuiWindowClass window_class;
-		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
 		ImGui::SetNextWindowClass(&window_class);
 
-		// Tighten up the padding so it feels like a sleek toolbar
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 4));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 		float windowWidth = ImGui::GetWindowContentRegionMax().x;
+		float iconSize = 24.0f;
 
-		//Center the Play/Stop button
-		float buttonWidth = 60.0f;
-		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonWidth * 0.5f));
+
+		// Center the button and make it transparent
+		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
+		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonSizeWithPadding * 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		// (Optional) If you want to customize the hover color so it looks sleeker:
+		 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
 		if (m_SceneState == SceneState::Play)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.2f, 0.2f, 1.0f));
-			if (ImGui::Button("Stop", ImVec2(buttonWidth, 0)))
+			if (ImGui::ImageButton("StopButton", m_ToolbarProps.StopButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
 				OnRuntimeStop();
 				m_SceneState = SceneState::Edit;
 			}
-			ImGui::PopStyleColor();
 		}
 		else
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
-			if (ImGui::Button("Play", ImVec2(buttonWidth, 0)))
+			if (ImGui::ImageButton("PlayButton", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
 				OnRuntimeStart();
 			}
-			ImGui::PopStyleColor();
 		}
 
-		ImGui::End();
-		ImGui::PopStyleVar();
+		// Pop the transparent button color!
+		ImGui::PopStyleColor(3);
+
+		ImGui::End(); 
+		ImGui::PopStyleVar(2);
 	}
 
 	void EditorLayer::RenderStatsOverlay(TimeStep delta)

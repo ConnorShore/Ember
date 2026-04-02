@@ -131,7 +131,7 @@ namespace Ember {
 		bool m_ViewportHovered = false;
 		bool m_ViewportFocused = false;
 
-		bool m_ShowStatsWindow = true;
+		bool m_ShowStatsWindow = false;
 
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
@@ -147,6 +147,12 @@ namespace Ember {
 			std::string ProjectName;
 			std::string ProjectDirectory;
 		} m_NewProjectSettings;
+
+		struct ToolbarProps
+		{
+			unsigned int PlayButtonTextureID;
+			unsigned int StopButtonTextureID;
+		} m_ToolbarProps;
 	};
 
 }
