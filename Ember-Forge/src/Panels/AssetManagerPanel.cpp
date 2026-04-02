@@ -31,7 +31,7 @@ namespace Ember {
 	{
 		ImGui::Begin(m_Title.c_str());
 
-		RenderSizeSelector();
+		RenderPanelControls();
 		RenderDirectoryContents();
 		RenderAssetPanelContextMenu();
 
@@ -44,18 +44,8 @@ namespace Ember {
 		m_CurrentDirectory = newDirectory;
 	}
 
-	void AssetManagerPanel::RenderSizeSelector()
+	void AssetManagerPanel::RenderPanelControls()
 	{
-		if (UI::PropertyGrid::Begin("##AssetManagerPropertyGrid"))
-		{
-			UI::PropertyGrid::SliderInt("Icon Size", m_IconSize, 20, 400);
-			UI::PropertyGrid::End();
-		}
-	}
-
-	void AssetManagerPanel::RenderDirectoryContents()
-	{
-		// Navigation bar
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		if (m_CurrentDirectory != m_AssetDirectory)
 		{
@@ -78,8 +68,36 @@ namespace Ember {
 		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, "Ember-Forge").string();
 		ImGui::TextDisabled("%s", relativePath.c_str());
 
-		ImGui::Separator();
+		// Size slider
+		float sliderWidth = 150.0f;
+		float labelWidth = ImGui::CalcTextSize("Icon Size").x;
+		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+		float totalRightWidth = sliderWidth + labelWidth + spacing;
 
+		// Calculate where the right-aligned item should start
+		float currentCursorX = ImGui::GetCursorPosX();
+		float rightAlignedX = ImGui::GetWindowContentRegionMax().x - totalRightWidth;
+
+		if (rightAlignedX > currentCursorX)
+		{
+			ImGui::SameLine(rightAlignedX);
+		}
+		else
+		{
+			ImGui::SameLine();
+		}
+
+		ImGui::Text("Icon Size");
+		ImGui::SameLine(0, spacing);
+		ImGui::SetNextItemWidth(sliderWidth);
+
+		ImGui::SliderInt("##IconSize", &m_IconSize, 20, 400);
+
+		ImGui::Separator();
+	}
+
+	void AssetManagerPanel::RenderDirectoryContents()
+	{
 		// Calculate how many columns we can fit
 		float padding = 16.0f;
 		float cellSize = m_IconSize + padding;

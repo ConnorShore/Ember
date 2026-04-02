@@ -4,6 +4,14 @@
 
 namespace Ember {
 
+	using Severity = UINotificationEvent::Severity;
+
+	struct NotificationData
+	{
+		std::string Message;
+		Severity MessageSeverity = Severity::Info;
+	};
+
 	class NotificationPanel : public Panel
 	{
 	public:
@@ -22,8 +30,8 @@ namespace Ember {
 		const float m_DisplayDuration = 3.0f;
 
 	private:
-		std::queue<std::string> m_NotificationQueue;
-		std::string m_CurrentNotification;
+		std::queue<NotificationData> m_NotificationQueue;
+		NotificationData m_CurrentNotification;
 
 		float m_CurrentTimer = 0.0f;
 	};

@@ -15,6 +15,8 @@ namespace Ember {
 		// Property Grid Items
 		bool HeaderWithActionButton(const std::string& headerLabel, const std::string& buttonLabel, const std::string& caption = "");
 		bool Checkbox(const std::string& label, bool& value);
+		bool InputText(const std::string& label, std::string& value);
+		bool DirectoryInput(const std::string& label, std::string& directoryPath, UICallbackFunc browseFunc);
 
 		// Property Grid Widgets
 		bool SliderInt(const std::string& label, int& value, int min = 0, int max = 0);

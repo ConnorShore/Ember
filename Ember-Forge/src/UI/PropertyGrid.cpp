@@ -67,6 +67,68 @@ namespace Ember {
 			ImGui::PushItemWidth(-FLT_MIN);
 			return ImGui::Checkbox(std::format("##{}", label).c_str(), &value);
 		}
+		bool InputText(const std::string& label, std::string& value)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+
+			char buffer[256];
+			strncpy_s(buffer, sizeof(buffer), value.c_str(), _TRUNCATE);
+
+			bool modified = false;
+			if (ImGui::InputText(std::format("##{}", label).c_str(), buffer, sizeof(buffer)))
+			{
+				value = std::string(buffer);
+				modified = true;
+			}
+			ImGui::PopItemWidth();
+			return modified;
+		}
+
+		bool DirectoryInput(const std::string& label, std::string& directoryPath, UICallbackFunc browseFunc)
+		{
+			ImGui::PushID(label.c_str());
+			bool modified = false;
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+
+			float buttonSize = ImGui::GetFrameHeight();
+			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+			float inputWidth = ImGui::GetContentRegionAvail().x - buttonSize - spacing;
+
+			ImGui::PushItemWidth(inputWidth);
+			char buffer[512];
+			strncpy_s(buffer, sizeof(buffer), directoryPath.c_str(), _TRUNCATE);
+			if (ImGui::InputText("##Path", buffer, sizeof(buffer)))
+			{
+				directoryPath = std::string(buffer);
+				modified = true;
+			}
+			ImGui::PopItemWidth();
+
+			if (browseFunc)
+			{
+				ImGui::SameLine(0, spacing);
+				if (ImGui::Button("...", ImVec2(buttonSize, buttonSize)))
+				{
+					browseFunc();
+					modified = true;
+				}
+			}
+
+			ImGui::PopID();
+			return modified;
+		}
 
 		// Property Grid Widgets
 

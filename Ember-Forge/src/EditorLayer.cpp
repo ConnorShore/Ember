@@ -5,6 +5,7 @@
 #include "Panels/EnvironmentPanel.h"
 #include "Panels/NotificationPanel.h"
 #include "UI/DragDropTypes.h"
+#include "UI/PropertyGrid.h"
 
 #include <random>
 
@@ -41,7 +42,7 @@ namespace Ember {
 		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
 		m_Camera.SetPitch(Math::Radians(30.0f));
 		m_Camera.SetYaw(Math::Radians(45.0f));
-		m_Camera.SetDistance(10.0f);
+		m_Camera.SetDistance(6.0f);
 
 		// Output Framebuffer
 		FramebufferSpecification specs;
@@ -92,12 +93,16 @@ namespace Ember {
 		switch (m_SceneState)
 		{
 			case SceneState::Edit:
+			{
 				m_Camera.OnUpdate(delta);
 				m_Context.ActiveScene->OnUpdateEdit(delta, m_Camera);
 				break;
+			}
 			case SceneState::Play:
+			{
 				m_Context.ActiveScene->OnUpdateRuntime(delta);
 				break;
+			}
 			case SceneState::Pause:
 			default:
 				EB_CORE_ASSERT(false, "Unhandled scene state!");
@@ -116,13 +121,13 @@ namespace Ember {
 
 		//ImGui::ShowDemoWindow();
 
-		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
-		float fps = CalculateFPS(delta);
-
 		// Menu Bar
 		RenderMenuBar();
-		DrawToolbar(fps);
+		DrawToolbar();
 		RenderSceneViewport();
+
+		if (m_ShowStatsWindow)
+			RenderStatsOverlay(delta);
 
 		// Render Panels
 		for (auto& panel : m_Panels)
@@ -199,6 +204,18 @@ namespace Ember {
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Editor"))
+		{
+			if (ImGui::BeginMenu("Tool Windows"))
+			{
+				ImGui::MenuItem("Debug Stats", nullptr, &m_ShowStatsWindow);
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+
 		ImGui::PopStyleVar();
 		ImGui::EndMainMenuBar();
 	}
@@ -251,52 +268,64 @@ namespace Ember {
 	{
 		if (m_NewProjectSettings.ShowProjectSettingsPopup)
 		{
-			ImGui::OpenPopup("NewProject");
+			ImGui::OpenPopup("New Project");
 			m_NewProjectSettings.ShowProjectSettingsPopup = false;
-			m_NewProjectSettings.ProjectName = "";
 		}
+
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-		if (ImGui::BeginPopupModal("NewProject", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		ImGui::SetNextWindowSize(ImVec2(600, 200), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("New Project", NULL, ImGuiWindowFlags_NoSavedSettings))
 		{
-			ImGui::Text("Project Name");
-			ImGui::Separator();
-
-			char buffer[128] = "";
-			strncpy_s(buffer, sizeof(buffer), m_NewProjectSettings.ProjectName.c_str(), _TRUNCATE);
-
-			if (ImGui::InputText("##ProjectName", buffer, sizeof(buffer)))
+			if (UI::PropertyGrid::Begin("NewProjectTable"))
 			{
-				m_NewProjectSettings.ProjectName = std::string(buffer);
+				UI::PropertyGrid::InputText("Project Name", m_NewProjectSettings.ProjectName);
+
+				auto browseFunc = [&]() {
+					std::string selectedDir = FileDialog::OpenDirectory();
+					if (!selectedDir.empty())
+						m_NewProjectSettings.ProjectDirectory = selectedDir;
+					};
+
+				UI::PropertyGrid::DirectoryInput("Location", m_NewProjectSettings.ProjectDirectory, browseFunc);
+
+				UI::PropertyGrid::End();
 			}
 
-			if (ImGui::Button("OK", ImVec2(120, 0)))
+			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			// Actions
+			bool isValid = !m_NewProjectSettings.ProjectName.empty() && !m_NewProjectSettings.ProjectDirectory.empty();
+
+			if (!isValid) ImGui::BeginDisabled();
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
 			{
-				// Create directory for ProjectDirectory
 				std::filesystem::path projectDirPath = std::filesystem::path(m_NewProjectSettings.ProjectDirectory) / m_NewProjectSettings.ProjectName;
 				std::filesystem::create_directories(projectDirPath);
 
-				std::string projectNameFinal = m_NewProjectSettings.ProjectName += ".ebproj";
+				std::string projectNameFinal = m_NewProjectSettings.ProjectName + ".ebproj";
 				std::filesystem::path fullProjectPath = projectDirPath / projectNameFinal;
+
 				auto project = ProjectManager::NewProject(fullProjectPath.string());
 
-				// Open default scene
 				OpenScene(project->GetStartScenePath().string());
-				auto assetPanel = GetPanel<AssetManagerPanel>();
-				if (assetPanel != nullptr)
-				{
+
+				if (auto assetPanel = GetPanel<AssetManagerPanel>())
 					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-				}
 
-				// Clear existing project assets
-				auto& assetManager = Application::Instance().GetAssetManager();
-				assetManager.ClearAssets();
-
+				Application::Instance().GetAssetManager().ClearAssets();
 
 				ImGui::CloseCurrentPopup();
 			}
+
+			if (!isValid) ImGui::EndDisabled();
+
 			ImGui::SameLine();
-			if (ImGui::Button("Cancel"))
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
 			{
 				m_NewProjectSettings.ProjectName = "";
 				ImGui::CloseCurrentPopup();
@@ -312,6 +341,7 @@ namespace Ember {
 		if (ImGui::GetIO().WantTextInput)
 			return false;
 
+		bool activeProject = ProjectManager::GetActive() != nullptr;
 		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
 		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
 
@@ -336,19 +366,22 @@ namespace Ember {
 				break;
 
 			// Scene Hot keys
-			// TODO: Disable if no project is active
 			case KeyCode::N:
-				if (control)
+				if (shift && control)
+					NewProject();
+				else if (activeProject && control)
 					NewScene();
 				break;
 			case KeyCode::O:
-				if (control)
+				if (shift && control)
+					OpenProject();
+				else if (activeProject && control)
 					OpenScene();
 				break;
 			case KeyCode::S:
-				if (control && shift)
+				if (activeProject && control && shift)
 					SaveScene(true);
-				else if (control)
+				else if (activeProject && control)
 					SaveScene(false);
 				break;
 
@@ -358,13 +391,13 @@ namespace Ember {
 					RemoveEntity(m_Context.SelectedEntity);
 				break;
 
-			case KeyCode::Space:
+			case KeyCode::Enter:
 				if (control)
 				{
 					if (m_SceneState == SceneState::Play)
-						m_SceneState = SceneState::Edit;
+						OnRuntimeStop();
 					else
-						m_SceneState = SceneState::Play;
+						OnRuntimeStart();
 				}
 				break;
 		}
@@ -401,7 +434,6 @@ namespace Ember {
 			{
 				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
 				m_Context.SelectedEntity = selected;
-				EB_CORE_INFO("Clicked Entity: {}", (uint64_t)selected);
 			}
 		}
 
@@ -550,7 +582,7 @@ namespace Ember {
 		}
 	}
 
-	void EditorLayer::DrawToolbar(float fps)
+	void EditorLayer::DrawToolbar()
 	{
 		ImGuiWindowClass window_class;
 		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
@@ -587,42 +619,52 @@ namespace Ember {
 			ImGui::PopStyleColor();
 		}
 
-		ImGui::SameLine();
-
-		// TODO: Add a debug window you can open that shows this kind of info so imgui.ini doesn't save a new entry for each fps value change
-		// 
-		// Format the text and calculate how much horizontal space it takes
-		//char fpsBuf[32];
-		//snprintf(fpsBuf, sizeof(fpsBuf), "FPS: %.1f", fps);
-		//float fpsTextWidth = ImGui::CalcTextSize(fpsBuf).x;
-
-		//// Push the cursor to the far right edge, minus the text width and a small margin
-		//ImGui::SetCursorPosX(windowWidth - fpsTextWidth - 10.0f);
-
-		//// Vertically align the text slightly so it sits nicely next to the button
-		//ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
-		//ImGui::TextDisabled("%s", fpsBuf); // TextDisabled makes it a subtle gray!
-
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
 
+	void EditorLayer::RenderStatsOverlay(TimeStep delta)
+	{
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoMove;
+
+		ImVec2 windowPos = ImVec2(m_ViewportBounds[1].x - 10.0f, m_ViewportBounds[0].y + 10.0f);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));	// Pin to top-right corner of the viewport with right alignment
+
+		ImGui::SetNextWindowBgAlpha(0.35f);
+
+		if (ImGui::Begin("Stats Overlay", nullptr, windowFlags))
+		{
+			ImGui::Text("Renderer Stats");
+			ImGui::Separator();
+			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
+			ImGui::Text("Entities: %d", m_Context.ActiveScene->GetAllEntities().size());
+		}
+		ImGui::End();
+	}
+
 	float EditorLayer::CalculateFPS(TimeStep delta)
 	{
-		// TODO: Move to a debug window with this kind of info
 		static float fpsTimer = 0.0f;
-		float fps = 0.0f;
+		static float fps = 0.0f;
+		static int frameCount = 0;    
 
 		fpsTimer += delta.Seconds();
+		frameCount++;
+
 		if (fpsTimer >= 1.0f)
 		{
-			fps = 1.0f / delta.Seconds();
+			fps = (float)frameCount / fpsTimer;
+
 			fpsTimer = 0.0f;
+			frameCount = 0;
 		}
 
 		return fps;
 	}
-
+	
 	void EditorLayer::CreateEntity()
 	{
 		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
@@ -689,10 +731,12 @@ namespace Ember {
 
 	void EditorLayer::NewProject()
 	{
-		m_NewProjectSettings.ProjectDirectory = FileDialog::OpenDirectory();
 		if (m_NewProjectSettings.ProjectDirectory.empty())
-			return;
-		
+		{
+			m_NewProjectSettings.ProjectDirectory = std::filesystem::current_path().string();
+		}
+
+		m_NewProjectSettings.ProjectName = "NewProject";
 		m_NewProjectSettings.ShowProjectSettingsPopup = true;
 	}
 
@@ -731,7 +775,8 @@ namespace Ember {
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 
-		EB_CORE_TRACE("New Scene created!");
+		auto evt = UINotificationEvent("New Scene created!");
+		m_Context.EventCallback(evt);
 	}
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
@@ -757,11 +802,13 @@ namespace Ember {
 				m_Context.SelectedEntity = {};
 				m_PreviousSelectedEntity = {};
 
-				EB_CORE_TRACE("Scene loaded successfully!");
+				auto evt = UINotificationEvent(std::format("Scene opened: {}", std::filesystem::path(sceneFile).filename().string()));
+				m_Context.EventCallback(evt);
 			}
 			else
 			{
-				EB_CORE_ERROR("Failed to load scene!");
+				auto evt = UINotificationEvent("Failed to load scene!", UINotificationEvent::Severity::Error);
+				m_Context.EventCallback(evt);
 			}
 		}
 	}
@@ -789,7 +836,9 @@ namespace Ember {
 			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
-			EB_CORE_TRACE("Scene saved!");
+
+			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
+			m_Context.EventCallback(evt);
 		}
 	}
 

@@ -35,8 +35,9 @@ namespace Ember {
 		void SyncEntitySelectionState();
 		void RenderTransformGizmos();
 
-		void DrawToolbar(float fps);
+		void DrawToolbar();
 
+		void RenderStatsOverlay(TimeStep delta);
 		float CalculateFPS(TimeStep delta);
 
 		void CreateEntity();
@@ -124,12 +125,13 @@ namespace Ember {
 
 		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
 		Vector2f m_ViewportSize;
-		Vector2f m_SceneViewSize;
 
 		std::vector<SharedPtr<Panel>> m_Panels;
 
 		bool m_ViewportHovered = false;
 		bool m_ViewportFocused = false;
+
+		bool m_ShowStatsWindow = true;
 
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
