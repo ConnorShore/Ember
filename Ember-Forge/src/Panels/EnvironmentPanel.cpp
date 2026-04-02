@@ -1,4 +1,6 @@
 #include "EnvironmentPanel.h"
+#include "UI/Nodes.h"
+#include "UI/PropertyGrid.h"
 
 namespace Ember {
 
@@ -13,35 +15,27 @@ namespace Ember {
 	{
 		ImGui::Begin("Environment");
 
-		// Bloom section
-		const ImGuiTreeNodeFlags treeNodeFlags =
-			ImGuiTreeNodeFlags_DefaultOpen |
-			ImGuiTreeNodeFlags_Framed |
-			ImGuiTreeNodeFlags_SpanAvailWidth |
-			ImGuiTreeNodeFlags_AllowOverlap |
-			ImGuiTreeNodeFlags_FramePadding;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-		bool open = ImGui::TreeNodeEx("Bloom", treeNodeFlags, "Bloom");
-		ImGui::PopStyleVar();
-
-		if (open)
+		if (UI::Nodes::BeginExpandableNode("Bloom"))
 		{
 			auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
 			ImGui::Checkbox("Enable", &bloomPass->Enabled);
-			ImGui::BeginDisabled(!bloomPass->Enabled);
 
-			// TODO: Get this hooked up
+			if (UI::PropertyGrid::Begin("##BloomPropertyGrid"))
+			{
+				ImGui::BeginDisabled(!bloomPass->Enabled);
 
-			float test;
-			ImGui::DragFloat("Threshold", &bloomPass->Threshold, 0.01f, 0.0f, 10.0f, "%.2f");
-			ImGui::DragFloat("Soft Knee", &bloomPass->Knee, 0.01f, 0.0f, 1.0f, "%.2f");
-			ImGui::DragFloat("Intensity", &bloomPass->Intensity, 0.01f, 0.0f, 5.0f, "%.2f");
-			ImGui::DragFloat("Blur Radius", &bloomPass->BlurRadius, 0.01f, 0.1f, 5.0f, "%.2f");
-			
-			ImGui::EndDisabled();
-			
-			ImGui::TreePop();
+				UI::PropertyGrid::Float("Threshold", bloomPass->Threshold, 0.01f, 0.0f, 10.0f);
+				UI::PropertyGrid::Float("Soft Knee", bloomPass->Knee, 0.01f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Intensity", bloomPass->Intensity, 0.01f, 0.0f, 5.0f);
+				UI::PropertyGrid::Float("Blur Radius", bloomPass->BlurRadius, 0.01f, 0.1f, 5.0f);
+
+				ImGui::EndDisabled();
+
+				UI::PropertyGrid::End();
+			}
+
+
+			UI::Nodes::EndExpandableNode();
 		}
 		
 		ImGui::End();

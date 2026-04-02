@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "UI/UIWidgets.h"
+#include "UI/PropertyGrid.h"
 
 namespace Ember {
 
@@ -23,7 +25,7 @@ namespace Ember {
 			ImGui::SameLine();
 
 			std::string projectionTypeName = Camera::GetProjectionTypeName(camera.GetProjectionType());
-			if (ImGui::BeginCombo("##CameraCombo", projectionTypeName.c_str()))
+			if (UI::BeginComboBox("##CameraCombo", projectionTypeName.c_str()))
 			{
 				for (unsigned int i = 0; i < static_cast<int>(Camera::ProjectionType::Count); i++)
 				{
@@ -31,91 +33,41 @@ namespace Ember {
 					std::string typeName = Camera::GetProjectionTypeName(type);
 
 					bool isSelected = typeName == projectionTypeName;
-					if (ImGui::Selectable(typeName.c_str(), isSelected))
+					if (UI::ComboBoxItem(typeName.c_str(), isSelected))
 						camera.SetProjectionType(type);
-
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
 				}
-				ImGui::EndCombo();
+				UI::EndComboBox();
 			}
 
 			ImGui::Separator();
 			ImGui::Text("Properties");
-			if (ImGui::BeginTable("TransformProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("TransformProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
 				if (camera.GetProjectionType() == Camera::ProjectionType::Perspective)
 				{
 					// FOV
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Field Of View");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##FieldOfView", &camera.GetPerspectiveProps().FieldOfView, 0.1f, 0.0f, 0.0f, "%.2f");
-
+					UI::PropertyGrid::Float("Field Of View", camera.GetPerspectiveProps().FieldOfView);
+					
 					// Near Clip
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Near Clip");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##NearClip", &camera.GetPerspectiveProps().NearClip, 0.1f, 0.0f, 0.0f, "%.2f");
+					UI::PropertyGrid::Float("Near Clip", camera.GetPerspectiveProps().NearClip);
 
-					// FOV
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Far Clip");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##FarClip", &camera.GetPerspectiveProps().FarClip, 0.1f, 0.0f, 0.0f, "%.2f");
-
-				}
-				else if (camera.GetProjectionType() == Camera::ProjectionType::Orthographic)
-				{
-					// FOV
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Size");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##Size", &camera.GetOrthographicProps().Size, 0.1f, 0.0f, 0.0f, "%.2f");
-
-					// Near Clip
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Near Clip");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##NearClip", &camera.GetOrthographicProps().NearClip, 0.1f, 0.0f, 0.0f, "%.2f");
-
-					// FOV
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Far Clip");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##FarClip", &camera.GetOrthographicProps().FarClip, 0.1f, 0.0f, 0.0f, "%.2f");
+					// Far Clip
+					UI::PropertyGrid::Float("Far Clip", camera.GetPerspectiveProps().FarClip);
 				}
 				else
 				{
-					EB_CORE_ASSERT(false, "Unsupported projection type selected!");
+					// Size
+					UI::PropertyGrid::Float("Size", camera.GetOrthographicProps().Size);
+
+					// Near Clip
+					UI::PropertyGrid::Float("Near Clip", camera.GetOrthographicProps().NearClip);
+
+					// Far Clip
+					UI::PropertyGrid::Float("Far Clip", camera.GetOrthographicProps().FarClip);
 				}
 
-				
-				ImGui::EndTable();
+				UI::PropertyGrid::End();
 			}
-
-			
 		}
 
 	private:

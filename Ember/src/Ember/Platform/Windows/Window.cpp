@@ -8,7 +8,14 @@
 #include "Ember/Input/Input.h"
 
 #include <glad/glad.h>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+
+// Link against the DWM library (for DwmSetWindowAttribute)
+#pragma comment(lib, "dwmapi.lib")
 
 namespace Ember {
 	namespace Windows {
@@ -35,6 +42,14 @@ namespace Ember {
 				return;
 			}
 
+			// Set dark theme for the window (Windows 10/11)
+			{
+				HWND hwnd = glfwGetWin32Window(m_Window);
+				BOOL useDarkMode = TRUE;
+				DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+			}
+
+			// Create graphics context
 			m_GraphicsContext = GraphicsContext::Create(m_Window);
 			m_GraphicsContext->Init();
 

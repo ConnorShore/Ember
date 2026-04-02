@@ -195,6 +195,19 @@ namespace Ember {
 		childTransform.Scale = outScale * childTransform.Scale;
 	}
 
+	void Scene::RemoveParent(Entity child)
+	{
+		auto& relationship = child.GetComponent<RelationshipComponent>();
+		if (relationship.ParentHandle != Constants::InvalidUUID)
+		{
+			auto parentEntity = GetEntity(relationship.ParentHandle);
+			auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
+			parentRelationship.Children.erase(std::remove(parentRelationship.Children.begin(), parentRelationship.Children.end(), child.GetUUID()), parentRelationship.Children.end());
+
+			relationship.ParentHandle = Constants::InvalidUUID;
+		}
+	}
+
 	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot)
 	{
 		std::string name = entity.GetName();

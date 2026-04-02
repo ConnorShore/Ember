@@ -18,6 +18,13 @@ namespace Ember {
 		void UpdateAssetDirectory(const std::filesystem::path& newDirectory);
 
 	private:
+		void RenderPanelControls();
+		void RenderDirectoryContents();
+		void RenderFileEntry(const std::filesystem::directory_entry& entry);
+		void RenderDirectoryEntry(const std::filesystem::directory_entry& entry);
+		void RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry);
+		void RenderAssetPanelContextMenu();
+
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
 	private:

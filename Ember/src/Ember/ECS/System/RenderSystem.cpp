@@ -678,7 +678,6 @@ namespace Ember {
 			outlinedEntityMap[entity] = outline;
 		}
 
-
 		// Pass over all post processing items
 		for (auto& pass : m_PostProcessStack)
 		{

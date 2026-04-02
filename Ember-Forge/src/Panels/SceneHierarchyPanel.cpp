@@ -1,7 +1,7 @@
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
-#include "utils/DragDropTypes.h"
+#include "UI/DragDropTypes.h"
 
 namespace Ember {
 
@@ -36,6 +36,7 @@ namespace Ember {
 
 		RenderEntityTree();
 		RenderContextMenu();
+		RenderRootParentDragDropZone();
 
 		ImGui::End();
 	}
@@ -60,20 +61,17 @@ namespace Ember {
 				if (ImGui::MenuItem("Cube"))
 				{
 					auto entity = Presets::CreateCube(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Sphere"))
 				{
 					auto entity = Presets::CreateSphere(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Quad"))
 				{
 					auto entity = Presets::CreateQuad(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 
 				ImGui::EndMenu();
@@ -152,7 +150,7 @@ namespace Ember {
 		}
 
 		// De-select if clicking blank space in the hierarchy window
-		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
 		{
 			SetSelectedEntity(Entity());
 		}
@@ -164,6 +162,7 @@ namespace Ember {
 	{
 		ImGuiTreeNodeFlags flags = ((GetSelectedEntity() == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+		flags |= ImGuiTreeNodeFlags_FramePadding;
 
 		bool hasChildren = !entity.GetComponent<RelationshipComponent>().Children.empty();
 		if (!hasChildren)
@@ -230,7 +229,7 @@ namespace Ember {
 		}
 
 		// Select if click
-		if (ImGui::IsItemClicked())
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
 		{
 			SetSelectedEntity(entity);
 		}
@@ -254,11 +253,7 @@ namespace Ember {
 			ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 
 			// If the user hits Enter, apply the name
-			if (ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
-			{
-				entity.GetComponent<TagComponent>().Tag = std::string(m_RenameBuffer);
-				m_RenamingEntity = {};
-			}
+			ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 			ImGui::PopItemWidth();
 
 			if (ImGui::IsItemDeactivated())
@@ -330,6 +325,25 @@ namespace Ember {
 		}
 	}
 
+	void SceneHierarchyPanel::RenderRootParentDragDropZone()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::Dummy(ImGui::GetContentRegionAvail());
+		ImGui::PopStyleVar();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			{
+				UUID payloadUUID = *(const UUID*)payload->Data;
+				Entity payloadEntity = m_Context->ActiveScene->GetEntity(payloadUUID);
+				m_Context->ActiveScene->RemoveParent(payloadEntity);
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
+
 	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
 	{
 		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetUUID() == Constants::InvalidUUID)
@@ -375,11 +389,19 @@ namespace Ember {
 		return false;
 	}
 
+	void SceneHierarchyPanel::CreateEntity(Entity entity)
+	{
+		SetSelectedEntity(entity);
+		RenameEntity(entity);
+
+		auto evt = UINotificationEvent(std::format("Entity {} Created", entity.GetName()));
+		m_Context->EventCallback(evt);
+	}
+
 	void SceneHierarchyPanel::CreateEmptyEntity()
 	{
 		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
-		SetSelectedEntity(entity);
-		RenameEntity(entity);
+		CreateEntity(entity);
 	}
 
 	void SceneHierarchyPanel::DuplicateEntity(Entity entity)

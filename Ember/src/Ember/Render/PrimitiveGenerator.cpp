@@ -4,12 +4,13 @@
 
 namespace Ember {
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateSphere(const std::string& name, float radius, unsigned int xSegments, unsigned int ySegments)
+	SharedPtr<Mesh> PrimitiveGenerator::CreateSphere(const std::string& name, float size, unsigned int xSegments, unsigned int ySegments)
 	{
 		std::vector<float> vertices;
 		std::vector<unsigned int> indices;
 
 		const float PI = 3.14159265359f;
+		float radius = size * 0.5f;
 
 		// 1. Generate Vertices (14 Floats per vertex)
 		for (unsigned int y = 0; y <= ySegments; ++y)

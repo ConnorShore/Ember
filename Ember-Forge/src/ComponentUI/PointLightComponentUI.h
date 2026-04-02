@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "UI/PropertyGrid.h"
 
 namespace Ember {
 
@@ -13,55 +14,24 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(PointLightComponent& component) override
 		{
-			if (ImGui::BeginTable("PointLightProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("PointLightProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+				UI::PropertyGrid::Color3("Color", component.Color);
+				UI::PropertyGrid::Float("Intensity", component.Intensity, 1.0f, 0.0f, m_MaxValue);
 
-				// Color
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Color");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::ColorEdit3("##Color", &component.Color[0]);
+				float radiusValue = m_UseRadius ? 1.0f : 0.0f;
 
-				// Intensity
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Intensity");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat("##Intensity", &component.Intensity, 1.0f, 0.0f, m_MaxValue, "%.2f");
-
-				// Radius
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Use Radius");
-				ImGui::TableNextColumn();
-				if (ImGui::Checkbox("##UseRadius", &m_UseRadius))
+				if (UI::PropertyGrid::Checkbox("Use Radius", m_UseRadius))
 				{
 					if (m_UseRadius)
 						component.Radius = 10.0f;
 					else
 						component.Radius = 0.0f;
 				}
-
 				if (m_UseRadius)
-				{
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Cutoff Radius");
-					ImGui::TableNextColumn();
-					ImGui::PushItemWidth(-FLT_MIN);
-					ImGui::DragFloat("##Cutoff_Radius", &component.Radius, 0.5f, 0.001f, m_MaxValue, "%.2f");
-				}
-
-				ImGui::EndTable();
+					UI::PropertyGrid::Float("Cutoff Radius", component.Radius, 0.5f, 0.001f, m_MaxValue);
+				
+				UI::PropertyGrid::End();
 			}
 		}
 

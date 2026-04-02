@@ -31,12 +31,17 @@ namespace Ember {
 
 		template<typename T>
 		inline void DetachComponent();
+		inline void DetachComponent(ComponentType componentType) const;
 
 		template<typename T>
 		inline bool ContainsComponent();
+		inline bool ContainsComponent(ComponentType componentType) const;
 
 		template<typename T>
 		inline T& GetComponent();
+
+		template<typename T>
+		inline ComponentType GetComponentType();
 
 		std::vector<Entity> GetAllChildren();
 		unsigned int GetNumChildren();
@@ -74,12 +79,6 @@ struct std::hash<Ember::Entity>
 
 namespace Ember {
 
-	//template<typename T>
-	//inline void Entity::AttachComponent(T& component)
-	//{
-	//	m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
-	//}
-
 	template<typename T>
 	inline void Entity::AttachComponent(T& component)
 	{
@@ -99,16 +98,35 @@ namespace Ember {
 		m_SceneHandle->GetRegistry().DetachComponent<T>(m_EntityHandle);
 	}
 
+	inline void Entity::DetachComponent(ComponentType componentType) const
+	{
+		EB_CORE_ASSERT(componentType != Constants::Entities::InvalidComponentID, "Invalid component type provided for detachment!");
+		EB_CORE_ASSERT(ContainsComponent(componentType), "Entity does not contain component type {}!", componentType);
+		m_SceneHandle->GetRegistry().DetachComponent(m_EntityHandle, componentType);
+	}
+
 	template<typename T>
 	inline bool Entity::ContainsComponent()
 	{
 		return m_SceneHandle->GetRegistry().ContainsComponent<T>(m_EntityHandle);
 	}
 
+	inline bool Entity::ContainsComponent(ComponentType componentType) const
+	{
+		EB_CORE_ASSERT(componentType != Constants::Entities::InvalidComponentID, "Invalid component type provided for containment check!");
+		return m_SceneHandle->GetRegistry().ContainsComponent(m_EntityHandle, componentType);
+	}
+
 	template<typename T>
 	inline T& Entity::GetComponent()
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<T>(m_EntityHandle);
+	}
+
+	template<typename T>
+	inline ComponentType Entity::GetComponentType()
+	{
+		return m_SceneHandle->GetRegistry().GetComponentType<T>();
 	}
 
 }

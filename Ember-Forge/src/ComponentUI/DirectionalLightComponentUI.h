@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI.h"
+#include "UI/PropertyGrid.h"
 
 namespace Ember {
 
@@ -13,30 +14,11 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(DirectionalLightComponent& component) override
 		{
-			if (ImGui::BeginTable("DirectionalLightProps", 2, ImGuiTableFlags_SizingFixedSame))
+			if (UI::PropertyGrid::Begin("DirectionalLightProps"))
 			{
-				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
-				// Color
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Color");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::ColorEdit3("##Color", &component.Color[0]);
-
-				// Intensity
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Intensity");
-				ImGui::TableNextColumn();
-				ImGui::PushItemWidth(-FLT_MIN);
-				ImGui::DragFloat("##Intensity", &component.Intensity, 0.1f, 0.0f, m_MaxValue, "%.2f");
-
-				ImGui::EndTable();
+				UI::PropertyGrid::Color3("Color", component.Color);
+				UI::PropertyGrid::Float("Intensity", component.Intensity, 0.1f, 0.0f, m_MaxValue);
+				UI::PropertyGrid::End();
 			}
 		}
 

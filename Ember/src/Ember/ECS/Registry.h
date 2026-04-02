@@ -42,6 +42,12 @@ namespace Ember {
 			m_ComponentManager->DetachComponent<T>(entity);
 		}
 
+		inline void DetachComponent(EntityID entity, ComponentType type)
+		{
+			m_EntityManager->DetachComponent(entity, type);
+			m_ComponentManager->DetachComponent(entity, type);
+		}
+
 		template<typename T>
 		inline bool ContainsComponent(EntityID entity)
 		{
@@ -58,6 +64,12 @@ namespace Ember {
 		inline bool ContainsComponents(EntityID entity)
 		{
 			return (ContainsComponent<Args>(entity) && ...);
+		}
+
+		template<typename T>
+		inline ComponentType GetComponentType()
+		{
+			return m_ComponentManager->GetComponentType<T>();
 		}
 
 		template<typename T>

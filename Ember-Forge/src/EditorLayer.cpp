@@ -3,7 +3,9 @@
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
-#include "Utils/DragDropTypes.h"
+#include "Panels/NotificationPanel.h"
+#include "UI/DragDropTypes.h"
+#include "UI/PropertyGrid.h"
 
 #include <random>
 
@@ -14,8 +16,8 @@ namespace Ember {
 	{
 		m_Context = {
 			.ActiveScene = m_EditorScene,
-			.SelectedEntity = m_InvalidEntity,
-			.EditorCamera = &m_Camera
+			.EditorCamera = &m_Camera,
+			.SelectedEntity = m_InvalidEntity
 		};
 	}
 
@@ -25,18 +27,22 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
+		// Setup theme
+		SetupImGuiTheme();
+
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<NotificationPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);
 		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
 		m_Camera.SetPitch(Math::Radians(30.0f));
 		m_Camera.SetYaw(Math::Radians(45.0f));
-		m_Camera.SetDistance(10.0f);
+		m_Camera.SetDistance(6.0f);
 
 		// Output Framebuffer
 		FramebufferSpecification specs;
@@ -50,6 +56,10 @@ namespace Ember {
 
 		for (auto& panel : m_Panels)
 			panel->OnAttach();
+
+		// Load play / pause textures
+		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Play.png")->GetID();
+		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Stop.png")->GetID();
 	}
 
 	void EditorLayer::OnDetach()
@@ -77,6 +87,9 @@ namespace Ember {
 	{
 		SyncEntitySelectionState();
 
+		for (auto& panel : m_Panels)
+			panel->OnUpdate(delta);
+
 		m_OutputFramebuffer->Bind();
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
@@ -84,12 +97,16 @@ namespace Ember {
 		switch (m_SceneState)
 		{
 			case SceneState::Edit:
+			{
 				m_Camera.OnUpdate(delta);
 				m_Context.ActiveScene->OnUpdateEdit(delta, m_Camera);
 				break;
+			}
 			case SceneState::Play:
+			{
 				m_Context.ActiveScene->OnUpdateRuntime(delta);
 				break;
+			}
 			case SceneState::Pause:
 			default:
 				EB_CORE_ASSERT(false, "Unhandled scene state!");
@@ -104,175 +121,27 @@ namespace Ember {
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
 		ImGuizmo::BeginFrame();
-
-		ImGui::ShowDemoWindow();
-
 		ImGui::DockSpaceOverViewport();
 
-		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
-		static float fps = 0.0f;
-		static float fpsTimer = 0.0f;
-
-		fpsTimer += delta.Seconds();
-		if (fpsTimer >= 1.0f)
-		{
-			fps = 1.0f / delta.Seconds();
-			fpsTimer = 0.0f;
-		}
+		//ImGui::ShowDemoWindow();
 
 		// Menu Bar
-		{
-			ImGui::BeginMainMenuBar();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
-				{
-					NewProject();
-				}
-				if (ImGui::MenuItem("Open Project", "Ctrl+Shift+O"))
-				{
-					OpenProject();
-				}
+		RenderMenuBar();
+		DrawToolbar();
+		RenderSceneViewport();
 
-				ImGui::Separator();
-				bool projectExists = ProjectManager::GetActive() != nullptr;
-
-				if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
-				{
-					NewScene();
-				}
-
-				if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
-				{
-					OpenScene();
-				}
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
-				{
-					SaveScene(false);
-				}
-
-				if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
-				{
-					SaveScene(true);
-				}
-
-				ImGui::EndMenu();
-			}
-
-			ImGui::PopStyleVar();
-			ImGui::EndMainMenuBar();
-		}
-
-		DrawToolbar(fps);
-
-		// Viewport
-		{
-			ImGui::Begin("Scene");
-
-			// Save view port info for mouse picking and viewport resizing
-			m_ViewportHovered = ImGui::IsWindowHovered();
-			
-			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-			auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
-
-			m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-			m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
-
-			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-			if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-			{
-				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-				m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-				m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-			}
-
-			unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
-			ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-			// Drag drop zone for models
-			if (ImGui::BeginDragDropTarget())
-			{
-				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
-					CreateEntityFromModel(filePath);
-				}
-				ImGui::EndDragDropTarget();
-			}
-
-			// Draw Transform Gizmos for selected entity
-			RenderTransformGizmos();
-
-			ImGui::End();
-		}
+		if (m_ShowStatsWindow)
+			RenderStatsOverlay(delta);
 
 		// Render Panels
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
 
 		// Pop up for new project
-		if (m_NewProjectSettings.ShowProjectSettingsPopup) 
-		{
-			ImGui::OpenPopup("NewProject");
-			m_NewProjectSettings.ShowProjectSettingsPopup = false;
-			m_NewProjectSettings.ProjectName = "";
-		}
-		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-		if (ImGui::BeginPopupModal("NewProject", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			ImGui::Text("Project Name");
-			ImGui::Separator();
+		RenderNewProjectPopup();
 
-			char buffer[128] = "";
-			strncpy_s(buffer, sizeof(buffer), m_NewProjectSettings.ProjectName.c_str(), _TRUNCATE);
-
-			if (ImGui::InputText("##ProjectName", buffer, sizeof(buffer)))
-			{
-				m_NewProjectSettings.ProjectName = std::string(buffer);
-			}
-
-			if (ImGui::Button("OK", ImVec2(120, 0)))
-			{
-				// Create directory for ProjectDirectory
-				std::filesystem::path projectDirPath = std::filesystem::path(m_NewProjectSettings.ProjectDirectory) / m_NewProjectSettings.ProjectName;
-				std::filesystem::create_directories(projectDirPath);
-
-				std::string projectNameFinal = m_NewProjectSettings.ProjectName += ".ebproj";
-				std::filesystem::path fullProjectPath = projectDirPath / projectNameFinal;
-				auto project = ProjectManager::NewProject(fullProjectPath.string());
-
-				// Open default scene
-				OpenScene(project->GetStartScenePath().string());
-				auto assetPanel = GetPanel<AssetManagerPanel>();
-				if (assetPanel != nullptr)
-				{
-					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-				}
-
-				// Clear existing project assets
-				auto& assetManager = Application::Instance().GetAssetManager();
-				assetManager.ClearAssets();
-
-
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Cancel"))
-			{
-				m_NewProjectSettings.ProjectName = "";
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-
-		// Delete pending entities
+		// Delete pending components and entities
+		RemovePendingComponents();
 		RemovePendingEntities();
 	}
 
@@ -298,12 +167,185 @@ namespace Ember {
 		m_SceneState = SceneState::Edit;
 	}
 
+	void EditorLayer::RenderMenuBar()
+	{
+		ImGui::BeginMainMenuBar();
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
+			{
+				NewProject();
+			}
+			if (ImGui::MenuItem("Open Project", "Ctrl+Shift+O"))
+			{
+				OpenProject();
+			}
+
+			ImGui::Separator();
+			bool projectExists = ProjectManager::GetActive() != nullptr;
+
+			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
+			{
+				NewScene();
+			}
+
+			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
+			{
+				OpenScene();
+			}
+
+			if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
+			{
+				SaveScene(false);
+			}
+
+			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
+			{
+				SaveScene(true);
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Editor"))
+		{
+			if (ImGui::BeginMenu("Tool Windows"))
+			{
+				ImGui::MenuItem("Debug Stats", nullptr, &m_ShowStatsWindow);
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::PopStyleVar();
+		ImGui::EndMainMenuBar();
+	}
+
+	void EditorLayer::RenderSceneViewport()
+	{
+		ImGui::Begin("Scene");
+
+		// Save view port info for mouse picking and viewport resizing
+		m_ViewportHovered = ImGui::IsWindowHovered();
+
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+		auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
+
+		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+
+		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+		{
+			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+			m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+		}
+
+		unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
+		ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		// Drag drop zone for models
+		if (ImGui::BeginDragDropTarget())
+		{
+			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			{
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+				CreateEntityFromModel(filePath);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		// Draw Transform Gizmos for selected entity
+		RenderTransformGizmos();
+
+		ImGui::End();
+	}
+
+	void EditorLayer::RenderNewProjectPopup()
+	{
+		if (m_NewProjectSettings.ShowProjectSettingsPopup)
+		{
+			ImGui::OpenPopup("New Project");
+			m_NewProjectSettings.ShowProjectSettingsPopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(600, 200), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("New Project", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			if (UI::PropertyGrid::Begin("NewProjectTable"))
+			{
+				UI::PropertyGrid::InputText("Project Name", m_NewProjectSettings.ProjectName);
+
+				auto browseFunc = [&]() {
+					std::string selectedDir = FileDialog::OpenDirectory();
+					if (!selectedDir.empty())
+						m_NewProjectSettings.ProjectDirectory = selectedDir;
+					};
+
+				UI::PropertyGrid::DirectoryInput("Location", m_NewProjectSettings.ProjectDirectory, browseFunc);
+
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			// Actions
+			bool isValid = !m_NewProjectSettings.ProjectName.empty() && !m_NewProjectSettings.ProjectDirectory.empty();
+
+			if (!isValid) ImGui::BeginDisabled();
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				std::filesystem::path projectDirPath = std::filesystem::path(m_NewProjectSettings.ProjectDirectory) / m_NewProjectSettings.ProjectName;
+				std::filesystem::create_directories(projectDirPath);
+
+				std::string projectNameFinal = m_NewProjectSettings.ProjectName + ".ebproj";
+				std::filesystem::path fullProjectPath = projectDirPath / projectNameFinal;
+
+				auto project = ProjectManager::NewProject(fullProjectPath.string());
+
+				OpenScene(project->GetStartScenePath().string());
+
+				if (auto assetPanel = GetPanel<AssetManagerPanel>())
+					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
+
+				Application::Instance().GetAssetManager().ClearAssets();
+
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (!isValid) ImGui::EndDisabled();
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_NewProjectSettings.ProjectName = "";
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
 	{
 		// If ImGui wants to capture keyboard input for a textbox, we should not process shortcuts
 		if (ImGui::GetIO().WantTextInput)
 			return false;
 
+		bool activeProject = ProjectManager::GetActive() != nullptr;
 		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
 		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
 
@@ -328,19 +370,22 @@ namespace Ember {
 				break;
 
 			// Scene Hot keys
-			// TODO: Disable if no project is active
 			case KeyCode::N:
-				if (control)
+				if (shift && control)
+					NewProject();
+				else if (activeProject && control)
 					NewScene();
 				break;
 			case KeyCode::O:
-				if (control)
+				if (shift && control)
+					OpenProject();
+				else if (activeProject && control)
 					OpenScene();
 				break;
 			case KeyCode::S:
-				if (control && shift)
+				if (activeProject && control && shift)
 					SaveScene(true);
-				else if (control)
+				else if (activeProject && control)
 					SaveScene(false);
 				break;
 
@@ -350,13 +395,13 @@ namespace Ember {
 					RemoveEntity(m_Context.SelectedEntity);
 				break;
 
-			case KeyCode::Space:
+			case KeyCode::Enter:
 				if (control)
 				{
 					if (m_SceneState == SceneState::Play)
-						m_SceneState = SceneState::Edit;
+						OnRuntimeStop();
 					else
-						m_SceneState = SceneState::Play;
+						OnRuntimeStart();
 				}
 				break;
 		}
@@ -393,7 +438,6 @@ namespace Ember {
 			{
 				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
 				m_Context.SelectedEntity = selected;
-				EB_CORE_INFO("Clicked Entity: {}", (uint64_t)selected);
 			}
 		}
 
@@ -405,36 +449,37 @@ namespace Ember {
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
-		// 1. Clean up the old selection safely
+		// Clean up the old selection safely
 		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
 		{
-			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
+			RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			if (m_PreviousSelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
 				{
-					// DEFENSIVE CHECK: Make sure the child exists before detaching!
 					if (child && child.ContainsComponent<OutlineComponent>())
-						child.DetachComponent<OutlineComponent>();
+						RemoveComponentFromEntity<OutlineComponent>(child);
 				}
 			}
 		}
 
-		// 2. Add outlines to the new selection safely
+		// Add outlines to the new selection safely
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 		{
-			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
+			OutlineEntity(m_Context.SelectedEntity);
 			if (m_Context.SelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
 				{
 					if (child != Constants::Entities::InvalidEntityID)
-						child.AttachComponent(m_OutlineEntitySelectedComp);
+					{
+						OutlineEntity(child);
+					}
 				}
 			}
 		}
 
-		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+ 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 	}
 
 	void EditorLayer::RenderTransformGizmos()
@@ -541,63 +586,97 @@ namespace Ember {
 		}
 	}
 
-	void EditorLayer::DrawToolbar(float fps)
+	void EditorLayer::DrawToolbar()
 	{
+		// Prevent the user from resizing the dock node itself
 		ImGuiWindowClass window_class;
-		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
 		ImGui::SetNextWindowClass(&window_class);
 
-		// Tighten up the padding so it feels like a sleek toolbar
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 4));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 		float windowWidth = ImGui::GetWindowContentRegionMax().x;
+		float iconSize = 24.0f;
 
-		//Center the Play/Stop button
-		float buttonWidth = 60.0f;
-		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonWidth * 0.5f));
+
+		// Center the button and make it transparent
+		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
+		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonSizeWithPadding * 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		// (Optional) If you want to customize the hover color so it looks sleeker:
+		 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
 		if (m_SceneState == SceneState::Play)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.2f, 0.2f, 1.0f));
-			if (ImGui::Button("Stop", ImVec2(buttonWidth, 0)))
+			if (ImGui::ImageButton("StopButton", m_ToolbarProps.StopButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
 				OnRuntimeStop();
 				m_SceneState = SceneState::Edit;
 			}
-			ImGui::PopStyleColor();
 		}
 		else
 		{
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
-		if (ImGui::Button("Play", ImVec2(buttonWidth, 0)))
-		{
-			OnRuntimeStart();
-		}
-		ImGui::PopStyleColor();
+			if (ImGui::ImageButton("PlayButton", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize)))
+			{
+				OnRuntimeStart();
+			}
 		}
 
-		ImGui::SameLine();
+		// Pop the transparent button color!
+		ImGui::PopStyleColor(3);
 
-		// TODO: Add a debug window you can open that shows this kind of info so imgui.ini doesn't save a new entry for each fps value change
-		// 
-		// Format the text and calculate how much horizontal space it takes
-		//char fpsBuf[32];
-		//snprintf(fpsBuf, sizeof(fpsBuf), "FPS: %.1f", fps);
-		//float fpsTextWidth = ImGui::CalcTextSize(fpsBuf).x;
-
-		//// Push the cursor to the far right edge, minus the text width and a small margin
-		//ImGui::SetCursorPosX(windowWidth - fpsTextWidth - 10.0f);
-
-		//// Vertically align the text slightly so it sits nicely next to the button
-		//ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
-		//ImGui::TextDisabled("%s", fpsBuf); // TextDisabled makes it a subtle gray!
-
-		ImGui::End();
-		ImGui::PopStyleVar();
+		ImGui::End(); 
+		ImGui::PopStyleVar(2);
 	}
 
+	void EditorLayer::RenderStatsOverlay(TimeStep delta)
+	{
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoMove;
+
+		ImVec2 windowPos = ImVec2(m_ViewportBounds[1].x - 10.0f, m_ViewportBounds[0].y + 10.0f);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));	// Pin to top-right corner of the viewport with right alignment
+
+		ImGui::SetNextWindowBgAlpha(0.35f);
+
+		if (ImGui::Begin("Stats Overlay", nullptr, windowFlags))
+		{
+			ImGui::Text("Renderer Stats");
+			ImGui::Separator();
+			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
+			ImGui::Text("Entities: %d", m_Context.ActiveScene->GetAllEntities().size());
+		}
+		ImGui::End();
+	}
+
+	float EditorLayer::CalculateFPS(TimeStep delta)
+	{
+		static float fpsTimer = 0.0f;
+		static float fps = 0.0f;
+		static int frameCount = 0;    
+
+		fpsTimer += delta.Seconds();
+		frameCount++;
+
+		if (fpsTimer >= 1.0f)
+		{
+			fps = (float)frameCount / fpsTimer;
+
+			fpsTimer = 0.0f;
+			frameCount = 0;
+		}
+
+		return fps;
+	}
+	
 	void EditorLayer::CreateEntity()
 	{
 		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
@@ -617,10 +696,33 @@ namespace Ember {
 		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
 			m_Context.SelectedEntity = m_InvalidEntity;
 
-		for (auto entity : m_Context.PendingEntityRemovals)
+		for (auto entity : m_Context.PendingEntityRemovals) {
+			std::string entityName = entity.GetName();
 			m_Context.ActiveScene->RemoveEntity(entity);
 
+			auto evt = UINotificationEvent(std::format("Entity {} Removed", entityName));
+			m_Context.EventCallback(evt);
+		}
+
 		m_Context.PendingEntityRemovals.clear();
+	}
+
+	void EditorLayer::RemovePendingComponents()
+	{
+		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
+		{
+			for (ComponentType componentType : components)
+			{
+				if (entity.ContainsComponent(componentType))
+				{
+					entity.DetachComponent(componentType);
+					auto evt = UINotificationEvent(std::format("Component {} removed from Entity {}", componentType, entity.GetName()));
+					m_Context.EventCallback(evt);
+				}
+			}
+		}
+
+		m_Context.PendingComponentRemovals.clear();
 	}
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
@@ -632,12 +734,21 @@ namespace Ember {
 		m_Context.SelectedEntity = modelEntity;
 	}
 
+	void EditorLayer::OutlineEntity(Entity entity)
+	{
+		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
+		if (!removed)
+			entity.AttachComponent(m_OutlineEntitySelectedComp);
+	}
+
 	void EditorLayer::NewProject()
 	{
-		m_NewProjectSettings.ProjectDirectory = FileDialog::OpenDirectory();
 		if (m_NewProjectSettings.ProjectDirectory.empty())
-			return;
-		
+		{
+			m_NewProjectSettings.ProjectDirectory = std::filesystem::current_path().string();
+		}
+
+		m_NewProjectSettings.ProjectName = "NewProject";
 		m_NewProjectSettings.ShowProjectSettingsPopup = true;
 	}
 
@@ -676,7 +787,8 @@ namespace Ember {
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 
-		EB_CORE_TRACE("New Scene created!");
+		auto evt = UINotificationEvent("New Scene created!");
+		m_Context.EventCallback(evt);
 	}
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
@@ -702,11 +814,13 @@ namespace Ember {
 				m_Context.SelectedEntity = {};
 				m_PreviousSelectedEntity = {};
 
-				EB_CORE_TRACE("Scene loaded successfully!");
+				auto evt = UINotificationEvent(std::format("Scene opened: {}", std::filesystem::path(sceneFile).filename().string()));
+				m_Context.EventCallback(evt);
 			}
 			else
 			{
-				EB_CORE_ERROR("Failed to load scene!");
+				auto evt = UINotificationEvent("Failed to load scene!", UINotificationEvent::Severity::Error);
+				m_Context.EventCallback(evt);
 			}
 		}
 	}
@@ -721,7 +835,7 @@ namespace Ember {
 		if (!sceneName.empty())
 		{
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
-				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			}
 
 			// Serialize scene
@@ -734,7 +848,111 @@ namespace Ember {
 			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
-			EB_CORE_TRACE("Scene saved!");
+
+			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
+			m_Context.EventCallback(evt);
 		}
 	}
+
+	void EditorLayer::SetupImGuiTheme()
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->AddFontFromFileTTF("Ember-Forge/assets/fonts/Roboto-Regular.ttf", 16.0f);
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		ImVec4* colors = style.Colors;
+
+		// --- Sizing & Spacing (Spacious & Modern) ---
+		style.WindowPadding = ImVec2(12.0f, 12.0f);
+		style.FramePadding = ImVec2(8.0f, 6.0f);
+		style.ItemSpacing = ImVec2(10.0f, 8.0f);
+		style.ItemInnerSpacing = ImVec2(6.0f, 6.0f);
+		style.IndentSpacing = 20.0f;
+		style.ScrollbarSize = 14.0f;
+		style.GrabMinSize = 12.0f;
+
+		// --- Borders & Rounding (Flat, subtle rounding) ---
+		style.WindowRounding = 4.0f;
+		style.ChildRounding = 4.0f;
+		style.FrameRounding = 3.0f;
+		style.PopupRounding = 4.0f;
+		style.ScrollbarRounding = 3.0f;
+		style.GrabRounding = 3.0f;
+		style.TabRounding = 3.0f;
+
+		style.WindowBorderSize = 1.0f;
+		style.FrameBorderSize = 0.0f;
+		style.PopupBorderSize = 1.0f;
+
+		// --- Base Colors (Deep Greys) ---
+		ImVec4 textBase = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
+		ImVec4 textMuted = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+
+		ImVec4 bgDarkest = ImVec4(0.08f, 0.08f, 0.08f, 1.00f); // Main window backgrounds
+		ImVec4 bgMid = ImVec4(0.12f, 0.12f, 0.12f, 1.00f); // Child windows
+		ImVec4 bgLight = ImVec4(0.16f, 0.16f, 0.16f, 1.00f); // Input fields, empty frames
+
+		ImVec4 borderCol = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+
+		// --- Accent Colors (Industrial Orange) ---
+		ImVec4 accentBase = ImVec4(0.88f, 0.40f, 0.10f, 1.00f); // #E2681B
+		ImVec4 accentHovered = ImVec4(0.95f, 0.47f, 0.15f, 1.00f); // Brighter on hover
+		ImVec4 accentActive = ImVec4(0.80f, 0.35f, 0.08f, 1.00f); // Darker on click
+
+		// --- Apply Colors ---
+		colors[ImGuiCol_Text] = textBase;
+		colors[ImGuiCol_TextDisabled] = textMuted;
+
+		// Backgrounds
+		colors[ImGuiCol_WindowBg] = bgDarkest;
+		colors[ImGuiCol_ChildBg] = bgMid;
+		colors[ImGuiCol_PopupBg] = bgDarkest;
+		colors[ImGuiCol_Border] = borderCol;
+		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+		// Frames (Inputs, Checkboxes)
+		colors[ImGuiCol_FrameBg] = bgLight;
+		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
+		colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+
+		// Titles
+		colors[ImGuiCol_TitleBg] = bgDarkest;
+		colors[ImGuiCol_TitleBgActive] = bgDarkest;
+		colors[ImGuiCol_TitleBgCollapsed] = bgDarkest;
+
+		// Buttons (Keep grey base, tint orange on hover for a cleaner look)
+		colors[ImGuiCol_Button] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_ButtonHovered] = accentHovered;
+		colors[ImGuiCol_ButtonActive] = accentActive;
+
+		// Headers (TreeNodes, Selectables)
+		colors[ImGuiCol_Header] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_HeaderHovered] = accentHovered;
+		colors[ImGuiCol_HeaderActive] = accentActive;
+
+		// Tabs
+		colors[ImGuiCol_Tab] = bgMid;
+		colors[ImGuiCol_TabHovered] = accentHovered;
+		colors[ImGuiCol_TabActive] = accentBase;
+		colors[ImGuiCol_TabUnfocused] = bgDarkest;
+		colors[ImGuiCol_TabUnfocusedActive] = bgMid;
+
+		// Sliders & Grabs
+		colors[ImGuiCol_SliderGrab] = accentBase;
+		colors[ImGuiCol_SliderGrabActive] = accentActive;
+
+		// Drag Drop
+		colors[ImGuiCol_DragDropTarget] = accentHovered;
+
+		// Separators
+		colors[ImGuiCol_Separator] = borderCol;
+		colors[ImGuiCol_SeparatorHovered] = accentBase;
+		colors[ImGuiCol_SeparatorActive] = accentActive;
+
+		// Resize Grips
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
+		colors[ImGuiCol_ResizeGripActive] = accentActive;
+	}
+
 }

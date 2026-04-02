@@ -128,21 +128,6 @@ namespace Ember {
 		EB_CORE_INFO("Application stopped running!");
 	}
 
-	//void Application::RegisterSystem(const SharedPtr<System>& system, Registry* registry)
-	//{
-	//	m_SystemManager->RegisterSystem(system, registry);
-	//}
-
-	//void Application::UnregisterSystem(const SharedPtr<System>& system, Registry* registry)
-	//{
-	//	m_SystemManager->UnregisterSystem(system, registry);
-	//}
-
-	//void Application::UpdateSystems(TimeStep delta, Registry* registry)
-	//{
-	//	m_SystemManager->UpdateSystems(delta, registry);
-	//}
-
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
 		m_Running = false;

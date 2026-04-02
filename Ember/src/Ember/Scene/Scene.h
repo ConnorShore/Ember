@@ -38,6 +38,7 @@ namespace Ember {
 		Entity GetEntity(UUID uuid);
 		Entity DuplicateEntity(Entity entity);
 		void SetEntityParent(UUID childUUID, Entity newParent);
+		void RemoveParent(Entity child);
 
 		template<IsCoreAsset T>
 		void RegisterAsset(const SharedPtr<T>& asset)
