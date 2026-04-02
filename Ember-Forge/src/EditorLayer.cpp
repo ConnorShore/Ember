@@ -3,6 +3,7 @@
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
+#include "Panels/NotificationPanel.h"
 #include "UI/DragDropTypes.h"
 
 #include <random>
@@ -14,8 +15,8 @@ namespace Ember {
 	{
 		m_Context = {
 			.ActiveScene = m_EditorScene,
-			.SelectedEntity = m_InvalidEntity,
-			.EditorCamera = &m_Camera
+			.EditorCamera = &m_Camera,
+			.SelectedEntity = m_InvalidEntity
 		};
 	}
 
@@ -33,6 +34,7 @@ namespace Ember {
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<NotificationPanel>::Create(&m_Context));
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);
@@ -80,6 +82,9 @@ namespace Ember {
 	{
 		SyncEntitySelectionState();
 
+		for (auto& panel : m_Panels)
+			panel->OnUpdate(delta);
+
 		m_OutputFramebuffer->Bind();
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
@@ -112,7 +117,7 @@ namespace Ember {
 		//ImGui::ShowDemoWindow();
 
 		// FPS calculation (updated every 1 seconds to avoid rapid fluctuations)
-		CalculateFPS(delta);
+		float fps = CalculateFPS(delta);
 
 		// Menu Bar
 		RenderMenuBar();
@@ -126,7 +131,8 @@ namespace Ember {
 		// Pop up for new project
 		RenderNewProjectPopup();
 
-		// Delete pending entities
+		// Delete pending components and entities
+		RemovePendingComponents();
 		RemovePendingEntities();
 	}
 
@@ -407,36 +413,37 @@ namespace Ember {
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
-		// 1. Clean up the old selection safely
+		// Clean up the old selection safely
 		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
 		{
-			m_PreviousSelectedEntity.DetachComponent<OutlineComponent>();
+			RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			if (m_PreviousSelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
 				{
-					// DEFENSIVE CHECK: Make sure the child exists before detaching!
 					if (child && child.ContainsComponent<OutlineComponent>())
-						child.DetachComponent<OutlineComponent>();
+						RemoveComponentFromEntity<OutlineComponent>(child);
 				}
 			}
 		}
 
-		// 2. Add outlines to the new selection safely
+		// Add outlines to the new selection safely
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 		{
-			m_Context.SelectedEntity.AttachComponent(m_OutlineEntitySelectedComp);
+			OutlineEntity(m_Context.SelectedEntity);
 			if (m_Context.SelectedEntity.IsRootParent())
 			{
 				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
 				{
 					if (child != Constants::Entities::InvalidEntityID)
-						child.AttachComponent(m_OutlineEntitySelectedComp);
+					{
+						OutlineEntity(child);
+					}
 				}
 			}
 		}
 
-		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+ 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 	}
 
 	void EditorLayer::RenderTransformGizmos()
@@ -572,12 +579,12 @@ namespace Ember {
 		}
 		else
 		{
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
-		if (ImGui::Button("Play", ImVec2(buttonWidth, 0)))
-		{
-			OnRuntimeStart();
-		}
-		ImGui::PopStyleColor();
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
+			if (ImGui::Button("Play", ImVec2(buttonWidth, 0)))
+			{
+				OnRuntimeStart();
+			}
+			ImGui::PopStyleColor();
 		}
 
 		ImGui::SameLine();
@@ -600,11 +607,11 @@ namespace Ember {
 		ImGui::PopStyleVar();
 	}
 
-	void EditorLayer::CalculateFPS(TimeStep delta)
+	float EditorLayer::CalculateFPS(TimeStep delta)
 	{
 		// TODO: Move to a debug window with this kind of info
-		static float fps = 0.0f;
 		static float fpsTimer = 0.0f;
+		float fps = 0.0f;
 
 		fpsTimer += delta.Seconds();
 		if (fpsTimer >= 1.0f)
@@ -612,6 +619,8 @@ namespace Ember {
 			fps = 1.0f / delta.Seconds();
 			fpsTimer = 0.0f;
 		}
+
+		return fps;
 	}
 
 	void EditorLayer::CreateEntity()
@@ -633,10 +642,33 @@ namespace Ember {
 		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
 			m_Context.SelectedEntity = m_InvalidEntity;
 
-		for (auto entity : m_Context.PendingEntityRemovals)
+		for (auto entity : m_Context.PendingEntityRemovals) {
+			std::string entityName = entity.GetName();
 			m_Context.ActiveScene->RemoveEntity(entity);
 
+			auto evt = UINotificationEvent(std::format("Entity {} Removed", entityName));
+			m_Context.EventCallback(evt);
+		}
+
 		m_Context.PendingEntityRemovals.clear();
+	}
+
+	void EditorLayer::RemovePendingComponents()
+	{
+		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
+		{
+			for (ComponentType componentType : components)
+			{
+				if (entity.ContainsComponent(componentType))
+				{
+					entity.DetachComponent(componentType);
+					auto evt = UINotificationEvent(std::format("Component {} removed from Entity {}", componentType, entity.GetName()));
+					m_Context.EventCallback(evt);
+				}
+			}
+		}
+
+		m_Context.PendingComponentRemovals.clear();
 	}
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
@@ -646,6 +678,13 @@ namespace Ember {
 
 		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(model, model->GetName());
 		m_Context.SelectedEntity = modelEntity;
+	}
+
+	void EditorLayer::OutlineEntity(Entity entity)
+	{
+		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
+		if (!removed)
+			entity.AttachComponent(m_OutlineEntitySelectedComp);
 	}
 
 	void EditorLayer::NewProject()
@@ -737,7 +776,7 @@ namespace Ember {
 		if (!sceneName.empty())
 		{
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
-				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
+				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			}
 
 			// Serialize scene

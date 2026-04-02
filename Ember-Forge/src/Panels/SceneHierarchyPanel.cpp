@@ -61,20 +61,17 @@ namespace Ember {
 				if (ImGui::MenuItem("Cube"))
 				{
 					auto entity = Presets::CreateCube(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Sphere"))
 				{
 					auto entity = Presets::CreateSphere(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Quad"))
 				{
 					auto entity = Presets::CreateQuad(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					CreateEntity(entity);
 				}
 
 				ImGui::EndMenu();
@@ -392,11 +389,19 @@ namespace Ember {
 		return false;
 	}
 
+	void SceneHierarchyPanel::CreateEntity(Entity entity)
+	{
+		SetSelectedEntity(entity);
+		RenameEntity(entity);
+
+		auto evt = UINotificationEvent(std::format("Entity {} Created", entity.GetName()));
+		m_Context->EventCallback(evt);
+	}
+
 	void SceneHierarchyPanel::CreateEmptyEntity()
 	{
 		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
-		SetSelectedEntity(entity);
-		RenameEntity(entity);
+		CreateEntity(entity);
 	}
 
 	void SceneHierarchyPanel::DuplicateEntity(Entity entity)

@@ -44,10 +44,6 @@ namespace Ember {
 			return m_AssetManager->Load<T>(name, filePath);
 		}
 
-		//void RegisterSystem(const SharedPtr<System>& system, Registry* registry);
-		//void UnregisterSystem(const SharedPtr<System>& system, Registry* registry);
-		//void UpdateSystems(TimeStep delta, Registry* registry);
-
 		template<typename T>
 		SharedPtr<T> GetSystem()
 		{

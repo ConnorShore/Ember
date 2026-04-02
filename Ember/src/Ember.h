@@ -46,7 +46,9 @@
 #include "Ember/Event/KeyEvent.h"
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/Event/WindowEvent.h"
+#include "Ember/Event/UIEvent.h"
 
+#include "Ember/ECS/Types.h"
 #include "Ember/ECS/Registry.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/ECS/System/RenderSystem.h"

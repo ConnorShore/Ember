@@ -26,6 +26,7 @@ namespace Ember {
 		bool IsAncestor(Entity ancestor, Entity descendant);
 		bool IsDescendant(Entity descendant, Entity ancestor);
 
+		void CreateEntity(Entity entity);
 		void CreateEmptyEntity();
 		void DuplicateEntity(Entity entity);
 		void RenameEntity(Entity entity);

@@ -37,13 +37,16 @@ namespace Ember {
 
 		void DrawToolbar(float fps);
 
-		void CalculateFPS(TimeStep delta);
+		float CalculateFPS(TimeStep delta);
 
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
 		void RemovePendingEntities();
+		void RemovePendingComponents();
 
 		void CreateEntityFromModel(const std::string& modelFilePath);
+
+		void OutlineEntity(Entity entity);
 
 		void NewProject();
 		void OpenProject();
@@ -66,6 +69,41 @@ namespace Ember {
 
 			return nullptr;
 		}
+
+	private:
+		template<typename T>
+		inline void RemoveComponentFromEntity(Entity entity)
+		{
+			if (entity == Constants::Entities::InvalidEntityID)
+				return;
+
+			ComponentType type = entity.GetComponentType<T>();
+			if (type == Constants::Entities::InvalidComponentID)
+				return;
+
+			m_Context.PendingComponentRemovals[entity].push_back(type);
+		}
+
+		template<typename T>
+		inline bool CancelComponentRemoval(Entity entity)
+		{
+			if (entity == Constants::Entities::InvalidEntityID)
+				return false;
+
+			ComponentType type = entity.GetComponentType<T>();
+			if (type == Constants::Entities::InvalidComponentID)
+				return false;
+
+			auto& pendingRemovals = m_Context.PendingComponentRemovals[entity];
+			size_t numErased = std::erase(pendingRemovals, type);
+			if (pendingRemovals.empty())
+			{
+				m_Context.PendingComponentRemovals.erase(entity);
+			}
+
+			return numErased > 0;
+		}
+
 
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);

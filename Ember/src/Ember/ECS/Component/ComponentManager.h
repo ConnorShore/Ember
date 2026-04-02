@@ -18,6 +18,7 @@ namespace Ember {
 	{
 		virtual ~ComponentMemoryArraysBase() = default;
 		virtual void EntityDestroyed(EntityID entity) = 0;
+		virtual void RemoveComponent(EntityID entity) = 0;
 	};
 
 	template<typename T>
@@ -34,6 +35,13 @@ namespace Ember {
 
 		T& InsertComponent(EntityID entity, T component)
 		{
+			// If the entity already has this component, update it in place
+			if (SparseEntityArray[entity] != Constants::Entities::InvalidComponentID)
+			{
+				DenseComponentArray[SparseEntityArray[entity]] = component;
+				return DenseComponentArray[SparseEntityArray[entity]];
+			}
+
 			// Add component to the dense component array and get its index
 			unsigned int componentIndex = DenseComponentArray.size();
 
@@ -52,7 +60,7 @@ namespace Ember {
 			return DenseComponentArray[SparseEntityArray[entity]];
 		}
 
-		void RemoveComponent(EntityID entity)
+		virtual void RemoveComponent(EntityID entity) override
 		{
 			// Get the index of the component in the dense arrays
 			unsigned int componentIndex = SparseEntityArray[entity];
@@ -121,6 +129,14 @@ namespace Ember {
 
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
 			memoryArrays->RemoveComponent(entity);
+		}
+
+		inline void DetachComponent(EntityID entity, ComponentType type)
+		{
+			if (type < m_ComponentArrays.size() && m_ComponentArrays[type] != nullptr)
+			{
+				m_ComponentArrays[type]->RemoveComponent(entity);
+			}
 		}
 
 		template<typename T>
