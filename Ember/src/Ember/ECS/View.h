@@ -46,6 +46,7 @@ namespace Ember {
 			bool operator!=(const Iterator& other) const { return m_Index != other.m_Index || m_Entities != other.m_Entities; }
 
 		private:
+			// Skip entities that have the Driver component but are missing any Filter components
 			void FindValidEntities()
 				{
 					uint32_t entityCt = static_cast<uint32_t>(m_Entities->size());

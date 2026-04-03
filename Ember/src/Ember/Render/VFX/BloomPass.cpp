@@ -37,6 +37,7 @@ namespace Ember {
 		}
 	}
 
+	// Three stages: (1) extract bright pixels, (2) ping-pong Gaussian blur, (3) composite onto scene
 	void BloomPass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
 	{
 		// Bloom Prefilter Pass //
@@ -60,6 +61,8 @@ namespace Ember {
 		// BLUR PASS //
 		RenderAction::UseDepthTest(false);
 
+		// Alternating horizontal/vertical blur passes between two ping-pong buffers.
+		// First iteration reads from the extraction buffer; subsequent ones read from the other ping-pong.
 		bool horizontalPass = true, firstIter = true;
 
 		m_BlurShader->Bind();

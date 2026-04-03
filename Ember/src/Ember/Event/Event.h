@@ -1,9 +1,11 @@
 #pragma once 
 
+// Shorthand macros for binding event callbacks and dispatching
 #define EB_EVENT_FUNCTION(f) [this](Ember::Event& e) { f; }
 #define EB_CREATE_DISPATCHER(event) Ember::EventDispatcher dispatcher(event);
 #define EB_DISPATCH_EVENT(eventType, handler) dispatcher.Dispatch<eventType>([this](eventType e) { return handler(e); });
 
+// Macros to reduce boilerplate when defining new event types
 #define EB_EVENT_TYPE_INITIALIZER(type) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
 								virtual const char* GetName() const override { return #type; }

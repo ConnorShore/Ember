@@ -21,6 +21,10 @@ namespace Ember {
 		virtual void RemoveComponent(EntityID entity) = 0;
 	};
 
+	// Sparse-set storage for a single component type
+	// SparseEntityArray: entity ID -> index into dense arrays (or InvalidComponentID if absent)
+	// DenseEntityArray:  packed entity IDs that have this component
+	// DenseComponentArray: packed component data, parallel to DenseEntityArray
 	template<typename T>
 	struct ComponentMemoryArray : public ComponentMemoryArraysBase
 	{
@@ -62,7 +66,6 @@ namespace Ember {
 
 		virtual void RemoveComponent(EntityID entity) override
 		{
-			// Get the index of the component in the dense arrays
 			uint32_t componentIndex = SparseEntityArray[entity];
 
 			if (componentIndex == Constants::Entities::InvalidComponentID)
@@ -71,19 +74,16 @@ namespace Ember {
 				return;
 			}
 
-			// Swap and pop the component //
+			// Swap-and-pop: overwrite the removed slot with the last element to stay packed
 			uint32_t lastComponentIndex = static_cast<uint32_t>(DenseComponentArray.size() - 1);
 			uint32_t entityReplaceId = DenseEntityArray[lastComponentIndex];
 
-			// Overwrite the component we want to remove with the last component in the dense array
-			// to keep the array dense
 			DenseComponentArray[componentIndex] = DenseComponentArray[lastComponentIndex];
 
-			// Update the mapping for that last component's new location
+			// Fix up the sparse mapping for the moved element
 			DenseEntityArray[componentIndex] = entityReplaceId;
 			SparseEntityArray[entityReplaceId] = componentIndex;
 
-			// Pop the dense arrays
 			SparseEntityArray[entity] = Constants::Entities::InvalidComponentID;
 			DenseComponentArray.pop_back();
 			DenseEntityArray.pop_back();
@@ -142,7 +142,7 @@ namespace Ember {
 		template<typename T>
 		inline ComponentType GetComponentType()
 		{
-			// Generates once per type and then is cached
+			// Each unique T gets a monotonically increasing ID, cached after first call
 			static const ComponentType typeId = GetNextComponentType();
 			return typeId;
 		}

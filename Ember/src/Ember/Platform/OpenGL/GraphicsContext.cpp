@@ -29,7 +29,7 @@ namespace Ember {
 			EB_CORE_TRACE("---------------------------------------");
 			
 #ifdef EB_DEBUG
-			// Enable error callbacks
+			// Enable synchronous GL error callbacks; suppress NOTIFICATION severity to reduce noise
 			glEnable(GL_DEBUG_OUTPUT);
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 			glDebugMessageCallback(GLMessageCallback, nullptr);

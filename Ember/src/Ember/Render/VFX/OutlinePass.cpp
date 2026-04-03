@@ -22,6 +22,8 @@ namespace Ember {
 
 		m_OutlineShader->Bind();
 
+		// Feed the shader the scene color, bright channel, and entity ID buffers from
+		// both the GBuffer (opaque) and HDR buffer (forward) so outlines work on all objects
 		m_OutlineShader->SetInt("u_Scene", 0);
 		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
 

@@ -39,6 +39,7 @@ namespace Ember {
 			ryml::NodeRef uniformNode = uniformsNode[name.c_str()];
 			uniformNode |= ryml::MAP;
 
+			// Use std::visit to serialize each uniform based on its variant type
 			std::visit([&](auto&& arg) {
 				using T = std::decay_t<decltype(arg)>;
 
@@ -133,6 +134,7 @@ namespace Ember {
 			if (baseMaterialUUID != Constants::InvalidUUID)
 				baseMaterial = assetManager.GetAsset<Material>(baseMaterialUUID);
 
+			// Fall back to default geometry material if the base material can't be found
 			if (!baseMaterial)
 				baseMaterial = assetManager.GetAsset<Material>(Constants::Assets::StandardGeometryMat);
 
@@ -165,7 +167,7 @@ namespace Ember {
 				c4::csubstr keyStr = uniformNode.key();
 				std::string uniformName(keyStr.str, keyStr.len);
 
-				// 1. If it has a "Type" child, parse using your robust editor format
+				// Editor format stores typed key-value pairs; cooker format uses simple names
 				if (uniformNode.is_map() && uniformNode.has_child("Type"))
 				{
 					std::string typeStr; uniformNode["Type"] >> typeStr;

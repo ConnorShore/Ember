@@ -24,7 +24,7 @@ namespace Ember {
 		{
 			auto [relationship, transform] = scene->GetRegistry().GetComponents<RelationshipComponent, TransformComponent>(entity);
 
-			// Only process if its the root parent
+			// Start propagation from root entities; children are handled recursively
 			if (relationship.ParentHandle != Constants::InvalidUUID)
 				continue;
 
@@ -32,6 +32,7 @@ namespace Ember {
 		}
 	}
 
+	// Recursively combines parent world transform with each entity's local transform
 	void TransformSystem::UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();

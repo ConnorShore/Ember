@@ -10,6 +10,7 @@ namespace Ember {
 		{
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+			// Permanently bind to the given binding point so all shaders sharing that index see this buffer
 			glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, m_Id);
 		}
 

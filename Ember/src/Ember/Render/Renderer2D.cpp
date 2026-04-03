@@ -21,6 +21,8 @@ namespace Ember {
 		float TextureIndex;
 	};
 
+	// Per-frame batch state: CPU-side vertex buffer is filled by DrawQuad calls
+	// and flushed to GPU in a single draw when EndFrame or NextBatch is called.
 	struct RendererData2D {
 		static const uint32_t MaxQuads = 1024;
 		static const uint32_t MaxVertices = MaxQuads * 4;
@@ -69,7 +71,7 @@ namespace Ember {
 			{ ShaderDataType::Float, "v_TextureIndex"}
 			});
 
-		// Generic index buffer population
+		// Pre-generate index data: every 4 vertices form a quad drawn as 2 triangles (6 indices)
 		auto quadIndexBufferData = new uint32_t[s_RendererData->MaxIndices];
 		uint32_t vertexOffset = 0;
 		for (uint32_t i = 0; i < s_RendererData->MaxIndices; i += 6)
@@ -126,6 +128,7 @@ namespace Ember {
 		s_RendererData->TextureSlotIndex = 1;
 	}
 
+	// Uploads the accumulated vertex data to the GPU and draws all queued quads
 	void Renderer2D::FlushBatch()
 	{
 		if (s_RendererData->QuadIndicesInBatch)
@@ -190,6 +193,7 @@ namespace Ember {
 		constexpr Vector2f texCoords[] = { {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f} };
 		float texIndex = 0.0f;
 
+		// Search existing slots for this texture to avoid binding duplicates
 		for (uint32_t i = 1; i < s_RendererData->TextureSlotIndex; i++)
 		{
 			if (s_RendererData->TextureSlots[i] == nullptr)
@@ -202,7 +206,7 @@ namespace Ember {
 			}
 		}
 
-		// If no texture was found, need to create new one
+		// If no texture was found, assign it to the next available slot (or flush if full)
 		if (texIndex == 0.0f)
 		{
 			if (s_RendererData->TextureSlotIndex >= s_RendererData->MaxTextureSlots)

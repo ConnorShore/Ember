@@ -7,6 +7,7 @@ namespace Ember {
 
 	SharedPtr<Project> ProjectManager::s_ActiveProject = nullptr;
 
+	// Creates a new project on disk with the standard directory layout and a default scene
 	SharedPtr<Project> ProjectManager::NewProject(const std::string& filepath)
 	{
 		auto project = SharedPtr<Project>::Create(filepath);

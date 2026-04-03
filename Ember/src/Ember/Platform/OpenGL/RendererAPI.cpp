@@ -91,7 +91,7 @@ namespace Ember {
 
 		void RendererAPI::CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims)
 		{
-			// get viewport dims in x0, y0, x1, y1 (not x,y,width,height)
+			// Convert (x, y, width, height) to (x0, y0, x1, y1) for glBlitNamedFramebuffer
 			int x0 = viewportDims.x;
 			int y0 = viewportDims.y;
 			int x1 = viewportDims.x + viewportDims.z;

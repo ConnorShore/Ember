@@ -7,6 +7,8 @@
 
 namespace Ember {
 
+	// Parses a combined shader file that uses `#shader vertex/fragment` directives to
+	// separate stages, and `// @UIProperty(...)` annotations to expose uniforms in the editor.
 	ShaderSourceOutput ShaderParser::Parse(const std::string& filePath, const ShaderMacros& macros /* = {} */)
 	{
 		std::ifstream stream(filePath);
@@ -112,7 +114,8 @@ namespace Ember {
 			}
 			else if (encounteredUIProp)
 			{
-				// The next line after a @UIProperty is expected to be the uniform declaration
+				// The line immediately after @UIProperty must be the uniform declaration;
+				// parse out the uniform name and add to the property list.
 				std::string_view lineView(line);
 				size_t uniformPos = lineView.find("uniform");
 				if (uniformPos != std::string::npos)
@@ -152,6 +155,8 @@ namespace Ember {
 		return { shaderSources, properties };
 	}
 
+	// Injects #define macros immediately after each #version directive so the
+	// GLSL preprocessor sees them before any user code.
 	std::string ShaderParser::InjectMacros(const std::string& source, const ShaderMacros& macros)
 	{
 		if (source.empty())

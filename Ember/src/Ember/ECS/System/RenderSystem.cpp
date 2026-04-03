@@ -13,6 +13,7 @@
 
 namespace Ember {
 
+	// UBO light data structs - layout matches std140 in the lighting shader
 	struct DirectionalLightData
 	{
 		Vector3f Direction; // 12 bytes
@@ -61,7 +62,9 @@ namespace Ember {
 		Renderer2D::Init();
 		Renderer3D::Init();
 
-		// GBuffer
+		// GBuffer: packed deferred rendering targets
+		// [0] AlbedoRoughness  [1] NormalMetallic  [2] PositionAO
+		// [3] Emission  [4] EntityID (integer for picking)  [5] Depth
 		{
 			Ember::FramebufferSpecification specs;
 			specs.Width = 1;
@@ -113,9 +116,10 @@ namespace Ember {
 			m_PostProcessBufferB = Framebuffer::Create(specs);
 		}
 
-		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);
-		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);
-		m_LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataBlock), 2);
+		// Uniform Buffer Objects at fixed binding points shared across all shaders
+		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);          // binding 0: ViewProjection
+		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);      // binding 1: DirLight + SpotLight VP
+		m_LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataBlock), 2);     // binding 2: All light data
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 
@@ -144,22 +148,21 @@ namespace Ember {
 
 	void RenderSystem::ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid)
 	{
-		// Save output framebuffer
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		if (!m_RenderSceneState.IsCameraFound) return;
 
-		// Sort entities into render queue buckets
 		SortEntitiesByRenderQueue(registry);
 
-		// The Deferred Pipeline
+		// --- Shadow pass ---
 		CreateDirectionalShadowMap(registry);
 		CreateSpotlightShadowMap(registry);
 
+		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
-		// The Forward Pipeline
+		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
 		RenderForwardEntities(registry);
 		RenderTransparentEntities(registry);
 
@@ -215,6 +218,8 @@ namespace Ember {
 			pass->OnViewportResize(width, height);
 	}
 
+	// Reads the entity ID from the framebuffer at a pixel. Checks the forward buffer
+	// first (drawn on top), falling back to the GBuffer's entity ID attachment.
 	EntityID RenderSystem::GetEntityIDAtPixel(uint32_t x, uint32_t y)
 	{
 		// Check the Forward buffer first (since it is drawn on top of the world)
@@ -289,6 +294,7 @@ namespace Ember {
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+			// Avoid degenerate LookAt when light points straight up/down
 			if (std::abs(lightDirection.y) > 0.99f)
 				up = Vector3f(0.0f, 0.0f, 1.0f);
 			Matrix4f lightView = Math::LookAt(eye, target, up);
@@ -508,7 +514,7 @@ namespace Ember {
 
 	void RenderSystem::RenderForwardEntities(Registry& registry)
 	{
-		// Copy depth buffer for forward rendering
+		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
 		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
 		m_HdrSceneBuffer->Bind();
 
@@ -665,6 +671,7 @@ namespace Ember {
 
 		RenderAction::UseDepthTest(false);
 
+		// Ping-pong between two buffers: each pass reads from currentInput and writes to currentOutput
 		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
 		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
 

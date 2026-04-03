@@ -141,11 +141,10 @@ namespace Ember {
 			m_ExpandToSelectedEntity = true;
 		}
 
-        for (auto& entity : entities) 
+		for (auto& entity : entities) 
 		{
-			// Draw the tree node
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
-			// Want to avoid drawing if they are siblings (but not at the root)
+			// Only draw root-level entities here; children are drawn recursively from DrawTreeNode
 			if (relationshipComp.ParentHandle == Constants::InvalidUUID)
 			{
 				DrawTreeNode(entity);
@@ -203,6 +202,7 @@ namespace Ember {
 				ImGui::EndDragDropSource();
 			}
 
+			// Validate the drag payload to prevent circular parent-child relationships
 			bool isValidPayload = true;
 			if (const ImGuiPayload* payload = ImGui::GetDragDropPayload())
 			{
@@ -212,6 +212,7 @@ namespace Ember {
 					bool isSameEntity = payloadUUID == entity.GetUUID();
 					bool isDescendant = IsAncestor(m_Context->ActiveScene->GetEntity(payloadUUID), entity);
 					bool isParent = entity.GetUUID() == m_Context->ActiveScene->GetEntity(payloadUUID).GetComponent<RelationshipComponent>().ParentHandle;
+					// Can't drop onto self, onto a descendant, or onto the current parent
 					isValidPayload = !isSameEntity && !isDescendant && !isParent;
 				}
 			}
@@ -328,6 +329,7 @@ namespace Ember {
 		}
 	}
 
+	// Fills remaining space with an invisible drop zone so dragging to blank area removes the parent
 	void SceneHierarchyPanel::RenderRootParentDragDropZone()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
@@ -347,6 +349,7 @@ namespace Ember {
 		}
 	}
 
+	// Walks up the parent chain from descendant to see if ancestor is one of its parents
 	bool SceneHierarchyPanel::IsAncestor(Entity ancestor, Entity descendant)
 	{
 		if (descendant == Constants::Entities::InvalidEntityID || descendant.GetUUID() == Constants::InvalidUUID)
@@ -368,6 +371,7 @@ namespace Ember {
 		return false;
 	}
 
+	// BFS through the children of ancestor to check if descendant is below it
 	bool SceneHierarchyPanel::IsDescendant(Entity descendant, Entity ancestor)
 	{
 		if (ancestor == Constants::Entities::InvalidEntityID || ancestor.GetUUID() == Constants::InvalidUUID)

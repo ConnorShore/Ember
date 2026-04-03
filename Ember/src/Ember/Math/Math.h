@@ -1,5 +1,7 @@
 #pragma once
 
+// Thin wrapper around GLM providing engine-standard type aliases and common math operations
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -38,6 +40,7 @@ namespace Ember {
 	using Matrix3f = Matrix3<float>;
 	using Matrix4f = Matrix4<float>;
 
+	// Convenience: multiply a 4x4 matrix by a 3D vector (treats as w=1, returns xyz)
 	inline Vector3f operator*(const Matrix4f& matrix, const Vector3f& vector)
 	{
 		return Vector3f(matrix * Vector4f(vector, 1.0f));
@@ -154,6 +157,8 @@ namespace Ember {
 			return glm::length(vector);
 		}
 
+		// Extracts translation, rotation (Euler), and scale from a transform matrix.
+		// Uses GLM decompose which handles skew/perspective but we only use TRS.
 		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
 		{
 			glm::vec3 scale;

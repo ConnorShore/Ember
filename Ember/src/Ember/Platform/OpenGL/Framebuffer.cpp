@@ -72,6 +72,7 @@ namespace Ember {
 			Regenerate();
 		}
 
+		// Reads a single pixel from an integer color attachment (used for entity ID picking)
 		int Framebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y) const
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
@@ -85,6 +86,8 @@ namespace Ember {
 			glClearNamedFramebufferiv(m_Id, GL_COLOR, attachmentIndex, &clearValue);
 		}
 
+		// Tears down existing GPU resources and rebuilds all attachments from the spec.
+		// Called on creation and every viewport resize.
 		void Framebuffer::Regenerate()
 		{
 			if (m_Id) {
@@ -144,6 +147,7 @@ namespace Ember {
 				}
 			}
 
+			// Tell OpenGL which color attachments this FBO can write to
 			if (!m_ColorAttachments.empty())
 				glNamedFramebufferDrawBuffers(m_Id, (GLsizei)drawBuffers.size(), drawBuffers.data());
 			else

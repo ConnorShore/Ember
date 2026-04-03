@@ -77,6 +77,7 @@ namespace Ember {
 
 			ImGui::Separator();
 
+			// Render property widgets driven by @UIProperty annotations in the shader
 			if (UI::PropertyGrid::Begin("MaterialProps"))
 			{
 				auto& shaderProps = material->GetShader()->GetProperties();
@@ -166,6 +167,8 @@ namespace Ember {
 		}
 
 	private:
+		// Reads a uniform from the material variant, renders an ImGui widget,
+		// and writes the value back if changed. Optional normalize maps [min,max] to [0,1].
 		template<typename T, typename RenderFunc>
 		void RenderProperty(const ShaderProperty& prop, const SharedPtr<MaterialBase>& material, RenderFunc renderFunc)
 		{

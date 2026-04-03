@@ -13,6 +13,7 @@ namespace Ember {
 		VertexBuffer::VertexBuffer(const void* data, uint32_t size)
 			: m_Id(0), m_Size(size)
 		{
+			// Immutable storage with DYNAMIC_STORAGE allows glNamedBufferSubData updates
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
 		}

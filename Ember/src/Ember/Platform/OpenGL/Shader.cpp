@@ -101,6 +101,7 @@ namespace Ember {
 			glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 		}
 
+		// Compiles each shader stage, attaches to program, links, then cleans up stage objects
 		void Shader::CompileShader(const ShaderSourceMap& sources)
 		{
 			EB_CORE_ASSERT(sources.size() <= NUM_SUPPORTED_SHADERS, "Only {} shader types are currently supported!", NUM_SUPPORTED_SHADERS);
@@ -125,6 +126,7 @@ namespace Ember {
 					int length;
 					glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &length);
 
+					// Stack-allocate the error message buffer to avoid heap alloc in error path
 					char* message = (char*)_alloca(length * sizeof(char));
 					glGetShaderInfoLog(shaderId, length, &length, message);
 
@@ -164,10 +166,12 @@ namespace Ember {
 
 			glValidateProgram(m_Id);
 
+			// Shader objects are no longer needed after linking
 			for (uint32_t i = 0; i < shaderIndex; i++)
 				glDeleteShader(shaderIDs[i]);
 		}
 
+		// Caches uniform locations to avoid repeated GL queries
 		int Shader::GetUniformLocation(const std::string& name) const
 		{
 			if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())

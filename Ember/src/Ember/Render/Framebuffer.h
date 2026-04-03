@@ -15,9 +15,9 @@ namespace Ember {
 		RGBA16F,
 		RED_INTEGER,
 
-		// Depth/Stencil - Depth acts as the sentinel
+		// Depth acts as a sentinel: any format >= Depth is a depth/stencil attachment
 		Depth,
-		DEPTH24STENCIL8 = Depth,	// Any values after this are considered depth/stencil formats
+		DEPTH24STENCIL8 = Depth,
 	};
 
 	static bool IsDepthFormat(FramebufferTextureFormat format)

@@ -29,6 +29,8 @@ namespace Ember {
 		return output;
 	}
 
+	// Imports a 3D model file via Assimp and "cooks" it into Ember's native formats:
+	// .ebmesh (binary vertex/index data), .ebmat (YAML material), .ebmodel (YAML hierarchy)
 	std::optional<ModelCookReport> ModelImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory)
 	{
 		Assimp::Importer importer;
@@ -41,6 +43,7 @@ namespace Ember {
 			aiProcess_CalcTangentSpace;
 
 		std::string extension = std::filesystem::path(inputFile).extension().string();
+		// glTF already uses OpenGL-style UVs, so skip the extra flip
 		if (extension != ".glb" && extension != ".gltf")
 		{
 			importFlags |= aiProcess_FlipUVs;
@@ -159,6 +162,7 @@ namespace Ember {
 		return rootNode;
 	}
 
+	// Assimp uses row-major; GLM/Ember uses column-major, so transpose during conversion
 	Matrix4f ModelImporter::ConvertMatrix(const aiMatrix4x4& aiMat)
 	{
 		return Matrix4f(
@@ -195,6 +199,7 @@ namespace Ember {
 		}
 	}
 
+	// Writes a mesh to Ember's binary format: header (magic + counts + AABB) followed by raw vertex/index data
 	bool ModelImporter::CookMesh(const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath)
 	{
 		std::ofstream file(outputFilePath, std::ios::binary | std::ios::trunc);
@@ -204,6 +209,7 @@ namespace Ember {
 		header.VertexCount = static_cast<uint32_t>(vertices.size());
 		header.IndexCount = static_cast<uint32_t>(indices.size());
 
+		// Compute axis-aligned bounding box for frustum culling
 		Vector3f minBounds(FLT_MAX);
 		Vector3f maxBounds(-FLT_MAX);
 		for (const auto& v : vertices)
@@ -349,6 +355,7 @@ namespace Ember {
 		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor);
 
 		float maxEmission = std::max({ emissiveColor.r, emissiveColor.g, emissiveColor.b });
+		// For unlit materials, normalize the emissive color into albedo + intensity
 		if (def.BaseMaterial == Constants::Assets::StandardUnlitMat && maxEmission > 0.0f)
 		{
 			if (maxEmission > 1.0f)
@@ -386,6 +393,7 @@ namespace Ember {
 			}
 			};
 
+		// Try each Assimp texture type in priority order (e.g. BASE_COLOR before DIFFUSE)
 		handleTexture({ aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, "_AlbedoMap", def.AlbedoMapPath);
 		handleTexture({ aiTextureType_NORMALS, aiTextureType_HEIGHT }, "_NormalMap", def.NormalMapPath);
 		handleTexture({ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, "_EmissiveMap", def.EmissiveMapPath);
@@ -418,6 +426,7 @@ namespace Ember {
 			int width, height, channels;
 			unsigned char* image_data = nullptr;
 
+			// Assimp convention: mHeight == 0 means the data is compressed (PNG/JPG bytes)
 			if (embeddedTexture->mHeight == 0)
 			{
 				image_data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(embeddedTexture->pcData), embeddedTexture->mWidth, &width, &height, &channels, 4);

@@ -18,6 +18,7 @@ namespace Ember {
 			{
 				UI::PropertyGrid::Float3("Position", component.Position);
 
+				// Convert internal radians to degrees for display; convert back on edit
 				Vector3f rotationDegrees = Vector3f(
 					Math::Degrees(component.Rotation.x),
 					Math::Degrees(component.Rotation.y),

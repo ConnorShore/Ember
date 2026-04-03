@@ -155,7 +155,7 @@ namespace Ember {
 		// Pop up for new project
 		RenderNewProjectPopup();
 
-		// Delete pending components and entities
+		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
 		RemovePendingEntities();
 	}
@@ -439,6 +439,7 @@ namespace Ember {
 
 			auto [mx, my] = ImGui::GetMousePos();
 
+			// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
 			mx -= m_ViewportBounds[0].x;
 			my -= m_ViewportBounds[0].y;
 
@@ -532,8 +533,8 @@ namespace Ember {
 
 		if (ImGuizmo::IsUsing())
 		{
-			// 'transform' is now our NEW World Matrix from the mouse drag.
-			// We must convert this back into a Local Matrix before saving it!
+			// ImGuizmo returns a new world-space matrix; convert back to local space
+			// by multiplying with the inverse of the parent's world transform
 			Matrix4f localTransform = transform;
 
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
@@ -672,6 +673,7 @@ namespace Ember {
 		ImGui::End();
 	}
 
+	// Averages frame count over 1-second intervals for a stable FPS readout
 	float EditorLayer::CalculateFPS(TimeStep delta)
 	{
 		static float fpsTimer = 0.0f;
@@ -748,6 +750,7 @@ namespace Ember {
 
 	void EditorLayer::OutlineEntity(Entity entity)
 	{
+		// If the outline was queued for removal (e.g. from deselection), cancel it instead of double-adding
 		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
 		if (!removed)
 			entity.AttachComponent(m_OutlineEntitySelectedComp);
@@ -847,6 +850,7 @@ namespace Ember {
 
 		if (!sceneName.empty())
 		{
+			// Strip editor-only outline components before serializing
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
 				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			}

@@ -22,6 +22,7 @@ namespace Ember {
 	bool Input::IsKeyHeld(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
+		// State > 1 means the key has been pressed AND repeated at least once
 		return s_KeyStates[static_cast<KeyCodeType>(key)] > 1;
 	}
 
@@ -56,6 +57,7 @@ namespace Ember {
 
 	void Input::SetKeyModifierState(KeyModifier modifier, bool active)
 	{
+		// Set or clear the modifier bit using bitwise OR / AND-NOT
 		s_ActiveModifiers = active
 			? (s_ActiveModifiers | modifier)
 			: static_cast<KeyModifierType>(s_ActiveModifiers & ~static_cast<KeyModifierType>(modifier));

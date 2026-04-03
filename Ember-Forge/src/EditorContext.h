@@ -13,12 +13,15 @@
 
 namespace Ember {
 
+	// Shared state passed to all editor panels and component UIs
 	struct EditorContext
 	{
 		SharedPtr<Scene> ActiveScene;
 		EditorCamera* EditorCamera;
 		Entity SelectedEntity;
 
+		// Deferred removals: entities/components are queued during rendering and
+		// actually removed after the frame to avoid invalidating iterators.
 		std::unordered_set<Entity> PendingEntityRemovals;
 		std::unordered_map<Entity, std::vector<ComponentType>> PendingComponentRemovals;
 

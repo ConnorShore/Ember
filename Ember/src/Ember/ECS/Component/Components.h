@@ -70,6 +70,7 @@ namespace Ember {
 			return WorldTransform;
 		}
 
+		// Extract basis vectors from the world transform matrix columns
 		Vector3f GetForward() const
 		{
 			return Math::Normalize(Vector3f(
@@ -134,6 +135,8 @@ namespace Ember {
 		MaterialComponent(UUID handle) : MaterialHandle(handle) {}
 		MaterialComponent(const MaterialComponent&) = default;
 
+		// Lazily creates a MaterialInstance from a base Material so this entity
+		// gets its own copy of uniforms without affecting other users of the same material
 		SharedPtr<MaterialInstance> GetInstanced(const std::string& materialInstanceName)
 		{
 			if (MaterialHandle == Constants::InvalidUUID)
@@ -227,11 +230,13 @@ namespace Ember {
 		Vector3f Color = Vector3f(1.0f);
 		float Intensity = 100.0f;
 
-		float CutOffAngle = Math::Radians(12.5f); // Stored in Radians for the C++ Camera
-		float OuterCutOffAngle = Math::Radians(17.5f); // Stored in Radians for the C++ Camera
+		// Store angles in radians for the C++ side (camera frustum, UI)
+		float CutOffAngle = Math::Radians(12.5f);
+		float OuterCutOffAngle = Math::Radians(17.5f);
 
-		float CutOff = cos(Math::Radians(12.5f));      // Stored as Cosine for the GLSL Shader
-		float OuterCutOff = cos(Math::Radians(17.5f));; // Stored as Cosine for the GLSL Shader
+		// Store as cosine values for direct use in GLSL (avoids per-fragment acos)
+		float CutOff = cos(Math::Radians(12.5f));
+		float OuterCutOff = cos(Math::Radians(17.5f));;
 
 		SpotLightComponent() = default;
 		SpotLightComponent(const Vector3f& color, float intensity, float cutOffDeg, float outerCutOffDeg)

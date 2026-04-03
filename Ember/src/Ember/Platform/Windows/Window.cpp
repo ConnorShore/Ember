@@ -53,6 +53,7 @@ namespace Ember {
 			m_GraphicsContext = GraphicsContext::Create(m_Window);
 			m_GraphicsContext->Init();
 
+			// Store our WindowData struct in GLFW's user pointer so lambdas can access it
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
 			//SetVSync(true);
@@ -85,6 +86,7 @@ namespace Ember {
 			return m_WindowData.VSync;
 		}
 
+		// Hook GLFW callbacks that translate native events into Ember events
 		void Window::RegisterCallbacks()
 		{
 			glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* w)

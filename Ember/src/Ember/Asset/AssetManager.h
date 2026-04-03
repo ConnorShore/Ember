@@ -35,7 +35,8 @@ namespace Ember {
 		template<IsCoreAsset T, typename... Args>
 		SharedPtr<T> Create(Args&&... args)
 		{
-          SharedPtr<T> newAsset;
+			// Abstract types (Shader, Texture) use their own factory; concrete types are constructed directly
+		  SharedPtr<T> newAsset;
 			if constexpr (std::is_abstract_v<T>)
 			{
 				newAsset = T::Create(std::forward<Args>(args)...);
@@ -66,6 +67,7 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
+			// Deduplicate by absolute path so the same file isn't loaded twice
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
 			{

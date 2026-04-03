@@ -36,6 +36,7 @@ namespace Ember {
 		}
 		else if (m_ProjectionType == ProjectionType::Orthographic)
 		{
+			// Scale ortho bounds by aspect ratio so content isn't stretched
 			float left = -m_OrthographicProps.Size * m_AspectRatio * 0.5f;
 			float right = m_OrthographicProps.Size * m_AspectRatio * 0.5f;
 			float top = m_OrthographicProps.Size * 0.5f;

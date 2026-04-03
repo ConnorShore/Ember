@@ -24,6 +24,7 @@ namespace Ember {
 		EB_CORE_INFO("Shutdown Script Engine...");
 	}
 
+	// Creates a fresh Lua VM for each play session so scripts start with clean state
 	void ScriptEngine::OnRuntimeStart()
 	{
 		s_LuaState = new sol::state();

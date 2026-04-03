@@ -4,6 +4,8 @@
 
 namespace Ember {
 
+	// Reconstructs a Model from its .ebmodel YAML manifest, loading referenced
+	// mesh and material assets via the AssetManager and rebuilding the node hierarchy.
 	SharedPtr<Model> ModelSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager)
 	{
 		std::ifstream file(filepath);
@@ -80,7 +82,7 @@ namespace Ember {
 				// Load the actual Mesh Asset via AssetManager!
 				meshNode.MeshAsset = assetManager.GetAsset<Mesh>(meshUUID);
 
-				// Map the UUID to a local index for this Model instance
+				// Deduplicate: only add each unique material UUID once to the materials list
 				if (materialIndexMap.find(materialUUID) == materialIndexMap.end())
 				{
 					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUID));

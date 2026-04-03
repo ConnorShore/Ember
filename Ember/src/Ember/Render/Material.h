@@ -113,6 +113,7 @@ namespace Ember {
 		{
 			m_Shader->Bind();
 
+			// Track texture slot so each texture uniform gets a unique binding point
 			uint32_t textureSlot = 0;
 			for (auto [name, value] : m_Uniforms)
 			{
@@ -124,6 +125,7 @@ namespace Ember {
 		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() const override { return m_Uniforms; }
 		inline bool ContainsUniform(const std::string& name) const override { return m_Uniforms.find(name) != m_Uniforms.end(); }
 
+		// Uploads a single uniform to the GPU, dispatching by variant type
 		inline void UploadUniform(const std::string& name, const MaterialValue& value, uint32_t& textureSlot) const
 		{
 			if (std::holds_alternative<int>(value)) m_Shader->SetInt(name, std::get<int>(value));

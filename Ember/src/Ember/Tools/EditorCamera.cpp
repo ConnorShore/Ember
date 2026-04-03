@@ -16,6 +16,7 @@ namespace Ember {
 		UpdateView();
 	}
 
+	// Recalculate the view matrix from the orbit position around the focal point
 	void EditorCamera::UpdateView()
 	{
 		m_Position = CalculatePosition();
@@ -25,6 +26,7 @@ namespace Ember {
 		m_ViewMatrix = Math::Inverse(m_ViewMatrix);
 	}
 
+	// Pan speed scales with viewport size via a quadratic curve so it feels consistent
 	std::pair<float, float> EditorCamera::PanSpeed() const
 	{
 		// FIX: Ask the base class for the viewport size instead of tracking it ourselves
@@ -101,6 +103,7 @@ namespace Ember {
 
 	void EditorCamera::MouseOrbit(const Vector2f& delta)
 	{
+		// Flip yaw direction when upside-down to keep controls intuitive
 		float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
 		m_Yaw += yawSign * delta.x * m_RotationSpeedFactor;
 		m_Pitch += delta.y * m_RotationSpeedFactor;
@@ -108,16 +111,18 @@ namespace Ember {
 
 	void EditorCamera::MouseRotate(const Vector2f& delta)
 	{
+		// In fly mode, rotate around the camera's current position instead of the focal point
 		Vector3f currentPosition = CalculatePosition();
 
 		float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
 		m_Yaw += yawSign * delta.x * m_RotationSpeedFactor;
 		m_Pitch += delta.y * m_RotationSpeedFactor;
 
-		// Gimbel lock
+		// Clamp pitch near +/-90 degrees to avoid gimbal lock
 		m_Pitch = std::max(m_Pitch, -1.56f);
 		m_Pitch = std::min(m_Pitch, 1.56f);
 
+		// Move focal point so the orbit radius stays consistent after rotation
 		m_FocalPoint = currentPosition + GetForwardDirection() * m_Distance;
 	}
 
@@ -126,6 +131,7 @@ namespace Ember {
 		m_Distance -= delta * ZoomSpeed();
 		if (m_Distance < 1.0f)
 		{
+			// Push focal point forward instead of allowing negative distance
 			m_FocalPoint += GetForwardDirection();
 			m_Distance = 1.0f;
 		}

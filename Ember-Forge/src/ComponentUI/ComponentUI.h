@@ -24,6 +24,7 @@ namespace Ember {
 	// Component UI Template Class
 	//////////////////////////////////////////////////////////////////////////
 
+	// Templated base for per-component editor UIs; subclasses implement RenderComponentImpl
 	template<typename T>
 	class ComponentUI : public ComponentUIBase
 	{
