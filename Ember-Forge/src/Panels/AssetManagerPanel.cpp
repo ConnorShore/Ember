@@ -238,13 +238,16 @@ namespace Ember {
 						{
 							auto& am = Application::Instance().GetAssetManager();
 
+							for (auto& tex : report->Textures)
+								am.Load<Texture>(tex.id, tex.name, tex.path, false);
+
 							for (auto& mat : report->Materials)
-								am.Load<MaterialInstance>(mat.id, mat.name, mat.path);
+								am.Load<MaterialInstance>(mat.id, mat.name, mat.path, false);
 
 							for (auto& mesh : report->Meshes)
-								am.Load<Mesh>(mesh.id, mesh.name, mesh.path);
+								am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
 
-							asset = am.Load<Model>(report->Model.id, report->Model.name, report->Model.path);
+							asset = am.Load<Model>(report->Model.id, report->Model.name, report->Model.path, false);
 						}
 					}
 					ImGui::CloseCurrentPopup();
@@ -276,7 +279,6 @@ namespace Ember {
 
 				if (asset != nullptr)
 				{
-					asset->SetIsEngineAsset(false);
 					EB_CORE_INFO("Successfully imported asset: {0}", asset->GetName());
 				}
 

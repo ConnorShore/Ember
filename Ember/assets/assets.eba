@@ -1,1 +1,217 @@
-Assets: []
+Assets:
+  - Type: Texture
+    UUID: 14305497443387492575
+    Name: DamagedHelmet_Material_MR_AlbedoMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_AlbedoMap.png'
+  - Type: Texture
+    UUID: 4449063580999245854
+    Name: DamagedHelmet_Material_MR_EmissiveMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_EmissiveMap.png'
+  - Type: Texture
+    UUID: 3046643182061640968
+    Name: BoxTextured_Texture_AlbedoMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Texture_AlbedoMap.png'
+  - Type: Texture
+    UUID: 10978192379655783337
+    Name: DamagedHelmet_Material_MR_NormalMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_NormalMap.png'
+  - Type: Texture
+    UUID: 14044294247702608954
+    Name: DamagedHelmet_Material_MR_ORMMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_ORMMap.png'
+  - Type: Texture
+    UUID: 13554950624892578491
+    Name: Duck_blinn3-fx_AlbedoMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_blinn3-fx_AlbedoMap.png'
+  - Type: Material
+    UUID: 14725814435639598858
+    Name: Duck_
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_.ebmat'
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 1
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_EmissionColor:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_EmissiveMap:
+        Type: Texture
+        Value: 1
+  - Type: Material
+    UUID: 17417589098831730959
+    Name: Duck_blinn3-fx
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_blinn3-fx.ebmat'
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 0
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_EmissionColor:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 13554950624892578491
+      u_Emission:
+        Type: float
+        Value: 0
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_EmissiveMap:
+        Type: Texture
+        Value: 1
+  - Type: Material
+    UUID: 4073401692248870654
+    Name: DamagedHelmet_Material_MR
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR.ebmat'
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 1
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_EmissionColor:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 14305497443387492575
+      u_Emission:
+        Type: float
+        Value: 10.8
+      u_NormalMap:
+        Type: Texture
+        Value: 10978192379655783337
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 14044294247702608954
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_EmissiveMap:
+        Type: Texture
+        Value: 4449063580999245854
+  - Type: Material
+    UUID: 17254219386766965286
+    Name: DamagedHelmet_
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_.ebmat'
+    RenderQueue: 1
+    Shader: 10
+    Instanced: true
+    BaseMaterialUUID: 31
+    Uniforms:
+      u_Metallic:
+        Type: float
+        Value: 1
+      u_Albedo:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_Roughness:
+        Type: float
+        Value: 1
+      u_EmissionColor:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_AO:
+        Type: float
+        Value: 1
+      u_AlbedoMap:
+        Type: Texture
+        Value: 1
+      u_Emission:
+        Type: float
+        Value: 0
+      u_NormalMap:
+        Type: Texture
+        Value: 3
+      u_MetallicRoughnessMap:
+        Type: Texture
+        Value: 1
+      u_Color:
+        Type: Vector3f
+        Value: [1,1,1]
+      u_EmissiveMap:
+        Type: Texture
+        Value: 1
+  - Type: Mesh
+    UUID: 8089315680081255934
+    Name: BoxTextured_Mesh
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Mesh.ebmesh'
+  - Type: Mesh
+    UUID: 5764574068108850649
+    Name: DamagedHelmet_mesh_helmet_LP_13930damagedHelmet
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_mesh_helmet_LP_13930damagedHelmet.ebmesh'
+  - Type: Mesh
+    UUID: 6617936932530975716
+    Name: Duck_LOD3spShape
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_LOD3spShape.ebmesh'
+  - Type: Model
+    UUID: 508992926487855261
+    Name: BoxTextured
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured.ebmodel'
+  - Type: Model
+    UUID: 16614750958842598966
+    Name: DamagedHelmet
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet.ebmodel'
+  - Type: Model
+    UUID: 14123611017772915665
+    Name: Duck
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck.ebmodel'

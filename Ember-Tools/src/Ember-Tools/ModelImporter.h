@@ -52,6 +52,7 @@ namespace Ember {
 		CookedAssetInfo Model;
 		std::vector<CookedAssetInfo> Meshes;
 		std::vector<CookedAssetInfo> Materials;
+		std::vector<CookedAssetInfo> Textures;
 	};
 
 	class ModelImporter
@@ -66,12 +67,12 @@ namespace Ember {
 		static void ProcessNode(const std::string& name, aiNode* aiNode, CookedModelNode& modelNode, const aiScene* scene, const std::string& outputDirectory, const std::vector<CookedAssetInfo>& cookedMeshes);
 
 		static CookedAssetInfo ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory);
-		static CookedAssetInfo ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory);
-
+		static CookedAssetInfo ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures);
+		static CookedAssetInfo ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory);
+		
 		static std::string DetermineBaseMaterial(const aiMaterial* aiMat);
 		static void ExtractPBRUniforms(const aiMaterial* aiMat, CookedMaterialDef& def);
-		static void ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, CookedMaterialDef& def, const std::string& outputDirectory);
-		static std::string ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory);
+		static void ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, CookedMaterialDef& def, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures);
 	};
 
 }

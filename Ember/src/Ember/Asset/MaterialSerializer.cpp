@@ -40,6 +40,7 @@ namespace Ember {
 		}
 
 		auto instance = SharedPtr<MaterialInstance>::Create(uuid, matName, baseMat);
+		instance->SetFilePath(filepath.string());
 
 		// Set Uniforms
 		if (root.has_child("Uniforms"))

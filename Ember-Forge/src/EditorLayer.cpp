@@ -727,10 +727,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
-		auto& assetManager = Application::Instance().GetAssetManager();
-		SharedPtr<Model> model = assetManager.Load<Model>(modelFilePath);
-
-		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(model, model->GetName());
+		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(modelFilePath);
 		m_Context.SelectedEntity = modelEntity;
 	}
 

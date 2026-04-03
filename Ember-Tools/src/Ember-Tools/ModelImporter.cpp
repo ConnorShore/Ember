@@ -41,14 +41,16 @@ namespace Ember {
 		std::string modelName = std::filesystem::path(inputFile).stem().string();
 		ModelCookReport report;
 
-		// Process Materials (Cooks to .ebmat)
+		// Process Materials & Textures (Cooks to .ebmat and .png)
 		if (scene->HasMaterials())
 		{
 			report.Materials.reserve(scene->mNumMaterials);
 			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
 			{
 				aiMaterial* material = scene->mMaterials[i];
-				CookedAssetInfo matInfo = ProcessMaterial(modelName, inputFile, scene, material, outputDirectory);
+
+				// We pass report.Textures in so the material processor can populate it!
+				CookedAssetInfo matInfo = ProcessMaterial(modelName, inputFile, scene, material, outputDirectory, report.Textures);
 				report.Materials.push_back(matInfo);
 			}
 		}
@@ -128,7 +130,7 @@ namespace Ember {
 		fout << yamlOutput;
 		fout.close();
 
-		// 5. Finalize the report
+		// Finalize the report
 		report.Model = { modelUUID, modelName, manifestPath.string() };
 		return report;
 	}
@@ -246,7 +248,7 @@ namespace Ember {
 
 	// --- MATERIAL COOKING ---
 
-	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory)
+	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures)
 	{
 		std::string rawMatName = aiMat->GetName().C_Str();
 		std::string matName = modelName + "_" + rawMatName;
@@ -255,7 +257,7 @@ namespace Ember {
 		def.BaseMaterial = DetermineBaseMaterial(aiMat);
 
 		ExtractPBRUniforms(aiMat, def);
-		ExtractTextures(matName, modelFilePath, scene, aiMat, def, outputDirectory);
+		ExtractTextures(matName, modelFilePath, scene, aiMat, def, outputDirectory, outTextures);
 
 		UUID materialUUID = UUID();
 		std::string matFileName = matName + ".ebmat";
@@ -356,15 +358,24 @@ namespace Ember {
 		aiGetMaterialFloat(aiMat, AI_MATKEY_METALLIC_FACTOR, &def.Metallic);
 	}
 
-	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, CookedMaterialDef& def, const std::string& outputDirectory)
+	void ModelImporter::ExtractTextures(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, CookedMaterialDef& def, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures)
 	{
-		def.AlbedoMapPath = ExtractAndCopyTexture(matName, modelFilePath, scene, aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, "_AlbedoMap", outputDirectory);
-		def.NormalMapPath = ExtractAndCopyTexture(matName, modelFilePath, scene, aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, "_NormalMap", outputDirectory);
-		def.EmissiveMapPath = ExtractAndCopyTexture(matName, modelFilePath, scene, aiMat, { aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, "_EmissiveMap", outputDirectory);
-		def.ORMMapPath = ExtractAndCopyTexture(matName, modelFilePath, scene, aiMat, { aiTextureType_UNKNOWN, aiTextureType_METALNESS }, "_ORMMap", outputDirectory);
+		auto handleTexture = [&](const std::vector<aiTextureType>& types, const std::string& suffix, std::string& outMapPath) {
+			CookedAssetInfo info = ExtractAndCopyTexture(matName, modelFilePath, scene, aiMat, types, suffix, outputDirectory);
+			if (!info.path.empty())
+			{
+				outMapPath = std::filesystem::path(info.path).filename().string();
+				outTextures.push_back(info);
+			}
+			};
+
+		handleTexture({ aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, "_AlbedoMap", def.AlbedoMapPath);
+		handleTexture({ aiTextureType_NORMALS, aiTextureType_HEIGHT }, "_NormalMap", def.NormalMapPath);
+		handleTexture({ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, "_EmissiveMap", def.EmissiveMapPath);
+		handleTexture({ aiTextureType_UNKNOWN, aiTextureType_METALNESS }, "_ORMMap", def.ORMMapPath);
 	}
 
-	std::string ModelImporter::ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory)
+	CookedAssetInfo ModelImporter::ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory)
 	{
 		aiTextureType validTextureType = aiTextureType_NONE;
 		for (auto type : typesToCheck)
@@ -376,7 +387,7 @@ namespace Ember {
 			}
 		}
 
-		if (validTextureType == aiTextureType_NONE) return "";
+		if (validTextureType == aiTextureType_NONE) return { 0, "", "" };
 
 		aiString texPath;
 		aiMat->GetTexture(validTextureType, 0, &texPath);
@@ -411,7 +422,8 @@ namespace Ember {
 
 				if (embeddedTexture->mHeight == 0) stbi_image_free(image_data);
 
-				return finalFileName;
+				// Generate UUID and track the texture
+				return { UUID(), texName, outTexPath.string() };
 			}
 		}
 		else
@@ -427,10 +439,11 @@ namespace Ember {
 				if (!std::filesystem::exists(destTexPath))
 					std::filesystem::copy_file(sourceTexPath, destTexPath);
 
-				return finalFileName;
+				// Generate UUID and track the texture
+				return { UUID(), sourceTexPath.stem().string(), destTexPath.string() };
 			}
 		}
 
-		return "";
+		return { 0, "", "" };
 	}
 }

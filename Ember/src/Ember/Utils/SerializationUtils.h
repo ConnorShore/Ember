@@ -89,6 +89,7 @@ namespace Ember {
 			{
 			case AssetType::Texture: return "Texture";
 			case AssetType::Shader: return "Shader";
+			case AssetType::Mesh: return "Mesh";
 			case AssetType::Model: return "Model";
 			case AssetType::Material: return "Material";
 			case AssetType::Script: return "Script";
@@ -100,6 +101,7 @@ namespace Ember {
 		{
 			if (typeStr == "Texture") return AssetType::Texture;
 			if (typeStr == "Shader") return AssetType::Shader;
+			if (typeStr == "Mesh") return AssetType::Mesh;
 			if (typeStr == "Model") return AssetType::Model;
 			if (typeStr == "Material") return AssetType::Material;
 			if (typeStr == "Script") return AssetType::Script;

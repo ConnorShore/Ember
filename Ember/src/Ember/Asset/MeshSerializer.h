@@ -53,7 +53,10 @@ namespace Ember {
 			file.close();
 
 			std::string name = filepath.stem().string();
-			return SharedPtr<Mesh>::Create(uuid, name, vertices, indices);;
+
+			auto meshAsset = SharedPtr<Mesh>::Create(uuid, name, vertices, indices);
+			meshAsset->SetFilePath(filepath.string());
+			return meshAsset;
 		}
 	};
 }

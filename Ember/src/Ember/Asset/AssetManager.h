@@ -64,7 +64,7 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
-		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath)
+		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
@@ -87,6 +87,8 @@ namespace Ember {
 				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
+
+			newAsset->SetIsEngineAsset(engineAsset);
 
 			m_Assets[newAsset->GetUUID()] = newAsset;
 			m_AssetNames[name] = newAsset->GetUUID();

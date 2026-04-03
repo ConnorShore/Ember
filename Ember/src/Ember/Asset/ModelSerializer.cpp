@@ -41,7 +41,8 @@ namespace Ember {
 		ModelNode rootModelNode;
 		DeserializeNode(rootNodeRef, rootModelNode, assetManager, materials, materialIndexMap);
 
-		return SharedPtr<Model>::Create(uuid, modelName, filepath.string(), rootModelNode, materials);
+		auto modelAsset = SharedPtr<Model>::Create(uuid, modelName, filepath.string(), rootModelNode, materials);
+		return modelAsset;
 	}
 
 	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, unsigned int>& materialIndexMap)
