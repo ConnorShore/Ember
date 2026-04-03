@@ -15,9 +15,9 @@ namespace Ember {
 		RGBA16F,
 		RED_INTEGER,
 
-		// Depth/Stencil - Depth acts as the sentinel
+		// Depth acts as a sentinel: any format >= Depth is a depth/stencil attachment
 		Depth,
-		DEPTH24STENCIL8 = Depth,	// Any values after this are considered depth/stencil formats
+		DEPTH24STENCIL8 = Depth,
 	};
 
 	static bool IsDepthFormat(FramebufferTextureFormat format)
@@ -46,8 +46,8 @@ namespace Ember {
 
 	struct FramebufferSpecification
 	{
-		unsigned int Width;
-		unsigned int Height;
+		uint32_t Width;
+		uint32_t Height;
 
 		FramebufferAttachmentSpecification AttachmentSpecs;
 	};
@@ -59,16 +59,16 @@ namespace Ember {
 
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
-		virtual void ViewportResize(unsigned int width, unsigned int height) = 0;
+		virtual void ViewportResize(uint32_t width, uint32_t height) = 0;
 
-		virtual const unsigned int GetColorAttachmentID(unsigned int id) const = 0;
-		virtual const unsigned int GetDepthAttachmentID() const = 0;
+		virtual uint32_t GetColorAttachmentID(uint32_t id) const = 0;
+		virtual uint32_t GetDepthAttachmentID() const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
-		virtual int ReadPixel(unsigned int attachmentIndex, int x, int y) const = 0;
-		virtual void ClearAttachment(unsigned int attachmentIndex, int& clearValue) = 0;
+		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const = 0;
+		virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) = 0;
 
-		virtual const unsigned int GetID() const = 0;
+		virtual uint32_t GetID() const = 0;
 
 		static SharedPtr<Framebuffer> Create(const FramebufferSpecification& specification);
 	};

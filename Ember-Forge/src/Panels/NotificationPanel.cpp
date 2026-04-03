@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "NotificationPanel.h"
 
 namespace Ember {
@@ -8,6 +9,7 @@ namespace Ember {
 		EB_DISPATCH_EVENT(UINotificationEvent, OnNotification);
 	}
 
+	// Pulls next message from the queue when the current one expires
 	void NotificationPanel::OnUpdate(TimeStep delta)
 	{
 		if (m_CurrentNotification.Message.empty() && !m_NotificationQueue.empty())
@@ -49,7 +51,8 @@ namespace Ember {
 
 		if (ImGui::Begin("##StatusBar", nullptr, windowFlags))
 		{
-			float alpha = std::clamp(m_CurrentTimer / 0.5f, 0.0f, 1.0f); // Fades out in the last 0.5 seconds
+			// Alpha fades from 1.0 to 0.0 during the last 0.5 seconds of display
+			float alpha = std::clamp(m_CurrentTimer / 0.5f, 0.0f, 1.0f);
 
 			switch (m_CurrentNotification.MessageSeverity)
 			{

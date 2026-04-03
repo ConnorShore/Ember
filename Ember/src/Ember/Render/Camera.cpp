@@ -20,7 +20,7 @@ namespace Ember {
 		CalculateProjectionMatrix();
 	}
 
-	void Camera::SetViewportSize(unsigned int width, unsigned int height)
+	void Camera::SetViewportSize(uint32_t width, uint32_t height)
 	{
 		m_ViewportSize = Vector2f(width, height);
 		m_AspectRatio = (float)width / (float)height;
@@ -36,6 +36,7 @@ namespace Ember {
 		}
 		else if (m_ProjectionType == ProjectionType::Orthographic)
 		{
+			// Scale ortho bounds by aspect ratio so content isn't stretched
 			float left = -m_OrthographicProps.Size * m_AspectRatio * 0.5f;
 			float right = m_OrthographicProps.Size * m_AspectRatio * 0.5f;
 			float top = m_OrthographicProps.Size * 0.5f;

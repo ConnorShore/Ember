@@ -22,7 +22,7 @@ namespace Ember {
 		return nullptr;
 	}
 
-	SharedPtr<Texture> Texture::Create(const std::string& name, unsigned int width, unsigned int height, const void* data)
+	SharedPtr<Texture> Texture::Create(const std::string& name, uint32_t width, uint32_t height, const void* data)
 	{
 		switch (RendererAPI::GetApi())
 		{
@@ -34,7 +34,7 @@ namespace Ember {
 		return nullptr;
 	}
 
-	SharedPtr<Texture> Texture::Create(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data)
+	SharedPtr<Texture> Texture::Create(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data)
 	{
 		switch (RendererAPI::GetApi())
 		{

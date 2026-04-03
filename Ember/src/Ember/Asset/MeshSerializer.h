@@ -11,6 +11,8 @@
 
 namespace Ember {
 
+	// Reads a binary .ebmesh file: validates the magic/version header, then
+	// bulk-reads vertex and index data directly into memory.
 	class MeshSerializer
 	{
 	public:

@@ -22,13 +22,13 @@ namespace Ember {
 
 		bool ContainsComponent(EntityID entity, ComponentType component);
 
-		inline const unsigned int GetNumActiveEntities() const { return m_NextEntityId - m_UnusedIds.size(); }
+		inline uint32_t GetNumActiveEntities() const { return m_NextEntityId - static_cast<uint32_t>(m_UnusedIds.size()); }
 
 	private:
 		std::bitset<Constants::Entities::MaxEntities> m_AliveEntities;
 		std::array<std::bitset<Constants::Entities::MaxComponents>, Constants::Entities::MaxEntities> m_EntityComponentMask;
 		std::queue<EntityID> m_UnusedIds;
-		unsigned int m_NextEntityId;
+		uint32_t m_NextEntityId;
 	};
 
 }

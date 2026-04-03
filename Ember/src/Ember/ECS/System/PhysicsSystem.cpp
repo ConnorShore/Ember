@@ -17,6 +17,7 @@ namespace Ember {
 		EB_CORE_INFO("Physics System detached!");
 	}
 
+	// Simple explicit Euler integration: position += velocity * dt
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		View view = scene->GetRegistry().Query<RigidBodyComponent, TransformComponent>();

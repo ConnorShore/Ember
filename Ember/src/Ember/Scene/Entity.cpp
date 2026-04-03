@@ -7,6 +7,8 @@ namespace Ember {
 	{
 		// TODO: FIX THIS, may need to get actual entities from the scene registry
 		// instead of creating new ones with the same ID and scene handle
+
+		// Collect direct children first, then recursively gather all descendants
 		std::vector<Entity> ret;
 		auto& relationship = GetComponent<RelationshipComponent>();
 		for (UUID childID : relationship.Children)
@@ -26,9 +28,9 @@ namespace Ember {
 		return ret;
 	}
 
-	unsigned int Entity::GetNumChildren()
+	uint32_t Entity::GetNumChildren()
 	{
-		return GetComponent<RelationshipComponent>().Children.size();
+		return static_cast<uint32_t>(GetComponent<RelationshipComponent>().Children.size());
 	}
 
 	bool Entity::IsRootParent()
@@ -52,6 +54,7 @@ namespace Ember {
 		return Entity();
 	}
 
+	// Depth-first search through the entity hierarchy by name
 	Entity Entity::FindEntityInHierarchy(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

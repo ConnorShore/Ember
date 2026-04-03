@@ -21,7 +21,7 @@ namespace Ember {
 		
 		EB_CORE_ASSERT(m_NextEntityId < Constants::Entities::MaxEntities, "Entity count has reached Ember's max limit!");
 
-		unsigned int newId = m_NextEntityId++;
+		uint32_t newId = m_NextEntityId++;
 		m_AliveEntities.set(newId, true);
 		return newId;
 	}

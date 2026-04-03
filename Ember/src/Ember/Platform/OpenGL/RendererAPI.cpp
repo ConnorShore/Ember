@@ -74,12 +74,12 @@ namespace Ember {
 			}
 		}
 
-		void RendererAPI::SetTextureUnit(unsigned int unit, unsigned int texture)
+		void RendererAPI::SetTextureUnit(uint32_t unit, uint32_t texture)
 		{
 			glBindTextureUnit(unit, texture);
 		}
 
-		void RendererAPI::SetFramebuffer(unsigned int framebufferId)
+		void RendererAPI::SetFramebuffer(uint32_t framebufferId)
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
 		}
@@ -89,9 +89,9 @@ namespace Ember {
 			glGetIntegerv(GL_FRAMEBUFFER_BINDING, outFramebufferId);
 		}
 
-		void RendererAPI::CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims)
+		void RendererAPI::CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims)
 		{
-			// get viewport dims in x0, y0, x1, y1 (not x,y,width,height)
+			// Convert (x, y, width, height) to (x0, y0, x1, y1) for glBlitNamedFramebuffer
 			int x0 = viewportDims.x;
 			int y0 = viewportDims.y;
 			int x1 = viewportDims.x + viewportDims.z;
@@ -108,17 +108,17 @@ namespace Ember {
 			glGetIntegerv(GL_VIEWPORT, outViewportDims);
 		}
 
-		void RendererAPI::SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height)
+		void RendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 		{
 			glViewport(x, y, width, height);
 		}
 
 		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray)
 		{
-			DrawIndexed(vertexArray, vertexArray->GetIndexBuffer()->GetCount());
+			DrawIndexed(vertexArray, static_cast<uint32_t>(vertexArray->GetIndexBuffer()->GetCount()));
 		}
 
-		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
+		void RendererAPI::DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt)
 		{
 			vertexArray->Bind();
 			glDrawElements(GL_TRIANGLES, indicesCt, GL_UNSIGNED_INT, nullptr);

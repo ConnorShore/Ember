@@ -16,6 +16,7 @@ namespace Ember {
 
 	void Registry::DestroyEntity(EntityID entity)
 	{
+		// Clean up all components before releasing the entity ID
 		m_ComponentManager->EntityDestroyed(entity);
 		m_EntityManager->DestroyEntity(entity);
 	}

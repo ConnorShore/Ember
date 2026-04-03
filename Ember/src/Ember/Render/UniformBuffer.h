@@ -9,9 +9,9 @@ namespace Ember {
 	public:
 		virtual ~UniformBuffer() = default;
 
-		virtual void SetData(const void* data, unsigned int size, unsigned int offset = 0) = 0;
+		virtual void SetData(const void* data, uint32_t size, uint32_t offset = 0) = 0;
 
-		static SharedPtr<UniformBuffer> Create(unsigned int size, unsigned int bindingPoint);
+		static SharedPtr<UniformBuffer> Create(uint32_t size, uint32_t bindingPoint);
 	};
 
 }

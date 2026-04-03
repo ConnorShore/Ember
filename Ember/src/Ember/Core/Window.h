@@ -10,12 +10,12 @@ namespace Ember {
 
 	struct WindowConfig
 	{
-		unsigned int Width, Height;
+		uint32_t Width, Height;
 		std::string Title;
 
 		WindowConfig(const std::string& title = "Ember Engine",
-			unsigned int width = 1280,
-			unsigned int height = 720)
+			uint32_t width = 1280,
+			uint32_t height = 720)
 			: Title(title), Width(width), Height(height)
 		{
 		}
@@ -24,16 +24,16 @@ namespace Ember {
 	class Window
 	{
 	public:
-		static constexpr unsigned int MaxWidth = 8192;
-		static constexpr unsigned int MaxHeight = 8192;
+		static constexpr uint32_t MaxWidth = 8192;
+		static constexpr uint32_t MaxHeight = 8192;
 
 	public:
 		virtual ~Window() = default;
 
 		virtual void OnUpdate() = 0;
 
-		virtual unsigned int GetWidth() const = 0;
-		virtual unsigned int GetHeight() const = 0;
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
 
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;

@@ -2,6 +2,7 @@
 #include "ComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+#include <Ember/Utils/PlatformUtil.h>
 
 #include <filesystem>
 #include <fstream>
@@ -59,7 +60,7 @@ namespace Ember {
 					std::string newScriptPath = "Ember-Forge/assets/scripts/NewScript.lua";
 					if (std::filesystem::exists(std::filesystem::absolute(newScriptPath)))
 					{
-						unsigned int index = 1;
+						uint32_t index = 1;
 						do {
 							newScriptPath = std::format("Ember-Forge/assets/scripts/NewScript({}).lua", index++);
 						} while (std::filesystem::exists(std::filesystem::absolute(newScriptPath)));

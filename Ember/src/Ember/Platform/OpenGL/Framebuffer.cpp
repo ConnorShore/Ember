@@ -17,12 +17,13 @@ namespace Ember {
 			case FramebufferTextureFormat::RED_INTEGER:		return GL_R32I;
 			case FramebufferTextureFormat::DEPTH24STENCIL8:	return GL_DEPTH24_STENCIL8;
 			case FramebufferTextureFormat::None:			return 0;
+			default:
+				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
+				return 0;
 			}
-
-			EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
 		}
 
-		GLuint FramebufferAttachmentTypeToGLAttachmentType(FramebufferTextureFormat format, unsigned int index = 0)
+		GLuint FramebufferAttachmentTypeToGLAttachmentType(FramebufferTextureFormat format, uint32_t index)
 		{
 			switch (format)
 			{
@@ -31,9 +32,10 @@ namespace Ember {
 			case FramebufferTextureFormat::RED_INTEGER:		return GL_COLOR_ATTACHMENT0 + index;
 			case FramebufferTextureFormat::DEPTH24STENCIL8:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			case FramebufferTextureFormat::None:			return 0;
+			default:
+				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
+				return 0;
 			}
-
-			EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
 		}
 
 		Framebuffer::Framebuffer(const FramebufferSpecification& specification)
@@ -57,7 +59,7 @@ namespace Ember {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
-		void Framebuffer::ViewportResize(unsigned int width, unsigned int height)
+		void Framebuffer::ViewportResize(uint32_t width, uint32_t height)
 		{
 			if (width == 0 || height == 0 || width > Window::MaxWidth || height > Window::MaxHeight)
 			{
@@ -70,7 +72,8 @@ namespace Ember {
 			Regenerate();
 		}
 
-		int Framebuffer::ReadPixel(unsigned int attachmentIndex, int x, int y) const
+		// Reads a single pixel from an integer color attachment (used for entity ID picking)
+		int Framebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y) const
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 			int pixelData;
@@ -78,16 +81,18 @@ namespace Ember {
 			return pixelData;
 		}
 
-		void Framebuffer::ClearAttachment(unsigned int attachmentIndex, int& clearValue)
+		void Framebuffer::ClearAttachment(uint32_t attachmentIndex, int& clearValue)
 		{
 			glClearNamedFramebufferiv(m_Id, GL_COLOR, attachmentIndex, &clearValue);
 		}
 
+		// Tears down existing GPU resources and rebuilds all attachments from the spec.
+		// Called on creation and every viewport resize.
 		void Framebuffer::Regenerate()
 		{
 			if (m_Id) {
 				glDeleteFramebuffers(1, &m_Id); 
-				glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
+				glDeleteTextures(static_cast<GLsizei>(m_ColorAttachments.size()), m_ColorAttachments.data());
 				glDeleteTextures(1, &m_DepthAttachment);
 
 				m_Id = 0;
@@ -99,17 +104,17 @@ namespace Ember {
 
 			std::vector<GLenum> drawBuffers;
 			bool containsDepth = false;
-			unsigned int size = m_Specification.AttachmentSpecs.Attachments.size();
-			for (unsigned int i = 0; i < size; i++)
+			uint32_t size = static_cast<uint32_t>(m_Specification.AttachmentSpecs.Attachments.size());
+			for (uint32_t i = 0; i < size; i++)
 			{
 				auto attachmentSpec = m_Specification.AttachmentSpecs.Attachments[i];
 				auto glColorFormat = FramebufferTextureFormatToGLFormat(attachmentSpec.TextureFormat);
-				auto glAttachment = FramebufferAttachmentTypeToGLAttachmentType(attachmentSpec.TextureFormat, m_ColorAttachments.size());
+				auto glAttachment = FramebufferAttachmentTypeToGLAttachmentType(attachmentSpec.TextureFormat, static_cast<uint32_t>(m_ColorAttachments.size()));
 
 				if (!IsDepthFormat(attachmentSpec.TextureFormat))
 				{
 					// Create the color texture
-					unsigned int textureId;
+					uint32_t textureId;
 					glCreateTextures(GL_TEXTURE_2D, 1, &textureId);
 					glTextureStorage2D(textureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
 
@@ -132,7 +137,7 @@ namespace Ember {
 						continue;
 					}
 
-					unsigned int depthTextureId;
+					uint32_t depthTextureId;
 					glCreateTextures(GL_TEXTURE_2D, 1, &depthTextureId);
 					glTextureStorage2D(depthTextureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
 					glNamedFramebufferTexture(m_Id, glAttachment, depthTextureId, 0);
@@ -142,6 +147,7 @@ namespace Ember {
 				}
 			}
 
+			// Tell OpenGL which color attachments this FBO can write to
 			if (!m_ColorAttachments.empty())
 				glNamedFramebufferDrawBuffers(m_Id, (GLsizei)drawBuffers.size(), drawBuffers.data());
 			else

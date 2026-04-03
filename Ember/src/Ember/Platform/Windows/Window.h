@@ -22,8 +22,8 @@ namespace Ember {
 			virtual void SetVSync(bool enabled) override;
 			virtual bool IsVSync() const override;
 
-			inline virtual unsigned int GetWidth() const override { return m_WindowData.Width; }
-			inline virtual unsigned int GetHeight() const override { return m_WindowData.Height; }
+			inline virtual uint32_t GetWidth() const override { return m_WindowData.Width; }
+			inline virtual uint32_t GetHeight() const override { return m_WindowData.Height; }
 			inline virtual void SetEventCallback(const EventCallbackFunc& callback) override { m_WindowData.EventCallback = callback; }
 			inline virtual void* GetNativeWindow() const override { return m_Window; }
 
@@ -37,7 +37,7 @@ namespace Ember {
 			struct WindowData
 			{
 				std::string Title;
-				unsigned int Width, Height;
+				uint32_t Width, Height;
 				EventCallbackFunc EventCallback;
 				bool VSync;
 			} m_WindowData;

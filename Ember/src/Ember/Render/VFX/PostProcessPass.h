@@ -13,7 +13,7 @@ namespace Ember {
 		virtual ~PostProcessPass() = default;
 		virtual void Init() = 0;
 		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) = 0;
-		virtual void OnViewportResize(unsigned int width, unsigned int height) {}
+		virtual void OnViewportResize(uint32_t width, uint32_t height) {}
 
 		bool Enabled = true;
 

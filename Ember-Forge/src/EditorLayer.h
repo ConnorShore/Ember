@@ -4,9 +4,13 @@
 #include "Panels/Panel.h"
 #include "EditorContext.h"
 
-#include <Ember.h>
+#include <Ember/Event/KeyEvent.h>
+#include <Ember/Event/MouseEvent.h>
+#include <Ember/Render/Framebuffer.h>
+
 #include <ImGuizmo.h>
 #include <vector>
+#include <concepts>
 
 namespace Ember {
 
@@ -150,8 +154,8 @@ namespace Ember {
 
 		struct ToolbarProps
 		{
-			unsigned int PlayButtonTextureID;
-			unsigned int StopButtonTextureID;
+			uint32_t PlayButtonTextureID;
+			uint32_t StopButtonTextureID;
 		} m_ToolbarProps;
 	};
 

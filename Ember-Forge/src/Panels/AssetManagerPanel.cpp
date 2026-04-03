@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "AssetManagerPanel.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
@@ -162,7 +163,7 @@ namespace Ember {
 		const std::filesystem::path fileName = entry.path().filename();
 		const std::string fileNameStr = fileName.string();
 
-		if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+		if (ImGui::ImageButton(fileNameStr.c_str(), m_FileTexID, ImVec2(static_cast<float>(m_IconSize), static_cast<float>(m_IconSize)), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
 		{
 			// TODO: Select the item
 		}
@@ -186,7 +187,7 @@ namespace Ember {
 		const std::filesystem::path fileName = entry.path().filename();
 		const std::string fileNameStr = fileName.string();
 
-		ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(m_IconSize, m_IconSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::ImageButton(fileNameStr.c_str(), m_DirectoryTexID, ImVec2(static_cast<float>(m_IconSize), static_cast<float>(m_IconSize)), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 		{
 			m_CurrentDirectory /= fileName;

@@ -32,11 +32,12 @@ namespace Ember {
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F
 			};
-			for (unsigned int i = 0; i < m_PingPongBuffers.size(); i++)
+			for (uint32_t i = 0; i < m_PingPongBuffers.size(); i++)
 				m_PingPongBuffers[i] = Framebuffer::Create(specs);
 		}
 	}
 
+	// Three stages: (1) extract bright pixels, (2) ping-pong Gaussian blur, (3) composite onto scene
 	void BloomPass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
 	{
 		// Bloom Prefilter Pass //
@@ -60,11 +61,13 @@ namespace Ember {
 		// BLUR PASS //
 		RenderAction::UseDepthTest(false);
 
+		// Alternating horizontal/vertical blur passes between two ping-pong buffers.
+		// First iteration reads from the extraction buffer; subsequent ones read from the other ping-pong.
 		bool horizontalPass = true, firstIter = true;
 
 		m_BlurShader->Bind();
 		m_BlurShader->SetInt(Constants::Uniforms::Image, 0);
-		for (unsigned int i = 0; i < m_Passes; i++)
+		for (uint32_t i = 0; i < m_Passes; i++)
 		{
 			m_PingPongBuffers[horizontalPass]->Bind();
 
@@ -106,7 +109,7 @@ namespace Ember {
 		/////
 	}
 
-	void BloomPass::OnViewportResize(unsigned int width, unsigned int height)
+	void BloomPass::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		m_BloomExtractionBuffer->ViewportResize(width, height);
 		m_PingPongBuffers[0]->ViewportResize(width, height);

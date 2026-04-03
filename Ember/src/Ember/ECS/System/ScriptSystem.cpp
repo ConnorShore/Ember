@@ -27,7 +27,6 @@ namespace Ember {
 	{
 		auto view = scene->GetRegistry().Query<ScriptComponent>();
 
-		// 1. Grab the active runtime Virtual Machine!
 		sol::state& luaState = ScriptEngine::GetState();
 
 		for (auto entityID : view)
@@ -38,6 +37,7 @@ namespace Ember {
 			if (script.ScriptHandle == Constants::InvalidUUID)
 				continue;
 
+			// First frame: load the Lua file, create an instance table, and call OnCreate
 			if (!script.Initialized)
 			{
 				auto scriptAsset = Application::Instance().GetAssetManager().GetAsset<Script>(script.ScriptHandle);
@@ -49,7 +49,7 @@ namespace Ember {
 					{
 						sol::table scriptClass = result;
 
-						// Create the instance and set up inheritance
+						// Create a per-entity Lua table that inherits from the script class via __index
 						script.Instance = luaState.create_table();
 						script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
 
@@ -76,7 +76,7 @@ namespace Ember {
 					EB_CORE_ERROR("ScriptSystem: Invalid ScriptHandle ID");
 				}
 
-				// Initialize no matter what so errors don't loop infinitely
+				// Mark as initialized unconditionally to prevent error spam on every frame
 				script.Initialized = true;
 			}
 
@@ -97,6 +97,7 @@ namespace Ember {
 		}
 	}
 
+	// Registers Ember types and functions into the Lua VM so scripts can interact with the engine
 	void ScriptSystem::BindAPI()
 	{
 		m_LuaState.new_usertype<Entity>("Entity",

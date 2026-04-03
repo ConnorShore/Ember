@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "EditorLayer.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
@@ -6,6 +7,20 @@
 #include "Panels/NotificationPanel.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+
+#include <Ember/Render/RenderAction.h>
+#include <Ember/Render/RendererAPI.h>
+#include <Ember/Render/Renderer2D.h>
+#include <Ember/Render/Renderer3D.h>
+#include <Ember/Input/Input.h>
+#include <Ember/Input/InputCode.h>
+#include <Ember/Event/UIEvent.h>
+#include <Ember/Core/ProjectManager.h>
+#include <Ember/Utils/PlatformUtil.h>
+#include <Ember/Scene/SceneSerializer.h>
+#include <Ember/Asset/AssetRegistrySerializer.h>
+
+#include <Ember-Tools/ModelImporter.h>
 
 #include <random>
 
@@ -140,7 +155,7 @@ namespace Ember {
 		// Pop up for new project
 		RenderNewProjectPopup();
 
-		// Delete pending components and entities
+		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
 		RemovePendingEntities();
 	}
@@ -151,7 +166,7 @@ namespace Ember {
 		m_PreviousSelectedEntity = m_InvalidEntity;
 
 		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
 		m_SceneState = SceneState::Play;
 	}
@@ -162,7 +177,7 @@ namespace Ember {
 		m_PreviousSelectedEntity = m_InvalidEntity;
 
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
 		m_SceneState = SceneState::Edit;
 	}
@@ -242,13 +257,13 @@ namespace Ember {
 		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-			m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-			m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		}
 
-		unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
-		ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		uint32_t textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
+		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(textureID)), ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		// Drag drop zone for models
 		if (ImGui::BeginDragDropTarget())
@@ -424,6 +439,7 @@ namespace Ember {
 
 			auto [mx, my] = ImGui::GetMousePos();
 
+			// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
 			mx -= m_ViewportBounds[0].x;
 			my -= m_ViewportBounds[0].y;
 
@@ -517,8 +533,8 @@ namespace Ember {
 
 		if (ImGuizmo::IsUsing())
 		{
-			// 'transform' is now our NEW World Matrix from the mouse drag.
-			// We must convert this back into a Local Matrix before saving it!
+			// ImGuizmo returns a new world-space matrix; convert back to local space
+			// by multiplying with the inverse of the parent's world transform
 			Matrix4f localTransform = transform;
 
 			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
@@ -657,6 +673,7 @@ namespace Ember {
 		ImGui::End();
 	}
 
+	// Averages frame count over 1-second intervals for a stable FPS readout
 	float EditorLayer::CalculateFPS(TimeStep delta)
 	{
 		static float fpsTimer = 0.0f;
@@ -733,6 +750,7 @@ namespace Ember {
 
 	void EditorLayer::OutlineEntity(Entity entity)
 	{
+		// If the outline was queued for removal (e.g. from deselection), cancel it instead of double-adding
 		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
 		if (!removed)
 			entity.AttachComponent(m_OutlineEntitySelectedComp);
@@ -781,7 +799,7 @@ namespace Ember {
 		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
 		m_Context.ActiveScene = m_EditorScene;
 
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 
@@ -806,7 +824,7 @@ namespace Ember {
 			{
 				m_EditorScene = newScene;
 				m_Context.ActiveScene = m_EditorScene;
-				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 				m_Context.ActiveScene->SetFilePath(sceneFile);
 
 				m_Context.SelectedEntity = {};
@@ -832,6 +850,7 @@ namespace Ember {
 
 		if (!sceneName.empty())
 		{
+			// Strip editor-only outline components before serializing
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
 				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
 			}

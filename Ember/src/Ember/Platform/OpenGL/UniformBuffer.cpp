@@ -6,10 +6,11 @@
 namespace Ember {
 	namespace OpenGL {
 
-		UniformBuffer::UniformBuffer(unsigned int size, unsigned int bindingPoint)
+		UniformBuffer::UniformBuffer(uint32_t size, uint32_t bindingPoint)
 		{
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+			// Permanently bind to the given binding point so all shaders sharing that index see this buffer
 			glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, m_Id);
 		}
 
@@ -18,7 +19,7 @@ namespace Ember {
 			glDeleteBuffers(1, &m_Id);
 		}
 
-		void UniformBuffer::SetData(const void* data, unsigned int size, unsigned int offset /*= 0*/)
+		void UniformBuffer::SetData(const void* data, uint32_t size, uint32_t offset /*= 0*/)
 		{
 			glNamedBufferSubData(m_Id, offset, size, data);
 		}

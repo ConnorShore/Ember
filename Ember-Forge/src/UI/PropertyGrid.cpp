@@ -1,5 +1,10 @@
+#include "efpch.h"
+
+#include "Types.h"
 #include "PropertyGrid.h"
 #include "DragDropTypes.h"
+
+#include <Ember/Core/Application.h>
 
 namespace Ember {
 	namespace UI::PropertyGrid {

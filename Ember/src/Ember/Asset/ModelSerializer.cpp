@@ -4,6 +4,8 @@
 
 namespace Ember {
 
+	// Reconstructs a Model from its .ebmodel YAML manifest, loading referenced
+	// mesh and material assets via the AssetManager and rebuilding the node hierarchy.
 	SharedPtr<Model> ModelSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager)
 	{
 		std::ifstream file(filepath);
@@ -36,7 +38,7 @@ namespace Ember {
 
 		// We need to collect unique materials to pass to the Model constructor
 		std::vector<SharedPtr<MaterialBase>> materials;
-		std::unordered_map<UUID, unsigned int> materialIndexMap;
+		std::unordered_map<UUID, uint32_t> materialIndexMap;
 
 		ModelNode rootModelNode;
 		DeserializeNode(rootNodeRef, rootModelNode, assetManager, materials, materialIndexMap);
@@ -45,7 +47,7 @@ namespace Ember {
 		return modelAsset;
 	}
 
-	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, unsigned int>& materialIndexMap)
+	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, uint32_t>& materialIndexMap)
 	{
 		yamlNode["Name"] >> modelNode.Name;
 
@@ -80,11 +82,11 @@ namespace Ember {
 				// Load the actual Mesh Asset via AssetManager!
 				meshNode.MeshAsset = assetManager.GetAsset<Mesh>(meshUUID);
 
-				// Map the UUID to a local index for this Model instance
+				// Deduplicate: only add each unique material UUID once to the materials list
 				if (materialIndexMap.find(materialUUID) == materialIndexMap.end())
 				{
 					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUID));
-					materialIndexMap[materialUUID] = (unsigned int)(materials.size() - 1);
+					materialIndexMap[materialUUID] = static_cast<uint32_t>(materials.size() - 1);
 				}
 
 				meshNode.MaterialIndex = materialIndexMap[materialUUID];

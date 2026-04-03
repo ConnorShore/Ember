@@ -29,11 +29,13 @@ namespace Ember {
 		return output;
 	}
 
+	// Imports a 3D model file via Assimp and "cooks" it into Ember's native formats:
+	// .ebmesh (binary vertex/index data), .ebmat (YAML material), .ebmodel (YAML hierarchy)
 	std::optional<ModelCookReport> ModelImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory)
 	{
 		Assimp::Importer importer;
 
-		unsigned int importFlags =
+		uint32_t importFlags =
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
 			aiProcess_JoinIdenticalVertices |
@@ -41,6 +43,7 @@ namespace Ember {
 			aiProcess_CalcTangentSpace;
 
 		std::string extension = std::filesystem::path(inputFile).extension().string();
+		// glTF already uses OpenGL-style UVs, so skip the extra flip
 		if (extension != ".glb" && extension != ".gltf")
 		{
 			importFlags |= aiProcess_FlipUVs;
@@ -60,7 +63,7 @@ namespace Ember {
 		if (scene->HasMaterials())
 		{
 			report.Materials.reserve(scene->mNumMaterials);
-			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
+			for (uint32_t i = 0; i < scene->mNumMaterials; i++)
 			{
 				aiMaterial* material = scene->mMaterials[i];
 
@@ -74,7 +77,7 @@ namespace Ember {
 		if (scene->HasMeshes())
 		{
 			report.Meshes.reserve(scene->mNumMeshes);
-			for (unsigned int i = 0; i < scene->mNumMeshes; i++)
+			for (uint32_t i = 0; i < scene->mNumMeshes; i++)
 			{
 				aiMesh* mesh = scene->mMeshes[i];
 				CookedAssetInfo meshInfo = ProcessMesh(modelName, mesh, outputDirectory, i);
@@ -159,6 +162,7 @@ namespace Ember {
 		return rootNode;
 	}
 
+	// Assimp uses row-major; GLM/Ember uses column-major, so transpose during conversion
 	Matrix4f ModelImporter::ConvertMatrix(const aiMatrix4x4& aiMat)
 	{
 		return Matrix4f(
@@ -171,9 +175,9 @@ namespace Ember {
 
 	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, CookedModelNode& modelNode, const aiScene* scene, const std::string& outputDirectory, const std::vector<CookedAssetInfo>& cookedMeshes)
 	{
-		for (unsigned int i = 0; i < aiNode->mNumMeshes; i++)
+		for (uint32_t i = 0; i < aiNode->mNumMeshes; i++)
 		{
-			unsigned int meshIndex = aiNode->mMeshes[i];
+			uint32_t meshIndex = aiNode->mMeshes[i];
 			aiMesh* mesh = scene->mMeshes[meshIndex];
 
 			CookedMeshNode meshNode;
@@ -185,7 +189,7 @@ namespace Ember {
 		}
 
 		modelNode.ChildNodes.reserve(aiNode->mNumChildren);
-		for (unsigned int i = 0; i < aiNode->mNumChildren; i++)
+		for (uint32_t i = 0; i < aiNode->mNumChildren; i++)
 		{
 			CookedModelNode childNode;
 			childNode.Name = aiNode->mChildren[i]->mName.C_Str();
@@ -195,6 +199,7 @@ namespace Ember {
 		}
 	}
 
+	// Writes a mesh to Ember's binary format: header (magic + counts + AABB) followed by raw vertex/index data
 	bool ModelImporter::CookMesh(const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath)
 	{
 		std::ofstream file(outputFilePath, std::ios::binary | std::ios::trunc);
@@ -204,6 +209,7 @@ namespace Ember {
 		header.VertexCount = static_cast<uint32_t>(vertices.size());
 		header.IndexCount = static_cast<uint32_t>(indices.size());
 
+		// Compute axis-aligned bounding box for frustum culling
 		Vector3f minBounds(FLT_MAX);
 		Vector3f maxBounds(-FLT_MAX);
 		for (const auto& v : vertices)
@@ -222,14 +228,14 @@ namespace Ember {
 		return true;
 	}
 
-	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, unsigned int index)
+	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, uint32_t index)
 	{
 		std::vector<MeshVertex> vertices;
-		std::vector<unsigned int> indices;
+		std::vector<uint32_t> indices;
 
 		vertices.reserve(aiMesh->mNumVertices);
 
-		for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
+		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			MeshVertex vertex;
 			vertex.Position = { aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z };
@@ -240,9 +246,9 @@ namespace Ember {
 			vertices.push_back(vertex);
 		}
 
-		for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
+		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
-			for (unsigned int j = 0; j < aiMesh->mFaces[i].mNumIndices; j++)
+			for (uint32_t j = 0; j < aiMesh->mFaces[i].mNumIndices; j++)
 			{
 				indices.push_back(aiMesh->mFaces[i].mIndices[j]);
 			}
@@ -265,7 +271,7 @@ namespace Ember {
 	// --- MATERIAL COOKING ---
 
 	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat,
-		const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, unsigned int index)
+		const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, uint32_t index)
 	{
 		std::string safeMatName = SanitizeFileName(aiMat->GetName().C_Str());
 		std::string matName = modelName + "_" + safeMatName + "_" + std::to_string(index);
@@ -349,6 +355,7 @@ namespace Ember {
 		aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &emissiveColor);
 
 		float maxEmission = std::max({ emissiveColor.r, emissiveColor.g, emissiveColor.b });
+		// For unlit materials, normalize the emissive color into albedo + intensity
 		if (def.BaseMaterial == Constants::Assets::StandardUnlitMat && maxEmission > 0.0f)
 		{
 			if (maxEmission > 1.0f)
@@ -386,6 +393,7 @@ namespace Ember {
 			}
 			};
 
+		// Try each Assimp texture type in priority order (e.g. BASE_COLOR before DIFFUSE)
 		handleTexture({ aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, "_AlbedoMap", def.AlbedoMapPath);
 		handleTexture({ aiTextureType_NORMALS, aiTextureType_HEIGHT }, "_NormalMap", def.NormalMapPath);
 		handleTexture({ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, "_EmissiveMap", def.EmissiveMapPath);
@@ -418,6 +426,7 @@ namespace Ember {
 			int width, height, channels;
 			unsigned char* image_data = nullptr;
 
+			// Assimp convention: mHeight == 0 means the data is compressed (PNG/JPG bytes)
 			if (embeddedTexture->mHeight == 0)
 			{
 				image_data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(embeddedTexture->pcData), embeddedTexture->mWidth, &width, &height, &channels, 4);

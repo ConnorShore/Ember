@@ -10,21 +10,22 @@ namespace Ember {
 		// Vertex Buffer
 		//////////////////////////////////////////////////////////////////////////
 
-		VertexBuffer::VertexBuffer(const void* data, unsigned int size)
+		VertexBuffer::VertexBuffer(const void* data, uint32_t size)
 			: m_Id(0), m_Size(size)
 		{
+			// Immutable storage with DYNAMIC_STORAGE allows glNamedBufferSubData updates
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
 		}
 
-		VertexBuffer::VertexBuffer(unsigned int size)
+		VertexBuffer::VertexBuffer(uint32_t size)
 			: m_Id(0), m_Size(size)
 		{
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 		}
 
-		VertexBuffer::VertexBuffer(const void* data, unsigned int size, const BufferLayout& layout)
+		VertexBuffer::VertexBuffer(const void* data, uint32_t size, const BufferLayout& layout)
 			: m_Id(0), m_Size(size)
 		{
 			this->m_Layout = layout;
@@ -42,7 +43,7 @@ namespace Ember {
 			glBindBuffer(GL_ARRAY_BUFFER, m_Id);
 		}
 
-		void VertexBuffer::SetData(const void* data, unsigned int size)
+		void VertexBuffer::SetData(const void* data, uint32_t size)
 		{
 			glNamedBufferSubData(m_Id, 0, size, data);
 		}
@@ -51,7 +52,7 @@ namespace Ember {
 		// Index Buffer
 		//////////////////////////////////////////////////////////////////////////
 
-		IndexBuffer::IndexBuffer(std::span<const unsigned int> data)
+		IndexBuffer::IndexBuffer(std::span<const uint32_t> data)
 			: m_Id(0), m_Size(data.size_bytes()), m_Count(data.size())
 		{
 			glCreateBuffers(1, &m_Id);

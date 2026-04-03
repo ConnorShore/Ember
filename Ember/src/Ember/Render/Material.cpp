@@ -20,19 +20,19 @@ namespace Ember {
 	{
 	}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+	SharedPtr<Material> MaterialLibrary::RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
 		auto material = SharedPtr<Material>::Create(uuid, name, shader, renderQueue);
 		Add(name, std::move(material));
 		return DynamicPointerCast<Material>(Get(name));
 	}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
+	SharedPtr<Material> MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue)
 	{
 		return RegisterMaterial(UUID(), name, shader, renderQueue);
 	}
 
-	const SharedPtr<Material>& MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
+	SharedPtr<Material> MaterialLibrary::RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
 		const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms)
 	{
 		auto material = SharedPtr<Material>::Create(name, shader, renderQueue, uniforms);
@@ -40,21 +40,21 @@ namespace Ember {
 		return DynamicPointerCast<Material>(Get(name));
 	}
 
-	const Ember::SharedPtr<Ember::Material>& MaterialLibrary::RegisterMaterial(const std::string& name)
+	SharedPtr<Material> MaterialLibrary::RegisterMaterial(const std::string& name)
 	{
 		auto material = SharedPtr<Material>::Create(name);
 		Add(name, std::move(material));
 		return DynamicPointerCast<Material>(Get(name));
 	}
 
-	const Ember::SharedPtr<Ember::Material>& MaterialLibrary::RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
+	SharedPtr<Material> MaterialLibrary::RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms)
 	{
 		auto material = SharedPtr<Material>::Create(name, uniforms);
 		Add(name, std::move(material));
 		return DynamicPointerCast<Material>(Get(name));
 	}
 
-	const SharedPtr<MaterialInstance>& MaterialLibrary::RegisterInstance(const std::string& name, const SharedPtr<Material>& material)
+	SharedPtr<MaterialInstance> MaterialLibrary::RegisterInstance(const std::string& name, const SharedPtr<Material>& material)
 	{
 		auto instance = SharedPtr<MaterialInstance>::Create(name, material);
 		Add(name, std::move(instance));

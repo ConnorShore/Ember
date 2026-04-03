@@ -14,6 +14,7 @@ namespace Ember {
 	/// Shared Resource Implementation
 	/// -------------------------------------------------------------------------------------
 
+	// Intrusive ref count base - any type managed by SharedPtr must inherit from this
 	class SharedResource
 	{
 	public:
@@ -58,6 +59,7 @@ namespace Ember {
 			IncrementRefCount();
 		}
 
+		// Move ctor - transfer ownership without touching the ref count
 		SharedPtr(SharedPtr<T>&& other) noexcept
 			: m_Ptr(other.m_Ptr)
 		{
@@ -68,6 +70,7 @@ namespace Ember {
 		{
 			if (this != &other)
 			{
+				// Release our current ref before taking on the new one
 				DecrementRefCount();
 
 				m_Ptr = other.m_Ptr;
@@ -143,6 +146,7 @@ namespace Ember {
 		{
 			if (m_Ptr)
 			{
+				// Last reference standing - destroy the managed object
 				if (m_Ptr->DecrementRefCount() == 0)
 				{
 					delete m_Ptr;

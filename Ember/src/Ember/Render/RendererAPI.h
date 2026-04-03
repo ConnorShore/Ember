@@ -40,18 +40,18 @@ namespace Ember {
 		virtual void UseDepthMask(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
 
-		virtual void SetTextureUnit(unsigned int unit, unsigned int texture) = 0;
-		virtual void SetFramebuffer(unsigned int framebufferId) = 0;
+		virtual void SetTextureUnit(uint32_t unit, uint32_t texture) = 0;
+		virtual void SetFramebuffer(uint32_t framebufferId) = 0;
 		virtual void GetPreviousFramebuffer(int* outFramebufferId) = 0;
 
-		virtual void CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims) = 0;
+		virtual void CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims) = 0;
 
 		virtual void GetViewportDimensions(int* outViewportDims) = 0;
 		
-		virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) = 0;
+		virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
 
 		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) = 0;
-		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt) = 0;
+		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt) = 0;
 
 	public:
 		static API GetApi() { return s_Api; }

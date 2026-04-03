@@ -17,18 +17,18 @@ namespace Ember {
 			virtual void UseDepthMask(bool use) override;
 			virtual void UseBlending(bool use) override;
 
-			virtual void SetTextureUnit(unsigned int unit, unsigned int texture) override;
-			virtual void SetFramebuffer(unsigned int framebufferId) override;
+			virtual void SetTextureUnit(uint32_t unit, uint32_t texture) override;
+			virtual void SetFramebuffer(uint32_t framebufferId) override;
 			virtual void GetPreviousFramebuffer(int* outFramebufferId) override;
 
-			virtual void CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims) override;
+			virtual void CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims) override;
 
 			virtual void GetViewportDimensions(int* outViewportDims) override;
 
-			virtual void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int  height) override;
+			virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
 			
 			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) override;
-			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt) override;
+			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt) override;
 		};
 
 	}

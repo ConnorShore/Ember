@@ -17,13 +17,13 @@ namespace Ember {
 	class Mesh : public Asset
 	{
 	public:
-		Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
-		Mesh(UUID uuid, const std::string& name, const std::vector<MeshVertex>& vertices, const std::vector<unsigned int>& indices);
-		Mesh(UUID uuid, const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
+		Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices);
+		Mesh(UUID uuid, const std::string& name, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices);
+		Mesh(UUID uuid, const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices);
 		~Mesh();
 
 		inline const SharedPtr<VertexArray>& GetVertexArray() { return m_VertexArray; }
-		inline unsigned int GetIndexCount() const { return m_VertexArray->GetIndexBuffer()->GetCount(); }
+		inline uint32_t GetIndexCount() const { return static_cast<uint32_t>(m_VertexArray->GetIndexBuffer()->GetCount()); }
 
 		static AssetType GetStaticType() { return AssetType::Mesh; }
 

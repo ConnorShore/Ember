@@ -33,7 +33,7 @@ namespace Ember {
 
 		VertexArray::~VertexArray()
 		{
-			for (unsigned int i = 0; i < m_CurrentVertexBufferInd; i++)
+			for (uint32_t i = 0; i < m_CurrentVertexBufferInd; i++)
 				glVertexArrayAttribBinding(m_Id, i, 0);
 
 			glDeleteVertexArrays(1, &m_Id);
@@ -58,6 +58,7 @@ namespace Ember {
 			SetVertexBufferAttribs();
 		}
 
+		// Configures vertex attributes using DSA (Direct State Access) based on the buffer layout
 		void VertexArray::SetVertexBufferAttribs()
 		{
 			for (auto& elem : m_VertexBuffer->GetLayout())
@@ -74,7 +75,8 @@ namespace Ember {
 				m_CurrentVertexBufferInd++;
 			}
 
-			for (unsigned int i = 0; i < m_CurrentVertexBufferInd; i++)
+			// Bind all attributes to binding point 0 (single VBO)
+			for (uint32_t i = 0; i < m_CurrentVertexBufferInd; i++)
 				glVertexArrayAttribBinding(m_Id, i, 0);
 		}
 

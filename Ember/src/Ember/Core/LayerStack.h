@@ -42,7 +42,8 @@ namespace Ember {
 
 	private:
 		std::vector<ScopedPtr<Layer>> m_Layers;
-		unsigned int m_LayerPartitionIndex = 0;
+		// Layers [0..partition) are regular layers, [partition..end) are canvas/overlay layers
+		uint32_t m_LayerPartitionIndex = 0;
 	};
 
 }

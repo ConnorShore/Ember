@@ -15,6 +15,7 @@ namespace Ember {
 
 	namespace Utils {
 
+		// Uses a fold expression to copy each component type from src to dst if present
 		template<typename... Component>
 		static void CopyComponents(Entity src, Entity dst)
 		{
@@ -37,6 +38,7 @@ namespace Ember {
 	{
 	}
 
+	// Deep-copies the scene, preserving all UUIDs so relationships remain valid
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{
 		auto newScene = SharedPtr<Scene>::Create(other->GetName());
@@ -105,7 +107,7 @@ namespace Ember {
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
-	void Scene::OnViewportResize(unsigned int width, unsigned int height)
+	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
@@ -183,7 +185,7 @@ namespace Ember {
 		// Set new parent handle
 		childRelationship.ParentHandle = newParent.GetUUID();
 
-		// Set child local transform
+		// Recompute the child's local transform relative to the new parent
 		auto& parentTransform = newParent.GetComponent<TransformComponent>();
 		auto& childTransform = childEntity.GetComponent<TransformComponent>();
 		auto parentInverseWorldTransform = Math::Inverse(parentTransform.GetWorldTransform());
@@ -208,6 +210,8 @@ namespace Ember {
 		}
 	}
 
+	// Recursively duplicates an entity and its children.
+	// isRoot: true for the top-level call so it keeps the same parent; false for descendants
 	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot)
 	{
 		std::string name = entity.GetName();
@@ -297,7 +301,7 @@ namespace Ember {
 		return rootEntity;
 	}
 
-	Entity Scene::GetEntityAtPixel(unsigned int x, unsigned int y)
+	Entity Scene::GetEntityAtPixel(uint32_t x, uint32_t y)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto renderSystem = systemManager.GetSystem<RenderSystem>();
@@ -316,7 +320,8 @@ namespace Ember {
 		auto& transform = currentEntity.GetComponent<TransformComponent>();
 		Math::DecomposeTransform(node.LocalTransform, transform.Position, transform.Rotation, transform.Scale);
 
-		// 2. Handle Meshes (Respecting the 1-Component Rule)
+		// If a node has a single mesh, attach directly to this entity.
+		// Multiple meshes require sub-entities since ECS only allows one MeshComponent per entity.
 		if (node.Meshes.size() == 1)
 		{
 			// Just grab the UUIDs directly from the assets! They are already registered.

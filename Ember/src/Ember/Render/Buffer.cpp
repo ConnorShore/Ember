@@ -33,7 +33,7 @@ namespace Ember {
 	// Vertex Buffer
 	//////////////////////////////////////////////////////////////////////////
 
-	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, unsigned int size)
+	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, uint32_t size)
 	{
 		switch (RendererAPI::GetApi())
 		{
@@ -45,7 +45,7 @@ namespace Ember {
 		return nullptr;
 	}
 
-	SharedPtr<VertexBuffer> VertexBuffer::Create(unsigned int size)
+	SharedPtr<VertexBuffer> VertexBuffer::Create(uint32_t size)
 	{
 		switch (RendererAPI::GetApi())
 		{
@@ -57,7 +57,7 @@ namespace Ember {
 		return nullptr;
 	}
 
-	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, unsigned int size, const BufferLayout& layout)
+	SharedPtr<VertexBuffer> VertexBuffer::Create(const void* data, uint32_t size, const BufferLayout& layout)
 	{
 		switch (RendererAPI::GetApi())
 		{
@@ -73,7 +73,7 @@ namespace Ember {
 	// Index Buffer
 	//////////////////////////////////////////////////////////////////////////
 
-	SharedPtr<IndexBuffer> IndexBuffer::Create(std::span<const unsigned int> data)
+	SharedPtr<IndexBuffer> IndexBuffer::Create(std::span<const uint32_t> data)
 	{
 		switch (RendererAPI::GetApi())
 		{

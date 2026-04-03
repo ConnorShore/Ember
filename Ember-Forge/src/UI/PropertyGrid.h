@@ -1,8 +1,11 @@
 #pragma once
 
-#include <Ember.h>
+#include <Ember/Math/Math.h>
+#include <Ember/Asset/UUID.h>
 
 #include "Types.h"
+
+#include <string>
 
 namespace Ember {
 

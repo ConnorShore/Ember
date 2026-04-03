@@ -33,21 +33,21 @@ namespace Ember {
 
 		virtual ~Texture() = default;
 
-		virtual void Bind(unsigned int slot = 0) const = 0;
+		virtual void Bind(uint32_t slot = 0) const = 0;
 
-		virtual unsigned int GetWidth() const = 0;
-		virtual unsigned int GetHeight() const = 0;
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
 
-		virtual void SetData(const void* data, unsigned int size) = 0;
+		virtual void SetData(const void* data, uint32_t size) = 0;
 
-		virtual unsigned int GetID() const = 0;
+		virtual uint32_t GetID() const = 0;
 
 		static SharedPtr<Texture> Create();
 		static SharedPtr<Texture> Create(const std::string& filePath);
 		static SharedPtr<Texture> Create(const std::string& name, const std::string& filePath);
 		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, const std::string& filePath);
-		static SharedPtr<Texture> Create(const std::string& name, unsigned int width, unsigned int height, const void* data);
-		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data);
+		static SharedPtr<Texture> Create(const std::string& name, uint32_t width, uint32_t height, const void* data);
+		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data);
 
 		virtual bool operator==(const SharedPtr<Texture>& other) const = 0;
 

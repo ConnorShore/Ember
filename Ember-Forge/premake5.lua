@@ -7,6 +7,9 @@ project "Ember-Forge"
    objdir ("%{wks.location}/bin/int/" .. outputdir .. "/%{prj.name}")
    debugdir "%{wks.location}"
 
+   pchheader "efpch.h"
+   pchsource "src/efpch.cpp"
+
    files
    { 
       "src/**.h",

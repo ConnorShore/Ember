@@ -206,7 +206,8 @@ namespace Ember {
 				if (entityNode.has_child("TagComponent"))
 					entityNode["TagComponent"]["Tag"] >> name;
 
-				// AddEntity automatically attaches ID, Tag, Transform, and Relationship components
+				// AddEntity automatically attaches ID, Tag, Transform, and Relationship components.
+				// The rest of the deserializer updates those and attaches any additional components.
 				Entity deserializedEntity = m_Scene->AddEntity(uuid, name);
 
 				// Core components are already attached, this just updates them
@@ -352,6 +353,7 @@ namespace Ember {
 					Util::DeserializeVector3f(lightNode["Color"], slc.Color);
 					lightNode["Intensity"] >> slc.Intensity;
 
+					// Recompute cosine values from deserialized radian angles
 					lightNode["CutOffAngle"] >> slc.CutOffAngle;
 					slc.CutOff = std::cos(slc.CutOffAngle);
 

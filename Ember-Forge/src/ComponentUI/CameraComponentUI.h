@@ -27,7 +27,7 @@ namespace Ember {
 			std::string projectionTypeName = Camera::GetProjectionTypeName(camera.GetProjectionType());
 			if (UI::BeginComboBox("##CameraCombo", projectionTypeName.c_str()))
 			{
-				for (unsigned int i = 0; i < static_cast<int>(Camera::ProjectionType::Count); i++)
+				for (uint32_t i = 0; i < static_cast<uint32_t>(Camera::ProjectionType::Count); i++)
 				{
 					auto type = static_cast<Camera::ProjectionType>(i);
 					std::string typeName = Camera::GetProjectionTypeName(type);

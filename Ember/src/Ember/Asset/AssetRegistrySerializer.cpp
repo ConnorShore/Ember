@@ -16,6 +16,8 @@
 
 namespace Ember {
 
+	// Serializes all user-created (non-engine) assets to a YAML registry file.
+	// Engine-default assets are loaded at startup and don't need persisting.
 	bool AssetRegistrySerializer::Serialize(const std::string& filePath)
 	{
 		ryml::Tree tree;
@@ -141,6 +143,7 @@ namespace Ember {
 				continue;
 			}
 
+			// Dispatch to the correct Load<T> based on the serialized type string
 			if (type == "Texture")
 			{
 				auto texture = m_AssetManagerHandle->Load<Texture>(uuid, name, path, false);
