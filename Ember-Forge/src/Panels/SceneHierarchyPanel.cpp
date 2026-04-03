@@ -416,7 +416,7 @@ namespace Ember {
 	void SceneHierarchyPanel::RenameEntity(Entity entity)
 	{
 		m_RenamingEntity = entity;
-		strncpy(m_RenameBuffer, entity.GetName().c_str(), sizeof(m_RenameBuffer));
+		strncpy_s(m_RenameBuffer, sizeof(m_RenameBuffer), entity.GetName().c_str(), _TRUNCATE);
 		m_SetRenameFocus = true;
 	}
 

@@ -150,8 +150,8 @@ namespace Ember {
 
 		struct ToolbarProps
 		{
-			unsigned int PlayButtonTextureID;
-			unsigned int StopButtonTextureID;
+			uint32_t PlayButtonTextureID;
+			uint32_t StopButtonTextureID;
 		} m_ToolbarProps;
 	};
 

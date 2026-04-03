@@ -30,7 +30,7 @@ namespace Ember {
 
 		void SetPerspective(float fov, float nearClip, float farClip);
 		void SetOrthographic(float size, float nearClip, float farClip);
-		void SetViewportSize(unsigned int width, unsigned int height);
+		void SetViewportSize(uint32_t width, uint32_t height);
 
 		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
 

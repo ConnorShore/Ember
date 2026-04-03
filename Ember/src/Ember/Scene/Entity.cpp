@@ -26,9 +26,9 @@ namespace Ember {
 		return ret;
 	}
 
-	unsigned int Entity::GetNumChildren()
+	uint32_t Entity::GetNumChildren()
 	{
-		return GetComponent<RelationshipComponent>().Children.size();
+		return static_cast<uint32_t>(GetComponent<RelationshipComponent>().Children.size());
 	}
 
 	bool Entity::IsRootParent()

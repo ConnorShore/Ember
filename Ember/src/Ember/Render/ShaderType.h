@@ -41,7 +41,7 @@ namespace Ember {
 		Matrix2, Matrix3, Matrix4,
 	};
 
-	constexpr unsigned int ShaderDataTypeSize(ShaderDataType shaderDataType)
+	constexpr uint32_t ShaderDataTypeSize(ShaderDataType shaderDataType)
 	{
 		switch (shaderDataType)
 		{
@@ -57,10 +57,11 @@ namespace Ember {
 		case ShaderDataType::Matrix2:	return 4 * 2 * 2;
 		case ShaderDataType::Matrix3:	return 4 * 3 * 3;
 		case ShaderDataType::Matrix4:	return 4 * 4 * 4;
+		default:						return 0;
 		}
 	}
 
-	constexpr unsigned int ShaderDataTypeCount(ShaderDataType shaderDataType)
+	constexpr uint32_t ShaderDataTypeCount(ShaderDataType shaderDataType)
 	{
 		switch (shaderDataType)
 		{
@@ -76,6 +77,7 @@ namespace Ember {
 		case ShaderDataType::Matrix2:	return 2 * 2;
 		case ShaderDataType::Matrix3:	return 3 * 3;
 		case ShaderDataType::Matrix4:	return 4 * 4;
+		default:						return 0;
 		}
 	}
 }

@@ -54,12 +54,12 @@ namespace Ember {
 			m_RendererApi->UseDepthMask(use);
 		}
 
-		static inline void SetTextureUnit(unsigned int unit, unsigned int texture)
+		static inline void SetTextureUnit(uint32_t unit, uint32_t texture)
 		{
 			m_RendererApi->SetTextureUnit(unit, texture);
 		}
 
-		static inline void SetFramebuffer(unsigned int framebufferId)
+		static inline void SetFramebuffer(uint32_t framebufferId)
 		{
 			m_RendererApi->SetFramebuffer(framebufferId);
 		}
@@ -74,12 +74,12 @@ namespace Ember {
 			m_RendererApi->GetViewportDimensions(outViewportdims);
 		}
 
-		static inline void CopyDepthBuffer(unsigned int gBufferId, unsigned int outputBuffer, Vector4<int> viewportDims)
+		static inline void CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims)
 		{
 			m_RendererApi->CopyDepthBuffer(gBufferId, outputBuffer, viewportDims);
 		}
 
-		static inline void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+		static inline void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 		{
 			m_RendererApi->SetViewport(x, y, width, height);
 		}
@@ -89,7 +89,7 @@ namespace Ember {
 			m_RendererApi->SetViewport(dimensions.x, dimensions.y, dimensions.z, dimensions.w);
 		}
 
-		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, unsigned int indicesCt)
+		static inline void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt)
 		{
 			m_RendererApi->DrawIndexed(vertexArray, indicesCt);
 		}

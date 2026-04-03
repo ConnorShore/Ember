@@ -113,7 +113,7 @@ namespace Ember {
 		{
 			m_Shader->Bind();
 
-			unsigned int textureSlot = 0;
+			uint32_t textureSlot = 0;
 			for (auto [name, value] : m_Uniforms)
 			{
 				UploadUniform(name, value, textureSlot);
@@ -124,7 +124,7 @@ namespace Ember {
 		inline const std::unordered_map<std::string, MaterialValue>& GetUniforms() const override { return m_Uniforms; }
 		inline bool ContainsUniform(const std::string& name) const override { return m_Uniforms.find(name) != m_Uniforms.end(); }
 
-		inline void UploadUniform(const std::string& name, const MaterialValue& value, unsigned int& textureSlot) const
+		inline void UploadUniform(const std::string& name, const MaterialValue& value, uint32_t& textureSlot) const
 		{
 			if (std::holds_alternative<int>(value)) m_Shader->SetInt(name, std::get<int>(value));
 			else if (std::holds_alternative<float>(value)) m_Shader->SetFloat(name, std::get<float>(value));
@@ -178,7 +178,7 @@ namespace Ember {
 		{
 			m_Material->GetShader()->Bind();
 
-			unsigned int textureSlot = 0;
+			uint32_t textureSlot = 0;
 			for (auto [name, value] : m_Uniforms)
 			{
 				m_Material->UploadUniform(name, value, textureSlot);

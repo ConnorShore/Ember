@@ -107,7 +107,7 @@ namespace Ember {
 
 			GLuint programId = glCreateProgram();
 			std::array<GLuint, NUM_SUPPORTED_SHADERS> shaderIDs;
-			unsigned int shaderIndex = 0;
+			uint32_t shaderIndex = 0;
 			for (auto kv : sources) {
 				ShaderType type = kv.first;
 				GLuint glType = Utils::GLShaderTypeFromShaderType(kv.first);
@@ -164,7 +164,7 @@ namespace Ember {
 
 			glValidateProgram(m_Id);
 
-			for (unsigned int i = 0; i < shaderIndex; i++)
+			for (uint32_t i = 0; i < shaderIndex; i++)
 				glDeleteShader(shaderIDs[i]);
 		}
 

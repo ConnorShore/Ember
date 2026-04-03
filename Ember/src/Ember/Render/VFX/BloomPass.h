@@ -13,7 +13,7 @@ namespace Ember {
 
 		virtual void Init() override;
 		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) override;
-		virtual void OnViewportResize(unsigned int width, unsigned int height) override;
+		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 
 	public:
 		float Threshold = 1.5f;
@@ -22,7 +22,7 @@ namespace Ember {
 		float BlurRadius = 0.7f;
 
 	private:
-		const unsigned int m_Passes = 10;
+		const uint32_t m_Passes = 10;
 
 		SharedPtr<Shader> m_BloomPrefilterShader;
 		SharedPtr<Shader> m_BlurShader;

@@ -6,7 +6,7 @@
 
 namespace Ember {
 
-	SharedPtr<UniformBuffer> UniformBuffer::Create(unsigned int size, unsigned int bindingPoint)
+	SharedPtr<UniformBuffer> UniformBuffer::Create(uint32_t size, uint32_t bindingPoint)
 	{
 		switch (RendererAPI::GetApi())
 		{

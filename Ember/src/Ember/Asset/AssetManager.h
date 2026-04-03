@@ -233,11 +233,11 @@ namespace Ember {
 		std::unordered_map<UUID, SharedPtr<Asset>> m_Assets;
 		std::unordered_map<std::string, UUID> m_AssetNames;
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
-		unsigned int m_TextureCt = 0;
-		unsigned int m_ShaderCt = 0;
-		unsigned int m_ModelCt = 0;
-		unsigned int m_MaterialCt = 0;
-		unsigned int m_ScriptCt = 0;
+		uint32_t m_TextureCt = 0;
+		uint32_t m_ShaderCt = 0;
+		uint32_t m_ModelCt = 0;
+		uint32_t m_MaterialCt = 0;
+		uint32_t m_ScriptCt = 0;
 	};
 
 }

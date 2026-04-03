@@ -36,7 +36,7 @@ namespace Ember {
 			int GetUniformLocation(const std::string& name) const;
 
 		private:
-			unsigned int m_Id;
+			uint32_t m_Id;
 			mutable std::unordered_map<std::string, int> m_UniformLocationCache;
 			std::vector<ShaderProperty> m_Properties;
 		};

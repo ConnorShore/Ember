@@ -42,7 +42,7 @@ namespace Ember {
 
 	private:
 		std::vector<ScopedPtr<Layer>> m_Layers;
-		unsigned int m_LayerPartitionIndex = 0;
+		uint32_t m_LayerPartitionIndex = 0;
 	};
 
 }

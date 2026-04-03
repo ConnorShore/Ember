@@ -4,18 +4,18 @@
 
 namespace Ember {
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateSphere(const std::string& name, float size, unsigned int xSegments, unsigned int ySegments)
+	SharedPtr<Mesh> PrimitiveGenerator::CreateSphere(const std::string& name, float size, uint32_t xSegments, uint32_t ySegments)
 	{
 		std::vector<float> vertices;
-		std::vector<unsigned int> indices;
+		std::vector<uint32_t> indices;
 
 		const float PI = 3.14159265359f;
 		float radius = size * 0.5f;
 
 		// 1. Generate Vertices (14 Floats per vertex)
-		for (unsigned int y = 0; y <= ySegments; ++y)
+		for (uint32_t y = 0; y <= ySegments; ++y)
 		{
-			for (unsigned int x = 0; x <= xSegments; ++x)
+			for (uint32_t x = 0; x <= xSegments; ++x)
 			{
 				float xSegment = (float)x / (float)xSegments;
 				float ySegment = (float)y / (float)ySegments;
@@ -52,14 +52,14 @@ namespace Ember {
 		}
 
 		// 2. Generate Indices
-		for (unsigned int y = 0; y < ySegments; ++y)
+		for (uint32_t y = 0; y < ySegments; ++y)
 		{
-			for (unsigned int x = 0; x < xSegments; ++x)
+			for (uint32_t x = 0; x < xSegments; ++x)
 			{
-				unsigned int top_left = (y * (xSegments + 1)) + x;
-				unsigned int top_right = top_left + 1;
-				unsigned int bottom_left = ((y + 1) * (xSegments + 1)) + x;
-				unsigned int bottom_right = bottom_left + 1;
+				uint32_t top_left = (y * (xSegments + 1)) + x;
+				uint32_t top_right = top_left + 1;
+				uint32_t bottom_left = ((y + 1) * (xSegments + 1)) + x;
+				uint32_t bottom_right = bottom_left + 1;
 
 				// Triangle 1
 				indices.push_back(top_left);
@@ -120,7 +120,7 @@ namespace Ember {
 			-s, -s,  s,    0.0f, -1.0f,  0.0f,    0.0f, 1.0f,   1.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f
 		};
 
-		std::vector<unsigned int> indices = {
+		std::vector<uint32_t> indices = {
 			 0,  1,  2,  2,  3,  0, // Front
 			 4,  5,  6,  6,  7,  4, // Right
 			 8,  9, 10, 10, 11,  8, // Back
@@ -145,7 +145,7 @@ namespace Ember {
 			-hw,  hh, 0.0f,     0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f
 		};
 
-		std::vector<unsigned int> indices = {
+		std::vector<uint32_t> indices = {
 			0, 1, 2, 2, 3, 0
 		};
 

@@ -25,7 +25,7 @@ namespace Ember {
 	struct ComponentMemoryArray : public ComponentMemoryArraysBase
 	{
 		std::vector<EntityID> SparseEntityArray;
-		std::vector<unsigned int> DenseEntityArray;
+		std::vector<uint32_t> DenseEntityArray;
 		std::vector<T> DenseComponentArray;
 
 		ComponentMemoryArray()
@@ -43,7 +43,7 @@ namespace Ember {
 			}
 
 			// Add component to the dense component array and get its index
-			unsigned int componentIndex = DenseComponentArray.size();
+			uint32_t componentIndex = static_cast<uint32_t>(DenseComponentArray.size());
 
 			// Map the component index to which entity its for
 			DenseComponentArray.push_back(component);
@@ -63,7 +63,7 @@ namespace Ember {
 		virtual void RemoveComponent(EntityID entity) override
 		{
 			// Get the index of the component in the dense arrays
-			unsigned int componentIndex = SparseEntityArray[entity];
+			uint32_t componentIndex = SparseEntityArray[entity];
 
 			if (componentIndex == Constants::Entities::InvalidComponentID)
 			{
@@ -72,8 +72,8 @@ namespace Ember {
 			}
 
 			// Swap and pop the component //
-			unsigned int lastComponentIndex = DenseComponentArray.size() - 1;
-			unsigned int entityReplaceId = DenseEntityArray[lastComponentIndex];
+			uint32_t lastComponentIndex = static_cast<uint32_t>(DenseComponentArray.size() - 1);
+			uint32_t entityReplaceId = DenseEntityArray[lastComponentIndex];
 
 			// Overwrite the component we want to remove with the last component in the dense array
 			// to keep the array dense

@@ -29,6 +29,7 @@ namespace Ember {
 					return castedSystem;
 				}
 			}
+			return nullptr;
 		}
 
 	private:

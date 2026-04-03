@@ -31,7 +31,7 @@ namespace Ember {
 		void OnUpdateEdit(TimeStep delta, EditorCamera& camera);
 		void OnEvent(Event& event);
 
-		void OnViewportResize(unsigned int width, unsigned int height);
+		void OnViewportResize(uint32_t width, uint32_t height);
 
         Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
@@ -64,7 +64,7 @@ namespace Ember {
 
 		Entity InstantiateModel(const std::string& modelFile);
 
-		Entity GetEntityAtPixel(unsigned int x, unsigned int y);
+		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
 
 		template<typename T>
 		inline void AttachComponent(const Entity& entity, T& component);

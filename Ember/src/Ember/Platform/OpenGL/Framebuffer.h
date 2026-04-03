@@ -15,32 +15,32 @@ namespace Ember {
 
 			void Bind() const override;
 			void Unbind() const override;
-			virtual void ViewportResize(unsigned int width, unsigned int height) override;
+			virtual void ViewportResize(uint32_t width, uint32_t height) override;
 
-			int ReadPixel(unsigned int attachmentIndex, int x, int y) const override;
-			void ClearAttachment(unsigned int attachmentIndex, int& clearValue) override;
+			int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
+			void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;
 
-			inline const unsigned int GetColorAttachmentID(unsigned int id) const override 
+			inline uint32_t GetColorAttachmentID(uint32_t id) const override 
 			{
 				EB_CORE_ASSERT(id < m_ColorAttachments.size(), "Color attachment id doesn't exist");
 				return m_ColorAttachments[id];
 			}
-			inline const unsigned int GetDepthAttachmentID() const override
+			inline uint32_t GetDepthAttachmentID() const override
 			{
 				return m_DepthAttachment;
 			}
 
 			inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
-			inline const unsigned int GetID() const override { return m_Id; }
+			inline uint32_t GetID() const override { return m_Id; }
 
 		private:
 			void Regenerate();
 
 		private:
-			unsigned int m_Id;
+			uint32_t m_Id;
 			FramebufferSpecification m_Specification;
-			std::vector<unsigned int> m_ColorAttachments;
-			unsigned int m_DepthAttachment;
+			std::vector<uint32_t> m_ColorAttachments;
+			uint32_t m_DepthAttachment;
 		};
 
 	}

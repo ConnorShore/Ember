@@ -44,7 +44,7 @@ namespace Ember {
 		inline ComponentType GetComponentType();
 
 		std::vector<Entity> GetAllChildren();
-		unsigned int GetNumChildren();
+		uint32_t GetNumChildren();
 		bool IsRootParent();
 
 		Entity GetChildByName(const std::string& name);

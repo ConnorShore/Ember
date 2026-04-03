@@ -24,9 +24,9 @@ namespace Ember {
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 		void OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform);
 
-		void OnViewportResize(unsigned int width, unsigned int height);
+		void OnViewportResize(uint32_t width, uint32_t height);
 
-		EntityID GetEntityIDAtPixel(unsigned int x, unsigned int y);
+		EntityID GetEntityIDAtPixel(uint32_t x, uint32_t y);
 
 		template<std::derived_from<PostProcessPass> T>
 		SharedPtr<PostProcessPass> GetPostProcessPass() const

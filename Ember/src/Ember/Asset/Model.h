@@ -14,7 +14,7 @@ namespace Ember {
 	struct MeshMaterialNode
 	{
 		SharedPtr<Mesh> MeshAsset;
-		unsigned int MaterialIndex;
+		uint32_t MaterialIndex;
 	};
 
 	struct ModelNode

@@ -23,7 +23,7 @@ namespace Ember {
 			void SetVertexBufferAttribs();
 
 		private:
-			unsigned int m_Id, m_CurrentVertexBufferInd;
+			uint32_t m_Id, m_CurrentVertexBufferInd;
 
 			SharedPtr<VertexBuffer> m_VertexBuffer;
 			SharedPtr<IndexBuffer> m_IndexBuffer;

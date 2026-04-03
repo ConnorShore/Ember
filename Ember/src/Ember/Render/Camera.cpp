@@ -20,7 +20,7 @@ namespace Ember {
 		CalculateProjectionMatrix();
 	}
 
-	void Camera::SetViewportSize(unsigned int width, unsigned int height)
+	void Camera::SetViewportSize(uint32_t width, uint32_t height)
 	{
 		m_ViewportSize = Vector2f(width, height);
 		m_AspectRatio = (float)width / (float)height;

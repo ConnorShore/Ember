@@ -204,7 +204,7 @@ namespace Ember {
 		ExecuteRenderPipeline(scene->GetRegistry(), true);
 	}
 
-	void RenderSystem::OnViewportResize(unsigned int width, unsigned int height)
+	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		m_GBuffer->ViewportResize(width, height);
 		m_HdrSceneBuffer->ViewportResize(width, height);
@@ -215,7 +215,7 @@ namespace Ember {
 			pass->OnViewportResize(width, height);
 	}
 
-	EntityID RenderSystem::GetEntityIDAtPixel(unsigned int x, unsigned int y)
+	EntityID RenderSystem::GetEntityIDAtPixel(uint32_t x, uint32_t y)
 	{
 		// Check the Forward buffer first (since it is drawn on top of the world)
 		m_HdrSceneBuffer->Bind();
@@ -275,7 +275,7 @@ namespace Ember {
 	{
 		// Get directional light view matrix to create shadow map
 		View lightView = registry.Query<DirectionalLightComponent, TransformComponent>();
-		unsigned int index = 0;
+		uint32_t index = 0;
 		for (EntityID entity : lightView)
 		{
 			if (index >= Constants::Renderer::MaxDirectionalLights)
@@ -306,7 +306,7 @@ namespace Ember {
 	{
 		// Get spotlight view matrix to create shadow map
 		View lightView = registry.Query<SpotLightComponent, TransformComponent>();
-		unsigned int index = 0;
+		uint32_t index = 0;
 		for (EntityID entity : lightView)
 		{
 			// TODO: Will create a 4-layer texture array for spotlight shadow maps to hold multiple shadow maps in the future, 

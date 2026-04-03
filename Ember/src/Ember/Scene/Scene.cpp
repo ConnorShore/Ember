@@ -105,7 +105,7 @@ namespace Ember {
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
-	void Scene::OnViewportResize(unsigned int width, unsigned int height)
+	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
@@ -297,7 +297,7 @@ namespace Ember {
 		return rootEntity;
 	}
 
-	Entity Scene::GetEntityAtPixel(unsigned int x, unsigned int y)
+	Entity Scene::GetEntityAtPixel(uint32_t x, uint32_t y)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto renderSystem = systemManager.GetSystem<RenderSystem>();

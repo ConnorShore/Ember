@@ -33,7 +33,7 @@ namespace Ember {
 	{
 		Assimp::Importer importer;
 
-		unsigned int importFlags =
+		uint32_t importFlags =
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |
 			aiProcess_JoinIdenticalVertices |
@@ -60,7 +60,7 @@ namespace Ember {
 		if (scene->HasMaterials())
 		{
 			report.Materials.reserve(scene->mNumMaterials);
-			for (unsigned int i = 0; i < scene->mNumMaterials; i++)
+			for (uint32_t i = 0; i < scene->mNumMaterials; i++)
 			{
 				aiMaterial* material = scene->mMaterials[i];
 
@@ -74,7 +74,7 @@ namespace Ember {
 		if (scene->HasMeshes())
 		{
 			report.Meshes.reserve(scene->mNumMeshes);
-			for (unsigned int i = 0; i < scene->mNumMeshes; i++)
+			for (uint32_t i = 0; i < scene->mNumMeshes; i++)
 			{
 				aiMesh* mesh = scene->mMeshes[i];
 				CookedAssetInfo meshInfo = ProcessMesh(modelName, mesh, outputDirectory, i);
@@ -171,9 +171,9 @@ namespace Ember {
 
 	void ModelImporter::ProcessNode(const std::string& name, aiNode* aiNode, CookedModelNode& modelNode, const aiScene* scene, const std::string& outputDirectory, const std::vector<CookedAssetInfo>& cookedMeshes)
 	{
-		for (unsigned int i = 0; i < aiNode->mNumMeshes; i++)
+		for (uint32_t i = 0; i < aiNode->mNumMeshes; i++)
 		{
-			unsigned int meshIndex = aiNode->mMeshes[i];
+			uint32_t meshIndex = aiNode->mMeshes[i];
 			aiMesh* mesh = scene->mMeshes[meshIndex];
 
 			CookedMeshNode meshNode;
@@ -185,7 +185,7 @@ namespace Ember {
 		}
 
 		modelNode.ChildNodes.reserve(aiNode->mNumChildren);
-		for (unsigned int i = 0; i < aiNode->mNumChildren; i++)
+		for (uint32_t i = 0; i < aiNode->mNumChildren; i++)
 		{
 			CookedModelNode childNode;
 			childNode.Name = aiNode->mChildren[i]->mName.C_Str();
@@ -222,14 +222,14 @@ namespace Ember {
 		return true;
 	}
 
-	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, unsigned int index)
+	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, uint32_t index)
 	{
 		std::vector<MeshVertex> vertices;
-		std::vector<unsigned int> indices;
+		std::vector<uint32_t> indices;
 
 		vertices.reserve(aiMesh->mNumVertices);
 
-		for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
+		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			MeshVertex vertex;
 			vertex.Position = { aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z };
@@ -240,9 +240,9 @@ namespace Ember {
 			vertices.push_back(vertex);
 		}
 
-		for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
+		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
-			for (unsigned int j = 0; j < aiMesh->mFaces[i].mNumIndices; j++)
+			for (uint32_t j = 0; j < aiMesh->mFaces[i].mNumIndices; j++)
 			{
 				indices.push_back(aiMesh->mFaces[i].mIndices[j]);
 			}
@@ -265,7 +265,7 @@ namespace Ember {
 	// --- MATERIAL COOKING ---
 
 	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat,
-		const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, unsigned int index)
+		const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, uint32_t index)
 	{
 		std::string safeMatName = SanitizeFileName(aiMat->GetName().C_Str());
 		std::string matName = modelName + "_" + safeMatName + "_" + std::to_string(index);

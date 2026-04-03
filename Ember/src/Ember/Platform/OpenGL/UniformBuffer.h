@@ -8,13 +8,13 @@ namespace Ember {
 		class UniformBuffer : public Ember::UniformBuffer
 		{
 		public:
-			UniformBuffer(unsigned int size, unsigned int bindingPoint);
+			UniformBuffer(uint32_t size, uint32_t bindingPoint);
 			virtual ~UniformBuffer();
 
-			virtual void SetData(const void* data, unsigned int size, unsigned int offset = 0) override;
+			virtual void SetData(const void* data, uint32_t size, uint32_t offset = 0) override;
 
 		private:
-			unsigned int m_Id;
+			uint32_t m_Id;
 		};
 
 	}

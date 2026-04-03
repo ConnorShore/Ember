@@ -4,20 +4,20 @@
 
 namespace Ember::Constants {
 
-	constexpr unsigned int InvalidUUID = 0;
+	constexpr uint32_t InvalidUUID = 0;
 
 	namespace Entities {
-		constexpr unsigned int MaxEntities = 1024;
-		constexpr unsigned int MaxComponents = 64;
+		constexpr uint32_t MaxEntities = 1024;
+		constexpr uint32_t MaxComponents = 64;
 
-		constexpr unsigned int InvalidEntityID = MaxEntities + 1;
-		constexpr unsigned int InvalidComponentID = MaxEntities + 1;
+		constexpr uint32_t InvalidEntityID = MaxEntities + 1;
+		constexpr uint32_t InvalidComponentID = MaxEntities + 1;
 	}
 
 	namespace Renderer {
-		inline constexpr unsigned int MaxDirectionalLights = 1;
-		inline constexpr unsigned int MaxSpotLights = 1;
-		inline constexpr unsigned int MaxPointLights = 256;
+		inline constexpr uint32_t MaxDirectionalLights = 1;
+		inline constexpr uint32_t MaxSpotLights = 1;
+		inline constexpr uint32_t MaxPointLights = 256;
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 

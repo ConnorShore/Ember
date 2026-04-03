@@ -18,14 +18,14 @@ namespace Ember {
 	{
 		std::string Name;
 		ShaderDataType DataType;
-		unsigned int Count;
+		uint32_t Count;
 		bool Normalize;
-		unsigned int Offset;
+		uint32_t Offset;
 
 		BufferElement(ShaderDataType dataType, const std::string& name, bool normalize = false)
 			: Name(name), DataType(dataType), Count(ShaderDataTypeCount(dataType)), Normalize(normalize), Offset(0) { }
 
-		BufferElement(ShaderDataType dataType, unsigned int count, bool normalize)
+		BufferElement(ShaderDataType dataType, uint32_t count, bool normalize)
 			: DataType(dataType), Count(count), Normalize(normalize), Offset(0) { }
 	};
 
@@ -40,7 +40,7 @@ namespace Ember {
 		BufferLayout(std::initializer_list<BufferElement> elements);
 		~BufferLayout();
 
-		inline const unsigned int GetStride() const { return m_Stride; }
+		inline uint32_t GetStride() const { return m_Stride; }
 		
 		inline const std::vector<BufferElement>& GetElements() const { return m_Elements; }
 
@@ -54,7 +54,7 @@ namespace Ember {
 
 	private:
 		std::vector<BufferElement> m_Elements;
-		unsigned int m_Stride = 0;
+		uint32_t m_Stride = 0;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ namespace Ember {
 
 		virtual void Bind() const = 0;
 
-		virtual const unsigned int GetID() const = 0;
+		virtual uint32_t GetID() const = 0;
 		virtual const size_t GetSize() const = 0;
 	};
 
@@ -81,14 +81,14 @@ namespace Ember {
 	public:
 		virtual ~VertexBuffer() = default;
 
-		virtual void SetData(const void* data, unsigned int size) = 0;
+		virtual void SetData(const void* data, uint32_t size) = 0;
 
 		void SetLayout(const BufferLayout& layout) { m_Layout = layout; }
 		const BufferLayout& GetLayout() const { return m_Layout; }
 
-		static SharedPtr<VertexBuffer> Create(const void* data, unsigned int size);
-		static SharedPtr<VertexBuffer> Create(unsigned int size);
-		static SharedPtr<VertexBuffer> Create(const void* data, unsigned int size, const BufferLayout& layout);
+		static SharedPtr<VertexBuffer> Create(const void* data, uint32_t size);
+		static SharedPtr<VertexBuffer> Create(uint32_t size);
+		static SharedPtr<VertexBuffer> Create(const void* data, uint32_t size, const BufferLayout& layout);
 
 	protected:
 		BufferLayout m_Layout;
@@ -103,7 +103,7 @@ namespace Ember {
 	public:
 		virtual ~IndexBuffer() = default;
 
-		static SharedPtr<IndexBuffer> Create(std::span<const unsigned int> data);
+		static SharedPtr<IndexBuffer> Create(std::span<const uint32_t> data);
 		virtual const size_t GetCount() const = 0;
 	};
 
@@ -116,7 +116,7 @@ namespace Ember {
 	//public:
 	//	virtual ~IndexedVertexBuffer() = default;
 
-	//	static SharedPtr<IndexedVertexBuffer<T>> Create(const T* vertexData, const unsigned int* indexData);
+	//	static SharedPtr<IndexedVertexBuffer<T>> Create(const T* vertexData, const uint32_t* indexData);
 	//};
 
 }

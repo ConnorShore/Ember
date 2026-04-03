@@ -151,7 +151,7 @@ namespace Ember {
 		m_PreviousSelectedEntity = m_InvalidEntity;
 
 		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
 		m_SceneState = SceneState::Play;
 	}
@@ -162,7 +162,7 @@ namespace Ember {
 		m_PreviousSelectedEntity = m_InvalidEntity;
 
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
 		m_SceneState = SceneState::Edit;
 	}
@@ -242,13 +242,13 @@ namespace Ember {
 		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-			m_OutputFramebuffer->ViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-			m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
-			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		}
 
-		unsigned int textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
-		ImGui::Image((void*)textureID, ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		uint32_t textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
+		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(textureID)), ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		// Drag drop zone for models
 		if (ImGui::BeginDragDropTarget())
@@ -781,7 +781,7 @@ namespace Ember {
 		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
 		m_Context.ActiveScene = m_EditorScene;
 
-		m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 
@@ -806,7 +806,7 @@ namespace Ember {
 			{
 				m_EditorScene = newScene;
 				m_Context.ActiveScene = m_EditorScene;
-				m_Context.ActiveScene->OnViewportResize((unsigned int)m_ViewportSize.x, (unsigned int)m_ViewportSize.y);
+				m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 				m_Context.ActiveScene->SetFilePath(sceneFile);
 
 				m_Context.SelectedEntity = {};

@@ -45,12 +45,12 @@ namespace Ember {
 		{
 		}
 
-		Texture::Texture(const std::string& name, unsigned int width, unsigned int height, const void* data)
+		Texture::Texture(const std::string& name, uint32_t width, uint32_t height, const void* data)
 			: Texture(UUID(), name, width, height, data)
 		{
 		}
 
-		Texture::Texture(UUID uuid, const std::string& name, unsigned int width, unsigned int height, const void* data)
+		Texture::Texture(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data)
 			: Ember::Texture(uuid, name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(4), m_LocalBuffer(nullptr)
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
@@ -77,12 +77,12 @@ namespace Ember {
 			}
 		}
 
-		void Texture::Bind(unsigned int slot) const
+		void Texture::Bind(uint32_t slot) const
 		{
 			glBindTextureUnit(slot, m_Id);
 		}
 
-		void Texture::SetData(const void* data, unsigned int size)
+		void Texture::SetData(const void* data, uint32_t size)
 		{
 			glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}

@@ -22,10 +22,10 @@ namespace Ember {
 	};
 
 	struct RendererData2D {
-		static const unsigned int MaxQuads = 1024;
-		static const unsigned int MaxVertices = MaxQuads * 4;
-		static const unsigned int MaxIndices = MaxQuads * 6;
-		static const unsigned int MaxTextureSlots = 32;
+		static const uint32_t MaxQuads = 1024;
+		static const uint32_t MaxVertices = MaxQuads * 4;
+		static const uint32_t MaxIndices = MaxQuads * 6;
+		static const uint32_t MaxTextureSlots = 32;
 
 		// Quads
 		SharedPtr<VertexArray> QuadVertexArray;
@@ -45,10 +45,10 @@ namespace Ember {
 			{-0.5f,  0.5f, 0.0f},
 		};
 
-		unsigned int QuadIndicesInBatch;
+		uint32_t QuadIndicesInBatch;
 
 		std::array<SharedPtr<Texture>, MaxTextureSlots> TextureSlots;
-		unsigned int TextureSlotIndex = 1;	// 0 is default
+		uint32_t TextureSlotIndex = 1;	// 0 is default
 	};
 
 	static ScopedPtr<RendererData2D> s_RendererData;
@@ -61,7 +61,7 @@ namespace Ember {
 		s_RendererData->QuadBufferStart = new QuadVertex[s_RendererData->MaxVertices];
 
 		s_RendererData->QuadVertexArray = VertexArray::Create();
-		s_RendererData->QuadVertexBuffer = VertexBuffer::Create((unsigned int)(s_RendererData->MaxVertices * sizeof(QuadVertex)));
+		s_RendererData->QuadVertexBuffer = VertexBuffer::Create(static_cast<uint32_t>(s_RendererData->MaxVertices * sizeof(QuadVertex)));
 		s_RendererData->QuadVertexBuffer->SetLayout({
 			{ ShaderDataType::Float3, "v_Position" },
 			{ ShaderDataType::Float4, "v_Color" },
@@ -70,9 +70,9 @@ namespace Ember {
 			});
 
 		// Generic index buffer population
-		auto quadIndexBufferData = new unsigned int[s_RendererData->MaxIndices];
-		unsigned int vertexOffset = 0;
-		for (unsigned int i = 0; i < s_RendererData->MaxIndices; i += 6)
+		auto quadIndexBufferData = new uint32_t[s_RendererData->MaxIndices];
+		uint32_t vertexOffset = 0;
+		for (uint32_t i = 0; i < s_RendererData->MaxIndices; i += 6)
 		{
 			quadIndexBufferData[i + 0] = vertexOffset + 0;
 			quadIndexBufferData[i + 1] = vertexOffset + 1;
@@ -92,7 +92,7 @@ namespace Ember {
 		// Todo add to shader/texture libraries
 		s_RendererData->QuadShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::Standard2dQuadShad);
 		s_RendererData->QuadShader->Bind();
-		for (unsigned int i = 0; i < s_RendererData->MaxTextureSlots; i++)
+		for (uint32_t i = 0; i < s_RendererData->MaxTextureSlots; i++)
 			s_RendererData->QuadShader->SetInt("u_Textures[" + std::to_string(i) + "]", i);
 
 		// Default white texture
@@ -130,10 +130,10 @@ namespace Ember {
 	{
 		if (s_RendererData->QuadIndicesInBatch)
 		{
-			for (unsigned int i = 0; i < s_RendererData->TextureSlotIndex; i++)
+			for (uint32_t i = 0; i < s_RendererData->TextureSlotIndex; i++)
 				s_RendererData->TextureSlots[i]->Bind(i);
 
-			auto size = (unsigned int)((char*)s_RendererData->QuadBufferCurrent - (char*)s_RendererData->QuadBufferStart);
+			auto size = static_cast<uint32_t>((char*)s_RendererData->QuadBufferCurrent - (char*)s_RendererData->QuadBufferStart);
 			s_RendererData->QuadVertexBuffer->SetData(s_RendererData->QuadBufferStart, size);
 
 			s_RendererData->QuadShader->Bind();
@@ -172,7 +172,7 @@ namespace Ember {
 			NextBatch();
 		}
 
-		for (unsigned int i = 0; i < 4; i++)
+		for (uint32_t i = 0; i < 4; i++)
 		{
 			s_RendererData->QuadBufferCurrent->Position = transform * s_RendererData->QuadVertexPositions[i];
 			s_RendererData->QuadBufferCurrent->Color = color;
@@ -190,7 +190,7 @@ namespace Ember {
 		constexpr Vector2f texCoords[] = { {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f} };
 		float texIndex = 0.0f;
 
-		for (unsigned int i = 1; i < s_RendererData->TextureSlotIndex; i++)
+		for (uint32_t i = 1; i < s_RendererData->TextureSlotIndex; i++)
 		{
 			if (s_RendererData->TextureSlots[i] == nullptr)
 				break;
@@ -215,7 +215,7 @@ namespace Ember {
 		if (s_RendererData->QuadIndicesInBatch >= s_RendererData->MaxIndices)
 			NextBatch();
 
-		for (unsigned int i = 0; i < 4; i++)
+		for (uint32_t i = 0; i < 4; i++)
 		{
 			s_RendererData->QuadBufferCurrent->Position = transform * s_RendererData->QuadVertexPositions[i];
 			s_RendererData->QuadBufferCurrent->Color = color;

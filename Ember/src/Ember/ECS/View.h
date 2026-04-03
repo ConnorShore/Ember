@@ -26,9 +26,9 @@ namespace Ember {
 		public:
 			Registry* m_Registry;
 			const std::vector<EntityID>* m_Entities;
-			unsigned int m_Index;
+			uint32_t m_Index;
 
-			Iterator(Registry* registry, const std::vector<EntityID>* entities, unsigned int index)
+			Iterator(Registry* registry, const std::vector<EntityID>* entities, uint32_t index)
 				: m_Registry(registry), m_Entities(entities), m_Index(index)
 			{
 				FindValidEntities();
@@ -47,8 +47,8 @@ namespace Ember {
 
 		private:
 			void FindValidEntities()
-			{
-				unsigned int entityCt = m_Entities->size();
+				{
+					uint32_t entityCt = static_cast<uint32_t>(m_Entities->size());
 				while (m_Index < entityCt)
 				{
 					if (m_Registry->ContainsComponents<Filters...>((*m_Entities)[m_Index]))
@@ -67,7 +67,7 @@ namespace Ember {
 		Iterator end() const
 		{
 			const auto& driverEntities = m_Registry->GetActiveEntities<Driver>();
-			return Iterator(m_Registry, &driverEntities, driverEntities.size());
+			return Iterator(m_Registry, &driverEntities, static_cast<uint32_t>(driverEntities.size()));
 		}
 
 	private:

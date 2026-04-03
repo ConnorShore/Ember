@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 
 namespace Ember {
 
-	using EntityID = unsigned int;
-	using ComponentType = unsigned int;
+	using EntityID = uint32_t;
+	using ComponentType = uint32_t;
 
 }

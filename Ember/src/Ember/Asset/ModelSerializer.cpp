@@ -36,7 +36,7 @@ namespace Ember {
 
 		// We need to collect unique materials to pass to the Model constructor
 		std::vector<SharedPtr<MaterialBase>> materials;
-		std::unordered_map<UUID, unsigned int> materialIndexMap;
+		std::unordered_map<UUID, uint32_t> materialIndexMap;
 
 		ModelNode rootModelNode;
 		DeserializeNode(rootNodeRef, rootModelNode, assetManager, materials, materialIndexMap);
@@ -45,7 +45,7 @@ namespace Ember {
 		return modelAsset;
 	}
 
-	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, unsigned int>& materialIndexMap)
+	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, uint32_t>& materialIndexMap)
 	{
 		yamlNode["Name"] >> modelNode.Name;
 
@@ -84,7 +84,7 @@ namespace Ember {
 				if (materialIndexMap.find(materialUUID) == materialIndexMap.end())
 				{
 					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUID));
-					materialIndexMap[materialUUID] = (unsigned int)(materials.size() - 1);
+					materialIndexMap[materialUUID] = static_cast<uint32_t>(materials.size() - 1);
 				}
 
 				meshNode.MaterialIndex = materialIndexMap[materialUUID];
