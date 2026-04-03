@@ -62,7 +62,7 @@ namespace Ember {
 
 		void RemoveEntity(Entity entity);
 
-		Entity InstantiateModel(const SharedPtr<Model>& model, const std::string& name = "");
+		Entity InstantiateModel(const std::string& modelFile);
 
 		Entity GetEntityAtPixel(unsigned int x, unsigned int y);
 

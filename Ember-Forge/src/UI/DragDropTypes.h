@@ -50,8 +50,10 @@ namespace Ember {
 			switch (type)
 			{
 			case DragDropPayloadType::AssetTexture: return "*.png;*.jpg;*.jpeg;*.bmp";
-			//case DragDropPayloadType::AssetMesh: return "*.obj;*.fbx;";
+				//case DragDropPayloadType::AssetMesh: return "*.obj;*.fbx;";
 			case DragDropPayloadType::AssetModel: return "*.obj;*.fbx;*.gltf;*.glb";
+			//case DragDropPayloadType::AssetMesh: return "*.ebmesh;";
+			//case DragDropPayloadType::AssetModel: return "*.ebmodel;";
 			case DragDropPayloadType::AssetShader: return "*.glsl;";
 			case DragDropPayloadType::AssetScript: return "*.lua;";
 			default: return "*.*";
@@ -62,9 +64,10 @@ namespace Ember {
 		{
 			if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
 				return DragDropPayloadType::AssetTexture;
-			//if (extension == ".obj" || extension == ".fbx")
-			//	return DragDropPayloadType::AssetMesh;
-			if (extension == ".obj" || extension == ".fbx" || extension == ".gltf" || extension == ".glb")
+			if (extension == ".ebmesh")
+				return DragDropPayloadType::AssetMesh;
+			//if (extension == ".obj" || extension == ".fbx" || extension == ".gltf" || extension == ".glb")
+			if (extension == ".ebmodel")
 				return DragDropPayloadType::AssetModel;
 			if (extension == ".glsl")
 				return DragDropPayloadType::AssetShader;

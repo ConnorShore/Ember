@@ -2,6 +2,8 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
+#include <Ember-Tools/ModelImporter.h>
+
 #include <format>
 
 namespace Ember {
@@ -228,9 +230,29 @@ namespace Ember {
 				if (ImGui::MenuItem("Model"))
 				{
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
-					std::string file = SelectAndLoadFile(std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
-					if (!file.empty())
-						asset = Application::Instance().GetAssetManager().Load<Model>(file);
+					std::string sourceFile = FileDialog::OpenFile("", modelFileTypes.c_str());
+
+					if (!sourceFile.empty())
+					{
+						auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
+
+						if (reportOpt.has_value())
+						{
+							auto& am = Application::Instance().GetAssetManager();
+
+							// Load the newly cooked assets from the project directory
+							for (auto& tex : reportOpt->Textures)
+								am.Load<Texture>(tex.id, tex.name, tex.path, false);
+
+							for (auto& mat : reportOpt->Materials)
+								am.Load<MaterialBase>(mat.id, mat.name, mat.path, false);
+
+							for (auto& mesh : reportOpt->Meshes)
+								am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
+
+							asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);
+						}
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))
@@ -260,7 +282,6 @@ namespace Ember {
 
 				if (asset != nullptr)
 				{
-					asset->SetIsEngineAsset(false);
 					EB_CORE_INFO("Successfully imported asset: {0}", asset->GetName());
 				}
 

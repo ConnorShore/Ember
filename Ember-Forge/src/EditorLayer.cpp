@@ -727,10 +727,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
-		auto& assetManager = Application::Instance().GetAssetManager();
-		SharedPtr<Model> model = assetManager.Load<Model>(modelFilePath);
-
-		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(model, model->GetName());
+		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(modelFilePath);
 		m_Context.SelectedEntity = modelEntity;
 	}
 
@@ -771,6 +768,7 @@ namespace Ember {
 		// Clear and reload default engine assets
 		auto& assetManager = Application::Instance().GetAssetManager();
 		assetManager.ClearAssets();
+		assetManager.LoadDefaults();
 
 		// Deserialize project assets
 		std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
@@ -841,6 +839,16 @@ namespace Ember {
 			// Serialize scene
 			SceneSerializer sceneSerializer(m_Context.ActiveScene);
 			sceneSerializer.Serialize(sceneName);
+
+			// Serialize materials (in case their values changed)
+			auto materials = Application::Instance().GetAssetManager().GetAssetsOfType<MaterialInstance>();
+			for (auto& material : materials)
+			{
+				if (!material->IsEngineAsset() && !material->GetFilePath().empty())
+				{
+					MaterialSerializer::Serialize(material->GetFilePath(), material);
+				}
+			}
 
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";

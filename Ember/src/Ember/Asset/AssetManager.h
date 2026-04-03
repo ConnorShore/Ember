@@ -1,9 +1,13 @@
 #pragma once
 
-#include "Ember/Core/Core.h"
 #include "UUID.h"
 #include "Asset.h"
-#include "ModelImporter.h"
+#include "Model.h"
+#include "MeshSerializer.h"
+#include "MaterialSerializer.h"
+#include "ModelSerializer.h"
+
+#include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptImporter.h"
 #include "Ember/Render/Texture.h"
@@ -60,7 +64,7 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
-		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath)
+		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
@@ -73,12 +77,23 @@ namespace Ember {
 				newAsset = TextureImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, Mesh>)
+				newAsset = MeshSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::derived_from<T, MaterialBase>)
+			{
+				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
+				newAsset = DynamicPointerCast<T>(baseMaterial);
+				if (!newAsset)
+					EB_CORE_ERROR("Failed to load Material! The requested type did not match the file's contents.");
+			}
 			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelImporter::Load(uuid, name, absolutePath, *this);
+				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
 			else if constexpr (std::same_as<T, Script>)
 				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
+
+			newAsset->SetIsEngineAsset(engineAsset);
 
 			m_Assets[newAsset->GetUUID()] = newAsset;
 			m_AssetNames[name] = newAsset->GetUUID();
@@ -110,17 +125,18 @@ namespace Ember {
 		}
 
 		// Custom load for model that takes mesh/material UUIDs (for deserialization)
-		template<std::same_as<Model> T>
-		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
-		{
-			auto absolutePath = std::filesystem::absolute(filePath).string();
-			auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
-			
-			m_Assets[model->GetUUID()] = model;
-			m_AssetNames[name] = model->GetUUID();
-			m_AssetPaths[absolutePath] = model->GetUUID();
-			return model;
-		}
+		//template<std::same_as<Model> T>
+		//SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
+		//{
+		//	auto absolutePath = std::filesystem::absolute(filePath).string();
+		//	auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
+		//	
+		//	m_Assets[model->GetUUID()] = model;
+		//	m_AssetNames[name] = model->GetUUID();
+		//	m_AssetPaths[absolutePath] = model->GetUUID();
+		//	return model;
+		//	return nullptr;	// TODO: Implement this
+		//}
 
 		template<IsCoreAsset T>
 		void Register(UUID uuid, const SharedPtr<T>& asset)

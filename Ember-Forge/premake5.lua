@@ -21,13 +21,16 @@ project "Ember-Forge"
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
       "%{wks.location}/Ember/vendor/lua/src",
-      "%{wks.location}/Ember/vendor/sol2/include"
+      "%{wks.location}/Ember/vendor/sol2/include",
+      "%{wks.location}/Ember/vendor/rapidyaml/src",
+		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
+      "%{wks.location}/Ember-Tools/src",
    }
 
    links 
    {
       "Ember",
-      "assimp",
+      "Ember-Tools",
       "ImGuizmo"
    }
 

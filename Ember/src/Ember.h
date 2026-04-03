@@ -63,6 +63,8 @@
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/MeshHeader.h"
+#include "Ember/Asset/MeshSerializer.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 
@@ -72,4 +74,6 @@
 // Vendor includes
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <assimp/Importer.hpp>
+
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>

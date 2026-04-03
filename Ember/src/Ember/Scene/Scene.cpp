@@ -288,9 +288,11 @@ namespace Ember {
 		m_EntityUUIDMap.erase(entityUUID);
 	}
 
-	Entity Scene::InstantiateModel(const SharedPtr<Model>& model, const std::string& name /*= ""*/)
+	Entity Scene::InstantiateModel(const std::string& modelFile)
 	{
-		Entity rootEntity = AddEntity(name.empty() ? model->GetName() : name);
+		std::string modelName = std::filesystem::path(modelFile).stem().string();
+		SharedPtr<Model> model = Application::Instance().GetAssetManager().GetAsset<Model>(modelName);
+		Entity rootEntity = AddEntity(model->GetName());
 		ProcessModelNode(rootEntity, model->GetRootNode(), model);
 		return rootEntity;
 	}
@@ -317,15 +319,14 @@ namespace Ember {
 		// 2. Handle Meshes (Respecting the 1-Component Rule)
 		if (node.Meshes.size() == 1)
 		{
-			// Safe to attach directly!
-			UUID meshId = Application::Instance().GetAssetManager().Register(node.Meshes[0].MeshAsset);
-			MeshComponent mc{ meshId };
-			currentEntity.AttachComponent<MeshComponent>(mc);
+			// Just grab the UUIDs directly from the assets! They are already registered.
+			UUID meshId = node.Meshes[0].MeshAsset->GetUUID();
+			MeshComponent meshComponent{ meshId };
+			currentEntity.AttachComponent<MeshComponent>(meshComponent);
 
-			// Attach material
-			UUID materialId = Application::Instance().GetAssetManager().Register(model->GetAllMaterials()[node.Meshes[0].MaterialIndex]);
-			MaterialComponent matComp{ materialId };
-			currentEntity.AttachComponent<MaterialComponent>(matComp);
+			UUID materialId = model->GetAllMaterials()[node.Meshes[0].MaterialIndex]->GetUUID();
+			MaterialComponent materialComponent{ materialId };
+			currentEntity.AttachComponent<MaterialComponent>(materialComponent);
 		}
 		else if (node.Meshes.size() > 1)
 		{
@@ -339,20 +340,18 @@ namespace Ember {
 				partRc.ParentHandle = currentEntity.GetUUID();
 				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetUUID());
 
-				// Attach the mesh
+				// Attach the mesh and material using their authoritative UUIDs
+				UUID meshId = node.Meshes[i].MeshAsset->GetUUID();
+				MeshComponent meshComponent{ meshId };
+				meshPartEntity.AttachComponent<MeshComponent>(meshComponent);
 
-				UUID meshId = Application::Instance().GetAssetManager().Register(node.Meshes[i].MeshAsset);
-				MeshComponent mc{ meshId };
-				meshPartEntity.AttachComponent<MeshComponent>(mc);
-
-				// Attach material
-				UUID materialId = Application::Instance().GetAssetManager().Register(model->GetAllMaterials()[node.Meshes[i].MaterialIndex]);
-				MaterialComponent matComp{ materialId };
-				meshPartEntity.AttachComponent<MaterialComponent>(matComp);
+				UUID materialId = model->GetAllMaterials()[node.Meshes[i].MaterialIndex]->GetUUID();
+				MaterialComponent materialComponent{ materialId };
+				meshPartEntity.AttachComponent<MaterialComponent>(materialComponent);
 			}
 		}
 
-		// 3. Recursively process all child branches
+		// Process all child branches
 		for (const auto& childNode : node.ChildNodes)
 		{
 			// Create the child entity

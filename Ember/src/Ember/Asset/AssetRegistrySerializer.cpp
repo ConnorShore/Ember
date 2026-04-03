@@ -50,12 +50,21 @@ namespace Ember {
 			Util::SerializeGeneralAsset(scriptNode, script);
 		}
 
-		auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
+		auto materials = m_AssetManagerHandle->GetAssetsOfType<Material>();
 		for (auto material : materials) {
-			if (material->IsEngineAsset())
+			if (material->GetFilePath().empty() || material->IsEngineAsset())
 				continue;
 			ryml::NodeRef materialNode = assetsNode.append_child();
-			Util::SerializeMaterial(materialNode, material);
+			//Util::SerializeMaterial(materialNode, material);
+			Util::SerializeGeneralAsset(materialNode, material);
+		}
+
+		auto meshes = m_AssetManagerHandle->GetAssetsOfType<Mesh>();
+		for (auto mesh : meshes) {
+			if (mesh->GetFilePath().empty() || mesh->IsEngineAsset())
+				continue;
+			ryml::NodeRef meshNode = assetsNode.append_child();
+			Util::SerializeGeneralAsset(meshNode, mesh);
 		}
 
 		auto models = m_AssetManagerHandle->GetAssetsOfType<Model>();
@@ -63,7 +72,7 @@ namespace Ember {
 			if (model->IsEngineAsset())
 				continue;
 			ryml::NodeRef modelNode = assetsNode.append_child();
-			Util::SerializeModel(modelNode, model);
+			Util::SerializeGeneralAsset(modelNode, model);
 		}
 		
 		// Write out to disk
@@ -106,18 +115,18 @@ namespace Ember {
 			assetNode["Type"] >> type;
 
 			// Special handling for Materials since they have a more complex structure
-			if (type == "Material")
-			{
-				SharedPtr<MaterialBase> material = Util::DeserializeMaterial(assetNode, m_AssetManagerHandle);
-				material->SetIsEngineAsset(false);
+			//if (type == "Material")
+			//{
+			//	SharedPtr<MaterialBase> material = Util::DeserializeMaterial(assetNode, m_AssetManagerHandle);
+			//	material->SetIsEngineAsset(false);
 
-				bool instanced = false;
-				assetNode["Instanced"] >> instanced;
+			//	bool instanced = false;
+			//	assetNode["Instanced"] >> instanced;
 
-				m_AssetManagerHandle->Register(material->GetUUID(), material);
-				EB_CORE_TRACE("  Loaded Material: {0}", material->GetName());
-				continue;
-			}
+			//	m_AssetManagerHandle->Register(material->GetUUID(), material);
+			//	EB_CORE_TRACE("  Loaded Material: {0}", material->GetName());
+			//	continue;
+			//}
 
 			uint64_t uuid;
 			std::string name, path;
@@ -127,51 +136,52 @@ namespace Ember {
 			assetNode["FilePath"] >> path;
 
 			if (path.empty())
+			{
+				EB_CORE_WARN("Asset '{0}' has an empty file path. Skipping.", name);
 				continue;
+			}
 
 			if (type == "Texture")
 			{
-				auto texture = m_AssetManagerHandle->Load<Texture>(uuid, name, path);
-				texture->SetIsEngineAsset(false);
-				EB_CORE_TRACE("  Loaded Texture: {0}", name);
+				auto texture = m_AssetManagerHandle->Load<Texture>(uuid, name, path, false);
+				EB_CORE_TRACE("Loaded Texture: {0}", name);
 			}
 			else if (type == "Shader")
 			{
-				auto shader = m_AssetManagerHandle->Load<Shader>(uuid, name, path);
-				shader->SetIsEngineAsset(false);
-				EB_CORE_TRACE("  Loaded Shader: {0}", name);
+				auto shader = m_AssetManagerHandle->Load<Shader>(uuid, name, path, false);
+				EB_CORE_TRACE("Loaded Shader: {0}", name);
 			}
 			else if (type == "Script")
 			{
-				auto script = m_AssetManagerHandle->Load<Script>(uuid, name, path);
-				script->SetIsEngineAsset(false);
-				EB_CORE_TRACE("  Loaded Script: {0}", name);
+				auto script = m_AssetManagerHandle->Load<Script>(uuid, name, path, false);
+				EB_CORE_TRACE("Loaded Script: {0}", name);
+			}
+			else if (type == "Mesh")
+			{
+				auto mesh = m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
+				EB_CORE_TRACE("Loaded Mesh: {0}", name);
+			}
+			else if (type == "MaterialInstance" || type == "Material")
+			{
+				SharedPtr<MaterialBase> material = m_AssetManagerHandle->Load<MaterialBase>(uuid, name, path, false);
+				//if (type == "MaterialInstance")
+				//	material = m_AssetManagerHandle->Load<MaterialInstance>(uuid, name, path, false);
+				//else
+				//	material = m_AssetManagerHandle->Load<Material>(uuid, name, path, false);
+
+				if (material)
+				{
+					EB_CORE_TRACE("Loaded Material: {0}", name);
+				}
 			}
 			else if (type == "Model")
 			{
-				std::vector<UUID> meshUUIDs;
-				if (assetNode.has_child("Meshes"))
-				{
-					for (ryml::NodeRef meshNode : assetNode["Meshes"].children())
-					{
-						uint64_t meshID; meshNode >> meshID;
-						meshUUIDs.push_back(meshID);
-					}
-				}
+				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, false);
 
-				std::vector<UUID> materialUUIDs;
-				if (assetNode.has_child("Materials"))
+				if (model)
 				{
-					for (ryml::NodeRef matNode : assetNode["Materials"].children())
-					{
-						uint64_t matID; matNode >> matID;
-						materialUUIDs.push_back(matID);
-					}
+					EB_CORE_TRACE("Loaded Model: {0}", name);
 				}
-
-				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
-				model->SetIsEngineAsset(false);
-				EB_CORE_TRACE("  Loaded Model: {0}", name);
 			}
 		}
 

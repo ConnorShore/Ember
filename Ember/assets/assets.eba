@@ -1,1 +1,45 @@
-Assets: []
+Assets:
+  - Type: Texture
+    UUID: 1748081563150056589
+    Name: indoor plant_2_NOR
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_2_NOR.jpg'
+  - Type: Texture
+    UUID: 7229321112115559712
+    Name: indoor plant_2_COL
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_2_COL.jpg'
+  - Type: Material
+    UUID: 3109471552815647092
+    Name: indoor plant_02_+2_IDP_ground_3
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_ground_3.ebmat'
+  - Type: Material
+    UUID: 7502952308650406704
+    Name: indoor plant_02_+2_IDP_leaves_0
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_leaves_0.ebmat'
+  - Type: Material
+    UUID: 6698615013223241541
+    Name: indoor plant_02_+2_IDP_root_1
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_root_1.ebmat'
+  - Type: Material
+    UUID: 8588543034114396961
+    Name: indoor plant_02_+2_IDP_Pot_2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_Pot_2.ebmat'
+  - Type: Mesh
+    UUID: 17843564377750698228
+    Name: indoor plant_02_+2_Mesh_2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_2.ebmesh'
+  - Type: Mesh
+    UUID: 11389532349452902965
+    Name: indoor plant_02_+2_Mesh_0
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_0.ebmesh'
+  - Type: Mesh
+    UUID: 1193498186981175791
+    Name: indoor plant_02_+2_Mesh_1
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_1.ebmesh'
+  - Type: Mesh
+    UUID: 16913900859079019372
+    Name: indoor plant_02_+2_Mesh_3
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_3.ebmesh'
+  - Type: Model
+    UUID: 1293447197653787853
+    Name: indoor plant_02_+2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2.ebmodel'

@@ -37,7 +37,6 @@ project "Ember"
       "GLFW",
       "glad",
       "imgui",
-      "assimp",
       "rapidyaml",
       "lua",
       "opengl32.lib",
@@ -46,7 +45,7 @@ project "Ember"
    defines
    {
       "EB_ENGINE",
-	  "_CRT_SECURE_NO_WARNINGS",
+	   "_CRT_SECURE_NO_WARNINGS",
       "GLFW_INCLUDE_NONE",
       "SOL_ALL_SAFETIES_ON=1"
    }
