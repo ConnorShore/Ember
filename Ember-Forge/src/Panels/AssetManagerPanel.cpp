@@ -2,6 +2,8 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
+#include <Ember-Tools/ModelImporter.h>
+
 #include <format>
 
 namespace Ember {
@@ -230,7 +232,21 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
 					std::string file = SelectAndLoadFile(std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						asset = Application::Instance().GetAssetManager().Load<Model>(file);
+					{
+						auto report = ModelImporter::CookModel(file, m_CurrentDirectory.string());
+						if (report.has_value())
+						{
+							auto& am = Application::Instance().GetAssetManager();
+
+							for (auto& mat : report->Materials)
+								am.Load<MaterialInstance>(mat.id, mat.name, mat.path);
+
+							for (auto& mesh : report->Meshes)
+								am.Load<Mesh>(mesh.id, mesh.name, mesh.path);
+
+							asset = am.Load<Model>(report->Model.id, report->Model.name, report->Model.path);
+						}
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))

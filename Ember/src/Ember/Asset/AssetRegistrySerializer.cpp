@@ -50,12 +50,28 @@ namespace Ember {
 			Util::SerializeGeneralAsset(scriptNode, script);
 		}
 
+		//auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
+		//for (auto material : materials) {
+		//	if (material->IsEngineAsset())
+		//		continue;
+		//	ryml::NodeRef materialNode = assetsNode.append_child();
+		//	Util::SerializeMaterial(materialNode, material);
+		//}
+
+		auto meshes = m_AssetManagerHandle->GetAssetsOfType<Mesh>();
+		for (auto mesh : meshes) {
+			if (mesh->GetFilePath().empty() || mesh->IsEngineAsset())
+				continue;
+			ryml::NodeRef meshNode = assetsNode.append_child();
+			Util::SerializeGeneralAsset(meshNode, mesh);
+		}
+
 		auto materials = m_AssetManagerHandle->GetAssetsOfType<MaterialBase>();
 		for (auto material : materials) {
-			if (material->IsEngineAsset())
+			if (material->GetFilePath().empty() || material->IsEngineAsset())
 				continue;
 			ryml::NodeRef materialNode = assetsNode.append_child();
-			Util::SerializeMaterial(materialNode, material);
+			Util::SerializeGeneralAsset(materialNode, material);
 		}
 
 		auto models = m_AssetManagerHandle->GetAssetsOfType<Model>();
@@ -63,7 +79,7 @@ namespace Ember {
 			if (model->IsEngineAsset())
 				continue;
 			ryml::NodeRef modelNode = assetsNode.append_child();
-			Util::SerializeModel(modelNode, model);
+			Util::SerializeGeneralAsset(modelNode, model);
 		}
 		
 		// Write out to disk
@@ -147,33 +163,58 @@ namespace Ember {
 				script->SetIsEngineAsset(false);
 				EB_CORE_TRACE("  Loaded Script: {0}", name);
 			}
+			else if (type == "Mesh")
+			{
+				auto mesh = m_AssetManagerHandle->Load<Mesh>(uuid, name, path);
+				mesh->SetIsEngineAsset(false);
+				EB_CORE_TRACE("  Loaded Mesh: {0}", name);
+			}
+			else if (type == "MaterialInstance" || type == "Material")
+			{
+				auto material = m_AssetManagerHandle->Load<MaterialInstance>(uuid, name, path);
+				if (material)
+				{
+					material->SetIsEngineAsset(false);
+					EB_CORE_TRACE("  Loaded Material: {0}", name);
+				}
+			}
 			else if (type == "Model")
 			{
-				std::vector<UUID> meshUUIDs;
-				if (assetNode.has_child("Meshes"))
-				{
-					for (ryml::NodeRef meshNode : assetNode["Meshes"].children())
-					{
-						uint64_t meshID; meshNode >> meshID;
-						meshUUIDs.push_back(meshID);
-					}
-				}
+				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path);
 
-				std::vector<UUID> materialUUIDs;
-				if (assetNode.has_child("Materials"))
+				if (model)
 				{
-					for (ryml::NodeRef matNode : assetNode["Materials"].children())
-					{
-						uint64_t matID; matNode >> matID;
-						materialUUIDs.push_back(matID);
-					}
+					model->SetIsEngineAsset(false);
+					EB_CORE_TRACE("  Loaded Model: {0}", name);
 				}
-
-				// TODO: Update this to use .ebmodel files
-				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
-				model->SetIsEngineAsset(false);
-				EB_CORE_TRACE("  Loaded Model: {0}", name);
 			}
+			//else if (type == "Model")
+			//{
+			//	std::vector<UUID> meshUUIDs;
+			//	if (assetNode.has_child("Meshes"))
+			//	{
+			//		for (ryml::NodeRef meshNode : assetNode["Meshes"].children())
+			//		{
+			//			uint64_t meshID; meshNode >> meshID;
+			//			meshUUIDs.push_back(meshID);
+			//		}
+			//	}
+
+			//	std::vector<UUID> materialUUIDs;
+			//	if (assetNode.has_child("Materials"))
+			//	{
+			//		for (ryml::NodeRef matNode : assetNode["Materials"].children())
+			//		{
+			//			uint64_t matID; matNode >> matID;
+			//			materialUUIDs.push_back(matID);
+			//		}
+			//	}
+
+			//	// TODO: Update this to use .ebmodel files
+			//	auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, meshUUIDs, materialUUIDs);
+			//	model->SetIsEngineAsset(false);
+			//	EB_CORE_TRACE("  Loaded Model: {0}", name);
+			//}
 		}
 
 		return true;

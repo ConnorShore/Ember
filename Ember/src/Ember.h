@@ -63,6 +63,8 @@
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/AssetManager.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/MeshHeader.h"
+#include "Ember/Asset/MeshSerializer.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 

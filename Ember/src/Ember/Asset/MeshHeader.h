@@ -27,7 +27,6 @@ namespace Ember {
 	{
 		uint32_t MagicNumber = MESH_FILE_MAGIC;
 		uint32_t Version = 1;
-		UUID MeshUUID;
 
 		uint32_t VertexCount = 0;
 		uint32_t IndexCount = 0;

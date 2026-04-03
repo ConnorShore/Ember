@@ -52,7 +52,8 @@ namespace Ember {
 
 			file.close();
 
-			return SharedPtr<Mesh>::Create(vertices, indices);;
+			std::string name = filepath.stem().string();
+			return SharedPtr<Mesh>::Create(uuid, name, vertices, indices);;
 		}
 	};
 }

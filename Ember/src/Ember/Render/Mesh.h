@@ -4,6 +4,7 @@
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Buffer.h"
 #include "Ember/Asset/Asset.h"
+#include "Ember/Asset/MeshHeader.h"
 
 #include <unordered_map>
 
@@ -17,6 +18,7 @@ namespace Ember {
 	{
 	public:
 		Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
+		Mesh(UUID uuid, const std::string& name, const std::vector<MeshVertex>& vertices, const std::vector<unsigned int>& indices);
 		Mesh(UUID uuid, const std::string& name, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
 		~Mesh();
 

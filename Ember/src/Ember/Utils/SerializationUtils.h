@@ -115,26 +115,26 @@ namespace Ember {
 			node["FilePath"] << asset->GetFilePath();
 		}
 
-		static void SerializeModel(ryml::NodeRef node, const SharedPtr<Model>& model)
-		{
-			SerializeGeneralAsset(node, model); // Saves UUID, Name, FilePath
+		//static void SerializeModel(ryml::NodeRef node, const SharedPtr<Model>& model)
+		//{
+		//	SerializeGeneralAsset(node, model); // Saves UUID, Name, FilePath
 
-			// Save the ordered list of Mesh UUIDs
-			ryml::NodeRef meshesNode = node["Meshes"];
-			meshesNode |= ryml::SEQ;
-			for (const auto& meshNode : model->GetAllMeshes())
-			{
-				meshesNode.append_child() << meshNode.MeshAsset->GetUUID();
-			}
+		//	// Save the ordered list of Mesh UUIDs
+		//	ryml::NodeRef meshesNode = node["Meshes"];
+		//	meshesNode |= ryml::SEQ;
+		//	for (const auto& meshNode : model->GetAllMeshes())
+		//	{
+		//		meshesNode.append_child() << meshNode.MeshAsset->GetUUID();
+		//	}
 
-			// Save the ordered list of Material UUIDs
-			ryml::NodeRef materialsNode = node["Materials"];
-			materialsNode |= ryml::SEQ;
-			for (const auto& material : model->GetAllMaterials())
-			{
-				materialsNode.append_child() << material->GetUUID();
-			}
-		}
+		//	// Save the ordered list of Material UUIDs
+		//	ryml::NodeRef materialsNode = node["Materials"];
+		//	materialsNode |= ryml::SEQ;
+		//	for (const auto& material : model->GetAllMaterials())
+		//	{
+		//		materialsNode.append_child() << material->GetUUID();
+		//	}
+		//}
 
 		static void SerializeMaterial(ryml::NodeRef node, const SharedPtr<MaterialBase>& material)
 		{
