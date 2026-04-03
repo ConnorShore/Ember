@@ -1,217 +1,69 @@
 Assets:
   - Type: Texture
-    UUID: 14305497443387492575
-    Name: DamagedHelmet_Material_MR_AlbedoMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_AlbedoMap.png'
-  - Type: Texture
-    UUID: 4449063580999245854
-    Name: DamagedHelmet_Material_MR_EmissiveMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_EmissiveMap.png'
-  - Type: Texture
-    UUID: 3046643182061640968
+    UUID: 11547858449892930200
     Name: BoxTextured_Texture_AlbedoMap
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Texture_AlbedoMap.png'
   - Type: Texture
-    UUID: 10978192379655783337
-    Name: DamagedHelmet_Material_MR_NormalMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_NormalMap.png'
+    UUID: 2025703251403719003
+    Name: CesiumMilkTruck_wheels_AlbedoMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_wheels_AlbedoMap.png'
   - Type: Texture
-    UUID: 14044294247702608954
-    Name: DamagedHelmet_Material_MR_ORMMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR_ORMMap.png'
-  - Type: Texture
-    UUID: 13554950624892578491
-    Name: Duck_blinn3-fx_AlbedoMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_blinn3-fx_AlbedoMap.png'
+    UUID: 8810486715010879261
+    Name: CesiumMilkTruck_truck_AlbedoMap
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_truck_AlbedoMap.png'
   - Type: Material
-    UUID: 14725814435639598858
-    Name: Duck_
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_.ebmat'
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 1
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_EmissionColor:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_AO:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_EmissiveMap:
-        Type: Texture
-        Value: 1
+    UUID: 14766528082258610433
+    Name: CesiumMilkTruck_truck
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_truck.ebmat'
   - Type: Material
-    UUID: 17417589098831730959
-    Name: Duck_blinn3-fx
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_blinn3-fx.ebmat'
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 0
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_EmissionColor:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_AO:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 13554950624892578491
-      u_Emission:
-        Type: float
-        Value: 0
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_EmissiveMap:
-        Type: Texture
-        Value: 1
+    UUID: 16263458263435563996
+    Name: CesiumMilkTruck_glass
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_glass.ebmat'
   - Type: Material
-    UUID: 4073401692248870654
-    Name: DamagedHelmet_Material_MR
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_Material_MR.ebmat'
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 1
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_EmissionColor:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_AO:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 14305497443387492575
-      u_Emission:
-        Type: float
-        Value: 10.8
-      u_NormalMap:
-        Type: Texture
-        Value: 10978192379655783337
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 14044294247702608954
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_EmissiveMap:
-        Type: Texture
-        Value: 4449063580999245854
+    UUID: 14222360738302841467
+    Name: BoxTextured_
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_.ebmat'
   - Type: Material
-    UUID: 17254219386766965286
-    Name: DamagedHelmet_
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_.ebmat'
-    RenderQueue: 1
-    Shader: 10
-    Instanced: true
-    BaseMaterialUUID: 31
-    Uniforms:
-      u_Metallic:
-        Type: float
-        Value: 1
-      u_Albedo:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_Roughness:
-        Type: float
-        Value: 1
-      u_EmissionColor:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_AO:
-        Type: float
-        Value: 1
-      u_AlbedoMap:
-        Type: Texture
-        Value: 1
-      u_Emission:
-        Type: float
-        Value: 0
-      u_NormalMap:
-        Type: Texture
-        Value: 3
-      u_MetallicRoughnessMap:
-        Type: Texture
-        Value: 1
-      u_Color:
-        Type: Vector3f
-        Value: [1,1,1]
-      u_EmissiveMap:
-        Type: Texture
-        Value: 1
+    UUID: 1789959781972494693
+    Name: BoxTextured_Texture
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Texture.ebmat'
+  - Type: Material
+    UUID: 8422382207709615763
+    Name: CesiumMilkTruck_wheels
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_wheels.ebmat'
+  - Type: Material
+    UUID: 2181476572535494857
+    Name: CesiumMilkTruck_window_trim
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_window_trim.ebmat'
+  - Type: Material
+    UUID: 4501674815204587117
+    Name: CesiumMilkTruck_
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_.ebmat'
   - Type: Mesh
-    UUID: 8089315680081255934
+    UUID: 9109146113234513428
+    Name: CesiumMilkTruck_Cesium_Milk_Truck-2
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-2.ebmesh'
+  - Type: Mesh
+    UUID: 16433755725538496555
+    Name: CesiumMilkTruck_Wheels
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Wheels.ebmesh'
+  - Type: Mesh
+    UUID: 10853139707558665819
     Name: BoxTextured_Mesh
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Mesh.ebmesh'
   - Type: Mesh
-    UUID: 5764574068108850649
-    Name: DamagedHelmet_mesh_helmet_LP_13930damagedHelmet
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet_mesh_helmet_LP_13930damagedHelmet.ebmesh'
+    UUID: 11770023006661585563
+    Name: CesiumMilkTruck_Cesium_Milk_Truck-0
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-0.ebmesh'
   - Type: Mesh
-    UUID: 6617936932530975716
-    Name: Duck_LOD3spShape
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck_LOD3spShape.ebmesh'
+    UUID: 12909802172029633453
+    Name: CesiumMilkTruck_Cesium_Milk_Truck-1
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-1.ebmesh'
   - Type: Model
-    UUID: 508992926487855261
+    UUID: 6840247994931131791
+    Name: CesiumMilkTruck
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck.ebmodel'
+  - Type: Model
+    UUID: 16492143519586957472
     Name: BoxTextured
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured.ebmodel'
-  - Type: Model
-    UUID: 16614750958842598966
-    Name: DamagedHelmet
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\DamagedHelmet.ebmodel'
-  - Type: Model
-    UUID: 14123611017772915665
-    Name: Duck
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\Duck.ebmodel'

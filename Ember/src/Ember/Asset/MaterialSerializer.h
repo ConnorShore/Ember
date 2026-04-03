@@ -16,7 +16,8 @@ namespace Ember {
 	class MaterialSerializer
 	{
 	public:
-		static SharedPtr<MaterialInstance> Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager);
+		static bool Serialize(const std::filesystem::path& filepath, const SharedPtr<MaterialBase>& material);
+		static SharedPtr<MaterialBase> Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager);
 	};
 
 }

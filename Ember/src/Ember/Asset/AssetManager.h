@@ -79,8 +79,13 @@ namespace Ember {
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Mesh>)
 				newAsset = MeshSerializer::Deserialize(uuid, absolutePath);
-			else if constexpr (std::same_as<T, MaterialInstance>)
-				newAsset = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
+			else if constexpr (std::derived_from<T, MaterialBase>)
+			{
+				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
+				newAsset = DynamicPointerCast<T>(baseMaterial);
+				if (!newAsset)
+					EB_CORE_ERROR("Failed to load Material! The requested type did not match the file's contents.");
+			}
 			else if constexpr (std::same_as<T, Model>)
 				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
 			else if constexpr (std::same_as<T, Script>)
