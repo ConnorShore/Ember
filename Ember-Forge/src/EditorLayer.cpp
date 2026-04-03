@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "EditorLayer.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
@@ -6,6 +7,20 @@
 #include "Panels/NotificationPanel.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+
+#include <Ember/Render/RenderAction.h>
+#include <Ember/Render/RendererAPI.h>
+#include <Ember/Render/Renderer2D.h>
+#include <Ember/Render/Renderer3D.h>
+#include <Ember/Input/Input.h>
+#include <Ember/Input/InputCode.h>
+#include <Ember/Event/UIEvent.h>
+#include <Ember/Core/ProjectManager.h>
+#include <Ember/Utils/PlatformUtil.h>
+#include <Ember/Scene/SceneSerializer.h>
+#include <Ember/Asset/AssetRegistrySerializer.h>
+
+#include <Ember-Tools/ModelImporter.h>
 
 #include <random>
 

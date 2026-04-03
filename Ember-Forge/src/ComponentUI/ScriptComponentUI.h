@@ -2,6 +2,7 @@
 #include "ComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+#include <Ember/Utils/PlatformUtil.h>
 
 #include <filesystem>
 #include <fstream>

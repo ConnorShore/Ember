@@ -1,6 +1,9 @@
+#include "efpch.h"
 #include "EnvironmentPanel.h"
 #include "UI/Nodes.h"
 #include "UI/PropertyGrid.h"
+#include <Ember/Render/VFX/BloomPass.h>
+#include <Ember/ECS/System/RenderSystem.h>
 
 namespace Ember {
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Ember.h>
+#include <Ember/Scene/Entity.h>
+#include <Ember/Math/Math.h>
 
 namespace Ember {
 

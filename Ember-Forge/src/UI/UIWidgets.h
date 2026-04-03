@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Ember.h>
-
-#include "Types.h"
+#include <string>
 
 namespace Ember {
 	namespace UI {

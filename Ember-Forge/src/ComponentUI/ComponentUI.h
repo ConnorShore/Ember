@@ -3,7 +3,6 @@
 #include "EditorContext.h"
 #include "Ui/Nodes.h"
 
-#include <Ember.h>
 #include <string>
 
 namespace Ember {

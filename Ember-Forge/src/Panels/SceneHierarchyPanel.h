@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Panel.h"
-#include <Ember.h>
 
 namespace Ember {
 

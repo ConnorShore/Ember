@@ -3,7 +3,11 @@
 #include "UI/PropertyGrid.h"
 #include "UI/DragDropTypes.h"
 
-#include <Ember.h>
+#include <Ember/Asset/AssetManager.h>
+#include <Ember/Utils/PlatformUtil.h>
+
+#include <imgui/imgui.h>
+
 #include <filesystem>
 
 namespace Ember {

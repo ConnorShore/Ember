@@ -21,7 +21,7 @@ namespace Ember {
 	};
 
 	// We use #pragma pack(push, 1) to ensure the compiler doesn't add padding bytes 
-	// between the variables, which would corrupt our binary read/writes!
+	// between the variables, which would corrupt our binary read/writes
 #pragma pack(push, 1)
 	struct MeshHeader
 	{
@@ -35,7 +35,7 @@ namespace Ember {
 		struct {
 			float Min[3];
 			float Max[3];
-		} Bounds;
+		} Bounds = {};
 	};
 #pragma pack(pop)
 

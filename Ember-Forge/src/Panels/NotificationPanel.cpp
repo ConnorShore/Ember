@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "NotificationPanel.h"
 
 namespace Ember {

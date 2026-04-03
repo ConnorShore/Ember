@@ -199,13 +199,13 @@ namespace Ember {
 	class MaterialLibrary
 	{
 	public:
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name);
-		const SharedPtr<Material>& RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
+		SharedPtr<Material> RegisterMaterial(const std::string& name);
+		SharedPtr<Material> RegisterMaterial(UUID uuid, const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
+		SharedPtr<Material> RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, const RenderQueue renderQueue);
+		SharedPtr<Material> RegisterMaterial(const std::string& name, const SharedPtr<Shader>& shader, 
 			const RenderQueue renderQueue, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<Material>& RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
-		const SharedPtr<MaterialInstance>& RegisterInstance(const std::string& name, const SharedPtr<Material>& material);
+		SharedPtr<Material> RegisterMaterial(const std::string& name, std::initializer_list<MaterialUniform> uniforms);
+		SharedPtr<MaterialInstance> RegisterInstance(const std::string& name, const SharedPtr<Material>& material);
 
 		const SharedPtr<MaterialBase>& Get(const std::string& name);
 		bool Exists(const std::string& name);

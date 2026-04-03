@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Ember.h>
+#include <Ember/Core/SharedPointer.h>
+#include <Ember/Core/Time.h>
+#include <Ember/Event/Event.h>
 
 #include "EditorContext.h"
 

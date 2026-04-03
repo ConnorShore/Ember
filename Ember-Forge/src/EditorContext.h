@@ -1,6 +1,11 @@
 #pragma once
 
-#include <Ember.h>
+#include <Ember/Core/Application.h>
+#include <Ember/Scene/Scene.h>
+#include <Ember/Scene/Entity.h>
+#include <Ember/Tools/EditorCamera.h>
+#include <Ember/Event/Event.h>
+#include <Ember/ECS/Types.h>
 
 #include <vector>
 #include <unordered_set>

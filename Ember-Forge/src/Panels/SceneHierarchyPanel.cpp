@@ -1,7 +1,10 @@
+#include "efpch.h"
 #include "SceneHierarchyPanel.h"
 #include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
 #include "UI/DragDropTypes.h"
+#include <Ember/Event/UIEvent.h>
+#include <Ember/Input/Input.h>
 
 namespace Ember {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sol/sol.hpp>
+#include <cstdint>
 
 namespace Ember::Constants {
 

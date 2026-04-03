@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "AssetManagerPanel.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"

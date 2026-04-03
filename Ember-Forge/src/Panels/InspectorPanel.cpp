@@ -1,3 +1,4 @@
+#include "efpch.h"
 #include "InspectorPanel.h"
 
 #include "ComponentUI/TransformComponentUI.h"
@@ -10,7 +11,7 @@
 #include "ComponentUI/MeshComponentUI.h"
 #include "ComponentUI/MaterialComponentUI.h"
 
-#include <Ember.h>
+#include <imgui/imgui.h>
 
 #include <format>
 
