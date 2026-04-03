@@ -14,6 +14,21 @@
 
 namespace Ember {
 
+	static std::string SanitizeFileName(const std::string& input)
+	{
+		std::string output = input;
+		const std::string invalidChars = "<>:/\\|?*\" \t\n\r";
+		for (char& c : output)
+		{
+			if (invalidChars.find(c) != std::string::npos)
+			{
+				c = '_'; // Replace invalid characters with an underscore
+			}
+		}
+		if (output.empty()) return "Unnamed";
+		return output;
+	}
+
 	std::optional<ModelCookReport> ModelImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory)
 	{
 		Assimp::Importer importer;
@@ -50,7 +65,7 @@ namespace Ember {
 				aiMaterial* material = scene->mMaterials[i];
 
 				// We pass report.Textures in so the material processor can populate it!
-				CookedAssetInfo matInfo = ProcessMaterial(modelName, inputFile, scene, material, outputDirectory, report.Textures);
+				CookedAssetInfo matInfo = ProcessMaterial(modelName, inputFile, scene, material, outputDirectory, report.Textures, i);
 				report.Materials.push_back(matInfo);
 			}
 		}
@@ -62,7 +77,7 @@ namespace Ember {
 			for (unsigned int i = 0; i < scene->mNumMeshes; i++)
 			{
 				aiMesh* mesh = scene->mMeshes[i];
-				CookedAssetInfo meshInfo = ProcessMesh(modelName, mesh, outputDirectory);
+				CookedAssetInfo meshInfo = ProcessMesh(modelName, mesh, outputDirectory, i);
 				report.Meshes.push_back(meshInfo);
 			}
 		}
@@ -207,7 +222,7 @@ namespace Ember {
 		return true;
 	}
 
-	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory)
+	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, unsigned int index)
 	{
 		std::vector<MeshVertex> vertices;
 		std::vector<unsigned int> indices;
@@ -234,7 +249,8 @@ namespace Ember {
 		}
 
 		UUID meshUUID = UUID();
-		std::string meshFileName = name + "_" + aiMesh->mName.C_Str() + ".ebmesh";
+		std::string safeFileName = SanitizeFileName(aiMesh->mName.C_Str());
+		std::string meshFileName = name + "_" + safeFileName + "_" + std::to_string(index) + ".ebmesh";
 		std::filesystem::path outputPath = std::filesystem::path(outputDirectory) / meshFileName;
 
 		if (CookMesh(vertices, indices, outputPath.string()))
@@ -248,10 +264,11 @@ namespace Ember {
 
 	// --- MATERIAL COOKING ---
 
-	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures)
+	CookedAssetInfo ModelImporter::ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat,
+		const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, unsigned int index)
 	{
-		std::string rawMatName = aiMat->GetName().C_Str();
-		std::string matName = modelName + "_" + rawMatName;
+		std::string safeMatName = SanitizeFileName(aiMat->GetName().C_Str());
+		std::string matName = modelName + "_" + safeMatName + "_" + std::to_string(index);
 
 		CookedMaterialDef def;
 		def.BaseMaterial = DetermineBaseMaterial(aiMat);
@@ -428,19 +445,32 @@ namespace Ember {
 		}
 		else
 		{
+			// --- EXTERNAL TEXTURE FIX ---
 			std::filesystem::path modelPath(modelFilePath);
-			std::filesystem::path sourceTexPath = modelPath.parent_path() / texPath.C_Str();
+			std::filesystem::path rawTexPath(texPath.C_Str());
+
+			// CRITICAL: Strip away any folder structure from the FBX's embedded path!
+			// If it says "C:\Artist\Textures\diffuse.jpg", we just grab "diffuse.jpg"
+			std::string pureFileName = rawTexPath.filename().string();
+
+			// Now safely combine it with our local model directory
+			std::filesystem::path sourceTexPath = modelPath.parent_path() / pureFileName;
+
+			EB_CORE_TRACE("Material '{0}' is looking for texture: {1}", matName, pureFileName);
 
 			if (std::filesystem::exists(sourceTexPath))
 			{
-				std::string finalFileName = sourceTexPath.filename().string();
-				std::filesystem::path destTexPath = std::filesystem::path(outputDirectory) / finalFileName;
+				std::filesystem::path destTexPath = std::filesystem::path(outputDirectory) / pureFileName;
 
 				if (!std::filesystem::exists(destTexPath))
 					std::filesystem::copy_file(sourceTexPath, destTexPath);
 
-				// Generate UUID and track the texture
-				return { UUID(), sourceTexPath.stem().string(), destTexPath.string() };
+				EB_CORE_TRACE(" -> Successfully found and copied: {0}", pureFileName);
+				return { UUID(), rawTexPath.stem().string(), destTexPath.string() };
+			}
+			else
+			{
+				EB_CORE_WARN(" -> Could NOT find texture on disk: {0}", sourceTexPath.string());
 			}
 		}
 

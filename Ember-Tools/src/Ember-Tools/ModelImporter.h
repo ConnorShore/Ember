@@ -66,9 +66,11 @@ namespace Ember {
 		static Matrix4f ConvertMatrix(const aiMatrix4x4& aiMat);
 		static void ProcessNode(const std::string& name, aiNode* aiNode, CookedModelNode& modelNode, const aiScene* scene, const std::string& outputDirectory, const std::vector<CookedAssetInfo>& cookedMeshes);
 
-		static CookedAssetInfo ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory);
-		static CookedAssetInfo ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures);
-		static CookedAssetInfo ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory);
+		static CookedAssetInfo ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, unsigned int index);
+		static CookedAssetInfo ProcessMaterial(const std::string& modelName, const std::string& modelFilePath, const aiScene* scene, 
+			const aiMaterial* aiMat, const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures, unsigned int index);
+		static CookedAssetInfo ExtractAndCopyTexture(const std::string& matName, const std::string& modelFilePath, const aiScene* scene, 
+			const aiMaterial* aiMat, const std::vector<aiTextureType>& typesToCheck, const std::string& texNameSuffix, const std::string& outputDirectory);
 		
 		static std::string DetermineBaseMaterial(const aiMaterial* aiMat);
 		static void ExtractPBRUniforms(const aiMaterial* aiMat, CookedMaterialDef& def);

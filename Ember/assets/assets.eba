@@ -1,69 +1,45 @@
 Assets:
   - Type: Texture
-    UUID: 11547858449892930200
-    Name: BoxTextured_Texture_AlbedoMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Texture_AlbedoMap.png'
+    UUID: 1748081563150056589
+    Name: indoor plant_2_NOR
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_2_NOR.jpg'
   - Type: Texture
-    UUID: 2025703251403719003
-    Name: CesiumMilkTruck_wheels_AlbedoMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_wheels_AlbedoMap.png'
-  - Type: Texture
-    UUID: 8810486715010879261
-    Name: CesiumMilkTruck_truck_AlbedoMap
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_truck_AlbedoMap.png'
+    UUID: 7229321112115559712
+    Name: indoor plant_2_COL
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_2_COL.jpg'
   - Type: Material
-    UUID: 14766528082258610433
-    Name: CesiumMilkTruck_truck
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_truck.ebmat'
+    UUID: 3109471552815647092
+    Name: indoor plant_02_+2_IDP_ground_3
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_ground_3.ebmat'
   - Type: Material
-    UUID: 16263458263435563996
-    Name: CesiumMilkTruck_glass
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_glass.ebmat'
+    UUID: 7502952308650406704
+    Name: indoor plant_02_+2_IDP_leaves_0
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_leaves_0.ebmat'
   - Type: Material
-    UUID: 14222360738302841467
-    Name: BoxTextured_
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_.ebmat'
+    UUID: 6698615013223241541
+    Name: indoor plant_02_+2_IDP_root_1
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_root_1.ebmat'
   - Type: Material
-    UUID: 1789959781972494693
-    Name: BoxTextured_Texture
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Texture.ebmat'
-  - Type: Material
-    UUID: 8422382207709615763
-    Name: CesiumMilkTruck_wheels
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_wheels.ebmat'
-  - Type: Material
-    UUID: 2181476572535494857
-    Name: CesiumMilkTruck_window_trim
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_window_trim.ebmat'
-  - Type: Material
-    UUID: 4501674815204587117
-    Name: CesiumMilkTruck_
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_.ebmat'
+    UUID: 8588543034114396961
+    Name: indoor plant_02_+2_IDP_Pot_2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_IDP_Pot_2.ebmat'
   - Type: Mesh
-    UUID: 9109146113234513428
-    Name: CesiumMilkTruck_Cesium_Milk_Truck-2
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-2.ebmesh'
+    UUID: 17843564377750698228
+    Name: indoor plant_02_+2_Mesh_2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_2.ebmesh'
   - Type: Mesh
-    UUID: 16433755725538496555
-    Name: CesiumMilkTruck_Wheels
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Wheels.ebmesh'
+    UUID: 11389532349452902965
+    Name: indoor plant_02_+2_Mesh_0
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_0.ebmesh'
   - Type: Mesh
-    UUID: 10853139707558665819
-    Name: BoxTextured_Mesh
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured_Mesh.ebmesh'
+    UUID: 1193498186981175791
+    Name: indoor plant_02_+2_Mesh_1
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_1.ebmesh'
   - Type: Mesh
-    UUID: 11770023006661585563
-    Name: CesiumMilkTruck_Cesium_Milk_Truck-0
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-0.ebmesh'
-  - Type: Mesh
-    UUID: 12909802172029633453
-    Name: CesiumMilkTruck_Cesium_Milk_Truck-1
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck_Cesium_Milk_Truck-1.ebmesh'
+    UUID: 16913900859079019372
+    Name: indoor plant_02_+2_Mesh_3
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2_Mesh_3.ebmesh'
   - Type: Model
-    UUID: 6840247994931131791
-    Name: CesiumMilkTruck
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMilkTruck.ebmodel'
-  - Type: Model
-    UUID: 16492143519586957472
-    Name: BoxTextured
-    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\BoxTextured.ebmodel'
+    UUID: 1293447197653787853
+    Name: indoor plant_02_+2
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\indoor plant_02_+2.ebmodel'

@@ -230,24 +230,27 @@ namespace Ember {
 				if (ImGui::MenuItem("Model"))
 				{
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
-					std::string file = SelectAndLoadFile(std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
-					if (!file.empty())
+					std::string sourceFile = FileDialog::OpenFile("", modelFileTypes.c_str());
+
+					if (!sourceFile.empty())
 					{
-						auto report = ModelImporter::CookModel(file, m_CurrentDirectory.string());
-						if (report.has_value())
+						auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
+
+						if (reportOpt.has_value())
 						{
 							auto& am = Application::Instance().GetAssetManager();
 
-							for (auto& tex : report->Textures)
+							// Load the newly cooked assets from the project directory
+							for (auto& tex : reportOpt->Textures)
 								am.Load<Texture>(tex.id, tex.name, tex.path, false);
 
-							for (auto& mat : report->Materials)
-								am.Load<MaterialInstance>(mat.id, mat.name, mat.path, false);
+							for (auto& mat : reportOpt->Materials)
+								am.Load<MaterialBase>(mat.id, mat.name, mat.path, false);
 
-							for (auto& mesh : report->Meshes)
+							for (auto& mesh : reportOpt->Meshes)
 								am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
 
-							asset = am.Load<Model>(report->Model.id, report->Model.name, report->Model.path, false);
+							asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);
 						}
 					}
 					ImGui::CloseCurrentPopup();
