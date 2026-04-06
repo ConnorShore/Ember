@@ -1,10 +1,6 @@
 #pragma once
 
-#include "Ember/Core/Core.h"
 #include "Ember/Asset/Asset.h"
-
-#include <string>
-#include <unordered_map>
 
 namespace Ember {
 
@@ -15,11 +11,8 @@ namespace Ember {
 		Diffuse,
 		Specular,
 		Normal,
+		CubeMap
 	};
-
-	//////////////////////////////////////////////////////////////////////////
-	// Texture
-	//////////////////////////////////////////////////////////////////////////
 
 	class Texture : public Asset
 	{
@@ -28,8 +21,7 @@ namespace Ember {
 			: Asset(name, filePath, GetStaticType()) {
 		}
 		Texture(UUID uuid, const std::string& name, const std::string& filePath)
-			: Asset(uuid, name, filePath, GetStaticType()) {
-		}
+			: Asset(uuid, name, filePath, GetStaticType()) { }
 
 		virtual ~Texture() = default;
 
@@ -37,41 +29,11 @@ namespace Ember {
 
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
-
-		virtual void SetData(const void* data, uint32_t size) = 0;
-
 		virtual uint32_t GetID() const = 0;
-
-		static SharedPtr<Texture> Create();
-		static SharedPtr<Texture> Create(const std::string& filePath);
-		static SharedPtr<Texture> Create(const std::string& name, const std::string& filePath);
-		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, const std::string& filePath);
-		static SharedPtr<Texture> Create(const std::string& name, uint32_t width, uint32_t height, const void* data);
-		static SharedPtr<Texture> Create(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data);
-
-		virtual bool operator==(const SharedPtr<Texture>& other) const = 0;
 
 		static AssetType GetStaticType() { return AssetType::Texture; }
 	};
 
-	//////////////////////////////////////////////////////////////////////////
-	// Texture Library
-	//////////////////////////////////////////////////////////////////////////
-
-	class TextureImporter
-	{
-	public:
-		static SharedPtr<Texture> Load(const std::string& filePath)
-		{
-			return Texture::Create(filePath);
-		}
-		static SharedPtr<Texture> Load(const std::string& name, const std::string& filePath)
-		{
-			return Texture::Create(name, filePath);
-		}
-		static SharedPtr<Texture> Load(UUID uuid, const std::string& name, const std::string& filePath)
-		{
-			return Texture::Create(uuid, name, filePath);
-		}
-	};
 }
+
+// TODO: Move texture library here

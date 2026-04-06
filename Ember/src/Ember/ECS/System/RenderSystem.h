@@ -6,6 +6,7 @@
 #include "Ember/Render/UniformBuffer.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
+#include "Ember/Render/CubeMap.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Render/VFX/PostProcessPass.h"
 
@@ -78,6 +79,12 @@ namespace Ember {
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
+
+		//skybox testing
+		SharedPtr<Texture2D> m_SkyboxTexture;
+		SharedPtr<Framebuffer> m_SkyboxBuffer;
+		SharedPtr<CubeMap> m_EnvironmentCubeMap;
+		SharedPtr<Mesh> m_SkyboxCube;
 
 		struct RenderQueueBuckets
 		{

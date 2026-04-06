@@ -8,7 +8,7 @@
 #include "VertexArray.h"
 #include "Buffer.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "Texture2D.h"
 #include "RenderAction.h"
 
 namespace Ember {
@@ -35,7 +35,7 @@ namespace Ember {
 		SharedPtr<IndexBuffer> QuadIndexBuffer;
 
 		SharedPtr<Shader> QuadShader;
-		SharedPtr<Texture> DefaultTexture;
+		SharedPtr<Texture2D> DefaultTexture;
 
 		QuadVertex* QuadBufferStart;
 		QuadVertex* QuadBufferCurrent;
@@ -49,7 +49,7 @@ namespace Ember {
 
 		uint32_t QuadIndicesInBatch;
 
-		std::array<SharedPtr<Texture>, MaxTextureSlots> TextureSlots;
+		std::array<SharedPtr<Texture2D>, MaxTextureSlots> TextureSlots;
 		uint32_t TextureSlotIndex = 1;	// 0 is default
 	};
 
@@ -98,7 +98,7 @@ namespace Ember {
 			s_RendererData->QuadShader->SetInt("u_Textures[" + std::to_string(i) + "]", i);
 
 		// Default white texture
-		s_RendererData->DefaultTexture = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
+		s_RendererData->DefaultTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
 		s_RendererData->TextureSlots[0] = s_RendererData->DefaultTexture;
 	}
 
@@ -150,7 +150,7 @@ namespace Ember {
 		StartBatch();
 	}
 
-	void Renderer2D::DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture>& texture)
+	void Renderer2D::DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture2D>& texture)
 	{
 		Matrix4f transform = Math::Translate(Vector3f(position.x, position.y, 0.0f))
 			* Math::Scale(Vector3f(size.x, size.y, 1.0f));
@@ -188,7 +188,7 @@ namespace Ember {
 	}
 
 
-	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture>& texture)
+	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture)
 	{
 		constexpr Vector2f texCoords[] = { {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f} };
 		float texIndex = 0.0f;

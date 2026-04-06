@@ -4,7 +4,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "VertexArray.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "Texture2D.h"
 
 #include <tuple>
 

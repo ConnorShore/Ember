@@ -340,8 +340,8 @@ namespace Ember {
 			bool hasValidTexture = textureID != Constants::InvalidUUID;
 
 			auto texture = hasValidTexture
-				? Application::Instance().GetAssetManager().GetAsset<Texture>(textureID)
-				: Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Empty.png");
+				? Application::Instance().GetAssetManager().GetAsset<Texture2D>(textureID)
+				: Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Empty.png");
 
 			auto id = (void*)(intptr_t)texture->GetID();
 			ImGui::Image(id, ImVec2(48, 48), ImVec2(0, 1), ImVec2(1, 0));

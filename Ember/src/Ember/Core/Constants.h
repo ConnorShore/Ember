@@ -56,6 +56,10 @@ namespace Ember::Constants {
 		inline const uint64_t BillboardShadUUID = 20;
 		inline const char* BloomPrefilterShad = "BloomPrefilter";
 		inline const uint64_t BloomPrefilterShadUUID = 21;
+		inline const char* EquirectangularToCubemapShad = "EquirectangularToCubemap";
+		inline const uint64_t EquirectangularToCubemapShadUUID = 22;
+		inline const char* SkyboxShad = "Skybox";
+		inline const uint64_t SkyboxShadUUID = 23;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -82,6 +86,7 @@ namespace Ember::Constants {
 
 		inline const char* Transform = "u_Transform";
 		inline const char* Projection = "u_Projection";
+		inline const char* View = "u_View";
 		inline const char* ViewProj = "u_ViewProjection";
 		inline const char* NormalMatrix = "u_NormalMatrix";
 		inline const char* InverseView = "u_InverseView";
@@ -116,6 +121,9 @@ namespace Ember::Constants {
 		inline const char* LightViewMatrix = "u_LightViewMat";
 		inline const char* DirectionalLightViewMatrix = "u_DirectionalLightViewMat";
 		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
+
+		inline const char* EquirectangularMap = "u_EquirectangularMap";
+		inline const char* EnvironmentMap = "u_EnvironmentMap";
 
 		inline const char* EntityID = "u_EntityID";
 	}

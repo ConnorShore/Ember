@@ -198,7 +198,7 @@ namespace Ember {
 						uniformNode["Type"] << "Matrix4f";
 						SerializeMatrix4f(uniformNode["Value"], arg);
 					}
-					else if constexpr (std::is_same_v<T, SharedPtr<Texture>>)
+					else if constexpr (std::is_same_v<T, SharedPtr<Texture2D>>)
 					{
 						uniformNode["Type"] << "Texture";
 						if (arg)
@@ -301,7 +301,7 @@ namespace Ember {
 						uint64_t texUUID;
 						valNode >> texUUID;
 
-						SharedPtr<Texture> tex = assetManager->GetAsset<Texture>(texUUID);
+						SharedPtr<Texture2D> tex = assetManager->GetAsset<Texture2D>(texUUID);
 						if (tex)
 							material->SetUniform(uniformName, tex);
 					}

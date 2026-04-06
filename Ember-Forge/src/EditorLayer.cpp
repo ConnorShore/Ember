@@ -65,7 +65,7 @@ namespace Ember {
 		specs.Height = 600;
 		specs.AttachmentSpecs = {
 			FramebufferTextureFormat::RGBA8,
-			FramebufferTextureFormat::DEPTH24STENCIL8
+			FramebufferTextureFormat::Depth24Stencil8
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
 
@@ -73,8 +73,8 @@ namespace Ember {
 			panel->OnAttach();
 
 		// Load play / pause textures
-		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Play.png")->GetID();
-		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Stop.png")->GetID();
+		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Play.png")->GetID();
+		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
 	}
 
 	void EditorLayer::OnDetach()

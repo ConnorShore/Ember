@@ -54,6 +54,11 @@ namespace Ember {
 			m_RendererApi->UseDepthMask(use);
 		}
 
+		static inline void UseDepthFunction(RendererAPI::DepthFunction func)
+		{
+			m_RendererApi->UseDepthFunction(func);
+		}
+
 		static inline void SetTextureUnit(uint32_t unit, uint32_t texture)
 		{
 			m_RendererApi->SetTextureUnit(unit, texture);

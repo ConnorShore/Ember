@@ -74,8 +74,8 @@ namespace Ember {
 				Ember::FramebufferTextureFormat::RGBA16F,			// NormalMetallic
 				Ember::FramebufferTextureFormat::RGBA16F,			// PositionAO
 				Ember::FramebufferTextureFormat::RGBA16F,			// Emission
-				Ember::FramebufferTextureFormat::RED_INTEGER,		// EntityID
-				Ember::FramebufferTextureFormat::DEPTH24STENCIL8	// Depth
+				Ember::FramebufferTextureFormat::RedInteger,		// EntityID
+				Ember::FramebufferTextureFormat::Depth24Stencil8	// Depth
 			};
 			m_GBuffer = Framebuffer::Create(specs);
 		}
@@ -86,7 +86,7 @@ namespace Ember {
 			specs.Width = 2048;
 			specs.Height = 2048;
 			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+				Ember::FramebufferTextureFormat::Depth24Stencil8
 			};
 			m_DirectionalShadowMapBuffer = Framebuffer::Create(specs);
 		}
@@ -96,7 +96,7 @@ namespace Ember {
 			specs.Width = 2048;
 			specs.Height = 2048;
 			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+				Ember::FramebufferTextureFormat::Depth24Stencil8
 			};
 			m_SpotShadowMapBuffer = Framebuffer::Create(specs);
 		}
@@ -108,8 +108,8 @@ namespace Ember {
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::RGBA16F,
 				Ember::FramebufferTextureFormat::RGBA16F,	// Do I need an extra slot for the new emissions?
-				Ember::FramebufferTextureFormat::RED_INTEGER,
-				Ember::FramebufferTextureFormat::DEPTH24STENCIL8
+				Ember::FramebufferTextureFormat::RedInteger,
+				Ember::FramebufferTextureFormat::Depth24Stencil8
 			};
 			m_HdrSceneBuffer = Framebuffer::Create(specs);
 			m_PostProcessBufferA = Framebuffer::Create(specs);
@@ -130,6 +130,64 @@ namespace Ember {
 		outlinePass->SetGBuffer(m_GBuffer);
 		m_PostProcessStack.emplace_back(outlinePass);
 		////////////////////////////////////////////////////////////////////
+
+		// Skybox testing vars
+
+		m_SkyboxTexture = Texture2D::Create("SkyboxTest", "Ember-Forge/assets/textures/skybox.hdr");
+		m_EnvironmentCubeMap = CubeMap::Create(1024);
+
+		Ember::FramebufferSpecification skyboxFBOSpecs;
+		skyboxFBOSpecs.Width = 1024;
+		skyboxFBOSpecs.Height = 1024;
+		skyboxFBOSpecs.AttachmentSpecs = {
+			Ember::FramebufferTextureFormat::RGBA16F,	// Color
+			Ember::FramebufferTextureFormat::Depth24 // Depth
+		};
+		m_SkyboxBuffer = Framebuffer::Create(skyboxFBOSpecs);
+
+		// --- Skybox pass ---
+		// Change this line!
+		Matrix4f captureProjection = Math::Perspective(90.0f, 1.0f, 0.1f, 100.0f);
+		std::array<Matrix4f, 6> captureViewsMat;
+		captureViewsMat[0] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f });
+		captureViewsMat[1] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f });
+		captureViewsMat[2] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f });
+		captureViewsMat[3] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, -1.0f });
+		captureViewsMat[4] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f });
+		captureViewsMat[5] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, -1.0f, 0.0f });
+
+		m_SkyboxCube = PrimitiveGenerator::CreateCube("Skybox_Cube");
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto equirectangularShader = assetManager.GetAsset<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID);
+
+		RenderAction::SetViewport(0, 0, 1024, 1024);
+
+		RenderAction::UseFaceCulling(false);
+		RenderAction::UseDepthTest(false);
+
+		m_SkyboxBuffer->Bind();
+		m_SkyboxTexture->Bind(0);
+		equirectangularShader->Bind();
+		equirectangularShader->SetInt("u_EquirectangularMap", 0);
+
+		// Render all 6 sides of the cubemap
+		equirectangularShader->SetMatrix4(Constants::Uniforms::Projection, captureProjection);
+		for (int i = 0; i < 6; ++i)
+		{
+			// Attach the current face of the cubemap to the Framebuffer
+			m_SkyboxBuffer->AttachColorTextureLayer(m_EnvironmentCubeMap->GetID(), 0, i);
+			RenderAction::Clear();
+
+			// Set the camera to look exactly at this face (90 degree FOV)
+			equirectangularShader->SetMatrix4(Constants::Uniforms::View, captureViewsMat[i]);
+
+			Renderer3D::Submit(m_SkyboxCube->GetVertexArray());
+		}
+
+		m_SkyboxBuffer->Unbind();
+
+		////
 
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
@@ -161,6 +219,39 @@ namespace Ember {
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
+
+		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
+		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+
+		// Skybox
+
+		// --- Render Actual Skybox ---
+		m_HdrSceneBuffer->Bind();
+
+		// Change depth function so the skybox (which will have a depth of 1.0) passes the depth test
+		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::LessEqual);
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseFaceCulling(false); // Make sure we can see the inside of the cube
+
+		auto skyboxShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::SkyboxShad);
+		skyboxShader->Bind();
+
+		skyboxShader->SetMatrix4(Constants::Uniforms::Projection, m_RenderSceneState.ActiveCamera.GetProjectionMatrix());
+		skyboxShader->SetMatrix4(Constants::Uniforms::View, Math::Inverse(m_RenderSceneState.CameraTransform));
+
+		// Bind the CUBEMAP we created
+		RenderAction::SetTextureUnit(0, m_EnvironmentCubeMap->GetID());
+		skyboxShader->SetInt(Constants::Uniforms::EnvironmentMap, 0);
+
+		skyboxShader->SetInt(Constants::Uniforms::EntityID, Constants::Entities::InvalidEntityID);
+
+		Renderer3D::Submit(m_SkyboxCube->GetVertexArray());
+
+		// Reset depth function to default
+		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::Less);
+		m_HdrSceneBuffer->Unbind();
+
+		////
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
 		RenderForwardEntities(registry);
@@ -381,9 +472,9 @@ namespace Ember {
 		m_GBuffer->ClearAttachment(4, clearValue);
 
 		// Bind default white as the default texture for all units to avoid accidentally sampling from unbound texture units in the shader
-		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
-		auto defaultBlack = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultBlackTex);
-		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
+		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
+		auto defaultBlack = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultBlackTex);
+		auto defaultNormal = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultNormalTex);
 		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
 		RenderAction::SetTextureUnit(1, defaultNormal->GetID());
 		RenderAction::SetTextureUnit(2, defaultWhite->GetID());
@@ -515,7 +606,7 @@ namespace Ember {
 	void RenderSystem::RenderForwardEntities(Registry& registry)
 	{
 		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
-		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+		//RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
 		m_HdrSceneBuffer->Bind();
 
 		RenderAction::UseDepthTest(true);
@@ -580,7 +671,7 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
-			auto texture = assetManager.GetAsset<Texture>(billboard.TextureHandle);
+			auto texture = assetManager.GetAsset<Texture2D>(billboard.TextureHandle);
 
 			// Find the billboards transform //
 			Matrix4f cameraRotation = m_RenderSceneState.CameraTransform;
@@ -650,7 +741,7 @@ namespace Ember {
 			}
 			else
 			{
-				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture>(sprite.TextureHandle);
+				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture2D>(sprite.TextureHandle);
 				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
 					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color, textureAsset);
 			}

@@ -13,16 +13,17 @@ namespace Ember {
 		// Color
 		RGBA8,
 		RGBA16F,
-		RED_INTEGER,
+		RedInteger,
 
 		// Depth acts as a sentinel: any format >= Depth is a depth/stencil attachment
 		Depth,
-		DEPTH24STENCIL8 = Depth,
+		Depth24,
+		Depth24Stencil8 = Depth,
 	};
 
 	static bool IsDepthFormat(FramebufferTextureFormat format)
 	{
-		return static_cast<int>(format) >= static_cast<int>(FramebufferTextureFormat::Depth);
+		return format >= FramebufferTextureFormat::Depth;
 	}
 
 	struct FramebufferTextureSpecification
@@ -65,6 +66,7 @@ namespace Ember {
 		virtual uint32_t GetDepthAttachmentID() const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
+		virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) = 0;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const = 0;
 		virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) = 0;
 

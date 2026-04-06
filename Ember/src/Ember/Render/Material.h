@@ -4,7 +4,7 @@
 #include "Ember/Math/Math.h"
 #include "Ember/Asset/Asset.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "Texture2D.h"
 
 #include <unordered_map>
 #include <variant>
@@ -36,7 +36,7 @@ namespace Ember {
 		Vector3f,
 		Vector4f,
 		Matrix4f,
-		SharedPtr<Texture>
+		SharedPtr<Texture2D>
 	>;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -133,9 +133,9 @@ namespace Ember {
 			else if (std::holds_alternative<Vector2f>(value)) m_Shader->SetFloat2(name, std::get<Vector2f>(value));
 			else if (std::holds_alternative<Vector3f>(value)) m_Shader->SetFloat3(name, std::get<Vector3f>(value));
 			else if (std::holds_alternative<Vector4f>(value)) m_Shader->SetFloat4(name, std::get<Vector4f>(value));
-			else if (std::holds_alternative<SharedPtr<Texture>>(value))
+			else if (std::holds_alternative<SharedPtr<Texture2D>>(value))
 			{
-				auto& tex = std::get<SharedPtr<Texture>>(value);
+				auto& tex = std::get<SharedPtr<Texture2D>>(value);
 				tex->Bind(textureSlot);
 				m_Shader->SetInt(name, textureSlot++);
 			}

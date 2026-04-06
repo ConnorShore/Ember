@@ -5,7 +5,7 @@
 #include "Ember/Render/Camera.h"
 #include "Ember/Render/VertexArray.h"
 #include "Ember/Render/Shader.h"
-#include "Ember/Render/Texture.h"
+#include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
 #include "Ember/ECS/Types.h"

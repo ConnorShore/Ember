@@ -10,7 +10,8 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptImporter.h"
-#include "Ember/Render/Texture.h"
+#include "Ember/Render/Texture2D.h"
+#include "Ember/Render/TextureImporter.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
 #include "Ember/Render/Mesh.h"
@@ -75,7 +76,7 @@ namespace Ember {
 			}
 
 			SharedPtr<T> newAsset;
-			if constexpr (std::same_as<T, Texture>)
+			if constexpr (std::same_as<T, Texture2D>)
 				newAsset = TextureImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Shader>)
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
@@ -216,7 +217,7 @@ namespace Ember {
 		template<IsCoreAsset T>
 		inline std::string GenerateName()
 		{
-			if constexpr (std::same_as<T, Texture>)
+			if constexpr (std::same_as<T, Texture2D>)
 				return std::format("Texture({})", m_TextureCt++);
 			else if constexpr (std::same_as<T, Shader>)
 				return std::format("Shader({})", m_ShaderCt++);

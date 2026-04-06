@@ -67,7 +67,7 @@ namespace Ember {
 					uniformNode["Type"] << "Matrix4f";
 					Util::SerializeMatrix4f(uniformNode["Value"], arg);
 				}
-				else if constexpr (std::is_same_v<T, SharedPtr<Texture>>) {
+				else if constexpr (std::is_same_v<T, SharedPtr<Texture2D>>) {
 					uniformNode["Type"] << "Texture";
 					if (arg) uniformNode["Value"] << (uint64_t)arg->GetUUID();
 					else uniformNode["Value"] << (uint64_t)Constants::InvalidUUID;
@@ -182,7 +182,7 @@ namespace Ember {
 					else if (typeStr == "Texture") {
 						uint64_t texUUID; valNode >> texUUID;
 						if (texUUID != Constants::InvalidUUID) {
-							SharedPtr<Texture> tex = assetManager.GetAsset<Texture>(texUUID);
+							SharedPtr<Texture2D> tex = assetManager.GetAsset<Texture2D>(texUUID);
 							if (tex) material->SetUniform(uniformName, tex);
 						}
 					}
@@ -207,7 +207,7 @@ namespace Ember {
 				if (textures.has_child(key)) {
 					std::string tName; textures[key] >> tName;
 					std::string tPath = (dir / tName).string();
-					auto tex = assetManager.Load<Texture>(tPath);
+					auto tex = assetManager.Load<Texture2D>(tPath);
 					if (tex) material->SetUniform(uniName, tex);
 				}
 				};

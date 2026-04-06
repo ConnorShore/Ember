@@ -23,8 +23,8 @@ namespace Ember {
 	void AssetManagerPanel::OnAttach()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto fileIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/File.png");
-		auto dirIcon = assetManager.Load<Texture>("Ember-Forge/assets/icons/Directory.png");
+		auto fileIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/File.png");
+		auto dirIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/Directory.png");
 
 		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
 		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();
@@ -243,7 +243,7 @@ namespace Ember {
 
 							// Load the newly cooked assets from the project directory
 							for (auto& tex : reportOpt->Textures)
-								am.Load<Texture>(tex.id, tex.name, tex.path, false);
+								am.Load<Texture2D>(tex.id, tex.name, tex.path, false);
 
 							for (auto& mat : reportOpt->Materials)
 								am.Load<MaterialBase>(mat.id, mat.name, mat.path, false);
@@ -261,7 +261,7 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
 					std::string file = SelectAndLoadFile(std::format("Texture Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
-						asset = Application::Instance().GetAssetManager().Load<Texture>(file);
+						asset = Application::Instance().GetAssetManager().Load<Texture2D>(file);
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Shader"))

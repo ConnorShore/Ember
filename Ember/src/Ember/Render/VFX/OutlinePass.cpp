@@ -32,11 +32,11 @@ namespace Ember {
 
 		// Bind Opaque IDs (G-Buffer)
 		m_OutlineShader->SetInt("u_OpaqueIDBuffer", 2);
-		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(4));	// RED_INTEGER attachment
+		RenderAction::SetTextureUnit(2, m_GBuffer->GetColorAttachmentID(4));	// RedInteger attachment
 
 		// Bind Forward IDs (HDR Buffer)
 		m_OutlineShader->SetInt("u_ForwardIDBuffer", 3);
-		RenderAction::SetTextureUnit(3, m_HdrBuffer->GetColorAttachmentID(2));  // Forward RED_INTEGER attachment
+		RenderAction::SetTextureUnit(3, m_HdrBuffer->GetColorAttachmentID(2));  // Forward RedInteger attachment
 
 		// Handle depth so outlines don't render over closer objects
 		m_OutlineShader->SetInt("u_DepthBuffer", 4);

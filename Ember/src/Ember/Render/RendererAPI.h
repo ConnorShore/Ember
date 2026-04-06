@@ -28,6 +28,18 @@ namespace Ember {
 			Back
 		};
 
+		enum class DepthFunction
+		{
+			Less,
+			LessEqual,
+			Greater,
+			GreaterEqual,
+			Equal,
+			NotEqual,
+			Always,
+			Never
+		};
+
 		using RenderBits = uint32_t;
 
 		virtual void Clear() = 0;
@@ -39,6 +51,8 @@ namespace Ember {
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseDepthMask(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
+
+		virtual void UseDepthFunction(DepthFunction func) = 0;
 
 		virtual void SetTextureUnit(uint32_t unit, uint32_t texture) = 0;
 		virtual void SetFramebuffer(uint32_t framebufferId) = 0;
