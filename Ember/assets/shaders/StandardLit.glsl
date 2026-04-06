@@ -53,8 +53,10 @@ layout(binding = 2) uniform sampler2D u_PositionAO;
 layout(binding = 3) uniform sampler2D u_EmissionOut;
 layout(binding = 4) uniform sampler2D u_DirectionShadowMap;
 layout(binding = 5) uniform sampler2D u_SpotShadowMap;
+layout(binding = 6) uniform samplerCube u_IrradianceMap;
 
 uniform vec3 u_CameraPos;
+uniform float u_EnvironmentIntensity;
 
 layout(std140, binding = 1) uniform ShadowData
 {
@@ -287,7 +289,13 @@ void main()
 	L0 += ApplyPointLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
 
 	// Ambient light
-	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
+	vec3 ambient = actualAlbedo * ao;
+	if (u_EnvironmentIntensity <= 0.0) {
+		ambient *= vec3(DEFAULT_AMBIENT);
+	} else {
+		ambient *= texture(u_IrradianceMap, N).rgb * u_EnvironmentIntensity;
+	}
+
     vec3 color = ambient + L0;
    
 	vec3 emission = texture(u_EmissionOut, TextureCoord).rgb;

@@ -165,6 +165,9 @@ namespace Ember {
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
+		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
+		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+
 		// --- Skybox ---
 		if (m_Skybox->Enabled())
 			RenderSkybox(registry);
@@ -434,12 +437,19 @@ namespace Ember {
 
 		litShader->Bind();
 		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+
+		if (m_Skybox->Enabled())
+			litShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, m_Skybox->GetIntensity());
+		else
+			litShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, 0.0f);
+
 		litShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
 		litShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
 		litShader->SetInt(Constants::Uniforms::PositionAO, 2);
 		litShader->SetInt(Constants::Uniforms::EmissionOut, 3);
 		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 4);
 		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 5);
+		litShader->SetInt(Constants::Uniforms::IrradianceMap, 6);
 
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
@@ -447,6 +457,7 @@ namespace Ember {
 		RenderAction::SetTextureUnit(3, m_GBuffer->GetColorAttachmentID(3));
 		RenderAction::SetTextureUnit(4, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
 		RenderAction::SetTextureUnit(5, m_SpotShadowMapBuffer->GetDepthAttachmentID());
+		RenderAction::SetTextureUnit(6, m_Skybox->GetIrradianceMapID());
 
 		LightDataBlock lightData = {};
 
@@ -517,9 +528,6 @@ namespace Ember {
 
 	void RenderSystem::RenderSkybox(Registry& registry)
 	{
-		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
-		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
- 
 		m_HdrSceneBuffer->Bind();
 
 		auto& assetManager = Application::Instance().GetAssetManager();
@@ -551,8 +559,6 @@ namespace Ember {
 
 	void RenderSystem::RenderForwardEntities(Registry& registry)
 	{
-		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
-		//RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
 		m_HdrSceneBuffer->Bind();
 
 		RenderAction::UseDepthTest(true);

@@ -39,6 +39,7 @@ namespace Ember {
 			{
 				ImGui::BeginDisabled(!skybox->Enabled());
 
+				// Texture Drop
 				std::string droppedFilePath;
 				if (UI::PropertyGrid::DragDropTexture("Skybox Texture", skybox->GetSkyboxTextureHandle(), droppedFilePath, [&]() {
 					skybox->Initialize(Constants::Assets::DefaultSkyboxUUID);	// TODO: Move to constant
@@ -51,8 +52,12 @@ namespace Ember {
 					m_Context->EventCallback(evt);
 				}
 
-				ImGui::EndDisabled();
+				// Intensity Slider
+				float intensity = skybox->GetIntensity();
+				if (UI::PropertyGrid::Float("Ambient Intensity", intensity, 0.01f, 0.0f, 10.0f))
+					skybox->SetIntensity(intensity);
 
+				ImGui::EndDisabled();
 				UI::PropertyGrid::End();
 			}
 

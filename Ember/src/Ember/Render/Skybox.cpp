@@ -32,31 +32,39 @@ namespace Ember {
 		m_SkyboxTextureHandle = equirectangularMapUUID;
 
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto equirectangularShader = assetManager.GetAsset<Shader>(Constants::Assets::EquirectangularToCubemapShad);
-		auto equirectangularTexture = assetManager.GetAsset<Texture2D>(equirectangularMapUUID);
 		auto cubeVao = assetManager.GetAsset<Mesh>(Constants::Assets::CubeMeshUUID)->GetVertexArray();
-
-		auto skyboxTexture = assetManager.GetAsset<Texture2D>(equirectangularMapUUID);
-		m_EnvironmentCubeMap = CubeMap::Create(1024);
-
-		Ember::FramebufferSpecification skyboxFBOSpecs;
-		skyboxFBOSpecs.Width = m_Resolution;
-		skyboxFBOSpecs.Height = m_Resolution;
-		skyboxFBOSpecs.AttachmentSpecs = {
-			Ember::FramebufferTextureFormat::RGBA16F,	// Color
-			Ember::FramebufferTextureFormat::Depth24	// Depth
-		};
-		m_SkyboxBuffer = Framebuffer::Create(skyboxFBOSpecs);
-
-		RenderAction::SetViewport(0, 0, m_Resolution, m_Resolution);
 
 		RenderAction::UseFaceCulling(false);
 		RenderAction::UseDepthTest(false);
 
+		CreateEnvironmentMap(assetManager, cubeVao);
+		CreateIrradianceMap(assetManager, cubeVao);
+	}
+
+	void Skybox::CreateEnvironmentMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO)
+	{
+		auto equirectangularShader = assetManager.GetAsset<Shader>(Constants::Assets::EquirectangularToCubemapShad);
+		auto equirectangularTexture = assetManager.GetAsset<Texture2D>(m_SkyboxTextureHandle);
+
+		auto skyboxTexture = assetManager.GetAsset<Texture2D>(m_SkyboxTextureHandle);
+		m_EnvironmentCubeMap = CubeMap::Create(1024);
+
+		Ember::FramebufferSpecification specs;
+		specs.Width = m_Resolution;
+		specs.Height = m_Resolution;
+		specs.AttachmentSpecs = {
+			Ember::FramebufferTextureFormat::RGBA16F,	// Color
+			Ember::FramebufferTextureFormat::Depth24	// Depth
+		};
+		m_SkyboxBuffer = Framebuffer::Create(specs);
+
+		RenderAction::SetViewport(0, 0, m_Resolution, m_Resolution);
+
 		m_SkyboxBuffer->Bind();
 		skyboxTexture->Bind(0);
+
 		equirectangularShader->Bind();
-		equirectangularShader->SetInt(Constants::Uniforms::EquirectangularMap, 0);
+		equirectangularShader->SetInt(Constants::Uniforms::EquirectangularMap, 0);	// Bind the equirectangular map as input
 
 		// Render all 6 sides of the cubemap
 		equirectangularShader->SetMatrix4(Constants::Uniforms::Projection, m_CaptureProjection);
@@ -69,10 +77,49 @@ namespace Ember {
 			// Set the camera to look exactly at this face (90 degree FOV)
 			equirectangularShader->SetMatrix4(Constants::Uniforms::View, m_CaptureViewMats[i]);
 
-			Renderer3D::Submit(cubeVao);
+			Renderer3D::Submit(cubeVAO);
 		}
 
 		m_SkyboxBuffer->Unbind();
+	}
+
+	void Skybox::CreateIrradianceMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO)
+	{
+		auto irradanceShader = assetManager.GetAsset<Shader>(Constants::Assets::IrradianceShadUUID);
+
+		m_IrradianceMap = CubeMap::Create(32);
+
+		Ember::FramebufferSpecification specs;
+		specs.Width = 32;
+		specs.Height = 32;
+		specs.AttachmentSpecs = {
+			Ember::FramebufferTextureFormat::RGBA16F,	// Color
+			Ember::FramebufferTextureFormat::Depth24	// Depth
+		};
+		m_IrradianceBuffer = Framebuffer::Create(specs);
+
+		RenderAction::SetViewport(0, 0, 32, 32);
+
+		m_IrradianceBuffer->Bind();
+		m_EnvironmentCubeMap->Bind(0);
+
+		irradanceShader->Bind();
+		irradanceShader->SetInt(Constants::Uniforms::EnvironmentMap, 0);	// Bind the environment cubemap as input
+
+		// Render all 6 sides of the cubemap
+		irradanceShader->SetMatrix4(Constants::Uniforms::Projection, m_CaptureProjection);
+		for (int i = 0; i < 6; ++i)
+		{
+			// Attach the current face of the cubemap to the Framebuffer
+			m_IrradianceBuffer->AttachColorTextureLayer(m_IrradianceMap->GetID(), 0, i);
+			RenderAction::Clear();
+
+			irradanceShader->SetMatrix4(Constants::Uniforms::View, m_CaptureViewMats[i]);
+
+			Renderer3D::Submit(cubeVAO);
+		}
+
+		m_IrradianceBuffer->Unbind();
 	}
 
 }

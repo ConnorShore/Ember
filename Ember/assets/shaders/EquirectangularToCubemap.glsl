@@ -37,6 +37,6 @@ void main()
 {
     vec2 uv = SampleSphericalMap(normalize(LocalPosition));
     vec3 color = texture(u_EquirectangularMap, uv).rgb;
-    
+    color = min(color, vec3(500.0));    // Clamp HDR values to prevent overflow when converting to cubemap
     OutColor = vec4(color, 1.0);
 } 

@@ -35,7 +35,7 @@ void main()
     OutColor = vec4(envColor, 1.0);
     
     // Output black for emission so the sky doesn't violently explode when you add Bloom!
-    OutEmission = vec4(0.0, 0.0, 0.0, 1.0); 
+    OutEmission = vec4(0.0f, 0.0f, 0.0f, 1.0); 
     
     // Output the invalid ID so clicking the sky selects nothing
     OutEntityID = u_EntityID; 
