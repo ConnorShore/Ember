@@ -6,7 +6,7 @@ namespace Ember {
 
 	void AssetManager::LoadDefaults()
 	{
-		// TODO: Clean this up and split out defaults to different seections (i.e. LoadDefaultMeshes, LoadDefaultTextures, etc.)
+		// TODO: Clean this up and split out defaults to different sections (i.e. LoadDefaultMeshes, LoadDefaultTextures, etc.)
 		EB_CORE_INFO("Loading default engine assets...");
 
 		// Textures
@@ -21,6 +21,8 @@ namespace Ember {
 
 		uint32_t blackTextureData = 0x00000000;
 		auto blackTex = Create<Texture2D>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
+
+		auto defaultSkybox = Load<Texture2D>(Constants::Assets::DefaultSkyboxUUID, Constants::Assets::DefaultSkybox, "Ember/assets/textures/DefaultSkybox.hdr");
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");

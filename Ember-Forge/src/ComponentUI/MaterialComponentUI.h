@@ -2,6 +2,7 @@
 #include "ComponentUI.h"
 #include "UI/UIWidgets.h"
 
+#include <Ember/Event/UIEvent.h>
 #include <variant>
 
 namespace Ember {
@@ -150,12 +151,14 @@ namespace Ember {
 						if (UI::PropertyGrid::DragDropTexture(prop.DisplayName, texUUID, droppedFilePath, [&]() {
 							auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
 							material->SetUniform(prop.UniformName, defaultTex);
-							})
-						)
+						}))
 						{
-							EB_CORE_TRACE("Received payload with data: {}", droppedFilePath);
 							auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
 							material->SetUniform(prop.UniformName, newTexture);
+
+							// Add UI notification for the new texture
+							auto evt = UINotificationEvent(std::format("{} texture updated to {}", prop.UniformName, droppedFilePath));
+							m_Context->EventCallback(evt);
 						}
 						break;
 					}

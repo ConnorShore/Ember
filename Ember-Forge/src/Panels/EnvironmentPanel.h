@@ -13,5 +13,7 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 	private:
+		void RenderSkyboxSettings();
+		void RenderBloomSettings();
 	};
 }

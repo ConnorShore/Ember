@@ -14,7 +14,7 @@ namespace Ember {
 		{
 			glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_Id);
 
-			glTextureStorage2D(m_Id, 1, GL_RGBA16F, m_Width, m_Height);
+			glTextureStorage2D(m_Id, 1, GL_RGB16F, m_Width, m_Height);
 
 			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

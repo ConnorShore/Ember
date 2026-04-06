@@ -7,6 +7,7 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/CubeMap.h"
+#include "Ember/Render/Skybox.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Render/VFX/PostProcessPass.h"
 
@@ -28,6 +29,8 @@ namespace Ember {
 		void OnViewportResize(uint32_t width, uint32_t height);
 
 		EntityID GetEntityIDAtPixel(uint32_t x, uint32_t y);
+
+		SharedPtr<Skybox> GetSkybox() const { return m_Skybox; }
 
 		template<std::derived_from<PostProcessPass> T>
 		SharedPtr<PostProcessPass> GetPostProcessPass() const
@@ -54,6 +57,7 @@ namespace Ember {
 		void CreateSpotlightShadowMap(Registry& registry);
 		void RenderDeferredGeometry(Registry& registry);
 		void RenderDeferredLighting(Registry& registry);
+		void RenderSkybox(Registry& registry);
 		void RenderForwardEntities(Registry& registry);
 		void RenderTransparentEntities(Registry& registry);
 		void RenderInfiniteGrid();
@@ -80,11 +84,8 @@ namespace Ember {
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
 
-		//skybox testing
-		SharedPtr<Texture2D> m_SkyboxTexture;
-		SharedPtr<Framebuffer> m_SkyboxBuffer;
-		SharedPtr<CubeMap> m_EnvironmentCubeMap;
-		SharedPtr<Mesh> m_SkyboxCube;
+		// Skybox handler
+		SharedPtr<Skybox> m_Skybox;
 
 		struct RenderQueueBuckets
 		{

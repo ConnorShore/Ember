@@ -131,63 +131,7 @@ namespace Ember {
 		m_PostProcessStack.emplace_back(outlinePass);
 		////////////////////////////////////////////////////////////////////
 
-		// Skybox testing vars
-
-		m_SkyboxTexture = Texture2D::Create("SkyboxTest", "Ember-Forge/assets/textures/skybox.hdr");
-		m_EnvironmentCubeMap = CubeMap::Create(1024);
-
-		Ember::FramebufferSpecification skyboxFBOSpecs;
-		skyboxFBOSpecs.Width = 1024;
-		skyboxFBOSpecs.Height = 1024;
-		skyboxFBOSpecs.AttachmentSpecs = {
-			Ember::FramebufferTextureFormat::RGBA16F,	// Color
-			Ember::FramebufferTextureFormat::Depth24 // Depth
-		};
-		m_SkyboxBuffer = Framebuffer::Create(skyboxFBOSpecs);
-
-		// --- Skybox pass ---
-		// Change this line!
-		Matrix4f captureProjection = Math::Perspective(90.0f, 1.0f, 0.1f, 100.0f);
-		std::array<Matrix4f, 6> captureViewsMat;
-		captureViewsMat[0] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f });
-		captureViewsMat[1] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f });
-		captureViewsMat[2] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f });
-		captureViewsMat[3] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, -1.0f });
-		captureViewsMat[4] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f });
-		captureViewsMat[5] = Math::LookAt({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, -1.0f, 0.0f });
-
-		m_SkyboxCube = PrimitiveGenerator::CreateCube("Skybox_Cube");
-
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto equirectangularShader = assetManager.GetAsset<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID);
-
-		RenderAction::SetViewport(0, 0, 1024, 1024);
-
-		RenderAction::UseFaceCulling(false);
-		RenderAction::UseDepthTest(false);
-
-		m_SkyboxBuffer->Bind();
-		m_SkyboxTexture->Bind(0);
-		equirectangularShader->Bind();
-		equirectangularShader->SetInt("u_EquirectangularMap", 0);
-
-		// Render all 6 sides of the cubemap
-		equirectangularShader->SetMatrix4(Constants::Uniforms::Projection, captureProjection);
-		for (int i = 0; i < 6; ++i)
-		{
-			// Attach the current face of the cubemap to the Framebuffer
-			m_SkyboxBuffer->AttachColorTextureLayer(m_EnvironmentCubeMap->GetID(), 0, i);
-			RenderAction::Clear();
-
-			// Set the camera to look exactly at this face (90 degree FOV)
-			equirectangularShader->SetMatrix4(Constants::Uniforms::View, captureViewsMat[i]);
-
-			Renderer3D::Submit(m_SkyboxCube->GetVertexArray());
-		}
-
-		m_SkyboxBuffer->Unbind();
-
-		////
+		m_Skybox = SharedPtr<Skybox>::Create(Constants::Assets::DefaultSkyboxUUID);
 
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
@@ -208,7 +152,8 @@ namespace Ember {
 	{
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
-		if (!m_RenderSceneState.IsCameraFound) return;
+		if (!m_RenderSceneState.IsCameraFound)
+			return;
 
 		SortEntitiesByRenderQueue(registry);
 
@@ -220,38 +165,9 @@ namespace Ember {
 		RenderDeferredGeometry(registry);
 		RenderDeferredLighting(registry);
 
-		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
-		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
-
-		// Skybox
-
-		// --- Render Actual Skybox ---
-		m_HdrSceneBuffer->Bind();
-
-		// Change depth function so the skybox (which will have a depth of 1.0) passes the depth test
-		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::LessEqual);
-		RenderAction::UseDepthTest(true);
-		RenderAction::UseFaceCulling(false); // Make sure we can see the inside of the cube
-
-		auto skyboxShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::SkyboxShad);
-		skyboxShader->Bind();
-
-		skyboxShader->SetMatrix4(Constants::Uniforms::Projection, m_RenderSceneState.ActiveCamera.GetProjectionMatrix());
-		skyboxShader->SetMatrix4(Constants::Uniforms::View, Math::Inverse(m_RenderSceneState.CameraTransform));
-
-		// Bind the CUBEMAP we created
-		RenderAction::SetTextureUnit(0, m_EnvironmentCubeMap->GetID());
-		skyboxShader->SetInt(Constants::Uniforms::EnvironmentMap, 0);
-
-		skyboxShader->SetInt(Constants::Uniforms::EntityID, Constants::Entities::InvalidEntityID);
-
-		Renderer3D::Submit(m_SkyboxCube->GetVertexArray());
-
-		// Reset depth function to default
-		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::Less);
-		m_HdrSceneBuffer->Unbind();
-
-		////
+		// --- Skybox ---
+		if (m_Skybox->Enabled())
+			RenderSkybox(registry);
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
 		RenderForwardEntities(registry);
@@ -277,9 +193,7 @@ namespace Ember {
 		SetSceneCamera(scene->GetRegistry());
 
 		if (m_RenderSceneState.IsCameraFound)
-		{
 			ExecuteRenderPipeline(scene->GetRegistry(), false);
-		}
 	}
 
 	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform)
@@ -319,9 +233,7 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 
 		if (forwardPixelData != Constants::Entities::InvalidEntityID)
-		{
 			return (EntityID)forwardPixelData;
-		}
 
 		// If the Forward buffer was empty, fallback to the Opaque G-Buffer!
 		m_GBuffer->Bind();
@@ -601,6 +513,40 @@ namespace Ember {
 
 		m_LightUniformBuffer->SetData(&lightData, sizeof(LightDataBlock), 0);
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+	void RenderSystem::RenderSkybox(Registry& registry)
+	{
+		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
+		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
+ 
+		m_HdrSceneBuffer->Bind();
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto cubeVao = assetManager.GetAsset<Mesh>(Constants::Assets::CubeMeshUUID)->GetVertexArray();
+
+		// Change depth function so the skybox (which will have a depth of 1.0) passes the depth test
+		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::LessEqual);
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseFaceCulling(false); // Make sure we can see the inside of the cube
+
+		auto skyboxShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::SkyboxShad);
+		skyboxShader->Bind();
+
+		skyboxShader->SetMatrix4(Constants::Uniforms::Projection, m_RenderSceneState.ActiveCamera.GetProjectionMatrix());
+		skyboxShader->SetMatrix4(Constants::Uniforms::View, Math::Inverse(m_RenderSceneState.CameraTransform));
+
+		// Bind the cubemap
+		RenderAction::SetTextureUnit(0, m_Skybox->GetEnvironmentCubeMapID());
+		skyboxShader->SetInt(Constants::Uniforms::EnvironmentMap, 0);
+
+		skyboxShader->SetInt(Constants::Uniforms::EntityID, Constants::Entities::InvalidEntityID);
+
+		Renderer3D::Submit(cubeVao);
+
+		// Reset depth function to default
+		RenderAction::UseDepthFunction(Ember::RendererAPI::DepthFunction::Less);
+		m_HdrSceneBuffer->Unbind();
 	}
 
 	void RenderSystem::RenderForwardEntities(Registry& registry)
