@@ -24,6 +24,8 @@ namespace Ember {
 
 		inline uint32_t GetEnvironmentCubeMapID() const { return m_EnvironmentCubeMap ? m_EnvironmentCubeMap->GetID() : 0; }
 		inline uint32_t GetIrradianceMapID() const { return m_IrradianceMap ? m_IrradianceMap->GetID() : 0; }
+		inline uint32_t GetPrefilteredMapID() const { return m_PrefilteredMap ? m_PrefilteredMap->GetID() : 0; }
+		inline uint32_t GetBRDFLUTID() const { return m_BRDFLUT ? m_BRDFLUT->GetID() : 0; }
 
 		inline UUID GetSkyboxTextureHandle() const { return m_SkyboxTextureHandle; }
 
@@ -39,6 +41,8 @@ namespace Ember {
 	private:
 		void CreateEnvironmentMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
 		void CreateIrradianceMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
+		void CreatePrefilteredMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
+		void CreateBRDFLUT(const AssetManager& assetManager);
 
 	private:
 		bool m_Enabled = false;
@@ -52,6 +56,12 @@ namespace Ember {
 
 		SharedPtr<Framebuffer> m_IrradianceBuffer;
 		SharedPtr<CubeMap> m_IrradianceMap;
+
+		SharedPtr<Framebuffer> m_PrefilterBuffer;
+		SharedPtr<CubeMap> m_PrefilteredMap;
+
+		SharedPtr<Framebuffer> m_BRDFLUTBuffer;
+		SharedPtr<Texture2D> m_BRDFLUT;
 
 		Matrix4f m_CaptureProjection;
 		std::array<Matrix4f, 6> m_CaptureViewMats;

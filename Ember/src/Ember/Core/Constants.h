@@ -64,6 +64,10 @@ namespace Ember::Constants {
 		inline const uint64_t EquirectangularToCubemapShadUUID = 23;
 		inline const char* IrradianceShad = "Irradiance";
 		inline const uint64_t IrradianceShadUUID = 24;
+		inline const char* PrefilterShad = "PreFilter";
+		inline const uint64_t PrefilterShadUUID = 25;
+		inline const char* BRDFLUTShad = "BRDFLUT";
+		inline const uint64_t BRDFLUTShadUUID = 26;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -129,6 +133,8 @@ namespace Ember::Constants {
 		inline const char* EquirectangularMap = "u_EquirectangularMap";
 		inline const char* EnvironmentMap = "u_EnvironmentMap";
 		inline const char* IrradianceMap = "u_IrradianceMap";
+		inline const char* PrefilterMap = "u_PrefilterMap";
+		inline const char* BRDFLUT = "u_BRDFLUT";
 
 		inline const char* EnvironmentIntensity = "u_EnvironmentIntensity";
 

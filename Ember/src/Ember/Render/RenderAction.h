@@ -49,6 +49,11 @@ namespace Ember {
 			m_RendererApi->UseBlending(use);
 		}
 
+		static inline void UseCubeMapSeamless(bool use)
+		{
+			m_RendererApi->UseCubeMapSeamless(use);
+		}
+
 		static inline void UseDepthMask(bool use)
 		{
 			m_RendererApi->UseDepthMask(use);

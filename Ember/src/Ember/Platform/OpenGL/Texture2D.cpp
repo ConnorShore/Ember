@@ -35,7 +35,8 @@ namespace Ember {
 				float* data = stbi_loadf(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);
 				if (data)
 				{
-					glTextureStorage2D(m_Id, 1, GL_RGBA16F, m_Width, m_Height);
+					m_NumMipMaps = 1 + (int)std::floor(std::log2(std::max(m_Width, m_Height)));
+					glTextureStorage2D(m_Id, m_NumMipMaps, GL_RGBA16F, m_Width, m_Height);
 					glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_FLOAT, data);
 					stbi_image_free(data);
 				}
@@ -46,7 +47,8 @@ namespace Ember {
 				unsigned char* data = stbi_load(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);
 				if (data)
 				{
-					glTextureStorage2D(m_Id, 1, GL_RGBA8, m_Width, m_Height);
+					m_NumMipMaps = 1 + (int)std::floor(std::log2(std::max(m_Width, m_Height)));
+					glTextureStorage2D(m_Id, m_NumMipMaps, GL_RGBA8, m_Width, m_Height);
 					glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 					stbi_image_free(data);
 				}
@@ -63,20 +65,34 @@ namespace Ember {
 		{
 		}
 
-		Texture2D::Texture2D(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data)
-			: Ember::Texture2D(uuid, name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(4)
+		Texture2D::Texture2D(UUID uuid, const std::string& name, TextureFormat format, uint32_t width, uint32_t height, const void* data, bool clampToEdge /* = false */)
+			: Ember::Texture2D(uuid, name, ""), m_Width(width), m_Height(height), m_BytesPerPixel(TextureFormatToBytesPerPixel(format)), m_Format(format)
 		{
+			m_NumMipMaps = 1 + (int)std::floor(std::log2(std::max(width, height)));
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_Id);
 
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			if (clampToEdge)
+			{
+				glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			}
+			else
+			{
+				glTextureParameteri(m_Id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTextureParameteri(m_Id, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			}
+			glTextureParameteri(m_Id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTextureParameteri(m_Id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-			glTextureStorage2D(m_Id, 1, GL_RGBA8, m_Width, m_Height);
-			// Upload provided data directly. Do not take ownership of the pointer.
+			glTextureStorage2D(m_Id, m_NumMipMaps, TextureFormatToOpenGLInternalFormat(format), m_Width, m_Height);
+
 			if (data)
 				glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+
+		Texture2D::Texture2D(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data)
+			: Texture2D(uuid, name, TextureFormat::RGBA8, width, height, data)
+		{
 		}
 
 		Texture2D::~Texture2D()
@@ -87,6 +103,11 @@ namespace Ember {
 		void Texture2D::Bind(uint32_t slot) const
 		{
 			glBindTextureUnit(slot, m_Id);
+		}
+
+		void Texture2D::GenerateMipmaps() const
+		{
+			glGenerateTextureMipmap(m_Id);
 		}
 
 		void Texture2D::SetData(const void* data, uint32_t size)

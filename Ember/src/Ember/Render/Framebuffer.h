@@ -12,6 +12,7 @@ namespace Ember {
 
 		// Color
 		RGBA8,
+		RG16F,
 		RGBA16F,
 		RedInteger,
 
@@ -66,7 +67,9 @@ namespace Ember {
 		virtual uint32_t GetDepthAttachmentID() const = 0;
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
+		virtual void AttachColorTexture(uint32_t textureId, int mipLevel = 0) = 0;
 		virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) = 0;
+
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const = 0;
 		virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) = 0;
 

@@ -49,6 +49,8 @@ namespace Ember {
 		auto skyboxShader = Load<Shader>(Constants::Assets::SkyboxShadUUID, Constants::Assets::SkyboxShad, "Ember/assets/shaders/Skybox.glsl");
 		auto equirectangularToCubemapShad = Load<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID, Constants::Assets::EquirectangularToCubemapShad, "Ember/assets/shaders/EquirectangularToCubemap.glsl");
 		auto irradianceShad = Load<Shader>(Constants::Assets::IrradianceShadUUID, Constants::Assets::IrradianceShad, "Ember/assets/shaders/Irradiance.glsl");
+		auto prefilterShad = Load<Shader>(Constants::Assets::PrefilterShadUUID, Constants::Assets::PrefilterShad, "Ember/assets/shaders/Prefilter.glsl");
+		auto brdfLUTShad = Load<Shader>(Constants::Assets::BRDFLUTShadUUID, Constants::Assets::BRDFLUTShad, "Ember/assets/shaders/BRDF.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

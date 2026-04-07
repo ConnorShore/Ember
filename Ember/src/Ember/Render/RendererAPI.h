@@ -51,6 +51,7 @@ namespace Ember {
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseDepthMask(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
+		virtual void UseCubeMapSeamless(bool use) = 0;
 
 		virtual void UseDepthFunction(DepthFunction func) = 0;
 

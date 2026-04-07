@@ -62,6 +62,14 @@ namespace Ember {
 			}
 		}
 
+		void RendererAPI::UseCubeMapSeamless(bool use)
+		{
+			if (use)
+				glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+			else
+				glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+		}
+
 		void RendererAPI::UseDepthFunction(DepthFunction func)
 		{
 			switch (func)

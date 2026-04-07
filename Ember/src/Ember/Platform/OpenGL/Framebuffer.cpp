@@ -13,6 +13,7 @@ namespace Ember {
 			switch (format)
 			{
 			case FramebufferTextureFormat::RGBA8:			return GL_RGBA8;
+			case FramebufferTextureFormat::RG16F:			return GL_RG16F;
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
 			case FramebufferTextureFormat::RedInteger:		return GL_R32I;
 			case FramebufferTextureFormat::Depth24: 		return GL_DEPTH_COMPONENT24;
@@ -29,6 +30,7 @@ namespace Ember {
 			switch (format)
 			{
 			case FramebufferTextureFormat::RGBA8:
+			case FramebufferTextureFormat::RG16F:
 			case FramebufferTextureFormat::RGBA16F:
 			case FramebufferTextureFormat::RedInteger:		return GL_COLOR_ATTACHMENT0 + index;
 			case FramebufferTextureFormat::Depth24:			return GL_DEPTH_ATTACHMENT;
@@ -72,6 +74,11 @@ namespace Ember {
 			m_Specification.Width = width;
 			m_Specification.Height = height;
 			Regenerate();
+		}
+
+		void Framebuffer::AttachColorTexture(uint32_t textureId, int mipLevel /*= 0*/)
+		{
+			glNamedFramebufferTexture(m_Id, GL_COLOR_ATTACHMENT0, textureId, mipLevel);
 		}
 
 		// Used for attaching a layer of a texture array to the framebuffer for rendering

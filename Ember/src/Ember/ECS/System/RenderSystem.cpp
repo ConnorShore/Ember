@@ -132,6 +132,7 @@ namespace Ember {
 		////////////////////////////////////////////////////////////////////
 
 		m_Skybox = SharedPtr<Skybox>::Create(Constants::Assets::DefaultSkyboxUUID);
+		RenderAction::UseCubeMapSeamless(true);
 
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
@@ -450,6 +451,8 @@ namespace Ember {
 		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 4);
 		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 5);
 		litShader->SetInt(Constants::Uniforms::IrradianceMap, 6);
+		litShader->SetInt(Constants::Uniforms::PrefilterMap, 7);
+		litShader->SetInt(Constants::Uniforms::BRDFLUT, 8);
 
 		RenderAction::SetTextureUnit(0, m_GBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_GBuffer->GetColorAttachmentID(1));
@@ -458,6 +461,8 @@ namespace Ember {
 		RenderAction::SetTextureUnit(4, m_DirectionalShadowMapBuffer->GetDepthAttachmentID());
 		RenderAction::SetTextureUnit(5, m_SpotShadowMapBuffer->GetDepthAttachmentID());
 		RenderAction::SetTextureUnit(6, m_Skybox->GetIrradianceMapID());
+		RenderAction::SetTextureUnit(7, m_Skybox->GetPrefilteredMapID());
+		RenderAction::SetTextureUnit(8, m_Skybox->GetBRDFLUTID());
 
 		LightDataBlock lightData = {};
 

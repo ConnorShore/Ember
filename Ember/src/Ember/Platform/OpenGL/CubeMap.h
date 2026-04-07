@@ -12,17 +12,20 @@ namespace Ember {
 			virtual ~CubeMap();
 
 			virtual void Bind(uint32_t slot = 0) const override;
+			virtual void GenerateMipmaps() const override;
 
-				virtual void SetData(CubeMapFace face, const void* data, uint32_t size) override;
+			inline virtual uint32_t GetNumMipMapLevels() const override { return m_NumMipMaps; }
 
-				virtual uint32_t GetWidth() const override { return m_Width; }
-				virtual uint32_t GetHeight() const override { return m_Height; }
-				virtual uint32_t GetID() const override { return m_Id; }
+			virtual void SetData(CubeMapFace face, const void* data, uint32_t size) override;
 
-				virtual bool operator==(const SharedPtr<Ember::CubeMap>& other) const override { return m_Id == other->GetID(); }
+			inline virtual uint32_t GetWidth() const override { return m_Width; }
+			inline virtual uint32_t GetHeight() const override { return m_Height; }
+			inline virtual uint32_t GetID() const override { return m_Id; }
+
+			inline virtual bool operator==(const SharedPtr<Ember::CubeMap>& other) const override { return m_Id == other->GetID(); }
 
 		private:
-			uint32_t m_Id;
+			uint32_t m_Id, m_NumMipMaps;
 			int m_Width, m_Height;
 		};
 

@@ -17,7 +17,9 @@ namespace Ember {
 			virtual void Unbind() const override;
 			virtual void ViewportResize(uint32_t width, uint32_t height) override;
 
+			virtual void AttachColorTexture(uint32_t textureId, int mipLevel = 0) override;
 			virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) override;
+
 			virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
 			virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;
 
