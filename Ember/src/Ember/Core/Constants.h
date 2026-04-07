@@ -18,6 +18,9 @@ namespace Ember::Constants {
 		inline constexpr uint32_t MaxDirectionalLights = 1;
 		inline constexpr uint32_t MaxSpotLights = 1;
 		inline constexpr uint32_t MaxPointLights = 256;
+
+		inline constexpr uint32_t MaxBones = 4;
+
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 
@@ -34,8 +37,11 @@ namespace Ember::Constants {
 		inline const char* DefaultSkybox = "DefaultSkybox";
 		inline const uint64_t DefaultSkyboxUUID = 5;
 
+		// TODO: Increment them all by 1
 		inline const char* StandardGeometryShad = "StandardGeometry";
-		inline const uint64_t StandardGeometryShadUUID = 10;
+		inline const uint64_t StandardGeometryShadUUID = 9;
+		inline const char* StandardSkinnedGeometryShad = "StandardSkinnedGeometry";
+		inline const uint64_t StandardSkinnedGeometryShadUUID = 10;
 		inline const char* StandardLitShad = "StandardLit";
 		inline const uint64_t StandardLitShadUUID = 11;
 		inline const char* StandardUnlitShad = "StandardUnlit";
@@ -73,8 +79,10 @@ namespace Ember::Constants {
 		inline const uint64_t DefaultMatUUID = 30;
 		inline const char* StandardGeometryMat = "StandardGeometry";
 		inline const uint64_t StandardGeometryMatUUID = 31;
+		inline const char* StandardSkinnedGeometryMat = "StandardGeometrySkinned";
+		inline const uint64_t StandardSkinnedGeometryMatUUID = 32;
 		inline const char* StandardUnlitMat = "StandardUnlit";
-		inline const uint64_t StandardUnlitMatUUID = 32;
+		inline const uint64_t StandardUnlitMatUUID = 33;
 
 		inline const uint64_t SphereMeshUUID = 50;
 		inline const uint64_t CubeMeshUUID = 51;

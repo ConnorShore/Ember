@@ -59,7 +59,7 @@ namespace Ember {
 	{
 	public:
 		static std::optional<ModelCookReport> CookModel(const std::string& inputFile, const std::string& outputDirectory);
-		static bool CookMesh(const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath);
+		static bool CookMesh(const std::vector<StaticMeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath);
 
 	private:
 		static CookedModelNode ProcessScene(const std::string& name, const aiScene* scene, const std::string& outputDirectory, const std::vector<CookedAssetInfo>& cookedMeshes);

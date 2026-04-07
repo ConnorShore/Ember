@@ -396,6 +396,57 @@ namespace Ember {
 		RenderAction::SetTextureUnit(2, defaultWhite->GetID());
 		RenderAction::SetTextureUnit(3, defaultBlack->GetID());
 
+		// Animation test
+
+		if (m_RenderQueueBuckets.Opaque.size() > 0)
+		{
+			EntityID entity = m_RenderQueueBuckets.Opaque[0];
+			auto& animator = registry.GetComponent<AnimatorComponent>(entity);
+			// 1. Grab the skeleton asset you loaded earlier
+	// (Assuming you stored the UUID or have access to it here)
+			auto skeletonAsset = Application::Instance().GetAssetManager().GetAsset<Skeleton>(150);
+			const auto& invBind = skeletonAsset->GetInverseBindTransforms();
+			const auto& bones = skeletonAsset->GetBones();
+
+			// We need a time variable to make it wave back and forth
+			static float time = 0.0f;
+			time += 0.05f; // Or use actual delta time
+
+			// =========================================================
+			// BONE 0: The Root (Stays completely still)
+			// =========================================================
+			Matrix4f globalBone0 = Matrix4f(1.0f); // Identity
+			Matrix4f finalBone0 = globalBone0 * invBind[0];
+
+			// =========================================================
+			// BONE 1: The Top Joint (Waves back and forth)
+			// =========================================================
+			// Create a rotation matrix swinging between -45 and 45 degrees
+			float angle = sin(time) * 45.0f;
+			Matrix4f animatedRotation = glm::rotate(Matrix4f(1.0f), glm::radians(angle), Vector3f(1.0f, 0.0f, 0.0f));
+
+			// The animated local pose is its original local pose + our new rotation
+			Matrix4f localPose1 = bones[1].LocalBindPoseTransform.ToMatrix();
+			Matrix4f animatedLocalPose1 = localPose1 * animatedRotation;
+
+			// The global pose is the Parent's Global (Bone 0) * our new local pose
+			Matrix4f globalBone1 = globalBone0 * animatedLocalPose1;
+			Matrix4f finalBone1 = globalBone1 * invBind[1];
+
+			// =========================================================
+			// UPDATE THE COMPONENT
+			// =========================================================
+			// Assuming you queried the registry for the AnimatorComponent
+			animator.BoneMatrices[0] = finalBone0;
+			animator.BoneMatrices[1] = finalBone1;
+
+			// The rest of your Identity matrices in the array can stay as they are, 
+			// since RiggedSimple only uses indices 0 and 1!
+
+		}
+
+		///
+
 		Renderer3D::BeginFrame();
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
@@ -406,8 +457,17 @@ namespace Ember {
 
 			auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+
 			materialAsset->GetShader()->Bind();
 			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
+
+			// Pass bone matrices for skinned meshes, if they exist
+			if (registry.ContainsComponent<AnimatorComponent>(entity))
+			{
+				auto& animator = registry.GetComponent<AnimatorComponent>(entity);
+				materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+			}
+
 			Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
 		}
 

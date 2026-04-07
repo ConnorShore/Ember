@@ -200,7 +200,7 @@ namespace Ember {
 	}
 
 	// Writes a mesh to Ember's binary format: header (magic + counts + AABB) followed by raw vertex/index data
-	bool ModelImporter::CookMesh(const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath)
+	bool ModelImporter::CookMesh(const std::vector<StaticMeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& outputFilePath)
 	{
 		std::ofstream file(outputFilePath, std::ios::binary | std::ios::trunc);
 		if (!file.is_open()) return false;
@@ -221,7 +221,7 @@ namespace Ember {
 		header.Bounds.Max[0] = maxBounds.x; header.Bounds.Max[1] = maxBounds.y; header.Bounds.Max[2] = maxBounds.z;
 
 		file.write((const char*)&header, sizeof(MeshHeader));
-		file.write((const char*)vertices.data(), vertices.size() * sizeof(MeshVertex));
+		file.write((const char*)vertices.data(), vertices.size() * sizeof(StaticMeshVertex));
 		file.write((const char*)indices.data(), indices.size() * sizeof(uint32_t));
 
 		file.close();
@@ -230,14 +230,14 @@ namespace Ember {
 
 	CookedAssetInfo ModelImporter::ProcessMesh(const std::string& name, const aiMesh* aiMesh, const std::string& outputDirectory, uint32_t index)
 	{
-		std::vector<MeshVertex> vertices;
+		std::vector<StaticMeshVertex> vertices;
 		std::vector<uint32_t> indices;
 
 		vertices.reserve(aiMesh->mNumVertices);
 
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
-			MeshVertex vertex;
+			StaticMeshVertex vertex;
 			vertex.Position = { aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z };
 			vertex.Normal = aiMesh->mNormals ? Vector3f(aiMesh->mNormals[i].x, aiMesh->mNormals[i].y, aiMesh->mNormals[i].z) : Vector3f(0.0f);
 			vertex.TexCoords = aiMesh->mTextureCoords[0] ? Vector2f(aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y) : Vector2f(0.0f);

@@ -3,7 +3,7 @@
 #include "UUID.h"
 #include "MeshHeader.h"
 
-#include "Ember/Render/Mesh.h"
+#include "Ember/Render/StaticMesh.h"
 #include "Ember/Core/Core.h"
 
 #include <fstream>
@@ -16,7 +16,7 @@ namespace Ember {
 	class MeshSerializer
 	{
 	public:
-		static SharedPtr<Mesh> Deserialize(UUID uuid, const std::filesystem::path& filepath)
+		static SharedPtr<StaticMesh> Deserialize(UUID uuid, const std::filesystem::path& filepath)
 		{
 			std::ifstream file(filepath, std::ios::binary);
 			if (!file.is_open())
@@ -42,11 +42,11 @@ namespace Ember {
 			}
 
 			// Allocate memory for the data
-			std::vector<MeshVertex> vertices(header.VertexCount);
+			std::vector<StaticMeshVertex> vertices(header.VertexCount);
 			std::vector<uint32_t> indices(header.IndexCount);
 
 			// Read data straight from disk into our vectors
-			size_t vertexDataSize = header.VertexCount * sizeof(MeshVertex);
+			size_t vertexDataSize = header.VertexCount * sizeof(StaticMeshVertex);
 			file.read((char*)vertices.data(), vertexDataSize);
 
 			size_t indexDataSize = header.IndexCount * sizeof(uint32_t);
@@ -56,7 +56,7 @@ namespace Ember {
 
 			std::string name = filepath.stem().string();
 
-			auto meshAsset = SharedPtr<Mesh>::Create(uuid, name, vertices, indices);
+			auto meshAsset = SharedPtr<StaticMesh>::Create(uuid, name, vertices, indices);
 			meshAsset->SetFilePath(filepath.string());
 			return meshAsset;
 		}

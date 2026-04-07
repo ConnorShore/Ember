@@ -26,6 +26,7 @@ namespace Ember {
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
+		auto skinnedGeometryShader = Load<Shader>(Constants::Assets::StandardSkinnedGeometryShadUUID, Constants::Assets::StandardSkinnedGeometryShad, "Ember/assets/shaders/StandardGeometrySkinned.glsl");
 		ShaderMacros lightMacros;
 		lightMacros["MAX_DIRECTIONAL_LIGHTS"] = std::to_string(Constants::Renderer::MaxDirectionalLights);
 		lightMacros["MAX_SPOT_LIGHTS"] = std::to_string(Constants::Renderer::MaxSpotLights);
@@ -64,6 +65,18 @@ namespace Ember {
 		geometryMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::EmissiveMap, whiteTex);
+
+		auto geometrySkinnedMaterial = Create<Material>(Constants::Assets::StandardSkinnedGeometryMatUUID, Constants::Assets::StandardSkinnedGeometryMat, skinnedGeometryShader, RenderQueue::Opaque);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(0.75f));
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Emission, 0.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::EmissionColor, Vector3f(1.0f));
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::EmissiveMap, whiteTex);
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMatUUID, Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
 		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));

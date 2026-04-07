@@ -13,9 +13,11 @@ namespace Ember {
 		Texture,
 		Mesh,
 		Model,
+		Skeleton,
+		Animation,
 		Shader,
 		Material,
-		Script
+		Script,
 	};
 
 	class Asset : public SharedResource

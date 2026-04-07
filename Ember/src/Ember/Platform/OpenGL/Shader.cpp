@@ -101,6 +101,11 @@ namespace Ember {
 			glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 		}
 
+		void Shader::SetMatrix4Array(const std::string& name, const Matrix4f* mats, uint32_t count) const
+		{
+			glUniformMatrix4fv(GetUniformLocation(name), count, GL_FALSE, &mats[0][0][0]);
+		}
+
 		// Compiles each shader stage, attaches to program, links, then cleans up stage objects
 		void Shader::CompileShader(const ShaderSourceMap& sources)
 		{

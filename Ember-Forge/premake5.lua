@@ -27,6 +27,7 @@ project "Ember-Forge"
       "%{wks.location}/Ember/vendor/sol2/include",
       "%{wks.location}/Ember/vendor/rapidyaml/src",
 		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
+      "%{wks.location}/Ember/vendor/tinygltf",
       "%{wks.location}/Ember-Tools/src",
    }
 

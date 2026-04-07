@@ -11,13 +11,24 @@ namespace Ember {
 	// Magic number to verify the file type: "EBMH" (Ember Mesh Header)
 	constexpr uint32_t MESH_FILE_MAGIC = 0x484D4245;
 
-	struct MeshVertex
+	struct StaticMeshVertex
 	{
 		Vector3f Position;
 		Vector3f Normal;
 		Vector2f TexCoords;
 		Vector3f Tangent;
 		Vector3f Bitangent;
+	};
+
+	struct SkinnedMeshVertex
+	{
+		Vector3f Position;
+		Vector3f Normal;
+		Vector2f TexCoords;
+		Vector3f Tangent;
+		Vector3f Bitangent;
+		Vector4<uint32_t> BoneIDs;
+		Vector4f BoneWeights;
 	};
 
 	// We use #pragma pack(push, 1) to ensure the compiler doesn't add padding bytes 

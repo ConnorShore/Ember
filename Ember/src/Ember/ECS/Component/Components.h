@@ -297,4 +297,15 @@ namespace Ember {
 		BillboardComponent(const BillboardComponent&) = default;
 	};
 
+	struct AnimatorComponent
+	{
+		// For the T-Pose test, we will pre-fill this with 100 Identity Matrices
+		std::vector<Matrix4f> BoneMatrices;
+
+		AnimatorComponent()
+		{
+			BoneMatrices.resize(100, Matrix4f(1.0f));
+		}
+	};
+
 }

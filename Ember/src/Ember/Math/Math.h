@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -155,6 +157,11 @@ namespace Ember {
 		static inline float Length(const Vector3f& vector)
 		{
 			return glm::length(vector);
+		}
+
+		static inline Matrix4f MakeMatrix4f(const float* data)
+		{
+			return glm::make_mat4(data);
 		}
 
 		// Extracts translation, rotation (Euler), and scale from a transform matrix.

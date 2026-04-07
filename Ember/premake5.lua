@@ -21,7 +21,8 @@ project "Ember"
       "vendor/rapidyaml/src",
 		"vendor/rapidyaml/ext/c4core/src",
       "vendor/lua/src",
-      "vendor/sol2/include"
+      "vendor/sol2/include",
+      "vendor/tinygltf"
    }
 
    files 

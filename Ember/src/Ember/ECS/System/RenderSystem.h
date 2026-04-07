@@ -69,7 +69,7 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Registry& registry);
 
 	private:
-		SharedPtr<Mesh> m_ScreenQuad;
+		SharedPtr<StaticMesh> m_ScreenQuad;
 
 		SharedPtr<Framebuffer> m_GBuffer;
 		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;

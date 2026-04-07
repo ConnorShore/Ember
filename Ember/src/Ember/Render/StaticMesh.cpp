@@ -1,14 +1,10 @@
 #include "ebpch.h"
-#include "Mesh.h"
+#include "StaticMesh.h"
 
 namespace Ember {
 
-	//////////////////////////////////////////////////////////////////////////
-	// Mesh
-	//////////////////////////////////////////////////////////////////////////
-
-	Mesh::Mesh(UUID uuid, const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices)
-		: Asset(uuid, name, "", GetStaticType())
+	StaticMesh::StaticMesh(UUID uuid, const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices)
+		: Mesh(uuid, name)
 	{
 		auto vbo = VertexBuffer::Create(&vertices[0], static_cast<uint32_t>(sizeof(float) * vertices.size()), {
 			{ ShaderDataType::Float3, "v_Position" },
@@ -23,15 +19,15 @@ namespace Ember {
 		m_VertexArray->SetBuffer(vbo, ibo);
 	}
 
-	Mesh::Mesh(const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices)
-		: Mesh(UUID(), name, vertices, indices)
+	StaticMesh::StaticMesh(const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices)
+		: StaticMesh(UUID(), name, vertices, indices)
 	{
 	}
 
-	Mesh::Mesh(UUID uuid, const std::string& name, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices)
-		: Asset(uuid, name, "", GetStaticType())
+	StaticMesh::StaticMesh(UUID uuid, const std::string& name, const std::vector<StaticMeshVertex>& vertices, const std::vector<uint32_t>& indices)
+		: Mesh(uuid, name)
 	{
-		auto vbo = VertexBuffer::Create(&vertices[0], static_cast<uint32_t>(sizeof(MeshVertex) * vertices.size()), {
+		auto vbo = VertexBuffer::Create(&vertices[0], static_cast<uint32_t>(sizeof(StaticMeshVertex) * vertices.size()), {
 			{ ShaderDataType::Float3, "v_Position" },
 			{ ShaderDataType::Float3, "v_Normal" },
 			{ ShaderDataType::Float2, "v_TextureCoord"},
@@ -44,9 +40,8 @@ namespace Ember {
 		m_VertexArray->SetBuffer(vbo, ibo);
 	}
 
-	Mesh::~Mesh()
+	StaticMesh::~StaticMesh()
 	{
 
 	}
-
 }

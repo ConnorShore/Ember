@@ -4,7 +4,7 @@
 
 namespace Ember {
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateSphere(const std::string& name, float size, uint32_t xSegments, uint32_t ySegments)
+	SharedPtr<StaticMesh> PrimitiveGenerator::CreateSphere(const std::string& name, float size, uint32_t xSegments, uint32_t ySegments)
 	{
 		std::vector<float> vertices;
 		std::vector<uint32_t> indices;
@@ -73,10 +73,10 @@ namespace Ember {
 			}
 		}
 
-		return SharedPtr<Mesh>::Create(name, vertices, indices);
+		return SharedPtr<StaticMesh>::Create(name, vertices, indices);
 	}
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateCube(const std::string& name, float size)
+	SharedPtr<StaticMesh> PrimitiveGenerator::CreateCube(const std::string& name, float size)
 	{
 		float s = size * 0.5f;
 
@@ -129,10 +129,10 @@ namespace Ember {
 			20, 21, 22, 22, 23, 20  // Bottom
 		};
 
-		return SharedPtr<Mesh>::Create(name, vertices, indices);
+		return SharedPtr<StaticMesh>::Create(name, vertices, indices);
 	}
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateQuad(const std::string& name, float width, float height)
+	SharedPtr<StaticMesh> PrimitiveGenerator::CreateQuad(const std::string& name, float width, float height)
 	{
 		float hw = width * 0.5f;
 		float hh = height * 0.5f;
@@ -149,11 +149,11 @@ namespace Ember {
 			0, 1, 2, 2, 3, 0
 		};
 
-		return SharedPtr<Mesh>::Create(name, vertices, indices);
+		return SharedPtr<StaticMesh>::Create(name, vertices, indices);
 	}
 
 
-	SharedPtr<Mesh> PrimitiveGenerator::CreateQuad(float width, float height)
+	SharedPtr<StaticMesh> PrimitiveGenerator::CreateQuad(float width, float height)
 	{
 		return CreateQuad("Primitive_Quad", width, height);
 	}

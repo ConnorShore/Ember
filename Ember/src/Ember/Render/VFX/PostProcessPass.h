@@ -3,7 +3,6 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/PrimitiveGenerator.h"
-#include "Ember/Render/Mesh.h"
 
 namespace Ember {
 
@@ -18,7 +17,7 @@ namespace Ember {
 		bool Enabled = true;
 
 	protected:
-		SharedPtr<Mesh> m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
+		SharedPtr<StaticMesh> m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 	};
 
 }

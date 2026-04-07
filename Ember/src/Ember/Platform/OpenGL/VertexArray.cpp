@@ -12,6 +12,10 @@ static GLuint ShaderDataTypeToGLType(Ember::ShaderDataType type)
 	case Ember::ShaderDataType::Int2:		return GL_INT;
 	case Ember::ShaderDataType::Int3:		return GL_INT;
 	case Ember::ShaderDataType::Int4:		return GL_INT;
+	case Ember::ShaderDataType::UInt:		return GL_UNSIGNED_INT;
+	case Ember::ShaderDataType::UInt2:		return GL_UNSIGNED_INT;
+	case Ember::ShaderDataType::UInt3:		return GL_UNSIGNED_INT;
+	case Ember::ShaderDataType::UInt4:		return GL_UNSIGNED_INT;
 	case Ember::ShaderDataType::Float:		return GL_FLOAT;
 	case Ember::ShaderDataType::Float2:		return GL_FLOAT;
 	case Ember::ShaderDataType::Float3:		return GL_FLOAT;
@@ -20,6 +24,24 @@ static GLuint ShaderDataTypeToGLType(Ember::ShaderDataType type)
 
 	EB_CORE_ASSERT(false, "Unsupported shader data type for GL type conversion!");
 	return 0;
+}
+
+static bool IsIntegerType(Ember::ShaderDataType type)
+{
+	switch (type)
+	{
+	case Ember::ShaderDataType::Int:
+	case Ember::ShaderDataType::Int2:
+	case Ember::ShaderDataType::Int3:
+	case Ember::ShaderDataType::Int4:
+	case Ember::ShaderDataType::UInt:
+	case Ember::ShaderDataType::UInt2:
+	case Ember::ShaderDataType::UInt3:
+	case Ember::ShaderDataType::UInt4:
+		return true;
+	default:
+		return false;
+	}
 }
 
 namespace Ember {
@@ -64,14 +86,28 @@ namespace Ember {
 			for (auto& elem : m_VertexBuffer->GetLayout())
 			{
 				glEnableVertexArrayAttrib(m_Id, m_CurrentVertexBufferInd);
-				glVertexArrayAttribFormat(
-					m_Id, 
-					m_CurrentVertexBufferInd, 
-					ShaderDataTypeCount(elem.DataType), 
-					ShaderDataTypeToGLType(elem.DataType),
-					elem.Normalize,
-					elem.Offset
-				);
+
+				if (IsIntegerType(elem.DataType))
+				{
+					glVertexArrayAttribIFormat(
+						m_Id,
+						m_CurrentVertexBufferInd,
+						ShaderDataTypeCount(elem.DataType),
+						ShaderDataTypeToGLType(elem.DataType),
+						elem.Offset
+					);
+				}
+				else
+				{
+					glVertexArrayAttribFormat(
+						m_Id,
+						m_CurrentVertexBufferInd,
+						ShaderDataTypeCount(elem.DataType),
+						ShaderDataTypeToGLType(elem.DataType),
+						elem.Normalize,
+						elem.Offset
+					);
+				}
 				m_CurrentVertexBufferInd++;
 			}
 

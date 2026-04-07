@@ -28,6 +28,7 @@ namespace Ember {
 			virtual void SetFloat3(const std::string& name, const Vector3f& vec) const override;
 			virtual void SetFloat4(const std::string& name, const Vector4f& vec) const override;
 			virtual void SetMatrix4(const std::string& name, const Matrix4f& mat) const override;
+			virtual void SetMatrix4Array(const std::string& name, const Matrix4f* mats, uint32_t count) const override;
 
 			virtual const std::vector<ShaderProperty>& GetProperties() const override { return m_Properties; }
 

@@ -3,6 +3,7 @@
 #include "UUID.h"
 #include "Asset.h"
 #include "Model.h"
+#include "Skeleton.h"
 #include "MeshSerializer.h"
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
@@ -68,7 +69,7 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
-			// Deduplicate by absolute path so the same file isn't loaded twice
+			// De-duplicate by absolute path so the same file isn't loaded twice
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
 			{
@@ -126,20 +127,6 @@ namespace Ember {
 			m_AssetPaths[absolutePath] = newShader->GetUUID();
 			return newShader;
 		}
-
-		// Custom load for model that takes mesh/material UUIDs (for deserialization)
-		//template<std::same_as<Model> T>
-		//SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
-		//{
-		//	auto absolutePath = std::filesystem::absolute(filePath).string();
-		//	auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
-		//	
-		//	m_Assets[model->GetUUID()] = model;
-		//	m_AssetNames[name] = model->GetUUID();
-		//	m_AssetPaths[absolutePath] = model->GetUUID();
-		//	return model;
-		//	return nullptr;	// TODO: Implement this
-		//}
 
 		template<IsCoreAsset T>
 		void Register(UUID uuid, const SharedPtr<T>& asset)
