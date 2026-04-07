@@ -53,6 +53,12 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(UUID assetUUID)
+		{
+			return Application::Instance().GetAssetManager().GetAsset<T>(assetUUID);
+		}
+
+		template<IsCoreAsset T>
 		std::vector<SharedPtr<T>> GetAssetsOfType()
 		{
 			return Application::Instance().GetAssetManager().GetAssetsOfType<T>();

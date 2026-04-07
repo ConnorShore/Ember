@@ -239,9 +239,12 @@ namespace Ember {
 						auto& am = Application::Instance().GetAssetManager();
 						auto skeleton = GLTFImporter::LoadSkeleton(sourceFile);
 						auto skinnedMesh = GLTFImporter::LoadSkinnedMesh(sourceFile);
+						skinnedMesh->SetSkeletonHandle(skeleton->GetUUID());
+						auto animation = GLTFImporter::LoadAnimation(sourceFile);
 
 						auto skeletonUUID = am.Register<Skeleton>(skeleton);
 						auto meshUUID = am.Register<SkinnedMesh>(skinnedMesh);
+						auto animUUID = am.Register<Animation>(animation);
 
 						// For testing, add an entity with the mesh, and a material
 						auto entity = m_Context->ActiveScene->AddEntity("Test Entity");
@@ -253,6 +256,8 @@ namespace Ember {
 						entity.AttachComponent<MaterialComponent>(matComp);
 
 						AnimatorComponent animComp;
+						animComp.SkeletonHandle = skeletonUUID;
+						animComp.CurrentAnimationHandle = animUUID;
 						entity.AttachComponent<AnimatorComponent>(animComp);
 					}
 

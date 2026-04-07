@@ -220,4 +220,127 @@ namespace Ember {
 		std::string name = std::filesystem::path(filePath).stem().string() + "_Mesh";
 		return SharedPtr<SkinnedMesh>::Create(UUID(), name, vertices, indices);
 	}
+
+	SharedPtr<Animation> GLTFImporter::LoadAnimation(const std::string& filePath)
+	{
+		tinygltf::Model model;
+		tinygltf::TinyGLTF loader;
+		std::string err, warn;
+
+		bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
+		if (!ret) {
+			EB_CORE_ERROR("Failed to load GLB: {0}", err);
+			return nullptr;
+		}
+
+		if (model.animations.empty()) {
+			EB_CORE_WARN("GLB does not contain any animations!");
+			return nullptr;
+		}
+
+		// Only load the first animation for now
+		const tinygltf::Animation& anim = model.animations[0];
+		std::string animName = anim.name.empty() ? "Animation_0" : anim.name;
+
+		std::unordered_map<uint32_t, BoneAnimationTrack> tracksByBone;
+		float maxDuration = 0.0f;
+
+		// Create a mapping from global glTF Node IDs to our local Bone IDs based on the Skin's joint list
+		std::unordered_map<int, int> nodeToBoneMap;
+		if (!model.skins.empty())
+		{
+			const tinygltf::Skin& skin = model.skins[0];
+			for (size_t i = 0; i < skin.joints.size(); i++) {
+				// Maps the global glTF Node ID to our local 0-based Bone ID
+				nodeToBoneMap[skin.joints[i]] = static_cast<int>(i);
+			}
+		}
+		else
+		{
+			EB_CORE_WARN("Trying to load a skeletal animation, but model has no skin!");
+			return nullptr;
+		}
+
+		// Loop through every channel (track) in the animation
+		for (const auto& channel : anim.channels)
+		{
+			uint32_t targetNode = channel.target_node;
+			if (nodeToBoneMap.find(targetNode) == nodeToBoneMap.end()) {
+				// This channel is animating a camera, a light, or a static mesh.
+				// Since we are building a skeletal animation track, we skip it!
+				continue;
+			}
+
+			const tinygltf::AnimationSampler& sampler = anim.samplers[channel.sampler];
+
+			// Convert the global Node ID into our local Bone ID!
+			uint32_t boneID = nodeToBoneMap[targetNode];
+
+			// Ensure a track exists for this bone in our map
+			if (tracksByBone.find(boneID) == tracksByBone.end()) {
+				tracksByBone[boneID] = BoneAnimationTrack();
+				tracksByBone[boneID].BoneID = boneID; // Use the mapped ID!
+			}
+			BoneAnimationTrack& track = tracksByBone[boneID];
+
+			// =====================================================================
+			// 1. EXTRACT TIMESTAMPS (The "Input" Accessor)
+			// =====================================================================
+			const tinygltf::Accessor& inputAccessor = model.accessors[sampler.input];
+			const tinygltf::BufferView& inputView = model.bufferViews[inputAccessor.bufferView];
+			const tinygltf::Buffer& inputBuffer = model.buffers[inputView.buffer];
+
+			const float* times = reinterpret_cast<const float*>(&inputBuffer.data[inputView.byteOffset + inputAccessor.byteOffset]);
+
+			// Update the total duration of the animation
+			for (size_t i = 0; i < inputAccessor.count; i++) {
+				if (times[i] > maxDuration) {
+					maxDuration = times[i];
+				}
+			}
+
+			// =====================================================================
+			// 2. EXTRACT KEYFRAME VALUES (The "Output" Accessor)
+			// =====================================================================
+			const tinygltf::Accessor& outputAccessor = model.accessors[sampler.output];
+			const tinygltf::BufferView& outputView = model.bufferViews[outputAccessor.bufferView];
+			const tinygltf::Buffer& outputBuffer = model.buffers[outputView.buffer];
+
+			const float* values = reinterpret_cast<const float*>(&outputBuffer.data[outputView.byteOffset + outputAccessor.byteOffset]);
+
+			// =====================================================================
+			// 3. MAP THE VALUES TO THE CORRECT TRACK TYPE
+			// =====================================================================
+			if (channel.target_path == "translation")
+			{
+				for (size_t i = 0; i < inputAccessor.count; i++) {
+					PositionKeyframe kf;
+					kf.TimeStamp = times[i];
+					kf.Position = Vector3f(values[i * 3 + 0], values[i * 3 + 1], values[i * 3 + 2]);
+					track.PositionKeyframes.push_back(kf);
+				}
+			}
+			else if (channel.target_path == "rotation")
+			{
+				for (size_t i = 0; i < inputAccessor.count; i++) {
+					RotationKeyframe kf;
+					kf.TimeStamp = times[i];
+					// Flip quaternion from (x,y,z,w) to (w,x,y,z) order
+					kf.Rotation = Quaternion(values[i * 4 + 3], values[i * 4 + 0], values[i * 4 + 1], values[i * 4 + 2]);
+					track.RotationKeyframes.push_back(kf);
+				}
+			}
+			// TODO: Scale in the future
+		}
+
+		// Flatten the unordered_map into our final std::vector for the Asset
+		std::vector<BoneAnimationTrack> finalTracks;
+		finalTracks.reserve(tracksByBone.size());
+		for (const auto& kvp : tracksByBone) {
+			finalTracks.push_back(kvp.second);
+		}
+
+		return SharedPtr<Animation>::Create(animName, maxDuration, finalTracks);
+	}
+
 }

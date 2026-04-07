@@ -1,13 +1,13 @@
 #shader vertex
 #version 450 core
 
-layout(location = 0) in vec3 v_Position;
-layout(location = 1) in vec3 v_Normal;
-layout(location = 2) in vec2 v_TextureCoord;
-layout(location = 3) in vec3 v_Tangent;
-layout(location = 4) in vec3 v_Bitangent;
+layout(location = 0) in vec3  v_Position;
+layout(location = 1) in vec3  v_Normal;
+layout(location = 2) in vec2  v_TextureCoord;
+layout(location = 3) in vec3  v_Tangent;
+layout(location = 4) in vec3  v_Bitangent;
 layout(location = 5) in uvec4 v_BoneIDs;
-layout(location = 6) in vec4 v_BoneWeights;
+layout(location = 6) in vec4  v_BoneWeights;
 
 out VertexOut {
     vec3 WorldPos;
@@ -21,8 +21,6 @@ layout(std140, binding = 0) uniform CameraData
 };
 
 uniform mat4 u_Transform;
-
-const int MAX_BONES = 100;
 uniform mat4 u_BoneMatrices[MAX_BONES];
 
 void main()
@@ -32,7 +30,7 @@ void main()
     boneTransform     += u_BoneMatrices[v_BoneIDs[2]] * v_BoneWeights[2];
     boneTransform     += u_BoneMatrices[v_BoneIDs[3]] * v_BoneWeights[3];
 
-    // 1. Transform the local vertex by the bones
+    // Transform the local vertex by the bones
     vec4 localPosition = boneTransform * vec4(v_Position, 1.0);
 
     vec4 worldPos = u_Transform * localPosition;

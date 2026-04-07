@@ -206,6 +206,26 @@ namespace Ember {
 		{
 			return (value - min) / (max - min);
 		}
+
+		static inline float Lerp(float a, float b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		static inline Vector3f Lerp(const Vector3f& a, const Vector3f& b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		static inline Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t)
+		{
+			return glm::slerp(a, b, t);
+		}
+
+		static inline Vector3f Mix(const Vector3f& a, const Vector3f& b, float t)
+		{
+			return glm::mix(a, b, t);
+		}
 	};
 
 }

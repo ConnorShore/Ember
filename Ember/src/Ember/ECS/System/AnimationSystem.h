@@ -4,11 +4,11 @@
 
 namespace Ember {
 
-	class PhysicsSystem : public System
+	class AnimationSystem : public System
 	{
 	public:
-		PhysicsSystem() = default;
-		virtual ~PhysicsSystem() = default;
+		AnimationSystem() = default;
+		virtual ~AnimationSystem() = default;
 
 		void OnAttach() override;
 		void OnDetach() override;

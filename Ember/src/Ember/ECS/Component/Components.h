@@ -299,12 +299,18 @@ namespace Ember {
 
 	struct AnimatorComponent
 	{
-		// For the T-Pose test, we will pre-fill this with 100 Identity Matrices
+		UUID SkeletonHandle = Constants::InvalidUUID;
+		UUID CurrentAnimationHandle = Constants::InvalidUUID;
+
 		std::vector<Matrix4f> BoneMatrices;
+
+		TimeStep CurrentTime = 0.0f;
+		bool IsPlaying = true;
+		bool Loop = true;
 
 		AnimatorComponent()
 		{
-			BoneMatrices.resize(100, Matrix4f(1.0f));
+			BoneMatrices.resize(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 		}
 	};
 

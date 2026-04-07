@@ -5,13 +5,13 @@ namespace Ember {
 
 	// UUID = 150 for testing right now
 	Skeleton::Skeleton(const std::string& name, const std::vector<Bone>& bones)
-		: Asset(150, name, "", AssetType::Skeleton), m_Bones(bones)
+		: Asset(name, "", AssetType::Skeleton), m_Bones(bones)
 	{
 		CalculateInverseBindTransforms();
 	}
 
 	Skeleton::Skeleton(const std::string& name, const std::vector<Bone>& bones, const std::vector<Matrix4f>& inverseBindTransforms)
-		: Asset(150, name, "", AssetType::Skeleton), m_Bones(bones), m_InverseBindTransforms(inverseBindTransforms)
+		: Asset(name, "", AssetType::Skeleton), m_Bones(bones), m_InverseBindTransforms(inverseBindTransforms)
 	{
 	}
 

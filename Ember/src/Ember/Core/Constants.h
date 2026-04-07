@@ -19,7 +19,7 @@ namespace Ember::Constants {
 		inline constexpr uint32_t MaxSpotLights = 1;
 		inline constexpr uint32_t MaxPointLights = 256;
 
-		inline constexpr uint32_t MaxBones = 4;
+		inline constexpr uint32_t MaxBones = 100;
 
 		inline constexpr float DefaultAmbient = 0.03f;
 	}

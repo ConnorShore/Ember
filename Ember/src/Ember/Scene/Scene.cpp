@@ -6,7 +6,8 @@
 
 #include "Ember/ECS/System/ScriptSystem.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
-#include "Ember/ECS/System/Rendersystem.h"
+#include "Ember/ECS/System/RenderSystem.h"
+#include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
@@ -89,6 +90,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
@@ -98,6 +100,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this); // TODO: Remove from here, just using for testing
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
 

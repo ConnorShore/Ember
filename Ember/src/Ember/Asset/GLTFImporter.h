@@ -2,6 +2,8 @@
 
 #include "Model.h"
 #include "Skeleton.h"
+#include "Animation.h"
+
 #include "Ember/Render/SkinnedMesh.h"
 
 #include <string>
@@ -14,6 +16,7 @@ namespace Ember {
 		static SharedPtr<Model> LoadModel(const std::string& filePath);
 		static SharedPtr<Skeleton> LoadSkeleton(const std::string& filePath);
 		static SharedPtr<SkinnedMesh> LoadSkinnedMesh(const std::string& filePath);
+		static SharedPtr<Animation> LoadAnimation(const std::string& filePath);
 	};
 
 }
