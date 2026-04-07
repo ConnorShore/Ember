@@ -2,6 +2,7 @@
 #include "ComponentUI.h"
 #include "UI/UIWidgets.h"
 
+#include <Ember/Event/UIEvent.h>
 #include <variant>
 
 namespace Ember {
@@ -136,10 +137,10 @@ namespace Ember {
 					}
 					case ShaderPropertyType::Texture:
 					{
-						SharedPtr<Texture> currentTexture = nullptr;
+						SharedPtr<Texture2D> currentTexture = nullptr;
 						bool hasTexture = material->ContainsUniform(prop.UniformName);
 						if (hasTexture)
-							currentTexture = std::get<SharedPtr<Texture>>(material->GetUniforms().at(prop.UniformName));
+							currentTexture = std::get<SharedPtr<Texture2D>>(material->GetUniforms().at(prop.UniformName));
 
 						bool hasValidTexture = currentTexture
 							&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
@@ -150,12 +151,14 @@ namespace Ember {
 						if (UI::PropertyGrid::DragDropTexture(prop.DisplayName, texUUID, droppedFilePath, [&]() {
 							auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
 							material->SetUniform(prop.UniformName, defaultTex);
-							})
-						)
+						}))
 						{
-							EB_CORE_TRACE("Received payload with data: {}", droppedFilePath);
-							auto newTexture = Application::Instance().GetAssetManager().Load<Texture>(droppedFilePath);
+							auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
 							material->SetUniform(prop.UniformName, newTexture);
+
+							// Add UI notification for the new texture
+							auto evt = UINotificationEvent(std::format("{} texture updated to {}", prop.UniformName, droppedFilePath));
+							m_Context->EventCallback(evt);
 						}
 						break;
 					}
@@ -186,7 +189,7 @@ namespace Ember {
 		}
 
 		// Helper to determine default texture to apply
-		SharedPtr<Texture> GetDefaultTextureForUniform(const std::string& uniformName)
+		SharedPtr<Texture2D> GetDefaultTextureForUniform(const std::string& uniformName)
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
 
@@ -195,17 +198,17 @@ namespace Ember {
 
 			if (nameLower.find("normal") != std::string::npos || nameLower.find("bump") != std::string::npos)
 			{
-				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultNormalTex);
+				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNormalTex);
 			}
 			else if (nameLower.find("emiss") != std::string::npos || nameLower.find("ao") != std::string::npos)
 			{
 				// Emission and AO use black texture
-				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultBlackTex);
+				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultBlackTex);
 			}
 			else
 			{
 				// Albedo, Metallic, Roughness, and general masks default to White
-				return assetManager.GetAsset<Texture>(Constants::Assets::DefaultWhiteTex);
+				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
 			}
 		}
 	};

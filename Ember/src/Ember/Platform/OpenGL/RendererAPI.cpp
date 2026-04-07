@@ -62,6 +62,28 @@ namespace Ember {
 			}
 		}
 
+		void RendererAPI::UseCubeMapSeamless(bool use)
+		{
+			if (use)
+				glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+			else
+				glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+		}
+
+		void RendererAPI::UseDepthFunction(DepthFunction func)
+		{
+			switch (func)
+			{
+			case DepthFunction::Less:	glDepthFunc(GL_LESS); break;
+			case DepthFunction::LessEqual:	glDepthFunc(GL_LEQUAL); break;
+			case DepthFunction::Greater:	glDepthFunc(GL_GREATER); break;
+			case DepthFunction::GreaterEqual:	glDepthFunc(GL_GEQUAL); break;
+			case DepthFunction::Equal:	glDepthFunc(GL_EQUAL); break;
+			case DepthFunction::NotEqual:	glDepthFunc(GL_NOTEQUAL); break;
+			default: EB_CORE_ASSERT(false, "Unknown depth function specified!");
+			}
+		}
+
 		void RendererAPI::UseDepthMask(bool use)
 		{
 			if (use)

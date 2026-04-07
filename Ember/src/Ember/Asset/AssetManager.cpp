@@ -6,21 +6,23 @@ namespace Ember {
 
 	void AssetManager::LoadDefaults()
 	{
-		// TODO: Clean this up and split out defaults to different seections (i.e. LoadDefaultMeshes, LoadDefaultTextures, etc.)
+		// TODO: Clean this up and split out defaults to different sections (i.e. LoadDefaultMeshes, LoadDefaultTextures, etc.)
 		EB_CORE_INFO("Loading default engine assets...");
 
 		// Textures
 		uint32_t whiteTextureData = 0xffffffff;
-		auto whiteTex = Create<Texture>(Constants::Assets::DefaultWhiteTexUUID, Constants::Assets::DefaultWhiteTex, 1, 1, &whiteTextureData);
+		auto whiteTex = Create<Texture2D>(Constants::Assets::DefaultWhiteTexUUID, Constants::Assets::DefaultWhiteTex, 1, 1, &whiteTextureData);
 
 		uint32_t flatNormalData = 0xffff8080;
-		auto normalTex = Create<Texture>(Constants::Assets::DefaultNormalTexUUID, Constants::Assets::DefaultNormalTex, 1, 1, &flatNormalData);
+		auto normalTex = Create<Texture2D>(Constants::Assets::DefaultNormalTexUUID, Constants::Assets::DefaultNormalTex, 1, 1, &flatNormalData);
 
 		uint32_t errorTextureData = 0xff00ffff;
-		auto errorTex = Create<Texture>(Constants::Assets::DefaultErrorTexUUID, Constants::Assets::DefaultErrorTex, 1, 1, &errorTextureData);
+		auto errorTex = Create<Texture2D>(Constants::Assets::DefaultErrorTexUUID, Constants::Assets::DefaultErrorTex, 1, 1, &errorTextureData);
 
 		uint32_t blackTextureData = 0x00000000;
-		auto blackTex = Create<Texture>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
+		auto blackTex = Create<Texture2D>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
+
+		auto defaultSkybox = Load<Texture2D>(Constants::Assets::DefaultSkyboxUUID, Constants::Assets::DefaultSkybox, "Ember/assets/textures/DefaultSkybox.hdr");
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
@@ -44,10 +46,15 @@ namespace Ember {
 		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
 		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
 		auto bloomPrefilter = Load<Shader>(Constants::Assets::BloomPrefilterShadUUID, Constants::Assets::BloomPrefilterShad, "Ember/assets/shaders/BloomPrefilter.glsl");
+		auto skyboxShader = Load<Shader>(Constants::Assets::SkyboxShadUUID, Constants::Assets::SkyboxShad, "Ember/assets/shaders/Skybox.glsl");
+		auto equirectangularToCubemapShad = Load<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID, Constants::Assets::EquirectangularToCubemapShad, "Ember/assets/shaders/EquirectangularToCubemap.glsl");
+		auto irradianceShad = Load<Shader>(Constants::Assets::IrradianceShadUUID, Constants::Assets::IrradianceShad, "Ember/assets/shaders/Irradiance.glsl");
+		auto prefilterShad = Load<Shader>(Constants::Assets::PrefilterShadUUID, Constants::Assets::PrefilterShad, "Ember/assets/shaders/Prefilter.glsl");
+		auto brdfLUTShad = Load<Shader>(Constants::Assets::BRDFLUTShadUUID, Constants::Assets::BRDFLUTShad, "Ember/assets/shaders/BRDF.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
-		geometryMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(1.0f));
+		geometryMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(0.75f));
 		geometryMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
 		geometryMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
 		geometryMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);

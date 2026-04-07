@@ -53,7 +53,7 @@ namespace Ember {
 		PointLightComponent plc;
 		newEntity.AttachComponent<PointLightComponent>(plc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/PointLight.png");
+		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/PointLight.png");
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -70,7 +70,7 @@ namespace Ember {
 		DirectionalLightComponent dlc;
 		newEntity.AttachComponent<DirectionalLightComponent>(dlc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/DirectionalLight.png");
+		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/DirectionalLight.png");
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -88,7 +88,7 @@ namespace Ember {
 		SpotLightComponent slc;
 		newEntity.AttachComponent<SpotLightComponent>(slc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/SpotLight.png");
+		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/SpotLight.png");
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -107,7 +107,7 @@ namespace Ember {
 		CameraComponent cc;
 		newEntity.AttachComponent<CameraComponent>(cc);
 
-		auto cameraTexture = Application::Instance().GetAssetManager().Load<Texture>("Ember-Forge/assets/icons/Camera.png");
+		auto cameraTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Camera.png");
 
 		BillboardComponent bc;
 		bc.TextureHandle = cameraTexture->GetUUID();

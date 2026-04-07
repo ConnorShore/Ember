@@ -35,6 +35,8 @@
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
 #include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/Texture2D.h"
+#include "Ember/Render/CubeMap.h"
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/UniformBuffer.h"
 

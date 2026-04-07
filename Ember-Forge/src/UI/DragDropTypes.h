@@ -49,9 +49,9 @@ namespace Ember {
 		{
 			switch (type)
 			{
-			case DragDropPayloadType::AssetTexture: return "*.png;*.jpg;*.jpeg;*.bmp";
+			case DragDropPayloadType::AssetTexture: return "*.png;*.jpg;*.hdr;*.jpeg;*.bmp;";
 				//case DragDropPayloadType::AssetMesh: return "*.obj;*.fbx;";
-			case DragDropPayloadType::AssetModel: return "*.obj;*.fbx;*.gltf;*.glb";
+			case DragDropPayloadType::AssetModel: return "*.obj;*.fbx;*.gltf;*.glb;";
 			//case DragDropPayloadType::AssetMesh: return "*.ebmesh;";
 			//case DragDropPayloadType::AssetModel: return "*.ebmodel;";
 			case DragDropPayloadType::AssetShader: return "*.glsl;";
@@ -62,7 +62,7 @@ namespace Ember {
 
 		static DragDropPayloadType ExtensionToDragDropPayloadType(const std::string& extension)
 		{
-			if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
+			if (extension == ".png" || extension == ".jpg" || extension == ".hdr" || extension == ".jpeg" || extension == ".bmp")
 				return DragDropPayloadType::AssetTexture;
 			if (extension == ".ebmesh")
 				return DragDropPayloadType::AssetMesh;

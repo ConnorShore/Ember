@@ -1,0 +1,70 @@
+#pragma once
+
+#include "Texture2D.h"
+#include "CubeMap.h"
+#include "VertexArray.h"
+#include "Framebuffer.h"
+#include "Mesh.h"
+
+#include "Ember/Core/Core.h"
+#include "Ember/Math/Math.h"
+#include "Ember/Asset/AssetManager.h"
+
+namespace Ember {
+
+	class Skybox : public SharedResource
+	{
+	public:
+		Skybox();
+		Skybox(UUID equirectangularMapAssetUUID);
+
+		~Skybox() = default;
+
+		void Initialize(UUID equirectangularMapAssetUUID);
+
+		inline uint32_t GetEnvironmentCubeMapID() const { return m_EnvironmentCubeMap ? m_EnvironmentCubeMap->GetID() : 0; }
+		inline uint32_t GetIrradianceMapID() const { return m_IrradianceMap ? m_IrradianceMap->GetID() : 0; }
+		inline uint32_t GetPrefilteredMapID() const { return m_PrefilteredMap ? m_PrefilteredMap->GetID() : 0; }
+		inline uint32_t GetBRDFLUTID() const { return m_BRDFLUT ? m_BRDFLUT->GetID() : 0; }
+
+		inline UUID GetSkyboxTextureHandle() const { return m_SkyboxTextureHandle; }
+
+		inline void SetSkyboxResolution(uint32_t resolution) { m_Resolution = resolution; Initialize(GetSkyboxTextureHandle()); }
+		inline uint32_t GetSkyboxResolution() const { return m_Resolution; }
+
+		inline void SetIntensity(float intensity) { m_Intensity = intensity; }
+		inline float GetIntensity() const { return m_Intensity; }
+
+		inline void SetEnabled(bool enabled) { m_Enabled = enabled; };
+		inline bool Enabled() const { return m_Enabled; }
+
+	private:
+		void CreateEnvironmentMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
+		void CreateIrradianceMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
+		void CreatePrefilteredMap(const AssetManager& assetManager, const SharedPtr<VertexArray>& cubeVAO);
+		void CreateBRDFLUT(const AssetManager& assetManager);
+
+	private:
+		bool m_Enabled = false;
+		float m_Intensity = 1.0f;
+
+		uint32_t m_Resolution = 1024;
+		UUID m_SkyboxTextureHandle;
+
+		SharedPtr<Framebuffer> m_SkyboxBuffer;
+		SharedPtr<CubeMap> m_EnvironmentCubeMap;
+
+		SharedPtr<Framebuffer> m_IrradianceBuffer;
+		SharedPtr<CubeMap> m_IrradianceMap;
+
+		SharedPtr<Framebuffer> m_PrefilterBuffer;
+		SharedPtr<CubeMap> m_PrefilteredMap;
+
+		SharedPtr<Framebuffer> m_BRDFLUTBuffer;
+		SharedPtr<Texture2D> m_BRDFLUT;
+
+		Matrix4f m_CaptureProjection;
+		std::array<Matrix4f, 6> m_CaptureViewMats;
+	};
+
+}

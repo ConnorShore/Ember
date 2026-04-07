@@ -645,7 +645,7 @@ typedef void (APIENTRY *GLVULKANPROCNV)(void);
 #define GL_RGB16I 0x8D89
 #define GL_RGBA8I 0x8D8E
 #define GL_RGB8I 0x8D8F
-#define GL_RED_INTEGER 0x8D94
+#define GL_RedInteger 0x8D94
 #define GL_GREEN_INTEGER 0x8D95
 #define GL_BLUE_INTEGER 0x8D96
 #define GL_RGB_INTEGER 0x8D98

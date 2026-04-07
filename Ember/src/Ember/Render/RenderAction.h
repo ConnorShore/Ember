@@ -49,9 +49,19 @@ namespace Ember {
 			m_RendererApi->UseBlending(use);
 		}
 
+		static inline void UseCubeMapSeamless(bool use)
+		{
+			m_RendererApi->UseCubeMapSeamless(use);
+		}
+
 		static inline void UseDepthMask(bool use)
 		{
 			m_RendererApi->UseDepthMask(use);
+		}
+
+		static inline void UseDepthFunction(RendererAPI::DepthFunction func)
+		{
+			m_RendererApi->UseDepthFunction(func);
 		}
 
 		static inline void SetTextureUnit(uint32_t unit, uint32_t texture)

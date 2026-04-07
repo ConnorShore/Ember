@@ -13,9 +13,11 @@ namespace Ember {
 			switch (format)
 			{
 			case FramebufferTextureFormat::RGBA8:			return GL_RGBA8;
+			case FramebufferTextureFormat::RG16F:			return GL_RG16F;
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
-			case FramebufferTextureFormat::RED_INTEGER:		return GL_R32I;
-			case FramebufferTextureFormat::DEPTH24STENCIL8:	return GL_DEPTH24_STENCIL8;
+			case FramebufferTextureFormat::RedInteger:		return GL_R32I;
+			case FramebufferTextureFormat::Depth24: 		return GL_DEPTH_COMPONENT24;
+			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH24_STENCIL8;
 			case FramebufferTextureFormat::None:			return 0;
 			default:
 				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
@@ -28,9 +30,11 @@ namespace Ember {
 			switch (format)
 			{
 			case FramebufferTextureFormat::RGBA8:
+			case FramebufferTextureFormat::RG16F:
 			case FramebufferTextureFormat::RGBA16F:
-			case FramebufferTextureFormat::RED_INTEGER:		return GL_COLOR_ATTACHMENT0 + index;
-			case FramebufferTextureFormat::DEPTH24STENCIL8:	return GL_DEPTH_STENCIL_ATTACHMENT;
+			case FramebufferTextureFormat::RedInteger:		return GL_COLOR_ATTACHMENT0 + index;
+			case FramebufferTextureFormat::Depth24:			return GL_DEPTH_ATTACHMENT;
+			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			case FramebufferTextureFormat::None:			return 0;
 			default:
 				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
@@ -72,12 +76,23 @@ namespace Ember {
 			Regenerate();
 		}
 
+		void Framebuffer::AttachColorTexture(uint32_t textureId, int mipLevel /*= 0*/)
+		{
+			glNamedFramebufferTexture(m_Id, GL_COLOR_ATTACHMENT0, textureId, mipLevel);
+		}
+
+		// Used for attaching a layer of a texture array to the framebuffer for rendering
+		void Framebuffer::AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer)
+		{
+			glNamedFramebufferTextureLayer(m_Id, GL_COLOR_ATTACHMENT0, textureId, mipLevel, layer);
+		}
+
 		// Reads a single pixel from an integer color attachment (used for entity ID picking)
 		int Framebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y) const
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 			int pixelData;
-			glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+			glReadPixels(x, y, 1, 1, GL_RedInteger, GL_INT, &pixelData);
 			return pixelData;
 		}
 
@@ -104,8 +119,8 @@ namespace Ember {
 
 			std::vector<GLenum> drawBuffers;
 			bool containsDepth = false;
-			uint32_t size = static_cast<uint32_t>(m_Specification.AttachmentSpecs.Attachments.size());
-			for (uint32_t i = 0; i < size; i++)
+			auto size = m_Specification.AttachmentSpecs.Attachments.size();
+			for (size_t i = 0; i < size; i++)
 			{
 				auto attachmentSpec = m_Specification.AttachmentSpecs.Attachments[i];
 				auto glColorFormat = FramebufferTextureFormatToGLFormat(attachmentSpec.TextureFormat);

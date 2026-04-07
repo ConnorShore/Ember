@@ -13,25 +13,28 @@ namespace Ember {
 			Framebuffer(const FramebufferSpecification& specification);
 			virtual ~Framebuffer();
 
-			void Bind() const override;
-			void Unbind() const override;
+			virtual void Bind() const override;
+			virtual void Unbind() const override;
 			virtual void ViewportResize(uint32_t width, uint32_t height) override;
 
-			int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
-			void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;
+			virtual void AttachColorTexture(uint32_t textureId, int mipLevel = 0) override;
+			virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) override;
 
-			inline uint32_t GetColorAttachmentID(uint32_t id) const override 
+			virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
+			virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;
+
+			virtual inline uint32_t GetColorAttachmentID(uint32_t id) const override 
 			{
 				EB_CORE_ASSERT(id < m_ColorAttachments.size(), "Color attachment id doesn't exist");
 				return m_ColorAttachments[id];
 			}
-			inline uint32_t GetDepthAttachmentID() const override
+			virtual inline uint32_t GetDepthAttachmentID() const override
 			{
 				return m_DepthAttachment;
 			}
 
-			inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
-			inline uint32_t GetID() const override { return m_Id; }
+			virtual inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
+			virtual inline uint32_t GetID() const override { return m_Id; }
 
 		private:
 			void Regenerate();

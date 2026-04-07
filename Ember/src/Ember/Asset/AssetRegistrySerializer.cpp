@@ -2,7 +2,7 @@
 #include "AssetRegistrySerializer.h"
 
 #include "Model.h"
-#include "Ember/Render/Texture.h"
+#include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
@@ -28,7 +28,7 @@ namespace Ember {
 		ryml::NodeRef assetsNode = root["Assets"];
 		assetsNode |= ryml::SEQ;
 
-		auto textures = m_AssetManagerHandle->GetAssetsOfType<Texture>();
+		auto textures = m_AssetManagerHandle->GetAssetsOfType<Texture2D>();
 		for (auto texture : textures) {
 			if (texture->GetFilePath().empty() || texture->IsEngineAsset())
 				continue;
@@ -146,7 +146,7 @@ namespace Ember {
 			// Dispatch to the correct Load<T> based on the serialized type string
 			if (type == "Texture")
 			{
-				auto texture = m_AssetManagerHandle->Load<Texture>(uuid, name, path, false);
+				auto texture = m_AssetManagerHandle->Load<Texture2D>(uuid, name, path, false);
 				EB_CORE_TRACE("Loaded Texture: {0}", name);
 			}
 			else if (type == "Shader")

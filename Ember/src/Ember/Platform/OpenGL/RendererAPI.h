@@ -16,6 +16,9 @@ namespace Ember {
 			virtual void UseDepthTest(bool use) override;
 			virtual void UseDepthMask(bool use) override;
 			virtual void UseBlending(bool use) override;
+			virtual void UseCubeMapSeamless(bool use) override;
+
+			virtual void UseDepthFunction(DepthFunction func) override;
 
 			virtual void SetTextureUnit(uint32_t unit, uint32_t texture) override;
 			virtual void SetFramebuffer(uint32_t framebufferId) override;

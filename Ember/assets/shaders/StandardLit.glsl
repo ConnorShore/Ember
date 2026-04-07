@@ -53,8 +53,12 @@ layout(binding = 2) uniform sampler2D u_PositionAO;
 layout(binding = 3) uniform sampler2D u_EmissionOut;
 layout(binding = 4) uniform sampler2D u_DirectionShadowMap;
 layout(binding = 5) uniform sampler2D u_SpotShadowMap;
+layout(binding = 6) uniform samplerCube u_IrradianceMap;
+layout(binding = 7) uniform samplerCube u_PrefilterMap;
+layout(binding = 8) uniform sampler2D u_BRDFLUT;
 
 uniform vec3 u_CameraPos;
+uniform float u_EnvironmentIntensity;
 
 layout(std140, binding = 1) uniform ShadowData
 {
@@ -94,6 +98,11 @@ float GeometrySchlickGGXSub(vec3 N, vec3 V, float roughness)
 vec3 Fresnel(vec3 V, vec3 H, vec3 F0)
 {
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - dot(H, V), 0.0, 1.0), 5.0);
+}
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
@@ -162,6 +171,8 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		vec3 numerator = D * G * F;
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 		vec3 specular =  numerator / denomenator;
+
+
 
 		result += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 	}
@@ -276,6 +287,7 @@ void main()
 
 	vec3 N = normalize(gNormal);
 	vec3 V = normalize(u_CameraPos - gPosition);
+    vec3 R = reflect(-V, N); 
 
 	// Clamp roughness to avoid NDF collapsing to 0 (produces flat ambient-only result)
 	roughness = max(roughness, 0.05);
@@ -286,17 +298,42 @@ void main()
 	L0 += ApplySpotLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
 	L0 += ApplyPointLighting(gPosition, gNormal, V, N, actualAlbedo, metallic, roughness);
 
-	// Ambient light
-	vec3 ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao;
-    vec3 color = ambient + L0;
-   
-	vec3 emission = texture(u_EmissionOut, TextureCoord).rgb;
-    
-    // 3. Add them together! Light doesn't care about shadows, it just adds on top.
-    vec3 finalColor = color + emission;
-    
-    OutColor = vec4(finalColor, 1.0);
+	// Calculate Specular IBL (Reflections)
+	const float MAX_REFLECTION_LOD = 7.0;	// This should match the max LOD level used when generating the prefilter map (7 = 128x128 for a 1024x1024 base resolution)
+	vec3 prefilteredColor = textureLod(u_PrefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;    
+	
+	// Calculate Fresnel for ambient lighting
+	vec3 F0 = mix(vec3(0.04), actualAlbedo, metallic);
+	vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-	// Extract bright areas for hdr / bloom. Anthing outside 1.0 will bloom
+	vec2 brdfUV = clamp(vec2(max(dot(N, V), 0.0), roughness), 0.001, 0.999);
+	vec2 brdf = texture(u_BRDFLUT, brdfUV).rg;
+	
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+	//Calc ulate Diffuse IBL (Ambient Light)
+	vec3 kS = F;
+	vec3 kD = 1.0 - kS;
+	kD *= 1.0 - metallic; // Metals don't have diffuse light!
+	
+	vec3 diffuseAmbient = texture(u_IrradianceMap, N).rgb * actualAlbedo * kD;
+
+	// Combine IBL and apply Intensity/AO
+	vec3 ambient = (diffuseAmbient + specular) * ao;
+	
+	if (u_EnvironmentIntensity <= 0.0) {
+		ambient = vec3(DEFAULT_AMBIENT) * actualAlbedo * ao; // Fallback
+	} else {
+		ambient *= u_EnvironmentIntensity;
+	}
+
+	// Final Composition
+	vec3 color = ambient + L0;
+	vec3 emission = texture(u_EmissionOut, TextureCoord).rgb;
+	
+	vec3 finalColor = color + emission;
+	OutColor = vec4(finalColor, 1.0);
+
+	// Extract bright areas for hdr / bloom
 	BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);
 }

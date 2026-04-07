@@ -31,6 +31,8 @@ namespace Ember::Constants {
 		inline const uint64_t DefaultNormalTexUUID = 3;
 		inline const char* DefaultBlackTex = "DefaultBlack";
 		inline const uint64_t DefaultBlackTexUUID = 4;
+		inline const char* DefaultSkybox = "DefaultSkybox";
+		inline const uint64_t DefaultSkyboxUUID = 5;
 
 		inline const char* StandardGeometryShad = "StandardGeometry";
 		inline const uint64_t StandardGeometryShadUUID = 10;
@@ -56,6 +58,16 @@ namespace Ember::Constants {
 		inline const uint64_t BillboardShadUUID = 20;
 		inline const char* BloomPrefilterShad = "BloomPrefilter";
 		inline const uint64_t BloomPrefilterShadUUID = 21;
+		inline const char* SkyboxShad = "Skybox";
+		inline const uint64_t SkyboxShadUUID = 22;
+		inline const char* EquirectangularToCubemapShad = "EquirectangularToCubemap";
+		inline const uint64_t EquirectangularToCubemapShadUUID = 23;
+		inline const char* IrradianceShad = "Irradiance";
+		inline const uint64_t IrradianceShadUUID = 24;
+		inline const char* PrefilterShad = "PreFilter";
+		inline const uint64_t PrefilterShadUUID = 25;
+		inline const char* BRDFLUTShad = "BRDFLUT";
+		inline const uint64_t BRDFLUTShadUUID = 26;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -82,6 +94,7 @@ namespace Ember::Constants {
 
 		inline const char* Transform = "u_Transform";
 		inline const char* Projection = "u_Projection";
+		inline const char* View = "u_View";
 		inline const char* ViewProj = "u_ViewProjection";
 		inline const char* NormalMatrix = "u_NormalMatrix";
 		inline const char* InverseView = "u_InverseView";
@@ -116,6 +129,14 @@ namespace Ember::Constants {
 		inline const char* LightViewMatrix = "u_LightViewMat";
 		inline const char* DirectionalLightViewMatrix = "u_DirectionalLightViewMat";
 		inline const char* SpotLightViewMatrix = "u_SpotLightViewMat";
+
+		inline const char* EquirectangularMap = "u_EquirectangularMap";
+		inline const char* EnvironmentMap = "u_EnvironmentMap";
+		inline const char* IrradianceMap = "u_IrradianceMap";
+		inline const char* PrefilterMap = "u_PrefilterMap";
+		inline const char* BRDFLUT = "u_BRDFLUT";
+
+		inline const char* EnvironmentIntensity = "u_EnvironmentIntensity";
 
 		inline const char* EntityID = "u_EntityID";
 	}
