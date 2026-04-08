@@ -84,7 +84,7 @@ namespace Ember {
 		// 2. COOK MATERIALS
 		for (size_t i = 0; i < model.materials.size(); i++) {
 			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages));
-			am.Load<MaterialBase>(report.Materials.back().id, report.Materials.back().name, report.Materials.back().path);
+			am.Load<MaterialBase>(report.Materials.back().id, report.Materials.back().name, report.Materials.back().path, false);
 		}
 
 		// 3. COOK MESHES
@@ -252,6 +252,7 @@ namespace Ember {
 			shader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::StandardGeometryShadUUID);
 
 		auto mat = SharedPtr<Material>::Create(id, name, shader, RenderQueue::Opaque);
+		mat->SetIsEngineAsset(false);
 
 		auto& pbr = gMat.pbrMetallicRoughness;
 		mat->SetUniform(Constants::Uniforms::Albedo, Vector3f((float)pbr.baseColorFactor[0], (float)pbr.baseColorFactor[1], (float)pbr.baseColorFactor[2]));

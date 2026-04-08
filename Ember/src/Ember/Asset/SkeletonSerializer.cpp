@@ -54,6 +54,8 @@ namespace Ember {
 		std::vector<Matrix4f> invBinds(header.BoneCount);
 		file.read((char*)invBinds.data(), header.BoneCount * sizeof(Matrix4f));
 
-		return SharedPtr<Skeleton>::Create(uuid, filepath.stem().string(), bones, invBinds);
+		auto skeleton = SharedPtr<Skeleton>::Create(uuid, filepath.stem().string(), bones, invBinds);
+		skeleton->SetFilePath(filepath.string());
+		return skeleton;
 	}
 }

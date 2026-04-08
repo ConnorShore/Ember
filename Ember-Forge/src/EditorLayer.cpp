@@ -731,8 +731,6 @@ namespace Ember {
 				if (entity.ContainsComponent(componentType))
 				{
 					entity.DetachComponent(componentType);
-					auto evt = UINotificationEvent(std::format("Component {} removed from Entity {}", componentType, entity.GetName()));
-					m_Context.EventCallback(evt);
 				}
 			}
 		}

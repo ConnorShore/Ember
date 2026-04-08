@@ -62,6 +62,7 @@ namespace Ember {
 			if (header.MagicNumber != MESH_FILE_MAGIC) return nullptr;
 
 			std::string name = filepath.stem().string();
+			SharedPtr<Mesh> mesh = nullptr;
 			if (header.IsSkinned) {
 				std::vector<SkinnedMeshVertex> verts(header.VertexCount);
 				file.read((char*)verts.data(), header.VertexCount * sizeof(SkinnedMeshVertex));
@@ -69,7 +70,7 @@ namespace Ember {
 				std::vector<uint32_t> indices(header.IndexCount);
 				file.read((char*)indices.data(), header.IndexCount * sizeof(uint32_t));
 
-				return SharedPtr<SkinnedMesh>::Create(uuid, name, verts, indices);
+				mesh = SharedPtr<SkinnedMesh>::Create(uuid, name, verts, indices);
 			}
 			else {
 				std::vector<StaticMeshVertex> verts(header.VertexCount);
@@ -78,8 +79,11 @@ namespace Ember {
 				std::vector<uint32_t> indices(header.IndexCount);
 				file.read((char*)indices.data(), header.IndexCount * sizeof(uint32_t));
 
-				return SharedPtr<StaticMesh>::Create(uuid, name, verts, indices);
+				mesh = SharedPtr<StaticMesh>::Create(uuid, name, verts, indices);
 			}
+
+			mesh->SetIsEngineAsset(false);
+			return mesh;
 		}
 	};
 }

@@ -68,7 +68,8 @@ namespace Ember {
 				DirectionalLightComponent,
 				SpotLightComponent,
 				PointLightComponent,
-				RelationshipComponent
+				RelationshipComponent,
+				AnimatorComponent
 			>(srcEntity, destEntity);
 		}
 
@@ -101,7 +102,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this); // TODO: Remove from here, just using for testing
+		//systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this); // TODO: Remove from here, just using for testing
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
 
@@ -232,7 +233,8 @@ namespace Ember {
 			RigidBodyComponent,
 			DirectionalLightComponent,
 			SpotLightComponent,
-			PointLightComponent
+			PointLightComponent,
+			AnimatorComponent
 		>(entity, newEntity);
 
 		if (entity.ContainsComponent<RelationshipComponent>())
