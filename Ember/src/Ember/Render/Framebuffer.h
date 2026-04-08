@@ -48,8 +48,8 @@ namespace Ember {
 
 	struct FramebufferSpecification
 	{
-		uint32_t Width;
-		uint32_t Height;
+		uint32_t Width = 1;
+		uint32_t Height = 1;
 
 		FramebufferAttachmentSpecification AttachmentSpecs;
 	};

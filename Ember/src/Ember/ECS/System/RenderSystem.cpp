@@ -149,44 +149,44 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid)
+	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool renderInfiniteGrid)
 	{
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		if (!m_RenderSceneState.IsCameraFound)
 			return;
 
-		SortEntitiesByRenderQueue(registry);
+		SortEntitiesByRenderQueue(scene);
 
 		// --- Shadow pass ---
-		CreateDirectionalShadowMap(registry);
-		CreateSpotlightShadowMap(registry);
+		CreateDirectionalShadowMap(scene);
+		CreateSpotlightShadowMap(scene);
 
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
-		RenderDeferredGeometry(registry);
-		RenderDeferredLighting(registry);
+		RenderDeferredGeometry(scene);
+		RenderDeferredLighting(scene);
 
 		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
 		RenderAction::CopyDepthBuffer(m_GBuffer->GetID(), m_HdrSceneBuffer->GetID(), m_RenderSceneState.ViewportDimensions);
 
 		// --- Skybox ---
 		if (m_Skybox->Enabled())
-			RenderSkybox(registry);
+			RenderSkybox(scene);
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
-		RenderForwardEntities(registry);
-		RenderTransparentEntities(registry);
+		RenderForwardEntities(scene);
+		RenderTransparentEntities(scene);
 
 		// Render Editor Grid
 		if (renderInfiniteGrid)
 			RenderInfiniteGrid();
 
-		RenderBillboards(registry);
+		RenderBillboards(scene);
 
-		HandlePostProcessing(registry);
+		HandlePostProcessing(scene);
 
 		// Overlays
-		Render2DEntities(registry);
+		Render2DEntities(scene);
 
 		ResetRenderState();
 	}
@@ -195,10 +195,10 @@ namespace Ember {
 	{
 		m_CurrentScene = scene;
 		InitializeRenderState();
-		SetSceneCamera(scene->GetRegistry());
+		SetSceneCamera(scene);
 
 		if (m_RenderSceneState.IsCameraFound)
-			ExecuteRenderPipeline(scene->GetRegistry(), false);
+			ExecuteRenderPipeline(scene, false);
 
 		m_CurrentScene = nullptr;
 	}
@@ -217,7 +217,7 @@ namespace Ember {
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
-		ExecuteRenderPipeline(scene->GetRegistry(), true);
+		ExecuteRenderPipeline(scene, true);
 
 		m_CurrentScene = nullptr;
 	}
@@ -262,8 +262,9 @@ namespace Ember {
 		m_RenderSceneState.Reset();
 	}
 
-	void RenderSystem::SetSceneCamera(Registry& registry)
+	void RenderSystem::SetSceneCamera(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
 		View cameraView = registry.Query<CameraComponent, TransformComponent>();
 		for (EntityID cameraEntity : cameraView)
 		{
@@ -283,14 +284,16 @@ namespace Ember {
 		}
 	}
 
-	void RenderSystem::CreateShadowMaps(Registry& registry)
+	void RenderSystem::CreateShadowMaps(Scene* scene)
 	{
-		CreateDirectionalShadowMap(registry);
-		CreateSpotlightShadowMap(registry);
+		CreateDirectionalShadowMap(scene);
+		CreateSpotlightShadowMap(scene);
 	}
 
-	void RenderSystem::CreateDirectionalShadowMap(Registry& registry)
+	void RenderSystem::CreateDirectionalShadowMap(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		// Get directional light view matrix to create shadow map
 		View lightView = registry.Query<DirectionalLightComponent, TransformComponent>();
 		uint32_t index = 0;
@@ -318,11 +321,13 @@ namespace Ember {
 
 			index++;
 		}
-		RenderGeometryForShadowMaps(registry, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
+		RenderGeometryForShadowMaps(scene, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
 	}
 
-	void RenderSystem::CreateSpotlightShadowMap(Registry& registry)
+	void RenderSystem::CreateSpotlightShadowMap(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		// Get spotlight view matrix to create shadow map
 		View lightView = registry.Query<SpotLightComponent, TransformComponent>();
 		uint32_t index = 0;
@@ -350,11 +355,12 @@ namespace Ember {
 			index++;
 		}
 
-		RenderGeometryForShadowMaps(registry, m_RenderSceneState.SpotLightViewMatrix, m_SpotShadowMapBuffer);
+		RenderGeometryForShadowMaps(scene, m_RenderSceneState.SpotLightViewMatrix, m_SpotShadowMapBuffer);
 	}
 
-	void RenderSystem::RenderGeometryForShadowMaps(Registry& registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
+	void RenderSystem::RenderGeometryForShadowMaps(Scene* scene, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
 	{
+		auto& registry = scene->GetRegistry();
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
 
@@ -401,8 +407,10 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderDeferredGeometry(Registry& registry)
+	void RenderSystem::RenderDeferredGeometry(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		m_GBuffer->Bind();
 		RenderAction::SetViewport(0, 0, m_GBuffer->GetSpecification().Width, m_GBuffer->GetSpecification().Height);
 
@@ -452,15 +460,23 @@ namespace Ember {
 
 				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 
-				// Upload Bone Matrices!
-				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
+				// Cache runtime animator Id -> do expensive lookup only once
+				if (mesh.RuntimeAnimatorID == Constants::Entities::InvalidEntityID && mesh.AnimatorEntityHandle != Constants::InvalidUUID)
 				{
-                  Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
-					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID && registry.ContainsComponent<AnimatorComponent>(animatorEntity.GetEntityHandle()))
+					Entity animatorEnt = scene->GetEntity(mesh.AnimatorEntityHandle);
+					if (animatorEnt.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 					{
-                        auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
-						materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+						mesh.RuntimeAnimatorID = animatorEnt.GetEntityHandle();
 					}
+				}
+
+				// Use cached runtime animator id
+				if (mesh.RuntimeAnimatorID != Constants::Entities::InvalidEntityID)
+				{
+					EB_CORE_ASSERT(registry.ContainsComponent<AnimatorComponent>(mesh.RuntimeAnimatorID), "Animator component should be present");
+
+					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
+					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
 				}
 
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
@@ -470,8 +486,10 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderDeferredLighting(Registry& registry)
+	void RenderSystem::RenderDeferredLighting(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		int dims[4] = { 0 };
 		RenderAction::GetViewportDimensions(dims);
 		m_RenderSceneState.ViewportDimensions = Vector4<int>(dims[0], dims[1], dims[2], dims[3]);
@@ -587,7 +605,7 @@ namespace Ember {
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
-	void RenderSystem::RenderSkybox(Registry& registry)
+	void RenderSystem::RenderSkybox(Scene* scene)
 	{
 		m_HdrSceneBuffer->Bind();
 
@@ -618,8 +636,10 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 	}
 
-	void RenderSystem::RenderForwardEntities(Registry& registry)
+	void RenderSystem::RenderForwardEntities(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		m_HdrSceneBuffer->Bind();
 
 		RenderAction::UseDepthTest(true);
@@ -663,7 +683,7 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
-	void RenderSystem::RenderTransparentEntities(Registry& registry)
+	void RenderSystem::RenderTransparentEntities(Scene* scene)
 	{
 
 	}
@@ -693,8 +713,10 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 	}
 
-	void RenderSystem::RenderBillboards(Registry& registry)
+	void RenderSystem::RenderBillboards(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		RenderAction::UseBlending(true);
 		RenderAction::UseDepthTest(false);
 
@@ -761,8 +783,10 @@ namespace Ember {
 		RenderAction::UseBlending(false);
 	}
 
-	void RenderSystem::Render2DEntities(Registry& registry)
+	void RenderSystem::Render2DEntities(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		RenderAction::UseDepthTest(false);
 
 		Renderer2D::BeginFrame();
@@ -787,8 +811,10 @@ namespace Ember {
 		Renderer2D::EndFrame();
 	}
 
-	void RenderSystem::HandlePostProcessing(Registry& registry)
+	void RenderSystem::HandlePostProcessing(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		// TODO: Down the line, passing textures between shaders is slow so eventually want to 
 		//  move to only a ping pong shader pass and a final composite shader.
 		//  The ping pong pass will handle every post processing effect that needs the ping pong approach
@@ -877,8 +903,10 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 	}
 
-	void RenderSystem::SortEntitiesByRenderQueue(Registry& registry)
+	void RenderSystem::SortEntitiesByRenderQueue(Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+
 		auto sortLogic = [&](EntityID entity) {
 			auto& material = registry.GetComponent<MaterialComponent>(entity);
 			if (material.MaterialHandle == Constants::InvalidUUID)

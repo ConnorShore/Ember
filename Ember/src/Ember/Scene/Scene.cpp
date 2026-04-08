@@ -240,6 +240,12 @@ namespace Ember {
 			AnimatorComponent
 		>(entity, newEntity);
 
+		// Clear runtime cache for skinned mesh component so new skeleton UUID is used
+		if (newEntity.ContainsComponent<SkinnedMeshComponent>())
+		{
+			newEntity.GetComponent<SkinnedMeshComponent>().RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
+		}
+
 		// If this entity owns the animator, establish the old->new UUID mapping
 		if (newEntity.ContainsComponent<AnimatorComponent>())
 		{

@@ -169,6 +169,14 @@ namespace Ember {
 				Util::SerializeVector3f(outlineNode["Color"], outlineComp.Color);
 				outlineNode["Thickness"] << outlineComp.Thickness;
 			}
+			if (entity.ContainsComponent<AnimatorComponent>())
+			{
+				auto& animator = entity.GetComponent<AnimatorComponent>();
+				ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
+				animatorNode |= ryml::MAP;
+				animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
+				animatorNode["CurrentAnimationHandle"] << (uint64_t)animator.CurrentAnimationHandle;
+			}
 		}
 
 		// Write out to disk
@@ -419,6 +427,25 @@ namespace Ember {
 					Util::DeserializeVector3f(outlineNode["Color"], oc.Color);
 					outlineNode["Thickness"] >> oc.Thickness;
 					deserializedEntity.AttachComponent<OutlineComponent>(oc);
+				}
+
+				if (entityNode.has_child("AnimatorComponent"))
+				{
+					ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
+					AnimatorComponent ac;
+
+					uint64_t skelHandle = Constants::InvalidUUID;
+					if (animatorNode.has_child("SkeletonHandle"))
+						animatorNode["SkeletonHandle"] >> skelHandle;
+
+					uint64_t animHandle = Constants::InvalidUUID;
+					if (animatorNode.has_child("CurrentAnimationHandle"))
+						animatorNode["CurrentAnimationHandle"] >> animHandle;
+
+					ac.SkeletonHandle = (UUID)skelHandle;
+					ac.CurrentAnimationHandle = (UUID)animHandle;
+
+					deserializedEntity.AttachComponent<AnimatorComponent>(ac);
 				}
 			}
 		}

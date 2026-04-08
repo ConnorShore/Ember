@@ -132,6 +132,9 @@ namespace Ember {
 		UUID MeshHandle = Constants::InvalidUUID;
 		UUID AnimatorEntityHandle = Constants::InvalidUUID;
 
+		// Runtime only (not serialized) -> used for caching animator id to avoid expensive lookups
+		EntityID RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
+
 		SkinnedMeshComponent() = default;
 		SkinnedMeshComponent(UUID meshId, UUID animatorEntityUUID = Constants::InvalidUUID)
 			: MeshHandle(meshId), AnimatorEntityHandle(animatorEntityUUID) {
@@ -219,7 +222,7 @@ namespace Ember {
 	struct CameraComponent
 	{
 		Camera Camera;
-		bool IsActive;
+		bool IsActive = false;
 
 		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}

@@ -48,25 +48,25 @@ namespace Ember {
 		}
 
 	private:
-		void ExecuteRenderPipeline(Registry& registry, bool renderInfiniteGrid);
+		void ExecuteRenderPipeline(Scene* scene, bool renderInfiniteGrid);
 		void InitializeRenderState();
-		void SetSceneCamera(Registry& registry);
-		void CreateShadowMaps(Registry& registry);
-		void RenderGeometryForShadowMaps(Registry& registry, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
-		void CreateDirectionalShadowMap(Registry& registry);
-		void CreateSpotlightShadowMap(Registry& registry);
-		void RenderDeferredGeometry(Registry& registry);
-		void RenderDeferredLighting(Registry& registry);
-		void RenderSkybox(Registry& registry);
-		void RenderForwardEntities(Registry& registry);
-		void RenderTransparentEntities(Registry& registry);
+		void SetSceneCamera(Scene* scene);
+		void CreateShadowMaps(Scene* scene);
+		void RenderGeometryForShadowMaps(Scene* scene, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
+		void CreateDirectionalShadowMap(Scene* scene);
+		void CreateSpotlightShadowMap(Scene* scene);
+		void RenderDeferredGeometry(Scene* scene);
+		void RenderDeferredLighting(Scene* scene);
+		void RenderSkybox(Scene* scene);
+		void RenderForwardEntities(Scene* scene);
+		void RenderTransparentEntities(Scene* scene);
 		void RenderInfiniteGrid();
-		void RenderBillboards(Registry& registry);
-		void Render2DEntities(Registry& registry);
-		void HandlePostProcessing(Registry& registry);
+		void RenderBillboards(Scene* scene);
+		void Render2DEntities(Scene* scene);
+		void HandlePostProcessing(Scene* scene);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
 		void ResetRenderState();
-		void SortEntitiesByRenderQueue(Registry& registry);
+		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
 		SharedPtr<StaticMesh> m_ScreenQuad;
