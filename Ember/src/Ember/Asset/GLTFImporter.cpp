@@ -1,346 +1,359 @@
 #include "ebpch.h"
 #include "GLTFImporter.h"
+
+#include "Ember/Core/Application.h"
 #include "Ember/Core/Core.h"
+#include "Ember/Asset/AssetManager.h"
+#include "Ember/Asset/MeshSerializer.h"
+#include "Ember/Asset/MaterialSerializer.h"
+#include "Ember/Asset/SkeletonSerializer.h"
+#include "Ember/Asset/AnimationSerializer.h"
+
+#include <filesystem>
+#include <fstream>
+#include <unordered_map>
+
+#include <ryml.hpp>
+#include <ryml_std.hpp>
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-
 #include <tiny_gltf.h>
 
 namespace Ember {
 
-	SharedPtr<Model> GLTFImporter::LoadModel(const std::string& filePath)
-	{
-		// TODO: Implement this! For now, we'll just return nullptr to avoid linker errors since the function is declared in the header.
-		// but we will want to load the entire model hierarchy, including all meshes, materials, textures, skeletons, animations, etc.
-		// For now, we'll just load the skeleton and a single skinned mesh as a proof of concept.
-		return nullptr;
+	// --- INTERNAL HELPERS ---
+
+	static std::string SanitizeFileName(const std::string& input) {
+		std::string output = input;
+		const std::string invalidChars = "<>:/\\|?*\" \t\n\r";
+		for (char& c : output) {
+			if (invalidChars.find(c) != std::string::npos) c = '_';
+		}
+		return output.empty() ? "Unnamed" : output;
 	}
 
-	SharedPtr<Skeleton> GLTFImporter::LoadSkeleton(const std::string& filepath)
-	{
+	static Matrix4f ExtractTransform(const tinygltf::Node& node) {
+		if (node.matrix.size() == 16) {
+			return Matrix4f(
+				(float)node.matrix[0], (float)node.matrix[1], (float)node.matrix[2], (float)node.matrix[3],
+				(float)node.matrix[4], (float)node.matrix[5], (float)node.matrix[6], (float)node.matrix[7],
+				(float)node.matrix[8], (float)node.matrix[9], (float)node.matrix[10], (float)node.matrix[11],
+				(float)node.matrix[12], (float)node.matrix[13], (float)node.matrix[14], (float)node.matrix[15]
+			);
+		}
+		Vector3f t(0.0f);
+		Quaternion r(1.0f, 0.0f, 0.0f, 0.0f);
+		Vector3f s(1.0f);
+		if (node.translation.size() == 3) t = Vector3f((float)node.translation[0], (float)node.translation[1], (float)node.translation[2]);
+		if (node.rotation.size() == 4) r = Quaternion((float)node.rotation[3], (float)node.rotation[0], (float)node.rotation[1], (float)node.rotation[2]);
+		if (node.scale.size() == 3) s = Vector3f((float)node.scale[0], (float)node.scale[1], (float)node.scale[2]);
+		return Math::Translate(t) * Math::ToMatrix4f(r) * Math::Scale(s);
+	}
+
+	// --- MAIN COOKING PIPELINE ---
+
+	std::optional<ModelCookReport> GLTFImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory) {
 		tinygltf::Model model;
 		tinygltf::TinyGLTF loader;
 		std::string err, warn;
 
-		bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filepath);
-		if (!ret) {
-			EB_CORE_ERROR("Failed to load GLB: {}", err);
-			return nullptr;
+		if (!loader.LoadBinaryFromFile(&model, &err, &warn, inputFile)) {
+			EB_CORE_ERROR("GLTF Error: {0}", err);
+			return std::nullopt;
 		}
 
-		// 1. Grab the Skin (This is the Rosetta Stone for animations)
-		if (model.skins.empty()) {
-			EB_CORE_ERROR("Model does not have a skin!");
-			return nullptr;
-		}
-		const tinygltf::Skin& skin = model.skins[0];
+		std::string modelName = SanitizeFileName(std::filesystem::path(inputFile).stem().string());
+		ModelCookReport report;
+		auto& am = Application::Instance().GetAssetManager();
 
-		std::vector<Bone> bones(skin.joints.size());
-		std::vector<Matrix4f> inverseBindMatrices(skin.joints.size());
+		// 1. COOK TEXTURES
+		std::vector<CookedAssetInfo> cookedImages(model.images.size());
+		for (size_t i = 0; i < model.images.size(); i++) {
+			const auto& img = model.images[i];
+			std::string name = img.name.empty() ? "Tex_" + std::to_string(i) : SanitizeFileName(img.name);
+			std::string fileName = modelName + "_" + name + ".png";
+			std::string fullPath = (std::filesystem::path(outputDirectory) / fileName).string();
 
-		// Extract the mathematically perfect Inverse Bind Matrices from the file
-		if (skin.inverseBindMatrices > -1)
-		{
-			const tinygltf::Accessor& accessor = model.accessors[skin.inverseBindMatrices];
-			const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-			const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-
-			const float* matrixData = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-			for (size_t i = 0; i < skin.joints.size(); i++) {
-				// glTF stores matrices as column-major float arrays, exactly like GLM
-				inverseBindMatrices[i] = Math::MakeMatrix4f(matrixData + (i * 16));
+			if (!std::filesystem::exists(fullPath)) {
+				stbi_write_png(fullPath.c_str(), img.width, img.height, img.component, img.image.data(), img.width * img.component);
 			}
+			cookedImages[i] = { UUID(), fileName, fullPath };
+			report.Textures.push_back(cookedImages[i]);
+			am.Load<Texture2D>(cookedImages[i].id, cookedImages[i].name, cookedImages[i].path, false);
 		}
 
-		// Map only the valid joints from the Skin, not all nodes
-		for (size_t i = 0; i < skin.joints.size(); i++)
-		{
-			int nodeIndex = skin.joints[i];
-			const auto& node = model.nodes[nodeIndex];
-
-			bones[i].Name = node.name.empty() ? "Bone_" + std::to_string(i) : node.name;
-			bones[i].ParentID = -1; // Default to no parent
-
-			// Extract Local Pose
-			BoneTransform localPose;
-			if (node.translation.size() == 3) {
-				localPose.Translation = Vector3f(node.translation[0], node.translation[1], node.translation[2]);
-			}
-			else {
-				localPose.Translation = Vector3f(0.0f);
-			}
-			if (node.rotation.size() == 4) {
-				localPose.Rotation = Quaternion(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
-			}
-			else {
-				localPose.Rotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
-			}
-			bones[i].LocalBindPoseTransform = localPose;
+		// 2. COOK MATERIALS
+		for (size_t i = 0; i < model.materials.size(); i++) {
+			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages));
+			am.Load<MaterialBase>(report.Materials.back().id, report.Materials.back().name, report.Materials.back().path);
 		}
 
-		// Map the parent/child hierarchy specifically within our new Bones array
-		for (size_t i = 0; i < skin.joints.size(); i++)
-		{
-			int nodeIndex = skin.joints[i];
-			const auto& node = model.nodes[nodeIndex];
+		// 3. COOK MESHES
+		std::vector<std::vector<CookedAssetInfo>> meshToPrims(model.meshes.size());
+		for (size_t i = 0; i < model.meshes.size(); i++) {
+			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, outputDirectory);
+			for (auto& p : meshToPrims[i]) {
+				report.Meshes.push_back(p);
+				am.Load<Mesh>(p.id, p.name, p.path, false);
+			}
+		}
 
-			for (int childNodeIndex : node.children)
-			{
-				// See if this child node is actually a bone in our skin
-				auto it = std::find(skin.joints.begin(), skin.joints.end(), childNodeIndex);
-				if (it != skin.joints.end()) {
-					// It is a bone, assign i as its parent.
-					int childBoneIndex = std::distance(skin.joints.begin(), it);
-					bones[childBoneIndex].ParentID = static_cast<uint32_t>(i);
+		// 4. COOK SKELETON
+		UUID skeletonID = Constants::InvalidUUID;
+		std::unordered_map<int, int> nodeToBoneMap; // Needed for animations later
+
+		if (!model.skins.empty()) {
+			const tinygltf::Skin& skin = model.skins[0];
+			std::vector<Bone> bones(skin.joints.size());
+			std::vector<Matrix4f> invBinds(skin.joints.size());
+
+			// Load Inverse Bind Matrices
+			if (skin.inverseBindMatrices > -1) {
+				const auto& accessor = model.accessors[skin.inverseBindMatrices];
+				const auto& view = model.bufferViews[accessor.bufferView];
+				const auto& buffer = model.buffers[view.buffer];
+				const float* matData = reinterpret_cast<const float*>(&buffer.data[view.byteOffset + accessor.byteOffset]);
+				for (size_t i = 0; i < skin.joints.size(); i++) {
+					invBinds[i] = glm::make_mat4(matData + (i * 16));
 				}
 			}
-		}
 
-		std::string name = std::filesystem::path(filepath).stem().string() + "_Skeleton";
-		return SharedPtr<Skeleton>::Create(name, bones, inverseBindMatrices);
-	}
+			// Map Joints
+			for (size_t i = 0; i < skin.joints.size(); i++) {
+				int nodeIdx = skin.joints[i];
+				nodeToBoneMap[nodeIdx] = (int)i;
+				const auto& gNode = model.nodes[nodeIdx];
 
-	SharedPtr<SkinnedMesh> GLTFImporter::LoadSkinnedMesh(const std::string& filePath)
-	{
-		tinygltf::Model model;
-		tinygltf::TinyGLTF loader;
-		std::string err, warn;
+				bones[i].Name = gNode.name.empty() ? "Bone_" + std::to_string(i) : gNode.name;
+				bones[i].ParentID = -1;
 
-		bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
-		if (!ret) {
-			EB_CORE_ERROR("Failed to load GLB: {}", err);
-			return nullptr;
-		}
+				// Local Pose
+				if (gNode.translation.size() == 3) bones[i].LocalBindPoseTransform.Translation = Vector3f((float)gNode.translation[0], (float)gNode.translation[1], (float)gNode.translation[2]);
+				if (gNode.rotation.size() == 4) bones[i].LocalBindPoseTransform.Rotation = Quaternion((float)gNode.rotation[3], (float)gNode.rotation[0], (float)gNode.rotation[1], (float)gNode.rotation[2]);
+			}
 
-		// Grab the first primitive of the first mesh
-		const tinygltf::Primitive& primitive = model.meshes[0].primitives[0];
-
-		// Find the position accessor to determine vertex count
-		const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
-		std::vector<SkinnedMeshVertex> vertices(posAccessor.count);
-
-		// Safely initialize all vertex memory to prevent NaN shader crashes!
-		for (auto& v : vertices) {
-			v.Position = Vector3f(0.0f);
-			v.Normal = Vector3f(0.0f, 1.0f, 0.0f);
-			v.TexCoords = Vector2f(0.0f);
-			v.Tangent = Vector3f(1.0f, 0.0f, 0.0f);   // Default Tangent
-			v.Bitangent = Vector3f(0.0f, 0.0f, 1.0f); // Default Bitangent
-			v.BoneIDs[0] = 0; v.BoneIDs[1] = 0; v.BoneIDs[2] = 0; v.BoneIDs[3] = 0;
-			v.BoneWeights[0] = 0.0f; v.BoneWeights[1] = 0.0f; v.BoneWeights[2] = 0.0f; v.BoneWeights[3] = 0.0f;
-		}
-
-		// =========================================================
-		// HELPER LAMBDA: Extracts any float-based VEC2/VEC3 attribute
-		// =========================================================
-		auto extractFloatAttribute = [&](const std::string& attrName, int numComponents, auto assignmentLambda)
-			{
-				if (primitive.attributes.find(attrName) != primitive.attributes.end())
-				{
-					const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find(attrName)->second];
-					const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-					const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-
-					int stride = accessor.ByteStride(bufferView);
-					const unsigned char* dataPtr = &buffer.data[bufferView.byteOffset + accessor.byteOffset];
-
-					for (size_t i = 0; i < accessor.count; i++) {
-						const float* vec = reinterpret_cast<const float*>(dataPtr + (i * stride));
-						assignmentLambda(vertices[i], vec);
+			// Hierarchy
+			for (size_t i = 0; i < skin.joints.size(); i++) {
+				const auto& gNode = model.nodes[skin.joints[i]];
+				for (int childNodeIdx : gNode.children) {
+					if (nodeToBoneMap.count(childNodeIdx)) {
+						bones[nodeToBoneMap[childNodeIdx]].ParentID = (uint32_t)i;
 					}
 				}
+			}
+
+			skeletonID = UUID();
+			auto skeleton = SharedPtr<Skeleton>::Create(skeletonID, modelName + "_Skeleton", bones, invBinds);
+			std::string skelPath = (std::filesystem::path(outputDirectory) / (modelName + ".ebskeleton")).string();
+			SkeletonSerializer::Serialize(skelPath, skeleton);
+			report.Skeleton = { skeletonID, modelName + "_Skeleton", skelPath };
+		}
+
+		// 4.5 COOK ANIMATIONS
+		for (size_t i = 0; i < model.animations.size(); i++) {
+			const auto& gAnim = model.animations[i];
+			std::unordered_map<uint32_t, BoneAnimationTrack> tracks;
+			float duration = 0.0f;
+
+			for (const auto& channel : gAnim.channels) {
+				if (!nodeToBoneMap.count(channel.target_node)) continue;
+
+				uint32_t boneID = nodeToBoneMap[channel.target_node];
+				const auto& sampler = gAnim.samplers[channel.sampler];
+
+				// Input (Times)
+				const auto& inAcc = model.accessors[sampler.input];
+				const auto& inView = model.bufferViews[inAcc.bufferView];
+				const float* times = reinterpret_cast<const float*>(&model.buffers[inView.buffer].data[inView.byteOffset + inAcc.byteOffset]);
+
+				// Output (Values)
+				const auto& outAcc = model.accessors[sampler.output];
+				const auto& outView = model.bufferViews[outAcc.bufferView];
+				const float* vals = reinterpret_cast<const float*>(&model.buffers[outView.buffer].data[outView.byteOffset + outAcc.byteOffset]);
+
+				if (times[inAcc.count - 1] > duration) duration = times[inAcc.count - 1];
+
+				auto& track = tracks[boneID];
+				track.BoneID = boneID;
+
+				for (size_t k = 0; k < inAcc.count; k++) {
+					if (channel.target_path == "translation")
+						track.PositionKeyframes.push_back({ times[k], Vector3f(vals[k * 3], vals[k * 3 + 1], vals[k * 3 + 2]) });
+					else if (channel.target_path == "rotation")
+						track.RotationKeyframes.push_back({ times[k], Quaternion(vals[k * 4 + 3], vals[k * 4], vals[k * 4 + 1], vals[k * 4 + 2]) });
+				}
+			}
+
+			std::vector<BoneAnimationTrack> trackList;
+			for (auto& pair : tracks)
+				trackList.push_back(pair.second);
+
+			auto anim = SharedPtr<Animation>::Create(gAnim.name.empty() ? "Anim_" + std::to_string(i) : gAnim.name, duration, trackList);
+			std::string animPath = (std::filesystem::path(outputDirectory) / (modelName + "_" + anim->GetName() + ".ebanim")).string();
+			AnimationSerializer::Serialize(animPath, anim);
+			report.Animations.push_back({ UUID(), anim->GetName(), animPath });
+		}
+
+		// 5. COOK MODEL HIERARCHY
+		UUID modelUUID = UUID();
+		std::string manifestPath = (std::filesystem::path(outputDirectory) / (modelName + ".ebmodel")).string();
+
+		// First, build the intermediate hierarchy (CookedModelNode) from the glTF scene
+		CookedModelNode intermediateRoot;
+		intermediateRoot.Name = modelName + "_Root";
+		const auto& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
+		for (int nodeIdx : scene.nodes) {
+			intermediateRoot.ChildNodes.push_back(ProcessNode(nodeIdx, model, outputDirectory, meshToPrims));
+		}
+
+		// Now, convert that intermediate hierarchy into the final ModelNode structure
+		// This resolves the Mesh UUIDs into actual Mesh Asset pointers via the AssetManager
+		auto convertNode = [&](const CookedModelNode& cooked, auto& self) -> ModelNode {
+			ModelNode node;
+			node.Name = cooked.Name;
+			node.LocalTransform = cooked.LocalTransform;
+			for (const auto& m : cooked.Meshes) {
+				// AssetManager was updated in steps 1-3, so these lookups will succeed
+				node.Meshes.push_back({ am.GetAsset<Mesh>(m.MeshID), m.MaterialIndex });
+			}
+			for (const auto& c : cooked.ChildNodes) {
+				node.ChildNodes.push_back(self(c, self));
+			}
+			return node;
 			};
 
-		// 1. EXTRACT STANDARD GEOMETRY
-		extractFloatAttribute("POSITION", 3, [](SkinnedMeshVertex& v, const float* data) {
-			v.Position = Vector3f(data[0], data[1], data[2]);
-			});
-		extractFloatAttribute("NORMAL", 3, [](SkinnedMeshVertex& v, const float* data) {
-			v.Normal = Vector3f(data[0], data[1], data[2]);
-			});
-		extractFloatAttribute("TEXCOORD_0", 2, [](SkinnedMeshVertex& v, const float* data) {
-			v.TexCoords = Vector2f(data[0], data[1]);
-			});
+		ModelNode rootModelNode = convertNode(intermediateRoot, convertNode);
 
-		// 2. EXTRACT BONE WEIGHTS (Float4)
-		extractFloatAttribute("WEIGHTS_0", 4, [](SkinnedMeshVertex& v, const float* data) {
-			v.BoneWeights[0] = data[0]; v.BoneWeights[1] = data[1];
-			v.BoneWeights[2] = data[2]; v.BoneWeights[3] = data[3];
-			});
-
-		// 3. EXTRACT BONE IDs (Requires safe casting from uint8/uint16)
-		if (primitive.attributes.find("JOINTS_0") != primitive.attributes.end())
-		{
-			const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("JOINTS_0")->second];
-			const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-			const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-			int stride = accessor.ByteStride(bufferView);
-			const unsigned char* dataPtr = &buffer.data[bufferView.byteOffset + accessor.byteOffset];
-
-			for (size_t i = 0; i < accessor.count; i++)
-			{
-				if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-					const uint16_t* joints = reinterpret_cast<const uint16_t*>(dataPtr + (i * stride));
-					vertices[i].BoneIDs[0] = joints[0]; vertices[i].BoneIDs[1] = joints[1];
-					vertices[i].BoneIDs[2] = joints[2]; vertices[i].BoneIDs[3] = joints[3];
-				}
-				else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
-					const uint8_t* joints = reinterpret_cast<const uint8_t*>(dataPtr + (i * stride));
-					vertices[i].BoneIDs[0] = joints[0]; vertices[i].BoneIDs[1] = joints[1];
-					vertices[i].BoneIDs[2] = joints[2]; vertices[i].BoneIDs[3] = joints[3];
-				}
-			}
+		// Collect the actual material assets for the Model constructor
+		std::vector<SharedPtr<MaterialBase>> modelMaterials;
+		for (auto& matInfo : report.Materials) {
+			modelMaterials.push_back(am.GetAsset<MaterialBase>(matInfo.id));
 		}
 
-		// 4. EXTRACT INDICES
-		std::vector<uint32_t> indices;
-		if (primitive.indices >= 0)
-		{
-			const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
-			const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-			const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+		// Create the final Model Asset
+		auto modelAsset = SharedPtr<Model>::Create(modelUUID, modelName, manifestPath, rootModelNode, modelMaterials, skeletonID);
 
-			indices.resize(accessor.count);
-			int stride = accessor.ByteStride(bufferView);
-			const unsigned char* dataPtr = &buffer.data[bufferView.byteOffset + accessor.byteOffset];
+		// 6. USE THE SERIALIZER!
+		ModelSerializer::Serialize(manifestPath, modelAsset);
 
-			for (size_t i = 0; i < accessor.count; i++)
-			{
-				if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-					indices[i] = *reinterpret_cast<const uint32_t*>(dataPtr + (i * stride));
-				}
-				else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-					indices[i] = *reinterpret_cast<const uint16_t*>(dataPtr + (i * stride));
-				}
-			}
-		}
-
-		std::string name = std::filesystem::path(filePath).stem().string() + "_Mesh";
-		return SharedPtr<SkinnedMesh>::Create(UUID(), name, vertices, indices);
+		report.Model = { modelUUID, modelName, manifestPath };
+		return report;
 	}
 
-	SharedPtr<Animation> GLTFImporter::LoadAnimation(const std::string& filePath)
-	{
-		tinygltf::Model model;
-		tinygltf::TinyGLTF loader;
-		std::string err, warn;
+	CookedAssetInfo GLTFImporter::ProcessMaterial(const std::string& modelName, int matIndex, const tinygltf::Model& model, const std::string& outputDirectory, std::vector<CookedAssetInfo>& cookedImages) {
+		const auto& gMat = model.materials[matIndex];
+		std::string name = modelName + "_" + (gMat.name.empty() ? "Mat_" + std::to_string(matIndex) : SanitizeFileName(gMat.name));
+		UUID id = UUID();
 
-		bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
-		if (!ret) {
-			EB_CORE_ERROR("Failed to load GLB: {0}", err);
-			return nullptr;
-		}
-
-		if (model.animations.empty()) {
-			EB_CORE_WARN("GLB does not contain any animations!");
-			return nullptr;
-		}
-
-		// Only load the first animation for now
-		const tinygltf::Animation& anim = model.animations[0];
-		std::string animName = anim.name.empty() ? "Animation_0" : anim.name;
-
-		std::unordered_map<uint32_t, BoneAnimationTrack> tracksByBone;
-		float maxDuration = 0.0f;
-
-		// Create a mapping from global glTF Node IDs to our local Bone IDs based on the Skin's joint list
-		std::unordered_map<int, int> nodeToBoneMap;
+		// If model is skinned, use StandardSkinnedGeometryShader
+		SharedPtr<Shader> shader;
 		if (!model.skins.empty())
-		{
-			const tinygltf::Skin& skin = model.skins[0];
-			for (size_t i = 0; i < skin.joints.size(); i++) {
-				// Maps the global glTF Node ID to our local 0-based Bone ID
-				nodeToBoneMap[skin.joints[i]] = static_cast<int>(i);
-			}
-		}
+			shader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::StandardSkinnedGeometryShadUUID);
 		else
-		{
-			EB_CORE_WARN("Trying to load a skeletal animation, but model has no skin!");
-			return nullptr;
-		}
+			shader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::StandardGeometryShadUUID);
 
-		// Loop through every channel (track) in the animation
-		for (const auto& channel : anim.channels)
-		{
-			uint32_t targetNode = channel.target_node;
-			if (nodeToBoneMap.find(targetNode) == nodeToBoneMap.end()) {
-				// This channel is animating a camera, a light, or a static mesh.
-				// Since we are building a skeletal animation track, we skip it!
-				continue;
+		auto mat = SharedPtr<Material>::Create(id, name, shader, RenderQueue::Opaque);
+
+		auto& pbr = gMat.pbrMetallicRoughness;
+		mat->SetUniform(Constants::Uniforms::Albedo, Vector3f((float)pbr.baseColorFactor[0], (float)pbr.baseColorFactor[1], (float)pbr.baseColorFactor[2]));
+		mat->SetUniform(Constants::Uniforms::Metallic, (float)pbr.metallicFactor);
+		mat->SetUniform(Constants::Uniforms::Roughness, (float)pbr.roughnessFactor);
+
+		// Set defaults for properties not in glTF
+		mat->SetUniform(Constants::Uniforms::AO, 1.0f); 
+		mat->SetUniform(Constants::Uniforms::EmissionColor, Vector3f(1.0f));
+		mat->SetUniform(Constants::Uniforms::Emission, 0.0f);
+
+		auto assignTex = [&](int texIdx, const std::string& uniName) {
+			if (texIdx > -1) {
+				int imgIdx = model.textures[texIdx].source;
+				auto tex = Application::Instance().GetAssetManager().GetAsset<Texture2D>(cookedImages[imgIdx].id);
+				mat->SetUniform(uniName, tex);
 			}
+			};
 
-			const tinygltf::AnimationSampler& sampler = anim.samplers[channel.sampler];
+		assignTex(pbr.baseColorTexture.index, Constants::Uniforms::AlbedoMap);
+		assignTex(gMat.normalTexture.index, Constants::Uniforms::NormalMap);
+		assignTex(pbr.metallicRoughnessTexture.index, Constants::Uniforms::MetallicRoughnessMap);
 
-			// Convert the global Node ID into our local Bone ID!
-			uint32_t boneID = nodeToBoneMap[targetNode];
-
-			// Ensure a track exists for this bone in our map
-			if (tracksByBone.find(boneID) == tracksByBone.end()) {
-				tracksByBone[boneID] = BoneAnimationTrack();
-				tracksByBone[boneID].BoneID = boneID; // Use the mapped ID!
-			}
-			BoneAnimationTrack& track = tracksByBone[boneID];
-
-			// =====================================================================
-			// 1. EXTRACT TIMESTAMPS (The "Input" Accessor)
-			// =====================================================================
-			const tinygltf::Accessor& inputAccessor = model.accessors[sampler.input];
-			const tinygltf::BufferView& inputView = model.bufferViews[inputAccessor.bufferView];
-			const tinygltf::Buffer& inputBuffer = model.buffers[inputView.buffer];
-
-			const float* times = reinterpret_cast<const float*>(&inputBuffer.data[inputView.byteOffset + inputAccessor.byteOffset]);
-
-			// Update the total duration of the animation
-			for (size_t i = 0; i < inputAccessor.count; i++) {
-				if (times[i] > maxDuration) {
-					maxDuration = times[i];
-				}
-			}
-
-			// =====================================================================
-			// 2. EXTRACT KEYFRAME VALUES (The "Output" Accessor)
-			// =====================================================================
-			const tinygltf::Accessor& outputAccessor = model.accessors[sampler.output];
-			const tinygltf::BufferView& outputView = model.bufferViews[outputAccessor.bufferView];
-			const tinygltf::Buffer& outputBuffer = model.buffers[outputView.buffer];
-
-			const float* values = reinterpret_cast<const float*>(&outputBuffer.data[outputView.byteOffset + outputAccessor.byteOffset]);
-
-			// =====================================================================
-			// 3. MAP THE VALUES TO THE CORRECT TRACK TYPE
-			// =====================================================================
-			if (channel.target_path == "translation")
-			{
-				for (size_t i = 0; i < inputAccessor.count; i++) {
-					PositionKeyframe kf;
-					kf.TimeStamp = times[i];
-					kf.Position = Vector3f(values[i * 3 + 0], values[i * 3 + 1], values[i * 3 + 2]);
-					track.PositionKeyframes.push_back(kf);
-				}
-			}
-			else if (channel.target_path == "rotation")
-			{
-				for (size_t i = 0; i < inputAccessor.count; i++) {
-					RotationKeyframe kf;
-					kf.TimeStamp = times[i];
-					// Flip quaternion from (x,y,z,w) to (w,x,y,z) order
-					kf.Rotation = Quaternion(values[i * 4 + 3], values[i * 4 + 0], values[i * 4 + 1], values[i * 4 + 2]);
-					track.RotationKeyframes.push_back(kf);
-				}
-			}
-			// TODO: Scale in the future
-		}
-
-		// Flatten the unordered_map into our final std::vector for the Asset
-		std::vector<BoneAnimationTrack> finalTracks;
-		finalTracks.reserve(tracksByBone.size());
-		for (const auto& kvp : tracksByBone) {
-			finalTracks.push_back(kvp.second);
-		}
-
-		return SharedPtr<Animation>::Create(animName, maxDuration, finalTracks);
+		std::string path = (std::filesystem::path(outputDirectory) / (name + ".ebmat")).string();
+		MaterialSerializer::Serialize(path, mat);
+		return { id, name, path };
 	}
 
+	std::vector<CookedAssetInfo> GLTFImporter::ProcessMesh(const std::string& modelName, int meshIndex, const tinygltf::Model& model, const std::string& outputDirectory) {
+		std::vector<CookedAssetInfo> cookedPrims;
+		const tinygltf::Mesh& gltfMesh = model.meshes[meshIndex];
+		std::string safeMeshName = SanitizeFileName(gltfMesh.name.empty() ? "Mesh_" + std::to_string(meshIndex) : gltfMesh.name);
+
+		for (size_t primIndex = 0; primIndex < gltfMesh.primitives.size(); primIndex++) {
+			const auto& primitive = gltfMesh.primitives[primIndex];
+			auto posIt = primitive.attributes.find("POSITION");
+			if (posIt == primitive.attributes.end()) continue;
+
+			const auto& posAccessor = model.accessors[posIt->second];
+			uint32_t vertexCount = (uint32_t)posAccessor.count;
+			bool isSkinned = primitive.attributes.count("JOINTS_0");
+			std::vector<SkinnedMeshVertex> vertices(vertexCount);
+
+			auto extract = [&](const std::string& attr, auto func) {
+				if (!primitive.attributes.count(attr)) return;
+				const auto& acc = model.accessors[primitive.attributes.find(attr)->second];
+				const auto& view = model.bufferViews[acc.bufferView];
+				int stride = acc.ByteStride(view);
+				const unsigned char* data = &model.buffers[view.buffer].data[view.byteOffset + acc.byteOffset];
+				for (size_t i = 0; i < acc.count; i++) func(vertices[i], data + (i * stride), acc.componentType);
+				};
+
+			extract("POSITION", [](SkinnedMeshVertex& v, const unsigned char* d, int t) { const float* f = (float*)d; v.Position = { f[0], f[1], f[2] }; });
+			extract("NORMAL", [](SkinnedMeshVertex& v, const unsigned char* d, int t) { const float* f = (float*)d; v.Normal = { f[0], f[1], f[2] }; });
+			extract("TEXCOORD_0", [](SkinnedMeshVertex& v, const unsigned char* d, int t) { const float* f = (float*)d; v.TexCoords = { f[0], f[1] }; });
+			extract("WEIGHTS_0", [](SkinnedMeshVertex& v, const unsigned char* d, int t) { const float* f = (float*)d; v.BoneWeights[0] = f[0]; v.BoneWeights[1] = f[1]; v.BoneWeights[2] = f[2]; v.BoneWeights[3] = f[3]; });
+			extract("JOINTS_0", [](SkinnedMeshVertex& v, const unsigned char* d, int t) {
+				if (t == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) { const uint16_t* s = (uint16_t*)d; v.BoneIDs[0] = s[0]; v.BoneIDs[1] = s[1]; v.BoneIDs[2] = s[2]; v.BoneIDs[3] = s[3]; }
+				else { v.BoneIDs[0] = d[0]; v.BoneIDs[1] = d[1]; v.BoneIDs[2] = d[2]; v.BoneIDs[3] = d[3]; }
+				});
+
+			std::vector<uint32_t> indices;
+			if (primitive.indices >= 0) {
+				const auto& acc = model.accessors[primitive.indices];
+				const auto& view = model.bufferViews[acc.bufferView];
+				indices.resize(acc.count);
+				const unsigned char* data = &model.buffers[view.buffer].data[view.byteOffset + acc.byteOffset];
+				int stride = acc.ByteStride(view);
+				for (size_t i = 0; i < acc.count; i++) {
+					if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) indices[i] = *(uint32_t*)(data + i * stride);
+					else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) indices[i] = *(uint16_t*)(data + i * stride);
+					else indices[i] = *(data + i * stride);
+				}
+			}
+
+			UUID meshUUID = UUID();
+			std::string primFileName = modelName + "_" + safeMeshName + "_Prim" + std::to_string(primIndex) + ".ebmesh";
+			std::string outputPath = (std::filesystem::path(outputDirectory) / primFileName).string();
+
+			// Cook directly to disk! No Mesh object created yet.
+			if (MeshSerializer::Serialize(outputPath, vertices, indices, isSkinned))
+				cookedPrims.push_back({ meshUUID, primFileName, outputPath });
+		}
+
+		return cookedPrims;
+	}
+
+	CookedModelNode GLTFImporter::ProcessNode(int nodeIndex, const tinygltf::Model& model, const std::string& outputDirectory, const std::vector<std::vector<CookedAssetInfo>>& meshToPrims) {
+		const auto& gNode = model.nodes[nodeIndex];
+		CookedModelNode node;
+		node.Name = gNode.name.empty() ? "Node_" + std::to_string(nodeIndex) : gNode.name;
+		node.LocalTransform = ExtractTransform(gNode);
+		if (gNode.mesh > -1) {
+			const auto& cooked = meshToPrims[gNode.mesh];
+			for (size_t i = 0; i < model.meshes[gNode.mesh].primitives.size(); i++)
+				node.Meshes.push_back({ cooked[i].id, (uint32_t)model.meshes[gNode.mesh].primitives[i].material });
+		}
+		for (int childIdx : gNode.children)
+			node.ChildNodes.push_back(ProcessNode(childIdx, model, outputDirectory, meshToPrims));
+		return node;
+	}
 }

@@ -20,8 +20,6 @@
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 
-#include <Ember-Tools/ModelImporter.h>
-
 #include <random>
 
 namespace Ember {

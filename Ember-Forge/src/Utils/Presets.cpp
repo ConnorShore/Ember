@@ -7,8 +7,8 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Cube");
 
-		MeshComponent mc(Constants::Assets::CubeMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::CubeMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
 		mtC.GetInstanced("Cube_Material");
@@ -22,8 +22,8 @@ namespace Ember {
 		Entity newEntity = scene->AddEntity("Quad");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it face parallel to the ground by default
 
-		MeshComponent mc(Constants::Assets::QuadMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::QuadMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
 		mtC.GetInstanced("Quad_Material");
@@ -36,8 +36,8 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Sphere");
 
-		MeshComponent mc(Constants::Assets::SphereMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::SphereMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
 		mtC.GetInstanced("Sphere_Material");

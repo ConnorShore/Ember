@@ -113,7 +113,6 @@ namespace Ember {
 		}
 
 		SharedPtr<MaterialBase> material;
-
 		if (instancedStr == "true")
 		{
 			uint64_t baseMaterialUUID = Constants::InvalidUUID;

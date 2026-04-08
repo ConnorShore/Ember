@@ -75,13 +75,23 @@ namespace Ember {
 				rigidBodyNode |= ryml::MAP;
 				Util::SerializeVector3f(rigidBodyNode["Velocity"], entity.GetComponent<RigidBodyComponent>().Velocity);
 			}
-			if (entity.ContainsComponent<MeshComponent>())
+			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
-				ryml::NodeRef meshNode = entityNode["MeshComponent"];
+				ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
 				meshNode |= ryml::MAP;
-				if (entity.GetComponent<MeshComponent>().MeshHandle != Constants::InvalidUUID)
+				if (entity.GetComponent<StaticMeshComponent>().MeshHandle != Constants::InvalidUUID)
 				{
-					meshNode["MeshUUID"] << entity.GetComponent<MeshComponent>().MeshHandle;
+					meshNode["MeshUUID"] << entity.GetComponent<StaticMeshComponent>().MeshHandle;
+				}
+			}
+			if (entity.ContainsComponent<SkinnedMeshComponent>())
+			{
+				ryml::NodeRef meshNode = entityNode["SkinnedMeshComponent"];
+				meshNode |= ryml::MAP;
+				if (entity.GetComponent<SkinnedMeshComponent>().MeshHandle != Constants::InvalidUUID)
+				{
+					meshNode["MeshUUID"] << entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
+					meshNode["RootAnimator"] << entity.GetComponent<SkinnedMeshComponent>().RootAnimator;
 				}
 			}
 			if (entity.ContainsComponent<MaterialComponent>())
@@ -269,16 +279,33 @@ namespace Ember {
 					deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
 				}
 
-				if (entityNode.has_child("MeshComponent"))
+				if (entityNode.has_child("StaticMeshComponent"))
 				{
-					ryml::NodeRef meshNode = entityNode["MeshComponent"];
+					ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
 					uint64_t meshId;
 					meshNode["MeshUUID"] >> meshId;
 					UUID meshUUID = (UUID)meshId;
 
-					MeshComponent mc;
+					StaticMeshComponent mc;
 					mc.MeshHandle = meshUUID;
-					deserializedEntity.AttachComponent<MeshComponent>(mc);
+					deserializedEntity.AttachComponent<StaticMeshComponent>(mc);
+				}
+
+				if (entityNode.has_child("SkinnedMeshComponent"))
+				{
+					ryml::NodeRef meshNode = entityNode["SkinnedMeshComponent"];
+					uint64_t meshId;
+					meshNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
+					uint64_t animatorId;
+					meshNode["RootAnimator"] >> animatorId;
+					UUID animatorUUID = (UUID)animatorId;
+
+					SkinnedMeshComponent mc;
+					mc.MeshHandle = meshUUID;
+					mc.RootAnimator = animatorUUID;
+					deserializedEntity.AttachComponent<SkinnedMeshComponent>(mc);
 				}
 
 				if (entityNode.has_child("MaterialComponent"))

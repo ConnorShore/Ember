@@ -4,6 +4,26 @@
 
 namespace Ember {
 
+	bool ModelSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<Model>& model)
+	{
+		ryml::Tree tree;
+		ryml::NodeRef root = tree.rootref();
+		root |= ryml::MAP;
+
+		root["Model"] << model->GetName();
+		root["UUID"] << (uint64_t)model->GetUUID();
+		root["SkeletonID"] << (uint64_t)model->GetSkeletonHandle();
+
+		ryml::NodeRef rootNodeRef = root["RootNode"];
+		SerializeNode(rootNodeRef, model->GetRootNode(), model->GetAllMaterials());
+
+		std::ofstream fout(filepath);
+		fout << tree;
+		fout.close();
+
+		return true;
+	}
+
 	// Reconstructs a Model from its .ebmodel YAML manifest, loading referenced
 	// mesh and material assets via the AssetManager and rebuilding the node hierarchy.
 	SharedPtr<Model> ModelSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager)
@@ -34,6 +54,9 @@ namespace Ember {
 		std::string modelName;
 		root["Model"] >> modelName;
 
+		uint64_t skeletonHandle;
+		root["SkeletonID"] >> skeletonHandle;
+
 		ryml::NodeRef rootNodeRef = root["RootNode"];
 
 		// We need to collect unique materials to pass to the Model constructor
@@ -43,8 +66,51 @@ namespace Ember {
 		ModelNode rootModelNode;
 		DeserializeNode(rootNodeRef, rootModelNode, assetManager, materials, materialIndexMap);
 
-		auto modelAsset = SharedPtr<Model>::Create(uuid, modelName, filepath.string(), rootModelNode, materials);
+		auto modelAsset = SharedPtr<Model>::Create(uuid, modelName, filepath.string(), rootModelNode, materials, (UUID)skeletonHandle);
 		return modelAsset;
+	}
+
+
+	void ModelSerializer::SerializeNode(ryml::NodeRef yamlNode, const ModelNode& modelNode, const std::vector<SharedPtr<MaterialBase>>& materials)
+	{
+		yamlNode |= ryml::MAP;
+		yamlNode["Name"] << modelNode.Name;
+
+		// 1. Serialize Transform
+		ryml::NodeRef transformNode = yamlNode["Transform"];
+		transformNode |= ryml::SEQ;
+		const float* matPtr = (const float*)&modelNode.LocalTransform;
+		for (int i = 0; i < 16; ++i)
+		{
+			transformNode.append_child() << matPtr[i];
+		}
+
+		// 2. Serialize Meshes
+		if (!modelNode.Meshes.empty())
+		{
+			ryml::NodeRef meshesRef = yamlNode["Meshes"];
+			meshesRef |= ryml::SEQ;
+			for (const auto& meshEntry : modelNode.Meshes)
+			{
+				ryml::NodeRef m = meshesRef.append_child();
+				m |= ryml::MAP;
+				m["MeshID"] << (uint64_t)meshEntry.MeshAsset->GetUUID();
+
+				UUID matUUID = materials[meshEntry.MaterialIndex]->GetUUID();
+				m["MaterialID"] << (uint64_t)matUUID;
+			}
+		}
+
+		// 3. Serialize Children
+		if (!modelNode.ChildNodes.empty())
+		{
+			ryml::NodeRef childrenRef = yamlNode["Children"];
+			childrenRef |= ryml::SEQ;
+			for (const auto& child : modelNode.ChildNodes)
+			{
+				SerializeNode(childrenRef.append_child(), child, materials);
+			}
+		}
 	}
 
 	void ModelSerializer::DeserializeNode(ryml::NodeRef yamlNode, ModelNode& modelNode, AssetManager& assetManager, std::vector<SharedPtr<MaterialBase>>& materials, std::unordered_map<UUID, uint32_t>& materialIndexMap)

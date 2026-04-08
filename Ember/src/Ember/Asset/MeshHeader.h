@@ -42,6 +42,8 @@ namespace Ember {
 		uint32_t VertexCount = 0;
 		uint32_t IndexCount = 0;
 
+		bool IsSkinned = false;
+
 		// Bounding Box (Used later for Frustum Culling)
 		struct {
 			float Min[3];

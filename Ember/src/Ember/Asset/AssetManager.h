@@ -7,6 +7,8 @@
 #include "MeshSerializer.h"
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
+#include "AnimationSerializer.h"
+#include "SkeletonSerializer.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -83,6 +85,14 @@ namespace Ember {
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Mesh>)
 				newAsset = MeshSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, Model>)
+				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
+			else if constexpr (std::same_as<T, Script>)
+				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, Animation>)
+				newAsset = AnimationSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, Skeleton>)
+				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
@@ -90,10 +100,6 @@ namespace Ember {
 				if (!newAsset)
 					EB_CORE_ERROR("Failed to load Material! The requested type did not match the file's contents.");
 			}
-			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
-			else if constexpr (std::same_as<T, Script>)
-				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 

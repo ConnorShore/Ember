@@ -58,7 +58,8 @@ namespace Ember {
 			// NOTE: Do not copy IDComponent here, we just set it above.
 			Utils::CopyComponents<
 				TransformComponent,
-				MeshComponent,
+				StaticMeshComponent,  // NEW
+				SkinnedMeshComponent, // NEW
 				MaterialComponent,
 				SpriteComponent,
 				CameraComponent,
@@ -67,7 +68,7 @@ namespace Ember {
 				DirectionalLightComponent,
 				SpotLightComponent,
 				PointLightComponent,
-				RelationshipComponent // We CAN copy this blindly here because we are preserving all UUIDs perfectly!
+				RelationshipComponent
 			>(srcEntity, destEntity);
 		}
 
@@ -222,7 +223,8 @@ namespace Ember {
 
 		Utils::CopyComponents<
 			TransformComponent,
-			MeshComponent,
+			StaticMeshComponent, 
+			SkinnedMeshComponent,
 			MaterialComponent,
 			SpriteComponent,
 			CameraComponent,
@@ -295,15 +297,6 @@ namespace Ember {
 		m_EntityUUIDMap.erase(entityUUID);
 	}
 
-	Entity Scene::InstantiateModel(const std::string& modelFile)
-	{
-		std::string modelName = std::filesystem::path(modelFile).stem().string();
-		SharedPtr<Model> model = Application::Instance().GetAssetManager().GetAsset<Model>(modelName);
-		Entity rootEntity = AddEntity(model->GetName());
-		ProcessModelNode(rootEntity, model->GetRootNode(), model);
-		return rootEntity;
-	}
-
 	Entity Scene::GetEntityAtPixel(uint32_t x, uint32_t y)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
@@ -312,66 +305,87 @@ namespace Ember {
 		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
 	}
 
+	Entity Scene::InstantiateModel(const std::string& modelFile)
+	{
+		std::string modelName = std::filesystem::path(modelFile).stem().string();
+		auto& am = Application::Instance().GetAssetManager();
+		SharedPtr<Model> model = am.GetAsset<Model>(modelName);
+
+		Entity rootEntity = AddEntity(model->GetName());
+		EntityID animatorEntity = Constants::Entities::InvalidEntityID;
+
+		if (model->GetSkeletonHandle() != Constants::InvalidUUID)
+		{
+			AnimatorComponent animator;
+			animator.SkeletonHandle = model->GetSkeletonHandle();
+
+			auto anim = am.GetAsset<Animation>("Anim_0");
+			animator.CurrentAnimationHandle = anim->GetUUID();
+
+			rootEntity.AttachComponent<AnimatorComponent>(animator);
+			animatorEntity = rootEntity.GetEntityHandle(); // Save the ECS handle
+		}
+
+		ProcessModelNode(rootEntity, model->GetRootNode(), model, animatorEntity);
+		return rootEntity;
+	}
+
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)
 	{
 		OnViewportResize(event.GetWidth(), event.GetHeight());
 		return false;
 	}
 
-	void Scene::ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model)
+	void Scene::ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, EntityID animatorEntity)
 	{
 		auto& transform = currentEntity.GetComponent<TransformComponent>();
 		Math::DecomposeTransform(node.LocalTransform, transform.Position, transform.Rotation, transform.Scale);
 
-		// If a node has a single mesh, attach directly to this entity.
-		// Multiple meshes require sub-entities since ECS only allows one MeshComponent per entity.
+		// Helper to attach the correct mesh component
+		auto attachMesh = [&](Entity e, const MeshMaterialNode& mNode) {
+			auto meshAsset = mNode.MeshAsset;
+			bool isSkinned = DynamicPointerCast<SkinnedMesh>(meshAsset) != nullptr;
+			if (isSkinned) 
+			{
+				SkinnedMeshComponent skinnedMeshComp(meshAsset->GetUUID(), animatorEntity);
+				e.AttachComponent<SkinnedMeshComponent>(skinnedMeshComp);
+			}
+			else 
+			{
+				StaticMeshComponent staticMeshComp(meshAsset->GetUUID());
+				e.AttachComponent<StaticMeshComponent>(staticMeshComp);
+			}
+
+			UUID materialId = model->GetAllMaterials()[mNode.MaterialIndex]->GetUUID();
+			MaterialComponent matComp(materialId);
+			e.AttachComponent<MaterialComponent>(matComp);
+			};
+
 		if (node.Meshes.size() == 1)
 		{
-			// Just grab the UUIDs directly from the assets! They are already registered.
-			UUID meshId = node.Meshes[0].MeshAsset->GetUUID();
-			MeshComponent meshComponent{ meshId };
-			currentEntity.AttachComponent<MeshComponent>(meshComponent);
-
-			UUID materialId = model->GetAllMaterials()[node.Meshes[0].MaterialIndex]->GetUUID();
-			MaterialComponent materialComponent{ materialId };
-			currentEntity.AttachComponent<MaterialComponent>(materialComponent);
+			attachMesh(currentEntity, node.Meshes[0]);
 		}
 		else if (node.Meshes.size() > 1)
 		{
-			// We must spawn sub-entities to hold the extra meshes
 			for (size_t i = 0; i < node.Meshes.size(); i++)
 			{
 				Entity meshPartEntity = AddEntity(node.Name + "_Part" + std::to_string(i));
-
-				// Link the relationship!
 				auto& partRc = meshPartEntity.GetComponent<RelationshipComponent>();
 				partRc.ParentHandle = currentEntity.GetUUID();
 				currentEntity.GetComponent<RelationshipComponent>().Children.push_back(meshPartEntity.GetUUID());
 
-				// Attach the mesh and material using their authoritative UUIDs
-				UUID meshId = node.Meshes[i].MeshAsset->GetUUID();
-				MeshComponent meshComponent{ meshId };
-				meshPartEntity.AttachComponent<MeshComponent>(meshComponent);
-
-				UUID materialId = model->GetAllMaterials()[node.Meshes[i].MaterialIndex]->GetUUID();
-				MaterialComponent materialComponent{ materialId };
-				meshPartEntity.AttachComponent<MaterialComponent>(materialComponent);
+				attachMesh(meshPartEntity, node.Meshes[i]);
 			}
 		}
 
-		// Process all child branches
 		for (const auto& childNode : node.ChildNodes)
 		{
-			// Create the child entity
 			Entity childEntity = AddEntity(childNode.Name);
-
-			// Link the relationship to the current entity
 			auto& childRc = childEntity.GetComponent<RelationshipComponent>();
 			childRc.ParentHandle = currentEntity.GetUUID();
 			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetUUID());
 
-			// Recurse deeper into the tree
-			ProcessModelNode(childEntity, childNode, model);
+			ProcessModelNode(childEntity, childNode, model, animatorEntity);
 		}
 	}
 

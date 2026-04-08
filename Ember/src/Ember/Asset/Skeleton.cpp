@@ -11,7 +11,12 @@ namespace Ember {
 	}
 
 	Skeleton::Skeleton(const std::string& name, const std::vector<Bone>& bones, const std::vector<Matrix4f>& inverseBindTransforms)
-		: Asset(name, "", AssetType::Skeleton), m_Bones(bones), m_InverseBindTransforms(inverseBindTransforms)
+		: Skeleton(UUID(), name, bones, inverseBindTransforms)
+	{
+	}
+
+	Skeleton::Skeleton(UUID uuid, const std::string& name, const std::vector<Bone>& bones, const std::vector<Matrix4f>& inverseBindTransforms)
+		: Asset(uuid, name, "", AssetType::Skeleton), m_Bones(bones), m_InverseBindTransforms(inverseBindTransforms)
 	{
 	}
 

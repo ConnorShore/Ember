@@ -31,8 +31,9 @@ namespace Ember {
 	class Model : public Asset
 	{
 	public:
-		Model(UUID uuid, const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials)
-			: Asset(uuid, name, filePath, GetStaticType()), m_RootNode(rootNode), m_AllMaterials(materials)
+		Model(UUID uuid, const std::string& name, const std::string& filePath, const ModelNode& rootNode, const std::vector<SharedPtr<MaterialBase>>& materials
+			, UUID skeletonHandle = Constants::InvalidUUID)
+			: Asset(uuid, name, filePath, GetStaticType()), m_RootNode(rootNode), m_AllMaterials(materials), m_SkeletonHandle(skeletonHandle)
 		{
 			std::vector<const ModelNode*> nodesToVisit = { &m_RootNode };
 			while (!nodesToVisit.empty())
@@ -58,12 +59,16 @@ namespace Ember {
 		const std::vector<MeshMaterialNode>& GetAllMeshes() const { return m_AllMeshes; }
 		const std::vector<SharedPtr<MaterialBase>>& GetAllMaterials() const { return m_AllMaterials; }
 
+		inline const UUID GetSkeletonHandle() const { return m_SkeletonHandle; }
+
 		static AssetType GetStaticType() { return AssetType::Model; }
 
 	private:
 		ModelNode m_RootNode;
+		UUID m_SkeletonHandle;
 		std::vector<MeshMaterialNode> m_AllMeshes;
 		std::vector<SharedPtr<MaterialBase>> m_AllMaterials;
+
 	};
 
 }

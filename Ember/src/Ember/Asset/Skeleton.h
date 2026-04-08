@@ -33,6 +33,7 @@ namespace Ember {
 		Skeleton() : Asset(Constants::InvalidUUID, "Unnamed Skeleton", "", AssetType::Skeleton) {}
 		Skeleton(const std::string& name, const std::vector<Bone>& bones);
 		Skeleton(const std::string& name, const std::vector<Bone>& bones, const std::vector<Matrix4f>& inverseBindTransforms);
+		Skeleton(UUID uuid, const std::string& name, const std::vector<Bone>& bones, const std::vector<Matrix4f>& inverseBindTransforms);
 
 		inline const std::vector<Bone>& GetBones() const { return m_Bones; }
 		inline const std::vector<Matrix4f>& GetInverseBindTransforms() const { return m_InverseBindTransforms; }

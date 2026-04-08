@@ -8,8 +8,10 @@
 #include "ComponentUI/SpotLightComponentUI.h"
 #include "ComponentUI/RigidBodyComponentUI.h"
 #include "ComponentUI/ScriptComponentUI.h"
-#include "ComponentUI/MeshComponentUI.h"
+#include "ComponentUI/StaticMeshComponentUI.h"
+#include "ComponentUI/SkinnedMeshComponentUI.h"
 #include "ComponentUI/MaterialComponentUI.h"
+#include "ComponentUI/AnimatorComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -26,7 +28,9 @@ namespace Ember {
 		m_ComponentUIs.emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<PointLightComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<SpotLightComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<MeshComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<StaticMeshComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<SkinnedMeshComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));

@@ -107,16 +107,4 @@ namespace Ember {
 		virtual const size_t GetCount() const = 0;
 	};
 
-	// TODO:
-	//////////////////////////////////////////////////////////////////////////
-	// Indexed Vertex Buffer
-	//////////////////////////////////////////////////////////////////////////
-	//class IndexedVertexBuffer : public Buffer
-	//{
-	//public:
-	//	virtual ~IndexedVertexBuffer() = default;
-
-	//	static SharedPtr<IndexedVertexBuffer<T>> Create(const T* vertexData, const uint32_t* indexData);
-	//};
-
 }

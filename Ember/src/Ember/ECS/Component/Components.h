@@ -118,13 +118,25 @@ namespace Ember {
 		SpriteComponent(const Vector4f color, UUID texId) : Color(color), TextureHandle(texId) {}
 	};
 
-	struct MeshComponent
+	struct StaticMeshComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 
-		MeshComponent() = default;
-		MeshComponent(UUID meshId) : MeshHandle(meshId) {}
-		MeshComponent(const MeshComponent&) = default;
+		StaticMeshComponent() = default;
+		StaticMeshComponent(UUID meshId) : MeshHandle(meshId) {}
+		StaticMeshComponent(const StaticMeshComponent&) = default;
+	};
+
+	struct SkinnedMeshComponent
+	{
+		UUID MeshHandle = Constants::InvalidUUID;
+		EntityID RootAnimator = Constants::Entities::InvalidEntityID;
+
+		SkinnedMeshComponent() = default;
+		SkinnedMeshComponent(UUID meshId, EntityID rootAnimator = Constants::Entities::InvalidEntityID)
+			: MeshHandle(meshId), RootAnimator(rootAnimator) {
+		}
+		SkinnedMeshComponent(const SkinnedMeshComponent&) = default;
 	};
 
 	struct MaterialComponent

@@ -3,7 +3,7 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
-#include <Ember-Tools/ModelImporter.h>
+#include "Ember/Utils/PlatformUtil.h"
 #include "Ember/Asset/GLTFImporter.h"
 
 #include <format>
@@ -234,55 +234,35 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
 					std::string sourceFile = FileDialog::OpenFile("", modelFileTypes.c_str());
 
+					// Need to convert to GLTFImporter and model cooking for static vs skeletal meshes
 					if (!sourceFile.empty())
 					{
-						auto& am = Application::Instance().GetAssetManager();
-						auto skeleton = GLTFImporter::LoadSkeleton(sourceFile);
-						auto skinnedMesh = GLTFImporter::LoadSkinnedMesh(sourceFile);
-						skinnedMesh->SetSkeletonHandle(skeleton->GetUUID());
-						auto animation = GLTFImporter::LoadAnimation(sourceFile);
+						//auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
+						auto reportOpt = GLTFImporter::CookModel(sourceFile, m_CurrentDirectory.string());
+						if (reportOpt.has_value())
+						{
+							auto& am = Application::Instance().GetAssetManager();
 
-						auto skeletonUUID = am.Register<Skeleton>(skeleton);
-						auto meshUUID = am.Register<SkinnedMesh>(skinnedMesh);
-						auto animUUID = am.Register<Animation>(animation);
+							// Load the newly cooked assets from the project directory
+							for (auto& tex : reportOpt->Textures)
+								am.Load<Texture2D>(tex.id, tex.name, tex.path, false);
 
-						// For testing, add an entity with the mesh, and a material
-						auto entity = m_Context->ActiveScene->AddEntity("Test Entity");
+							for (auto& mat : reportOpt->Materials)
+								am.Load<MaterialBase>(mat.id, mat.name, mat.path, false);
 
-						MeshComponent meshComp(meshUUID);
-						entity.AttachComponent<MeshComponent>(meshComp);
+							for (auto& mesh : reportOpt->Meshes)
+								am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
 
-						MaterialComponent matComp(Constants::Assets::StandardSkinnedGeometryMatUUID);
-						entity.AttachComponent<MaterialComponent>(matComp);
+							for (auto& anim : reportOpt->Animations)
+								am.Load<Animation>(anim.id, anim.name, anim.path, false);
 
-						AnimatorComponent animComp;
-						animComp.SkeletonHandle = skeletonUUID;
-						animComp.CurrentAnimationHandle = animUUID;
-						entity.AttachComponent<AnimatorComponent>(animComp);
+							am.Load<Skeleton>(reportOpt->Skeleton.id, reportOpt->Skeleton.name, reportOpt->Skeleton.path, false);
+
+							// Load the final model asset
+							asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);
+						}
 					}
 
-					// Need to convert to GLTFImporter and model cooking for static vs skeletal meshes
-					//if (!sourceFile.empty())
-					//{
-					//	auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
-
-					//	if (reportOpt.has_value())
-					//	{
-					//		auto& am = Application::Instance().GetAssetManager();
-
-					//		// Load the newly cooked assets from the project directory
-					//		for (auto& tex : reportOpt->Textures)
-					//			am.Load<Texture2D>(tex.id, tex.name, tex.path, false);
-
-					//		for (auto& mat : reportOpt->Materials)
-					//			am.Load<MaterialBase>(mat.id, mat.name, mat.path, false);
-
-					//		for (auto& mesh : reportOpt->Meshes)
-					//			am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
-
-					//		asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);
-					//	}
-					//}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))

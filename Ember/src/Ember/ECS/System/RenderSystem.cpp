@@ -359,16 +359,33 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 
 		Renderer3D::BeginFrame();
-
 		shadowShader->Bind();
 		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
-			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
+			auto [transform] = registry.GetComponents<TransformComponent>(entity);
 			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
-			auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
-			Renderer3D::Submit(meshAsset->GetVertexArray());
+
+			if (registry.ContainsComponent<StaticMeshComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
+				auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
+				Renderer3D::Submit(meshAsset->GetVertexArray());
+			}
+			else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
+				auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
+
+				// NOTE: If your shadow shader supports skinning (highly recommended), pass the matrices here!
+				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID) {
+					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
+					shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				}
+
+				Renderer3D::Submit(meshAsset->GetVertexArray());
+			}
 		}
 
 		Renderer3D::EndFrame();
@@ -400,24 +417,40 @@ namespace Ember {
 
 		for (EntityID entity : m_RenderQueueBuckets.Opaque)
 		{
-			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			if (mesh.MeshHandle == Constants::InvalidUUID || material.MaterialHandle == Constants::InvalidUUID)
+			auto [material, transform] = registry.GetComponents<MaterialComponent, TransformComponent>(entity);
+			if (material.MaterialHandle == Constants::InvalidUUID)
 				continue;
 
-			auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
-
 			materialAsset->GetShader()->Bind();
 			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 
-			// Pass bone matrices for skinned meshes, if they exist
-			if (registry.ContainsComponent<AnimatorComponent>(entity))
+			if (registry.ContainsComponent<StaticMeshComponent>(entity))
 			{
-				auto& animator = registry.GetComponent<AnimatorComponent>(entity);
-				materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
-			}
+				auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
+				if (mesh.MeshHandle == Constants::InvalidUUID)
+					continue;
 
-			Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+			}
+			else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
+				if (mesh.MeshHandle == Constants::InvalidUUID)
+					continue;
+
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+
+				// Upload Bone Matrices!
+				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID)
+				{
+					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
+					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				}
+
+				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+			}
 		}
 
 		Renderer3D::EndFrame();
@@ -581,12 +614,31 @@ namespace Ember {
 
 		for (EntityID entity : m_RenderQueueBuckets.Forward)
 		{
-			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+			auto [material, transform] = registry.GetComponents<MaterialComponent, TransformComponent>(entity);
+			if (material.MaterialHandle == Constants::InvalidUUID)
+				continue;
+
 			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
 			materialAsset->GetShader()->Bind();
 			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
-			Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+
+			if (registry.ContainsComponent<StaticMeshComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+			}
+			else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+
+				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID) {
+					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
+					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				}
+				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
+			}
 		}
 
 		Renderer3D::EndFrame();
@@ -808,30 +860,27 @@ namespace Ember {
 
 	void RenderSystem::SortEntitiesByRenderQueue(Registry& registry)
 	{
-		View view = registry.Query<MeshComponent, MaterialComponent, TransformComponent>();
-		for (EntityID entity : view)
-		{
-			auto [mesh, material, transform] = registry.GetComponents<MeshComponent, MaterialComponent, TransformComponent>(entity);
-			if (mesh.MeshHandle == Constants::InvalidUUID || material.MaterialHandle == Constants::InvalidUUID)
-				continue;
+		auto sortLogic = [&](EntityID entity) {
+			auto& material = registry.GetComponent<MaterialComponent>(entity);
+			if (material.MaterialHandle == Constants::InvalidUUID)
+				return;
 
-			auto& assetManager = Application::Instance().GetAssetManager();
-			auto materialAsset = assetManager.GetAsset<MaterialBase>(material.MaterialHandle);
+			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
 			switch (materialAsset->GetRenderQueue())
 			{
-			case RenderQueue::Opaque:
-				m_RenderQueueBuckets.Opaque.push_back(entity);
-				break;
-			case RenderQueue::Forward:
-				m_RenderQueueBuckets.Forward.push_back(entity);
-				break;
-			case RenderQueue::Transparent:
-				m_RenderQueueBuckets.Transparent.push_back(entity);
-				break;
-			default:
-				EB_CORE_ASSERT(false, "Unknown Render Queue type!");
-				break;
+			case RenderQueue::Opaque: m_RenderQueueBuckets.Opaque.push_back(entity); break;
+			case RenderQueue::Forward: m_RenderQueueBuckets.Forward.push_back(entity); break;
+			case RenderQueue::Transparent: m_RenderQueueBuckets.Transparent.push_back(entity); break;
 			}
+		};
+
+		// Sort Static Meshes
+		for (EntityID entity : registry.Query<StaticMeshComponent, MaterialComponent, TransformComponent>()) {
+			sortLogic(entity);
+		}
+		// Sort Skinned Meshes
+		for (EntityID entity : registry.Query<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) {
+			sortLogic(entity);
 		}
 	}
 
