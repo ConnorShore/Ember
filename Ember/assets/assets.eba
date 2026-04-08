@@ -1,21 +1,21 @@
 Assets:
   - Type: Texture
-    UUID: 9750751056085670693
+    UUID: 391333904029233847
     Name: CesiumMan_Tex_0.png
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Tex_0.png'
   - Type: Material
-    UUID: 13683545234038021269
+    UUID: 18328081731837415361
     Name: CesiumMan_Cesium_Man-effect
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Cesium_Man-effect.ebmat'
   - Type: Skeleton
-    UUID: 10559281868936761671
+    UUID: 12907483248186109860
     Name: CesiumMan
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan.ebskeleton'
   - Type: Animation
-    UUID: 8687127684571741110
+    UUID: 5319751555058580977
     Name: CesiumMan_Anim_0
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Anim_0.ebanim'
   - Type: Model
-    UUID: 2655354450507708285
+    UUID: 7836308864101864450
     Name: CesiumMan
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan.ebmodel'

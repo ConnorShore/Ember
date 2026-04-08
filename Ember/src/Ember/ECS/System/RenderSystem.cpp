@@ -193,15 +193,19 @@ namespace Ember {
 
 	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		m_CurrentScene = scene;
 		InitializeRenderState();
 		SetSceneCamera(scene->GetRegistry());
 
 		if (m_RenderSceneState.IsCameraFound)
 			ExecuteRenderPipeline(scene->GetRegistry(), false);
+
+		m_CurrentScene = nullptr;
 	}
 
 	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform)
 	{
+		m_CurrentScene = scene;
 		InitializeRenderState();
 
 		// Set render scene state for camera info
@@ -214,6 +218,8 @@ namespace Ember {
 
 		// Update the system
 		ExecuteRenderPipeline(scene->GetRegistry(), true);
+
+		m_CurrentScene = nullptr;
 	}
 
 	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)
@@ -378,10 +384,14 @@ namespace Ember {
 				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
 				auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
 
-				// NOTE: If your shadow shader supports skinning (highly recommended), pass the matrices here!
-				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID) {
-					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
-					shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
+				{
+					Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
+					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+					{
+                        auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
+						shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+					}
 				}
 
 				Renderer3D::Submit(meshAsset->GetVertexArray());
@@ -443,10 +453,14 @@ namespace Ember {
 				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 
 				// Upload Bone Matrices!
-				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID)
+				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
 				{
-					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
-					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+                  Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
+					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID && registry.ContainsComponent<AnimatorComponent>(animatorEntity.GetEntityHandle()))
+					{
+                        auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
+						materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+					}
 				}
 
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
@@ -633,9 +647,14 @@ namespace Ember {
 				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
 				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 
-				if (mesh.RootAnimator != Constants::Entities::InvalidEntityID) {
-					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RootAnimator);
-					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
+				{
+                  Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
+					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID && registry.ContainsComponent<AnimatorComponent>(animatorEntity.GetEntityHandle()))
+					{
+                        auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
+						materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+					}
 				}
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
 			}

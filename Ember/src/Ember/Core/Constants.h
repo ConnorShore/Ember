@@ -4,7 +4,7 @@
 
 namespace Ember::Constants {
 
-	constexpr uint32_t InvalidUUID = 0;
+ constexpr uint32_t InvalidUUID = 0;
 
 	namespace Entities {
 		constexpr uint32_t MaxEntities = 1024;

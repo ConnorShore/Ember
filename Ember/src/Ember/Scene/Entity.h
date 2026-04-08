@@ -55,8 +55,9 @@ namespace Ember {
 		const std::string& GetName() const;
 
 		operator EntityID() { return m_EntityHandle; }
-		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }// Returns true if the entity has a valid handle and points to a valid scene
-		operator bool() const { return m_EntityHandle != Constants::Entities::InvalidEntityID && m_SceneHandle != nullptr; }
+		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }
+		// Returns true if the entity has a valid handle and points to a valid scene
+		explicit operator bool() const { return m_EntityHandle != Constants::Entities::InvalidEntityID && m_SceneHandle != nullptr; }
 
 	private:
 		Scene* m_SceneHandle;

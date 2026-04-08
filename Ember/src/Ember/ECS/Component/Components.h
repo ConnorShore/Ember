@@ -130,11 +130,11 @@ namespace Ember {
 	struct SkinnedMeshComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
-		EntityID RootAnimator = Constants::Entities::InvalidEntityID;
+		UUID AnimatorEntityHandle = Constants::InvalidUUID;
 
 		SkinnedMeshComponent() = default;
-		SkinnedMeshComponent(UUID meshId, EntityID rootAnimator = Constants::Entities::InvalidEntityID)
-			: MeshHandle(meshId), RootAnimator(rootAnimator) {
+		SkinnedMeshComponent(UUID meshId, UUID animatorEntityUUID = Constants::InvalidUUID)
+			: MeshHandle(meshId), AnimatorEntityHandle(animatorEntityUUID) {
 		}
 		SkinnedMeshComponent(const SkinnedMeshComponent&) = default;
 	};

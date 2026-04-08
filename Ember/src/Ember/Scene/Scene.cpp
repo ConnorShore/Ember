@@ -156,8 +156,9 @@ namespace Ember {
 
 	Entity Scene::GetEntity(UUID uuid)
 	{
-		if (m_EntityUUIDMap.find(uuid) != m_EntityUUIDMap.end())
-			return { m_EntityUUIDMap.at(uuid), this };
+		auto it = m_EntityUUIDMap.find(uuid);
+		if (it != m_EntityUUIDMap.end())
+			return { it->second, this };
 
 		return Entity();
 	}
@@ -216,8 +217,10 @@ namespace Ember {
 	}
 
 	// Recursively duplicates an entity and its children.
-	// isRoot: true for the top-level call so it keeps the same parent; false for descendants
-	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot)
+	// isRoot: true for the top-level call so it keeps the same parent; false for descendants.
+	// originalAnimatorUUID/newAnimatorUUID track the UUID remapping for AnimatorComponent owners
+	// so SkinnedMeshComponent handles are updated inline rather than repaired after the fact.
+	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot, UUID originalAnimatorUUID, UUID newAnimatorUUID)
 	{
 		std::string name = entity.GetName();
 		Entity newEntity = AddEntity(name + " (Copy)");
@@ -236,6 +239,21 @@ namespace Ember {
 			PointLightComponent,
 			AnimatorComponent
 		>(entity, newEntity);
+
+		// If this entity owns the animator, establish the old->new UUID mapping
+		if (newEntity.ContainsComponent<AnimatorComponent>())
+		{
+			originalAnimatorUUID = entity.GetUUID();
+			newAnimatorUUID = newEntity.GetUUID();
+		}
+
+		// Remap AnimatorEntityHandle to point at the new animator entity, not the original
+		if (newEntity.ContainsComponent<SkinnedMeshComponent>() && originalAnimatorUUID != Constants::InvalidUUID)
+		{
+			auto& mesh = newEntity.GetComponent<SkinnedMeshComponent>();
+			if (mesh.AnimatorEntityHandle == originalAnimatorUUID)
+				mesh.AnimatorEntityHandle = newAnimatorUUID;
+		}
 
 		if (entity.ContainsComponent<RelationshipComponent>())
 		{
@@ -263,7 +281,7 @@ namespace Ember {
 				Entity childEntity = GetEntity(childUUID);
 				if (childEntity != Constants::Entities::InvalidEntityID)
 				{
-					Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false);
+					Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false, originalAnimatorUUID, newAnimatorUUID);
 					newRels.Children.push_back(duplicatedChild.GetUUID());
 				}
 			}
@@ -314,18 +332,19 @@ namespace Ember {
 		SharedPtr<Model> model = am.GetAsset<Model>(modelName);
 
 		Entity rootEntity = AddEntity(model->GetName());
-		EntityID animatorEntity = Constants::Entities::InvalidEntityID;
+		UUID animatorEntity = Constants::InvalidUUID;
 
 		if (model->GetSkeletonHandle() != Constants::InvalidUUID)
 		{
 			AnimatorComponent animator;
 			animator.SkeletonHandle = model->GetSkeletonHandle();
 
+			// Temp testing
 			auto anim = am.GetAsset<Animation>("Anim_0");
 			animator.CurrentAnimationHandle = anim->GetUUID();
 
 			rootEntity.AttachComponent<AnimatorComponent>(animator);
-			animatorEntity = rootEntity.GetEntityHandle(); // Save the ECS handle
+				animatorEntity = rootEntity.GetUUID(); // Save the UUID
 		}
 
 		ProcessModelNode(rootEntity, model->GetRootNode(), model, animatorEntity);
@@ -338,7 +357,7 @@ namespace Ember {
 		return false;
 	}
 
-	void Scene::ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, EntityID animatorEntity)
+	void Scene::ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID)
 	{
 		auto& transform = currentEntity.GetComponent<TransformComponent>();
 		Math::DecomposeTransform(node.LocalTransform, transform.Position, transform.Rotation, transform.Scale);
@@ -349,7 +368,7 @@ namespace Ember {
 			bool isSkinned = DynamicPointerCast<SkinnedMesh>(meshAsset) != nullptr;
 			if (isSkinned) 
 			{
-				SkinnedMeshComponent skinnedMeshComp(meshAsset->GetUUID(), animatorEntity);
+				SkinnedMeshComponent skinnedMeshComp(meshAsset->GetUUID(), animatorEntityUUID);
 				e.AttachComponent<SkinnedMeshComponent>(skinnedMeshComp);
 			}
 			else 
@@ -387,7 +406,7 @@ namespace Ember {
 			childRc.ParentHandle = currentEntity.GetUUID();
 			currentEntity.GetComponent<RelationshipComponent>().Children.push_back(childEntity.GetUUID());
 
-			ProcessModelNode(childEntity, childNode, model, animatorEntity);
+			ProcessModelNode(childEntity, childNode, model, animatorEntityUUID);
 		}
 	}
 

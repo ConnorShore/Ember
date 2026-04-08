@@ -90,8 +90,8 @@ namespace Ember {
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
-		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, EntityID animatorEntity);
-		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot);
+		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID);
+		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot, UUID originalAnimatorUUID = Constants::InvalidUUID, UUID newAnimatorUUID = Constants::InvalidUUID);
 		
 
 	private:

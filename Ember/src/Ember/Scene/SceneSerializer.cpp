@@ -91,7 +91,7 @@ namespace Ember {
 				if (entity.GetComponent<SkinnedMeshComponent>().MeshHandle != Constants::InvalidUUID)
 				{
 					meshNode["MeshUUID"] << entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
-					meshNode["RootAnimator"] << entity.GetComponent<SkinnedMeshComponent>().RootAnimator;
+					meshNode["RootAnimator"] << entity.GetComponent<SkinnedMeshComponent>().AnimatorEntityHandle;
 				}
 			}
 			if (entity.ContainsComponent<MaterialComponent>())
@@ -304,7 +304,7 @@ namespace Ember {
 
 					SkinnedMeshComponent mc;
 					mc.MeshHandle = meshUUID;
-					mc.RootAnimator = animatorUUID;
+					mc.AnimatorEntityHandle = animatorUUID;
 					deserializedEntity.AttachComponent<SkinnedMeshComponent>(mc);
 				}
 

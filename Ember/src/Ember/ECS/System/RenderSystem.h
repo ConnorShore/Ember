@@ -118,6 +118,8 @@ namespace Ember {
 			}
 
 		} m_RenderSceneState;
+
+		Scene* m_CurrentScene = nullptr;
 	};
 
 }
