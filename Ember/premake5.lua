@@ -17,12 +17,10 @@ project "Ember"
       "vendor/glm",
       "vendor/imgui",
       "vendor/stb",
-      "vendor/assimp/include",
       "vendor/rapidyaml/src",
 		"vendor/rapidyaml/ext/c4core/src",
       "vendor/lua/src",
       "vendor/sol2/include",
-      "vendor/tinygltf"
    }
 
    files 

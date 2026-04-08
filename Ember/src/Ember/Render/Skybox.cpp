@@ -159,7 +159,7 @@ namespace Ember {
 		prefilterShader->SetFloat("u_Resolution", static_cast<float>(m_Resolution));
 
 		uint32_t maxMipLevels = m_PrefilteredMap->GetNumMipMapLevels();
-		for (int mip = 0; mip < maxMipLevels; mip++)
+		for (uint32_t mip = 0; mip < maxMipLevels; mip++)
 		{
 			// Resize the viewport for each mip level
 			unsigned int mipWidth = static_cast<unsigned int>(prefilterResolution * std::pow(0.5, mip));
@@ -171,12 +171,12 @@ namespace Ember {
 
 			// Render all 6 sides of the cubemap
 			prefilterShader->SetMatrix4(Constants::Uniforms::Projection, m_CaptureProjection);
-			for (size_t i = 0; i < 6; i++)
+			for (uint32_t i = 0; i < 6; i++)
 			{
 				prefilterShader->SetMatrix4(Constants::Uniforms::View, m_CaptureViewMats[i]);
 
 				// Attach the current face of the cubemap to the Framebuffer
-				m_PrefilterBuffer->AttachColorTextureLayer(m_PrefilteredMap->GetID(), mip, i);
+				m_PrefilterBuffer->AttachColorTextureLayer(m_PrefilteredMap->GetID(), (int)mip, i);
 				RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 				Renderer3D::Submit(cubeVAO);
 			}

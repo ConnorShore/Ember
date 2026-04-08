@@ -1,10 +1,9 @@
 #pragma once
 
-#include "Model.h"
-#include "Skeleton.h"
-#include "Animation.h"
-
-#include "Ember/Render/SkinnedMesh.h"
+#include <Ember/Asset/Model.h>
+#include <Ember/Asset/Skeleton.h>
+#include <Ember/Asset/Animation.h>
+#include <Ember/Render/SkinnedMesh.h>
 
 #include <string>
 

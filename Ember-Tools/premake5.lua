@@ -16,21 +16,20 @@ project "Ember-Tools"
    includedirs 
    {
       "src",
-      "%{wks.location}/Ember-Tools/vendor/assimp",
+      "%{wks.location}/Ember-Tools/vendor/tinygltf",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
+      "%{wks.location}/Ember/vendor/stb",
       "%{wks.location}/Ember/vendor/lua/src",
       "%{wks.location}/Ember/vendor/sol2/include",
       "%{wks.location}/Ember/vendor/rapidyaml/src",
-		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
-      "%{wks.location}/Ember/vendor/tinygltf",
+		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src"
    }
 
    links 
    {
       "Ember",
-      "assimp"
    }
 
    filter "system:windows"

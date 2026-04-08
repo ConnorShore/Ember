@@ -1,13 +1,12 @@
-#include "ebpch.h"
 #include "GLTFImporter.h"
 
-#include "Ember/Core/Application.h"
-#include "Ember/Core/Core.h"
-#include "Ember/Asset/AssetManager.h"
-#include "Ember/Asset/MeshSerializer.h"
-#include "Ember/Asset/MaterialSerializer.h"
-#include "Ember/Asset/SkeletonSerializer.h"
-#include "Ember/Asset/AnimationSerializer.h"
+#include <Ember/Core/Application.h>
+#include <Ember/Core/Core.h>
+#include <Ember/Asset/AssetManager.h>
+#include <Ember/Asset/MeshSerializer.h>
+#include <Ember/Asset/MaterialSerializer.h>
+#include <Ember/Asset/SkeletonSerializer.h>
+#include <Ember/Asset/AnimationSerializer.h>
 
 #include <filesystem>
 #include <fstream>
@@ -17,8 +16,6 @@
 #include <ryml_std.hpp>
 
 #define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <tiny_gltf.h>
 
 namespace Ember {

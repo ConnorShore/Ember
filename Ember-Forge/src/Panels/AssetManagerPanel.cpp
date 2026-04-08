@@ -4,7 +4,8 @@
 #include "UI/PropertyGrid.h"
 
 #include "Ember/Utils/PlatformUtil.h"
-#include "Ember/Asset/GLTFImporter.h"
+
+#include <Ember-Tools/GLTFImporter.h>
 
 #include <format>
 

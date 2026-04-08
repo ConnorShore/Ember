@@ -1,0 +1,27 @@
+Material: CesiumMan_Cesium_Man-effect
+UUID: 16386728401553113365
+RenderQueue: 1
+Instanced: false
+Shader: 10
+Uniforms:
+  u_Metallic:
+    Type: float
+    Value: 0
+  u_Albedo:
+    Type: Vector3f
+    Value: [1,1,1]
+  u_Roughness:
+    Type: float
+    Value: 1
+  u_EmissionColor:
+    Type: Vector3f
+    Value: [1,1,1]
+  u_AO:
+    Type: float
+    Value: 1
+  u_AlbedoMap:
+    Type: Texture
+    Value: 17003550575571703781
+  u_Emission:
+    Type: float
+    Value: 0

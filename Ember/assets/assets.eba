@@ -1,0 +1,9 @@
+Assets:
+  - Type: Texture
+    UUID: 17003550575571703781
+    Name: CesiumMan_Tex_0.png
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Tex_0.png'
+  - Type: Model
+    UUID: 1166016203457030036
+    Name: CesiumMan
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan.ebmodel'

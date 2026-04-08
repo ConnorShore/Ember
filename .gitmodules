@@ -13,6 +13,3 @@
 [submodule "Ember/vendor/rapidyaml"]
 	path = Ember/vendor/rapidyaml
 	url = https://github.com/ConnorShore/rapidyaml.git
-[submodule "Ember-Tools/vendor/assimp"]
-	path = Ember-Tools/vendor/assimp
-	url = https://github.com/ConnorShore/assimp.git
