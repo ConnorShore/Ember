@@ -306,14 +306,16 @@ namespace Ember {
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-			Matrix4f lightProjection = Math::Orthographic(-5.0f, 5.0f, -5.0f, 5.0f, -100.0f, 500.0f);
-			//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
+			Matrix4f lightProjection = Math::Orthographic(-5.0f, 5.0f, -5.0f, 5.0f, -20.0f, 100.0f);
+
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+
 			// Avoid degenerate LookAt when light points straight up/down
 			if (std::abs(lightDirection.y) > 0.99f)
 				up = Vector3f(0.0f, 0.0f, 1.0f);
+
 			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
 

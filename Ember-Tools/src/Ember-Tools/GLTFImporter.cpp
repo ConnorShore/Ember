@@ -363,13 +363,39 @@ namespace Ember {
 		CookedModelNode node;
 		node.Name = gNode.name.empty() ? "Node_" + std::to_string(nodeIndex) : gNode.name;
 		node.LocalTransform = ExtractTransform(gNode);
-		if (gNode.mesh > -1) {
+
+		if (gNode.mesh > -1) 
+		{
 			const auto& cooked = meshToPrims[gNode.mesh];
-			for (size_t i = 0; i < model.meshes[gNode.mesh].primitives.size(); i++)
-				node.Meshes.push_back({ cooked[i].id, (uint32_t)model.meshes[gNode.mesh].primitives[i].material });
+
+			// Track the cooked index independently of the primitive index
+			size_t cookedIndex = 0;
+
+			for (size_t i = 0; i < model.meshes[gNode.mesh].primitives.size(); i++) 
+			{
+				const auto& primitive = model.meshes[gNode.mesh].primitives[i];
+
+				// Match the exact skip logic from ProcessMesh
+				if (primitive.attributes.find("POSITION") == primitive.attributes.end())
+					continue;
+
+				// Final safety bounds check
+				if (cookedIndex < cooked.size()) {
+
+					// Protect against unassigned materials (-1)
+					uint32_t safeMaterialIndex = 0; // Fallback to the very first material in the file
+					if (primitive.material > -1)
+						safeMaterialIndex = (uint32_t)primitive.material;
+
+					node.Meshes.push_back({ cooked[cookedIndex].id, safeMaterialIndex });
+					cookedIndex++;
+				}
+			}
 		}
+
 		for (int childIdx : gNode.children)
 			node.ChildNodes.push_back(ProcessNode(childIdx, model, outputDirectory, meshToPrims));
+
 		return node;
 	}
 }
