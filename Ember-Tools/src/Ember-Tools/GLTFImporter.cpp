@@ -327,6 +327,14 @@ namespace Ember {
 					else indices[i] = *(data + i * stride);
 				}
 			}
+			else
+			{
+				// No indices provided, generate a simple 0..vertexCount-1 index buffer
+				indices.resize(vertices.size());
+				for (uint32_t i = 0; i < vertices.size(); i++) {
+					indices[i] = i;
+				}
+			}
 
 			UUID meshUUID = UUID();
 			std::string primFileName = modelName + "_" + safeMeshName + "_Prim" + std::to_string(primIndex) + ".ebmesh";

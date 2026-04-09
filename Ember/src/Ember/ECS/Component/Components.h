@@ -319,16 +319,16 @@ namespace Ember {
 		UUID SkeletonHandle = Constants::InvalidUUID;
 		UUID CurrentAnimationHandle = Constants::InvalidUUID;
 
-		std::vector<Matrix4f> BoneMatrices;
+		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 
 		TimeStep CurrentTime = 0.0f;
 		bool IsPlaying = true;
 		bool Loop = true;
 
-		AnimatorComponent()
-		{
-			BoneMatrices.resize(Constants::Renderer::MaxBones, Matrix4f(1.0f));
-		}
+		AnimatorComponent() = default;
+		AnimatorComponent(UUID skeletonUUID, UUID animationUUID)
+			: SkeletonHandle(skeletonUUID), CurrentAnimationHandle(animationUUID) {}
+		AnimatorComponent(const AnimatorComponent&) = default;
 	};
 
 }

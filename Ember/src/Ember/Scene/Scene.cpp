@@ -102,7 +102,6 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
-		//systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this); // TODO: Remove from here, just using for testing
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
 
@@ -347,8 +346,10 @@ namespace Ember {
 			animator.SkeletonHandle = model->GetSkeletonHandle();
 
 			// Temp testing
-			auto anim = am.GetAsset<Animation>("Anim_0");
-			animator.CurrentAnimationHandle = anim->GetUUID();
+			//auto anim = am.GetAsset<Animation>("Anim_0");
+			//animator.CurrentAnimationHandle = anim->GetUUID();
+
+			animator.IsPlaying = false;
 
 			rootEntity.AttachComponent<AnimatorComponent>(animator);
 			animatorEntity = rootEntity.GetUUID(); // Save the UUID

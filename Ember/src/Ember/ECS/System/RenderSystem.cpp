@@ -475,7 +475,7 @@ namespace Ember {
 				{
 					EB_CORE_ASSERT(registry.ContainsComponent<AnimatorComponent>(mesh.RuntimeAnimatorID), "Animator component should be present");
 
-					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
+ 					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
 					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
 				}
 
