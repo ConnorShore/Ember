@@ -54,6 +54,7 @@ namespace Ember {
 				}
 				UI::EndComboBox();
 			}
+
 			ImGui::SameLine();
 			if (ImGui::Button("Clone"))
 			{
@@ -66,6 +67,7 @@ namespace Ember {
 					// Serialize the asset
 					std::filesystem::path assetDirectory = ProjectManager::GetActive()->GetAssetDirectory();
 					std::filesystem::path filePath = assetDirectory / "Materials" / (cloneName + ".ebmat");
+					clonedMaterial->SetFilePath(filePath.string());
 
 					if (!MaterialSerializer::Serialize(filePath, clonedMaterial))
 						EB_CORE_ERROR("Failed to serialize cloned material!");
@@ -92,9 +94,7 @@ namespace Ember {
 
 			bool isEngineAsset = material->IsEngineAsset();
 			if (isEngineAsset)
-			{
-				ImGui::TextWrapped("This is an engine material. To modify its properties, clone it first by clicking the 'Clone' button.");
-			}
+				ImGui::TextWrapped("Clone material to modify the properties.");
 
 			if (!isEngineAsset)
 			{

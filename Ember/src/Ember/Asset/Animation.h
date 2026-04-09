@@ -34,8 +34,12 @@ namespace Ember {
 	class Animation : public Asset
 	{
 	public:
+		Animation(UUID uuid, const std::string& name, float duration, const std::vector<BoneAnimationTrack>& tracks)
+			: Asset(uuid, name, "", AssetType::Animation), m_Duration(duration), m_Tracks(tracks) {
+		}
 		Animation(const std::string& name, float duration, const std::vector<BoneAnimationTrack>& tracks)
-			: Asset(name, "", AssetType::Animation), m_Duration(duration), m_Tracks(tracks) { }
+			: Animation(UUID(), name, duration, tracks) {
+		}
 
 		inline float GetDuration() const { return m_Duration; }
 		inline const std::vector<BoneAnimationTrack>& GetTracks() const { return m_Tracks; }

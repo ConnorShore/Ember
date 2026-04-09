@@ -1,25 +1,29 @@
 Assets:
   - Type: Texture
-    UUID: 14738619222778992124
+    UUID: 370167208091164461
     Name: CesiumMan_Tex_0.png
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan_Tex_0.png'
   - Type: Material
-    UUID: 12864239088574047058
+    UUID: 13254978547600032443
+    Name: Sphere_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 14104229427809059368
     Name: CesiumMan_Cesium_Man-effect
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan_Cesium_Man-effect.ebmat'
   - Type: Mesh
-    UUID: 13210187539442544451
+    UUID: 16960984960031990912
     Name: CesiumMan_Cesium_Man_Prim0
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan_Cesium_Man_Prim0.ebmesh'
   - Type: Skeleton
-    UUID: 1546508495206442806
+    UUID: 14566834015630658416
     Name: CesiumMan
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan.ebskeleton'
   - Type: Animation
-    UUID: 4019064811925855445
+    UUID: 4061092966795460676
     Name: CesiumMan_Anim_0
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan_Anim_0.ebanim'
   - Type: Model
-    UUID: 1292672833875200629
+    UUID: 11752010752218175031
     Name: CesiumMan
     FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Models\CesiumMan.ebmodel'

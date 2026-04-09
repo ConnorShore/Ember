@@ -103,7 +103,7 @@ namespace Ember {
 		file.close();
 
 		std::string name = filepath.stem().string();
-		auto anim = SharedPtr<Animation>::Create(name, duration, tracks);
+		auto anim = SharedPtr<Animation>::Create(uuid, name, duration, tracks);
 		anim->SetFilePath(filepath.string());
 
 		return anim;
