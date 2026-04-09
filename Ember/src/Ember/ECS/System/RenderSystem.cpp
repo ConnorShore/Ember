@@ -306,7 +306,8 @@ namespace Ember {
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-			Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
+			Matrix4f lightProjection = Math::Orthographic(-5.0f, 5.0f, -5.0f, 5.0f, -100.0f, 500.0f);
+			//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f, 500.0f);
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
 			Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
@@ -362,7 +363,6 @@ namespace Ember {
 	{
 		auto& registry = scene->GetRegistry();
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
 
 		shadowMapBuffer->Bind();
 
@@ -370,39 +370,98 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(true);
 
+		// Split entities  so can bind each shader 1 time
+		int size = (int)m_RenderQueueBuckets.Opaque.size();
+		std::vector<EntityID> splitEntities(size);
+
+		int staticCount = 0;
+		int skinnedCount = 0;
+		for (int i = 0; i < size; i++)
+		{
+			EntityID entity = m_RenderQueueBuckets.Opaque[i];
+			if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+				splitEntities[size - 1 - skinnedCount++] = entity; // Add to end of list
+			else if (registry.ContainsComponent<StaticMeshComponent>(entity))
+				splitEntities[staticCount++] = entity; // Keep at beginning of list
+		}
+
+
 		Renderer3D::BeginFrame();
+
+		// Render static meshes with the static shadow shader
+		auto shadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);
 		shadowShader->Bind();
 		shadowShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);
 
-		for (EntityID entity : m_RenderQueueBuckets.Opaque)
+		for (int i = 0; i < staticCount; i++)
 		{
+			EntityID entity = splitEntities[i];
 			auto [transform] = registry.GetComponents<TransformComponent>(entity);
 			shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
-
 			if (registry.ContainsComponent<StaticMeshComponent>(entity))
 			{
 				auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
 				auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
 				Renderer3D::Submit(meshAsset->GetVertexArray());
 			}
-			else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+		}
+
+		// Render skinned meshes with the skinned shadow shader
+		auto shadowSkinnedShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardSkinnedShadowShad);
+		shadowSkinnedShader->Bind();
+		shadowSkinnedShader->SetMatrix4(Constants::Uniforms::LightViewMatrix, lightViewMatrix);
+
+		for (int i = size - skinnedCount; i < size; i++)
+		{
+			EntityID entity = splitEntities[i];
+			auto [transform] = registry.GetComponents<TransformComponent>(entity);
+			shadowSkinnedShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
+			if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
 			{
 				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
 				auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
-
 				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
 				{
 					Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
 					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 					{
-                        auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
-						shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+						auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
+						shadowSkinnedShader->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
 					}
 				}
-
 				Renderer3D::Submit(meshAsset->GetVertexArray());
 			}
 		}
+
+		//for (EntityID entity : m_RenderQueueBuckets.Opaque)
+		//{
+		//	auto [transform] = registry.GetComponents<TransformComponent>(entity);
+		//	shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
+
+		//	if (registry.ContainsComponent<StaticMeshComponent>(entity))
+		//	{
+		//		auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
+		//		auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
+		//		Renderer3D::Submit(meshAsset->GetVertexArray());
+		//	}
+		//	else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
+		//	{
+		//		auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
+		//		auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
+
+		//		if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
+		//		{
+		//			Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
+		//			if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+		//			{
+  //                      auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
+		//				shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+		//			}
+		//		}
+
+		//		Renderer3D::Submit(meshAsset->GetVertexArray());
+		//	}
+		//}
 
 		Renderer3D::EndFrame();
 	}
@@ -476,7 +535,7 @@ namespace Ember {
 					EB_CORE_ASSERT(registry.ContainsComponent<AnimatorComponent>(mesh.RuntimeAnimatorID), "Animator component should be present");
 
  					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
-					materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+					materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
 				}
 
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
@@ -673,7 +732,7 @@ namespace Ember {
 					if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID && registry.ContainsComponent<AnimatorComponent>(animatorEntity.GetEntityHandle()))
 					{
                         auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
-						materialAsset->GetShader()->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+						materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
 					}
 				}
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);

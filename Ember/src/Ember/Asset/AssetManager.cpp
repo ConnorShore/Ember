@@ -38,6 +38,9 @@ namespace Ember {
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShadUUID, Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
 		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShadUUID, Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
 		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadowShadUUID, Constants::Assets::StandardShadowShad, "Ember/assets/shaders/StandardShadow.glsl");
+		ShaderMacros skinShadMacros;
+		skinShadMacros["MAX_BONES"] = std::to_string(Constants::Renderer::MaxBones);
+		auto shadowSkinnedShader = Load<Shader>(Constants::Assets::StandardSkinnedShadowShadUUID, Constants::Assets::StandardSkinnedShadowShad, "Ember/assets/shaders/StandardSkinnedShadow.glsl", skinShadMacros);
 		auto gaussianBlurShaer = Load<Shader>(Constants::Assets::GaussianBlurShadUUID, Constants::Assets::GaussianBlurShad, "Ember/assets/shaders/GaussianBlur.glsl");
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShadUUID, Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
 		ShaderMacros outlineMacros;

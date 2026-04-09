@@ -346,10 +346,10 @@ namespace Ember {
 			animator.SkeletonHandle = model->GetSkeletonHandle();
 
 			// Temp testing
-			//auto anim = am.GetAsset<Animation>("Anim_0");
-			//animator.CurrentAnimationHandle = anim->GetUUID();
+			auto anim = am.GetAsset<Animation>("Anim_0");
+			animator.CurrentAnimationHandle = anim->GetUUID();
 
-			animator.IsPlaying = false;
+			//animator.IsPlaying = false;
 
 			rootEntity.AttachComponent<AnimatorComponent>(animator);
 			animatorEntity = rootEntity.GetUUID(); // Save the UUID

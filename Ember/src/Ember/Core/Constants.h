@@ -24,6 +24,7 @@ namespace Ember::Constants {
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 
+	// TODO: Update sections to have massive regeions 10000, 20000, 20001, etc
 	namespace Assets {
 
 		inline const char* DefaultWhiteTex = "DefaultWhite";
@@ -37,7 +38,6 @@ namespace Ember::Constants {
 		inline const char* DefaultSkybox = "DefaultSkybox";
 		inline const uint64_t DefaultSkyboxUUID = 5;
 
-		// TODO: Increment them all by 1
 		inline const char* StandardGeometryShad = "StandardGeometry";
 		inline const uint64_t StandardGeometryShadUUID = 9;
 		inline const char* StandardSkinnedGeometryShad = "StandardSkinnedGeometry";
@@ -74,6 +74,8 @@ namespace Ember::Constants {
 		inline const uint64_t PrefilterShadUUID = 25;
 		inline const char* BRDFLUTShad = "BRDFLUT";
 		inline const uint64_t BRDFLUTShadUUID = 26;
+		inline const char* StandardSkinnedShadowShad = "StandardSkinnedShadow";
+		inline const uint64_t StandardSkinnedShadowShadUUID = 14;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -143,6 +145,8 @@ namespace Ember::Constants {
 		inline const char* IrradianceMap = "u_IrradianceMap";
 		inline const char* PrefilterMap = "u_PrefilterMap";
 		inline const char* BRDFLUT = "u_BRDFLUT";
+
+		inline const char* BoneMatrices = "u_BoneMatrices";
 
 		inline const char* EnvironmentIntensity = "u_EnvironmentIntensity";
 

@@ -264,17 +264,27 @@ namespace Ember {
 		mat->SetUniform(Constants::Uniforms::EmissionColor, Vector3f(1.0f));
 		mat->SetUniform(Constants::Uniforms::Emission, 0.0f);
 
-		auto assignTex = [&](int texIdx, const std::string& uniName) {
-			if (texIdx > -1) {
+		auto& am = Application::Instance().GetAssetManager();
+		auto defaultWhite = am.GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTexUUID);
+		auto defaultNormal = am.GetAsset<Texture2D>(Constants::Assets::DefaultNormalTexUUID);
+		auto defaultBlack = am.GetAsset<Texture2D>(Constants::Assets::DefaultBlackTexUUID);
+
+		auto assignTex = [&](int texIdx, const std::string& uniName, SharedPtr<Texture2D> fallback) {
+			if (texIdx > -1) 
+			{
 				int imgIdx = model.textures[texIdx].source;
 				auto tex = Application::Instance().GetAssetManager().GetAsset<Texture2D>(cookedImages[imgIdx].id);
 				mat->SetUniform(uniName, tex);
 			}
+			else 
+			{
+				mat->SetUniform(uniName, fallback);
+			}
 			};
 
-		assignTex(pbr.baseColorTexture.index, Constants::Uniforms::AlbedoMap);
-		assignTex(gMat.normalTexture.index, Constants::Uniforms::NormalMap);
-		assignTex(pbr.metallicRoughnessTexture.index, Constants::Uniforms::MetallicRoughnessMap);
+		assignTex(pbr.baseColorTexture.index, Constants::Uniforms::AlbedoMap, defaultWhite);
+		assignTex(gMat.normalTexture.index, Constants::Uniforms::NormalMap, defaultNormal);
+		assignTex(pbr.metallicRoughnessTexture.index, Constants::Uniforms::MetallicRoughnessMap, defaultWhite);
 
 		std::string path = (std::filesystem::path(outputDirectory) / (name + ".ebmat")).string();
 		MaterialSerializer::Serialize(path, mat);
