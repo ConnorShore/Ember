@@ -48,7 +48,7 @@ namespace Ember {
 		}
 
 	private:
-		void ExecuteRenderPipeline(Scene* scene, bool renderInfiniteGrid);
+		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
 		void InitializeRenderState();
 		void SetSceneCamera(Scene* scene);
 		void CreateShadowMaps(Scene* scene);
@@ -61,7 +61,7 @@ namespace Ember {
 		void RenderForwardEntities(Scene* scene);
 		void RenderTransparentEntities(Scene* scene);
 		void RenderInfiniteGrid();
-		void RenderBillboards(Scene* scene);
+		void RenderBillboards(Scene* scene, bool isRuntime);
 		void Render2DEntities(Scene* scene);
 		void HandlePostProcessing(Scene* scene);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);

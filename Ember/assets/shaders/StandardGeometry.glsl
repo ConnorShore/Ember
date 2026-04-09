@@ -99,6 +99,12 @@ void main()
     // Normal Map
     vec3 normalMap = texture(u_NormalMap, FragIn.TexCoord).rgb;
     normalMap = normalMap * 2.0 - 1.0; // Transform from [0,1] to [-1,1]
+    if (length(normalMap) <= 0.0) 
+    {
+        normalMap = vec3(0.0, 0.0, 1.0);
+    }
+
+    normalMap = normalize(normalMap);
     vec3 finalNormal = normalize(FragIn.TBN * normalMap).rgb;
     
     // Emission (sRGB -> Linear)

@@ -149,7 +149,7 @@ namespace Ember {
 		EB_CORE_INFO("RenderSystem is detached!");
 	}
 
-	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool renderInfiniteGrid)
+	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool isRuntime)
 	{
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
@@ -178,10 +178,10 @@ namespace Ember {
 		RenderTransparentEntities(scene);
 
 		// Render Editor Grid
-		if (renderInfiniteGrid)
+		if (!isRuntime)
 			RenderInfiniteGrid();
 
-		RenderBillboards(scene);
+		RenderBillboards(scene, isRuntime);
 
 		HandlePostProcessing(scene);
 
@@ -198,7 +198,7 @@ namespace Ember {
 		SetSceneCamera(scene);
 
 		if (m_RenderSceneState.IsCameraFound)
-			ExecuteRenderPipeline(scene, false);
+			ExecuteRenderPipeline(scene, true);
 
 		m_CurrentScene = nullptr;
 	}
@@ -217,7 +217,7 @@ namespace Ember {
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
-		ExecuteRenderPipeline(scene, true);
+		ExecuteRenderPipeline(scene, false);
 
 		m_CurrentScene = nullptr;
 	}
@@ -435,36 +435,6 @@ namespace Ember {
 				Renderer3D::Submit(meshAsset->GetVertexArray());
 			}
 		}
-
-		//for (EntityID entity : m_RenderQueueBuckets.Opaque)
-		//{
-		//	auto [transform] = registry.GetComponents<TransformComponent>(entity);
-		//	shadowShader->SetMatrix4(Constants::Uniforms::Transform, transform.WorldTransform);
-
-		//	if (registry.ContainsComponent<StaticMeshComponent>(entity))
-		//	{
-		//		auto& mesh = registry.GetComponent<StaticMeshComponent>(entity);
-		//		auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
-		//		Renderer3D::Submit(meshAsset->GetVertexArray());
-		//	}
-		//	else if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
-		//	{
-		//		auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
-		//		auto meshAsset = assetManager.GetAsset<Mesh>(mesh.MeshHandle);
-
-		//		if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && m_CurrentScene)
-		//		{
-		//			Entity animatorEntity = m_CurrentScene->GetEntity(mesh.AnimatorEntityHandle);
-		//			if (animatorEntity.GetEntityHandle() != Constants::Entities::InvalidEntityID)
-		//			{
-  //                      auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
-		//				shadowShader->SetMatrix4Array("u_BoneMatrices", animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
-		//			}
-		//		}
-
-		//		Renderer3D::Submit(meshAsset->GetVertexArray());
-		//	}
-		//}
 
 		Renderer3D::EndFrame();
 	}
@@ -775,7 +745,7 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 	}
 
-	void RenderSystem::RenderBillboards(Scene* scene)
+	void RenderSystem::RenderBillboards(Scene* scene, bool isRuntime)
 	{
 		auto& registry = scene->GetRegistry();
 
@@ -792,6 +762,9 @@ namespace Ember {
 		for (EntityID entity : view)
 		{
 			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
+			if (isRuntime && !billboard.RenderRuntime)
+				continue;
+
 			auto texture = assetManager.GetAsset<Texture2D>(billboard.TextureHandle);
 
 			// Find the billboards transform //

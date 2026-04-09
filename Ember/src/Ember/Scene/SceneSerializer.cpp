@@ -177,6 +177,18 @@ namespace Ember {
 				animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
 				animatorNode["CurrentAnimationHandle"] << (uint64_t)animator.CurrentAnimationHandle;
 			}
+			if (entity.ContainsComponent<BillboardComponent>())
+			{
+				auto& billboard = entity.GetComponent<BillboardComponent>();
+				ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
+				billboardNode |= ryml::MAP;
+				billboardNode["TextureHandle"] << (uint64_t)billboard.TextureHandle;
+				Util::SerializeVector4f(billboardNode["Tint"], billboard.Tint);
+				billboardNode["Spherical"] << billboard.Spherical;
+				billboardNode["StaticSize"] << billboard.StaticSize;
+				billboardNode["Size"] << billboard.Size;
+				billboardNode["RenderRuntime"] << billboard.RenderRuntime;
+			}
 		}
 
 		// Write out to disk
@@ -446,6 +458,26 @@ namespace Ember {
 					ac.CurrentAnimationHandle = (UUID)animHandle;
 
 					deserializedEntity.AttachComponent<AnimatorComponent>(ac);
+				}
+
+				if (entityNode.has_child("BillboardComponent"))
+				{
+					ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
+					BillboardComponent bc;
+
+					uint64_t texHandle;
+					billboardNode["TextureHandle"] >> texHandle;
+					UUID textureUUID = (UUID)texHandle;
+					bc.TextureHandle = textureUUID;
+
+					Util::DeserializeVector4f(billboardNode["Tint"], bc.Tint);
+
+					billboardNode["Spherical"] >> bc.Spherical;
+					billboardNode["StaticSize"] >> bc.StaticSize;
+					billboardNode["Size"] >> bc.Size;
+					billboardNode["RenderRuntime"] >> bc.RenderRuntime; 
+
+					deserializedEntity.AttachComponent<BillboardComponent>(bc);
 				}
 			}
 		}

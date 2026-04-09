@@ -27,6 +27,8 @@ namespace Ember {
 		void OnImGuiRender(TimeStep delta) override;
 
 	private:
+		void LoadDefaultAssets();
+
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 

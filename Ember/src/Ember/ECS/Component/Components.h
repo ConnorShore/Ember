@@ -308,6 +308,7 @@ namespace Ember {
 		Vector4f Tint = Vector4f(1.0f);
 		bool Spherical = true;
 		bool StaticSize = true;
+		bool RenderRuntime = false;
 		float Size = 1.0f;
 
 		BillboardComponent() = default;

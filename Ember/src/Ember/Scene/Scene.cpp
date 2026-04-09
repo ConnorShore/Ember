@@ -69,7 +69,8 @@ namespace Ember {
 				SpotLightComponent,
 				PointLightComponent,
 				RelationshipComponent,
-				AnimatorComponent
+				AnimatorComponent,
+				BillboardComponent
 			>(srcEntity, destEntity);
 		}
 
@@ -244,7 +245,8 @@ namespace Ember {
 			DirectionalLightComponent,
 			SpotLightComponent,
 			PointLightComponent,
-			AnimatorComponent
+			AnimatorComponent,
+			BillboardComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

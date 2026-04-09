@@ -1,5 +1,8 @@
 #include "efpch.h"
+
 #include "EditorLayer.h"
+#include "EditorConstants.h"
+
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
@@ -49,6 +52,9 @@ namespace Ember {
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<NotificationPanel>::Create(&m_Context));
+
+		// Default Assets
+		LoadDefaultAssets();
 
 		// Editor Camera Setup
 		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);
@@ -156,6 +162,17 @@ namespace Ember {
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
 		RemovePendingEntities();
+	}
+
+	void EditorLayer::LoadDefaultAssets()
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Textures
+		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, "Ember-Forge/assets/icons/PointLight.png");
+		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, "Ember-Forge/assets/icons/DirectionalLight.png");
+		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, "Ember-Forge/assets/icons/SpotLight.png");
+		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, "Ember-Forge/assets/icons/Camera.png");
 	}
 
 	void EditorLayer::OnRuntimeStart()

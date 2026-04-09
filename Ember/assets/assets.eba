@@ -1,57 +1,33 @@
 Assets:
   - Type: Texture
-    UUID: 11191206547159888868
+    UUID: 9888697746210380440
     Name: Fox_Tex_0.png
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Tex_0.png'
-  - Type: Texture
-    UUID: 5644173566487910188
-    Name: CesiumMan_Tex_0.png
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Tex_0.png'
   - Type: Material
-    UUID: 1227444930437973891
+    UUID: 17209794165028728517
     Name: Fox_fox_material
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox_material.ebmat'
-  - Type: Material
-    UUID: 6449441160695064756
-    Name: CesiumMan_Cesium_Man-effect
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Cesium_Man-effect.ebmat'
   - Type: Mesh
-    UUID: 3962647210189997018
-    Name: CesiumMan_Cesium_Man_Prim0
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Cesium_Man_Prim0.ebmesh'
-  - Type: Mesh
-    UUID: 15336735162315706686
+    UUID: 8145367263081744517
     Name: Fox_fox1_Prim0
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox1_Prim0.ebmesh'
   - Type: Skeleton
-    UUID: 12167123698767958561
+    UUID: 4369982157160885940
     Name: Fox
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebskeleton'
-  - Type: Skeleton
-    UUID: 10605433696591361968
-    Name: CesiumMan
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan.ebskeleton'
   - Type: Animation
-    UUID: 5797788715169202931
+    UUID: 15400922455270421412
     Name: Fox_Walk
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Walk.ebanim'
   - Type: Animation
-    UUID: 8105505325140942262
+    UUID: 10745282212432052114
     Name: Fox_Survey
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Survey.ebanim'
   - Type: Animation
-    UUID: 592751302988885751
+    UUID: 1879547689221941766
     Name: Fox_Run
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Run.ebanim'
-  - Type: Animation
-    UUID: 10304375991854564540
-    Name: CesiumMan_Anim_0
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan_Anim_0.ebanim'
   - Type: Model
-    UUID: 7574321508502298756
-    Name: CesiumMan
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\CesiumMan.ebmodel'
-  - Type: Model
-    UUID: 18309522785021585358
+    UUID: 14783902982120251620
     Name: Fox
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebmodel'
