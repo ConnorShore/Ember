@@ -271,7 +271,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
 					std::string file = SelectAndLoadFile(std::format("Texture Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Texture2D>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Shader"))
@@ -279,7 +282,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetShader);
 					std::string file = SelectAndLoadFile(std::format("Shader Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Shader>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Script"))
@@ -287,7 +293,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetScript);
 					std::string file = SelectAndLoadFile(std::format("Script Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Script>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 

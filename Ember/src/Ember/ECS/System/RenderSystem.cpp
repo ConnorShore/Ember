@@ -272,7 +272,7 @@ namespace Ember {
 			if (camera.IsActive)
 			{
 				m_RenderSceneState.ActiveCamera = camera.Camera;
-				m_RenderSceneState.CameraTransform = Math::Translate(transform.Position) * Math::GetRotationMatrix(transform.Rotation);
+				m_RenderSceneState.CameraTransform = transform.WorldTransform;// Math::Translate(transform.Position)* Math::GetRotationMatrix(transform.Rotation);
 				m_RenderSceneState.IsCameraFound = true;
 
 				// set uniform buffer
@@ -306,6 +306,7 @@ namespace Ember {
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+			//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f,500.0f);
 			Matrix4f lightProjection = Math::Orthographic(-25.0f, 25.0f, -25.0f, 25.0f, -20.0f, 200.0f);
 
 			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);

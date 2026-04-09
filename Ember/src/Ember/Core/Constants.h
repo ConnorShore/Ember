@@ -77,7 +77,7 @@ namespace Ember::Constants {
 		inline const char* BRDFLUTShad = "BRDFLUT";
 		inline const uint64_t BRDFLUTShadUUID = 26;
 		inline const char* StandardSkinnedShadowShad = "StandardSkinnedShadow";
-		inline const uint64_t StandardSkinnedShadowShadUUID = 14;
+		inline const uint64_t StandardSkinnedShadowShadUUID = 27;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;

@@ -191,15 +191,23 @@ namespace Ember {
 		childRelationship.ParentHandle = newParent.GetUUID();
 
 		// Recompute the child's local transform relative to the new parent
+		// NewLocal = Inverse(ParentWorld) * CurrentChildWorld
 		auto& parentTransform = newParent.GetComponent<TransformComponent>();
 		auto& childTransform = childEntity.GetComponent<TransformComponent>();
-		auto parentInverseWorldTransform = Math::Inverse(parentTransform.GetWorldTransform());
-		Vector3f outPos, outRot, outScale;
-		Math::DecomposeTransform(parentInverseWorldTransform, outPos, outRot, outScale);
 
-		childTransform.Position = outPos + childTransform.Position;
-		childTransform.Rotation = outRot + childTransform.Rotation;
-		childTransform.Scale = outScale * childTransform.Scale;
+		Matrix4f parentInverseWorld = Math::Inverse(parentTransform.WorldTransform);
+		Matrix4f currentChildWorld = childTransform.WorldTransform;
+
+		// Calculate the exact local matrix needed to maintain the current world position
+		Matrix4f newLocalTransform = parentInverseWorld * currentChildWorld;
+
+		Vector3f outPos, outRot, outScale;
+		Math::DecomposeTransform(newLocalTransform, outPos, outRot, outScale);
+
+		// Directly assign the decomposed values! No addition!
+		childTransform.Position = outPos;
+		childTransform.Rotation = outRot;
+		childTransform.Scale = outScale;
 	}
 
 	void Scene::RemoveParent(Entity child)

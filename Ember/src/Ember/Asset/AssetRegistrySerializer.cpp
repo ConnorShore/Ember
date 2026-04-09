@@ -44,7 +44,7 @@ namespace Ember {
 			};
 
 		// Serialize all standard types (ordering matters)
-		serializeType(m_AssetManagerHandle->GetAssetsOfType<Texture2D>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Texture>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Shader>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Script>());
 
