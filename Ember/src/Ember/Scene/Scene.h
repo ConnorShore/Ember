@@ -16,6 +16,13 @@ namespace Ember {
 
 	class Entity;
 
+	enum class SceneState
+	{
+		Edit = 0,
+		Play = 1,
+		Pause = 2
+	};
+
 	class Scene : public SharedResource
 	{
 	public:

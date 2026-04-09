@@ -60,14 +60,28 @@ namespace Ember {
 			// Advance the clock
 			if (animator.IsPlaying)
 			{
-				animator.CurrentTime += delta;  //  TODO: Add playback speed multiplier here later
+				float duration = animation->GetDuration();
+				animator.CurrentTime += (delta * animator.PlaybackSpeed);  //  TODO: Add playback speed multiplier here later
 
-				if (animator.CurrentTime > animation->GetDuration()) {
-					if (animator.Loop) {
-						animator.CurrentTime = fmod(animator.CurrentTime, animation->GetDuration());
+				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
+				{
+					if (animator.Loop)
+						animator.CurrentTime = fmod(animator.CurrentTime, duration);
+					else 
+					{
+						animator.CurrentTime = duration;	// Clamp to end
+						animator.IsPlaying = false;
 					}
-					else {
-						animator.CurrentTime = animation->GetDuration();
+				}
+				else if (animator.PlaybackSpeed < 0.0f && animator.CurrentTime <= 0.0f)
+				{
+					animator.CurrentTime = std::fmod(animator.CurrentTime, duration);
+
+					if (animator.CurrentTime < 0.0f)
+						animator.CurrentTime += duration;
+					else
+					{
+						animator.CurrentTime = 0.0f;	// Clamp to start
 						animator.IsPlaying = false;
 					}
 				}
@@ -97,7 +111,14 @@ namespace Ember {
 				else if (track.PositionKeyframes.size() > 1) {
 					size_t p0Index = GetKeyframeIndex(track.PositionKeyframes, animator.CurrentTime);
 					size_t p1Index = p0Index + 1;
-					float factor = GetScaleFactor(track.PositionKeyframes[p0Index].TimeStamp, track.PositionKeyframes[p1Index].TimeStamp, animator.CurrentTime);
+
+					if (p1Index >= track.PositionKeyframes.size())
+						p1Index = p0Index;
+
+					float factor = 0.0f;
+					if (p0Index != p1Index)
+						factor = GetScaleFactor(track.PositionKeyframes[p0Index].TimeStamp, track.PositionKeyframes[p1Index].TimeStamp, animator.CurrentTime);
+
 					position = Math::Mix(track.PositionKeyframes[p0Index].Position, track.PositionKeyframes[p1Index].Position, factor);
 				}
 
@@ -108,9 +129,16 @@ namespace Ember {
 				else if (track.RotationKeyframes.size() > 1) {
 					size_t p0Index = GetKeyframeIndex(track.RotationKeyframes, animator.CurrentTime);
 					size_t p1Index = p0Index + 1;
-					float factor = GetScaleFactor(track.RotationKeyframes[p0Index].TimeStamp, track.RotationKeyframes[p1Index].TimeStamp, animator.CurrentTime);
+
+					if (p1Index >= track.RotationKeyframes.size())
+						p1Index = p0Index;
+
+					float factor = 0.0f;
+					if (p0Index != p1Index)
+						factor = GetScaleFactor(track.RotationKeyframes[p0Index].TimeStamp, track.RotationKeyframes[p1Index].TimeStamp, animator.CurrentTime);
+
 					rotation = Math::Slerp(track.RotationKeyframes[p0Index].Rotation, track.RotationKeyframes[p1Index].Rotation, factor);
-					rotation = glm::normalize(rotation); // Always normalize after slerp to prevent scaling artifacts
+					rotation = glm::normalize(rotation); // Always normalize after slerp
 				}
 
 				// TODO: Add scale later

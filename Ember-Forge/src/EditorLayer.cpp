@@ -88,7 +88,7 @@ namespace Ember {
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
 
 		// Update camera
-		if (m_SceneState == SceneState::Edit)
+		if (m_Context.CurrentSceneState == SceneState::Edit)
 			m_Camera.OnEvent(event);
 
 		// Propagate events to panels
@@ -107,7 +107,7 @@ namespace Ember {
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
 
-		switch (m_SceneState)
+		switch (m_Context.CurrentSceneState)
 		{
 			case SceneState::Edit:
 			{
@@ -166,7 +166,7 @@ namespace Ember {
 		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
-		m_SceneState = SceneState::Play;
+		m_Context.CurrentSceneState = SceneState::Play;
 	}
 
 	void EditorLayer::OnRuntimeStop()
@@ -177,7 +177,7 @@ namespace Ember {
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
-		m_SceneState = SceneState::Edit;
+		m_Context.CurrentSceneState = SceneState::Edit;
 	}
 
 	void EditorLayer::RenderMenuBar()
@@ -411,7 +411,7 @@ namespace Ember {
 			case KeyCode::Enter:
 				if (control)
 				{
-					if (m_SceneState == SceneState::Play)
+					if (m_Context.CurrentSceneState == SceneState::Play)
 						OnRuntimeStop();
 					else
 						OnRuntimeStart();
@@ -427,7 +427,7 @@ namespace Ember {
 	{
 		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
 		{
-			if (m_SceneState != SceneState::Edit)
+			if (m_Context.CurrentSceneState != SceneState::Edit)
 				return false;
 
 			// If a gizmo is drawn and the mouse is over it, we should not change the selected entity
@@ -498,7 +498,7 @@ namespace Ember {
 
 	void EditorLayer::RenderTransformGizmos()
 	{
-		if (m_GizmoType == -1 || m_SceneState != SceneState::Edit)
+		if (m_GizmoType == -1 || m_Context.CurrentSceneState != SceneState::Edit)
 			return;
 
 		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
@@ -626,12 +626,12 @@ namespace Ember {
 		 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
-		if (m_SceneState == SceneState::Play)
+		if (m_Context.CurrentSceneState == SceneState::Play)
 		{
 			if (ImGui::ImageButton("StopButton", m_ToolbarProps.StopButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
 				OnRuntimeStop();
-				m_SceneState = SceneState::Edit;
+				m_Context.CurrentSceneState = SceneState::Edit;
 			}
 		}
 		else

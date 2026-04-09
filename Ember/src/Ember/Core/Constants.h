@@ -1,17 +1,19 @@
 #pragma once
 
+#include "Ember/Asset/UUID.h"
+
 #include <cstdint>
 
 namespace Ember::Constants {
 
- constexpr uint32_t InvalidUUID = 0;
+	constexpr uint64_t InvalidUUID = 0;
 
 	namespace Entities {
-		constexpr uint32_t MaxEntities = 1024;
-		constexpr uint32_t MaxComponents = 64;
+		constexpr uint64_t MaxEntities = 1024;
+		constexpr uint64_t MaxComponents = 64;
 
-		constexpr uint32_t InvalidEntityID = MaxEntities + 1;
-		constexpr uint32_t InvalidComponentID = MaxEntities + 1;
+		constexpr uint64_t InvalidEntityID = MaxEntities + 1;
+		constexpr uint64_t InvalidComponentID = MaxEntities + 1;
 	}
 
 	namespace Renderer {

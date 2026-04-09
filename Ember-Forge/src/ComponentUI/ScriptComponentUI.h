@@ -2,6 +2,8 @@
 #include "ComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+
+#include <Ember/Core/ProjectManager.h>
 #include <Ember/Utils/PlatformUtil.h>
 
 #include <filesystem>
@@ -20,6 +22,8 @@ namespace Ember {
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
 			bool scriptExists = component.ScriptHandle != Constants::InvalidUUID;
+			auto scriptDir = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+
 			std::string fileName = "None (Script)";
 
 			if (scriptExists)
@@ -35,10 +39,26 @@ namespace Ember {
 				std::string droppedPath;
 
 				UI::UICallbackFunc browseFunc = [&]() {
-					std::string scriptFile = FileDialog::OpenFile("Ember-Forge/assets/scripts", "Ember Script (*.lua)", "*.lua");
+					std::string scriptFile = FileDialog::OpenFile(scriptDir.string().c_str(), "Ember Script (*.lua)", "*.lua");
 					if (!scriptFile.empty())
 					{
+						// If script is within project, keep it where it is, if its outside, copy into the scriptDir
+						if (std::filesystem::absolute(scriptFile).string().find(std::filesystem::absolute(ProjectManager::GetActive()->GetAssetDirectory()).string()) != 0)
+						{
+							std::string destPath = (scriptDir / std::filesystem::path(scriptFile).filename()).string();
+							std::filesystem::copy_file(scriptFile, destPath, std::filesystem::copy_options::overwrite_existing);
+							droppedPath = destPath;
+						}
+						else
+						{
+							droppedPath = scriptFile;
+						}
+
+						// TODO: If the script is already an engine asset, we don't want to mark it as a non-engine asset
+
 						auto scriptAsset = assetManager.Load<Script>(scriptFile);
+						scriptAsset->SetIsEngineAsset(false); // User-created script, not an engine asset
+
 						component.ScriptHandle = scriptAsset->GetUUID();
 						component.Initialized = false;
 					}
@@ -57,12 +77,53 @@ namespace Ember {
 				}
 
 				UI::UICallbackFunc createFunc = [&]() {
-					std::string newScriptPath = "Ember-Forge/assets/scripts/NewScript.lua";
+					// Show popup to set script name
+					if (ImGui::BeginPopupModal("Create New Script", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						static char scriptName[128] = "NewScript";
+						ImGui::InputText("Script Name", scriptName, sizeof(scriptName));
+						if (ImGui::Button("Create", ImVec2(120, 0)))
+						{
+							std::string newScriptPath = (scriptDir / std::format("{}.lua", scriptName)).string();
+							if (std::filesystem::exists(std::filesystem::absolute(newScriptPath)))
+							{
+								ImGui::OpenPopup("File Exists");
+							}
+							else
+							{
+								std::ofstream newScriptFile(newScriptPath);
+								newScriptFile << "-- Default Script\nlocal " << scriptName << " = {}\nfunction OnCreate(entity)\nend\nfunction OnUpdate(delta)\nend\nreturn " << scriptName;
+								newScriptFile.close();
+								auto scriptAsset = assetManager.Load<Script>(newScriptPath);
+								scriptAsset->SetIsEngineAsset(false); // User-created script, not an engine asset
+								component.ScriptHandle = scriptAsset->GetUUID();
+								component.Initialized = false;
+								system(("code " + newScriptPath).c_str());
+								ImGui::CloseCurrentPopup();
+							}
+						}
+						if (ImGui::BeginPopupModal("File Exists", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+						{
+							ImGui::Text("A script with that name already exists. Please choose a different name.");
+							if (ImGui::Button("OK", ImVec2(120, 0)))
+							{
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::EndPopup();
+						}
+						ImGui::EndPopup();
+					}
+					else
+					{
+						ImGui::OpenPopup("Create New Script");
+					}
+
+					std::string newScriptPath = (scriptDir / "NewScript.lua").string();
 					if (std::filesystem::exists(std::filesystem::absolute(newScriptPath)))
 					{
 						uint32_t index = 1;
 						do {
-							newScriptPath = std::format("Ember-Forge/assets/scripts/NewScript({}).lua", index++);
+							newScriptPath = std::format("{}/NewScript({}).lua", scriptDir.string(), index++);
 						} while (std::filesystem::exists(std::filesystem::absolute(newScriptPath)));
 					}
 
@@ -71,6 +132,8 @@ namespace Ember {
 					newScriptFile.close();
 
 					auto scriptAsset = assetManager.Load<Script>(newScriptPath);
+					scriptAsset->SetIsEngineAsset(false); // User-created script, not an engine asset
+
 					component.ScriptHandle = scriptAsset->GetUUID();
 					component.Initialized = false;
 

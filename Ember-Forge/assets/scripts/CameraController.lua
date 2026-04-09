@@ -8,7 +8,7 @@ function CameraController:OnCreate(entity)
 end
 
 function CameraController:OnUpdate(delta)
-    local transform = self.Entity:GetTransform()
+    local transform = self.Entity:GetComponent("TransformComponent")
 
     if IsKeyPressed(KeyCode.W) then 
         transform.Position.z = transform.Position.z - (self.Speed * delta)

@@ -46,6 +46,10 @@ namespace Ember {
 
 	void SceneHierarchyPanel::RenderContextMenu()
 	{
+		// Only available in edit mode
+		if (m_Context->CurrentSceneState != SceneState::Edit)
+			return;
+
 		if (Input::IsKeyPressed(KeyCode::Space))
 		{
 			ImGui::OpenPopup("SceneHierarchyContextWindow");
