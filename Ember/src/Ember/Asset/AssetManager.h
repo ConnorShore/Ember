@@ -184,6 +184,10 @@ namespace Ember {
 
         SharedPtr<Asset> GetAssetBase(UUID id) const;
 
+		bool ContainsAsset(UUID id) const { return m_Assets.contains(id); }
+		bool ContainsAssetWithName(const std::string& name) const { return m_AssetNames.contains(name); }
+		bool ContainsAssetWithPath(const std::string& path) const { return m_AssetPaths.contains(std::filesystem::absolute(path).string()); }
+
 		void RemoveAsset(const std::string& file)
 		{
 			auto absolutePath = std::filesystem::absolute(file).string();

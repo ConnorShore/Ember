@@ -335,6 +335,7 @@ namespace Ember {
 	{
 		std::string modelName = std::filesystem::path(modelFile).stem().string();
 		auto& am = Application::Instance().GetAssetManager();
+
 		SharedPtr<Model> model = am.GetAsset<Model>(modelName);
 
 		Entity rootEntity = AddEntity(model->GetName());
@@ -350,7 +351,7 @@ namespace Ember {
 			animator.CurrentAnimationHandle = anim->GetUUID();
 
 			rootEntity.AttachComponent<AnimatorComponent>(animator);
-				animatorEntity = rootEntity.GetUUID(); // Save the UUID
+			animatorEntity = rootEntity.GetUUID(); // Save the UUID
 		}
 
 		ProcessModelNode(rootEntity, model->GetRootNode(), model, animatorEntity);

@@ -11,7 +11,7 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Cube_Material");
+		//mtC.GetInstanced("Cube_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -26,7 +26,7 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Quad_Material");
+		//mtC.GetInstanced("Quad_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -40,7 +40,7 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Sphere_Material");
+		//mtC.GetInstanced("Sphere_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;

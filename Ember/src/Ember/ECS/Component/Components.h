@@ -171,6 +171,7 @@ namespace Ember {
 			{
 				auto base = DynamicPointerCast<Material>(materialAsset);
 				auto newInstance = SharedPtr<MaterialInstance>::Create(materialInstanceName, base);
+				newInstance->SetIsEngineAsset(false);
 				// TODO: Find way to avoid name clashing if multiple instances of the same material are created with the same name
 				assetManager.Register(newInstance);
 
@@ -211,6 +212,7 @@ namespace Ember {
 				return nullptr;
 			}
 
+			newInstance->SetIsEngineAsset(false);
 			assetManager.Register(newInstance);
 
 			MaterialHandle = newInstance->GetUUID();

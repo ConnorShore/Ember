@@ -3,6 +3,9 @@
 #include "UI/UIWidgets.h"
 
 #include <Ember/Event/UIEvent.h>
+#include <Ember/Asset/MaterialSerializer.h>
+#include <Ember/Core/ProjectManager.h>
+
 #include <variant>
 
 namespace Ember {
@@ -59,7 +62,16 @@ namespace Ember {
 
 				auto clonedMaterial = component.CloneMaterial(cloneName);
 				if (clonedMaterial)
+				{
+					// Serialize the asset
+					std::filesystem::path assetDirectory = ProjectManager::GetActive()->GetAssetDirectory();
+					std::filesystem::path filePath = assetDirectory / "Materials" / (cloneName + ".ebmat");
+
+					if (!MaterialSerializer::Serialize(filePath, clonedMaterial))
+						EB_CORE_ERROR("Failed to serialize cloned material!");
+
 					m_Context->ActiveScene->RegisterAsset(clonedMaterial);
+				}
 			}
 
 			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
@@ -78,95 +90,105 @@ namespace Ember {
 
 			ImGui::Separator();
 
-			// Render property widgets driven by @UIProperty annotations in the shader
-			if (UI::PropertyGrid::Begin("MaterialProps"))
+			bool isEngineAsset = material->IsEngineAsset();
+			if (isEngineAsset)
 			{
-				auto& shaderProps = material->GetShader()->GetProperties();
-				for (auto& prop : shaderProps)
-				{
-					switch (prop.Type)
-					{
-					case ShaderPropertyType::Float:
-					{
-						RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
-							return UI::PropertyGrid::Float(name, *value, prop.Step, prop.Min, prop.Max);
-							});
-						break;
-					}
-					case ShaderPropertyType::Float2:
-					{
-						RenderProperty<Vector2f>(prop, material, [&prop](const std::string& name, Vector2f* value) {
-							return UI::PropertyGrid::Float2(name, *value, prop.Step, prop.Min, prop.Max);
-							});
-						break;
-					}
-					case ShaderPropertyType::Float3:
-					{
-						RenderProperty<Vector3f>(prop, material, [&prop](const std::string& name, Vector3f* value) {
-							return UI::PropertyGrid::Float3(name, *value, prop.Step, prop.Min, prop.Max);
-							});
-						break;
-					}
-					case ShaderPropertyType::Float4:
-					{
-						RenderProperty<Vector4f>(prop, material, [&prop](const std::string& name, Vector4f* value) {
-							return UI::PropertyGrid::Float4(name, *value, prop.Step, prop.Min, prop.Max);
-							});
-						break;
-					}
-					case ShaderPropertyType::Color3:
-					{
-						RenderProperty<Vector3f>(prop, material, [](const std::string& name, Vector3f* value) {
-							return UI::PropertyGrid::Color3(name, *value);
-							});
-						break;
-					}
-					case ShaderPropertyType::Color4:
-					{
-						RenderProperty<Vector4f>(prop, material, [](const std::string& name, Vector4f* value) {
-							return UI::PropertyGrid::Color4(name, *value);
-							});
-						break;
-					}
-					case ShaderPropertyType::Slider:
-					{
-						RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
-							return UI::PropertyGrid::SliderFloat(name, *value, prop.Min, prop.Max);
-							});
-						break;
-					}
-					case ShaderPropertyType::Texture:
-					{
-						SharedPtr<Texture2D> currentTexture = nullptr;
-						bool hasTexture = material->ContainsUniform(prop.UniformName);
-						if (hasTexture)
-							currentTexture = std::get<SharedPtr<Texture2D>>(material->GetUniforms().at(prop.UniformName));
-
-						bool hasValidTexture = currentTexture
-							&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
-							&& currentTexture->GetName() != Constants::Assets::DefaultNormalTex
-							&& currentTexture->GetName() != Constants::Assets::DefaultErrorTex;
-						UUID texUUID = hasValidTexture ? currentTexture->GetUUID() : UUID(Constants::InvalidUUID);
-						std::string droppedFilePath;
-						if (UI::PropertyGrid::DragDropTexture(prop.DisplayName, texUUID, droppedFilePath, [&]() {
-							auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
-							material->SetUniform(prop.UniformName, defaultTex);
-						}))
-						{
-							auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
-							material->SetUniform(prop.UniformName, newTexture);
-
-							// Add UI notification for the new texture
-							auto evt = UINotificationEvent(std::format("{} texture updated to {}", prop.UniformName, droppedFilePath));
-							m_Context->EventCallback(evt);
-						}
-						break;
-					}
-					}
-				}
-
-				UI::PropertyGrid::End();
+				ImGui::TextWrapped("This is an engine material. To modify its properties, clone it first by clicking the 'Clone' button.");
 			}
+
+			if (!isEngineAsset)
+			{
+				// Render property widgets driven by @UIProperty annotations in the shader
+				if (UI::PropertyGrid::Begin("MaterialProps"))
+				{
+					auto& shaderProps = material->GetShader()->GetProperties();
+					for (auto& prop : shaderProps)
+					{
+						switch (prop.Type)
+						{
+						case ShaderPropertyType::Float:
+						{
+							RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
+								return UI::PropertyGrid::Float(name, *value, prop.Step, prop.Min, prop.Max);
+								});
+							break;
+						}
+						case ShaderPropertyType::Float2:
+						{
+							RenderProperty<Vector2f>(prop, material, [&prop](const std::string& name, Vector2f* value) {
+								return UI::PropertyGrid::Float2(name, *value, prop.Step, prop.Min, prop.Max);
+								});
+							break;
+						}
+						case ShaderPropertyType::Float3:
+						{
+							RenderProperty<Vector3f>(prop, material, [&prop](const std::string& name, Vector3f* value) {
+								return UI::PropertyGrid::Float3(name, *value, prop.Step, prop.Min, prop.Max);
+								});
+							break;
+						}
+						case ShaderPropertyType::Float4:
+						{
+							RenderProperty<Vector4f>(prop, material, [&prop](const std::string& name, Vector4f* value) {
+								return UI::PropertyGrid::Float4(name, *value, prop.Step, prop.Min, prop.Max);
+								});
+							break;
+						}
+						case ShaderPropertyType::Color3:
+						{
+							RenderProperty<Vector3f>(prop, material, [](const std::string& name, Vector3f* value) {
+								return UI::PropertyGrid::Color3(name, *value);
+								});
+							break;
+						}
+						case ShaderPropertyType::Color4:
+						{
+							RenderProperty<Vector4f>(prop, material, [](const std::string& name, Vector4f* value) {
+								return UI::PropertyGrid::Color4(name, *value);
+								});
+							break;
+						}
+						case ShaderPropertyType::Slider:
+						{
+							RenderProperty<float>(prop, material, [&prop](const std::string& name, float* value) {
+								return UI::PropertyGrid::SliderFloat(name, *value, prop.Min, prop.Max);
+								});
+							break;
+						}
+						case ShaderPropertyType::Texture:
+						{
+							SharedPtr<Texture2D> currentTexture = nullptr;
+							bool hasTexture = material->ContainsUniform(prop.UniformName);
+							if (hasTexture)
+								currentTexture = std::get<SharedPtr<Texture2D>>(material->GetUniforms().at(prop.UniformName));
+
+							bool hasValidTexture = currentTexture
+								&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
+								&& currentTexture->GetName() != Constants::Assets::DefaultNormalTex
+								&& currentTexture->GetName() != Constants::Assets::DefaultErrorTex;
+							UUID texUUID = hasValidTexture ? currentTexture->GetUUID() : UUID(Constants::InvalidUUID);
+							std::string droppedFilePath;
+							if (UI::PropertyGrid::DragDropTexture(prop.DisplayName, texUUID, droppedFilePath, [&]() {
+								auto defaultTex = GetDefaultTextureForUniform(prop.UniformName);
+								material->SetUniform(prop.UniformName, defaultTex);
+								}))
+							{
+								auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
+								material->SetUniform(prop.UniformName, newTexture);
+
+								// Add UI notification for the new texture
+								auto evt = UINotificationEvent(std::format("{} texture updated to {}", prop.UniformName, droppedFilePath));
+								m_Context->EventCallback(evt);
+							}
+							break;
+						}
+						}
+					}
+
+					UI::PropertyGrid::End();
+				}
+			}
+			
 		}
 
 	private:

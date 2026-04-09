@@ -82,7 +82,8 @@ namespace Ember {
 				mesh = SharedPtr<StaticMesh>::Create(uuid, name, verts, indices);
 			}
 
-			mesh->SetIsEngineAsset(false);
+			mesh->SetFilePath(filepath.string());
+			//mesh->SetIsEngineAsset(false);
 			return mesh;
 		}
 	};
