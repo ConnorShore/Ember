@@ -26,6 +26,55 @@ namespace Ember {
 		float framesDiff = nextTimeStamp - lastTimeStamp;
 		return midwayLength / framesDiff;
 	}
+
+	static Vector3f EvaluatePosition(const BoneAnimationTrack& track, float time)
+	{
+		if (track.PositionKeyframes.size() == 1)
+			return track.PositionKeyframes[0].Position;
+
+		size_t p0Index = GetKeyframeIndex(track.PositionKeyframes, time);
+		size_t p1Index = (p0Index + 1) % track.PositionKeyframes.size(); // Safer wrap-around
+
+		float factor = 0.0f;
+		if (p0Index != p1Index)
+			factor = GetScaleFactor(track.PositionKeyframes[p0Index].TimeStamp, track.PositionKeyframes[p1Index].TimeStamp, time);
+
+		return Math::Mix(track.PositionKeyframes[p0Index].Position, track.PositionKeyframes[p1Index].Position, factor);
+	}
+
+	static Quaternion EvaluateRotation(const BoneAnimationTrack& track, float time)
+	{
+		if (track.RotationKeyframes.size() == 1)
+			return track.RotationKeyframes[0].Rotation;
+
+		size_t p0Index = GetKeyframeIndex(track.RotationKeyframes, time);
+		size_t p1Index = (p0Index + 1) % track.RotationKeyframes.size();
+
+		float factor = 0.0f;
+		if (p0Index != p1Index)
+			factor = GetScaleFactor(track.RotationKeyframes[p0Index].TimeStamp, track.RotationKeyframes[p1Index].TimeStamp, time);
+
+		Quaternion rot = Math::Slerp(track.RotationKeyframes[p0Index].Rotation, track.RotationKeyframes[p1Index].Rotation, factor);
+		return Math::Normalize(rot);
+	}
+
+	// Helper to find a track for a specific bone ID
+	static const BoneAnimationTrack* GetTrack(const SharedPtr<Animation>& anim, uint32_t boneID)
+	{
+		if (!anim) 
+			return nullptr;
+
+		// TODO: Optimize in future with bone to track cache:
+		// i.e. return animation->Tracks[BoneToTrackMap[boneID]]
+		for (const auto& track : anim->GetTracks()) 
+		{
+			if (track.BoneID == boneID)
+				return &track;
+		}
+
+		return nullptr;
+	}
+
 	// ------------------------
 
 	void AnimationSystem::OnAttach()
@@ -53,14 +102,38 @@ namespace Ember {
 
 			auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
 			auto animation = assetManager.GetAsset<Animation>(animator.CurrentAnimationHandle);
+			auto prevAnimation = animator.PreviousAnimationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(animator.PreviousAnimationHandle) : nullptr;
 
 			const auto& bones = skeleton->GetBones();
 			const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
+
+			float blendWeight = 1.0f;
 
 			// Advance the clock
 			if (animator.IsPlaying)
 			{
 				float duration = animation->GetDuration();
+
+				//If a animation is currently crossfading, we need to handle the logic
+				if (animator.PreviousAnimationHandle != Constants::InvalidUUID && prevAnimation)
+				{
+					animator.PreviousTime += (delta * animator.PlaybackSpeed);
+					if (animator.Loop)
+						animator.PreviousTime = fmod(animator.PreviousTime, prevAnimation->GetDuration());
+
+					// Calculate Blend Weight (0.0 to 1.0)
+					animator.CurrentBlendTime += delta;
+					blendWeight = std::clamp(animator.CurrentBlendTime / animator.BlendDuration, 0.0f, 1.0f);
+
+					if (blendWeight >= 1.0f)
+					{
+						// Blend finished, clear the previous state
+						animator.PreviousAnimationHandle = Constants::InvalidUUID;
+						animator.CurrentBlendTime = 0.0f;
+						animator.BlendDuration = 0.0f;
+					}
+				}
+
 				animator.CurrentTime += (delta * animator.PlaybackSpeed);  //  TODO: Add playback speed multiplier here later
 
 				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
@@ -91,61 +164,45 @@ namespace Ember {
 			std::vector<Matrix4f> localTransforms(bones.size());
 			std::vector<Matrix4f> globalTransforms(bones.size());
 
-			// Initialize all bones to their default bind pose 
-			// (Important because some bones might not have an animation track!)
-			for (size_t i = 0; i < bones.size(); i++) {
-				localTransforms[i] = bones[i].LocalBindPoseTransform.ToMatrix();
-			}
-
-			// Interpolate the tracks
-			for (const auto& track : animation->GetTracks())
+			// 1. Interpolate and Blend!
+			for (size_t i = 0; i < bones.size(); i++)
 			{
-				uint32_t boneID = track.BoneID;
-				Vector3f position = bones[boneID].LocalBindPoseTransform.Translation;
-				Quaternion rotation = bones[boneID].LocalBindPoseTransform.Rotation;
+				// Default to bind pose
+				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
+				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
 
-				// Interpolate Position
-				if (track.PositionKeyframes.size() == 1) {
-					position = track.PositionKeyframes[0].Position;
-				}
-				else if (track.PositionKeyframes.size() > 1) {
-					size_t p0Index = GetKeyframeIndex(track.PositionKeyframes, animator.CurrentTime);
-					size_t p1Index = p0Index + 1;
-
-					if (p1Index >= track.PositionKeyframes.size())
-						p1Index = p0Index;
-
-					float factor = 0.0f;
-					if (p0Index != p1Index)
-						factor = GetScaleFactor(track.PositionKeyframes[p0Index].TimeStamp, track.PositionKeyframes[p1Index].TimeStamp, animator.CurrentTime);
-
-					position = Math::Mix(track.PositionKeyframes[p0Index].Position, track.PositionKeyframes[p1Index].Position, factor);
+				// Evaluate Current Animation
+				if (animation) {
+					if (const auto* track = GetTrack(animation, i)) {
+						if (track->PositionKeyframes.size() > 0)
+							currentPos = EvaluatePosition(*track, animator.CurrentTime);
+						if (track->RotationKeyframes.size() > 0)
+							currentRot = EvaluateRotation(*track, animator.CurrentTime);
+					}
 				}
 
-				// Interpolate Rotation (SLERP)
-				if (track.RotationKeyframes.size() == 1) {
-					rotation = track.RotationKeyframes[0].Rotation;
+				// Evaluate Previous Animation & BLEND
+				if (blendWeight < 1.0f && prevAnimation)
+				{
+					Vector3f prevPos = bones[i].LocalBindPoseTransform.Translation;
+					Quaternion prevRot = bones[i].LocalBindPoseTransform.Rotation;
+
+					if (const auto* prevTrack = GetTrack(prevAnimation, i)) {
+						if (prevTrack->PositionKeyframes.size() > 0)
+							prevPos = EvaluatePosition(*prevTrack, animator.PreviousTime);
+						if (prevTrack->RotationKeyframes.size() > 0)
+							prevRot = EvaluateRotation(*prevTrack, animator.PreviousTime);
+					}
+
+					// If blendWeight is 0.2, it takes 80% of prev and 20% of current.
+					currentPos = Math::Mix(prevPos, currentPos, blendWeight);
+					currentRot = glm::normalize(Math::Slerp(prevRot, currentRot, blendWeight));
 				}
-				else if (track.RotationKeyframes.size() > 1) {
-					size_t p0Index = GetKeyframeIndex(track.RotationKeyframes, animator.CurrentTime);
-					size_t p1Index = p0Index + 1;
-
-					if (p1Index >= track.RotationKeyframes.size())
-						p1Index = p0Index;
-
-					float factor = 0.0f;
-					if (p0Index != p1Index)
-						factor = GetScaleFactor(track.RotationKeyframes[p0Index].TimeStamp, track.RotationKeyframes[p1Index].TimeStamp, animator.CurrentTime);
-
-					rotation = Math::Slerp(track.RotationKeyframes[p0Index].Rotation, track.RotationKeyframes[p1Index].Rotation, factor);
-					rotation = glm::normalize(rotation); // Always normalize after slerp
-				}
-
-				// TODO: Add scale later
 
 				// Combine into the new Local Matrix
-				localTransforms[boneID] = Math::Translate(position) * Math::ToMatrix4f(rotation);
+				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
 			}
+
 
 			// Build global pose hierarchy
 			// We can loop linearly because glTF guarantees parent nodes appear before children in the array

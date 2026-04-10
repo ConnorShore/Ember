@@ -134,6 +134,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Quaternion Normalize(const Quaternion& quat)
+		{
+			return glm::normalize(quat);
+		}
+
 		static inline Quaternion ToQuaternion(const Matrix4f& matrix)
 		{
 			return glm::quat(matrix);

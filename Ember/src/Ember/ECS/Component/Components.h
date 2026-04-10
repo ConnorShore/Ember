@@ -135,6 +135,7 @@ namespace Ember {
 		// Runtime only (not serialized) -> used for caching animator id to avoid expensive lookups
 		EntityID RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
 
+
 		SkinnedMeshComponent() = default;
 		SkinnedMeshComponent(UUID meshId, UUID animatorEntityUUID = Constants::InvalidUUID)
 			: MeshHandle(meshId), AnimatorEntityHandle(animatorEntityUUID) {
@@ -322,9 +323,15 @@ namespace Ember {
 
 		// Runtime data
 		TimeStep CurrentTime = 0.0f;
+		TimeStep PreviousTime = 0.0f;
 		float PlaybackSpeed = 1.0f;
 		bool IsPlaying = true;
 		bool Loop = true;
+
+		// Blending
+		UUID PreviousAnimationHandle = Constants::InvalidUUID;
+		float BlendDuration = 0.0f;
+		float CurrentBlendTime = 0.0f;
 
 		// Caches
 		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));

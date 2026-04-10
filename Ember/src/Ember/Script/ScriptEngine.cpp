@@ -370,7 +370,27 @@ namespace Ember {
 			),
 			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
 			"IsPlaying", &AnimatorComponent::IsPlaying,
-			"Loop", &AnimatorComponent::Loop
+			"Loop", &AnimatorComponent::Loop,
+			"Crossfade", [](AnimatorComponent& c, UUID targetAnim, float duration) {
+				if (c.CurrentAnimationHandle == targetAnim || targetAnim == Constants::InvalidUUID)
+					return;
+				if (c.CurrentAnimationHandle == Constants::InvalidUUID)
+				{
+					// No current animation, just switch immediately
+					c.CurrentAnimationHandle = targetAnim;
+					c.CurrentTime = 0.0f;
+					c.IsPlaying = true;
+					return;
+				}
+
+				c.PreviousAnimationHandle = c.CurrentAnimationHandle;
+				c.PreviousTime = c.CurrentTime;
+				c.CurrentAnimationHandle = targetAnim;
+				c.CurrentTime = 0.0f;
+				c.BlendDuration = duration;
+				c.CurrentBlendTime = 0.0f;
+				c.IsPlaying = true;
+			}
 		);
 	}
 
@@ -391,4 +411,5 @@ namespace Ember {
 			return GetAssetFromTypeString(typeName, assetName);
 		});
 	}
+
 }
