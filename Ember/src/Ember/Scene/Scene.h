@@ -73,6 +73,19 @@ namespace Ember {
 
 		std::vector<Entity> GetAllEntities() const;
 
+		template<typename Driver, typename... Filters>
+		std::vector<Entity> GetAllEntitiesWithComponents()
+		{
+			std::vector<Entity> entities;
+			entities.reserve(m_Registry->GetActiveEntities<Driver>().size());
+
+			auto view = m_Registry->Query<Driver, Filters...>();
+			for (EntityID entity : view)
+				entities.emplace_back(entity, const_cast<Scene*>(this));
+
+			return entities;
+		}
+
 		void RemoveEntity(Entity entity);
 
 		Entity InstantiateModel(const std::string& modelFile);

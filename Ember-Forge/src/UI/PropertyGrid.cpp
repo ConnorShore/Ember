@@ -1,6 +1,7 @@
 #include "efpch.h"
 
 #include "Types.h"
+#include "UIWidgets.h"
 #include "PropertyGrid.h"
 #include "DragDropTypes.h"
 
@@ -387,6 +388,32 @@ namespace Ember {
 			ImGui::EndGroup();
 
 			return textureChanged;
+		}
+
+		bool BeginComboBox(const std::string& label, const std::string& previewValue)
+		{
+			// Add a label for the first column and then use UIWidgets.BeginComboBox for next column
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+			// Prop name
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextWrapped("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+
+			return UI::BeginComboBox(std::format("##{}", label), previewValue);
+		}
+
+		bool ComboBoxItem(const std::string& itemLabel, bool isSelected)
+		{
+			// Wrappers for normal UI widget
+			return UI::ComboBoxItem(itemLabel, isSelected);
+		}
+
+		void EndComboBox()
+		{
+			UI::EndComboBox();
 		}
 
 	}

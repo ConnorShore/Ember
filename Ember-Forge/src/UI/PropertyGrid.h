@@ -41,6 +41,11 @@ namespace Ember {
 
 		// Drag Drop Items
 		bool DragDropTexture(const std::string& label, UUID textureID, std::string& outDroppedPath, UICallbackFunc clearButtonFunc);
+
+		// Combo box
+		bool BeginComboBox(const std::string& label, const std::string& previewValue);
+		bool ComboBoxItem(const std::string& itemLabel, bool isSelected);
+		void EndComboBox();
 	}
 
 }
