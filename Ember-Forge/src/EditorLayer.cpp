@@ -788,15 +788,13 @@ namespace Ember {
 
 		auto project = ProjectManager::LoadProject(projectFile);
 
-		// Load the default scene for the project
-		OpenScene(project->GetStartScenePath().string());
-
 		// Load assets for project
 		auto assetPanel = GetPanel<AssetManagerPanel>();
 		if (assetPanel != nullptr)
 			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
 
-		// Clear and reload default engine assets
+		// Clear and reload default engine assets before loading the scene so all
+		// asset UUIDs referenced by the scene (e.g. skybox texture) are resolvable.
 		auto& assetManager = Application::Instance().GetAssetManager();
 		assetManager.ClearAssets();
 		assetManager.LoadDefaults();
@@ -805,6 +803,9 @@ namespace Ember {
 		std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
 		AssetRegistrySerializer assetSerializer(&assetManager);
 		assetSerializer.Deserialize(assetFilePath);
+
+		// Load the default scene for the project (assets must be ready first)
+		OpenScene(project->GetStartScenePath().string());
 	}
 
 	void EditorLayer::NewScene()

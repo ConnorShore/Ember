@@ -2,6 +2,9 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
+#include "Ember/Core/Application.h"
+#include "Ember/ECS/System/RenderSystem.h"
+#include "Ember/Render/VFX/BloomPass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -190,6 +193,28 @@ namespace Ember {
 				billboardNode["RenderRuntime"] << billboard.RenderRuntime;
 			}
 		}
+
+		// Environment settings
+		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+		auto skybox = renderSystem->GetSkybox();
+		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+
+		ryml::NodeRef envNode = root["Environment"];
+		envNode |= ryml::MAP;
+
+		ryml::NodeRef skyboxNode = envNode["Skybox"];
+		skyboxNode |= ryml::MAP;
+		skyboxNode["Enabled"] << skybox->Enabled();
+		skyboxNode["Intensity"] << skybox->GetIntensity();
+		skyboxNode["TextureUUID"] << (uint64_t)skybox->GetSkyboxTextureHandle();
+
+		ryml::NodeRef bloomNode = envNode["Bloom"];
+		bloomNode |= ryml::MAP;
+		bloomNode["Enabled"] << bloomPass->Enabled;
+		bloomNode["Threshold"] << bloomPass->Threshold;
+		bloomNode["Knee"] << bloomPass->Knee;
+		bloomNode["Intensity"] << bloomPass->Intensity;
+		bloomNode["BlurRadius"] << bloomPass->BlurRadius;
 
 		// Write out to disk
 		std::ofstream fout(filepath);
@@ -479,6 +504,48 @@ namespace Ember {
 
 					deserializedEntity.AttachComponent<BillboardComponent>(bc);
 				}
+			}
+		}
+
+		if (root.has_child("Environment"))
+		{
+			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+			auto skybox = renderSystem->GetSkybox();
+			auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+
+			ryml::NodeRef envNode = root["Environment"];
+
+			if (envNode.has_child("Skybox"))
+			{
+				ryml::NodeRef skyboxNode = envNode["Skybox"];
+				bool skyboxEnabled;
+				skyboxNode["Enabled"] >> skyboxEnabled;
+				skybox->SetEnabled(skyboxEnabled);
+
+				float intensity;
+				skyboxNode["Intensity"] >> intensity;
+				skybox->SetIntensity(intensity);
+
+				uint64_t texUUID;
+				skyboxNode["TextureUUID"] >> texUUID;
+				if (texUUID != Constants::InvalidUUID)
+				{
+					auto& assetManager = Application::Instance().GetAssetManager();
+					if (assetManager.ContainsAsset((UUID)texUUID))
+						skybox->Initialize((UUID)texUUID);
+					else
+						EB_CORE_WARN("SceneSerializer: Skybox texture UUID not found in AssetManager. Skybox will not be restored.");
+				}
+			}
+
+			if (envNode.has_child("Bloom"))
+			{
+				ryml::NodeRef bloomNode = envNode["Bloom"];
+				bloomNode["Enabled"] >> bloomPass->Enabled;
+				bloomNode["Threshold"] >> bloomPass->Threshold;
+				bloomNode["Knee"] >> bloomPass->Knee;
+				bloomNode["Intensity"] >> bloomPass->Intensity;
+				bloomNode["BlurRadius"] >> bloomPass->BlurRadius;
 			}
 		}
 

@@ -67,10 +67,10 @@ namespace Ember {
 		for (size_t i = 0; i < model.images.size(); i++) {
 			const auto& img = model.images[i];
 
-			// FIX: Handle cases where the GLB references an external image that wasn't found
+			// Handle cases where the GLB references an external image that wasn't found
 			if (img.image.empty()) {
-				EB_CORE_WARN("GLTF Warning: Image {0} is empty, using default white.", i);
-				cookedImages[i] = { Constants::Assets::DefaultWhiteTexUUID, "DefaultWhite", "" };
+				EB_CORE_WARN("GLTF Warning: Image {} is empty, using default white.", i);
+				cookedImages[i] = { Constants::Assets::DefaultWhiteTexUUID, Constants::Assets::DefaultWhiteTex, "" };
 				continue;
 			}
 
@@ -87,7 +87,7 @@ namespace Ember {
 		}
 
 		// 2. COOK MATERIALS
-		// FIX: We now check if the model actually has skins before assigning the skinned shader
+		// We now check if the model actually has skins before assigning the skinned shader
 		bool modelIsSkinned = !model.skins.empty();
 		for (size_t i = 0; i < model.materials.size(); i++) {
 			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages, modelIsSkinned));
