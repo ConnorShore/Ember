@@ -257,7 +257,8 @@ namespace Ember {
 							for (auto& anim : reportOpt->Animations)
 								am.Load<Animation>(anim.id, anim.name, anim.path, false);
 
-							am.Load<Skeleton>(reportOpt->Skeleton.id, reportOpt->Skeleton.name, reportOpt->Skeleton.path, false);
+							if (reportOpt->Skeleton.id != Constants::InvalidUUID)
+								am.Load<Skeleton>(reportOpt->Skeleton.id, reportOpt->Skeleton.name, reportOpt->Skeleton.path, false);
 
 							// Load the final model asset
 							asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);

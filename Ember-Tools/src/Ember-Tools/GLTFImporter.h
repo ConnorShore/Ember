@@ -71,12 +71,8 @@ namespace Ember {
 		// Assets
 		static std::vector<CookedAssetInfo> ProcessMesh(const std::string& modelName, int meshIndex, const tinygltf::Model& model,
 			const std::string& outputDirectory);
-		static CookedAssetInfo ProcessMaterial(const std::string& modelName, int matIndex, const tinygltf::Model& model,
-			const std::string& outputDirectory, std::vector<CookedAssetInfo>& outTextures);
-
-		// Binary Cooking
-		static bool CookStaticMesh(const std::vector<StaticMeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& path);
-		static bool CookSkinnedMesh(const std::vector<SkinnedMeshVertex>& vertices, const std::vector<uint32_t>& indices, const std::string& path);
+		static CookedAssetInfo ProcessMaterial(const std::string& modelName, int matIndex, const tinygltf::Model& model, 
+			const std::string& outputDirectory, std::vector<CookedAssetInfo>& cookedImages, bool isSkinned);
 	};
 
 }
