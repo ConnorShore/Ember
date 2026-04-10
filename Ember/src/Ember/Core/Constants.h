@@ -1,26 +1,32 @@
 #pragma once
 
+#include "Ember/Asset/UUID.h"
+
 #include <cstdint>
 
 namespace Ember::Constants {
 
-	constexpr uint32_t InvalidUUID = 0;
+	constexpr uint64_t InvalidUUID = 0;
 
 	namespace Entities {
-		constexpr uint32_t MaxEntities = 1024;
-		constexpr uint32_t MaxComponents = 64;
+		constexpr uint64_t MaxEntities = 1024;
+		constexpr uint64_t MaxComponents = 64;
 
-		constexpr uint32_t InvalidEntityID = MaxEntities + 1;
-		constexpr uint32_t InvalidComponentID = MaxEntities + 1;
+		constexpr uint64_t InvalidEntityID = MaxEntities + 1;
+		constexpr uint64_t InvalidComponentID = MaxEntities + 1;
 	}
 
 	namespace Renderer {
 		inline constexpr uint32_t MaxDirectionalLights = 1;
 		inline constexpr uint32_t MaxSpotLights = 1;
 		inline constexpr uint32_t MaxPointLights = 256;
+
+		inline constexpr uint32_t MaxBones = 100;
+
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 
+	// TODO: Update sections to have massive regeions 10000, 20000, 20001, etc
 	namespace Assets {
 
 		inline const char* DefaultWhiteTex = "DefaultWhite";
@@ -35,7 +41,9 @@ namespace Ember::Constants {
 		inline const uint64_t DefaultSkyboxUUID = 5;
 
 		inline const char* StandardGeometryShad = "StandardGeometry";
-		inline const uint64_t StandardGeometryShadUUID = 10;
+		inline const uint64_t StandardGeometryShadUUID = 9;
+		inline const char* StandardSkinnedGeometryShad = "StandardSkinnedGeometry";
+		inline const uint64_t StandardSkinnedGeometryShadUUID = 10;
 		inline const char* StandardLitShad = "StandardLit";
 		inline const uint64_t StandardLitShadUUID = 11;
 		inline const char* StandardUnlitShad = "StandardUnlit";
@@ -68,13 +76,17 @@ namespace Ember::Constants {
 		inline const uint64_t PrefilterShadUUID = 25;
 		inline const char* BRDFLUTShad = "BRDFLUT";
 		inline const uint64_t BRDFLUTShadUUID = 26;
+		inline const char* StandardSkinnedShadowShad = "StandardSkinnedShadow";
+		inline const uint64_t StandardSkinnedShadowShadUUID = 27;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
 		inline const char* StandardGeometryMat = "StandardGeometry";
 		inline const uint64_t StandardGeometryMatUUID = 31;
+		inline const char* StandardSkinnedGeometryMat = "StandardGeometrySkinned";
+		inline const uint64_t StandardSkinnedGeometryMatUUID = 32;
 		inline const char* StandardUnlitMat = "StandardUnlit";
-		inline const uint64_t StandardUnlitMatUUID = 32;
+		inline const uint64_t StandardUnlitMatUUID = 33;
 
 		inline const uint64_t SphereMeshUUID = 50;
 		inline const uint64_t CubeMeshUUID = 51;
@@ -135,6 +147,8 @@ namespace Ember::Constants {
 		inline const char* IrradianceMap = "u_IrradianceMap";
 		inline const char* PrefilterMap = "u_PrefilterMap";
 		inline const char* BRDFLUT = "u_BRDFLUT";
+
+		inline const char* BoneMatrices = "u_BoneMatrices";
 
 		inline const char* EnvironmentIntensity = "u_EnvironmentIntensity";
 

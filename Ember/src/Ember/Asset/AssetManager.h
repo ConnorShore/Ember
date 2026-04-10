@@ -3,9 +3,12 @@
 #include "UUID.h"
 #include "Asset.h"
 #include "Model.h"
+#include "Skeleton.h"
 #include "MeshSerializer.h"
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
+#include "AnimationSerializer.h"
+#include "SkeletonSerializer.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -68,7 +71,7 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
-			// Deduplicate by absolute path so the same file isn't loaded twice
+			// De-duplicate by absolute path so the same file isn't loaded twice
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
 			{
@@ -82,6 +85,14 @@ namespace Ember {
 				newAsset = ShaderImporter::Load(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Mesh>)
 				newAsset = MeshSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, Model>)
+				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
+			else if constexpr (std::same_as<T, Script>)
+				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, Animation>)
+				newAsset = AnimationSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, Skeleton>)
+				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
@@ -89,10 +100,6 @@ namespace Ember {
 				if (!newAsset)
 					EB_CORE_ERROR("Failed to load Material! The requested type did not match the file's contents.");
 			}
-			else if constexpr (std::same_as<T, Model>)
-				newAsset = ModelSerializer::Deserialize(uuid, absolutePath, *this);
-			else if constexpr (std::same_as<T, Script>)
-				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
@@ -126,20 +133,6 @@ namespace Ember {
 			m_AssetPaths[absolutePath] = newShader->GetUUID();
 			return newShader;
 		}
-
-		// Custom load for model that takes mesh/material UUIDs (for deserialization)
-		//template<std::same_as<Model> T>
-		//SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const std::vector<UUID>& meshUUIDs, const std::vector<UUID>& materialUUIDs)
-		//{
-		//	auto absolutePath = std::filesystem::absolute(filePath).string();
-		//	auto model = ModelImporter::Load(uuid, name, absolutePath, *this, meshUUIDs, materialUUIDs);
-		//	
-		//	m_Assets[model->GetUUID()] = model;
-		//	m_AssetNames[name] = model->GetUUID();
-		//	m_AssetPaths[absolutePath] = model->GetUUID();
-		//	return model;
-		//	return nullptr;	// TODO: Implement this
-		//}
 
 		template<IsCoreAsset T>
 		void Register(UUID uuid, const SharedPtr<T>& asset)
@@ -190,6 +183,10 @@ namespace Ember {
 		}
 
         SharedPtr<Asset> GetAssetBase(UUID id) const;
+
+		bool ContainsAsset(UUID id) const { return m_Assets.contains(id); }
+		bool ContainsAssetWithName(const std::string& name) const { return m_AssetNames.contains(name); }
+		bool ContainsAssetWithPath(const std::string& path) const { return m_AssetPaths.contains(std::filesystem::absolute(path).string()); }
 
 		void RemoveAsset(const std::string& file)
 		{

@@ -26,6 +26,9 @@ namespace Ember {
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
+		ShaderMacros skinGeoMacros;
+		skinGeoMacros["MAX_BONES"] = std::to_string(Constants::Renderer::MaxBones);
+		auto skinnedGeometryShader = Load<Shader>(Constants::Assets::StandardSkinnedGeometryShadUUID, Constants::Assets::StandardSkinnedGeometryShad, "Ember/assets/shaders/StandardGeometrySkinned.glsl", skinGeoMacros);
 		ShaderMacros lightMacros;
 		lightMacros["MAX_DIRECTIONAL_LIGHTS"] = std::to_string(Constants::Renderer::MaxDirectionalLights);
 		lightMacros["MAX_SPOT_LIGHTS"] = std::to_string(Constants::Renderer::MaxSpotLights);
@@ -35,6 +38,9 @@ namespace Ember {
 		auto unlitShader = Load<Shader>(Constants::Assets::StandardUnlitShadUUID, Constants::Assets::StandardUnlitShad, "Ember/assets/shaders/StandardUnlit.glsl");
 		auto quadShader = Load<Shader>(Constants::Assets::Standard2dQuadShadUUID, Constants::Assets::Standard2dQuadShad, "Ember/assets/shaders/Renderer2D_Quad.glsl");
 		auto shadowShader = Load<Shader>(Constants::Assets::StandardShadowShadUUID, Constants::Assets::StandardShadowShad, "Ember/assets/shaders/StandardShadow.glsl");
+		ShaderMacros skinShadMacros;
+		skinShadMacros["MAX_BONES"] = std::to_string(Constants::Renderer::MaxBones);
+		auto shadowSkinnedShader = Load<Shader>(Constants::Assets::StandardSkinnedShadowShadUUID, Constants::Assets::StandardSkinnedShadowShad, "Ember/assets/shaders/StandardSkinnedShadow.glsl", skinShadMacros);
 		auto gaussianBlurShaer = Load<Shader>(Constants::Assets::GaussianBlurShadUUID, Constants::Assets::GaussianBlurShad, "Ember/assets/shaders/GaussianBlur.glsl");
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShadUUID, Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
 		ShaderMacros outlineMacros;
@@ -64,6 +70,18 @@ namespace Ember {
 		geometryMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
 		geometryMaterial->SetUniform(Constants::Uniforms::EmissiveMap, whiteTex);
+
+		auto geometrySkinnedMaterial = Create<Material>(Constants::Assets::StandardSkinnedGeometryMatUUID, Constants::Assets::StandardSkinnedGeometryMat, skinnedGeometryShader, RenderQueue::Opaque);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(0.75f));
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Metallic, 0.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Roughness, 0.5f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::AO, 1.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::Emission, 0.0f);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::EmissionColor, Vector3f(1.0f));
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::AlbedoMap, whiteTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::NormalMap, normalTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::MetallicRoughnessMap, whiteTex);
+		geometrySkinnedMaterial->SetUniform(Constants::Uniforms::EmissiveMap, whiteTex);
 
 		auto unlitMaterial = Create<Material>(Constants::Assets::StandardUnlitMatUUID, Constants::Assets::StandardUnlitMat, unlitShader, RenderQueue::Forward);
 		unlitMaterial->SetUniform(Constants::Uniforms::Color, Vector3f(1.0f));

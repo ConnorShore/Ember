@@ -37,6 +37,7 @@ namespace Ember {
 		None = 0,
 		Bool,
 		Int, Int2, Int3, Int4,
+		UInt, UInt2, UInt3, UInt4,
 		Float, Float2, Float3, Float4,
 		Matrix2, Matrix3, Matrix4,
 	};
@@ -50,6 +51,10 @@ namespace Ember {
 		case ShaderDataType::Int2:		return 4 * 2;
 		case ShaderDataType::Int3:		return 4 * 3;
 		case ShaderDataType::Int4:		return 4 * 4;
+		case ShaderDataType::UInt:		return 4;
+		case ShaderDataType::UInt2:		return 4 * 2;
+		case ShaderDataType::UInt3:		return 4 * 3;
+		case ShaderDataType::UInt4:		return 4 * 4;
 		case ShaderDataType::Float:		return 4;
 		case ShaderDataType::Float2:	return 4 * 2;
 		case ShaderDataType::Float3:	return 4 * 3;
@@ -70,6 +75,10 @@ namespace Ember {
 		case ShaderDataType::Int2:		return 2;
 		case ShaderDataType::Int3:		return 3;
 		case ShaderDataType::Int4:		return 4;
+		case ShaderDataType::UInt:		return 1;
+		case ShaderDataType::UInt2:		return 2;
+		case ShaderDataType::UInt3:		return 3;
+		case ShaderDataType::UInt4:		return 4;
 		case ShaderDataType::Float:		return 1;
 		case ShaderDataType::Float2:	return 2;
 		case ShaderDataType::Float3:	return 3;

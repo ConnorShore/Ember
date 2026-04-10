@@ -1,5 +1,6 @@
 #include "efpch.h"
 #include "Presets.h"
+#include "EditorConstants.h"
 
 namespace Ember {
 
@@ -7,11 +8,11 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Cube");
 
-		MeshComponent mc(Constants::Assets::CubeMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::CubeMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Cube_Material");
+		//mtC.GetInstanced("Cube_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -22,11 +23,11 @@ namespace Ember {
 		Entity newEntity = scene->AddEntity("Quad");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it face parallel to the ground by default
 
-		MeshComponent mc(Constants::Assets::QuadMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::QuadMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Quad_Material");
+		//mtC.GetInstanced("Quad_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -36,11 +37,11 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Sphere");
 
-		MeshComponent mc(Constants::Assets::SphereMeshUUID);
-		newEntity.AttachComponent<MeshComponent>(mc);
+		StaticMeshComponent mc(Constants::Assets::SphereMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		mtC.GetInstanced("Sphere_Material");
+		//mtC.GetInstanced("Sphere_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -53,7 +54,7 @@ namespace Ember {
 		PointLightComponent plc;
 		newEntity.AttachComponent<PointLightComponent>(plc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/PointLight.png");
+		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::PointLightTexUUID);
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -70,7 +71,8 @@ namespace Ember {
 		DirectionalLightComponent dlc;
 		newEntity.AttachComponent<DirectionalLightComponent>(dlc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/DirectionalLight.png");
+
+		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID);
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -88,7 +90,7 @@ namespace Ember {
 		SpotLightComponent slc;
 		newEntity.AttachComponent<SpotLightComponent>(slc);
 
-		auto lightTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/SpotLight.png");
+		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::SpotLightTexUUID);
 
 		BillboardComponent bc;
 		bc.TextureHandle = lightTexture->GetUUID();
@@ -107,7 +109,8 @@ namespace Ember {
 		CameraComponent cc;
 		newEntity.AttachComponent<CameraComponent>(cc);
 
-		auto cameraTexture = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Camera.png");
+
+		auto cameraTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::CameraTexUUID);
 
 		BillboardComponent bc;
 		bc.TextureHandle = cameraTexture->GetUUID();

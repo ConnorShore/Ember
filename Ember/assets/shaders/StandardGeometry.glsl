@@ -26,9 +26,29 @@ void main()
     gl_Position = u_ViewProjection * worldPos;
 
     mat3 normalMatrix = mat3(transpose(inverse(u_Transform)));
-    vec3 T = normalize(normalMatrix * v_Tangent);
-    vec3 B = normalize(normalMatrix * v_Bitangent);
     vec3 N = normalize(normalMatrix * v_Normal);
+    vec3 T;
+    if (length(v_Tangent) < 0.001) 
+    {
+        // Generate an arbitrary tangent orthogonal to the normal
+        vec3 up = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        T = normalize(cross(up, N));
+    } 
+    else 
+    {
+        T = normalize(normalMatrix * v_Tangent);
+    }
+
+    vec3 B;
+    if (length(v_Bitangent) < 0.001) 
+    {
+        // Generate the bitangent via cross product
+        B = normalize(cross(N, T));
+    } 
+    else 
+    {
+        B = normalize(normalMatrix * v_Bitangent);
+    }
     
     VertOut.WorldPos = vec3(worldPos);
     VertOut.TexCoord = v_TextureCoord;
@@ -99,6 +119,12 @@ void main()
     // Normal Map
     vec3 normalMap = texture(u_NormalMap, FragIn.TexCoord).rgb;
     normalMap = normalMap * 2.0 - 1.0; // Transform from [0,1] to [-1,1]
+    if (length(normalMap) <= 0.0) 
+    {
+        normalMap = vec3(0.0, 0.0, 1.0);
+    }
+
+    normalMap = normalize(normalMap);
     vec3 finalNormal = normalize(FragIn.TBN * normalMap).rgb;
     
     // Emission (sRGB -> Linear)

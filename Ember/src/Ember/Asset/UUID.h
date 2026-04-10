@@ -13,6 +13,14 @@ namespace Ember {
 		UUID(const UUID&) = default;
 
 		operator uint64_t() const { return m_UUID; }
+		bool operator==(const UUID& other) const { return m_UUID == other.m_UUID; }
+		bool operator!=(const UUID& other) const { return m_UUID != other.m_UUID; }
+		bool operator==(uint64_t other) const { return m_UUID == other; }
+		bool operator!=(uint64_t other) const { return m_UUID != other; }
+
+		// Used for sorting
+		bool operator<(const UUID& other) const { return m_UUID < other.m_UUID; }
+
 	private:
 		uint64_t m_UUID;
 	};

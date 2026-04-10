@@ -7,7 +7,6 @@ namespace Ember {
 	class ScriptEngine
 	{
 	public:
-
 		static void Init();
 		static void Shutdown();
 
@@ -18,9 +17,12 @@ namespace Ember {
 
 	private:
 		static void BindAPI();
+		static void BindCore();
+		static void BindEntity();
 		static void BindInput();
 		static void BindMath();
 		static void BindComponents();
+		static void BindAssets();
 	};
 
 }

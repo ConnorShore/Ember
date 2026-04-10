@@ -14,8 +14,6 @@ include "Ember/vendor/lua"
 
 include "Ember-Forge/vendor/ImGuizmo"
 
-include "Ember-Tools/vendor/assimp"
-
 include "Ember"
 include "Ember-Tools"
 include "Ember-Forge"

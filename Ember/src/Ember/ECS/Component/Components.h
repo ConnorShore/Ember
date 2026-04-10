@@ -118,13 +118,29 @@ namespace Ember {
 		SpriteComponent(const Vector4f color, UUID texId) : Color(color), TextureHandle(texId) {}
 	};
 
-	struct MeshComponent
+	struct StaticMeshComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 
-		MeshComponent() = default;
-		MeshComponent(UUID meshId) : MeshHandle(meshId) {}
-		MeshComponent(const MeshComponent&) = default;
+		StaticMeshComponent() = default;
+		StaticMeshComponent(UUID meshId) : MeshHandle(meshId) {}
+		StaticMeshComponent(const StaticMeshComponent&) = default;
+	};
+
+	struct SkinnedMeshComponent
+	{
+		UUID MeshHandle = Constants::InvalidUUID;
+		UUID AnimatorEntityHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> used for caching animator id to avoid expensive lookups
+		EntityID RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
+
+
+		SkinnedMeshComponent() = default;
+		SkinnedMeshComponent(UUID meshId, UUID animatorEntityUUID = Constants::InvalidUUID)
+			: MeshHandle(meshId), AnimatorEntityHandle(animatorEntityUUID) {
+		}
+		SkinnedMeshComponent(const SkinnedMeshComponent&) = default;
 	};
 
 	struct MaterialComponent
@@ -156,6 +172,7 @@ namespace Ember {
 			{
 				auto base = DynamicPointerCast<Material>(materialAsset);
 				auto newInstance = SharedPtr<MaterialInstance>::Create(materialInstanceName, base);
+				newInstance->SetIsEngineAsset(false);
 				// TODO: Find way to avoid name clashing if multiple instances of the same material are created with the same name
 				assetManager.Register(newInstance);
 
@@ -196,6 +213,7 @@ namespace Ember {
 				return nullptr;
 			}
 
+			newInstance->SetIsEngineAsset(false);
 			assetManager.Register(newInstance);
 
 			MaterialHandle = newInstance->GetUUID();
@@ -207,7 +225,7 @@ namespace Ember {
 	struct CameraComponent
 	{
 		Camera Camera;
-		bool IsActive;
+		bool IsActive = false;
 
 		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
@@ -291,10 +309,37 @@ namespace Ember {
 		Vector4f Tint = Vector4f(1.0f);
 		bool Spherical = true;
 		bool StaticSize = true;
+		bool RenderRuntime = false;
 		float Size = 1.0f;
 
 		BillboardComponent() = default;
 		BillboardComponent(const BillboardComponent&) = default;
+	};
+
+	struct AnimatorComponent
+	{
+		UUID SkeletonHandle = Constants::InvalidUUID;
+		UUID CurrentAnimationHandle = Constants::InvalidUUID;
+
+		// Runtime data
+		TimeStep CurrentTime = 0.0f;
+		TimeStep PreviousTime = 0.0f;
+		float PlaybackSpeed = 1.0f;
+		bool IsPlaying = true;
+		bool Loop = true;
+
+		// Blending
+		UUID PreviousAnimationHandle = Constants::InvalidUUID;
+		float BlendDuration = 0.0f;
+		float CurrentBlendTime = 0.0f;
+
+		// Caches
+		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
+
+		AnimatorComponent() = default;
+		AnimatorComponent(UUID skeletonUUID, UUID animationUUID)
+			: SkeletonHandle(skeletonUUID), CurrentAnimationHandle(animationUUID) {}
+		AnimatorComponent(const AnimatorComponent&) = default;
 	};
 
 }

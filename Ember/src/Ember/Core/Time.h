@@ -11,6 +11,7 @@ namespace Ember {
 	class TimeStep
 	{
 	public:
+		TimeStep() : m_Time(0.0f) {}
 		TimeStep(float time)
 			: m_Time(time) {
 		}
@@ -19,6 +20,7 @@ namespace Ember {
 		float Milliseconds() const { return m_Time * 1000.0f; }
 
 		operator float() const { return m_Time; }
+		float operator+=(const TimeStep& other) { m_Time += other.m_Time; return m_Time; }
 
 	private:
 		float m_Time;

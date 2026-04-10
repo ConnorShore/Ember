@@ -45,7 +45,8 @@ namespace Ember {
 					skybox->Initialize(Constants::Assets::DefaultSkyboxUUID);	// TODO: Move to constant
 				}))
 				{
-					auto newSkyboxTex = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
+					std::string skyboxTexName = std::filesystem::path(droppedFilePath).stem().string();
+					auto newSkyboxTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), skyboxTexName, droppedFilePath, false);
 					skybox->Initialize(newSkyboxTex->GetUUID());
 
 					auto evt = UINotificationEvent(std::format("Skybox texture updated to {}", droppedFilePath));

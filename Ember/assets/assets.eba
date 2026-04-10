@@ -1,1 +1,97 @@
-Assets: []
+Assets:
+  - Type: Texture
+    UUID: 15108973500196863060
+    Name: Lantern_Tex_0.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_0.png'
+  - Type: Texture
+    UUID: 18097785076798670421
+    Name: Lantern_Tex_2.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_2.png'
+  - Type: Texture
+    UUID: 3258090039725265832
+    Name: Lantern_Tex_1.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_1.png'
+  - Type: Texture
+    UUID: 12756682284774851501
+    Name: moonless_golf_4k
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\moonless_golf_4k.hdr'
+  - Type: Texture
+    UUID: 844457925654129773
+    Name: Fox_Tex_0.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
+  - Type: Texture
+    UUID: 10575124471300148294
+    Name: case
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\case.jpg'
+  - Type: Texture
+    UUID: 5751372179770291590
+    Name: Lantern_ORM_Mat0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_ORM_Mat0.png'
+  - Type: Texture
+    UUID: 2177168009304926995
+    Name: Lantern_Tex_3.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_3.png'
+  - Type: Script
+    UUID: 5364558041277287564
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Scripts\NewScript.lua'
+  - Type: Material
+    UUID: 14259139745694361247
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 9936367634715839456
+    Name: Ground_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 7854277777578053203
+    Name: Fox_fox_material
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox_material.ebmat'
+  - Type: Material
+    UUID: 1736256064260583025
+    Name: Sphere_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 9235652788431923194
+    Name: Lantern_LanternPost_Mat
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPost_Mat.ebmat'
+  - Type: Mesh
+    UUID: 7192262471407756962
+    Name: Lantern_LanternPole_Chain_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Chain_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 15948662498445879843
+    Name: Lantern_LanternPole_Lantern_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Lantern_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 3033507380462941629
+    Name: Fox_fox1_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox1_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 3343826297804333935
+    Name: Lantern_LanternPole_Body_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Body_Prim0.ebmesh'
+  - Type: Skeleton
+    UUID: 14397647678188599878
+    Name: Fox
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebskeleton'
+  - Type: Animation
+    UUID: 11532369519631369985
+    Name: Fox_Survey
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Survey.ebanim'
+  - Type: Animation
+    UUID: 7448940337024467380
+    Name: Fox_Walk
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Walk.ebanim'
+  - Type: Animation
+    UUID: 9585729018807739622
+    Name: Fox_Run
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Run.ebanim'
+  - Type: Model
+    UUID: 6935754573396706420
+    Name: Fox
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebmodel'
+  - Type: Model
+    UUID: 9787688241411138515
+    Name: Lantern
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern.ebmodel'

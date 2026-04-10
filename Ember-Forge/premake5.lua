@@ -28,6 +28,7 @@ project "Ember-Forge"
       "%{wks.location}/Ember/vendor/rapidyaml/src",
 		"%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
       "%{wks.location}/Ember-Tools/src",
+      "%{wks.location}/Ember-Tools/vendor/tinygltf",
    }
 
    links 

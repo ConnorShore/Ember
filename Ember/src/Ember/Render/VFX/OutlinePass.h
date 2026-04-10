@@ -25,7 +25,7 @@ namespace Ember {
 		SharedPtr<Shader> m_OutlineShader;
 		SharedPtr<Framebuffer> m_GBuffer;
 		SharedPtr<Framebuffer> m_HdrBuffer;
-		EntityID  m_SelectedEntityID;
+		EntityID  m_SelectedEntityID = Constants::Entities::InvalidEntityID;
 
 		Vector3f m_OutlineColor = Vector3f(1.0f, 0.5f, 0.0f);
 		float m_OutlineThickness = 1.0f;

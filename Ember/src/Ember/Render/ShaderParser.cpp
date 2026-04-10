@@ -31,7 +31,11 @@ namespace Ember {
 			{
 				if (currentType != ShaderType::None)
 				{
-					shaderSources[currentType] = ss.str();
+					// Inject macros if necessary
+					std::string shaderSrc = InjectMacros(ss.str(), macros);
+					shaderSources[currentType] = shaderSrc;
+
+					// Clear the stringstream for the next shader stage
 					ss.str(std::string());
 				}
 

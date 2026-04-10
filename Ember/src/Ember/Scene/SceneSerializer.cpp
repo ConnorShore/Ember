@@ -2,6 +2,9 @@
 #include "SceneSerializer.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Utils/SerializationUtils.h"
+#include "Ember/Core/Application.h"
+#include "Ember/ECS/System/RenderSystem.h"
+#include "Ember/Render/VFX/BloomPass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -75,13 +78,23 @@ namespace Ember {
 				rigidBodyNode |= ryml::MAP;
 				Util::SerializeVector3f(rigidBodyNode["Velocity"], entity.GetComponent<RigidBodyComponent>().Velocity);
 			}
-			if (entity.ContainsComponent<MeshComponent>())
+			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
-				ryml::NodeRef meshNode = entityNode["MeshComponent"];
+				ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
 				meshNode |= ryml::MAP;
-				if (entity.GetComponent<MeshComponent>().MeshHandle != Constants::InvalidUUID)
+				if (entity.GetComponent<StaticMeshComponent>().MeshHandle != Constants::InvalidUUID)
 				{
-					meshNode["MeshUUID"] << entity.GetComponent<MeshComponent>().MeshHandle;
+					meshNode["MeshUUID"] << entity.GetComponent<StaticMeshComponent>().MeshHandle;
+				}
+			}
+			if (entity.ContainsComponent<SkinnedMeshComponent>())
+			{
+				ryml::NodeRef meshNode = entityNode["SkinnedMeshComponent"];
+				meshNode |= ryml::MAP;
+				if (entity.GetComponent<SkinnedMeshComponent>().MeshHandle != Constants::InvalidUUID)
+				{
+					meshNode["MeshUUID"] << entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
+					meshNode["RootAnimator"] << entity.GetComponent<SkinnedMeshComponent>().AnimatorEntityHandle;
 				}
 			}
 			if (entity.ContainsComponent<MaterialComponent>())
@@ -159,7 +172,49 @@ namespace Ember {
 				Util::SerializeVector3f(outlineNode["Color"], outlineComp.Color);
 				outlineNode["Thickness"] << outlineComp.Thickness;
 			}
+			if (entity.ContainsComponent<AnimatorComponent>())
+			{
+				auto& animator = entity.GetComponent<AnimatorComponent>();
+				ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
+				animatorNode |= ryml::MAP;
+				animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
+				animatorNode["CurrentAnimationHandle"] << (uint64_t)animator.CurrentAnimationHandle;
+			}
+			if (entity.ContainsComponent<BillboardComponent>())
+			{
+				auto& billboard = entity.GetComponent<BillboardComponent>();
+				ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
+				billboardNode |= ryml::MAP;
+				billboardNode["TextureHandle"] << (uint64_t)billboard.TextureHandle;
+				Util::SerializeVector4f(billboardNode["Tint"], billboard.Tint);
+				billboardNode["Spherical"] << billboard.Spherical;
+				billboardNode["StaticSize"] << billboard.StaticSize;
+				billboardNode["Size"] << billboard.Size;
+				billboardNode["RenderRuntime"] << billboard.RenderRuntime;
+			}
 		}
+
+		// Environment settings
+		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+		auto skybox = renderSystem->GetSkybox();
+		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+
+		ryml::NodeRef envNode = root["Environment"];
+		envNode |= ryml::MAP;
+
+		ryml::NodeRef skyboxNode = envNode["Skybox"];
+		skyboxNode |= ryml::MAP;
+		skyboxNode["Enabled"] << skybox->Enabled();
+		skyboxNode["Intensity"] << skybox->GetIntensity();
+		skyboxNode["TextureUUID"] << (uint64_t)skybox->GetSkyboxTextureHandle();
+
+		ryml::NodeRef bloomNode = envNode["Bloom"];
+		bloomNode |= ryml::MAP;
+		bloomNode["Enabled"] << bloomPass->Enabled;
+		bloomNode["Threshold"] << bloomPass->Threshold;
+		bloomNode["Knee"] << bloomPass->Knee;
+		bloomNode["Intensity"] << bloomPass->Intensity;
+		bloomNode["BlurRadius"] << bloomPass->BlurRadius;
 
 		// Write out to disk
 		std::ofstream fout(filepath);
@@ -269,16 +324,33 @@ namespace Ember {
 					deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
 				}
 
-				if (entityNode.has_child("MeshComponent"))
+				if (entityNode.has_child("StaticMeshComponent"))
 				{
-					ryml::NodeRef meshNode = entityNode["MeshComponent"];
+					ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
 					uint64_t meshId;
 					meshNode["MeshUUID"] >> meshId;
 					UUID meshUUID = (UUID)meshId;
 
-					MeshComponent mc;
+					StaticMeshComponent mc;
 					mc.MeshHandle = meshUUID;
-					deserializedEntity.AttachComponent<MeshComponent>(mc);
+					deserializedEntity.AttachComponent<StaticMeshComponent>(mc);
+				}
+
+				if (entityNode.has_child("SkinnedMeshComponent"))
+				{
+					ryml::NodeRef meshNode = entityNode["SkinnedMeshComponent"];
+					uint64_t meshId;
+					meshNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
+					uint64_t animatorId;
+					meshNode["RootAnimator"] >> animatorId;
+					UUID animatorUUID = (UUID)animatorId;
+
+					SkinnedMeshComponent mc;
+					mc.MeshHandle = meshUUID;
+					mc.AnimatorEntityHandle = animatorUUID;
+					deserializedEntity.AttachComponent<SkinnedMeshComponent>(mc);
 				}
 
 				if (entityNode.has_child("MaterialComponent"))
@@ -393,6 +465,87 @@ namespace Ember {
 					outlineNode["Thickness"] >> oc.Thickness;
 					deserializedEntity.AttachComponent<OutlineComponent>(oc);
 				}
+
+				if (entityNode.has_child("AnimatorComponent"))
+				{
+					ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
+					AnimatorComponent ac;
+
+					uint64_t skelHandle = Constants::InvalidUUID;
+					if (animatorNode.has_child("SkeletonHandle"))
+						animatorNode["SkeletonHandle"] >> skelHandle;
+
+					uint64_t animHandle = Constants::InvalidUUID;
+					if (animatorNode.has_child("CurrentAnimationHandle"))
+						animatorNode["CurrentAnimationHandle"] >> animHandle;
+
+					ac.SkeletonHandle = (UUID)skelHandle;
+					ac.CurrentAnimationHandle = (UUID)animHandle;
+
+					deserializedEntity.AttachComponent<AnimatorComponent>(ac);
+				}
+
+				if (entityNode.has_child("BillboardComponent"))
+				{
+					ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
+					BillboardComponent bc;
+
+					uint64_t texHandle;
+					billboardNode["TextureHandle"] >> texHandle;
+					UUID textureUUID = (UUID)texHandle;
+					bc.TextureHandle = textureUUID;
+
+					Util::DeserializeVector4f(billboardNode["Tint"], bc.Tint);
+
+					billboardNode["Spherical"] >> bc.Spherical;
+					billboardNode["StaticSize"] >> bc.StaticSize;
+					billboardNode["Size"] >> bc.Size;
+					billboardNode["RenderRuntime"] >> bc.RenderRuntime; 
+
+					deserializedEntity.AttachComponent<BillboardComponent>(bc);
+				}
+			}
+		}
+
+		if (root.has_child("Environment"))
+		{
+			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+			auto skybox = renderSystem->GetSkybox();
+			auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+
+			ryml::NodeRef envNode = root["Environment"];
+
+			if (envNode.has_child("Skybox"))
+			{
+				ryml::NodeRef skyboxNode = envNode["Skybox"];
+				bool skyboxEnabled;
+				skyboxNode["Enabled"] >> skyboxEnabled;
+				skybox->SetEnabled(skyboxEnabled);
+
+				float intensity;
+				skyboxNode["Intensity"] >> intensity;
+				skybox->SetIntensity(intensity);
+
+				uint64_t texUUID;
+				skyboxNode["TextureUUID"] >> texUUID;
+				if (texUUID != Constants::InvalidUUID)
+				{
+					auto& assetManager = Application::Instance().GetAssetManager();
+					if (assetManager.ContainsAsset((UUID)texUUID))
+						skybox->Initialize((UUID)texUUID);
+					else
+						EB_CORE_WARN("SceneSerializer: Skybox texture UUID not found in AssetManager. Skybox will not be restored.");
+				}
+			}
+
+			if (envNode.has_child("Bloom"))
+			{
+				ryml::NodeRef bloomNode = envNode["Bloom"];
+				bloomNode["Enabled"] >> bloomPass->Enabled;
+				bloomNode["Threshold"] >> bloomPass->Threshold;
+				bloomNode["Knee"] >> bloomPass->Knee;
+				bloomNode["Intensity"] >> bloomPass->Intensity;
+				bloomNode["BlurRadius"] >> bloomPass->BlurRadius;
 			}
 		}
 

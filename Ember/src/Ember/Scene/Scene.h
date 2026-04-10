@@ -16,6 +16,13 @@ namespace Ember {
 
 	class Entity;
 
+	enum class SceneState
+	{
+		Edit = 0,
+		Play = 1,
+		Pause = 2
+	};
+
 	class Scene : public SharedResource
 	{
 	public:
@@ -53,12 +60,31 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
+		SharedPtr<T> GetAsset(UUID assetUUID)
+		{
+			return Application::Instance().GetAssetManager().GetAsset<T>(assetUUID);
+		}
+
+		template<IsCoreAsset T>
 		std::vector<SharedPtr<T>> GetAssetsOfType()
 		{
 			return Application::Instance().GetAssetManager().GetAssetsOfType<T>();
 		}
 
 		std::vector<Entity> GetAllEntities() const;
+
+		template<typename Driver, typename... Filters>
+		std::vector<Entity> GetAllEntitiesWithComponents()
+		{
+			std::vector<Entity> entities;
+			entities.reserve(m_Registry->GetActiveEntities<Driver>().size());
+
+			auto view = m_Registry->Query<Driver, Filters...>();
+			for (EntityID entity : view)
+				entities.emplace_back(entity, const_cast<Scene*>(this));
+
+			return entities;
+		}
 
 		void RemoveEntity(Entity entity);
 
@@ -84,8 +110,8 @@ namespace Ember {
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
-		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model);
-		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot);
+		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID);
+		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot, UUID originalAnimatorUUID = Constants::InvalidUUID, UUID newAnimatorUUID = Constants::InvalidUUID);
 		
 
 	private:

@@ -6,6 +6,8 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/Asset/Skeleton.h" 
+#include "Ember/Asset/Animation.h"
 
 #include "Ember/Utils/SerializationUtils.h"
 
@@ -28,55 +30,32 @@ namespace Ember {
 		ryml::NodeRef assetsNode = root["Assets"];
 		assetsNode |= ryml::SEQ;
 
-		auto textures = m_AssetManagerHandle->GetAssetsOfType<Texture2D>();
-		for (auto texture : textures) {
-			if (texture->GetFilePath().empty() || texture->IsEngineAsset())
-				continue;
-			ryml::NodeRef textureNode = assetsNode.append_child();
-			Util::SerializeGeneralAsset(textureNode, texture);
-		}
+		auto serializeType = [&](auto assets) {
+			for (auto asset : assets) {
+				if (asset->GetFilePath().empty() || asset->IsEngineAsset())
+					continue;
+				ryml::NodeRef assetNode = assetsNode.append_child();
 
-		auto shaders = m_AssetManagerHandle->GetAssetsOfType<Shader>();
-		for (auto shader : shaders) {
-			if (shader->GetFilePath().empty() || shader->IsEngineAsset())
-				continue;
-			ryml::NodeRef shaderNode = assetsNode.append_child();
-			Util::SerializeGeneralAsset(shaderNode, shader);
-		}
+				//if (asset->GetType() == AssetType::Material)
+				//	Util::SerializeMaterial(assetNode, DynamicPointerCast<MaterialBase>(asset));
+				//else
+				Util::SerializeGeneralAsset(assetNode, asset);
+			}
+			};
 
-		auto scripts = m_AssetManagerHandle->GetAssetsOfType<Script>();
-		for (auto script : scripts) {
-			if (script->GetFilePath().empty() || script->IsEngineAsset())
-				continue;
-			ryml::NodeRef scriptNode = assetsNode.append_child();
-			Util::SerializeGeneralAsset(scriptNode, script);
-		}
+		// Serialize all standard types (ordering matters)
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Texture>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Shader>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Script>());
 
-		auto materials = m_AssetManagerHandle->GetAssetsOfType<Material>();
-		for (auto material : materials) {
-			if (material->GetFilePath().empty() || material->IsEngineAsset())
-				continue;
-			ryml::NodeRef materialNode = assetsNode.append_child();
-			//Util::SerializeMaterial(materialNode, material);
-			Util::SerializeGeneralAsset(materialNode, material);
-		}
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Material>());
 
-		auto meshes = m_AssetManagerHandle->GetAssetsOfType<Mesh>();
-		for (auto mesh : meshes) {
-			if (mesh->GetFilePath().empty() || mesh->IsEngineAsset())
-				continue;
-			ryml::NodeRef meshNode = assetsNode.append_child();
-			Util::SerializeGeneralAsset(meshNode, mesh);
-		}
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Mesh>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Skeleton>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Animation>());
 
-		auto models = m_AssetManagerHandle->GetAssetsOfType<Model>();
-		for (auto model : models) {
-			if (model->IsEngineAsset())
-				continue;
-			ryml::NodeRef modelNode = assetsNode.append_child();
-			Util::SerializeGeneralAsset(modelNode, model);
-		}
-		
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Model>());
+
 		// Write out to disk
 		std::ofstream fout(filePath);
 		fout << tree;
@@ -116,20 +95,6 @@ namespace Ember {
 			std::string type;
 			assetNode["Type"] >> type;
 
-			// Special handling for Materials since they have a more complex structure
-			//if (type == "Material")
-			//{
-			//	SharedPtr<MaterialBase> material = Util::DeserializeMaterial(assetNode, m_AssetManagerHandle);
-			//	material->SetIsEngineAsset(false);
-
-			//	bool instanced = false;
-			//	assetNode["Instanced"] >> instanced;
-
-			//	m_AssetManagerHandle->Register(material->GetUUID(), material);
-			//	EB_CORE_TRACE("  Loaded Material: {0}", material->GetName());
-			//	continue;
-			//}
-
 			uint64_t uuid;
 			std::string name, path;
 
@@ -137,54 +102,35 @@ namespace Ember {
 			assetNode["Name"] >> name;
 			assetNode["FilePath"] >> path;
 
-			if (path.empty())
-			{
-				EB_CORE_WARN("Asset '{0}' has an empty file path. Skipping.", name);
-				continue;
-			}
+			if (path.empty()) continue;
 
-			// Dispatch to the correct Load<T> based on the serialized type string
-			if (type == "Texture")
-			{
-				auto texture = m_AssetManagerHandle->Load<Texture2D>(uuid, name, path, false);
-				EB_CORE_TRACE("Loaded Texture: {0}", name);
+			if (type == "Texture") {
+				m_AssetManagerHandle->Load<Texture2D>(uuid, name, path, false);
 			}
-			else if (type == "Shader")
-			{
-				auto shader = m_AssetManagerHandle->Load<Shader>(uuid, name, path, false);
-				EB_CORE_TRACE("Loaded Shader: {0}", name);
+			else if (type == "Shader") {
+				m_AssetManagerHandle->Load<Shader>(uuid, name, path, false);
 			}
-			else if (type == "Script")
-			{
-				auto script = m_AssetManagerHandle->Load<Script>(uuid, name, path, false);
-				EB_CORE_TRACE("Loaded Script: {0}", name);
+			else if (type == "Script") {
+				m_AssetManagerHandle->Load<Script>(uuid, name, path, false);
 			}
-			else if (type == "Mesh")
-			{
-				auto mesh = m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
-				EB_CORE_TRACE("Loaded Mesh: {0}", name);
+			else if (type == "Mesh") {
+				m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
 			}
-			else if (type == "MaterialInstance" || type == "Material")
-			{
-				SharedPtr<MaterialBase> material = m_AssetManagerHandle->Load<MaterialBase>(uuid, name, path, false);
-				//if (type == "MaterialInstance")
-				//	material = m_AssetManagerHandle->Load<MaterialInstance>(uuid, name, path, false);
-				//else
-				//	material = m_AssetManagerHandle->Load<Material>(uuid, name, path, false);
-
-				if (material)
-				{
-					EB_CORE_TRACE("Loaded Material: {0}", name);
+			else if (type == "MaterialInstance" || type == "Material") {
+				auto material = MaterialSerializer::Deserialize(uuid, path, *m_AssetManagerHandle);
+				if (material) {
+					material->SetIsEngineAsset(false);
+					m_AssetManagerHandle->Register(material);
 				}
 			}
-			else if (type == "Model")
-			{
-				auto model = m_AssetManagerHandle->Load<Model>(uuid, name, path, false);
-
-				if (model)
-				{
-					EB_CORE_TRACE("Loaded Model: {0}", name);
-				}
+			else if (type == "Model") {
+				m_AssetManagerHandle->Load<Model>(uuid, name, path, false);
+			}
+			else if (type == "Skeleton") {
+				m_AssetManagerHandle->Load<Skeleton>(uuid, name, path, false);
+			}
+			else if (type == "Animation") {
+				m_AssetManagerHandle->Load<Animation>(uuid, name, path, false);
 			}
 		}
 

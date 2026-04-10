@@ -113,11 +113,29 @@ namespace Ember {
 		{
 			m_Shader->Bind();
 
-			// Track texture slot so each texture uniform gets a unique binding point
-			uint32_t textureSlot = 0;
-			for (auto [name, value] : m_Uniforms)
+			// First pass: upload all non-texture uniforms (order doesn't matter)
+			for (const auto& [name, value] : m_Uniforms)
 			{
-				UploadUniform(name, value, textureSlot);
+				if (!std::holds_alternative<SharedPtr<Texture2D>>(value))
+					UploadUniform(name, value);
+			}
+
+			// Second pass: bind textures in the order defined by the shader's property list.
+			// This ensures deterministic slot assignment matching the shader's layout(binding = X) order.
+			uint32_t textureSlot = 0;
+			for (const auto& prop : m_Shader->GetProperties())
+			{
+				if (prop.Type == ShaderPropertyType::Texture)
+				{
+					auto it = m_Uniforms.find(prop.UniformName);
+					if (it != m_Uniforms.end() && std::holds_alternative<SharedPtr<Texture2D>>(it->second))
+					{
+						auto& tex = std::get<SharedPtr<Texture2D>>(it->second);
+						tex->Bind(textureSlot);
+						m_Shader->SetInt(prop.UniformName, textureSlot);
+					}
+					textureSlot++;
+				}
 			}
 		}
 
@@ -126,7 +144,7 @@ namespace Ember {
 		inline bool ContainsUniform(const std::string& name) const override { return m_Uniforms.find(name) != m_Uniforms.end(); }
 
 		// Uploads a single uniform to the GPU, dispatching by variant type
-		inline void UploadUniform(const std::string& name, const MaterialValue& value, uint32_t& textureSlot) const
+		inline void UploadUniform(const std::string& name, const MaterialValue& value) const
 		{
 			if (std::holds_alternative<int>(value)) m_Shader->SetInt(name, std::get<int>(value));
 			else if (std::holds_alternative<float>(value)) m_Shader->SetFloat(name, std::get<float>(value));
@@ -136,8 +154,9 @@ namespace Ember {
 			else if (std::holds_alternative<SharedPtr<Texture2D>>(value))
 			{
 				auto& tex = std::get<SharedPtr<Texture2D>>(value);
-				tex->Bind(textureSlot);
-				m_Shader->SetInt(name, textureSlot++);
+				// Use the shader's layout(binding = X) value to bind the texture to the correct unit
+				int binding = m_Shader->GetInt(name);
+				tex->Bind(binding);
 			}
 			else EB_CORE_ASSERT(false, "Unknown Material Value type!");
 		}
@@ -178,12 +197,31 @@ namespace Ember {
 
 		void Bind() const override
 		{
-			m_Material->GetShader()->Bind();
+			auto shader = m_Material->GetShader();
+			shader->Bind();
 
-			uint32_t textureSlot = 0;
-			for (auto [name, value] : m_Uniforms)
+			// First pass: upload all non-texture uniforms
+			for (const auto& [name, value] : m_Uniforms)
 			{
-				m_Material->UploadUniform(name, value, textureSlot);
+				if (!std::holds_alternative<SharedPtr<Texture2D>>(value))
+					m_Material->UploadUniform(name, value);
+			}
+
+			// Second pass: bind textures in the order defined by the shader's property list
+			uint32_t textureSlot = 0;
+			for (const auto& prop : shader->GetProperties())
+			{
+				if (prop.Type == ShaderPropertyType::Texture)
+				{
+					auto it = m_Uniforms.find(prop.UniformName);
+					if (it != m_Uniforms.end() && std::holds_alternative<SharedPtr<Texture2D>>(it->second))
+					{
+						auto& tex = std::get<SharedPtr<Texture2D>>(it->second);
+						tex->Bind(textureSlot);
+						shader->SetInt(prop.UniformName, textureSlot);
+					}
+					textureSlot++;
+				}
 			}
 		}
 

@@ -12,14 +12,14 @@
 
 namespace Ember {
 
-	class MeshComponentUI : public ComponentUI<MeshComponent>
+	class StaticMeshComponentUI : public ComponentUI<StaticMeshComponent>
 	{
 	public:
-		MeshComponentUI(EditorContext* context) : ComponentUI(context) {}
-		inline const char* GetName() const override { return "Mesh Component"; }
+		StaticMeshComponentUI(EditorContext* context) : ComponentUI(context) {}
+		inline const char* GetName() const override { return "Static Mesh Component"; }
 
 	protected:
-		inline void RenderComponentImpl(MeshComponent& component) override
+		inline void RenderComponentImpl(StaticMeshComponent& component) override
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
 			bool meshExists = component.MeshHandle != Constants::InvalidUUID;

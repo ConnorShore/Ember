@@ -3,7 +3,9 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
-#include <Ember-Tools/ModelImporter.h>
+#include "Ember/Utils/PlatformUtil.h"
+
+#include <Ember-Tools/GLTFImporter.h>
 
 #include <format>
 
@@ -233,10 +235,11 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
 					std::string sourceFile = FileDialog::OpenFile("", modelFileTypes.c_str());
 
+					// Need to convert to GLTFImporter and model cooking for static vs skeletal meshes
 					if (!sourceFile.empty())
 					{
-						auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
-
+						//auto reportOpt = ModelImporter::CookModel(sourceFile, m_CurrentDirectory.string());
+						auto reportOpt = GLTFImporter::CookModel(sourceFile, m_CurrentDirectory.string());
 						if (reportOpt.has_value())
 						{
 							auto& am = Application::Instance().GetAssetManager();
@@ -251,9 +254,17 @@ namespace Ember {
 							for (auto& mesh : reportOpt->Meshes)
 								am.Load<Mesh>(mesh.id, mesh.name, mesh.path, false);
 
+							for (auto& anim : reportOpt->Animations)
+								am.Load<Animation>(anim.id, anim.name, anim.path, false);
+
+							if (reportOpt->Skeleton.id != Constants::InvalidUUID)
+								am.Load<Skeleton>(reportOpt->Skeleton.id, reportOpt->Skeleton.name, reportOpt->Skeleton.path, false);
+
+							// Load the final model asset
 							asset = am.Load<Model>(reportOpt->Model.id, reportOpt->Model.name, reportOpt->Model.path, false);
 						}
 					}
+
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Texture"))
@@ -261,7 +272,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
 					std::string file = SelectAndLoadFile(std::format("Texture Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Texture2D>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Shader"))
@@ -269,7 +283,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetShader);
 					std::string file = SelectAndLoadFile(std::format("Shader Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Shader>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 				if (ImGui::MenuItem("Script"))
@@ -277,7 +294,10 @@ namespace Ember {
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetScript);
 					std::string file = SelectAndLoadFile(std::format("Script Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
+					{
 						asset = Application::Instance().GetAssetManager().Load<Script>(file);
+						asset->SetIsEngineAsset(false);
+					}
 					ImGui::CloseCurrentPopup();
 				}
 

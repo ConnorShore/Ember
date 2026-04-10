@@ -1,7 +1,6 @@
 #pragma once
 
 #include "System.h"
-#include "Ember/ECS/Registry.h"
 
 namespace Ember {
 

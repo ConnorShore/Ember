@@ -9,6 +9,7 @@
 #include "Ember/ECS/System/PhysicsSystem.h"
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/ECS/System/AnimationSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -41,6 +42,7 @@ namespace Ember {
 
 		m_SystemManager = ScopedPtr<SystemManager>::Create();
 		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<AnimationSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<RenderSystem>::Create());

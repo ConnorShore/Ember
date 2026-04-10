@@ -9,6 +9,133 @@
 
 namespace Ember {
 
+	//////////////////////////////////////////////////////////////////////////
+	// Utility helpers
+	//////////////////////////////////////////////////////////////////////////
+
+	static sol::object GetAssetFromTypeString(const std::string& assetTypeStr, const std::string& assetName)
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		AssetType type = GetAssetTypeFromString(assetTypeStr);
+		switch (type)
+		{
+			case AssetType::Texture:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Texture>(assetName).Ptr());
+			case AssetType::Mesh:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Mesh>(assetName).Ptr());
+			case AssetType::Model:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Model>(assetName).Ptr());
+			case AssetType::Skeleton:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Skeleton>(assetName).Ptr());
+			case AssetType::Animation:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Animation>(assetName).Ptr());
+			case AssetType::Shader:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Shader>(assetName).Ptr());
+			case AssetType::Material:
+				return sol::make_object(ScriptEngine::GetState(), assetManager.GetAsset<Material>(assetName).Ptr());
+			case AssetType::Script:
+				EB_CORE_ASSERT(false, "Cannot get script assets from Lua!");
+				return sol::lua_nil;
+			default:
+				EB_CORE_ASSERT(false, "Unknown asset type: {}", assetTypeStr);
+				return sol::lua_nil;
+		}
+	}
+
+	static sol::object GetComponentFromString(const std::string& componentTypeStr, Entity& entity)
+	{
+		if (componentTypeStr == "IDComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<IDComponent>());
+		if (componentTypeStr == "TagComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<TagComponent>());
+		if (componentTypeStr == "RelationshipComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<RelationshipComponent>());
+		if (componentTypeStr == "TransformComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<TransformComponent>());
+		if (componentTypeStr == "RigidBodyComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<RigidBodyComponent>());
+		if (componentTypeStr == "SpriteComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<SpriteComponent>());
+		if (componentTypeStr == "StaticMeshComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<StaticMeshComponent>());
+		if (componentTypeStr == "SkinnedMeshComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<SkinnedMeshComponent>());
+		if (componentTypeStr == "MaterialComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<MaterialComponent>());
+		if (componentTypeStr == "CameraComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<CameraComponent>());
+		if (componentTypeStr == "DirectionalLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<DirectionalLightComponent>());
+		if (componentTypeStr == "SpotLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<SpotLightComponent>());
+		if (componentTypeStr == "PointLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<PointLightComponent>());
+		if (componentTypeStr == "OutlineComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<OutlineComponent>());
+		if (componentTypeStr == "BillboardComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<BillboardComponent>());
+		if (componentTypeStr == "AnimatorComponent")
+			return sol::make_object(ScriptEngine::GetState(), &entity.GetComponent<AnimatorComponent>());
+
+		if (componentTypeStr == "ScriptComponent")
+		{
+			EB_CORE_ASSERT(false, "Cannot get script components from Lua!");
+			return sol::lua_nil;
+		}
+
+		EB_CORE_ASSERT(false, "Unknown component type: {}", componentTypeStr);
+		return sol::lua_nil;
+	}
+
+	static sol::object ContainsComponentFromString(const std::string& componentTypeStr, Entity& entity)
+	{
+		if (componentTypeStr == "IDComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<IDComponent>());
+		if (componentTypeStr == "TagComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<TagComponent>());
+		if (componentTypeStr == "RelationshipComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<RelationshipComponent>());
+		if (componentTypeStr == "TransformComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<TransformComponent>());
+		if (componentTypeStr == "RigidBodyComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<RigidBodyComponent>());
+		if (componentTypeStr == "SpriteComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<SpriteComponent>());
+		if (componentTypeStr == "StaticMeshComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<StaticMeshComponent>());
+		if (componentTypeStr == "SkinnedMeshComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<SkinnedMeshComponent>());
+		if (componentTypeStr == "MaterialComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<MaterialComponent>());
+		if (componentTypeStr == "CameraComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<CameraComponent>());
+		if (componentTypeStr == "DirectionalLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<DirectionalLightComponent>());
+		if (componentTypeStr == "SpotLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<SpotLightComponent>());
+		if (componentTypeStr == "PointLightComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<PointLightComponent>());
+		if (componentTypeStr == "OutlineComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<OutlineComponent>());
+		if (componentTypeStr == "BillboardComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<BillboardComponent>());
+		if (componentTypeStr == "AnimatorComponent")
+			return sol::make_object(ScriptEngine::GetState(), entity.ContainsComponent<AnimatorComponent>());
+
+		if (componentTypeStr == "ScriptComponent")
+		{
+			EB_CORE_ASSERT(false, "Cannot check for script components from Lua!");
+			return sol::lua_nil;
+		}
+
+		EB_CORE_ASSERT(false, "Unknown component type: {}", componentTypeStr);
+		return sol::lua_nil;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Script Engine
+	//////////////////////////////////////////////////////////////////////////
+
 	static sol::state* s_LuaState = nullptr;
 
 	void ScriptEngine::Init()
@@ -49,15 +176,32 @@ namespace Ember {
 
 	void ScriptEngine::BindAPI()
 	{
-		s_LuaState->new_usertype<Entity>("Entity",
-			"GetTransform", [](Entity& e) -> TransformComponent& { return e.GetComponent<TransformComponent>(); },
-			"GetName", &Entity::GetName,
-			"GetUUID", &Entity::GetUUID
-		);
-
+		BindCore();
+		BindEntity();
 		BindInput();
 		BindMath();
 		BindComponents();
+		BindAssets();
+	}
+
+	void ScriptEngine::BindCore()
+	{
+		s_LuaState->new_usertype<UUID>("UUID",
+			sol::constructors<UUID(), UUID(uint64_t)>(),
+            sol::meta_function::equal_to, static_cast<bool(UUID::*)(const UUID&) const>(&UUID::operator==),
+			sol::meta_function::to_string, [](const UUID& a) { return std::to_string((uint64_t)a); }
+		);
+	}
+
+	void ScriptEngine::BindEntity()
+	{
+		s_LuaState->new_usertype<Entity>("Entity",
+			//"GetTransform", [](Entity& e) -> TransformComponent& { return e.GetComponent<TransformComponent>(); },
+			"GetName", &Entity::GetName,
+			"GetUUID", &Entity::GetUUID,
+			"GetComponent", [](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e); },
+			"ContainsComponent", [](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e); }
+		);
 	}
 
 	void ScriptEngine::BindInput()
@@ -210,11 +354,62 @@ namespace Ember {
 
 	void ScriptEngine::BindComponents()
 	{
+		// TODO: Setup bindings for all components
 		s_LuaState->new_usertype<TransformComponent>("TransformComponent",
 			"Position", &TransformComponent::Position,
 			"Rotation", &TransformComponent::Rotation,
-			"Scale", &TransformComponent::Scale
+			"Scale", &TransformComponent::Scale,
+			"GetForward", &TransformComponent::GetForward
 		);
+
+		s_LuaState->new_usertype<AnimatorComponent>("AnimatorComponent",
+			"CurrentAnimationHandle", &AnimatorComponent::CurrentAnimationHandle,
+			"CurrentTime", sol::property(
+				[](AnimatorComponent& c) { return (float)c.CurrentTime; },           // Getter (returns float to Lua)
+				[](AnimatorComponent& c, float time) { c.CurrentTime = time; }       // Setter (takes float from Lua)
+			),
+			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
+			"IsPlaying", &AnimatorComponent::IsPlaying,
+			"Loop", &AnimatorComponent::Loop,
+			"Crossfade", [](AnimatorComponent& c, UUID targetAnim, float duration) {
+				if (c.CurrentAnimationHandle == targetAnim || targetAnim == Constants::InvalidUUID)
+					return;
+				if (c.CurrentAnimationHandle == Constants::InvalidUUID)
+				{
+					// No current animation, just switch immediately
+					c.CurrentAnimationHandle = targetAnim;
+					c.CurrentTime = 0.0f;
+					c.IsPlaying = true;
+					return;
+				}
+
+				c.PreviousAnimationHandle = c.CurrentAnimationHandle;
+				c.PreviousTime = c.CurrentTime;
+				c.CurrentAnimationHandle = targetAnim;
+				c.CurrentTime = 0.0f;
+				c.BlendDuration = duration;
+				c.CurrentBlendTime = 0.0f;
+				c.IsPlaying = true;
+			}
+		);
+	}
+
+	void ScriptEngine::BindAssets()
+	{
+		// Define assets
+		s_LuaState->new_usertype<Animation>("Animation",
+			"GetUUID", [](Animation& anim) { return anim.GetUUID(); },
+			"GetName", [](Animation& anim) { return anim.GetName(); },
+			"GetDuration", [](Animation& anim) { return anim.GetDuration(); }
+		);
+
+		// Asset Manager table
+		sol::table assetManager = s_LuaState->create_named_table("AssetManager");
+
+		// Ability to get assets
+		assetManager.set_function("GetAsset", [](const std::string& typeName, const std::string& assetName, sol::this_state s) -> sol::object {
+			return GetAssetFromTypeString(typeName, assetName);
+		});
 	}
 
 }

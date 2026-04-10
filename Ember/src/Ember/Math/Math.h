@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -132,6 +134,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Quaternion Normalize(const Quaternion& quat)
+		{
+			return glm::normalize(quat);
+		}
+
 		static inline Quaternion ToQuaternion(const Matrix4f& matrix)
 		{
 			return glm::quat(matrix);
@@ -155,6 +162,11 @@ namespace Ember {
 		static inline float Length(const Vector3f& vector)
 		{
 			return glm::length(vector);
+		}
+
+		static inline Matrix4f MakeMatrix4f(const float* data)
+		{
+			return glm::make_mat4(data);
 		}
 
 		// Extracts translation, rotation (Euler), and scale from a transform matrix.
@@ -198,6 +210,36 @@ namespace Ember {
 		static inline T Normalize(const T& value, float min, float max)
 		{
 			return (value - min) / (max - min);
+		}
+
+		static inline float Lerp(float a, float b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		static inline Vector3f Lerp(const Vector3f& a, const Vector3f& b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		static inline Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t)
+		{
+			return glm::slerp(a, b, t);
+		}
+
+		static inline Vector3f Mix(const Vector3f& a, const Vector3f& b, float t)
+		{
+			return glm::mix(a, b, t);
+		}
+
+		static inline Vector3f Cross(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::cross(a, b);
+		}
+
+		static inline float Dot(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::dot(a, b);
 		}
 	};
 
