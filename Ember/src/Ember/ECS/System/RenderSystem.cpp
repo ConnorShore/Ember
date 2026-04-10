@@ -347,8 +347,9 @@ namespace Ember {
 
 			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
 			Matrix4f lightProjection = Math::Perspective(Math::Degrees(light.OuterCutOffAngle) * 2.0f, 1.0f, 1.0f, 100.0f);
-			Vector3f target = lightDirection + transform.Position;	// Look in the direction of the spotlight
-			Vector3f eye = transform.Position;
+			Vector3f worldPos = Vector3f(transform.WorldTransform[3]);
+			Vector3f target = lightDirection + worldPos;	// Look in the direction of the spotlight
+			Vector3f eye = worldPos;
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
 			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.SpotLightViewMatrix = lightProjection * lightView;
@@ -602,7 +603,7 @@ namespace Ember {
 				auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
 				int i = lightData.ActiveSpotLights;
 
-				lightData.SpotLights[i].Position = transform.Position;
+				lightData.SpotLights[i].Position = Vector3f(transform.WorldTransform[3]);
 				lightData.SpotLights[i].Direction = transform.GetForward();
 				lightData.SpotLights[i].Color = light.Color;
 				lightData.SpotLights[i].Intensity = light.Intensity;
@@ -624,7 +625,7 @@ namespace Ember {
 				auto [light, transform] = registry.GetComponents<PointLightComponent, TransformComponent>(entity);
 				int i = lightData.ActivePointLights;
 
-				lightData.PointLights[i].Position = transform.Position;
+				lightData.PointLights[i].Position = Vector3f(transform.WorldTransform[3]);
 				lightData.PointLights[i].Color = light.Color;
 				lightData.PointLights[i].Intensity = light.Intensity;
 				lightData.PointLights[i].Radius = light.Radius;
