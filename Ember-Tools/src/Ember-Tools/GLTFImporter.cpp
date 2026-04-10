@@ -346,6 +346,37 @@ namespace Ember {
 				}
 			}
 
+			if (!primitive.attributes.count("NORMAL"))
+			{
+				// Calculate face normals and accumulate them into the vertices
+				for (size_t i = 0; i < indices.size(); i += 3)
+				{
+					uint32_t i0 = indices[i];
+					uint32_t i1 = indices[i + 1];
+					uint32_t i2 = indices[i + 2];
+
+					Vector3f p0 = vertices[i0].Position;
+					Vector3f p1 = vertices[i1].Position;
+					Vector3f p2 = vertices[i2].Position;
+
+					Vector3f edge1 = p1 - p0;
+					Vector3f edge2 = p2 - p0;
+
+					// Cross product of two edges gives the perpendicular face normal
+					Vector3f faceNormal = Math::Normalize(Math::Cross(edge1, edge2));
+
+					vertices[i0].Normal += faceNormal;
+					vertices[i1].Normal += faceNormal;
+					vertices[i2].Normal += faceNormal;
+				}
+
+				// Normalize the accumulated vectors to smooth the shading
+				for (auto& v : vertices)
+				{
+					v.Normal = Math::Normalize(v.Normal);
+				}
+			}
+
 			UUID meshUUID = UUID();
 			std::string primFileName = modelName + "_" + safeMeshName + "_Prim" + std::to_string(primIndex) + ".ebmesh";
 			std::string outputPath = (std::filesystem::path(outputDirectory) / primFileName).string();

@@ -226,6 +226,16 @@ namespace Ember {
 		{
 			return glm::mix(a, b, t);
 		}
+
+		static inline Vector3f Cross(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::cross(a, b);
+		}
+
+		static inline float Dot(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::dot(a, b);
+		}
 	};
 
 }

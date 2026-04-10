@@ -767,46 +767,52 @@ namespace Ember {
 
 			auto texture = assetManager.GetAsset<Texture2D>(billboard.TextureHandle);
 
+			Vector3f worldPos, worldRot, worldScale;
+			Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+
 			// Find the billboards transform //
 			Matrix4f cameraRotation = m_RenderSceneState.CameraTransform;
-			cameraRotation[3] = Vector4f(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation from camera transform to only get rotation for the billboard shader
+			cameraRotation[3] = Vector4f(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation from camera transform
 
 			// Scale billboard depending on if its static or not
 			float distanceScale = billboard.Size;
 			if (billboard.StaticSize)
 			{
-				float distance = Math::Length(transform.Position - Vector3f(m_RenderSceneState.CameraTransform[3]));
+				float distance = Math::Length(worldPos - Vector3f(m_RenderSceneState.CameraTransform[3]));
 				distanceScale = distance / 10.0f;
 			}
-			Vector3f finalScale = transform.Scale * distanceScale;
-			
+
+			Vector3f finalScale = worldScale * distanceScale;
+
 			Matrix4f billboardTransform;
 			if (billboard.Spherical)
 			{
-				// Always faces the camera, but keeps its own position
-				billboardTransform = Math::Translate(transform.Position) * cameraRotation * Math::Scale(finalScale);
+				// Always faces the camera, but keeps its own position (using worldPos!)
+				billboardTransform = Math::Translate(worldPos) * cameraRotation * Math::Scale(finalScale);
 			}
-			else 
+			else
 			{
 				// Only want the camera's rotation on the Y axis for cylindrical billboards
 				Vector3f cameraPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
-				Vector3f dirToCamera = cameraPos - transform.Position;
+				Vector3f dirToCamera = cameraPos - worldPos;
 
 				// Use atan2 to get the exact angle on the XZ plane
 				float yaw = std::atan2(dirToCamera.x, dirToCamera.z);
 
-				billboardTransform = Math::Translate(transform.Position) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(finalScale);
+				billboardTransform = Math::Translate(worldPos) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(finalScale);
 			}
 			///////////////////////////////////////
 
 			Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
-			billboardShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
-			billboardShader->SetMatrix4(Constants::Uniforms::Transform, billboardTransform);
 
+			// May be able to remove, its in the ubo
+			billboardShader->SetMatrix4(Constants::Uniforms::ViewProj, viewProj);
+
+			billboardShader->SetMatrix4(Constants::Uniforms::Transform, billboardTransform);
 			billboardShader->SetFloat4(Constants::Uniforms::Color, billboard.Tint);
 			billboardShader->SetInt(Constants::Uniforms::EntityID, entity);
-
 			billboardShader->SetInt(Constants::Uniforms::Image, 0);
+
 			RenderAction::SetTextureUnit(0, texture->GetID());
 
 			Renderer3D::Submit(PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray());

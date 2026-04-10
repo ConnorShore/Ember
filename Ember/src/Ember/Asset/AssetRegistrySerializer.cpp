@@ -116,9 +116,6 @@ namespace Ember {
 			else if (type == "Mesh") {
 				m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
 			}
-			//else if (type == "MaterialInstance" || type == "Material") {
-			//	m_AssetManagerHandle->Load<MaterialBase>(uuid, name, path, false);
-			//}
 			else if (type == "MaterialInstance" || type == "Material") {
 				auto material = MaterialSerializer::Deserialize(uuid, path, *m_AssetManagerHandle);
 				if (material) {

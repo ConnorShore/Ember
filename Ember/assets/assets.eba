@@ -1,33 +1,53 @@
 Assets:
   - Type: Texture
-    UUID: 9888697746210380440
+    UUID: 844457925654129773
     Name: Fox_Tex_0.png
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Tex_0.png'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
+  - Type: Texture
+    UUID: 10575124471300148294
+    Name: case
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\case.jpg'
+  - Type: Script
+    UUID: 5364558041277287564
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Scripts\NewScript.lua'
   - Type: Material
-    UUID: 17209794165028728517
+    UUID: 14259139745694361247
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 9936367634715839456
+    Name: Ground_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 7854277777578053203
     Name: Fox_fox_material
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox_material.ebmat'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox_material.ebmat'
+  - Type: Material
+    UUID: 1736256064260583025
+    Name: Sphere_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
   - Type: Mesh
-    UUID: 8145367263081744517
+    UUID: 3033507380462941629
     Name: Fox_fox1_Prim0
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox1_Prim0.ebmesh'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox1_Prim0.ebmesh'
   - Type: Skeleton
-    UUID: 4369982157160885940
+    UUID: 14397647678188599878
     Name: Fox
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebskeleton'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebskeleton'
   - Type: Animation
-    UUID: 15400922455270421412
-    Name: Fox_Walk
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Walk.ebanim'
-  - Type: Animation
-    UUID: 10745282212432052114
+    UUID: 11532369519631369985
     Name: Fox_Survey
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Survey.ebanim'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Survey.ebanim'
   - Type: Animation
-    UUID: 1879547689221941766
+    UUID: 7448940337024467380
+    Name: Fox_Walk
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Walk.ebanim'
+  - Type: Animation
+    UUID: 9585729018807739622
     Name: Fox_Run
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Run.ebanim'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Run.ebanim'
   - Type: Model
-    UUID: 14783902982120251620
+    UUID: 6935754573396706420
     Name: Fox
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebmodel'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebmodel'
