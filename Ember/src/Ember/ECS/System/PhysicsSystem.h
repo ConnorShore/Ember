@@ -34,6 +34,7 @@ namespace Ember {
 
 	private:
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
+		void AttachCollidersRecursively(EntityID currentEntity, EntityID parentWithBody, Scene* scene, rp3d::RigidBody* body);
 
 	private:
 		rp3d::PhysicsCommon m_PhysicsCommon;

@@ -57,21 +57,22 @@ namespace Ember {
 			// 3. Use your amazing fold expression to copy all the data!
 			// NOTE: Do not copy IDComponent here, we just set it above.
 			Utils::CopyComponents<
-				TransformComponent,
-				StaticMeshComponent,  // NEW
-				SkinnedMeshComponent, // NEW
-				MaterialComponent,
-				SpriteComponent,
-				CameraComponent,
-				ScriptComponent,
-				RigidBodyComponent,
-				DirectionalLightComponent,
-				SpotLightComponent,
-				PointLightComponent,
-				RelationshipComponent,
-				AnimatorComponent,
-				BillboardComponent
-			>(srcEntity, destEntity);
+					TransformComponent,
+					StaticMeshComponent,  // NEW
+					SkinnedMeshComponent, // NEW
+					MaterialComponent,
+					SpriteComponent,
+					CameraComponent,
+					ScriptComponent,
+					RigidBodyComponent,
+					BoxColliderComponent,
+					DirectionalLightComponent,
+					SpotLightComponent,
+					PointLightComponent,
+					RelationshipComponent,
+					AnimatorComponent,
+					BillboardComponent
+				>(srcEntity, destEntity);
 		}
 
 		// Copy registry assets and systems to new scene
@@ -258,6 +259,7 @@ namespace Ember {
 			CameraComponent,
 			ScriptComponent,
 			RigidBodyComponent,
+			BoxColliderComponent,
 			DirectionalLightComponent,
 			SpotLightComponent,
 			PointLightComponent,

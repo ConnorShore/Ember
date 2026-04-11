@@ -12,6 +12,7 @@
 #include "ComponentUI/SkinnedMeshComponentUI.h"
 #include "ComponentUI/MaterialComponentUI.h"
 #include "ComponentUI/AnimatorComponentUI.h"
+#include "ComponentUI/BoxColliderComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -33,6 +34,7 @@ namespace Ember {
 		m_ComponentUIs.emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
+		m_ComponentUIs.emplace_back(ScopedPtr<BoxColliderComponentUI>::Create(m_Context));
 		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
 	}
 

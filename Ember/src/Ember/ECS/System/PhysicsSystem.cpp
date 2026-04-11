@@ -1,10 +1,11 @@
 #include "ebpch.h"
 #include "PhysicsSystem.h"
-
 #include "Ember/Core/Core.h"
 #include "Ember/Scene/Scene.h"
 
 namespace Ember {
+
+	// --- HELPER FUNCTIONS ---
 
 	static rp3d::BodyType ToRp3dBodyType(RigidBodyComponent::BodyType type)
 	{
@@ -21,6 +22,39 @@ namespace Ember {
 			return rp3d::BodyType::STATIC;
 		}
 	}
+
+	// Climbs the Relationship tree to find the EntityID that owns the RigidBody
+	static EntityID FindRigidBodyEntity(EntityID current, Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+		EntityID node = current;
+
+		while (node != Constants::Entities::InvalidEntityID)
+		{
+			// Found it!
+			if (registry.ContainsComponent<RigidBodyComponent>(node))
+				return node;
+
+			// Climb up to the parent
+			if (registry.ContainsComponent<RelationshipComponent>(node))
+			{
+				UUID parentUUID = registry.GetComponent<RelationshipComponent>(node).ParentHandle;
+				if (parentUUID == Constants::InvalidUUID)
+					break; // Reached the root
+
+				Entity parentEntity = scene->GetEntity(parentUUID);
+				node = parentEntity.GetEntityHandle();
+			}
+			else
+			{
+				break; // No relationship component, cannot climb further
+			}
+		}
+		return Constants::Entities::InvalidEntityID;
+	}
+
+
+	// --- PHYSICS SYSTEM IMPLEMENTATION ---
 
 	PhysicsSystem::PhysicsSystem()
 	{
@@ -47,11 +81,11 @@ namespace Ember {
 		m_PhysicsWorld = m_PhysicsCommon.createPhysicsWorld();
 		RefreshPhysicsWorld();
 
-		// Handles both Future Spawns AND the Backfill!
-		scene->GetRegistry().ConnectAndRetroact<RigidBodyComponent>(
+		// Creation hooks
+		registry.ConnectAndRetroact<RigidBodyComponent>(
 			[this, scene](EntityID entity, RigidBodyComponent& rb) {
 
-				// Only create the body if it doesn't exist yet!
+				// Idempotent check
 				if (rb.Body == nullptr)
 				{
 					auto& transform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
@@ -60,12 +94,91 @@ namespace Ember {
 			}
 		);
 
-		// Detach doesn't need to be retroactive, just standard Connect
-		scene->GetRegistry().OnComponentDetached<RigidBodyComponent>().Connect(
+		registry.ConnectAndRetroact<BoxColliderComponent>(
+			[this, scene](EntityID entity, BoxColliderComponent& box) {
+
+				// Idempotent check
+				if (box.Shape == nullptr)
+				{
+					EntityID rootBodyEntity = FindRigidBodyEntity(entity, scene);
+
+					if (rootBodyEntity != Constants::Entities::InvalidEntityID)
+					{
+						auto& rb = scene->GetRegistry().GetComponent<RigidBodyComponent>(rootBodyEntity);
+						auto& rootTransform = scene->GetRegistry().GetComponent<TransformComponent>(rootBodyEntity);
+						auto& childTransform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
+
+						if (rb.Body != nullptr)
+						{
+							// Get the transform of the child relative to the Root RigidBody
+							Matrix4f relativeMatrix = Math::Inverse(rootTransform.WorldTransform) * childTransform.WorldTransform;
+
+							Vector3f relPos, relRot, relScale;
+							Math::DecomposeTransform(relativeMatrix, relPos, relRot, relScale);
+
+							// Use the child's absolute world scale for extents so the collider always
+							// matches the visual size (relScale is identity when collider == body entity)
+							Vector3f childWorldPos, childWorldRot, childWorldScale;
+							Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, childWorldScale);
+
+							// Calculate the box extents (half-sizes) and ensure they are not zero
+							rp3d::Vector3 extents((box.Size.x * childWorldScale.x) * 0.5f, (box.Size.y * childWorldScale.y) * 0.5f, (box.Size.z * childWorldScale.z) * 0.5f);
+							if (extents.x <= 0.0f || extents.y <= 0.0f || extents.z <= 0.0f) {
+								EB_CORE_ERROR("Box Collider extents are zero!");
+								extents = rp3d::Vector3(0.5f, 0.5f, 0.5f);
+							}
+
+							// Scale the box by the relative hierarchy scale
+							box.Shape = m_PhysicsCommon.createBoxShape(extents);
+
+							// Position the box at the relative hierarchy offset
+							Quaternion localRotation = Math::ToQuaternion(relRot);
+							rp3d::Transform rp3dLocal(
+								rp3d::Vector3(relPos.x + box.Offset.x, relPos.y + box.Offset.y, relPos.z + box.Offset.z),
+								rp3d::Quaternion(localRotation.x, localRotation.y, localRotation.z, localRotation.w)
+							);
+
+							// Attach to the body and save references for cleanup
+							box.Collider = rb.Body->addCollider(box.Shape, rp3dLocal);
+							box.AttachedBody = rb.Body;
+
+							// Update the RigidBody's mass properties to account for the new collider
+							if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
+							{
+								rb.Body->updateMassPropertiesFromColliders();
+								if (rb.Mass > 0.0f)
+									rb.Body->setMass(rb.Mass);
+							}
+						}
+					}
+				}
+			}
+		);
+
+		// Cleanup hooks
+		registry.OnComponentDetached<RigidBodyComponent>().Connect(
 			[this](EntityID entity, RigidBodyComponent& rb) {
 				if (rb.Body) {
 					m_PhysicsWorld->destroyRigidBody(rb.Body);
 					rb.Body = nullptr;
+				}
+			}
+		);
+
+		registry.OnComponentDetached<BoxColliderComponent>().Connect(
+			[this](EntityID entity, BoxColliderComponent& box) {
+
+				// Safely remove the collider from the RigidBody before destroying the shape!
+				if (box.Collider && box.AttachedBody) 
+				{
+					box.AttachedBody->removeCollider(box.Collider);
+
+					if (box.Shape)
+						m_PhysicsCommon.destroyBoxShape(box.Shape);
+
+					box.Collider = nullptr;
+					box.Shape = nullptr;
+					box.AttachedBody = nullptr;
 				}
 			}
 		);
@@ -77,14 +190,14 @@ namespace Ember {
 		m_PhysicsWorld = nullptr;
 	}
 
-	// Simple explicit Euler integration: position += velocity * dt
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		const float timeStep = 1.0f / m_Settings.UpdateRate;
 		m_TimeAcumulator += delta;
 
 		// Step the physics simulation
-		while (m_TimeAcumulator >= timeStep) {
+		while (m_TimeAcumulator >= timeStep) 
+		{
 			m_PhysicsWorld->update(timeStep);
 			m_TimeAcumulator -= timeStep;
 		}
@@ -106,6 +219,9 @@ namespace Ember {
 				Quaternion rotation(rot.x, rot.y, rot.z, rot.w);
 				transform.Rotation = Math::ToEulerAngles(rotation);
 			}
+
+			// Get Collider component to sync size
+
 		}
 	}
 
@@ -114,22 +230,24 @@ namespace Ember {
 		m_PhysicsWorld->setGravity(rp3d::Vector3(0, m_Settings.Gravity, 0));
 		m_PhysicsWorld->setNbIterationsPositionSolver(m_Settings.PositionSolverIterations);
 		m_PhysicsWorld->setNbIterationsVelocitySolver(m_Settings.VelocitySolverIterations);
-
-		// TODO: Verify that the physics world is properly updated with the new settings
-		// or if world needs to be recreated
 	}
 
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)
 	{
-		Quaternion rotation = Math::ToQuaternion(transform.WorldTransform);
+		// Decompose the World Transform to safely strip away the scale
+		Vector3f worldPos, worldRot, worldScale;
+		Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
 
-		rp3d::Vector3 initPos(transform.Position.x, transform.Position.y, transform.Position.z);
+		// Convert the pure, unscaled Euler rotation to a Quaternion
+		Quaternion rotation = Math::ToQuaternion(worldRot);
+
+		// Pass the pure global data to ReactPhysics3D
+		rp3d::Vector3 initPos(worldPos.x, worldPos.y, worldPos.z);
 		rp3d::Quaternion initRot(rotation.x, rotation.y, rotation.z, rotation.w);
 
 		auto rp3dRigidBody = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
 		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
 		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
-		rp3dRigidBody->setMass(rigidBody.Mass);
 
 		rigidBody.Body = rp3dRigidBody;
 	}

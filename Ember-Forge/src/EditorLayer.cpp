@@ -832,6 +832,8 @@ namespace Ember {
 		if (!sceneFile.empty())
 		{
 			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+			newScene->SetFilePath(sceneFile);
+
 			SceneSerializer serializer(newScene);
 			if (serializer.Deserialize(sceneFile))
 			{
@@ -850,17 +852,16 @@ namespace Ember {
 
 	void EditorLayer::SaveScene(bool saveAs /* = false */)
 	{
-		const char* sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string().c_str();
+		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
-			? FileDialog::SaveFile(sceneDirectory, "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
+			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
 			: m_Context.ActiveScene->GetFilePath();
 
 		if (!sceneName.empty())
 		{
 			// Strip editor-only outline components before serializing
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
-			}
 
 			// Serialize scene
 			SceneSerializer sceneSerializer(m_Context.ActiveScene);

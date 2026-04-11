@@ -76,6 +76,18 @@ namespace Ember {
 			{
 				ryml::NodeRef rigidBodyNode = entityNode["RigidBodyComponent"];
 				rigidBodyNode |= ryml::MAP;
+
+				rigidBodyNode["Type"] << (int)entity.GetComponent<RigidBodyComponent>().Type;
+				rigidBodyNode["Mass"] << entity.GetComponent<RigidBodyComponent>().Mass;
+				rigidBodyNode["GravityEnabled"] << entity.GetComponent<RigidBodyComponent>().GravityEnabled;
+			}
+			if (entity.ContainsComponent<BoxColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
+				colliderNode |= ryml::MAP;
+
+				Util::SerializeVector3f(colliderNode["Size"], entity.GetComponent<BoxColliderComponent>().Size);
+				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<BoxColliderComponent>().Offset);
 			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
@@ -315,8 +327,23 @@ namespace Ember {
 
 				if (entityNode.has_child("RigidBodyComponent"))
 				{
+					ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
+
 					RigidBodyComponent rbc;
+					rbNode["Type"] >> (int&)rbc.Type;
+					rbNode["Mass"] >> rbc.Mass;
+					rbNode["GravityEnabled"] >> rbc.GravityEnabled;
+
 					deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
+				}
+
+				if (entityNode.has_child("BoxColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
+					BoxColliderComponent bcc;
+					Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
+					Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset);
+					deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
 				}
 
 				if (entityNode.has_child("StaticMeshComponent"))
