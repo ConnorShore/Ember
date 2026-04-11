@@ -362,6 +362,12 @@ namespace Ember {
 			"GetForward", &TransformComponent::GetForward
 		);
 
+		s_LuaState->new_usertype<RigidBodyComponent>("RigidBodyComponent",
+			"Mass", &RigidBodyComponent::Mass,
+			"GravityEnabled", &RigidBodyComponent::GravityEnabled,
+			"ApplyForce", &RigidBodyComponent::ApplyForce
+		);
+
 		s_LuaState->new_usertype<AnimatorComponent>("AnimatorComponent",
 			"CurrentAnimationHandle", &AnimatorComponent::CurrentAnimationHandle,
 			"CurrentTime", sol::property(

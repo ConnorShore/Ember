@@ -6,6 +6,22 @@
 
 namespace Ember {
 
+	static rp3d::BodyType ToRp3dBodyType(RigidBodyComponent::BodyType type)
+	{
+		switch (type)
+		{
+		case RigidBodyComponent::BodyType::Static:
+			return rp3d::BodyType::STATIC;
+		case RigidBodyComponent::BodyType::Dynamic:
+			return rp3d::BodyType::DYNAMIC;
+		case RigidBodyComponent::BodyType::Kinematic:
+			return rp3d::BodyType::KINEMATIC;
+		default:
+			EB_CORE_ASSERT(false, "Unknown body type!");
+			return rp3d::BodyType::STATIC;
+		}
+	}
+
 	PhysicsSystem::PhysicsSystem()
 	{
 	}
@@ -64,27 +80,32 @@ namespace Ember {
 	// Simple explicit Euler integration: position += velocity * dt
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
-		//View view = scene->GetRegistry().Query<RigidBodyComponent, TransformComponent>();
-		//for (EntityID entity : view)
-		//{
-		//	auto [transform, rigidBody] = scene->GetRegistry().GetComponents<TransformComponent, RigidBodyComponent>(entity);
-		//	transform.Position += rigidBody.Velocity * (float)delta;
-		//}
-
 		const float timeStep = 1.0f / m_Settings.UpdateRate;
-
-		// Add the time difference in the accumulator
 		m_TimeAcumulator += delta;
 
-		// While there is enough accumulated time to take
-		// one or several physics steps
+		// Step the physics simulation
 		while (m_TimeAcumulator >= timeStep) {
-
-			// Update the Dynamics world with a constant time step
 			m_PhysicsWorld->update(timeStep);
-
-			// Decrease the accumulated time
 			m_TimeAcumulator -= timeStep;
+		}
+
+		// Sync Physics -> ECS (Update graphics transforms)
+		auto view = scene->GetRegistry().Query<RigidBodyComponent, TransformComponent>();
+		for (EntityID entity : view)
+		{
+			auto [rb, transform] = scene->GetRegistry().GetComponents<RigidBodyComponent, TransformComponent>(entity);
+
+			if (rb.Body != nullptr)
+			{
+				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
+				const rp3d::Vector3& pos = rp3dTransform.getPosition();
+				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
+
+				transform.Position = { pos.x, pos.y, pos.z };
+
+				Quaternion rotation(rot.x, rot.y, rot.z, rot.w);
+				transform.Rotation = Math::ToEulerAngles(rotation);
+			}
 		}
 	}
 
@@ -105,7 +126,12 @@ namespace Ember {
 		rp3d::Vector3 initPos(transform.Position.x, transform.Position.y, transform.Position.z);
 		rp3d::Quaternion initRot(rotation.x, rotation.y, rotation.z, rotation.w);
 
-		rigidBody.Body = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
+		auto rp3dRigidBody = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
+		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
+		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
+		rp3dRigidBody->setMass(rigidBody.Mass);
+
+		rigidBody.Body = rp3dRigidBody;
 	}
 
 }

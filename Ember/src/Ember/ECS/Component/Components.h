@@ -18,7 +18,8 @@
 #include <string>
 #include <functional>
 
-namespace reactphysics3d { class RigidBody; }
+#include <reactphysics3d/mathematics/mathematics.h>
+#include <reactphysics3d/body/RigidBody.h>
 
 namespace Ember {
 
@@ -103,11 +104,22 @@ namespace Ember {
 
 	struct RigidBodyComponent
 	{
-		//Vector3f Velocity = Vector3f(0.0f);
+		enum class BodyType { Static, Dynamic, Kinematic } Type = BodyType::Static;
+		float Mass = 1.0f;
+		bool GravityEnabled = true;
+
+		void ApplyForce(const Vector3f& force)
+		{
+			if (Body)
+				Body->applyLocalForceAtCenterOfMass(reactphysics3d::Vector3(force.x, force.y, force.z));
+		}
+
+		// Runtime only (not serialized) -> holds the actual physics body created in the PhysicsSystem
 		reactphysics3d::RigidBody* Body = nullptr;
 
 		RigidBodyComponent() = default;
-		//RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
+		RigidBodyComponent(BodyType type, float mass = 1.0f, bool gravityEnabled = true) 
+			: Type(type), Mass(mass), GravityEnabled(gravityEnabled) {}
 		RigidBodyComponent(const RigidBodyComponent&) = default;
 	};
 
