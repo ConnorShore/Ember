@@ -79,14 +79,30 @@ namespace Ember {
 		return newScene;
 	}
 
+	void Scene::OnAttach()
+	{
+		EB_CORE_INFO("Scene '{}' attached!", m_Name);
+	}
+
+	void Scene::OnDetach()
+	{
+		EB_CORE_INFO("Scene '{}' detached!", m_Name);
+	}
+
 	void Scene::OnRuntimeStart()
 	{
 		ScriptEngine::OnRuntimeStart();
+
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 	}
 
 	void Scene::OnRuntimeStop()
 	{
 		ScriptEngine::OnRuntimeStop();
+
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)

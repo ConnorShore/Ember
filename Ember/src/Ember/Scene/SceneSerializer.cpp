@@ -76,7 +76,6 @@ namespace Ember {
 			{
 				ryml::NodeRef rigidBodyNode = entityNode["RigidBodyComponent"];
 				rigidBodyNode |= ryml::MAP;
-				Util::SerializeVector3f(rigidBodyNode["Velocity"], entity.GetComponent<RigidBodyComponent>().Velocity);
 			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
@@ -316,11 +315,7 @@ namespace Ember {
 
 				if (entityNode.has_child("RigidBodyComponent"))
 				{
-					ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
-					Vector3f velocity;
-					Util::DeserializeVector3f(rbNode["Velocity"], velocity);
-
-					RigidBodyComponent rbc(velocity);
+					RigidBodyComponent rbc;
 					deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
 				}
 

@@ -18,6 +18,8 @@
 #include <string>
 #include <functional>
 
+namespace reactphysics3d { class RigidBody; }
+
 namespace Ember {
 
 	struct IDComponent
@@ -101,10 +103,11 @@ namespace Ember {
 
 	struct RigidBodyComponent
 	{
-		Vector3f Velocity = Vector3f(0.0f);
+		//Vector3f Velocity = Vector3f(0.0f);
+		reactphysics3d::RigidBody* Body = nullptr;
 
 		RigidBodyComponent() = default;
-		RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
+		//RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
 		RigidBodyComponent(const RigidBodyComponent&) = default;
 	};
 

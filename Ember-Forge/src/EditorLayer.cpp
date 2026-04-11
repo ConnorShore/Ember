@@ -28,8 +28,11 @@
 namespace Ember {
 
 	EditorLayer::EditorLayer()
-		: Layer("Ember Forge"), m_EditorScene(SharedPtr<Scene>::Create("DefaultScene"))
+		: Layer("Ember Forge")
 	{
+		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
+		SetNewScene(defaultScene);
+
 		m_Context = {
 			.ActiveScene = m_EditorScene,
 			.EditorCamera = &m_Camera,
@@ -810,12 +813,8 @@ namespace Ember {
 
 	void EditorLayer::NewScene()
 	{
-		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
-		m_Context.ActiveScene = m_EditorScene;
-
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		m_Context.SelectedEntity = {};
-		m_PreviousSelectedEntity = {};
+		SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("New Scene");
+		SetNewScene(newScene);
 
 		auto evt = UINotificationEvent("New Scene created!");
 		m_Context.EventCallback(evt);
@@ -836,13 +835,7 @@ namespace Ember {
 			SceneSerializer serializer(newScene);
 			if (serializer.Deserialize(sceneFile))
 			{
-				m_EditorScene = newScene;
-				m_Context.ActiveScene = m_EditorScene;
-				m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-				m_Context.ActiveScene->SetFilePath(sceneFile);
-
-				m_Context.SelectedEntity = {};
-				m_PreviousSelectedEntity = {};
+				SetNewScene(newScene);
 
 				auto evt = UINotificationEvent(std::format("Scene opened: {}", std::filesystem::path(sceneFile).filename().string()));
 				m_Context.EventCallback(evt);
@@ -893,6 +886,21 @@ namespace Ember {
 			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
 			m_Context.EventCallback(evt);
 		}
+	}
+
+	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
+	{
+		if (m_Context.ActiveScene != nullptr)
+			m_Context.ActiveScene->OnDetach();
+
+		m_EditorScene = newScene;
+		m_Context.ActiveScene = newScene;
+
+		m_Context.ActiveScene->OnAttach();
+
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		m_Context.SelectedEntity = {};
+		m_PreviousSelectedEntity = {};
 	}
 
 	void EditorLayer::SetupImGuiTheme()

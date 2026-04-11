@@ -19,6 +19,7 @@ namespace Ember {
 		virtual ~ComponentMemoryArraysBase() = default;
 		virtual void EntityDestroyed(EntityID entity) = 0;
 		virtual void RemoveComponent(EntityID entity) = 0;
+		virtual void* GetComponentDataErased(EntityID entity) = 0;
 	};
 
 	// Sparse-set storage for a single component type
@@ -62,6 +63,16 @@ namespace Ember {
 		{
 			EB_CORE_ASSERT(SparseEntityArray[entity] != Constants::Entities::InvalidComponentID, "Attempting to retrieve a non-existent component!");
 			return DenseComponentArray[SparseEntityArray[entity]];
+		}
+
+		virtual void* GetComponentDataErased(EntityID entity) override
+		{
+			if (SparseEntityArray[entity] == Constants::Entities::InvalidComponentID)
+			{
+				EB_CORE_WARN("Entity {} does not contain component type!", entity);
+				return nullptr;
+			}
+			return &DenseComponentArray[SparseEntityArray[entity]];
 		}
 
 		virtual void RemoveComponent(EntityID entity) override
@@ -154,6 +165,16 @@ namespace Ember {
 
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
 			return memoryArrays->GetComponent(entity);
+		}
+
+		inline void* GetComponentDataErased(EntityID entity, ComponentType type)
+		{
+			if (type >= m_ComponentArrays.size() || m_ComponentArrays[type] == nullptr)
+			{
+				EB_CORE_WARN("Component type {} does not exist!", type);
+				return nullptr;
+			}
+			return m_ComponentArrays[type]->GetComponentDataErased(entity);
 		}
 
 		template<typename T>
