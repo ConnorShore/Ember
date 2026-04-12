@@ -22,6 +22,7 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/ECS/System/PhysicsSystem.h>
 
 #include <random>
 
@@ -152,6 +153,14 @@ namespace Ember {
 		DrawToolbar();
 		RenderSceneViewport();
 
+		// Project Settings Pop up
+		if (m_ShowProjectSettingsPopup)
+		{
+			ImGui::OpenPopup(m_ProjectSettingsDialog.GetPopupName().c_str());
+			m_ShowProjectSettingsPopup = false;
+		}
+		m_ProjectSettingsDialog.OnImGuiRender();
+
 		if (m_ShowStatsWindow)
 			RenderStatsOverlay(delta);
 
@@ -241,6 +250,16 @@ namespace Ember {
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Project"))
+		{
+			if (ImGui::MenuItem("Project Settings"))
+			{
+				m_ShowProjectSettingsPopup = true;
+			}
+
+			ImGui::EndMenu();
+		}
+
 		if (ImGui::BeginMenu("Editor"))
 		{
 			if (ImGui::BeginMenu("Tool Windows"))
@@ -259,7 +278,32 @@ namespace Ember {
 
 	void EditorLayer::RenderSceneViewport()
 	{
-		ImGui::Begin("Scene");
+		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar);
+
+		// Scene viewport menu bar
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("Gizmos"))
+			{
+				auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+				if (physicsSystem)
+				{
+					auto& debugSettings = physicsSystem->GetDebugRenderSettings();
+
+					ImGui::MenuItem("Show Physics Colliders", nullptr, &debugSettings.Enabled);
+					if (debugSettings.Enabled)
+					{
+						ImGui::Separator();
+
+						ImGui::MenuItem("Draw Shapes", nullptr, &debugSettings.DrawColliders);
+						ImGui::MenuItem("Draw Contact Points", nullptr, &debugSettings.DrawContactPoints);
+						ImGui::MenuItem("Draw AABBs", nullptr, &debugSettings.DrawColliderAxes);
+					}
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
 
 		// Save view port info for mouse picking and viewport resizing
 		m_ViewportHovered = ImGui::IsWindowHovered();

@@ -958,7 +958,7 @@ namespace Ember {
 	void RenderSystem::RenderPhysicsDebug(Scene* scene)
 	{
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
-		if (physicsSystem)
+		if (physicsSystem && physicsSystem->GetDebugRenderSettings().Enabled)
 		{
 			uint32_t lineCount = physicsSystem->GetDebugLineCount();
 			uint32_t triangleCount = physicsSystem->GetDebugTriangleCount();

@@ -86,18 +86,7 @@ namespace Ember {
 		RefreshPhysicsWorld();
 
 		// Setup debug renderer
-		m_PhysicsWorld->setIsDebugRenderingEnabled(m_DebugRenderSettings.Enabled);
-
-		if (m_DebugRenderSettings.Enabled)
-		{
-			EB_CORE_INFO("Physics debug rendering enabled!");
-
-			auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
-			//debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliders);
-			//debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, m_DebugRenderSettings.DrawColliderAxes);
-			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLISION_SHAPE, m_DebugRenderSettings.DrawColliders);
-			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::CONTACT_POINT, m_DebugRenderSettings.DrawContactPoints);
-		}
+		ShowDebugRendererIfApplicable();
 
 		// Creation hooks
 		registry.ConnectAndRetroact<RigidBodyComponent>(
@@ -221,6 +210,8 @@ namespace Ember {
 
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		ShowDebugRendererIfApplicable();
+
 		const float timeStep = 1.0f / m_Settings.UpdateRate;
 		m_TimeAcumulator += delta;
 
@@ -238,27 +229,25 @@ namespace Ember {
 		{
 			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
 
-				if (rb.Body != nullptr)
-					{
-						const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
-						const rp3d::Vector3& pos = rp3dTransform.getPosition();
-						const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
+			if (rb.Body != nullptr)
+			{
+				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
+				const rp3d::Vector3& pos = rp3dTransform.getPosition();
+				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
 
-						transform.Position = { pos.x, pos.y, pos.z };
+				transform.Position = { pos.x, pos.y, pos.z };
 
-						Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
-						transform.Rotation = Math::ToEulerAngles(rotation);
-					}
-				}
-
-				// Regenerate debug primitives each frame so GetDebugLines/GetDebugLineCount return current data
-				if (m_DebugRenderSettings.Enabled)
-				{
-					auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
-					debugRenderer.reset();
-					debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
-				}
+				Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
+				transform.Rotation = Math::ToEulerAngles(rotation);
 			}
+		}
+
+		// Regenerate debug primitives each frame so GetDebugLines/GetDebugLineCount return current data
+		auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
+		debugRenderer.reset();
+		if (m_DebugRenderSettings.Enabled)
+			debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
+	}
 
 	void PhysicsSystem::RefreshPhysicsWorld()
 	{
@@ -287,6 +276,22 @@ namespace Ember {
 		rp3dRigidBody->setIsAllowedToSleep(false);
 
 		rigidBody.Body = rp3dRigidBody;
+	}
+
+	void PhysicsSystem::ShowDebugRendererIfApplicable()
+	{
+		if (m_PhysicsWorld)
+		{
+			m_PhysicsWorld->setIsDebugRenderingEnabled(m_DebugRenderSettings.Enabled);
+
+			if (m_DebugRenderSettings.Enabled)
+			{
+				auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
+				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLISION_SHAPE, m_DebugRenderSettings.DrawColliders);
+				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::CONTACT_POINT, m_DebugRenderSettings.DrawContactPoints);
+				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliderAxes);
+			}
+		}
 	}
 
 	const DebugLine* PhysicsSystem::GetDebugLines() const

@@ -56,6 +56,7 @@ namespace Ember {
 
 	private:
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
+		void ShowDebugRendererIfApplicable();
 
 	private:
 		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;
