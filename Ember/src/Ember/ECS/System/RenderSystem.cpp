@@ -10,6 +10,7 @@
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
+#include "Ember/Render/DebugRenderer.h"
 #include "Ember/Scene/Scene.h"
 
 namespace Ember {
@@ -201,7 +202,7 @@ namespace Ember {
 
 		// Overlays
 		Render2DEntities(scene);
-		RenderPhysicsDebug(scene);
+		RenderDebug(scene);
 
 		ResetRenderState();
 	}
@@ -955,70 +956,21 @@ namespace Ember {
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
-	void RenderSystem::RenderPhysicsDebug(Scene* scene)
+	void RenderSystem::RenderDebug(Scene* scene)
 	{
-		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
-		if (physicsSystem && physicsSystem->GetDebugRenderSettings().Enabled)
+		const auto& vertices = DebugRenderer::GetVertices();
+
+		if (!vertices.empty())
 		{
-			uint32_t lineCount = physicsSystem->GetDebugLineCount();
-			uint32_t triangleCount = physicsSystem->GetDebugTriangleCount();
+			auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
+			physicsDebugShader->Bind();
 
-			if (lineCount > 0 || triangleCount > 0)
-			{
-				const DebugLine* lines = physicsSystem->GetDebugLines();
-				const DebugTriangle* triangles = physicsSystem->GetDebugTriangles();
-
-				std::vector<DebugVertex> vertices;
-
-				// Reserve enough space: 2 verts per line + 6 verts per triangle (3 edges)
-				vertices.reserve((lineCount * 2) + (triangleCount * 6));
-
-				auto unpackColor = [](uint32_t color) -> Vector4f {
-					return Vector4f(
-						((color >> 16) & 0xFF) / 255.0f,
-						((color >> 8) & 0xFF) / 255.0f,
-						(color & 0xFF) / 255.0f,
-						1.0f
-					);
-					};
-
-				// 1. Unpack standard lines
-				for (uint32_t i = 0; i < lineCount; i++)
-				{
-					vertices.push_back({ lines[i].Point1, unpackColor(lines[i].Color1) });
-					vertices.push_back({ lines[i].Point2, unpackColor(lines[i].Color2) });
-				}
-
-				// 2. Unpack Triangles into Lines!
-				for (uint32_t i = 0; i < triangleCount; i++)
-				{
-					Vector4f c1 = unpackColor(triangles[i].Color1);
-					Vector4f c2 = unpackColor(triangles[i].Color2);
-					Vector4f c3 = unpackColor(triangles[i].Color3);
-
-					// Edge 1 (Point 1 to Point 2)
-					vertices.push_back({ triangles[i].Point1, c1 });
-					vertices.push_back({ triangles[i].Point2, c2 });
-
-					// Edge 2 (Point 2 to Point 3)
-					vertices.push_back({ triangles[i].Point2, c2 });
-					vertices.push_back({ triangles[i].Point3, c3 });
-
-					// Edge 3 (Point 3 to Point 1)
-					vertices.push_back({ triangles[i].Point3, c3 });
-					vertices.push_back({ triangles[i].Point1, c1 });
-				}
-
-				// Bind Shader & Upload
-				auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
-				physicsDebugShader->Bind();
-
-				// Upload Data and Draw
-				m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
-				m_PhysicsDebugLineVAO->Bind();
-				RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
-			}
+			m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
+			m_PhysicsDebugLineVAO->Bind();
+			RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
 		}
+
+		DebugRenderer::Clear();
 	}
 
 	void RenderSystem::ResetRenderState()

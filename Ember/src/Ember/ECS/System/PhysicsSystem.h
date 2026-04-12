@@ -3,7 +3,6 @@
 #include "Ember/ECS/Types.h"
 #include "System.h"
 #include "Ember/ECS/Component/Components.h"
-#include "Ember/Render/DebugLine.h"
 
 // forward declarations
 namespace reactphysics3d {
@@ -48,15 +47,10 @@ namespace Ember {
 
 		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
-		const DebugLine* GetDebugLines() const;
-		uint32_t GetDebugLineCount() const;
-
-		const DebugTriangle* GetDebugTriangles() const;
-		uint32_t GetDebugTriangleCount() const;
-
 	private:
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
 		void ShowDebugRendererIfApplicable();
+		void UpdateDebugRenderData();
 
 	private:
 		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;

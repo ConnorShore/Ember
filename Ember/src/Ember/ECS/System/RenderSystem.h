@@ -65,7 +65,7 @@ namespace Ember {
 		void Render2DEntities(Scene* scene);
 		void HandlePostProcessing(Scene* scene);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
-		void RenderPhysicsDebug(Scene* scene);
+		void RenderDebug(Scene* scene);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Scene* scene);
 

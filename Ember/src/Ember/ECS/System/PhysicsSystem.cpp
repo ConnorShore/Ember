@@ -2,6 +2,7 @@
 #include "PhysicsSystem.h"
 #include "Ember/Core/Core.h"
 #include "Ember/Scene/Scene.h"
+#include "Ember/Render/DebugRenderer.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -242,11 +243,7 @@ namespace Ember {
 			}
 		}
 
-		// Regenerate debug primitives each frame so GetDebugLines/GetDebugLineCount return current data
-		auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
-		debugRenderer.reset();
-		if (m_DebugRenderSettings.Enabled)
-			debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
+		UpdateDebugRenderData();
 	}
 
 	void PhysicsSystem::RefreshPhysicsWorld()
@@ -294,39 +291,48 @@ namespace Ember {
 		}
 	}
 
-	const DebugLine* PhysicsSystem::GetDebugLines() const
+	void PhysicsSystem::UpdateDebugRenderData()
 	{
-		if (m_PhysicsWorld == nullptr || GetDebugLineCount() == 0)
-			return nullptr;
+		// Regenerate debug primitives each frame so GetDebugLines/GetDebugLineCount return current data
+		auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
+		debugRenderer.reset();
 
-		// Cast the raw memory so the rest of the engine never sees rp3d
-		const auto* rp3dLines = m_PhysicsWorld->getDebugRenderer().getLinesArray();
-		return reinterpret_cast<const DebugLine*>(rp3dLines);
-	}
+		if (m_DebugRenderSettings.Enabled)
+		{
+			debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
 
-	uint32_t PhysicsSystem::GetDebugLineCount() const
-	{
-		if (m_PhysicsWorld == nullptr)
-			return 0;
+			// Unpack Color Helper
+			auto unpackColor = [](uint32_t color) -> Vector4f {
+				return Vector4f(((color >> 16) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f, (color & 0xFF) / 255.0f, 1.0f);
+			};
 
-		return m_PhysicsWorld->getDebugRenderer().getNbLines();
-	}
+			// Push Lines
+			uint32_t lineCount = debugRenderer.getNbLines();
+			if (lineCount > 0)
+			{
+				const auto* lines = debugRenderer.getLinesArray();
+				for (uint32_t i = 0; i < lineCount; i++)
+				{
+					Vector3f point1 = { lines[i].point1.x, lines[i].point1.y, lines[i].point1.z };
+					Vector3f point2 = { lines[i].point2.x, lines[i].point2.y, lines[i].point2.z };
+					DebugRenderer::DrawLine(point1, point2, unpackColor(lines[i].color1));
+				}
+			}
 
-	const DebugTriangle* PhysicsSystem::GetDebugTriangles() const
-	{
-		if (m_PhysicsWorld == nullptr || GetDebugTriangleCount() == 0)
-			return nullptr;
-
-		const auto* rp3dTriangles = m_PhysicsWorld->getDebugRenderer().getTrianglesArray();
-		return reinterpret_cast<const DebugTriangle*>(rp3dTriangles);
-	}
-
-	uint32_t PhysicsSystem::GetDebugTriangleCount() const
-	{
-		if (m_PhysicsWorld == nullptr)
-			return 0;
-
-		return m_PhysicsWorld->getDebugRenderer().getNbTriangles();
+			// Push Triangles
+			uint32_t triCount = debugRenderer.getNbTriangles();
+			if (triCount > 0)
+			{
+				const auto* tris = debugRenderer.getTrianglesArray();
+				for (uint32_t i = 0; i < triCount; i++)
+				{
+					Vector3f point1 = { tris[i].point1.x, tris[i].point1.y, tris[i].point1.z };
+					Vector3f point2 = { tris[i].point2.x, tris[i].point2.y, tris[i].point2.z };
+					Vector3f point3 = { tris[i].point3.x, tris[i].point3.y, tris[i].point3.z };
+					DebugRenderer::DrawTriangle(point1, point2, point3, unpackColor(tris[i].color1));
+				}
+			}
+		}
 	}
 
 }
