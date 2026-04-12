@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "RenderSystem.h"
+#include "PhysicsSystem.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
@@ -137,8 +138,21 @@ namespace Ember {
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
 
-		m_RenderSceneState.Reset();
+		// Debug Drawing
+		uint32_t maxDebugVertices = 20000;
+		m_PhysicsDebugLineVBO = VertexBuffer::Create(maxDebugVertices * sizeof(DebugVertex));
 
+		m_PhysicsDebugLineVBO->SetLayout({
+			{ ShaderDataType::Float3, "v_Position" },
+			{ ShaderDataType::Float4, "v_Color" }
+			});
+
+		m_PhysicsDebugLineVAO = VertexArray::Create();
+
+		// Notice we dropped the '0' here, using our fixed method!
+		m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+
+		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
 	}
 
@@ -187,6 +201,7 @@ namespace Ember {
 
 		// Overlays
 		Render2DEntities(scene);
+		RenderPhysicsDebug(scene);
 
 		ResetRenderState();
 	}
@@ -938,6 +953,54 @@ namespace Ember {
 		RenderAction::SetTextureUnit(0, outputBuffer->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+	void RenderSystem::RenderPhysicsDebug(Scene* scene)
+	{
+		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+		if (physicsSystem)
+		{
+			uint32_t lineCount = physicsSystem->GetDebugLineCount();
+			if (lineCount > 0)
+			{
+				const DebugLine* lines = physicsSystem->GetDebugLines();
+
+				// 1. Unpack the Physics data into our clean GPU layout
+				std::vector<DebugVertex> vertices;
+				vertices.reserve(lineCount * 2);
+
+				for (uint32_t i = 0; i < lineCount; i++)
+				{
+					// ReactPhysics3D stores color as an integer. We must unpack it to a Vector4f (RGBA)
+					auto unpackColor = [](uint32_t color) -> Vector4f {
+						return Vector4f(
+							((color >> 16) & 0xFF) / 255.0f, // R
+							((color >> 8) & 0xFF) / 255.0f,  // G
+							(color & 0xFF) / 255.0f,         // B
+							1.0f                             // A
+						);
+						};
+
+					vertices.push_back({ lines[i].Point1, unpackColor(lines[i].Color1) });
+					vertices.push_back({ lines[i].Point2, unpackColor(lines[i].Color2) });
+				}
+
+				// 2. Bind Shader
+				auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
+				physicsDebugShader->Bind();
+
+				// Set view projection if your shader needs it!
+				// physicsDebugShader->SetMatrix4(Constants::Uniforms::ViewProj, m_CameraUniformBuffer->...);
+
+				// 3. Upload Data and Draw!
+				m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
+
+				m_PhysicsDebugLineVAO->Bind();
+
+				// Pass vertices.size(), NOT lineCount!
+				RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
+			}
+		}
 	}
 
 	void RenderSystem::ResetRenderState()

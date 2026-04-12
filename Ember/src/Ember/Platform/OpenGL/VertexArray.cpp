@@ -80,6 +80,17 @@ namespace Ember {
 			SetVertexBufferAttribs();
 		}
 
+		void VertexArray::SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer)
+		{
+			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
+				"Vertex buffer must have a layout set before being used in a vertex array!");
+
+			m_VertexBuffer = vertexBuffer;
+			glVertexArrayVertexBuffer(m_Id, 0, vertexBuffer->GetID(), 0, vertexBuffer->GetLayout().GetStride());
+
+			SetVertexBufferAttribs();
+		}
+
 		// Configures vertex attributes using DSA (Direct State Access) based on the buffer layout
 		void VertexArray::SetVertexBufferAttribs()
 		{

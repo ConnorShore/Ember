@@ -57,6 +57,7 @@ namespace Ember {
 		auto irradianceShad = Load<Shader>(Constants::Assets::IrradianceShadUUID, Constants::Assets::IrradianceShad, "Ember/assets/shaders/Irradiance.glsl");
 		auto prefilterShad = Load<Shader>(Constants::Assets::PrefilterShadUUID, Constants::Assets::PrefilterShad, "Ember/assets/shaders/Prefilter.glsl");
 		auto brdfLUTShad = Load<Shader>(Constants::Assets::BRDFLUTShadUUID, Constants::Assets::BRDFLUTShad, "Ember/assets/shaders/BRDF.glsl");
+		auto physicsDebugShad = Load<Shader>(Constants::Assets::PhysicsDebugShadUUID, Constants::Assets::PhysicsDebugShad, "Ember/assets/shaders/PhysicsDebug.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

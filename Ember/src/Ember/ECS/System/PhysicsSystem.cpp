@@ -3,6 +3,8 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Scene/Scene.h"
 
+#include <reactphysics3d/reactphysics3d.h>
+
 namespace Ember {
 
 	// --- HELPER FUNCTIONS ---
@@ -78,8 +80,23 @@ namespace Ember {
 	{
 		auto& registry = scene->GetRegistry();
 
-		m_PhysicsWorld = m_PhysicsCommon.createPhysicsWorld();
+		m_PhysicsCommon = ScopedPtr<rp3d::PhysicsCommon>::Create();
+
+		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
 		RefreshPhysicsWorld();
+
+		// Setup debug renderer
+		m_PhysicsWorld->setIsDebugRenderingEnabled(m_DebugRenderSettings.Enabled);
+
+		if (m_DebugRenderSettings.Enabled)
+		{
+			EB_CORE_INFO("Physics debug rendering enabled!");
+
+			auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
+			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliders);
+			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, m_DebugRenderSettings.DrawColliderAxes);
+			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::CONTACT_POINT, m_DebugRenderSettings.DrawContactPoints);
+		}
 
 		// Creation hooks
 		registry.ConnectAndRetroact<RigidBodyComponent>(
@@ -129,7 +146,7 @@ namespace Ember {
 							}
 
 							// Scale the box by the relative hierarchy scale
-							box.Shape = m_PhysicsCommon.createBoxShape(extents);
+							box.Shape = m_PhysicsCommon->createBoxShape(extents);
 
 							// Position the box at the relative hierarchy offset
 							Quaternion localRotation = Math::ToQuaternion(relRot);
@@ -174,7 +191,7 @@ namespace Ember {
 					box.AttachedBody->removeCollider(box.Collider);
 
 					if (box.Shape)
-						m_PhysicsCommon.destroyBoxShape(box.Shape);
+						m_PhysicsCommon->destroyBoxShape(box.Shape);
 
 					box.Collider = nullptr;
 					box.Shape = nullptr;
@@ -186,7 +203,7 @@ namespace Ember {
 
 	void PhysicsSystem::OnSceneDetach(Scene* scene)
 	{
-		m_PhysicsCommon.destroyPhysicsWorld(m_PhysicsWorld);
+		m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
 		m_PhysicsWorld = nullptr;
 	}
 
@@ -203,27 +220,33 @@ namespace Ember {
 		}
 
 		// Sync Physics -> ECS (Update graphics transforms)
-		auto view = scene->GetRegistry().Query<RigidBodyComponent, TransformComponent>();
+		auto& registry = scene->GetRegistry();
+		auto view = registry.Query<RigidBodyComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
-			auto [rb, transform] = scene->GetRegistry().GetComponents<RigidBodyComponent, TransformComponent>(entity);
+			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
 
-			if (rb.Body != nullptr)
-			{
-				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
-				const rp3d::Vector3& pos = rp3dTransform.getPosition();
-				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
+				if (rb.Body != nullptr)
+					{
+						const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
+						const rp3d::Vector3& pos = rp3dTransform.getPosition();
+						const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
 
-				transform.Position = { pos.x, pos.y, pos.z };
+						transform.Position = { pos.x, pos.y, pos.z };
 
-				Quaternion rotation(rot.x, rot.y, rot.z, rot.w);
-				transform.Rotation = Math::ToEulerAngles(rotation);
+						Quaternion rotation(rot.x, rot.y, rot.z, rot.w);
+						transform.Rotation = Math::ToEulerAngles(rotation);
+					}
+				}
+
+				// Regenerate debug primitives each frame so GetDebugLines/GetDebugLineCount return current data
+				if (m_DebugRenderSettings.Enabled)
+				{
+					auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
+					debugRenderer.reset();
+					debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
+				}
 			}
-
-			// Get Collider component to sync size
-
-		}
-	}
 
 	void PhysicsSystem::RefreshPhysicsWorld()
 	{
@@ -248,8 +271,27 @@ namespace Ember {
 		auto rp3dRigidBody = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
 		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
 		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
+		rp3dRigidBody->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
 
 		rigidBody.Body = rp3dRigidBody;
+	}
+
+	const DebugLine* PhysicsSystem::GetDebugLines() const
+	{
+		if (m_PhysicsWorld == nullptr)
+			return nullptr;
+
+		// Cast the raw memory so the rest of the engine never sees rp3d
+		const auto* rp3dLines = m_PhysicsWorld->getDebugRenderer().getLinesArray();
+		return reinterpret_cast<const DebugLine*>(rp3dLines);
+	}
+
+	uint32_t PhysicsSystem::GetDebugLineCount() const
+	{
+		if (m_PhysicsWorld == nullptr)
+			return 0;
+
+		return m_PhysicsWorld->getDebugRenderer().getNbLines();
 	}
 
 }

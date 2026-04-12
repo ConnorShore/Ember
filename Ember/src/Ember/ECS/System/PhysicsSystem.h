@@ -3,8 +3,14 @@
 #include "Ember/ECS/Types.h"
 #include "System.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Render/DebugLine.h"
 
-#include <reactphysics3d/reactphysics3d.h>
+// forward declarations
+namespace reactphysics3d {
+	class PhysicsCommon;
+	class PhysicsWorld;
+}
+namespace rp3d = reactphysics3d;
 
 namespace Ember {
 
@@ -15,6 +21,14 @@ namespace Ember {
 
 		uint32_t PositionSolverIterations = 5;
 		uint32_t VelocitySolverIterations = 10;
+	};
+
+	struct DebugRenderSettings
+	{
+		bool Enabled = true;
+		bool DrawColliders = true;
+		bool DrawColliderAxes = true;
+		bool DrawContactPoints = true;
 	};
 
 	class PhysicsSystem : public System
@@ -32,15 +46,21 @@ namespace Ember {
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
 
-	private:
-		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
-		void AttachCollidersRecursively(EntityID currentEntity, EntityID parentWithBody, Scene* scene, rp3d::RigidBody* body);
+		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
+
+		const DebugLine* GetDebugLines() const;
+		uint32_t GetDebugLineCount() const;
 
 	private:
-		rp3d::PhysicsCommon m_PhysicsCommon;
+		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
+
+	private:
+		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;
+		//rp3d::PhysicsCommon* m_PhysicsCommon = nullptr;
 		rp3d::PhysicsWorld* m_PhysicsWorld = nullptr;
 
 		PhysicsSettings m_Settings;
+		DebugRenderSettings m_DebugRenderSettings;
 
 		float m_TimeAcumulator = 0.0f;
 	};
