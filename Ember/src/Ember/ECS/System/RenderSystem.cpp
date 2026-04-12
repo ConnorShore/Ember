@@ -961,43 +961,61 @@ namespace Ember {
 		if (physicsSystem)
 		{
 			uint32_t lineCount = physicsSystem->GetDebugLineCount();
-			if (lineCount > 0)
+			uint32_t triangleCount = physicsSystem->GetDebugTriangleCount();
+
+			if (lineCount > 0 || triangleCount > 0)
 			{
 				const DebugLine* lines = physicsSystem->GetDebugLines();
+				const DebugTriangle* triangles = physicsSystem->GetDebugTriangles();
 
-				// 1. Unpack the Physics data into our clean GPU layout
 				std::vector<DebugVertex> vertices;
-				vertices.reserve(lineCount * 2);
 
+				// Reserve enough space: 2 verts per line + 6 verts per triangle (3 edges)
+				vertices.reserve((lineCount * 2) + (triangleCount * 6));
+
+				auto unpackColor = [](uint32_t color) -> Vector4f {
+					return Vector4f(
+						((color >> 16) & 0xFF) / 255.0f,
+						((color >> 8) & 0xFF) / 255.0f,
+						(color & 0xFF) / 255.0f,
+						1.0f
+					);
+					};
+
+				// 1. Unpack standard lines
 				for (uint32_t i = 0; i < lineCount; i++)
 				{
-					// ReactPhysics3D stores color as an integer. We must unpack it to a Vector4f (RGBA)
-					auto unpackColor = [](uint32_t color) -> Vector4f {
-						return Vector4f(
-							((color >> 16) & 0xFF) / 255.0f, // R
-							((color >> 8) & 0xFF) / 255.0f,  // G
-							(color & 0xFF) / 255.0f,         // B
-							1.0f                             // A
-						);
-						};
-
 					vertices.push_back({ lines[i].Point1, unpackColor(lines[i].Color1) });
 					vertices.push_back({ lines[i].Point2, unpackColor(lines[i].Color2) });
 				}
 
-				// 2. Bind Shader
+				// 2. Unpack Triangles into Lines!
+				for (uint32_t i = 0; i < triangleCount; i++)
+				{
+					Vector4f c1 = unpackColor(triangles[i].Color1);
+					Vector4f c2 = unpackColor(triangles[i].Color2);
+					Vector4f c3 = unpackColor(triangles[i].Color3);
+
+					// Edge 1 (Point 1 to Point 2)
+					vertices.push_back({ triangles[i].Point1, c1 });
+					vertices.push_back({ triangles[i].Point2, c2 });
+
+					// Edge 2 (Point 2 to Point 3)
+					vertices.push_back({ triangles[i].Point2, c2 });
+					vertices.push_back({ triangles[i].Point3, c3 });
+
+					// Edge 3 (Point 3 to Point 1)
+					vertices.push_back({ triangles[i].Point3, c3 });
+					vertices.push_back({ triangles[i].Point1, c1 });
+				}
+
+				// Bind Shader & Upload
 				auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
 				physicsDebugShader->Bind();
 
-				// Set view projection if your shader needs it!
-				// physicsDebugShader->SetMatrix4(Constants::Uniforms::ViewProj, m_CameraUniformBuffer->...);
-
-				// 3. Upload Data and Draw!
+				// Upload Data and Draw
 				m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
-
 				m_PhysicsDebugLineVAO->Bind();
-
-				// Pass vertices.size(), NOT lineCount!
 				RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
 			}
 		}

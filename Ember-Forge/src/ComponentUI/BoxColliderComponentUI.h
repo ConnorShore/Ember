@@ -25,13 +25,13 @@ namespace Ember {
 
 			// Seed Size from the entity's current world scale so the inspector
 			// immediately reflects the visible dimensions of the object
-			if (entity.ContainsComponent<TransformComponent>())
-			{
-				auto& transform = entity.GetComponent<TransformComponent>();
-				Vector3f worldPos, worldRot, worldScale;
-				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
-				comp.Size = worldScale;
-			}
+			//if (entity.ContainsComponent<TransformComponent>())
+			//{
+			//	auto& transform = entity.GetComponent<TransformComponent>();
+			//	Vector3f worldPos, worldRot, worldScale;
+			//	Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+			//	comp.Size = worldScale;
+			//}
 
 			m_Context->ActiveScene->AttachComponent(entity, comp);
 		}

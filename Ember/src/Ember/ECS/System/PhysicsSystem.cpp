@@ -93,8 +93,9 @@ namespace Ember {
 			EB_CORE_INFO("Physics debug rendering enabled!");
 
 			auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
-			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliders);
-			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, m_DebugRenderSettings.DrawColliderAxes);
+			//debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliders);
+			//debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, m_DebugRenderSettings.DrawColliderAxes);
+			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLISION_SHAPE, m_DebugRenderSettings.DrawColliders);
 			debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::CONTACT_POINT, m_DebugRenderSettings.DrawContactPoints);
 		}
 
@@ -163,8 +164,19 @@ namespace Ember {
 							if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
 							{
 								rb.Body->updateMassPropertiesFromColliders();
+
 								if (rb.Mass > 0.0f)
-									rb.Body->setMass(rb.Mass);
+								{
+									float currentMass = rb.Body->getMass();
+									if (currentMass > 0.0f)
+									{
+										float massRatio = rb.Mass / currentMass;
+										rp3d::Vector3 localInertia = rb.Body->getLocalInertiaTensor();
+
+										rb.Body->setMass(rb.Mass);
+										rb.Body->setLocalInertiaTensor(localInertia * massRatio); // Scale it!
+									}
+								}
 							}
 						}
 					}
@@ -234,7 +246,7 @@ namespace Ember {
 
 						transform.Position = { pos.x, pos.y, pos.z };
 
-						Quaternion rotation(rot.x, rot.y, rot.z, rot.w);
+						Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
 						transform.Rotation = Math::ToEulerAngles(rotation);
 					}
 				}
@@ -272,13 +284,14 @@ namespace Ember {
 		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
 		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
 		rp3dRigidBody->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
+		rp3dRigidBody->setIsAllowedToSleep(false);
 
 		rigidBody.Body = rp3dRigidBody;
 	}
 
 	const DebugLine* PhysicsSystem::GetDebugLines() const
 	{
-		if (m_PhysicsWorld == nullptr)
+		if (m_PhysicsWorld == nullptr || GetDebugLineCount() == 0)
 			return nullptr;
 
 		// Cast the raw memory so the rest of the engine never sees rp3d
@@ -292,6 +305,23 @@ namespace Ember {
 			return 0;
 
 		return m_PhysicsWorld->getDebugRenderer().getNbLines();
+	}
+
+	const DebugTriangle* PhysicsSystem::GetDebugTriangles() const
+	{
+		if (m_PhysicsWorld == nullptr || GetDebugTriangleCount() == 0)
+			return nullptr;
+
+		const auto* rp3dTriangles = m_PhysicsWorld->getDebugRenderer().getTrianglesArray();
+		return reinterpret_cast<const DebugTriangle*>(rp3dTriangles);
+	}
+
+	uint32_t PhysicsSystem::GetDebugTriangleCount() const
+	{
+		if (m_PhysicsWorld == nullptr)
+			return 0;
+
+		return m_PhysicsWorld->getDebugRenderer().getNbTriangles();
 	}
 
 }

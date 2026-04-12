@@ -51,6 +51,9 @@ namespace Ember {
 		const DebugLine* GetDebugLines() const;
 		uint32_t GetDebugLineCount() const;
 
+		const DebugTriangle* GetDebugTriangles() const;
+		uint32_t GetDebugTriangleCount() const;
+
 	private:
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
 

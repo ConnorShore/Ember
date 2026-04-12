@@ -18,4 +18,14 @@ namespace Ember {
 		uint32_t Color2;
 	};
 
+	struct DebugTriangle
+	{
+		Vector3f Point1;
+		uint32_t Color1;
+		Vector3f Point2;
+		uint32_t Color2;
+		Vector3f Point3;
+		uint32_t Color3;
+	};
+
 }
