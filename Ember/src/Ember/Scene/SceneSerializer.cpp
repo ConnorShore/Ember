@@ -108,7 +108,7 @@ namespace Ember {
 			{
 				ryml::NodeRef meshNode = entityNode["ConcaveMeshColliderComponent"];
 				meshNode |= ryml::MAP;
-				if (entity.GetComponent<StaticMeshComponent>().MeshHandle != Constants::InvalidUUID)
+				if (entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
 				{
 					meshNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
 				}
