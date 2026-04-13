@@ -3,6 +3,12 @@
 #include <ryml.hpp>
 #include <ryml_std.hpp>
 
+#include "Ember/Asset/Asset.h"
+#include "Ember/Render/Material.h"
+#include "Ember/Render/Texture2D.h"
+#include "Ember/Asset/AssetManager.h"
+#include "Ember/Math/Math.h"
+
 namespace Ember {
 	namespace Util {
 		static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)

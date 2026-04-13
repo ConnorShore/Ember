@@ -23,7 +23,7 @@ namespace Ember {
 	public:
 		Project(const std::string& projectPath) :
 			m_ProjectDirectory(std::filesystem::path(projectPath).parent_path()),
-			m_Config({ std::filesystem::path(projectPath).filename().string() })
+			m_Config({ std::filesystem::path(projectPath).stem().string() })
 		{
 		}
 

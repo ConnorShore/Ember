@@ -922,6 +922,9 @@ namespace Ember {
 
 			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
 
+			// Save project as well to update any project settings
+			ProjectManager::SaveActiveProject();
+
 			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
 			m_Context.EventCallback(evt);
 		}
