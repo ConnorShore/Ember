@@ -22,6 +22,7 @@
 #include <reactphysics3d/body/RigidBody.h>
 #include <reactphysics3d/collision/shapes/BoxShape.h>
 #include <reactphysics3d/collision/shapes/SphereShape.h>
+#include <reactphysics3d/collision/shapes/CapsuleShape.h>
 
 namespace Ember {
 
@@ -177,6 +178,25 @@ namespace Ember {
 		SphereColliderComponent(float radius, const Vector3f& offset = Vector3f(0.0f))
 			: Radius(radius), Offset(offset) {}
 		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
+	struct CapsuleColliderComponent
+	{
+		float Radius = 0.5f;
+		float Height = 2.0f;
+		Vector3f Offset = Vector3f(0.0f);
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(float radius, float height, const Vector3f& offset = Vector3f(0.0f))
+			: Radius(radius), Height(height), Offset(offset) {
+		}
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+
 	};
 
 	struct SpriteComponent

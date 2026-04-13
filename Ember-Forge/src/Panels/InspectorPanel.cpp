@@ -14,6 +14,7 @@
 #include "ComponentUI/AnimatorComponentUI.h"
 #include "ComponentUI/BoxColliderComponentUI.h"
 #include "ComponentUI/SphereColliderComponentUI.h"
+#include "ComponentUI/CapsuleColliderComponent.h"
 
 #include <imgui/imgui.h>
 
@@ -56,6 +57,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<BoxColliderComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<SphereColliderComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<CapsuleColliderComponentUI>::Create(m_Context));
 
 		// --- ANIMATION ---
 		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));

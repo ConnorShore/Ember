@@ -239,6 +239,78 @@ namespace Ember {
 			}
 		);
 
+		registry.ConnectAndRetroact<CapsuleColliderComponent>(
+			[this, scene](EntityID entity, CapsuleColliderComponent& capsule) {
+				// Idempotent check
+				if (capsule.Shape == nullptr)
+				{
+					EntityID rootBodyEntity = FindRigidBodyEntity(entity, scene);
+					if (rootBodyEntity != Constants::Entities::InvalidEntityID)
+					{
+						auto& rb = scene->GetRegistry().GetComponent<RigidBodyComponent>(rootBodyEntity);
+						auto& rootTransform = scene->GetRegistry().GetComponent<TransformComponent>(rootBodyEntity);
+						auto& childTransform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
+
+						if (rb.Body != nullptr)
+						{
+							// Get the transform of the child relative to the Root RigidBody
+							Matrix4f relativeMatrix = Math::Inverse(rootTransform.WorldTransform) * childTransform.WorldTransform;
+							Vector3f relPos, relRot, relScale;
+							Math::DecomposeTransform(relativeMatrix, relPos, relRot, relScale);
+
+							// Use the child's absolute world scale for radius so the collider always
+							// matches the visual size (relScale is identity when collider == body entity)
+							Vector3f childWorldPos, childWorldRot, childWorldScale;
+							Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, childWorldScale);
+							float maxScale = std::max(std::max(childWorldScale.x, childWorldScale.y), childWorldScale.z);
+							float radius = capsule.Radius * maxScale;
+							float height = capsule.Height * maxScale;
+							if (radius <= 0.0f) 
+							{
+								EB_CORE_ERROR("Capsule Collider radius is zero!");
+								radius = 0.5f;
+							}
+							if (height <= 0.0f) 
+							{
+								EB_CORE_ERROR("Capsule Collider height is zero!");
+								height = 2.0f;
+							}
+
+							// Create the sphere shape and attach it to the body
+							capsule.Shape = m_PhysicsCommon->createCapsuleShape(radius, height);
+							Quaternion localRotation = Math::ToQuaternion(relRot);
+							rp3d::Transform rp3dLocal(
+								rp3d::Vector3(relPos.x + capsule.Offset.x, relPos.y + capsule.Offset.y, relPos.z + capsule.Offset.z),
+								rp3d::Quaternion(localRotation.x, localRotation.y, localRotation.z, localRotation.w)
+							);
+
+							capsule.Collider = rb.Body->addCollider(capsule.Shape, rp3dLocal);
+							capsule.AttachedBody = rb.Body;
+
+							// Update the RigidBody's mass properties to account for the new collider
+							if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
+							{
+								rb.Body->updateMassPropertiesFromColliders();
+
+								if (rb.Mass > 0.0f)
+								{
+									float currentMass = rb.Body->getMass();
+									if (currentMass > 0.0f)
+									{
+										float massRatio = rb.Mass / currentMass;
+										rp3d::Vector3 localInertia = rb.Body->getLocalInertiaTensor();
+
+										rb.Body->setMass(rb.Mass);
+										rb.Body->setLocalInertiaTensor(localInertia * massRatio); // Scale it!
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		);
+
 		// Cleanup hooks
 		registry.OnComponentDetached<RigidBodyComponent>().Connect(
 			[this](EntityID entity, RigidBodyComponent& rb) {
@@ -277,6 +349,20 @@ namespace Ember {
 					sphere.Collider = nullptr;
 					sphere.Shape = nullptr;
 					sphere.AttachedBody = nullptr;
+				}
+			}
+		);
+
+		registry.OnComponentDetached<CapsuleColliderComponent>().Connect(
+			[this](EntityID entity, CapsuleColliderComponent& capsule) {
+				if (capsule.Collider && capsule.AttachedBody)
+				{
+					capsule.AttachedBody->removeCollider(capsule.Collider);
+					if (capsule.Shape)
+						m_PhysicsCommon->destroyCapsuleShape(capsule.Shape);
+					capsule.Collider = nullptr;
+					capsule.Shape = nullptr;
+					capsule.AttachedBody = nullptr;
 				}
 			}
 		);
