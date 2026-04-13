@@ -89,6 +89,13 @@ namespace Ember {
 				Util::SerializeVector3f(colliderNode["Size"], entity.GetComponent<BoxColliderComponent>().Size);
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<BoxColliderComponent>().Offset);
 			}
+			if (entity.ContainsComponent<SphereColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
+				colliderNode |= ryml::MAP;
+				colliderNode["Radius"] << entity.GetComponent<SphereColliderComponent>().Radius;
+				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<SphereColliderComponent>().Offset);
+			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
 				ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
@@ -344,6 +351,15 @@ namespace Ember {
 					Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
 					Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset);
 					deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
+				}
+
+				if (entityNode.has_child("SphereColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
+					SphereColliderComponent scc;
+					colliderNode["Radius"] >> scc.Radius;
+					Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset);
+					deserializedEntity.AttachComponent<SphereColliderComponent>(scc);
 				}
 
 				if (entityNode.has_child("StaticMeshComponent"))

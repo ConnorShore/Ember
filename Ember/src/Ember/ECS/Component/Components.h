@@ -21,6 +21,7 @@
 #include <reactphysics3d/mathematics/mathematics.h>
 #include <reactphysics3d/body/RigidBody.h>
 #include <reactphysics3d/collision/shapes/BoxShape.h>
+#include <reactphysics3d/collision/shapes/SphereShape.h>
 
 namespace Ember {
 
@@ -160,6 +161,22 @@ namespace Ember {
 		BoxColliderComponent(const Vector3f& size, const Vector3f& offset = Vector3f(0.0f))
 			: Size(size), Offset(offset) {}
 		BoxColliderComponent(const BoxColliderComponent&) = default;
+	};
+
+	struct SphereColliderComponent
+	{
+		float Radius = 0.5f;
+		Vector3f Offset = Vector3f(0.0f);
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(float radius, const Vector3f& offset = Vector3f(0.0f))
+			: Radius(radius), Offset(offset) {}
+		SphereColliderComponent(const SphereColliderComponent&) = default;
 	};
 
 	struct SpriteComponent

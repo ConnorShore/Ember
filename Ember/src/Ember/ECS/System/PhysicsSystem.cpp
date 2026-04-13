@@ -174,6 +174,71 @@ namespace Ember {
 			}
 		);
 
+		registry.ConnectAndRetroact<SphereColliderComponent>(
+			[this, scene](EntityID entity, SphereColliderComponent& sphere) {
+				// Idempotent check
+				if (sphere.Shape == nullptr)
+				{
+					EntityID rootBodyEntity = FindRigidBodyEntity(entity, scene);
+					if (rootBodyEntity != Constants::Entities::InvalidEntityID)
+					{
+						auto& rb = scene->GetRegistry().GetComponent<RigidBodyComponent>(rootBodyEntity);
+						auto& rootTransform = scene->GetRegistry().GetComponent<TransformComponent>(rootBodyEntity);
+						auto& childTransform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
+
+						if (rb.Body != nullptr)
+						{
+							// Get the transform of the child relative to the Root RigidBody
+							Matrix4f relativeMatrix = Math::Inverse(rootTransform.WorldTransform) * childTransform.WorldTransform;
+							Vector3f relPos, relRot, relScale;
+							Math::DecomposeTransform(relativeMatrix, relPos, relRot, relScale);
+
+							// Use the child's absolute world scale for radius so the collider always
+							// matches the visual size (relScale is identity when collider == body entity)
+							Vector3f childWorldPos, childWorldRot, childWorldScale;
+							Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, childWorldScale);
+							float maxScale = std::max(std::max(childWorldScale.x, childWorldScale.y), childWorldScale.z);
+							float radius = sphere.Radius * maxScale;
+							if (radius <= 0.0f) {
+								EB_CORE_ERROR("Sphere Collider radius is zero!");
+								radius = 0.5f;
+							}
+
+							// Create the sphere shape and attach it to the body
+							sphere.Shape = m_PhysicsCommon->createSphereShape(radius);
+							Quaternion localRotation = Math::ToQuaternion(relRot);
+							rp3d::Transform rp3dLocal(
+								rp3d::Vector3(relPos.x + sphere.Offset.x, relPos.y + sphere.Offset.y, relPos.z + sphere.Offset.z),
+								rp3d::Quaternion(localRotation.x, localRotation.y, localRotation.z, localRotation.w)
+							);
+
+							sphere.Collider = rb.Body->addCollider(sphere.Shape, rp3dLocal);
+							sphere.AttachedBody = rb.Body;
+
+							// Update the RigidBody's mass properties to account for the new collider
+							if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
+							{
+								rb.Body->updateMassPropertiesFromColliders();
+
+								if (rb.Mass > 0.0f)
+								{
+									float currentMass = rb.Body->getMass();
+									if (currentMass > 0.0f)
+									{
+										float massRatio = rb.Mass / currentMass;
+										rp3d::Vector3 localInertia = rb.Body->getLocalInertiaTensor();
+
+										rb.Body->setMass(rb.Mass);
+										rb.Body->setLocalInertiaTensor(localInertia * massRatio); // Scale it!
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		);
+
 		// Cleanup hooks
 		registry.OnComponentDetached<RigidBodyComponent>().Connect(
 			[this](EntityID entity, RigidBodyComponent& rb) {
@@ -198,6 +263,20 @@ namespace Ember {
 					box.Collider = nullptr;
 					box.Shape = nullptr;
 					box.AttachedBody = nullptr;
+				}
+			}
+		);
+
+		registry.OnComponentDetached<SphereColliderComponent>().Connect(
+			[this](EntityID entity, SphereColliderComponent& sphere) {
+				if (sphere.Collider && sphere.AttachedBody)
+				{
+					sphere.AttachedBody->removeCollider(sphere.Collider);
+					if (sphere.Shape)
+						m_PhysicsCommon->destroySphereShape(sphere.Shape);
+					sphere.Collider = nullptr;
+					sphere.Shape = nullptr;
+					sphere.AttachedBody = nullptr;
 				}
 			}
 		);

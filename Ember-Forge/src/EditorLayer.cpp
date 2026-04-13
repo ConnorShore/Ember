@@ -161,6 +161,7 @@ namespace Ember {
 		}
 		m_ProjectSettingsDialog.OnImGuiRender();
 
+		// Render stats overlay
 		if (m_ShowStatsWindow)
 			RenderStatsOverlay(delta);
 
@@ -189,9 +190,6 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
 		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
@@ -200,9 +198,6 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
@@ -899,11 +894,15 @@ namespace Ember {
 		{
 			// Strip editor-only outline components before serializing
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
+				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
 			// Serialize scene
 			SceneSerializer sceneSerializer(m_Context.ActiveScene);
 			sceneSerializer.Serialize(sceneName);
+
+			// Re-apply outline component after saving so the user doesn't lose their selection highlight
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+				OutlineEntity(m_Context.SelectedEntity);
 
 			// Serialize materials (in case their values changed)
 			auto materials = Application::Instance().GetAssetManager().GetAssetsOfType<MaterialInstance>();

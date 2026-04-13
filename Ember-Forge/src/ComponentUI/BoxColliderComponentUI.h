@@ -1,4 +1,5 @@
 #pragma once
+
 #include "ComponentUI.h"
 #include "UI/PropertyGrid.h"
 #include "Ember/Math/Math.h"
@@ -21,18 +22,7 @@ namespace Ember {
 				return;
 			}
 
-			BoxColliderComponent comp = {};
-
-			// Seed Size from the entity's current world scale so the inspector
-			// immediately reflects the visible dimensions of the object
-			//if (entity.ContainsComponent<TransformComponent>())
-			//{
-			//	auto& transform = entity.GetComponent<TransformComponent>();
-			//	Vector3f worldPos, worldRot, worldScale;
-			//	Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
-			//	comp.Size = worldScale;
-			//}
-
+			BoxColliderComponent comp;
 			m_Context->ActiveScene->AttachComponent(entity, comp);
 		}
 
