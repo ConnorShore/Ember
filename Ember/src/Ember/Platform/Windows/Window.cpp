@@ -33,6 +33,8 @@ namespace Ember {
 				EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
 				s_GLFWInitialized = true;
 			}
+			// Hide the window before creation to prevent the "teleport flicker"
+			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 			m_Window = glfwCreateWindow(config.Width, config.Height, config.Title.c_str(), NULL, NULL);
 			if (!m_Window)
@@ -42,12 +44,25 @@ namespace Ember {
 				return;
 			}
 
-			// Set dark theme for the window (Windows 10/11)
+			// Center window on monitor
+			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+			if (mode)
 			{
-				HWND hwnd = glfwGetWin32Window(m_Window);
-				BOOL useDarkMode = TRUE;
-				DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+				int xPos = (mode->width - config.Width) / 2;
+				// Offset slightly upwards (e.g., -30) to account for the Windows task bar feeling visually heavy
+				int yPos = (mode->height - config.Height) / 2 - 30;
+
+				glfwSetWindowPos(m_Window, xPos, yPos);
 			}
+
+			// Reveal the window now that it is placed
+			glfwShowWindow(m_Window);
+
+			// Set dark theme for the window (Windows 10/11)
+			HWND hwnd = glfwGetWin32Window(m_Window);
+			BOOL useDarkMode = TRUE;
+			DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 
 			// Create graphics context
 			m_GraphicsContext = GraphicsContext::Create(m_Window);

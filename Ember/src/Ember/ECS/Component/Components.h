@@ -112,7 +112,29 @@ namespace Ember {
 		void ApplyForce(const Vector3f& force)
 		{
 			if (Body)
-				Body->applyLocalForceAtCenterOfMass(reactphysics3d::Vector3(force.x, force.y, force.z));
+			{
+				Body->setIsSleeping(false);
+				Body->applyWorldForceAtCenterOfMass(reactphysics3d::Vector3(force.x, force.y, force.z));
+			}
+		}
+
+		void ApplyImpulse(const Vector3f& impulse)
+		{
+			if (Body)
+			{
+				Body->setIsSleeping(false);
+
+				float mass = Body->getMass();
+				if (mass > 0.0f)
+				{
+					// DeltaVelocity = Impulse / Mass
+					reactphysics3d::Vector3 currentVelocity = Body->getLinearVelocity();
+					reactphysics3d::Vector3 deltaVelocity(impulse.x / mass, impulse.y / mass, impulse.z / mass);
+
+					// Apply the sudden burst of speed
+					Body->setLinearVelocity(currentVelocity + deltaVelocity);
+				}
+			}
 		}
 
 		// Runtime only (not serialized) -> holds the actual physics body created in the PhysicsSystem

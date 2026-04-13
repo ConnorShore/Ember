@@ -264,26 +264,11 @@ namespace Ember {
 		{
 			if (ImGui::BeginMenu("Tool Windows"))
 			{
-				ImGui::MenuItem("Debug Stats", nullptr, &m_ShowStatsWindow);
-
+				ImGui::MenuItem("Render Stats", nullptr, &m_ShowStatsWindow);
 				ImGui::EndMenu();
 			}
 
-			ImGui::EndMenu();
-		}
-
-		ImGui::PopStyleVar();
-		ImGui::EndMainMenuBar();
-	}
-
-	void EditorLayer::RenderSceneViewport()
-	{
-		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar);
-
-		// Scene viewport menu bar
-		if (ImGui::BeginMenuBar())
-		{
-			if (ImGui::BeginMenu("Gizmos"))
+			if (ImGui::BeginMenu("Debug"))
 			{
 				auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 				if (physicsSystem)
@@ -302,8 +287,17 @@ namespace Ember {
 				}
 				ImGui::EndMenu();
 			}
-			ImGui::EndMenuBar();
+
+			ImGui::EndMenu();
 		}
+
+		ImGui::PopStyleVar();
+		ImGui::EndMainMenuBar();
+	}
+
+	void EditorLayer::RenderSceneViewport()
+	{
+		ImGui::Begin("Scene");
 
 		// Save view port info for mouse picking and viewport resizing
 		m_ViewportHovered = ImGui::IsWindowHovered();
@@ -1048,5 +1042,4 @@ namespace Ember {
 		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
 		colors[ImGuiCol_ResizeGripActive] = accentActive;
 	}
-
 }

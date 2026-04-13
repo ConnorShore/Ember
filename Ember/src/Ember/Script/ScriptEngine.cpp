@@ -191,12 +191,24 @@ namespace Ember {
             sol::meta_function::equal_to, static_cast<bool(UUID::*)(const UUID&) const>(&UUID::operator==),
 			sol::meta_function::to_string, [](const UUID& a) { return std::to_string((uint64_t)a); }
 		);
+
+		// Logging
+		s_LuaState->set_function("Log", [](const std::string& message) {
+			EB_CORE_INFO("{}", message);
+			});
+
+		s_LuaState->set_function("LogWarn", [](const std::string& message) {
+			EB_CORE_WARN("{}", message);
+			});
+
+		s_LuaState->set_function("LogError", [](const std::string& message) {
+			EB_CORE_ERROR("{}", message);
+			});
 	}
 
 	void ScriptEngine::BindEntity()
 	{
 		s_LuaState->new_usertype<Entity>("Entity",
-			//"GetTransform", [](Entity& e) -> TransformComponent& { return e.GetComponent<TransformComponent>(); },
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"GetComponent", [](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e); },
@@ -346,6 +358,7 @@ namespace Ember {
 	void ScriptEngine::BindMath()
 	{
 		s_LuaState->new_usertype<Vector3f>("Vector3f",
+			sol::constructors<Vector3f(), Vector3f(float, float, float)>(),
 			"x", &Vector3f::x,
 			"y", &Vector3f::y,
 			"z", &Vector3f::z
@@ -365,7 +378,8 @@ namespace Ember {
 		s_LuaState->new_usertype<RigidBodyComponent>("RigidBodyComponent",
 			"Mass", &RigidBodyComponent::Mass,
 			"GravityEnabled", &RigidBodyComponent::GravityEnabled,
-			"ApplyForce", &RigidBodyComponent::ApplyForce
+			"ApplyForce", &RigidBodyComponent::ApplyForce,
+			"ApplyImpulse", &RigidBodyComponent::ApplyImpulse
 		);
 
 		s_LuaState->new_usertype<AnimatorComponent>("AnimatorComponent",

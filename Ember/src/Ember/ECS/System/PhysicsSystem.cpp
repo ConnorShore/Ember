@@ -248,7 +248,12 @@ namespace Ember {
 
 	void PhysicsSystem::RefreshPhysicsWorld()
 	{
-		m_PhysicsWorld->setGravity(rp3d::Vector3(0, m_Settings.Gravity, 0));
+		// Set gravity vector (normalized direction * gravity strength)
+		rp3d::Vector3 gravityVec(m_Settings.GravityVector.x , m_Settings.GravityVector.y, m_Settings.GravityVector.z);
+		gravityVec.normalize();
+		gravityVec *= m_Settings.GravityStrength;
+
+		m_PhysicsWorld->setGravity(gravityVec);
 		m_PhysicsWorld->setNbIterationsPositionSolver(m_Settings.PositionSolverIterations);
 		m_PhysicsWorld->setNbIterationsVelocitySolver(m_Settings.VelocitySolverIterations);
 	}

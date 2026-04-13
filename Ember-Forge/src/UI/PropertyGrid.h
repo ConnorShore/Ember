@@ -24,6 +24,10 @@ namespace Ember {
 		// Property Grid Widgets
 		bool SliderInt(const std::string& label, int& value, int min = 0, int max = 0);
 		bool SliderFloat(const std::string& label, float& value, float min = 0.0f, float max = 0.0f);
+
+		bool Int(const std::string& label, int& value, int step = 1, int min = 0, int max = 0);
+		bool UInt(const std::string& label, uint32_t& value, uint32_t step = 1, uint32_t min = 0, uint32_t max = 0);
+
 		bool Float(const std::string& label, float& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);
 		bool Float2(const std::string& label, Vector2f& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);
 		bool Float3(const std::string& label, Vector3f& value, float step = 0.1f, float min = 0.0f, float max = 0.0f);

@@ -15,7 +15,9 @@ namespace Ember {
 
 	struct PhysicsSettings
 	{
-		float Gravity = -9.81f;
+		float GravityStrength = 9.81f;
+		Vector3f GravityVector = { 0.0f, -1.0f, 0.0f };
+
 		uint32_t UpdateRate = 60;
 
 		uint32_t PositionSolverIterations = 5;
@@ -24,7 +26,8 @@ namespace Ember {
 
 	struct DebugRenderSettings
 	{
-		bool Enabled = true;
+		bool Enabled = false;
+
 		bool DrawColliders = true;
 		bool DrawColliderAxes = true;
 		bool DrawContactPoints = true;

@@ -1,14 +1,15 @@
 #include "efpch.h"
 #include "ProjectSettingsDialog.h"
 
+#include "UI/PropertyGrid.h"
+
+#include <Ember/ECS/System/PhysicsSystem.h>
 #include <imgui/imgui.h>
 
 namespace Ember {
 
 	ProjectSettingsDialog::ProjectSettingsDialog()
 	{
-		// TODO: Move items to property grid
-		// TODO: Save all settings the moment they are changed (hook up settings to actual values)
 	}
 
 	ProjectSettingsDialog::~ProjectSettingsDialog()
@@ -35,14 +36,14 @@ namespace Ember {
 			ImVec2 contentRegion = ImGui::GetContentRegionAvail();
 			float splitHeight = contentRegion.y;
 
-			// --- LEFT PANE (Categories) ---
+			// Left pane (Category List)
 			ImGui::BeginChild("CategoryPane", ImVec2(150, splitHeight), true);
 			RenderLeftPane();
 			ImGui::EndChild();
 
 			ImGui::SameLine();
 
-			// --- RIGHT PANE (Settings Content) ---
+			// Right pane (Content)
 			ImGui::BeginChild("ContentPane", ImVec2(0, splitHeight), true);
 			RenderRightPane();
 			ImGui::EndChild();
@@ -62,7 +63,6 @@ namespace Ember {
 
 	void ProjectSettingsDialog::RenderRightPane()
 	{
-		// Draw the corresponding content based on the selected tab
 		switch (m_SelectedCategory)
 		{
 		case Category::General: RenderGeneralSettings(); break;
@@ -76,7 +76,7 @@ namespace Ember {
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		// Just some dummy data for now to show the layout
+		// TODO: Hook up project name to actual project data
 		static char projectName[128] = "Ember Forge Project";
 		ImGui::InputText("Project Name", projectName, IM_ARRAYSIZE(projectName));
 	}
@@ -87,21 +87,28 @@ namespace Ember {
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		// NOTE: In your real engine, you would fetch these references directly from your PhysicsSystem.
-		// I am using static variables here just so the UI functions immediately when you paste it in.
-		static float gravity[3] = { 0.0f, -9.81f, 0.0f };
-		static int posIters = 8;
-		static int velIters = 15;
+		auto& physicsSettings = Application::Instance().GetSystem<PhysicsSystem>()->GetSettings();
 
 		ImGui::TextDisabled("Simulation");
-		ImGui::DragFloat3("Default Gravity", gravity, 0.1f);
+		if (UI::PropertyGrid::Begin("Physics Simulation Settings"))
+		{
+			UI::PropertyGrid::Float("Default Gravity Strength", physicsSettings.GravityStrength, 0.01f, 0.0f, 1000.0f);
+			UI::PropertyGrid::Float3("Default Gravity Vector", physicsSettings.GravityVector, 0.01f, -1.0f, 1.0f);
+
+			UI::PropertyGrid::End();
+		}
 
 		ImGui::Spacing();
 		ImGui::Spacing();
 
 		ImGui::TextDisabled("Solver");
-		ImGui::DragInt("Position Iterations", &posIters, 1, 1, 32);
-		ImGui::DragInt("Velocity Iterations", &velIters, 1, 1, 32);
+		if (UI::PropertyGrid::Begin("Physics Solver Settings"))
+		{
+			UI::PropertyGrid::UInt("Position Iterations", physicsSettings.PositionSolverIterations, 1, 1, 32);
+			UI::PropertyGrid::UInt("Velocity Iterations", physicsSettings.VelocitySolverIterations, 1, 1, 32);
+
+			UI::PropertyGrid::End();
+		}
 	}
 
 }

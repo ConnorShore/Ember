@@ -1,4 +1,8 @@
 Assets:
+  - Type: Script
+    UUID: 13318002457163931215
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\PhysicsTest\Assets\Scripts\NewScript.lua'
   - Type: Material
     UUID: 4407744521506142990
     Name: Cube_StandardGeometry_Clone

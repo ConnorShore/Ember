@@ -160,6 +160,36 @@ namespace Ember {
 			return ImGui::SliderFloat(std::format("##{}", label).c_str(), &value, min, max, "%.2f");
 		}
 
+		bool Int(const std::string& label, int& value, int step /*= 1*/, int min /*= 0*/, int max /*= 0*/)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text(label.c_str());
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+			return ImGui::DragInt(std::format("##{}", label).c_str(), &value, step, min, max, "%d");
+		}
+
+		bool UInt(const std::string& label, uint32_t& value, uint32_t step /*= 1*/, uint32_t min /*= 0*/, uint32_t max /*= 0*/)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text(label.c_str());
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+
+			int intValue = static_cast<int>(value);
+			if (ImGui::DragInt(std::format("##{}", label).c_str(), &intValue, step, min, max, "%d"))
+			{
+				value = static_cast<uint32_t>(intValue);
+				return true;
+			}
+			return false;
+		}
+
+
 		bool Float(const std::string& label, float& value, float step /*= 0.1f*/, float min /* = 0.0f */, float max /* = 0.0f */)
 		{
 			ImGui::TableNextRow();
@@ -415,6 +445,5 @@ namespace Ember {
 		{
 			UI::EndComboBox();
 		}
-
 	}
 }
