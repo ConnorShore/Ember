@@ -236,6 +236,28 @@ namespace Ember {
 			}
 		);
 
+		registry.ConnectAndRetroact<ConvexMeshColliderComponent>(
+			[this, scene](EntityID entity, ConvexMeshColliderComponent& mesh) {
+				if (mesh.Shape != nullptr)
+					return;
+				ColliderSetupCtx ctx;
+				if (!ResolveColliderSetup(entity, scene, ctx))
+					return;
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+				float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
+				mesh.PhysicsVertices = meshAsset->GetVertexPositions();
+
+				mesh.RP3DVertexArray = new rp3d::VertexArray(mesh.PhysicsVertices.data(), 3 * sizeof(float), meshAsset->GetVertexCount(), rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE);
+
+				std::vector<rp3d::Message> messages;
+				rp3d::ConvexMesh* convexMesh = m_PhysicsCommon->createConvexMesh(*mesh.RP3DVertexArray, messages);
+
+				rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
+				AttachAndUpdateMass(mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
+					MakeColliderTransform(ctx.RelPos, ctx.RelRot));
+			}
+		);
+
 		registry.ConnectAndRetroact<ConcaveMeshColliderComponent>(
 			[this, scene](EntityID entity, ConcaveMeshColliderComponent& mesh) {
 				if (mesh.Shape != nullptr)
@@ -319,6 +341,17 @@ namespace Ember {
 		registry.OnComponentDetached<CapsuleColliderComponent>().Connect(
 			[this](EntityID entity, CapsuleColliderComponent& capsule) {
 				DetachCollider(capsule, [&]() { m_PhysicsCommon->destroyCapsuleShape(capsule.Shape); });
+			}
+		);
+
+		registry.OnComponentDetached<ConvexMeshColliderComponent>().Connect(
+			[this](EntityID entity, ConvexMeshColliderComponent& mesh) {
+				DetachCollider(mesh, [&]() {
+					m_PhysicsCommon->destroyConvexMeshShape(mesh.Shape);
+					if (mesh.RP3DVertexArray)
+						delete mesh.RP3DVertexArray;
+					mesh.RP3DVertexArray = nullptr;
+				});
 			}
 		);
 

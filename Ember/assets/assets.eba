@@ -1,33 +1,33 @@
 Assets:
   - Type: Texture
-    UUID: 5216301324549434198
+    UUID: 14053319401249880352
     Name: Fox_Tex_0.png
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Tex_0.png'
   - Type: Material
-    UUID: 17248930183424959787
+    UUID: 16113829942231454628
     Name: Fox_fox_material
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox_material.ebmat'
   - Type: Mesh
-    UUID: 4917086612289440889
+    UUID: 110254680017202446
     Name: Fox_fox1_Prim0
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_fox1_Prim0.ebmesh'
   - Type: Skeleton
-    UUID: 6997643464401923019
+    UUID: 15782764662208091100
     Name: Fox
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebskeleton'
   - Type: Animation
-    UUID: 10720385629060573188
+    UUID: 3431177998383799448
+    Name: Fox_Walk
+    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Walk.ebanim'
+  - Type: Animation
+    UUID: 9699479504242471473
     Name: Fox_Survey
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Survey.ebanim'
   - Type: Animation
-    UUID: 15484249839548172826
+    UUID: 4452661224458173375
     Name: Fox_Run
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Run.ebanim'
-  - Type: Animation
-    UUID: 12851478956126070318
-    Name: Fox_Walk
-    FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox_Walk.ebanim'
   - Type: Model
-    UUID: 8425028785694784406
+    UUID: 15540939496229300730
     Name: Fox
     FilePath: 'C:\Development\Projects\Ember\Ember-Forge\assets\models\Fox.ebmodel'

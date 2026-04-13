@@ -25,6 +25,7 @@
 #include <reactphysics3d/collision/shapes/CapsuleShape.h>
 #include <reactphysics3d/collision/shapes/ConvexMeshShape.h>
 #include <reactphysics3d/collision/shapes/ConcaveMeshShape.h>
+#include <reactphysics3d/collision/VertexArray.h>
 #include <reactphysics3d/collision/TriangleVertexArray.h>
 #include <reactphysics3d/collision/TriangleMesh.h>
 
@@ -200,6 +201,25 @@ namespace Ember {
 			: Radius(radius), Height(height), Offset(offset) {
 		}
 		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+	};
+
+	struct ConvexMeshColliderComponent
+	{
+		UUID MeshHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+
+		std::vector<float> PhysicsVertices;
+		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
+
+		ConvexMeshColliderComponent() = default;
+		ConvexMeshColliderComponent(UUID meshHandle)
+			: MeshHandle(meshHandle) {
+		}
+		ConvexMeshColliderComponent(const ConvexMeshColliderComponent&) = default;
 	};
 
 	struct ConcaveMeshColliderComponent
