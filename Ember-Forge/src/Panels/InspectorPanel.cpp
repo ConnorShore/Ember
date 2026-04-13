@@ -21,23 +21,47 @@
 
 namespace Ember {
 
+	static std::string GetCategoryName(InspectorPanel::Category category)
+	{
+		switch (category)
+		{
+		case InspectorPanel::Category::Core: return "Core";
+		case InspectorPanel::Category::Rendering: return "Rendering";
+		case InspectorPanel::Category::Lighting: return "Lighting";
+		case InspectorPanel::Category::Physics: return "Physics";
+		case InspectorPanel::Category::Animation: return "Animation";
+		case InspectorPanel::Category::Scripting: return "Scripts";
+		default: return "Unknown";
+		}
+	}
+
 	InspectorPanel::InspectorPanel(EditorContext* context)
 		: Panel("Inspector", context)
 	{
-		// Populate the list of Component UIs that this panel will draw for entities
-		m_ComponentUIs.emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<CameraComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<PointLightComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<SpotLightComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<StaticMeshComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<SkinnedMeshComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<BoxColliderComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<SphereColliderComponentUI>::Create(m_Context));
-		m_ComponentUIs.emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
+		// --- CORE ---
+		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
+
+		// --- RENDERING ---
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<CameraComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<StaticMeshComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<SkinnedMeshComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
+
+		// --- LIGHTING ---
+		m_ComponentUIs[Category::Lighting].emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Lighting].emplace_back(ScopedPtr<PointLightComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Lighting].emplace_back(ScopedPtr<SpotLightComponentUI>::Create(m_Context));
+
+		// --- PHYSICS ---
+		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<RigidBodyComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<BoxColliderComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<SphereColliderComponentUI>::Create(m_Context));
+
+		// --- ANIMATION ---
+		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
+
+		// --- SCRIPTING ---
+		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
 	}
 
 	InspectorPanel::~InspectorPanel()
@@ -67,8 +91,13 @@ namespace Ember {
 			DrawEntityHeader(entity);
 
 			// Entity Components
-			for (auto& componentUI : m_ComponentUIs)
-				componentUI->Render(entity);
+			for (auto& [Category, components] : m_ComponentUIs)
+			{
+				for (auto& componentUI : components)
+				{
+					componentUI->Render(entity);
+				}
+			}
 
 			ImGui::End();
 		}
@@ -85,12 +114,18 @@ namespace Ember {
 
 			if (ImGui::BeginPopup("AddComponentPopup"))
 			{
-				for (auto& comps : m_ComponentUIs)
+				for (auto& [category, comps] : m_ComponentUIs)
 				{
-					if (ImGui::MenuItem(comps->GetName()))
+					if (ImGui::BeginMenu(GetCategoryName(category).c_str()))
 					{
-						EB_CORE_TRACE("Adding component {}", comps->GetName());
-						comps->CreateComponentForEntity(entity);
+						for (auto& comp : comps)
+						{
+							if (ImGui::MenuItem(comp->GetName()))
+							{
+								comp->CreateComponentForEntity(entity);
+							}
+						}
+						ImGui::EndMenu();
 					}
 				}
 				ImGui::EndPopup();
