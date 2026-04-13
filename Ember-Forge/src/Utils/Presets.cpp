@@ -12,7 +12,6 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		//mtC.GetInstanced("Cube_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -27,7 +26,6 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		//mtC.GetInstanced("Quad_Material");
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;
@@ -41,7 +39,19 @@ namespace Ember {
 		newEntity.AttachComponent<StaticMeshComponent>(mc);
 
 		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		//mtC.GetInstanced("Sphere_Material");
+		newEntity.AttachComponent<MaterialComponent>(mtC);
+
+		return newEntity;
+	}
+
+	Entity Presets::CreateCapsule(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("Capsule");
+
+		StaticMeshComponent mc(Constants::Assets::CapsuleMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
+
+		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
 		newEntity.AttachComponent<MaterialComponent>(mtC);
 
 		return newEntity;

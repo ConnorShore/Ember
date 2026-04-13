@@ -80,6 +80,11 @@ namespace Ember {
 					auto entity = Presets::CreateQuad(m_Context->ActiveScene);
 					CreateEntity(entity);
 				}
+				if (ImGui::MenuItem("Capsule"))
+				{
+					auto entity = Presets::CreateCapsule(m_Context->ActiveScene);
+					CreateEntity(entity);
+				}
 
 				ImGui::EndMenu();
 			}

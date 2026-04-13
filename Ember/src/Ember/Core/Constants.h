@@ -93,6 +93,7 @@ namespace Ember::Constants {
 		inline const uint64_t SphereMeshUUID = 50;
 		inline const uint64_t CubeMeshUUID = 51;
 		inline const uint64_t QuadMeshUUID = 52;
+		inline const uint64_t CapsuleMeshUUID = 53;
 	}
 
 	namespace Uniforms {

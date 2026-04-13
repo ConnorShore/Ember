@@ -158,4 +158,122 @@ namespace Ember {
 		return CreateQuad("Primitive_Quad", width, height);
 	}
 
+	SharedPtr<StaticMesh> PrimitiveGenerator::CreateCapsule(const std::string& name, float radius, float height)
+	{
+		uint32_t xSegments = 64;
+		uint32_t ySegments = 64;
+
+		std::vector<float> vertices;
+		std::vector<uint32_t> indices;
+
+		const float PI = 3.14159265359f;
+
+		// 1. Calculate the offsets
+		// The cylindrical part's height is total height minus the two spherical caps
+		float cylinderHeight = std::max(0.0f, height - (radius * 2.0f));
+		float halfCylHeight = cylinderHeight / 2.0f;
+
+		uint32_t halfYSegments = ySegments / 2;
+
+		// 2. Generate Top Hemisphere (Shifted UP)
+		for (uint32_t y = 0; y <= halfYSegments; ++y)
+		{
+			for (uint32_t x = 0; x <= xSegments; ++x)
+			{
+				float xSegment = (float)x / (float)xSegments;
+				float ySegment = (float)y / (float)ySegments;
+
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+				// Position (Scaled by radius, shifted UP)
+				vertices.push_back(xPos * radius);
+				vertices.push_back((yPos * radius) + halfCylHeight);
+				vertices.push_back(zPos * radius);
+
+				// Normal
+				vertices.push_back(xPos);
+				vertices.push_back(yPos);
+				vertices.push_back(zPos);
+
+				// UV
+				vertices.push_back(xSegment);
+				vertices.push_back(ySegment);
+
+				// Tangents
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI));
+				vertices.push_back(0.0f);
+				vertices.push_back(std::cos(xSegment * 2.0f * PI));
+
+				// Bitangents
+				vertices.push_back(-std::cos(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
+				vertices.push_back(std::sin(ySegment * PI));
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
+			}
+		}
+
+		// 3. Generate Bottom Hemisphere (Shifted DOWN)
+		// We start at halfYSegments again to duplicate the equator ring for the cylinder!
+		for (uint32_t y = halfYSegments; y <= ySegments; ++y)
+		{
+			for (uint32_t x = 0; x <= xSegments; ++x)
+			{
+				float xSegment = (float)x / (float)xSegments;
+				float ySegment = (float)y / (float)ySegments;
+
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+				// Position (Scaled by radius, shifted DOWN)
+				vertices.push_back(xPos * radius);
+				vertices.push_back((yPos * radius) - halfCylHeight);
+				vertices.push_back(zPos * radius);
+
+				// Normal
+				vertices.push_back(xPos);
+				vertices.push_back(yPos);
+				vertices.push_back(zPos);
+
+				// UV
+				vertices.push_back(xSegment);
+				vertices.push_back(ySegment);
+
+				// Tangents
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI));
+				vertices.push_back(0.0f);
+				vertices.push_back(std::cos(xSegment * 2.0f * PI));
+
+				// Bitangents
+				vertices.push_back(-std::cos(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
+				vertices.push_back(std::sin(ySegment * PI));
+				vertices.push_back(-std::sin(xSegment * 2.0f * PI) * std::cos(ySegment * PI));
+			}
+		}
+
+		// 4. Generate Indices
+		for (uint32_t y = 0; y <= ySegments; ++y)
+		{
+			for (uint32_t x = 0; x < xSegments; ++x)
+			{
+				uint32_t top_left = (y * (xSegments + 1)) + x;
+				uint32_t top_right = top_left + 1;
+				uint32_t bottom_left = ((y + 1) * (xSegments + 1)) + x;
+				uint32_t bottom_right = bottom_left + 1;
+
+				indices.push_back(top_left);
+				indices.push_back(bottom_left);
+				indices.push_back(top_right);
+
+				indices.push_back(top_right);
+				indices.push_back(bottom_left);
+				indices.push_back(bottom_right);
+			}
+		}
+
+		return SharedPtr<StaticMesh>::Create(name, vertices, indices);
+	}
+
+
 }

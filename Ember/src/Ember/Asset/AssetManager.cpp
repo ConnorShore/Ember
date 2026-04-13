@@ -94,9 +94,11 @@ namespace Ember {
 		auto sphereMesh = PrimitiveGenerator::CreateSphere();
 		auto cubeMesh = PrimitiveGenerator::CreateCube();
 		auto quadMesh = PrimitiveGenerator::CreateQuad();
+		auto capsuleMesh = PrimitiveGenerator::CreateCapsule();
 		Register(Constants::Assets::SphereMeshUUID, sphereMesh);
 		Register(Constants::Assets::CubeMeshUUID, cubeMesh);
 		Register(Constants::Assets::QuadMeshUUID, quadMesh);
+		Register(Constants::Assets::CapsuleMeshUUID, capsuleMesh);
 	}
 	
 	void AssetManager::ClearAssets()
