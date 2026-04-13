@@ -29,6 +29,8 @@ namespace Ember {
 		private:
 			uint32_t m_Id;
 			size_t m_Size;
+
+			std::vector<uint8_t> m_LocalData;
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -51,6 +53,8 @@ namespace Ember {
 			uint32_t m_Id;
 			size_t m_Size;
 			size_t m_Count;
+			
+			std::vector<uint32_t> m_LocalData;
 		};
 
 	}

@@ -65,6 +65,11 @@ namespace Ember {
 
 	PhysicsSystem::~PhysicsSystem()
 	{
+		if (m_PhysicsWorld)
+		{
+			m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+			m_PhysicsWorld = nullptr;
+		}
 	}
 
 	void PhysicsSystem::OnAttach()
@@ -239,6 +244,87 @@ namespace Ember {
 			}
 		);
 
+		registry.ConnectAndRetroact<ConcaveMeshColliderComponent>(
+			[this, scene](EntityID entity, ConcaveMeshColliderComponent& mesh) {
+				// Idempotent check
+				if (mesh.Shape == nullptr)
+				{
+					EntityID rootBodyEntity = FindRigidBodyEntity(entity, scene);
+					if (rootBodyEntity != Constants::Entities::InvalidEntityID)
+					{
+						auto& rb = scene->GetRegistry().GetComponent<RigidBodyComponent>(rootBodyEntity);
+						auto& rootTransform = scene->GetRegistry().GetComponent<TransformComponent>(rootBodyEntity);
+						auto& childTransform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
+						auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+
+						if (rb.Body != nullptr)
+						{
+							// Get the transform of the child relative to the Root RigidBody
+							Matrix4f relativeMatrix = Math::Inverse(rootTransform.WorldTransform) * childTransform.WorldTransform;
+							Vector3f relPos, relRot, relScale;
+							Math::DecomposeTransform(relativeMatrix, relPos, relRot, relScale);
+
+							// Use the child's absolute world scale for radius so the collider always
+							// matches the visual size (relScale is identity when collider == body entity)
+							Vector3f childWorldPos, childWorldRot, childWorldScale;
+							Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, childWorldScale);
+							float maxScale = std::max(std::max(childWorldScale.x, childWorldScale.y), childWorldScale.z);
+
+							const int nbVertices = meshAsset->GetVertexCount();
+							const int nbTriangles = meshAsset->GetTriangleCount();
+
+							// 1. Store the vectors permanently inside the component
+							mesh.PhysicsVertices = meshAsset->GetVertexPositions();
+							mesh.PhysicsIndices = meshAsset->GetTriangles();
+
+							// 2. Point TriangleVertexArray at the safe, persistent memory
+							mesh.TriangleArray = new rp3d::TriangleVertexArray(
+								nbVertices, mesh.PhysicsVertices.data(), 3 * sizeof(float),
+								nbTriangles, mesh.PhysicsIndices.data(), 3 * sizeof(uint32_t),
+								rp3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+								rp3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+
+							// 3. Create and store the TriangleMesh
+							std::vector<rp3d::Message> messages;
+							mesh.TriangleMesh = m_PhysicsCommon->createTriangleMesh(*mesh.TriangleArray, messages);
+
+							// 4. Create the shape
+							rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
+							mesh.Shape = m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling);
+
+							Quaternion localRotation = Math::ToQuaternion(relRot);
+							rp3d::Transform rp3dLocal(
+								rp3d::Vector3(relPos.x, relPos.y, relPos.z),
+								rp3d::Quaternion(localRotation.x, localRotation.y, localRotation.z, localRotation.w)
+							);
+
+							mesh.Collider = rb.Body->addCollider(mesh.Shape, rp3dLocal);
+							mesh.AttachedBody = rb.Body;
+
+							// Update the RigidBody's mass properties to account for the new collider
+							if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
+							{
+								rb.Body->updateMassPropertiesFromColliders();
+
+								if (rb.Mass > 0.0f)
+								{
+									float currentMass = rb.Body->getMass();
+									if (currentMass > 0.0f)
+									{
+										float massRatio = rb.Mass / currentMass;
+										rp3d::Vector3 localInertia = rb.Body->getLocalInertiaTensor();
+
+										rb.Body->setMass(rb.Mass);
+										rb.Body->setLocalInertiaTensor(localInertia * massRatio); // Scale it!
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		);
+
 		registry.ConnectAndRetroact<CapsuleColliderComponent>(
 			[this, scene](EntityID entity, CapsuleColliderComponent& capsule) {
 				// Idempotent check
@@ -363,6 +449,32 @@ namespace Ember {
 					capsule.Collider = nullptr;
 					capsule.Shape = nullptr;
 					capsule.AttachedBody = nullptr;
+				}
+			}
+		);
+
+		registry.OnComponentDetached<ConcaveMeshColliderComponent>().Connect(
+			[this](EntityID entity, ConcaveMeshColliderComponent& mesh) {
+				if (mesh.Collider && mesh.AttachedBody)
+				{
+					mesh.AttachedBody->removeCollider(mesh.Collider);
+
+					// Destroy in reverse order of creation
+					if (mesh.Shape)
+						m_PhysicsCommon->destroyConcaveMeshShape(mesh.Shape);
+
+					if (mesh.TriangleMesh)
+						m_PhysicsCommon->destroyTriangleMesh(mesh.TriangleMesh);
+
+					if (mesh.TriangleArray)
+						delete mesh.TriangleArray;
+
+					// Clear pointers
+					mesh.Collider = nullptr;
+					mesh.Shape = nullptr;
+					mesh.TriangleMesh = nullptr;
+					mesh.TriangleArray = nullptr;
+					mesh.AttachedBody = nullptr;
 				}
 			}
 		);

@@ -104,6 +104,15 @@ namespace Ember {
 				colliderNode["Height"] << entity.GetComponent<CapsuleColliderComponent>().Height;
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<CapsuleColliderComponent>().Offset);
 			}
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+			{
+				ryml::NodeRef meshNode = entityNode["ConcaveMeshColliderComponent"];
+				meshNode |= ryml::MAP;
+				if (entity.GetComponent<StaticMeshComponent>().MeshHandle != Constants::InvalidUUID)
+				{
+					meshNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
+				}
+			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
 				ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
@@ -378,6 +387,18 @@ namespace Ember {
 					colliderNode["Height"] >> ccc.Height;
 					Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset);
 					deserializedEntity.AttachComponent<CapsuleColliderComponent>(ccc);
+				}
+
+				if (entityNode.has_child("ConcaveMeshColliderComponent"))
+				{
+					ryml::NodeRef meshNode = entityNode["ConcaveMeshColliderComponent"];
+					uint64_t meshId;
+					meshNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
+					ConcaveMeshColliderComponent mc;
+					mc.MeshHandle = meshUUID;
+					deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(mc);
 				}
 
 				if (entityNode.has_child("StaticMeshComponent"))

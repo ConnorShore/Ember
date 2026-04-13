@@ -57,8 +57,8 @@ namespace Ember {
 
 	private:
 		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;
-		//rp3d::PhysicsCommon* m_PhysicsCommon = nullptr;
-		rp3d::PhysicsWorld* m_PhysicsWorld = nullptr;
+
+		rp3d::PhysicsWorld* m_PhysicsWorld = nullptr;	// TODO: Make scoped ptr
 
 		PhysicsSettings m_Settings;
 		DebugRenderSettings m_DebugRenderSettings;

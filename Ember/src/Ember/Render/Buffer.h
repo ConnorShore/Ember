@@ -85,6 +85,7 @@ namespace Ember {
 
 		void SetLayout(const BufferLayout& layout) { m_Layout = layout; }
 		const BufferLayout& GetLayout() const { return m_Layout; }
+		void* GetData() const { return m_Data; }
 
 		static SharedPtr<VertexBuffer> Create(const void* data, uint32_t size);
 		static SharedPtr<VertexBuffer> Create(uint32_t size);
@@ -92,6 +93,7 @@ namespace Ember {
 
 	protected:
 		BufferLayout m_Layout;
+		void* m_Data = nullptr;
 	};
 	
 
@@ -105,6 +107,11 @@ namespace Ember {
 
 		static SharedPtr<IndexBuffer> Create(std::span<const uint32_t> data);
 		virtual const size_t GetCount() const = 0;
+
+		uint32_t* GetData() const { return m_Data; }
+
+	protected:
+		uint32_t* m_Data = nullptr;
 	};
 
 }

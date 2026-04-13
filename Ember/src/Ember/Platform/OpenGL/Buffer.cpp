@@ -13,6 +13,11 @@ namespace Ember {
 		VertexBuffer::VertexBuffer(const void* data, uint32_t size)
 			: m_Id(0), m_Size(size)
 		{
+			m_LocalData.resize(size);
+			std::memcpy(m_LocalData.data(), data, size);
+
+			this->m_Data = m_LocalData.data();
+
 			// Immutable storage with DYNAMIC_STORAGE allows glNamedBufferSubData updates
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
@@ -21,6 +26,9 @@ namespace Ember {
 		VertexBuffer::VertexBuffer(uint32_t size)
 			: m_Id(0), m_Size(size)
 		{
+			m_LocalData.resize(size, 0);
+			this->m_Data = m_LocalData.data();
+
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 		}
@@ -29,12 +37,18 @@ namespace Ember {
 			: m_Id(0), m_Size(size)
 		{
 			this->m_Layout = layout;
+
+			m_LocalData.resize(size);
+			std::memcpy(m_LocalData.data(), data, size);
+			this->m_Data = m_LocalData.data();
+
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, size, data, GL_DYNAMIC_STORAGE_BIT);
 		}
 
 		VertexBuffer::~VertexBuffer()
 		{
+			this->m_Data = nullptr;
 			glDeleteBuffers(1, &m_Id);
 		}
 
@@ -45,6 +59,7 @@ namespace Ember {
 
 		void VertexBuffer::SetData(const void* data, uint32_t size)
 		{
+			this->m_Data = const_cast<void*>(data);
 			glNamedBufferSubData(m_Id, 0, size, data);
 		}
 
@@ -55,12 +70,17 @@ namespace Ember {
 		IndexBuffer::IndexBuffer(std::span<const uint32_t> data)
 			: m_Id(0), m_Size(data.size_bytes()), m_Count(data.size())
 		{
+			m_LocalData.assign(data.begin(), data.end());
+			this->m_Data = m_LocalData.data();
+
+			// Immutable storage with DYNAMIC_STORAGE allows glNamedBufferSubData updates
 			glCreateBuffers(1, &m_Id);
 			glNamedBufferStorage(m_Id, data.size_bytes(), data.data(), GL_DYNAMIC_STORAGE_BIT);
 		}
 
 		IndexBuffer::~IndexBuffer()
 		{
+			this->m_Data = nullptr;
 			glDeleteBuffers(1, &m_Id);
 		}
 
