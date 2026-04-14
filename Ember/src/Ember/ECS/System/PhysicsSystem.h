@@ -44,6 +44,7 @@ namespace Ember {
 		void OnSceneAttach(Scene* scene) override;
 		void OnSceneDetach(Scene* scene) override;
 		void OnUpdate(TimeStep delta, Scene* scene) override;
+		void OnEditorUpdate(TimeStep delta, Scene* scene);
 
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();

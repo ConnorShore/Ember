@@ -174,22 +174,28 @@ namespace Ember {
 
 	void PhysicsSystem::OnAttach()
 	{
+		m_PhysicsCommon = ScopedPtr<rp3d::PhysicsCommon>::Create();
+
+		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
+		RefreshPhysicsWorld();
+
 		EB_CORE_INFO("Physics System attached!");
 	}
 
 	void PhysicsSystem::OnDetach()
 	{
+		if (m_PhysicsWorld)
+		{
+			m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+			m_PhysicsWorld = nullptr;
+		}
+
 		EB_CORE_INFO("Physics System detached!");
 	}
 
 	void PhysicsSystem::OnSceneAttach(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
-
-		m_PhysicsCommon = ScopedPtr<rp3d::PhysicsCommon>::Create();
-
-		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
-		RefreshPhysicsWorld();
 
 		// Setup debug renderer
 		ShowDebugRendererIfApplicable();
@@ -389,8 +395,8 @@ namespace Ember {
 
 	void PhysicsSystem::OnSceneDetach(Scene* scene)
 	{
-		m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
-		m_PhysicsWorld = nullptr;
+		//m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+		//m_PhysicsWorld = nullptr;
 	}
 
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
@@ -401,32 +407,81 @@ namespace Ember {
 		m_TimeAcumulator += delta;
 
 		// Step the physics simulation
-		while (m_TimeAcumulator >= timeStep) 
+		while (m_TimeAcumulator >= timeStep)
 		{
 			m_PhysicsWorld->update(timeStep);
 			m_TimeAcumulator -= timeStep;
 		}
 
-		// Sync Physics -> ECS (Update graphics transforms)
+		// Dynamic:   physics drives the entity  (rp3d → local transform)
+		// Kinematic: entity drives physics      (WorldTransform → rp3d)
+		// Static:    no movement, no sync needed
 		auto& registry = scene->GetRegistry();
 		auto view = registry.Query<RigidBodyComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
 			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
 
-			if (rb.Body != nullptr)
+			if (rb.Body == nullptr)
+				continue;
+
+			if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
 			{
+				// Physics drives the entity — read world transform from rp3d and write to
+				// the entity's local transform fields (correct for root-level rigid bodies)
 				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
 				const rp3d::Vector3& pos = rp3dTransform.getPosition();
 				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
 
 				transform.Position = { pos.x, pos.y, pos.z };
-
 				Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
 				transform.Rotation = Math::ToEulerAngles(rotation);
 			}
+			else if (rb.Type == RigidBodyComponent::BodyType::Kinematic)
+			{
+				// Entity drives physics — push the entity's current world transform into
+				// the rp3d body so the physics body follows the entity, not the reverse.
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+
+				Quaternion q = Math::ToQuaternion(worldRot);
+				rb.Body->setTransform(rp3d::Transform(
+					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
+					rp3d::Quaternion(q.x, q.y, q.z, q.w)
+				));
+			}
 		}
 
+		UpdateDebugRenderData();
+	}
+
+	void PhysicsSystem::OnEditorUpdate(TimeStep delta, Scene* scene)
+	{
+		// Sync ECS -> Physics (So when you drag objects with your mouse, the collider moves!)
+		auto& registry = scene->GetRegistry();
+		auto view = registry.Query<RigidBodyComponent, TransformComponent>();
+
+		for (EntityID entity : view)
+		{
+			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
+
+			if (rb.Body != nullptr)
+			{
+				rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
+
+				// Take the TransformComponent and push it INTO ReactPhysics3D
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+
+				rp3d::Vector3 newPos(worldPos.x, worldPos.y, worldPos.z);
+				Quaternion q = Math::ToQuaternion(worldRot);
+				rp3d::Quaternion newRot(q.x, q.y, q.z, q.w);
+
+				rb.Body->setTransform(rp3d::Transform(newPos, newRot));
+			}
+		}
+
+		ShowDebugRendererIfApplicable();
 		UpdateDebugRenderData();
 	}
 
@@ -456,6 +511,7 @@ namespace Ember {
 		rp3d::Quaternion initRot(rotation.x, rotation.y, rotation.z, rotation.w);
 
 		auto rp3dRigidBody = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
+		rp3dRigidBody->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
 		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
 		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
 		rp3dRigidBody->setIsDebugEnabled(m_DebugRenderSettings.Enabled);

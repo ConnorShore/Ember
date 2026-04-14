@@ -86,6 +86,9 @@ namespace Ember {
 
 	void Scene::OnAttach()
 	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
 
@@ -98,8 +101,8 @@ namespace Ember {
 	{
 		ScriptEngine::OnRuntimeStart();
 
-		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		//auto& systemManager = Application::Instance().GetSystemManager();
+		//systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 	}
 
 	void Scene::OnRuntimeStop()
@@ -123,6 +126,7 @@ namespace Ember {
 	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
@@ -348,9 +352,13 @@ namespace Ember {
 	{
 		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
 
-		// Remove children first
-		for (auto child : entity.GetAllChildren())
-			RemoveEntity(child);
+		// Copy child UUIDs first to avoid iterating a component that gets modified during recursion
+		std::vector<UUID> childUUIDs = entity.GetComponent<RelationshipComponent>().Children;
+		for (UUID childUUID : childUUIDs)
+		{
+			Entity childEntity = GetEntity(childUUID);
+			RemoveEntity(childEntity);
+		}
 
 		// Remove from ECS and our Map
 		UUID entityUUID = entity.GetUUID();
