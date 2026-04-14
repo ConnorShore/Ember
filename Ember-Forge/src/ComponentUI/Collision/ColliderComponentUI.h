@@ -53,37 +53,39 @@ namespace Ember {
 			auto& filterManager = Ember::ProjectManager::GetActive()->GetCollisionFilterManager();
 
 			std::vector<std::string> activeFilterNames = filterManager.GetActiveFilters(collisionFilter);
-			std::string name = filterManager.GetFilterName(Ember::CollisionFilterPreset::Default);
+
+			std::string name = "None";
 			if (activeFilterNames.size() == 1)
 				name = activeFilterNames[0];
-			if (activeFilterNames.size() > 1)
+			else if (activeFilterNames.size() > 1)
 				name = "Multiple Filters";
 
 			if (UI::PropertyGrid::BeginComboBox(label.c_str(), name))
 			{
-				std::vector<std::string> filterNames = filterManager.GetFilters();
+				std::vector<std::string> filterNames = filterManager.GetCustomFilters();
 				for (const auto& filterName : filterNames)
 				{
-					// Don't show default filter
-					if (filterName == filterManager.GetFilterName(Ember::CollisionFilterPreset::Default))
-						continue;
-
+					
 					Ember::CollisionFilter filterValue = filterManager.GetFilter(filterName);
 
 					bool isSelected = (collisionFilter & filterValue) == filterValue;
 					if (ImGui::Checkbox(filterName.c_str(), &isSelected))
 					{
 						if (isSelected)
-							collisionFilter |= filterValue;
+							collisionFilter |= filterValue; // Set the bit
 						else
-							collisionFilter &= ~filterValue;
+							collisionFilter &= ~filterValue; // Unset the bit
 					}
 				}
 
 				ImGui::Separator();
 
+				// Optional: Setup quick actions for common masks
 				if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
-					collisionFilter = Ember::CollisionFilterPreset::Default;
+					collisionFilter = 0x0000; // All bits off
+
+				if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
+					collisionFilter = 0xFFFF; // All 16 bits on
 
 				UI::PropertyGrid::EndComboBox();
 			}

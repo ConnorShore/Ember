@@ -3,6 +3,7 @@
 
 #include "UI/PropertyGrid.h"
 
+#include <Ember/Core/ProjectManager.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <imgui/imgui.h>
 
@@ -109,6 +110,61 @@ namespace Ember {
 
 			UI::PropertyGrid::End();
 		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::TextDisabled("Collision Categories");
+
+		// Use a child window with a border so it looks clean inside the right pane.
+		// ImVec2(0, 0) tells ImGui to fill the remaining width and height perfectly.
+		ImGui::BeginChild("CollisionCategoriesSection", ImVec2(0, 0), true);
+
+		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
+
+		// ReactPhysics3D uses a 16-bit integer for masks, so we iterate exactly 16 times.
+		for (int i = 0; i < 16; i++)
+		{
+			ImGui::PushID(i);
+
+			// Fixed width for the label so the input boxes align perfectly into a neat column
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Layer %2d", i);
+			ImGui::SameLine(80.0f);
+
+			if (i == 0)
+			{
+				// Default can't be changed
+				ImGui::TextDisabled("Default");
+			}
+			else
+			{
+				std::string currentName = filterManager.GetFilterNameBySlot(i);
+				char buffer[64];
+				strncpy_s(buffer, sizeof(buffer), currentName.c_str(), _TRUNCATE);
+
+				// Dynamically size the input box to stretch, but leave 60px for the Clear button
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
+
+				// Update the slot name instantly as the user types
+				if (ImGui::InputText("##LayerName", buffer, sizeof(buffer)))
+				{
+					filterManager.SetFilterNameAtSlot(i, std::string(buffer));
+				}
+
+				// The Clear button quickly wipes the slot back to an empty string
+				ImGui::SameLine();
+				if (ImGui::Button("Clear"))
+				{
+					filterManager.SetFilterNameAtSlot(i, "");
+				}
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndChild();
+
 	}
 
 }

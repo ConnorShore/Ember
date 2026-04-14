@@ -3,71 +3,115 @@
 
 namespace Ember {
 
-	void CollisionFilterManager::InitWithCustomFilters(std::vector<std::string> customFilters)
+	CollisionFilterManager::CollisionFilterManager()
 	{
-		InitDefaultFilters();
+		// Ensure the array is completely clear on startup
+		for (int i = 0; i < 16; i++)
+			m_Slots[i] = "";
+	}
+
+	void CollisionFilterManager::InitWithCustomFilters(const std::vector<std::string>& customFilters)
+	{
+		// Only set default as others may have been overridden by the user, we want to preserve those if possible
+		m_Slots[0] = "Default";     // Bit 0: 0x0001
+
+		uint32_t slotIndex = 1;
 		for (const auto& filterName : customFilters)
-			AddFilter(filterName);
+		{
+			if (slotIndex >= 16)
+			{
+				EB_CORE_WARN("Exceeded maximum number of collision filters (16). Skipping: {}", filterName);
+				break;
+			}
+			m_Slots[slotIndex] = filterName;
+			slotIndex++;
+		}
 	}
 
 	void CollisionFilterManager::InitDefaultFilters()
 	{
-		m_filterMap["Default"] = CollisionFilterPreset::Default;	// Default doesn't use a bit, so it doesn't get counted towards the next filter index
-
-		m_filterMap["Player"] = CollisionFilterPreset::Player;
-		m_filterMap["Enemy"] = CollisionFilterPreset::Enemy;
-		m_filterMap["Environment"] = CollisionFilterPreset::Environment;
-
-		m_nextFilter = 3; // 3 filters already used by presets, so start from the next
-		m_defaultFilterCount = m_filterMap.size();
+		// Lock the foundational layers to specific bits so they never shift
+		m_Slots[0] = "Default";     // Bit 0: 0x0001
+		m_Slots[1] = "Player";      // Bit 1: 0x0002
+		m_Slots[2] = "Enemy";       // Bit 2: 0x0004
+		m_Slots[3] = "Environment"; // Bit 3: 0x0008
 	}
 
-	void CollisionFilterManager::AddFilter(const std::string& name)
+	std::string CollisionFilterManager::GetFilterNameBySlot(uint32_t index) const
 	{
-		EB_CORE_ASSERT(m_nextFilter < 64, "Exceeded maximum number of collision filters (64)");
+		if (index < 16)
+			return m_Slots[index];
+		return "";
+	}
 
-		m_filterMap[name] = 1ULL << m_nextFilter;
-		m_nextFilter++;
+	void CollisionFilterManager::SetFilterNameAtSlot(uint32_t index, const std::string& name)
+	{
+		if (index > 0 && index < 16) // > 0 prevents overwriting the "Default" slot!
+			m_Slots[index] = name;
 	}
 
 	CollisionFilter CollisionFilterManager::GetFilter(const std::string& name) const
 	{
-		if (m_filterMap.find(name) != m_filterMap.end())
-			return m_filterMap.at(name);
+		if (name.empty()) return 0;
 
-		return 0ULL;
+		for (int i = 0; i < 16; i++)
+		{
+			if (m_Slots[i] == name)
+				return static_cast<CollisionFilter>(1 << i); // Return the exact bit for this slot
+		}
+
+		return 0; // Not found
 	}
 
 	std::string CollisionFilterManager::GetFilterName(CollisionFilter filter) const
 	{
-		for (const auto& [name, f] : m_filterMap)
+		for (int i = 0; i < 16; i++)
 		{
-			if (f == filter)
-				return name;
+			if (filter == static_cast<CollisionFilter>(1 << i))
+				return m_Slots[i];
 		}
 
-		EB_CORE_ASSERT(false, "Filter not found for value: {}", filter);
-		return "Default";
+		// If multiple bits are set, or it's empty
+		return "Multiple";
 	}
 
-	std::vector<std::string> CollisionFilterManager::GetAllFilters(CollisionFilter filterMask) const
+	std::vector<std::string> CollisionFilterManager::GetFilters() const
 	{
 		std::vector<std::string> names;
-		names.reserve(m_filterMap.size());
-		for (const auto& [name, filter] : m_filterMap)
+		for (int i = 0; i < 16; i++)
 		{
-
-			// Default filter doesn't count, only set if no filters are active
-			if (filter == CollisionFilterPreset::Default)
-				continue;
-			
-			if ((filterMask & filter) == filter)
-				names.push_back(name);
+			if (!m_Slots[i].empty())
+				names.push_back(m_Slots[i]);
 		}
+		return names;
+	}
 
-		if (names.size() == 0)
-			names.push_back(GetFilterName(CollisionFilterPreset::Default));
+	std::vector<std::string> CollisionFilterManager::GetCustomFilters() const
+	{
+		std::vector<std::string> names;
+		for (int i = 1; i < 16; i++)
+		{
+			if (!m_Slots[i].empty())
+				names.push_back(m_Slots[i]);
+		}
+		return names;
+	}
 
+	std::vector<std::string> CollisionFilterManager::GetActiveFilters(CollisionFilter activeFilter) const
+	{
+		std::vector<std::string> names;
+		for (int i = 0; i < 16; i++)
+		{
+			if (m_Slots[i].empty())
+				continue;
+
+			// Extract the bit for the current slot and check if it's active in the mask
+			CollisionFilter bit = static_cast<CollisionFilter>(1 << i);
+			if ((activeFilter & bit) == bit)
+			{
+				names.push_back(m_Slots[i]);
+			}
+		}
 		return names;
 	}
 

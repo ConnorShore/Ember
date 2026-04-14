@@ -1,68 +1,36 @@
 #pragma once
 
 #include "CollisionFilter.h"
-
 #include <string>
-#include <unordered_map>
+#include <vector>
+#include <array>
 
 namespace Ember {
 
 	class CollisionFilterManager
 	{
 	public:
-		CollisionFilterManager() = default;
+		CollisionFilterManager();
 
-		void InitWithCustomFilters(std::vector<std::string> customFilters);
+		void InitWithCustomFilters(const std::vector<std::string>& customFilters);
 		void InitDefaultFilters();
-		void AddFilter(const std::string& name);
 
+		// UI/Editor Array Slot Access
+		std::string GetFilterNameBySlot(uint32_t index) const;
+		void SetFilterNameAtSlot(uint32_t index, const std::string& name);
+
+		// Runtime Bitmask Access
 		CollisionFilter GetFilter(const std::string& name) const;
 		std::string GetFilterName(CollisionFilter filter) const;
-		std::vector<std::string> GetAllFilters(CollisionFilter filterMask) const;
 
-		inline std::vector<std::string> GetFilters() const
-		{
-			std::vector<std::string> names;
-			names.reserve(m_filterMap.size());
-			for (const auto& [name, filter] : m_filterMap)
-				names.push_back(name);
-			return names;
-		}
-		inline std::vector<std::string> GetCustomFilters() const		{
-			std::vector<std::string> names;
-			names.reserve(m_filterMap.size() - m_defaultFilterCount);
-			for (const auto& [name, filter] : m_filterMap)
-			{
-				if (filter != CollisionFilterPreset::Default &&
-					filter != CollisionFilterPreset::Player &&
-					filter != CollisionFilterPreset::Enemy &&
-					filter != CollisionFilterPreset::Environment)
-				{
-					names.push_back(name);
-				}
-			}
-			return names;
-		}
-
-		inline uint32_t GetFilterCount() const { return static_cast<uint32_t>(m_filterMap.size()); }
-		inline uint32_t GetCustomFilterCount() const { return static_cast<uint32_t>(m_filterMap.size() - m_defaultFilterCount); }
-
-		// Returns names of all filters whose bit is set in activeFilter
-		inline std::vector<std::string> GetActiveFilters(CollisionFilter activeFilter) const
-		{
-			std::vector<std::string> names;
-			for (const auto& [name, filter] : m_filterMap)
-			{
-				if (filter != CollisionFilterPreset::Default && (activeFilter & filter) == filter)
-					names.push_back(name);
-			}
-			return names;
-		}
+		// Bulk Queries
+		std::vector<std::string> GetFilters() const;
+		std::vector<std::string> GetCustomFilters() const;
+		std::vector<std::string> GetActiveFilters(CollisionFilter activeFilter) const;
 
 	private:
-		std::unordered_map<std::string, CollisionFilter> m_filterMap;
-		uint64_t m_nextFilter = 0;
-		uint64_t m_defaultFilterCount = 0;
+		// ReactPhysics3D uses a 16-bit integer mask, giving us exactly 16 fixed slots.
+		std::string m_Slots[16];
 	};
 
 }
