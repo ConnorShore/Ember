@@ -914,6 +914,16 @@ namespace Ember {
 				}
 			}
 
+			// Serialize physics materials as well
+			auto physicsMaterials = Application::Instance().GetAssetManager().GetAssetsOfType<PhysicsMaterial>();
+			for (auto& physMat : physicsMaterials)
+			{
+				if (!physMat->IsEngineAsset() && !physMat->GetFilePath().empty())
+				{
+					PhysicsMaterialSerializer::Serialize(physMat->GetFilePath(), physMat);
+				}
+			}
+
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
 			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());

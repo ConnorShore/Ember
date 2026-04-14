@@ -22,6 +22,7 @@ namespace Ember {
 		std::filesystem::create_directories(project->GetAssetDirectory());
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Models");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Materials");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Physics Materials");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Shaders");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Textures");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Scripts");

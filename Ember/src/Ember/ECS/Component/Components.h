@@ -12,6 +12,7 @@
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Asset/PhysicsMaterial.h"
 
 #include <sol/sol.hpp>
 
@@ -162,6 +163,8 @@ namespace Ember {
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::BoxShape* Shape = nullptr;     // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
@@ -180,6 +183,8 @@ namespace Ember {
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
@@ -201,6 +206,8 @@ namespace Ember {
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
@@ -219,6 +226,8 @@ namespace Ember {
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
@@ -241,6 +250,8 @@ namespace Ember {
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::ConcaveMeshShape* Shape = nullptr;   // The raw geometry

@@ -120,12 +120,6 @@ namespace Ember {
 				it++;
 			}
 		}
-
-		m_TextureCt = 0;
-		m_ShaderCt = 0;
-		m_ModelCt = 0;
-		m_MaterialCt = 0;
-		m_ScriptCt = 0;
 	}
 
 	SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const

@@ -115,6 +115,16 @@ namespace Ember {
 		if (collider.CollisionMask != CollisionFilterPreset::Default)
 			collider.Collider->setCollideWithMaskBits(collider.CollisionMask);
 
+		if (collider.PhysicsMaterialHandle != Constants::InvalidUUID)
+		{
+			auto material = Application::Instance().GetAssetManager().GetAsset<PhysicsMaterial>(collider.PhysicsMaterialHandle);
+			EB_CORE_ASSERT(material, "Invalid Physics Material handle!");
+
+			auto& rp3dMaterial = collider.Collider->getMaterial();
+			rp3dMaterial.setBounciness(material->Bounciness);
+			rp3dMaterial.setFrictionCoefficient(material->Friction);
+		}
+
 		if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
 		{
 			rb.Body->updateMassPropertiesFromColliders();

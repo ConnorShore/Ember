@@ -1,1 +1,9 @@
-Assets: []
+Assets:
+  - Type: PhysicsMaterial
+    UUID: 15071766372993757854
+    Name: VeryBouncy
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Physics Materials\VeryBouncy.ebpmat'
+  - Type: PhysicsMaterial
+    UUID: 6776834574034079103
+    Name: NotBouncy
+    FilePath: 'C:\Users\cjsho\Desktop\NewProject\Assets\Physics Materials\NotBouncy.ebpmat'

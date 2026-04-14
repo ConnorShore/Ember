@@ -91,6 +91,7 @@ namespace Ember {
 				
 				colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<BoxColliderComponent>().PhysicsMaterialHandle;
 			}
 			if (entity.ContainsComponent<SphereColliderComponent>())
 			{
@@ -101,6 +102,7 @@ namespace Ember {
 
 				colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<SphereColliderComponent>().PhysicsMaterialHandle;
 			}
 			if (entity.ContainsComponent<CapsuleColliderComponent>())
 			{
@@ -112,6 +114,7 @@ namespace Ember {
 
 				colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<CapsuleColliderComponent>().PhysicsMaterialHandle;
 			}
 			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
 			{
@@ -123,6 +126,7 @@ namespace Ember {
 
 					colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
+					colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().PhysicsMaterialHandle;
 				}
 			}
 			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
@@ -135,6 +139,7 @@ namespace Ember {
 
 					colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
+					colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().PhysicsMaterialHandle;
 				}
 			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
@@ -393,6 +398,9 @@ namespace Ember {
 					Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset);
 					colliderNode["Category"] >> bcc.Category;
 					colliderNode["CollisionMask"] >> bcc.CollisionMask;
+					uint64_t bccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
+					bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
 					deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
 				}
 
@@ -404,6 +412,9 @@ namespace Ember {
 					Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset);
 					colliderNode["Category"] >> scc.Category;
 					colliderNode["CollisionMask"] >> scc.CollisionMask;
+					uint64_t sccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> sccPhysMatId;
+					scc.PhysicsMaterialHandle = (UUID)sccPhysMatId;
 					deserializedEntity.AttachComponent<SphereColliderComponent>(scc);
 				}
 
@@ -416,6 +427,9 @@ namespace Ember {
 					Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset);
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
+					uint64_t cccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> cccPhysMatId;
+					ccc.PhysicsMaterialHandle = (UUID)cccPhysMatId;
 					deserializedEntity.AttachComponent<CapsuleColliderComponent>(ccc);
 				}
 
@@ -430,6 +444,9 @@ namespace Ember {
 					ccc.MeshHandle = meshUUID;
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
+					uint64_t convexPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> convexPhysMatId;
+					ccc.PhysicsMaterialHandle = (UUID)convexPhysMatId;
 					deserializedEntity.AttachComponent<ConvexMeshColliderComponent>(ccc);
 				}
 
@@ -444,6 +461,9 @@ namespace Ember {
 					cmcc.MeshHandle = meshUUID;
 					colliderNode["Category"] >> cmcc.Category;
 					colliderNode["CollisionMask"] >> cmcc.CollisionMask;
+					uint64_t concavePhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> concavePhysMatId;
+					cmcc.PhysicsMaterialHandle = (UUID)concavePhysMatId;
 					deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(cmcc);
 				}
 

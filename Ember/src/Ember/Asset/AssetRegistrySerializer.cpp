@@ -34,11 +34,8 @@ namespace Ember {
 			for (auto asset : assets) {
 				if (asset->GetFilePath().empty() || asset->IsEngineAsset())
 					continue;
-				ryml::NodeRef assetNode = assetsNode.append_child();
 
-				//if (asset->GetType() == AssetType::Material)
-				//	Util::SerializeMaterial(assetNode, DynamicPointerCast<MaterialBase>(asset));
-				//else
+				ryml::NodeRef assetNode = assetsNode.append_child();
 				Util::SerializeGeneralAsset(assetNode, asset);
 			}
 			};
@@ -55,6 +52,8 @@ namespace Ember {
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Animation>());
 
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Model>());
+
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<PhysicsMaterial>());
 
 		// Write out to disk
 		std::ofstream fout(filePath);
@@ -102,20 +101,16 @@ namespace Ember {
 			assetNode["Name"] >> name;
 			assetNode["FilePath"] >> path;
 
-			if (path.empty()) continue;
-
-			if (type == "Texture") {
+			if (path.empty())
+				continue;
+			if (type == "Texture")
 				m_AssetManagerHandle->Load<Texture2D>(uuid, name, path, false);
-			}
-			else if (type == "Shader") {
+			else if (type == "Shader")
 				m_AssetManagerHandle->Load<Shader>(uuid, name, path, false);
-			}
-			else if (type == "Script") {
+			else if (type == "Script")
 				m_AssetManagerHandle->Load<Script>(uuid, name, path, false);
-			}
-			else if (type == "Mesh") {
+			else if (type == "Mesh")
 				m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
-			}
 			else if (type == "MaterialInstance" || type == "Material") {
 				auto material = MaterialSerializer::Deserialize(uuid, path, *m_AssetManagerHandle);
 				if (material) {
@@ -123,15 +118,16 @@ namespace Ember {
 					m_AssetManagerHandle->Register(material);
 				}
 			}
-			else if (type == "Model") {
+			else if (type == "Model")
 				m_AssetManagerHandle->Load<Model>(uuid, name, path, false);
-			}
-			else if (type == "Skeleton") {
+			else if (type == "Skeleton")
 				m_AssetManagerHandle->Load<Skeleton>(uuid, name, path, false);
-			}
-			else if (type == "Animation") {
+			else if (type == "Animation")
 				m_AssetManagerHandle->Load<Animation>(uuid, name, path, false);
-			}
+			else if (type == "PhysicsMaterial")
+				m_AssetManagerHandle->Load<PhysicsMaterial>(uuid, name, path, false);
+			else
+				EB_CORE_WARN("Unknown asset type '{0}' in registry! Skipping.", type);
 		}
 
 		return true;

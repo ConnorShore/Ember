@@ -89,35 +89,6 @@ namespace Ember {
 			}
 		}
 
-		static std::string GetAssetTypeString(AssetType type)
-		{
-			switch (type)
-			{
-			case AssetType::Texture: return "Texture";
-			case AssetType::Shader: return "Shader";
-			case AssetType::Mesh: return "Mesh";
-			case AssetType::Model: return "Model";
-			case AssetType::Material: return "Material";
-			case AssetType::Script: return "Script";
-			case AssetType::Animation: return "Animation";
-			case AssetType::Skeleton: return "Skeleton";
-			default: return "Unknown";
-			}
-		}
-
-		static AssetType GetAssetTypeFromString(const std::string& typeStr)
-		{
-			if (typeStr == "Texture") return AssetType::Texture;
-			if (typeStr == "Shader") return AssetType::Shader;
-			if (typeStr == "Mesh") return AssetType::Mesh;
-			if (typeStr == "Model") return AssetType::Model;
-			if (typeStr == "Material") return AssetType::Material;
-			if (typeStr == "Script") return AssetType::Script;
-			if (typeStr == "Animation") return AssetType::Animation;
-			if (typeStr == "Skeleton") return AssetType::Skeleton;
-			return AssetType::Texture; // Default to Texture if unknown
-		}
-
 		static void SerializeGeneralAsset(ryml::NodeRef node, const SharedPtr<Asset>& asset)
 		{
 			node |= ryml::MAP;
