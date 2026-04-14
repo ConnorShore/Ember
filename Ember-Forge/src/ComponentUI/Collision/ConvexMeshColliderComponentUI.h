@@ -51,13 +51,17 @@ namespace Ember {
 
 				auto clearFunc = meshExists ? UI::UICallbackFunc([&]() {
 					component.MeshHandle = Constants::InvalidUUID;
+					component.NeedsRebuild = true;
 					}) : nullptr;
 
 				if (UI::PropertyGrid::AssetReference("Mesh", meshName, payloadType, droppedPath, browseFunc, clearFunc))
 				{
 					auto mesh = assetManager.Load<Mesh>(droppedPath);
 					if (mesh)
+					{
 						component.MeshHandle = mesh->GetUUID();
+						component.NeedsRebuild = true;
+					}
 				}
 
 				ImGui::PushID("Mesh");
@@ -70,7 +74,10 @@ namespace Ember {
 						{
 							auto meshAsset = assetManager.Load<Mesh>(meshFile);
 							if (meshAsset)
+							{
 								component.MeshHandle = meshAsset->GetUUID();
+								component.NeedsRebuild = true;
+							}
 						}
 					}
 

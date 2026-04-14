@@ -102,6 +102,14 @@ namespace Ember {
 		);
 	}
 
+	static rp3d::Transform MakeColliderTransform(const Vector3f& relPos, const Quaternion& q, const Vector3f& offset = Vector3f(0.0f))
+	{
+		return rp3d::Transform(
+			rp3d::Vector3(relPos.x + offset.x, relPos.y + offset.y, relPos.z + offset.z),
+			rp3d::Quaternion(q.x, q.y, q.z, q.w)
+		);
+	}
+
 	template<typename TCollider, typename TShape>
 	static void AttachAndUpdateMass(TCollider& collider, TShape* shape, RigidBodyComponent& rb, const rp3d::Transform& localTransform)
 	{
@@ -215,25 +223,7 @@ namespace Ember {
 			[this, scene](EntityID entity, BoxColliderComponent& box) {
 				if (box.Shape != nullptr)
 					return;
-
-				ColliderSetupCtx ctx;
-				if (!ResolveColliderSetup(entity, scene, ctx))
-					return;
-
-				rp3d::Vector3 extents(
-					(box.Size.x * ctx.ChildWorldScale.x) * 0.5f,
-					(box.Size.y * ctx.ChildWorldScale.y) * 0.5f,
-					(box.Size.z * ctx.ChildWorldScale.z) * 0.5f
-				);
-
-				if (extents.x <= 0.0f || extents.y <= 0.0f || extents.z <= 0.0f) 
-				{
-					EB_CORE_ERROR("Box Collider extents are zero!");
-					extents = rp3d::Vector3(0.5f, 0.5f, 0.5f);
-				}
-
-				AttachAndUpdateMass(box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
-					MakeColliderTransform(ctx.RelPos, ctx.RelRot, box.Offset));
+				CreateBoxCollider(entity, box, scene);
 			}
 		);
 
@@ -241,21 +231,7 @@ namespace Ember {
 			[this, scene](EntityID entity, SphereColliderComponent& sphere) {
 				if (sphere.Shape != nullptr)
 					return;
-
-				ColliderSetupCtx ctx;
-				if (!ResolveColliderSetup(entity, scene, ctx))
-					return;
-
-				float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
-				float radius = sphere.Radius * maxScale;
-				if (radius <= 0.0f) 
-				{
-					EB_CORE_ERROR("Sphere Collider radius is zero!");
-					radius = 0.5f;
-				}
-
-				AttachAndUpdateMass(sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
-					MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
+				CreateSphereCollider(entity, sphere, scene);
 			}
 		);
 
@@ -263,21 +239,7 @@ namespace Ember {
 			[this, scene](EntityID entity, ConvexMeshColliderComponent& mesh) {
 				if (mesh.Shape != nullptr)
 					return;
-				ColliderSetupCtx ctx;
-				if (!ResolveColliderSetup(entity, scene, ctx))
-					return;
-				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
-				float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
-				mesh.PhysicsVertices = meshAsset->GetVertexPositions();
-
-				mesh.RP3DVertexArray = new rp3d::VertexArray(mesh.PhysicsVertices.data(), 3 * sizeof(float), meshAsset->GetVertexCount(), rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE);
-
-				std::vector<rp3d::Message> messages;
-				rp3d::ConvexMesh* convexMesh = m_PhysicsCommon->createConvexMesh(*mesh.RP3DVertexArray, messages);
-
-				rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
-				AttachAndUpdateMass(mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
-					MakeColliderTransform(ctx.RelPos, ctx.RelRot));
+				CreateConvexMeshCollider(entity, mesh, scene);
 			}
 		);
 
@@ -285,29 +247,7 @@ namespace Ember {
 			[this, scene](EntityID entity, ConcaveMeshColliderComponent& mesh) {
 				if (mesh.Shape != nullptr)
 					return;
-
-				ColliderSetupCtx ctx;
-				if (!ResolveColliderSetup(entity, scene, ctx))
-					return;
-
-				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
-				float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
-
-				mesh.PhysicsVertices = meshAsset->GetVertexPositions();
-				mesh.PhysicsIndices = meshAsset->GetTriangles();
-				mesh.TriangleArray = new rp3d::TriangleVertexArray(
-					meshAsset->GetVertexCount(), mesh.PhysicsVertices.data(), 3 * sizeof(float),
-					meshAsset->GetTriangleCount(), mesh.PhysicsIndices.data(), 3 * sizeof(uint32_t),
-					rp3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-					rp3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE
-				);
-
-				std::vector<rp3d::Message> messages;
-				mesh.TriangleMesh = m_PhysicsCommon->createTriangleMesh(*mesh.TriangleArray, messages);
-
-				rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
-				AttachAndUpdateMass(mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
-					MakeColliderTransform(ctx.RelPos, ctx.RelRot));
+				CreateConcaveMeshCollider(entity, mesh, scene);
 			}
 		);
 
@@ -315,27 +255,7 @@ namespace Ember {
 			[this, scene](EntityID entity, CapsuleColliderComponent& capsule) {
 				if (capsule.Shape != nullptr)
 					return;
-
-				ColliderSetupCtx ctx;
-				if (!ResolveColliderSetup(entity, scene, ctx))
-					return;
-
-				float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
-				float radius = capsule.Radius * maxScale;
-				float height = capsule.Height * maxScale;
-				if (radius <= 0.0f) 
-				{
-					EB_CORE_ERROR("Capsule Collider radius is zero!");
-					radius = 0.5f;
-				}
-				if (height <= 0.0f) 
-				{
-					EB_CORE_ERROR("Capsule Collider height is zero!");
-					height = 2.0f;
-				}
-
-				AttachAndUpdateMass(capsule, m_PhysicsCommon->createCapsuleShape(radius, height), *ctx.Rb,
-					MakeColliderTransform(ctx.RelPos, ctx.RelRot, capsule.Offset));
+				CreateCapsuleCollider(entity, capsule, scene);
 			}
 		);
 
@@ -466,23 +386,107 @@ namespace Ember {
 			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
 
 			if (rb.Body != nullptr)
+				{
+					rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
+
+					// Sync body type and gravity so inspector changes are reflected before play
+					rb.Body->setType(ToRp3dBodyType(rb.Type));
+					rb.Body->enableGravity(rb.GravityEnabled);
+
+					// Take the TransformComponent and push it INTO ReactPhysics3D
+					Vector3f worldPos, worldRot, worldScale;
+					Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+
+					rp3d::Vector3 newPos(worldPos.x, worldPos.y, worldPos.z);
+					Quaternion q = Math::ToQuaternion(worldRot);
+					rp3d::Quaternion newRot(q.x, q.y, q.z, q.w);
+
+					rb.Body->setTransform(rp3d::Transform(newPos, newRot));
+				}
+		}
+
+		// Rebuild colliders whose properties were changed in the inspector
+		auto boxView = registry.Query<BoxColliderComponent>();
+		for (EntityID entity : boxView)
+		{
+			auto& box = registry.GetComponent<BoxColliderComponent>(entity);
+			if (box.NeedsRebuild)
 			{
-				rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
+				DetachCollider(box, [&]() { m_PhysicsCommon->destroyBoxShape(box.Shape); });
+				CreateBoxCollider(entity, box, scene);
+				box.NeedsRebuild = false;
+			}
+		}
 
-				// Take the TransformComponent and push it INTO ReactPhysics3D
-				Vector3f worldPos, worldRot, worldScale;
-				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+		auto sphereView = registry.Query<SphereColliderComponent>();
+		for (EntityID entity : sphereView)
+		{
+			auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
+			if (sphere.NeedsRebuild)
+			{
+				DetachCollider(sphere, [&]() { m_PhysicsCommon->destroySphereShape(sphere.Shape); });
+				CreateSphereCollider(entity, sphere, scene);
+				sphere.NeedsRebuild = false;
+			}
+		}
 
-				rp3d::Vector3 newPos(worldPos.x, worldPos.y, worldPos.z);
-				Quaternion q = Math::ToQuaternion(worldRot);
-				rp3d::Quaternion newRot(q.x, q.y, q.z, q.w);
+		auto capsuleView = registry.Query<CapsuleColliderComponent>();
+		for (EntityID entity : capsuleView)
+		{
+			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
+			if (capsule.NeedsRebuild)
+			{
+				DetachCollider(capsule, [&]() { m_PhysicsCommon->destroyCapsuleShape(capsule.Shape); });
+				CreateCapsuleCollider(entity, capsule, scene);
+				capsule.NeedsRebuild = false;
+			}
+		}
 
-				rb.Body->setTransform(rp3d::Transform(newPos, newRot));
+		auto convexView = registry.Query<ConvexMeshColliderComponent>();
+		for (EntityID entity : convexView)
+		{
+			auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
+			if (mesh.NeedsRebuild)
+			{
+				DetachCollider(mesh, [&]() {
+					m_PhysicsCommon->destroyConvexMeshShape(mesh.Shape);
+					if (mesh.RP3DVertexArray)
+						delete mesh.RP3DVertexArray;
+					mesh.RP3DVertexArray = nullptr;
+				});
+				CreateConvexMeshCollider(entity, mesh, scene);
+				mesh.NeedsRebuild = false;
+			}
+		}
+
+		auto concaveView = registry.Query<ConcaveMeshColliderComponent>();
+		for (EntityID entity : concaveView)
+		{
+			auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
+			if (mesh.NeedsRebuild)
+			{
+				DetachCollider(mesh, [&]() {
+					m_PhysicsCommon->destroyConcaveMeshShape(mesh.Shape);
+					if (mesh.TriangleMesh)
+						m_PhysicsCommon->destroyTriangleMesh(mesh.TriangleMesh);
+					if (mesh.TriangleArray)
+						delete mesh.TriangleArray;
+					mesh.TriangleMesh = nullptr;
+					mesh.TriangleArray = nullptr;
+				});
+				CreateConcaveMeshCollider(entity, mesh, scene);
+				mesh.NeedsRebuild = false;
 			}
 		}
 
 		ShowDebugRendererIfApplicable();
 		UpdateDebugRenderData();
+	}
+
+	void PhysicsSystem::RemoveRigidBody(RigidBodyComponent& rigidBody)
+	{
+		m_PhysicsWorld->destroyRigidBody(rigidBody.Body);
+		rigidBody.Body = nullptr;
 	}
 
 	void PhysicsSystem::RefreshPhysicsWorld()
@@ -518,6 +522,155 @@ namespace Ember {
 		rp3dRigidBody->setIsAllowedToSleep(false);
 
 		rigidBody.Body = rp3dRigidBody;
+	}
+
+	void PhysicsSystem::CreateBoxCollider(EntityID entity, BoxColliderComponent& box, Scene* scene)
+	{
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(entity, scene, ctx))
+			return;
+
+		rp3d::Vector3 extents(
+			(box.Size.x * ctx.ChildWorldScale.x) * 0.5f,
+			(box.Size.y * ctx.ChildWorldScale.y) * 0.5f,
+			(box.Size.z * ctx.ChildWorldScale.z) * 0.5f
+		);
+
+		if (extents.x <= 0.0f || extents.y <= 0.0f || extents.z <= 0.0f)
+		{
+			EB_CORE_ERROR("Box Collider extents are zero!");
+			extents = rp3d::Vector3(0.5f, 0.5f, 0.5f);
+		}
+
+		AttachAndUpdateMass(box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
+			MakeColliderTransform(ctx.RelPos, ctx.RelRot, box.Offset));
+	}
+
+	void PhysicsSystem::CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene)
+	{
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(entity, scene, ctx))
+			return;
+
+		float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
+		float radius = sphere.Radius * maxScale;
+		if (radius <= 0.0f)
+		{
+			EB_CORE_ERROR("Sphere Collider radius is zero!");
+			radius = 0.5f;
+		}
+
+		AttachAndUpdateMass(sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
+			MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
+	}
+
+	void PhysicsSystem::CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene)
+	{
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(entity, scene, ctx))
+			return;
+
+		float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
+		float radius = capsule.Radius * maxScale;
+		float height = capsule.Height * maxScale;
+		if (radius <= 0.0f)
+		{
+			EB_CORE_ERROR("Capsule Collider radius is zero!");
+			radius = 0.5f;
+		}
+		if (height <= 0.0f)
+		{
+			EB_CORE_ERROR("Capsule Collider height is zero!");
+			height = 2.0f;
+		}
+
+		Vector3f defaultUp = { 0.0f, 1.0f, 0.0f };
+		Vector3f targetDir = Math::Normalize(capsule.Direction);
+
+		Quaternion directionQuat;
+		float dot = Math::Dot(defaultUp, targetDir);
+
+		if (dot > 0.9999f)
+		{
+			directionQuat = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+		}
+		else if (dot < -0.9999f)
+		{
+			directionQuat = Math::AngleAxis(Math::Radians(180.0f), Vector3f(1.0f, 0.0f, 0.0f));
+		}
+		else
+		{
+			Vector3f rotationAxis = Math::Normalize(Math::Cross(defaultUp, targetDir));
+			float angle = std::acos(dot);
+			directionQuat = Math::AngleAxis(angle, rotationAxis);
+		}
+
+		Quaternion entityRelQuat = Math::ToQuaternion(ctx.RelRot);
+		Quaternion finalQuat = entityRelQuat * directionQuat;
+
+		// rp3d's height is the cylindrical section only (caps are added separately),
+		// but CapsuleColliderComponent.Height is total height (matching the mesh generator).
+		float cylinderHeight = std::max(0.0f, height - 2.0f * radius);
+
+		AttachAndUpdateMass(capsule, m_PhysicsCommon->createCapsuleShape(radius, cylinderHeight), *ctx.Rb,
+			MakeColliderTransform(ctx.RelPos, finalQuat, capsule.Offset));
+	}
+
+	void PhysicsSystem::CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene)
+	{
+		if (mesh.MeshHandle == Constants::InvalidUUID)
+			return;
+
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(entity, scene, ctx))
+			return;
+
+		auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+		if (!meshAsset)
+			return;
+
+		float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
+		mesh.PhysicsVertices = meshAsset->GetVertexPositions();
+
+		mesh.RP3DVertexArray = new rp3d::VertexArray(mesh.PhysicsVertices.data(), 3 * sizeof(float), meshAsset->GetVertexCount(), rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE);
+
+		std::vector<rp3d::Message> messages;
+		rp3d::ConvexMesh* convexMesh = m_PhysicsCommon->createConvexMesh(*mesh.RP3DVertexArray, messages);
+
+		rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
+		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
+			MakeColliderTransform(ctx.RelPos, ctx.RelRot));
+	}
+
+	void PhysicsSystem::CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene)
+	{
+		if (mesh.MeshHandle == Constants::InvalidUUID)
+			return;
+
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(entity, scene, ctx))
+			return;
+
+		auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
+		if (!meshAsset)
+			return;
+
+		float maxScale = std::max({ ctx.ChildWorldScale.x, ctx.ChildWorldScale.y, ctx.ChildWorldScale.z });
+		mesh.PhysicsVertices = meshAsset->GetVertexPositions();
+		mesh.PhysicsIndices = meshAsset->GetTriangles();
+		mesh.TriangleArray = new rp3d::TriangleVertexArray(
+			meshAsset->GetVertexCount(), mesh.PhysicsVertices.data(), 3 * sizeof(float),
+			meshAsset->GetTriangleCount(), mesh.PhysicsIndices.data(), 3 * sizeof(uint32_t),
+			rp3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+			rp3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE
+		);
+
+		std::vector<rp3d::Message> messages;
+		mesh.TriangleMesh = m_PhysicsCommon->createTriangleMesh(*mesh.TriangleArray, messages);
+
+		rp3d::Vector3 scaling(maxScale, maxScale, maxScale);
+		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
+			MakeColliderTransform(ctx.RelPos, ctx.RelRot));
 	}
 
 	void PhysicsSystem::ShowDebugRendererIfApplicable()

@@ -246,6 +246,12 @@ namespace Ember {
 		{
 			return glm::dot(a, b);
 		}
+		
+		static inline Quaternion AngleAxis(float radians, const Vector3f vec)
+		{
+			return glm::angleAxis(radians, vec);
+		}
+
 	};
 
 }

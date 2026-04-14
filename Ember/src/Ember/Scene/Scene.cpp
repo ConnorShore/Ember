@@ -360,6 +360,15 @@ namespace Ember {
 			RemoveEntity(childEntity);
 		}
 
+		// If contains a RigidBodyComponent, remove it from the PhysicsSystem's runtime simulation
+		if (entity.ContainsComponent<RigidBodyComponent>())
+		{
+			auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+			auto& rigidBody = entity.GetComponent<RigidBodyComponent>();
+			physicsSystem->RemoveRigidBody(rigidBody);
+		}
+
+
 		// Remove from ECS and our Map
 		UUID entityUUID = entity.GetUUID();
 		m_Registry->DestroyEntity(entity.GetEntityHandle());

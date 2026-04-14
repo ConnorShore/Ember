@@ -46,6 +46,8 @@ namespace Ember {
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 		void OnEditorUpdate(TimeStep delta, Scene* scene);
 
+		void RemoveRigidBody(RigidBodyComponent& rigidBody);
+
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
 
@@ -53,6 +55,11 @@ namespace Ember {
 
 	private:
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
+		void CreateBoxCollider(EntityID entity, BoxColliderComponent& box, Scene* scene);
+		void CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene);
+		void CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene);
+		void CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene);
+		void CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene);
 		void ShowDebugRendererIfApplicable();
 		void UpdateDebugRenderData();
 

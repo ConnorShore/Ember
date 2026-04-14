@@ -20,8 +20,11 @@ namespace Ember {
 		{
 			if (UI::PropertyGrid::Begin("SphereColliderProps"))
 			{
-				UI::PropertyGrid::Float("Radius", component.Radius);
-				UI::PropertyGrid::Float3("Offset", component.Offset);
+				bool changed = false;
+				changed |= UI::PropertyGrid::Float("Radius", component.Radius);
+				changed |= UI::PropertyGrid::Float3("Offset", component.Offset);
+				if (changed)
+					component.NeedsRebuild = true;
 
 				UI::PropertyGrid::End();
 			}

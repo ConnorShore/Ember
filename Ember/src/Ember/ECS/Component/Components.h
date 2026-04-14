@@ -169,6 +169,7 @@ namespace Ember {
 		reactphysics3d::BoxShape* Shape = nullptr;     // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size, const Vector3f& offset = Vector3f(0.0f))
@@ -190,6 +191,7 @@ namespace Ember {
 		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius, const Vector3f& offset = Vector3f(0.0f))
@@ -203,6 +205,8 @@ namespace Ember {
 		float Height = 2.0f;
 		Vector3f Offset = Vector3f(0.0f);
 
+		Vector3f Direction = Vector3f(0.0f, 1.0f, 0.0f); // Default to Y-axis
+
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
@@ -212,6 +216,7 @@ namespace Ember {
 		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height, const Vector3f& offset = Vector3f(0.0f))
@@ -233,6 +238,7 @@ namespace Ember {
 		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -257,6 +263,7 @@ namespace Ember {
 		reactphysics3d::ConcaveMeshShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;

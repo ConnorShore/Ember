@@ -111,6 +111,7 @@ namespace Ember {
 				colliderNode["Radius"] << entity.GetComponent<CapsuleColliderComponent>().Radius;
 				colliderNode["Height"] << entity.GetComponent<CapsuleColliderComponent>().Height;
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<CapsuleColliderComponent>().Offset);
+				Util::SerializeVector3f(colliderNode["Direction"], entity.GetComponent<CapsuleColliderComponent>().Direction);
 
 				colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
@@ -425,6 +426,7 @@ namespace Ember {
 					colliderNode["Radius"] >> ccc.Radius;
 					colliderNode["Height"] >> ccc.Height;
 					Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset);
+					Util::DeserializeVector3f(colliderNode["Direction"], ccc.Direction);
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
 					uint64_t cccPhysMatId;

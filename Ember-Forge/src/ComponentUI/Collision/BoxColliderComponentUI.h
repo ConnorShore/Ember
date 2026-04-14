@@ -20,8 +20,11 @@ namespace Ember {
 		{
 			if (UI::PropertyGrid::Begin("BoxColliderProps"))
 			{
-				UI::PropertyGrid::Float3("Size", component.Size);
-				UI::PropertyGrid::Float3("Offset", component.Offset);
+				bool changed = false;
+				changed |= UI::PropertyGrid::Float3("Size", component.Size);
+				changed |= UI::PropertyGrid::Float3("Offset", component.Offset);
+				if (changed)
+					component.NeedsRebuild = true;
 
 				UI::PropertyGrid::End();
 			}
