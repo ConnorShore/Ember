@@ -88,6 +88,9 @@ namespace Ember {
 
 				Util::SerializeVector3f(colliderNode["Size"], entity.GetComponent<BoxColliderComponent>().Size);
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<BoxColliderComponent>().Offset);
+				
+				colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
 			}
 			if (entity.ContainsComponent<SphereColliderComponent>())
 			{
@@ -95,6 +98,9 @@ namespace Ember {
 				colliderNode |= ryml::MAP;
 				colliderNode["Radius"] << entity.GetComponent<SphereColliderComponent>().Radius;
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<SphereColliderComponent>().Offset);
+
+				colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
 			}
 			if (entity.ContainsComponent<CapsuleColliderComponent>())
 			{
@@ -103,23 +109,32 @@ namespace Ember {
 				colliderNode["Radius"] << entity.GetComponent<CapsuleColliderComponent>().Radius;
 				colliderNode["Height"] << entity.GetComponent<CapsuleColliderComponent>().Height;
 				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<CapsuleColliderComponent>().Offset);
+
+				colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
 			}
 			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
 			{
-				ryml::NodeRef meshNode = entityNode["ConvexMeshColliderComponent"];
-				meshNode |= ryml::MAP;
+				ryml::NodeRef colliderNode = entityNode["ConvexMeshColliderComponent"];
+				colliderNode |= ryml::MAP;
 				if (entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
 				{
-					meshNode["MeshUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle;
+					colliderNode["MeshUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle;
+
+					colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
+					colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
 				}
 			}
 			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
 			{
-				ryml::NodeRef meshNode = entityNode["ConcaveMeshColliderComponent"];
-				meshNode |= ryml::MAP;
+				ryml::NodeRef colliderNode = entityNode["ConcaveMeshColliderComponent"];
+				colliderNode |= ryml::MAP;
 				if (entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
 				{
-					meshNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
+					colliderNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
+
+					colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
+					colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
 				}
 			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
@@ -376,6 +391,8 @@ namespace Ember {
 					BoxColliderComponent bcc;
 					Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
 					Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset);
+					colliderNode["Category"] >> bcc.Category;
+					colliderNode["CollisionMask"] >> bcc.CollisionMask;
 					deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
 				}
 
@@ -385,6 +402,8 @@ namespace Ember {
 					SphereColliderComponent scc;
 					colliderNode["Radius"] >> scc.Radius;
 					Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset);
+					colliderNode["Category"] >> scc.Category;
+					colliderNode["CollisionMask"] >> scc.CollisionMask;
 					deserializedEntity.AttachComponent<SphereColliderComponent>(scc);
 				}
 
@@ -395,31 +414,37 @@ namespace Ember {
 					colliderNode["Radius"] >> ccc.Radius;
 					colliderNode["Height"] >> ccc.Height;
 					Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset);
+					colliderNode["Category"] >> ccc.Category;
+					colliderNode["CollisionMask"] >> ccc.CollisionMask;
 					deserializedEntity.AttachComponent<CapsuleColliderComponent>(ccc);
 				}
 
 				if (entityNode.has_child("ConvexMeshColliderComponent"))
 				{
-					ryml::NodeRef meshNode = entityNode["ConvexMeshColliderComponent"];
+					ryml::NodeRef colliderNode = entityNode["ConvexMeshColliderComponent"];
 					uint64_t meshId;
-					meshNode["MeshUUID"] >> meshId;
+					colliderNode["MeshUUID"] >> meshId;
 					UUID meshUUID = (UUID)meshId;
 
-					ConvexMeshColliderComponent mc;
-					mc.MeshHandle = meshUUID;
-					deserializedEntity.AttachComponent<ConvexMeshColliderComponent>(mc);
+					ConvexMeshColliderComponent ccc;
+					ccc.MeshHandle = meshUUID;
+					colliderNode["Category"] >> ccc.Category;
+					colliderNode["CollisionMask"] >> ccc.CollisionMask;
+					deserializedEntity.AttachComponent<ConvexMeshColliderComponent>(ccc);
 				}
 
 				if (entityNode.has_child("ConcaveMeshColliderComponent"))
 				{
-					ryml::NodeRef meshNode = entityNode["ConcaveMeshColliderComponent"];
+					ryml::NodeRef colliderNode = entityNode["ConcaveMeshColliderComponent"];
 					uint64_t meshId;
-					meshNode["MeshUUID"] >> meshId;
+					colliderNode["MeshUUID"] >> meshId;
 					UUID meshUUID = (UUID)meshId;
 
-					ConcaveMeshColliderComponent mc;
-					mc.MeshHandle = meshUUID;
-					deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(mc);
+					ConcaveMeshColliderComponent cmcc;
+					cmcc.MeshHandle = meshUUID;
+					colliderNode["Category"] >> cmcc.Category;
+					colliderNode["CollisionMask"] >> cmcc.CollisionMask;
+					deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(cmcc);
 				}
 
 				if (entityNode.has_child("StaticMeshComponent"))

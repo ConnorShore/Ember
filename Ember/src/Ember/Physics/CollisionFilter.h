@@ -1,0 +1,16 @@
+#pragma once
+
+#include <cstdint>
+
+namespace Ember {
+
+	using CollisionFilter = uint16_t;
+
+	namespace CollisionFilterPreset
+	{
+		constexpr CollisionFilter Default =		0ULL;
+		constexpr CollisionFilter Player =		1ULL;
+		constexpr CollisionFilter Enemy =		1ULL << 1;
+		constexpr CollisionFilter Environment =	1ULL << 2;
+	}
+}

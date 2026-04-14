@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ComponentUI.h"
+#include "ColliderComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 #include "Ember/Math/Math.h"
@@ -10,30 +10,14 @@
 
 namespace Ember {
 
-	class ConcaveMeshColliderComponentUI : public ComponentUI<ConcaveMeshColliderComponent>
+	class ConvexMeshColliderComponentUI : public ColliderComponentUI<ConvexMeshColliderComponent>
 	{
 	public:
-		ConcaveMeshColliderComponentUI(EditorContext* context) : ComponentUI(context) {}
-		inline const char* GetName() const override { return "Concave Mesh Collider"; }
-
-		void CreateComponentForEntity(Entity entity) override
-		{
-			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
-			{
-				EB_CORE_WARN("Entity already contains a component of type %s!", GetName());
-				return;
-			}
-
-			UUID currentMesh = entity.ContainsComponent<StaticMeshComponent>() 
-				? (UUID) entity.GetComponent<StaticMeshComponent>().MeshHandle 
-				: (UUID) Constants::InvalidUUID;
-
-			ConcaveMeshColliderComponent comp(currentMesh);
-			m_Context->ActiveScene->AttachComponent(entity, comp);
-		}
+		ConvexMeshColliderComponentUI(EditorContext* context) : ColliderComponentUI(context) {}
+		inline const char* GetName() const override { return "Convex Mesh Collider"; }
 
 	protected:
-		inline void RenderComponentImpl(ConcaveMeshColliderComponent& component) override
+		inline void RenderComponentProperties(ConvexMeshColliderComponent& component) override
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
 			bool meshExists = component.MeshHandle != Constants::InvalidUUID;
@@ -56,7 +40,7 @@ namespace Ember {
 				}
 			}
 
-			if (UI::PropertyGrid::Begin("ConcaveMeshComponentProps"))
+			if (UI::PropertyGrid::Begin("ConvexMeshColliderComponent"))
 			{
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetMesh);
 				std::string droppedPath;

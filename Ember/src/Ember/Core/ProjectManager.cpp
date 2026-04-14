@@ -13,6 +13,8 @@ namespace Ember {
 		auto project = SharedPtr<Project>::Create(filepath);
 		s_ActiveProject = project;
 
+		s_ActiveProject->GetCollisionFilterManager().InitDefaultFilters();
+
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(filepath);
 

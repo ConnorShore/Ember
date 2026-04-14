@@ -62,6 +62,7 @@ namespace Ember {
 	struct ColliderSetupCtx
 	{
 		RigidBodyComponent* Rb;
+
 		Vector3f RelPos;
 		Vector3f RelRot;
 		Vector3f ChildWorldScale;
@@ -107,6 +108,12 @@ namespace Ember {
 		collider.Shape = shape;
 		collider.Collider = rb.Body->addCollider(shape, localTransform);
 		collider.AttachedBody = rb.Body;
+
+		if (collider.Category != CollisionFilterPreset::Default)
+			collider.Collider->setCollisionCategoryBits(collider.Category);
+
+		if (collider.CollisionMask != CollisionFilterPreset::Default)
+			collider.Collider->setCollideWithMaskBits(collider.CollisionMask);
 
 		if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
 		{

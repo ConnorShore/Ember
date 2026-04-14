@@ -11,6 +11,7 @@
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Physics/CollisionFilter.h"
 
 #include <sol/sol.hpp>
 
@@ -158,6 +159,9 @@ namespace Ember {
 		Vector3f Size = Vector3f(1.0f);
 		Vector3f Offset = Vector3f(0.0f);
 
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::BoxShape* Shape = nullptr;     // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
@@ -173,6 +177,9 @@ namespace Ember {
 	{
 		float Radius = 0.5f;
 		Vector3f Offset = Vector3f(0.0f);
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
@@ -191,6 +198,9 @@ namespace Ember {
 		float Height = 2.0f;
 		Vector3f Offset = Vector3f(0.0f);
 
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
@@ -206,6 +216,9 @@ namespace Ember {
 	struct ConvexMeshColliderComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
@@ -225,6 +238,9 @@ namespace Ember {
 	struct ConcaveMeshColliderComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::ConcaveMeshShape* Shape = nullptr;   // The raw geometry

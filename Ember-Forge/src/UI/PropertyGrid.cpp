@@ -13,7 +13,7 @@ namespace Ember {
 		// Property Grid Layout
 		bool Begin(const std::string& id)
 		{
-			ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable;
+			ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
 			if (ImGui::BeginTable(id.c_str(), 2, flags))
 			{
 				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
@@ -428,7 +428,7 @@ namespace Ember {
 
 			// Prop name
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextWrapped("%s", label.c_str());
+			ImGui::Text("%s", label.c_str());
 
 			ImGui::TableNextColumn();
 

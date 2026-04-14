@@ -52,7 +52,7 @@ project "Ember"
    }
 
    filter "system:windows"
-      systemversion "latest"  
+      systemversion "latest"
 
    filter "configurations:Debug"
       defines { "EB_DEBUG" }

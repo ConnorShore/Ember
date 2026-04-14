@@ -6,6 +6,8 @@
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
+#include <vector>
+#include <string>
 #include <fstream>
 #include <sstream>
 
@@ -37,6 +39,17 @@ namespace Ember {
 		physicsNode["UpdateRate"] << physicsSettings.UpdateRate;
 		physicsNode["PositionSolverIterations"] << physicsSettings.PositionSolverIterations;
 		physicsNode["VelocitySolverIterations"] << physicsSettings.VelocitySolverIterations;
+
+		// Physics Collider Filters
+		auto& filterManager = m_Project->GetCollisionFilterManager();
+		auto filterNode = physicsNode["CollisionFilters"];
+		filterNode |= ryml::SEQ;
+		for (const auto& filter : filterManager.GetCustomFilters())
+		{
+			auto filterEntryNode = filterNode.append_child();
+			filterEntryNode |= ryml::MAP;
+			filterEntryNode["Name"] << filter;
+		}
 
 		std::ofstream fout(filePath);
 		fout << tree;
@@ -75,6 +88,7 @@ namespace Ember {
 		{
 			auto settingsNode = root["Settings"];
 
+			// Physics Settings
 			auto& physicsSettings = Application::Instance().GetSystem<PhysicsSystem>()->GetSettings();
 			auto physicsNode = settingsNode["Physics"];
 			physicsNode["GravityStrength"] >> physicsSettings.GravityStrength;
@@ -83,6 +97,19 @@ namespace Ember {
 			physicsNode["UpdateRate"] >> physicsSettings.UpdateRate;
 			physicsNode["PositionSolverIterations"] >> physicsSettings.PositionSolverIterations;
 			physicsNode["VelocitySolverIterations"] >> physicsSettings.VelocitySolverIterations;
+
+			// Physics Collider Filters
+			auto& filterManager = m_Project->GetCollisionFilterManager();
+			std::vector<std::string> customFilters;
+
+			for (auto filterNode : physicsNode["CollisionFilters"].children())
+			{
+				std::string filterName;
+				filterNode["Name"] >> filterName;
+				customFilters.push_back(filterName);
+			}
+
+			filterManager.InitWithCustomFilters(customFilters);
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

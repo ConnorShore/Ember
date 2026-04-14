@@ -70,6 +70,9 @@
 
 #include "Ember/Utils/PlatformUtil.h"
 
+#include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Physics/CollisionFilterManager.h"
+
 #include "Ember/Core/Project.h"
 #include "Ember/Core/ProjectManager.h"
 

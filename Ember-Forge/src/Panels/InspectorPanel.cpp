@@ -12,11 +12,11 @@
 #include "ComponentUI/SkinnedMeshComponentUI.h"
 #include "ComponentUI/MaterialComponentUI.h"
 #include "ComponentUI/AnimatorComponentUI.h"
-#include "ComponentUI/BoxColliderComponentUI.h"
-#include "ComponentUI/SphereColliderComponentUI.h"
-#include "ComponentUI/CapsuleColliderComponent.h"
-#include "ComponentUI/ConcaveMeshColliderComponentUI.h"
-#include "ComponentUI/ConvexMeshColliderComponentUI.h"
+#include "ComponentUI/Collision/BoxColliderComponentUI.h"
+#include "ComponentUI/Collision/SphereColliderComponentUI.h"
+#include "ComponentUI/Collision/CapsuleColliderComponent.h"
+#include "ComponentUI/Collision/ConcaveMeshColliderComponentUI.h"
+#include "ComponentUI/Collision/ConvexMeshColliderComponentUI.h"
 
 #include <imgui/imgui.h>
 
