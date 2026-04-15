@@ -72,6 +72,7 @@
 
 #include "Ember/Physics/CollisionFilter.h"
 #include "Ember/Physics/CollisionFilterManager.h"
+#include "Ember/Physics/Raycast.h"
 
 #include "Ember/Core/Project.h"
 #include "Ember/Core/ProjectManager.h"

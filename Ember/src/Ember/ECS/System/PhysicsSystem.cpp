@@ -3,6 +3,7 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
+#include "Ember/Physics/RaycastCallback.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -105,10 +106,14 @@ namespace Ember {
 	}
 
 	template<typename TCollider, typename TShape>
-	static void AttachAndUpdateMass(TCollider& collider, TShape* shape, RigidBodyComponent& rb, const rp3d::Transform& localTransform)
+	static void AttachAndUpdateMass(EntityID entity, TCollider& collider, TShape* shape, RigidBodyComponent& rb, const rp3d::Transform& localTransform)
 	{
 		collider.Shape = shape;
 		collider.Collider = rb.Body->addCollider(shape, localTransform);
+
+		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
+		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
+
 		collider.AttachedBody = rb.Body;
 
 		if (collider.Category != CollisionFilterPreset::Default)
@@ -157,7 +162,6 @@ namespace Ember {
 			collider.AttachedBody = nullptr;
 		}
 	}
-
 
 	// --- PHYSICS SYSTEM IMPLEMENTATION ---
 
@@ -556,6 +560,37 @@ namespace Ember {
 		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
 	}
 
+	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& endPoint)
+	{
+		rp3d::Vector3 start(startPoint.x, startPoint.y, startPoint.z);
+		rp3d::Vector3 end(endPoint.x, endPoint.y, endPoint.z);
+		rp3d::Ray ray(start, end);
+
+		RaycastCallback callback;
+		m_PhysicsWorld->raycast(ray, &callback);
+
+		RaycastData ret;
+		ret.Hit = callback.HasHit();
+
+		if (ret.Hit)
+		{
+			const RaycastInfoWrapper& info = callback.GetInfo();
+
+			ret.HitFraction = info.hitFraction;
+			ret.CollisionPoint = { info.worldPoint.x, info.worldPoint.y, info.worldPoint.z };
+			ret.SurfaceNormal = { info.worldNormal.x, info.worldNormal.y, info.worldNormal.z };
+
+			// Extract the Entity IDs
+			EntityID rbID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.body->getUserData()));
+			EntityID collID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.collider->getUserData()));
+
+			ret.RigidBodyEntity = rbID;
+			ret.ColliderEntity = collID;
+		}
+
+		return ret;
+	}
+
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)
 	{
 		// Decompose the World Transform to safely strip away the scale
@@ -597,7 +632,7 @@ namespace Ember {
 			extents = rp3d::Vector3(0.5f, 0.5f, 0.5f);
 		}
 
-		AttachAndUpdateMass(box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
+		AttachAndUpdateMass(entity, box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, box.Offset));
 	}
 
@@ -615,7 +650,7 @@ namespace Ember {
 			radius = 0.5f;
 		}
 
-		AttachAndUpdateMass(sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
+		AttachAndUpdateMass(entity, sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
 	}
 
@@ -643,7 +678,7 @@ namespace Ember {
 		// but CapsuleColliderComponent.Height is total height (matching the mesh generator).
 		float cylinderHeight = std::max(0.0f, height - 2.0f * radius);
 
-		AttachAndUpdateMass(capsule, m_PhysicsCommon->createCapsuleShape(radius, cylinderHeight), *ctx.Rb,
+		AttachAndUpdateMass(entity, capsule, m_PhysicsCommon->createCapsuleShape(radius, cylinderHeight), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, capsule.Offset));
 	}
 
@@ -672,7 +707,7 @@ namespace Ember {
 			ctx.ChildWorldScale.y,
 			ctx.ChildWorldScale.z
 		);
-		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
+		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
 	}
 
@@ -706,7 +741,7 @@ namespace Ember {
 			ctx.ChildWorldScale.y,
 			ctx.ChildWorldScale.z
 		);
-		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
+		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
 	}
 

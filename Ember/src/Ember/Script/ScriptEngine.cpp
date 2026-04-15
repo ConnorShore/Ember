@@ -25,17 +25,17 @@ namespace Ember {
     void ScriptEngine::Shutdown()
     {
         if (s_LuaState)
-            OnRuntimeStart();
+            OnRuntimeStop();
 
         EB_CORE_INFO("Shutdown Script Engine...");
     }
 
     // Creates a fresh Lua VM for each play session so scripts start with clean state
-    void ScriptEngine::OnRuntimeStart()
+    void ScriptEngine::OnRuntimeStart(Scene* scene)
     {
         s_LuaState = new sol::state();
         s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::string);
-        BindAPI();
+        BindAPI(scene);
 
         EB_CORE_INFO("Started Script Engine runtime!");
     }
@@ -53,13 +53,13 @@ namespace Ember {
         return *s_LuaState;
     }
 
-    void ScriptEngine::BindAPI()
+    void ScriptEngine::BindAPI(Scene* scene)
     {
         BindCore(*s_LuaState);
         BindEntity(*s_LuaState);
         BindInput(*s_LuaState);
         BindMath(*s_LuaState);
-        BindPhysics(*s_LuaState);
+        BindPhysics(*s_LuaState, scene);
         BindComponents(*s_LuaState);
         BindAssets(*s_LuaState);
     }

@@ -158,10 +158,7 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
-		ScriptEngine::OnRuntimeStart();
-
-		//auto& systemManager = Application::Instance().GetSystemManager();
-		//systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		ScriptEngine::OnRuntimeStart(this);
 	}
 
 	void Scene::OnRuntimeStop()

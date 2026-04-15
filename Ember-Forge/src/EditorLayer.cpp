@@ -23,6 +23,7 @@
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
+#include <Ember/Physics/Raycast.h>
 
 #include <random>
 

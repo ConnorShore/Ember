@@ -3,6 +3,7 @@
 #include "Ember/ECS/Types.h"
 #include "System.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Physics/RaycastData.h"
 
 // forward declarations
 namespace reactphysics3d {
@@ -48,6 +49,8 @@ namespace Ember {
 
 		void RemoveRigidBody(RigidBodyComponent& rigidBody);
 		void InitializeEntity(EntityID entity, Scene* scene);
+
+		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
