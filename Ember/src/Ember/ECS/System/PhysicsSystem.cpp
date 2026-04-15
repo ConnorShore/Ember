@@ -485,6 +485,59 @@ namespace Ember {
 		rigidBody.Body = nullptr;
 	}
 
+	void PhysicsSystem::InitializeEntity(EntityID entity, Scene* scene)
+	{
+		if (!m_PhysicsWorld)
+			return;
+
+		auto& registry = scene->GetRegistry();
+
+		if (registry.ContainsComponent<RigidBodyComponent>(entity))
+		{
+			auto& rb = registry.GetComponent<RigidBodyComponent>(entity);
+			if (rb.Body == nullptr)
+			{
+				auto& transform = registry.GetComponent<TransformComponent>(entity);
+				CreateRigidBody(entity, transform, rb);
+			}
+		}
+
+		if (registry.ContainsComponent<BoxColliderComponent>(entity))
+		{
+			auto& box = registry.GetComponent<BoxColliderComponent>(entity);
+			if (box.Shape == nullptr)
+				CreateBoxCollider(entity, box, scene);
+		}
+
+		if (registry.ContainsComponent<SphereColliderComponent>(entity))
+		{
+			auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
+			if (sphere.Shape == nullptr)
+				CreateSphereCollider(entity, sphere, scene);
+		}
+
+		if (registry.ContainsComponent<CapsuleColliderComponent>(entity))
+		{
+			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
+			if (capsule.Shape == nullptr)
+				CreateCapsuleCollider(entity, capsule, scene);
+		}
+
+		if (registry.ContainsComponent<ConvexMeshColliderComponent>(entity))
+		{
+			auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
+			if (mesh.Shape == nullptr)
+				CreateConvexMeshCollider(entity, mesh, scene);
+		}
+
+		if (registry.ContainsComponent<ConcaveMeshColliderComponent>(entity))
+		{
+			auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
+			if (mesh.Shape == nullptr)
+				CreateConcaveMeshCollider(entity, mesh, scene);
+		}
+	}
+
 	void PhysicsSystem::RefreshPhysicsWorld()
 	{
 		// Set gravity vector (normalized direction * gravity strength)

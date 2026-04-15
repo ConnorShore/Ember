@@ -47,6 +47,7 @@ namespace Ember {
 		void OnEditorUpdate(TimeStep delta, Scene* scene);
 
 		void RemoveRigidBody(RigidBodyComponent& rigidBody);
+		void InitializeEntity(EntityID entity, Scene* scene);
 
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
