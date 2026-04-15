@@ -42,6 +42,13 @@ namespace Ember {
 
 			if (UI::PropertyGrid::Begin("ConvexMeshColliderComponent"))
 			{
+				bool changed = false;
+				changed |= UI::PropertyGrid::Float3("Scale", component.Scale);
+				changed |= UI::PropertyGrid::Float3("Offset Position", component.Offset.Position);
+				changed |= UI::PropertyGrid::Float3("Offset Rotation", component.Offset.Rotation);
+				if (changed)
+					component.NeedsRebuild = true;
+
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetMesh);
 				std::string droppedPath;
 

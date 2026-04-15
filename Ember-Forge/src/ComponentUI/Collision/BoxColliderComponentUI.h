@@ -22,7 +22,8 @@ namespace Ember {
 			{
 				bool changed = false;
 				changed |= UI::PropertyGrid::Float3("Size", component.Size);
-				changed |= UI::PropertyGrid::Float3("Offset", component.Offset);
+				changed |= UI::PropertyGrid::Float3("Offset Position", component.Offset.Position);
+				changed |= UI::PropertyGrid::Float3("Offset Rotation", component.Offset.Rotation);
 				if (changed)
 					component.NeedsRebuild = true;
 

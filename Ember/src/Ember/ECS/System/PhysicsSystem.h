@@ -51,6 +51,8 @@ namespace Ember {
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
 
+		void RestartPhysicsWorld();
+
 		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 	private:

@@ -33,6 +33,12 @@
 
 namespace Ember {
 
+	struct ColliderOffset
+	{
+		Vector3f Position = { 0.0f, 0.0f, 0.0f };
+		Vector3f Rotation = { 0.0f, 0.0f, 0.0f }; // Euler angles
+	};
+
 	struct IDComponent
 	{
 		UUID ID;
@@ -158,7 +164,7 @@ namespace Ember {
 	struct BoxColliderComponent
 	{
 		Vector3f Size = Vector3f(1.0f);
-		Vector3f Offset = Vector3f(0.0f);
+		ColliderOffset Offset;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -172,15 +178,15 @@ namespace Ember {
 		bool NeedsRebuild = false;
 
 		BoxColliderComponent() = default;
-		BoxColliderComponent(const Vector3f& size, const Vector3f& offset = Vector3f(0.0f))
-			: Size(size), Offset(offset) {}
+		BoxColliderComponent(const Vector3f& size)
+			: Size(size) {}
 		BoxColliderComponent(const BoxColliderComponent&) = default;
 	};
 
 	struct SphereColliderComponent
 	{
 		float Radius = 0.5f;
-		Vector3f Offset = Vector3f(0.0f);
+		ColliderOffset Offset;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -194,8 +200,8 @@ namespace Ember {
 		bool NeedsRebuild = false;
 
 		SphereColliderComponent() = default;
-		SphereColliderComponent(float radius, const Vector3f& offset = Vector3f(0.0f))
-			: Radius(radius), Offset(offset) {}
+		SphereColliderComponent(float radius)
+			: Radius(radius) {}
 		SphereColliderComponent(const SphereColliderComponent&) = default;
 	};
 
@@ -203,9 +209,7 @@ namespace Ember {
 	{
 		float Radius = 0.5f;
 		float Height = 2.0f;
-		Vector3f Offset = Vector3f(0.0f);
-
-		Vector3f Direction = Vector3f(0.0f, 1.0f, 0.0f); // Default to Y-axis
+		ColliderOffset Offset;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -219,8 +223,8 @@ namespace Ember {
 		bool NeedsRebuild = false;
 
 		CapsuleColliderComponent() = default;
-		CapsuleColliderComponent(float radius, float height, const Vector3f& offset = Vector3f(0.0f))
-			: Radius(radius), Height(height), Offset(offset) {
+		CapsuleColliderComponent(float radius, float height)
+			: Radius(radius), Height(height) {
 		}
 		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
 	};
@@ -228,6 +232,8 @@ namespace Ember {
 	struct ConvexMeshColliderComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+		ColliderOffset Offset;
+		Vector3f Scale = Vector3f(1.0f);
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -253,6 +259,8 @@ namespace Ember {
 	struct ConcaveMeshColliderComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+		ColliderOffset Offset;
+		Vector3f Scale = Vector3f(1.0f);
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;

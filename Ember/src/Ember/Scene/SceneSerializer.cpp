@@ -87,8 +87,9 @@ namespace Ember {
 				colliderNode |= ryml::MAP;
 
 				Util::SerializeVector3f(colliderNode["Size"], entity.GetComponent<BoxColliderComponent>().Size);
-				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<BoxColliderComponent>().Offset);
-				
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<BoxColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<BoxColliderComponent>().Offset.Rotation);
+
 				colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
 				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<BoxColliderComponent>().PhysicsMaterialHandle;
@@ -98,7 +99,8 @@ namespace Ember {
 				ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
 				colliderNode |= ryml::MAP;
 				colliderNode["Radius"] << entity.GetComponent<SphereColliderComponent>().Radius;
-				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<SphereColliderComponent>().Offset);
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<SphereColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<SphereColliderComponent>().Offset.Rotation);
 
 				colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
@@ -110,8 +112,8 @@ namespace Ember {
 				colliderNode |= ryml::MAP;
 				colliderNode["Radius"] << entity.GetComponent<CapsuleColliderComponent>().Radius;
 				colliderNode["Height"] << entity.GetComponent<CapsuleColliderComponent>().Height;
-				Util::SerializeVector3f(colliderNode["Offset"], entity.GetComponent<CapsuleColliderComponent>().Offset);
-				Util::SerializeVector3f(colliderNode["Direction"], entity.GetComponent<CapsuleColliderComponent>().Direction);
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<CapsuleColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<CapsuleColliderComponent>().Offset.Rotation);
 
 				colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
@@ -125,6 +127,10 @@ namespace Ember {
 				{
 					colliderNode["MeshUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle;
 
+					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Position);
+					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Rotation);
+					Util::SerializeVector3f(colliderNode["Scale"], entity.GetComponent<ConvexMeshColliderComponent>().Scale);
+
 					colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
 					colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().PhysicsMaterialHandle;
@@ -137,6 +143,10 @@ namespace Ember {
 				if (entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
 				{
 					colliderNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
+
+					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Position);
+					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Rotation);
+					Util::SerializeVector3f(colliderNode["Scale"], entity.GetComponent<ConcaveMeshColliderComponent>().Scale);
 
 					colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
@@ -396,7 +406,12 @@ namespace Ember {
 					ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
 					BoxColliderComponent bcc;
 					Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
-					Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset);
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], bcc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], bcc.Offset.Rotation);
 					colliderNode["Category"] >> bcc.Category;
 					colliderNode["CollisionMask"] >> bcc.CollisionMask;
 					uint64_t bccPhysMatId;
@@ -410,7 +425,12 @@ namespace Ember {
 					ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
 					SphereColliderComponent scc;
 					colliderNode["Radius"] >> scc.Radius;
-					Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset);
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], scc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], scc.Offset.Rotation);
 					colliderNode["Category"] >> scc.Category;
 					colliderNode["CollisionMask"] >> scc.CollisionMask;
 					uint64_t sccPhysMatId;
@@ -425,8 +445,12 @@ namespace Ember {
 					CapsuleColliderComponent ccc;
 					colliderNode["Radius"] >> ccc.Radius;
 					colliderNode["Height"] >> ccc.Height;
-					Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset);
-					Util::DeserializeVector3f(colliderNode["Direction"], ccc.Direction);
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
 					uint64_t cccPhysMatId;
@@ -444,6 +468,12 @@ namespace Ember {
 
 					ConvexMeshColliderComponent ccc;
 					ccc.MeshHandle = meshUUID;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
+					if (colliderNode.has_child("Scale"))
+						Util::DeserializeVector3f(colliderNode["Scale"], ccc.Scale);
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
 					uint64_t convexPhysMatId;
@@ -461,6 +491,12 @@ namespace Ember {
 
 					ConcaveMeshColliderComponent cmcc;
 					cmcc.MeshHandle = meshUUID;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], cmcc.Offset.Rotation);
+					if (colliderNode.has_child("Scale"))
+						Util::DeserializeVector3f(colliderNode["Scale"], cmcc.Scale);
 					colliderNode["Category"] >> cmcc.Category;
 					colliderNode["CollisionMask"] >> cmcc.CollisionMask;
 					uint64_t concavePhysMatId;
