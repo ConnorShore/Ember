@@ -166,6 +166,8 @@ namespace Ember {
 		Vector3f Size = Vector3f(1.0f);
 		ColliderOffset Offset;
 
+		bool IsTrigger = false;
+
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
@@ -187,6 +189,8 @@ namespace Ember {
 	{
 		float Radius = 0.5f;
 		ColliderOffset Offset;
+
+		bool IsTrigger = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -211,6 +215,8 @@ namespace Ember {
 		float Height = 2.0f;
 		ColliderOffset Offset;
 
+		bool IsTrigger = false;
+
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
 
@@ -233,6 +239,8 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		ColliderOffset Offset;
+
+		bool IsTrigger = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -259,6 +267,8 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		ColliderOffset Offset;
+
+		bool IsTrigger = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;

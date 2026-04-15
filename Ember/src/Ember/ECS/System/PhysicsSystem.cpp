@@ -109,13 +109,18 @@ namespace Ember {
 	static void AttachAndUpdateMass(EntityID entity, TCollider& collider, TShape* shape, RigidBodyComponent& rb, const rp3d::Transform& localTransform)
 	{
 		collider.Shape = shape;
+		collider.AttachedBody = rb.Body;
+
+		// Setup collider in the physics engine
 		collider.Collider = rb.Body->addCollider(shape, localTransform);
 
 		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
 		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
 
-		collider.AttachedBody = rb.Body;
+		// Set trigger
+		collider.Collider->setIsTrigger(collider.IsTrigger);
 
+		// Set collision filters
 		if (collider.Category != CollisionFilterPreset::Default)
 			collider.Collider->setCollisionCategoryBits(collider.Category);
 

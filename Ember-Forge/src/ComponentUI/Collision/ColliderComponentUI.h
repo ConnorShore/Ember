@@ -34,6 +34,23 @@ namespace Ember {
 
 			ImGui::PushID(&component);
 
+			// Collision Offset Section
+			if (ImGui::TreeNode("Collider Offset"))
+			{
+				if (UI::PropertyGrid::Begin("CollisionFilterProps"))
+				{
+					bool changed = false;
+					changed |= UI::PropertyGrid::Float3("Position", component.Offset.Position);
+					changed |= UI::PropertyGrid::Float3("Rotation", component.Offset.Rotation);
+					if (changed)
+						component.NeedsRebuild = true;
+
+					UI::PropertyGrid::End();
+				}
+
+				ImGui::TreePop();
+			}
+
 			// Collision Filter Section
 			if (ImGui::TreeNode("Collision Filters"))
 			{
@@ -91,7 +108,6 @@ namespace Ember {
 
 				ImGui::Separator();
 
-				// Optional: Setup quick actions for common masks
 				if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
 					collisionFilter = 0x0000; // All bits off
 

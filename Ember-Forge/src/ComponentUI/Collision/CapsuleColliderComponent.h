@@ -22,8 +22,7 @@ namespace Ember {
 				bool changed = false;
 				changed |= UI::PropertyGrid::Float("Radius", component.Radius, 0.1f, 0.01f, 10000000.0f);
 				changed |= UI::PropertyGrid::Float("Height", component.Height, 0.1f, 0.01f, 10000000.0f);
-				changed |= UI::PropertyGrid::Float3("Offset Position", component.Offset.Position);
-				changed |= UI::PropertyGrid::Float3("Offset Rotation", component.Offset.Rotation);
+				changed |= UI::PropertyGrid::Checkbox("Is Trigger", component.IsTrigger);
 				if (changed)
 					component.NeedsRebuild = true;
 

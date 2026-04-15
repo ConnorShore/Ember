@@ -24,7 +24,7 @@ namespace Ember {
 
     void ScriptEngine::Shutdown()
     {
-        if (s_LuaState)
+        if (s_LuaState != nullptr)
             OnRuntimeStop();
 
         EB_CORE_INFO("Shutdown Script Engine...");
@@ -42,8 +42,12 @@ namespace Ember {
 
     void ScriptEngine::OnRuntimeStop()
     {
-        delete s_LuaState;
-        s_LuaState = nullptr;
+        if (s_LuaState != nullptr)
+		{
+			delete s_LuaState;
+			s_LuaState = nullptr;
+        }
+
         EB_CORE_INFO("Stopped Script Engine runtime!");
     }
 
