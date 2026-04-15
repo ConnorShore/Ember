@@ -13,6 +13,7 @@ namespace Ember {
 		virtual ~VertexArray() = default;
 
 		virtual void Bind() const = 0;
+		virtual void SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer) = 0;
 		virtual void SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer) = 0;
 
 		virtual const SharedPtr<VertexBuffer>& GetVertexBuffer() const = 0;

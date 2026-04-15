@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "RenderSystem.h"
+#include "PhysicsSystem.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
@@ -9,6 +10,7 @@
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
+#include "Ember/Render/DebugRenderer.h"
 #include "Ember/Scene/Scene.h"
 
 namespace Ember {
@@ -137,8 +139,21 @@ namespace Ember {
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
 
-		m_RenderSceneState.Reset();
+		// Debug Drawing
+		uint32_t maxDebugVertices = 20000;
+		m_PhysicsDebugLineVBO = VertexBuffer::Create(maxDebugVertices * sizeof(DebugVertex));
 
+		m_PhysicsDebugLineVBO->SetLayout({
+			{ ShaderDataType::Float3, "v_Position" },
+			{ ShaderDataType::Float4, "v_Color" }
+			});
+
+		m_PhysicsDebugLineVAO = VertexArray::Create();
+
+		// Notice we dropped the '0' here, using our fixed method!
+		m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+
+		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
 	}
 
@@ -187,6 +202,7 @@ namespace Ember {
 
 		// Overlays
 		Render2DEntities(scene);
+		RenderDebug(scene);
 
 		ResetRenderState();
 	}
@@ -938,6 +954,23 @@ namespace Ember {
 		RenderAction::SetTextureUnit(0, outputBuffer->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+	void RenderSystem::RenderDebug(Scene* scene)
+	{
+		const auto& vertices = DebugRenderer::GetVertices();
+
+		if (!vertices.empty())
+		{
+			auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
+			physicsDebugShader->Bind();
+
+			m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
+			m_PhysicsDebugLineVAO->Bind();
+			RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
+		}
+
+		DebugRenderer::Clear();
 	}
 
 	void RenderSystem::ResetRenderState()

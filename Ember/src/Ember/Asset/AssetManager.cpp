@@ -57,6 +57,7 @@ namespace Ember {
 		auto irradianceShad = Load<Shader>(Constants::Assets::IrradianceShadUUID, Constants::Assets::IrradianceShad, "Ember/assets/shaders/Irradiance.glsl");
 		auto prefilterShad = Load<Shader>(Constants::Assets::PrefilterShadUUID, Constants::Assets::PrefilterShad, "Ember/assets/shaders/Prefilter.glsl");
 		auto brdfLUTShad = Load<Shader>(Constants::Assets::BRDFLUTShadUUID, Constants::Assets::BRDFLUTShad, "Ember/assets/shaders/BRDF.glsl");
+		auto physicsDebugShad = Load<Shader>(Constants::Assets::PhysicsDebugShadUUID, Constants::Assets::PhysicsDebugShad, "Ember/assets/shaders/PhysicsDebug.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
@@ -93,9 +94,11 @@ namespace Ember {
 		auto sphereMesh = PrimitiveGenerator::CreateSphere();
 		auto cubeMesh = PrimitiveGenerator::CreateCube();
 		auto quadMesh = PrimitiveGenerator::CreateQuad();
+		auto capsuleMesh = PrimitiveGenerator::CreateCapsule();
 		Register(Constants::Assets::SphereMeshUUID, sphereMesh);
 		Register(Constants::Assets::CubeMeshUUID, cubeMesh);
 		Register(Constants::Assets::QuadMeshUUID, quadMesh);
+		Register(Constants::Assets::CapsuleMeshUUID, capsuleMesh);
 	}
 	
 	void AssetManager::ClearAssets()
@@ -117,12 +120,6 @@ namespace Ember {
 				it++;
 			}
 		}
-
-		m_TextureCt = 0;
-		m_ShaderCt = 0;
-		m_ModelCt = 0;
-		m_MaterialCt = 0;
-		m_ScriptCt = 0;
 	}
 
 	SharedPtr<Asset> AssetManager::GetAssetBase(UUID id) const

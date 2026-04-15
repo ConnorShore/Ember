@@ -13,3 +13,6 @@
 [submodule "Ember/vendor/rapidyaml"]
 	path = Ember/vendor/rapidyaml
 	url = https://github.com/ConnorShore/rapidyaml.git
+[submodule "Ember/vendor/reactphysics3d"]
+	path = Ember/vendor/reactphysics3d
+	url = https://github.com/ConnorShore/reactphysics3d.git

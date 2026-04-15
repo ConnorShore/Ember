@@ -33,6 +33,8 @@ namespace Ember {
 					meshName = "Quad";
 				else if (component.MeshHandle == Constants::Assets::SphereMeshUUID) 
 					meshName = "Sphere";
+				else if (component.MeshHandle == Constants::Assets::CapsuleMeshUUID)
+					meshName = "Capsule";
 				else
 				{
 					auto meshAsset = assetManager.GetAsset<Mesh>(component.MeshHandle);
@@ -70,6 +72,8 @@ namespace Ember {
 						component.MeshHandle = Constants::Assets::QuadMeshUUID;
 					if (ImGui::MenuItem("Sphere")) 
 						component.MeshHandle = Constants::Assets::SphereMeshUUID;
+					if (ImGui::MenuItem("Capsule"))
+						component.MeshHandle = Constants::Assets::CapsuleMeshUUID;
 
 					ImGui::Separator();
 

@@ -109,6 +109,11 @@ namespace Ember {
 			m_RendererApi->DrawIndexed(vertexArray);
 		}
 
+		static inline void DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount)
+		{
+			m_RendererApi->DrawLines(vertexArray, vertexCount);
+		}
+
 	private:
 		static ScopedPtr<RendererAPI> m_RendererApi;
 	};

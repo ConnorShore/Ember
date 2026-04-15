@@ -11,6 +11,7 @@ include "Ember/vendor/glad"
 include "Ember/vendor/imgui"
 include "Ember/vendor/rapidyaml"
 include "Ember/vendor/lua"
+include "Ember/vendor/reactphysics3d"
 
 include "Ember-Forge/vendor/ImGuizmo"
 

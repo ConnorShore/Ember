@@ -65,6 +65,7 @@ namespace Ember {
 		void Render2DEntities(Scene* scene);
 		void HandlePostProcessing(Scene* scene);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
+		void RenderDebug(Scene* scene);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Scene* scene);
 
@@ -83,6 +84,10 @@ namespace Ember {
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
+
+		// Physics Debug Data
+		SharedPtr<VertexArray> m_PhysicsDebugLineVAO;
+		SharedPtr<VertexBuffer> m_PhysicsDebugLineVBO;
 
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
@@ -120,6 +125,7 @@ namespace Ember {
 		} m_RenderSceneState;
 
 		Scene* m_CurrentScene = nullptr;
+
 	};
 
 }

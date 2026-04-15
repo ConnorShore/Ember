@@ -102,15 +102,14 @@ namespace Ember {
 		root["Material"] >> name;
 
 		int renderQueue = 0;
-		if (root.has_child("RenderQueue")) root["RenderQueue"] >> renderQueue;
+		if (root.has_child("RenderQueue"))
+			root["RenderQueue"] >> renderQueue;
 
 		std::string instancedStr = "false";
-		if (root.has_child("Instanced")) {
+		if (root.has_child("Instanced"))
 			root["Instanced"] >> instancedStr;
-		}
-		else if (root.has_child("BaseMaterial")) {
+		else if (root.has_child("BaseMaterial"))
 			instancedStr = "true";
-		}
 
 		SharedPtr<MaterialBase> material;
 		if (instancedStr == "true")

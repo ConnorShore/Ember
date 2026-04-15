@@ -11,6 +11,7 @@ namespace Ember {
 		static Entity CreateCube(const SharedPtr<Scene>& scene);
 		static Entity CreateQuad(const SharedPtr<Scene>& scene);
 		static Entity CreateSphere(const SharedPtr<Scene>& scene);
+		static Entity CreateCapsule(const SharedPtr<Scene>& scene);
 
 		static Entity CreatePointLight(const SharedPtr<Scene>& scene);
 		static Entity CreateDirectionalLight(const SharedPtr<Scene>& scene);

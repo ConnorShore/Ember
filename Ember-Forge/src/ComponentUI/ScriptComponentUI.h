@@ -92,7 +92,7 @@ namespace Ember {
 							else
 							{
 								std::ofstream newScriptFile(newScriptPath);
-								newScriptFile << "-- Default Script\nlocal " << scriptName << " = {}\nfunction OnCreate(entity)\nend\nfunction OnUpdate(delta)\nend\nreturn " << scriptName;
+								newScriptFile << "-- Default Script\nlocal " << scriptName << " = {}\nfunction " << scriptName << ":OnCreate(entity)\nend\nfunction " << scriptName <<  ":OnUpdate(delta)\nend\nreturn " << scriptName;
 								newScriptFile.close();
 								auto scriptAsset = assetManager.Load<Script>(newScriptPath);
 								scriptAsset->SetIsEngineAsset(false); // User-created script, not an engine asset

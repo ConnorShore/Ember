@@ -4,25 +4,21 @@
 
 namespace Ember {
 
+	class Scene;
+
 	class ScriptEngine
 	{
 	public:
 		static void Init();
 		static void Shutdown();
 
-		static void OnRuntimeStart();
+		static void OnRuntimeStart(Scene* scene);
 		static void OnRuntimeStop();
 
 		static sol::state& GetState();
 
 	private:
-		static void BindAPI();
-		static void BindCore();
-		static void BindEntity();
-		static void BindInput();
-		static void BindMath();
-		static void BindComponents();
-		static void BindAssets();
+		static void BindAPI(Scene* scene);
 	};
 
 }

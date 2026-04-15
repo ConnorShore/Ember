@@ -43,9 +43,9 @@ namespace Ember {
 					bool isSelected = material && (material->GetUUID() == mat->GetUUID());
 					if (UI::ComboBoxItem(mat->GetName().c_str(), isSelected))
 					{
-						std::string name = mat->GetName() + "_" + m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
+						//std::string name = mat->GetName() + "_" + m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
 						component.MaterialHandle = mat->GetUUID();
-						component.GetInstanced(name);
+						//component.GetInstanced(name);
 					}
 
 					// Set the initial focus when opening the combo

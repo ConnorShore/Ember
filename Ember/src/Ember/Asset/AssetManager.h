@@ -4,11 +4,13 @@
 #include "Asset.h"
 #include "Model.h"
 #include "Skeleton.h"
+#include "PhysicsMaterial.h"
 #include "MeshSerializer.h"
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
 #include "AnimationSerializer.h"
 #include "SkeletonSerializer.h"
+#include "PhysicsMaterialSerializer.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -93,6 +95,8 @@ namespace Ember {
 				newAsset = AnimationSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, Skeleton>)
 				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, PhysicsMaterial>)
+				newAsset = PhysicsMaterialSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
@@ -207,37 +211,11 @@ namespace Ember {
 				m_Assets.erase(uuid);
 			}
 		}
-		
-	private:
-
-		// TODO: See if this ever actually gets used
-		template<IsCoreAsset T>
-		inline std::string GenerateName()
-		{
-			if constexpr (std::same_as<T, Texture2D>)
-				return std::format("Texture({})", m_TextureCt++);
-			else if constexpr (std::same_as<T, Shader>)
-				return std::format("Shader({})", m_ShaderCt++);
-			else if constexpr (std::same_as<T, Model>)
-				return std::format("Model({})", m_ModelCt++);
-			else if constexpr (std::same_as<T, Script>)
-				return std::format("Script({})", m_ScriptCt++);
-			else if constexpr (std::same_as<T, Material> || std::same_as<T, MaterialInstance>)
-				return std::format("Material({})", m_MaterialCt++);
-
-			EB_CORE_ASSERT(false, "Attempted to generate name for invalid Asset type!");
-			return "";
-		}
 
 	private:
 		std::unordered_map<UUID, SharedPtr<Asset>> m_Assets;
 		std::unordered_map<std::string, UUID> m_AssetNames;
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
-		uint32_t m_TextureCt = 0;
-		uint32_t m_ShaderCt = 0;
-		uint32_t m_ModelCt = 0;
-		uint32_t m_MaterialCt = 0;
-		uint32_t m_ScriptCt = 0;
 	};
 
 }

@@ -78,6 +78,8 @@ namespace Ember::Constants {
 		inline const uint64_t BRDFLUTShadUUID = 26;
 		inline const char* StandardSkinnedShadowShad = "StandardSkinnedShadow";
 		inline const uint64_t StandardSkinnedShadowShadUUID = 27;
+		inline const char* PhysicsDebugShad = "PhysicsDebug";
+		inline const uint64_t PhysicsDebugShadUUID = 28;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -91,6 +93,7 @@ namespace Ember::Constants {
 		inline const uint64_t SphereMeshUUID = 50;
 		inline const uint64_t CubeMeshUUID = 51;
 		inline const uint64_t QuadMeshUUID = 52;
+		inline const uint64_t CapsuleMeshUUID = 53;
 	}
 
 	namespace Uniforms {

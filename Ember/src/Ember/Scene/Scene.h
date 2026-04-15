@@ -31,6 +31,9 @@ namespace Ember {
 
 		static SharedPtr<Scene> CopyScene(SharedPtr<Scene> other);
 
+		void OnAttach();
+		void OnDetach();
+
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 

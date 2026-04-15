@@ -3,6 +3,7 @@
 #include "Ember/Tools/EditorCamera.h"
 #include "Panels/Panel.h"
 #include "EditorContext.h"
+#include "ProjectSettingsDialog.h"
 
 #include <Ember/Event/KeyEvent.h>
 #include <Ember/Event/MouseEvent.h>
@@ -60,6 +61,8 @@ namespace Ember {
 		void NewScene();
 		void OpenScene(const std::string& scenePath = "");
 		void SaveScene(bool saveAs = false);
+
+		void SetNewScene(SharedPtr<Scene> newScene);
 
 		void SetupImGuiTheme();
 
@@ -139,6 +142,9 @@ namespace Ember {
 		int m_GizmoMode = ImGuizmo::WORLD;
 
 		Entity m_EntityToDelete;
+
+		bool m_ShowProjectSettingsPopup = false;
+		ProjectSettingsDialog m_ProjectSettingsDialog;
 
 		struct NewProjectSettings
 		{

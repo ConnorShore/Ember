@@ -21,6 +21,7 @@ project "Ember"
 		"vendor/rapidyaml/ext/c4core/src",
       "vendor/lua/src",
       "vendor/sol2/include",
+      "vendor/reactphysics3d/include"
    }
 
    files 
@@ -38,6 +39,7 @@ project "Ember"
       "imgui",
       "rapidyaml",
       "lua",
+      "reactphysics3d",
       "opengl32.lib",
    }
 
@@ -50,7 +52,7 @@ project "Ember"
    }
 
    filter "system:windows"
-      systemversion "latest"  
+      systemversion "latest"
 
    filter "configurations:Debug"
       defines { "EB_DEBUG" }

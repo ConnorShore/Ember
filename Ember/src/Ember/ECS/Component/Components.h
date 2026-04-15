@@ -11,6 +11,8 @@
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Asset/PhysicsMaterial.h"
 
 #include <sol/sol.hpp>
 
@@ -18,7 +20,24 @@
 #include <string>
 #include <functional>
 
+#include <reactphysics3d/mathematics/mathematics.h>
+#include <reactphysics3d/body/RigidBody.h>
+#include <reactphysics3d/collision/shapes/BoxShape.h>
+#include <reactphysics3d/collision/shapes/SphereShape.h>
+#include <reactphysics3d/collision/shapes/CapsuleShape.h>
+#include <reactphysics3d/collision/shapes/ConvexMeshShape.h>
+#include <reactphysics3d/collision/shapes/ConcaveMeshShape.h>
+#include <reactphysics3d/collision/VertexArray.h>
+#include <reactphysics3d/collision/TriangleVertexArray.h>
+#include <reactphysics3d/collision/TriangleMesh.h>
+
 namespace Ember {
+
+	struct ColliderOffset
+	{
+		Vector3f Position = { 0.0f, 0.0f, 0.0f };
+		Vector3f Rotation = { 0.0f, 0.0f, 0.0f }; // Euler angles
+	};
 
 	struct IDComponent
 	{
@@ -101,11 +120,177 @@ namespace Ember {
 
 	struct RigidBodyComponent
 	{
-		Vector3f Velocity = Vector3f(0.0f);
+		enum class BodyType { Static, Dynamic, Kinematic } Type = BodyType::Static;
+		float Mass = 1.0f;
+		bool GravityEnabled = true;
+
+		void ApplyForce(const Vector3f& force)
+		{
+			if (Body)
+			{
+				Body->setIsSleeping(false);
+				Body->applyWorldForceAtCenterOfMass(reactphysics3d::Vector3(force.x, force.y, force.z));
+			}
+		}
+
+		void ApplyImpulse(const Vector3f& impulse)
+		{
+			if (Body)
+			{
+				Body->setIsSleeping(false);
+
+				float mass = Body->getMass();
+				if (mass > 0.0f)
+				{
+					// DeltaVelocity = Impulse / Mass
+					reactphysics3d::Vector3 currentVelocity = Body->getLinearVelocity();
+					reactphysics3d::Vector3 deltaVelocity(impulse.x / mass, impulse.y / mass, impulse.z / mass);
+
+					// Apply the sudden burst of speed
+					Body->setLinearVelocity(currentVelocity + deltaVelocity);
+				}
+			}
+		}
+
+		// Runtime only (not serialized) -> holds the actual physics body created in the PhysicsSystem
+		reactphysics3d::RigidBody* Body = nullptr;
 
 		RigidBodyComponent() = default;
-		RigidBodyComponent(const Vector3f& velocity) : Velocity(velocity) {}
+		RigidBodyComponent(BodyType type, float mass = 1.0f, bool gravityEnabled = true) 
+			: Type(type), Mass(mass), GravityEnabled(gravityEnabled) {}
 		RigidBodyComponent(const RigidBodyComponent&) = default;
+	};
+
+	struct BoxColliderComponent
+	{
+		Vector3f Size = Vector3f(1.0f);
+		ColliderOffset Offset;
+
+		bool IsTrigger = false;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::BoxShape* Shape = nullptr;     // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
+
+		BoxColliderComponent() = default;
+		BoxColliderComponent(const Vector3f& size)
+			: Size(size) {}
+		BoxColliderComponent(const BoxColliderComponent&) = default;
+	};
+
+	struct SphereColliderComponent
+	{
+		float Radius = 0.5f;
+		ColliderOffset Offset;
+
+		bool IsTrigger = false;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(float radius)
+			: Radius(radius) {}
+		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
+	struct CapsuleColliderComponent
+	{
+		float Radius = 0.5f;
+		float Height = 2.0f;
+		ColliderOffset Offset;
+
+		bool IsTrigger = false;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(float radius, float height)
+			: Radius(radius), Height(height) {
+		}
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+	};
+
+	struct ConvexMeshColliderComponent
+	{
+		UUID MeshHandle = Constants::InvalidUUID;
+		ColliderOffset Offset;
+
+		bool IsTrigger = false;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
+
+		std::vector<float> PhysicsVertices;
+		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
+
+		ConvexMeshColliderComponent() = default;
+		ConvexMeshColliderComponent(UUID meshHandle)
+			: MeshHandle(meshHandle) {
+		}
+		ConvexMeshColliderComponent(const ConvexMeshColliderComponent&) = default;
+	};
+
+	struct ConcaveMeshColliderComponent
+	{
+		UUID MeshHandle = Constants::InvalidUUID;
+		ColliderOffset Offset;
+
+		bool IsTrigger = false;
+
+		CollisionFilter Category = CollisionFilterPreset::Default;
+		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+
+		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
+
+		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
+		reactphysics3d::ConcaveMeshShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		bool NeedsRebuild = false;
+
+		std::vector<float> PhysicsVertices;
+		std::vector<uint32_t> PhysicsIndices;
+		reactphysics3d::TriangleVertexArray* TriangleArray = nullptr;
+		reactphysics3d::TriangleMesh* TriangleMesh = nullptr;
+
+		ConcaveMeshColliderComponent() = default;
+		ConcaveMeshColliderComponent(UUID meshHandle)
+			: MeshHandle(meshHandle) {
+		}
+		ConcaveMeshColliderComponent(const ConcaveMeshColliderComponent&) = default;
 	};
 
 	struct SpriteComponent

@@ -165,7 +165,7 @@ namespace Ember {
 			std::vector<Matrix4f> globalTransforms(bones.size());
 
 			// 1. Interpolate and Blend!
-			for (size_t i = 0; i < bones.size(); i++)
+			for (uint32_t i = 0; i < bones.size(); i++)
 			{
 				// Default to bind pose
 				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;

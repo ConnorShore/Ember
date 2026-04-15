@@ -144,6 +144,11 @@ namespace Ember {
 			return glm::quat(matrix);
 		}
 
+		static inline Quaternion ToQuaternion(const Vector3f& eulerAngles)
+		{
+			return glm::quat(eulerAngles);
+		}
+
 		static inline Vector3f ToEulerAngles(const Quaternion& quat)
 		{
 			return glm::eulerAngles(quat);
@@ -241,6 +246,12 @@ namespace Ember {
 		{
 			return glm::dot(a, b);
 		}
+		
+		static inline Quaternion AngleAxis(float radians, const Vector3f vec)
+		{
+			return glm::angleAxis(radians, vec);
+		}
+
 	};
 
 }

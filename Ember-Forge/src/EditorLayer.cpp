@@ -22,14 +22,19 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/ECS/System/PhysicsSystem.h>
+#include <Ember/Physics/Raycast.h>
 
 #include <random>
 
 namespace Ember {
 
 	EditorLayer::EditorLayer()
-		: Layer("Ember Forge"), m_EditorScene(SharedPtr<Scene>::Create("DefaultScene"))
+		: Layer("Ember Forge")
 	{
+		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
+		SetNewScene(defaultScene);
+
 		m_Context = {
 			.ActiveScene = m_EditorScene,
 			.EditorCamera = &m_Camera,
@@ -149,6 +154,15 @@ namespace Ember {
 		DrawToolbar();
 		RenderSceneViewport();
 
+		// Project Settings Pop up
+		if (m_ShowProjectSettingsPopup)
+		{
+			ImGui::OpenPopup(m_ProjectSettingsDialog.GetPopupName().c_str());
+			m_ShowProjectSettingsPopup = false;
+		}
+		m_ProjectSettingsDialog.OnImGuiRender();
+
+		// Render stats overlay
 		if (m_ShowStatsWindow)
 			RenderStatsOverlay(delta);
 
@@ -177,9 +191,6 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
 		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
@@ -188,9 +199,6 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		m_Context.SelectedEntity = m_InvalidEntity;
-		m_PreviousSelectedEntity = m_InvalidEntity;
-
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
@@ -238,12 +246,41 @@ namespace Ember {
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Project"))
+		{
+			if (ImGui::MenuItem("Project Settings"))
+			{
+				m_ShowProjectSettingsPopup = true;
+			}
+
+			ImGui::EndMenu();
+		}
+
 		if (ImGui::BeginMenu("Editor"))
 		{
 			if (ImGui::BeginMenu("Tool Windows"))
 			{
-				ImGui::MenuItem("Debug Stats", nullptr, &m_ShowStatsWindow);
+				ImGui::MenuItem("Render Stats", nullptr, &m_ShowStatsWindow);
+				ImGui::EndMenu();
+			}
 
+			if (ImGui::BeginMenu("Debug"))
+			{
+				auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+				if (physicsSystem)
+				{
+					auto& debugSettings = physicsSystem->GetDebugRenderSettings();
+
+					ImGui::MenuItem("Show Physics Colliders", nullptr, &debugSettings.Enabled);
+					if (debugSettings.Enabled)
+					{
+						ImGui::Separator();
+
+						ImGui::MenuItem("Draw Shapes", nullptr, &debugSettings.DrawColliders);
+						ImGui::MenuItem("Draw Contact Points", nullptr, &debugSettings.DrawContactPoints);
+						ImGui::MenuItem("Draw AABBs", nullptr, &debugSettings.DrawColliderAxes);
+					}
+				}
 				ImGui::EndMenu();
 			}
 
@@ -810,12 +847,8 @@ namespace Ember {
 
 	void EditorLayer::NewScene()
 	{
-		m_EditorScene = SharedPtr<Scene>::Create("New Scene");
-		m_Context.ActiveScene = m_EditorScene;
-
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		m_Context.SelectedEntity = {};
-		m_PreviousSelectedEntity = {};
+		SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("New Scene");
+		SetNewScene(newScene);
 
 		auto evt = UINotificationEvent("New Scene created!");
 		m_Context.EventCallback(evt);
@@ -833,16 +866,12 @@ namespace Ember {
 		if (!sceneFile.empty())
 		{
 			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+			newScene->SetFilePath(sceneFile);
+
 			SceneSerializer serializer(newScene);
 			if (serializer.Deserialize(sceneFile))
 			{
-				m_EditorScene = newScene;
-				m_Context.ActiveScene = m_EditorScene;
-				m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-				m_Context.ActiveScene->SetFilePath(sceneFile);
-
-				m_Context.SelectedEntity = {};
-				m_PreviousSelectedEntity = {};
+				SetNewScene(newScene);
 
 				auto evt = UINotificationEvent(std::format("Scene opened: {}", std::filesystem::path(sceneFile).filename().string()));
 				m_Context.EventCallback(evt);
@@ -857,21 +886,24 @@ namespace Ember {
 
 	void EditorLayer::SaveScene(bool saveAs /* = false */)
 	{
-		const char* sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string().c_str();
+		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
-			? FileDialog::SaveFile(sceneDirectory, "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
+			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
 			: m_Context.ActiveScene->GetFilePath();
 
 		if (!sceneName.empty())
 		{
 			// Strip editor-only outline components before serializing
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID) {
-				RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
-			}
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
 			// Serialize scene
 			SceneSerializer sceneSerializer(m_Context.ActiveScene);
 			sceneSerializer.Serialize(sceneName);
+
+			// Re-apply outline component after saving so the user doesn't lose their selection highlight
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+				OutlineEntity(m_Context.SelectedEntity);
 
 			// Serialize materials (in case their values changed)
 			auto materials = Application::Instance().GetAssetManager().GetAssetsOfType<MaterialInstance>();
@@ -883,6 +915,16 @@ namespace Ember {
 				}
 			}
 
+			// Serialize physics materials as well
+			auto physicsMaterials = Application::Instance().GetAssetManager().GetAssetsOfType<PhysicsMaterial>();
+			for (auto& physMat : physicsMaterials)
+			{
+				if (!physMat->IsEngineAsset() && !physMat->GetFilePath().empty())
+				{
+					PhysicsMaterialSerializer::Serialize(physMat->GetFilePath(), physMat);
+				}
+			}
+
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
 			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
@@ -890,9 +932,27 @@ namespace Ember {
 
 			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
 
+			// Save project as well to update any project settings
+			ProjectManager::SaveActiveProject();
+
 			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
 			m_Context.EventCallback(evt);
 		}
+	}
+
+	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
+	{
+		if (m_Context.ActiveScene != nullptr)
+			m_Context.ActiveScene->OnDetach();
+
+		m_EditorScene = newScene;
+		m_Context.ActiveScene = newScene;
+
+		m_Context.ActiveScene->OnAttach();
+
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		m_Context.SelectedEntity = {};
+		m_PreviousSelectedEntity = {};
 	}
 
 	void EditorLayer::SetupImGuiTheme()
@@ -995,5 +1055,4 @@ namespace Ember {
 		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
 		colors[ImGuiCol_ResizeGripActive] = accentActive;
 	}
-
 }

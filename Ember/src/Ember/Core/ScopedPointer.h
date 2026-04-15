@@ -88,4 +88,10 @@ namespace Ember {
 		T* m_Ptr = nullptr;
 	};
 
+	template <typename T, typename U>
+	T* StaticPointerCast(const ScopedPtr<U>& ptr)
+	{
+		return static_cast<T*>(ptr.Ptr());
+	}
+
 }

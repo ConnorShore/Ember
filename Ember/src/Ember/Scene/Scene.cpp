@@ -28,6 +28,65 @@ namespace Ember {
 					}
 				}(), ...);
 		}
+
+		// Clears all runtime-only physics pointer fields on an entity so that the
+		// PhysicsSystem will create fresh, independent objects for it.
+		static void ResetPhysicsRuntimeState(Entity entity)
+		{
+			if (entity.ContainsComponent<RigidBodyComponent>())
+				entity.GetComponent<RigidBodyComponent>().Body = nullptr;
+
+			if (entity.ContainsComponent<BoxColliderComponent>())
+			{
+				auto& c = entity.GetComponent<BoxColliderComponent>();
+				c.Shape = nullptr;
+				c.Collider = nullptr;
+				c.AttachedBody = nullptr;
+				c.NeedsRebuild = false;
+			}
+
+			if (entity.ContainsComponent<SphereColliderComponent>())
+			{
+				auto& c = entity.GetComponent<SphereColliderComponent>();
+				c.Shape = nullptr;
+				c.Collider = nullptr;
+				c.AttachedBody = nullptr;
+				c.NeedsRebuild = false;
+			}
+
+			if (entity.ContainsComponent<CapsuleColliderComponent>())
+			{
+				auto& c = entity.GetComponent<CapsuleColliderComponent>();
+				c.Shape = nullptr;
+				c.Collider = nullptr;
+				c.AttachedBody = nullptr;
+				c.NeedsRebuild = false;
+			}
+
+			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
+			{
+				auto& c = entity.GetComponent<ConvexMeshColliderComponent>();
+				c.Shape = nullptr;
+				c.Collider = nullptr;
+				c.AttachedBody = nullptr;
+				c.NeedsRebuild = false;
+				c.PhysicsVertices.clear();
+				c.RP3DVertexArray = nullptr;
+			}
+
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+			{
+				auto& c = entity.GetComponent<ConcaveMeshColliderComponent>();
+				c.Shape = nullptr;
+				c.Collider = nullptr;
+				c.AttachedBody = nullptr;
+				c.NeedsRebuild = false;
+				c.PhysicsVertices.clear();
+				c.PhysicsIndices.clear();
+				c.TriangleArray = nullptr;
+				c.TriangleMesh = nullptr;
+			}
+		}
 	}
 
 	Scene::Scene(const std::string& name)
@@ -57,21 +116,26 @@ namespace Ember {
 			// 3. Use your amazing fold expression to copy all the data!
 			// NOTE: Do not copy IDComponent here, we just set it above.
 			Utils::CopyComponents<
-				TransformComponent,
-				StaticMeshComponent,  // NEW
-				SkinnedMeshComponent, // NEW
-				MaterialComponent,
-				SpriteComponent,
-				CameraComponent,
-				ScriptComponent,
-				RigidBodyComponent,
-				DirectionalLightComponent,
-				SpotLightComponent,
-				PointLightComponent,
-				RelationshipComponent,
-				AnimatorComponent,
-				BillboardComponent
-			>(srcEntity, destEntity);
+					TransformComponent,
+					StaticMeshComponent,  // NEW
+					SkinnedMeshComponent, // NEW
+					MaterialComponent,
+					SpriteComponent,
+					CameraComponent,
+					ScriptComponent,
+					RigidBodyComponent,
+					BoxColliderComponent,
+					SphereColliderComponent,
+					CapsuleColliderComponent,
+					ConvexMeshColliderComponent,
+					ConcaveMeshColliderComponent,
+					DirectionalLightComponent,
+					SpotLightComponent,
+					PointLightComponent,
+					RelationshipComponent,
+					AnimatorComponent,
+					BillboardComponent
+				>(srcEntity, destEntity);
 		}
 
 		// Copy registry assets and systems to new scene
@@ -79,14 +143,30 @@ namespace Ember {
 		return newScene;
 	}
 
+	void Scene::OnAttach()
+	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+
+		EB_CORE_INFO("Scene '{}' attached!", m_Name);
+	}
+
+	void Scene::OnDetach()
+	{
+		EB_CORE_INFO("Scene '{}' detached!", m_Name);
+	}
+
 	void Scene::OnRuntimeStart()
 	{
-		ScriptEngine::OnRuntimeStart();
+		ScriptEngine::OnRuntimeStart(this);
 	}
 
 	void Scene::OnRuntimeStop()
 	{
 		ScriptEngine::OnRuntimeStop();
+
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
@@ -102,6 +182,7 @@ namespace Ember {
 	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 	}
@@ -242,6 +323,11 @@ namespace Ember {
 			CameraComponent,
 			ScriptComponent,
 			RigidBodyComponent,
+			BoxColliderComponent,
+			SphereColliderComponent,
+			CapsuleColliderComponent,
+			ConvexMeshColliderComponent,
+			ConcaveMeshColliderComponent,
 			DirectionalLightComponent,
 			SpotLightComponent,
 			PointLightComponent,
@@ -270,39 +356,53 @@ namespace Ember {
 				mesh.AnimatorEntityHandle = newAnimatorUUID;
 		}
 
-		if (entity.ContainsComponent<RelationshipComponent>())
+		// Reset all runtime-only physics state copied from the source entity.
+		// Without this, the attach hooks saw non-null pointers and skipped creation,
+		// leaving both entities sharing the same physics objects.
+		Utils::ResetPhysicsRuntimeState(newEntity);
+
+		// Set up the relationship ParentHandle BEFORE initializing physics so that
+		// FindRigidBodyEntity can correctly climb the parent chain (e.g. a child
+		// collider whose rigid body lives on an ancestor).
+		auto oldRels = entity.GetComponent<RelationshipComponent>();
+		RelationshipComponent newRels;
+
+		if (isRoot)
 		{
-			auto oldRels = entity.GetComponent<RelationshipComponent>();
-			RelationshipComponent newRels;
+			newRels.ParentHandle = oldRels.ParentHandle;
 
-			if (isRoot)
+			if (newParentId != Constants::InvalidUUID)
 			{
-				newRels.ParentHandle = oldRels.ParentHandle;
-
-				if (newParentId != Constants::InvalidUUID)
-				{
-					Entity newParent = GetEntity(newParentId);
-					if (newParent)
-						newParent.GetComponent<RelationshipComponent>().Children.push_back(newEntity.GetUUID());
-				}
+				Entity newParent = GetEntity(newParentId);
+				if (newParent)
+					newParent.GetComponent<RelationshipComponent>().Children.push_back(newEntity.GetUUID());
 			}
-			else
-			{
-				newRels.ParentHandle = newParentId;
-			}
-
-			for (UUID childUUID : oldRels.Children)
-			{
-				Entity childEntity = GetEntity(childUUID);
-				if (childEntity != Constants::Entities::InvalidEntityID)
-				{
-					Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false, originalAnimatorUUID, newAnimatorUUID);
-					newRels.Children.push_back(duplicatedChild.GetUUID());
-				}
-			}
-
-			newEntity.AttachComponent(newRels);
 		}
+		else
+		{
+			newRels.ParentHandle = newParentId;
+		}
+
+		// Attach now (no children yet) so the parent chain is navigable for physics init.
+		newEntity.AttachComponent(newRels);
+
+		// Create fresh, independent physics objects for this entity
+		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+		physicsSystem->InitializeEntity(newEntity.GetEntityHandle(), this);
+
+		// Recurse into children and collect their new UUIDs.
+		for (UUID childUUID : oldRels.Children)
+		{
+			Entity childEntity = GetEntity(childUUID);
+			if (childEntity != Constants::Entities::InvalidEntityID)
+			{
+				Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false, originalAnimatorUUID, newAnimatorUUID);
+				newRels.Children.push_back(duplicatedChild.GetUUID());
+			}
+		}
+
+		// Re-attach with the fully populated children list.
+		newEntity.AttachComponent(newRels);
 
 		return newEntity;
 	}
@@ -322,9 +422,22 @@ namespace Ember {
 	{
 		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
 
-		// Remove children first
-		for (auto child : entity.GetAllChildren())
-			RemoveEntity(child);
+		// Copy child UUIDs first to avoid iterating a component that gets modified during recursion
+		std::vector<UUID> childUUIDs = entity.GetComponent<RelationshipComponent>().Children;
+		for (UUID childUUID : childUUIDs)
+		{
+			Entity childEntity = GetEntity(childUUID);
+			RemoveEntity(childEntity);
+		}
+
+		// If contains a RigidBodyComponent, remove it from the PhysicsSystem's runtime simulation
+		if (entity.ContainsComponent<RigidBodyComponent>())
+		{
+			auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+			auto& rigidBody = entity.GetComponent<RigidBodyComponent>();
+			physicsSystem->RemoveRigidBody(rigidBody);
+		}
+
 
 		// Remove from ECS and our Map
 		UUID entityUUID = entity.GetUUID();
@@ -354,12 +467,6 @@ namespace Ember {
 		{
 			AnimatorComponent animator;
 			animator.SkeletonHandle = model->GetSkeletonHandle();
-
-			// Temp testing
-			//auto anim = am.GetAsset<Animation>("Anim_0");
-			//animator.CurrentAnimationHandle = anim->GetUUID();
-
-			//animator.IsPlaying = false;
 
 			rootEntity.AttachComponent<AnimatorComponent>(animator);
 			animatorEntity = rootEntity.GetUUID(); // Save the UUID

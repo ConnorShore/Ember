@@ -145,5 +145,12 @@ namespace Ember {
 			vertexArray->Bind();
 			glDrawElements(GL_TRIANGLES, indicesCt, GL_UNSIGNED_INT, nullptr);
 		}
+
+		void RendererAPI::DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount)
+		{
+			vertexArray->Bind();
+			glDrawArrays(GL_LINES, 0, vertexCount);
+		}
+
 	}
 }

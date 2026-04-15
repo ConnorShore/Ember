@@ -76,7 +76,85 @@ namespace Ember {
 			{
 				ryml::NodeRef rigidBodyNode = entityNode["RigidBodyComponent"];
 				rigidBodyNode |= ryml::MAP;
-				Util::SerializeVector3f(rigidBodyNode["Velocity"], entity.GetComponent<RigidBodyComponent>().Velocity);
+
+				rigidBodyNode["Type"] << (int)entity.GetComponent<RigidBodyComponent>().Type;
+				rigidBodyNode["Mass"] << entity.GetComponent<RigidBodyComponent>().Mass;
+				rigidBodyNode["GravityEnabled"] << entity.GetComponent<RigidBodyComponent>().GravityEnabled;
+			}
+			if (entity.ContainsComponent<BoxColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
+				colliderNode |= ryml::MAP;
+
+				Util::SerializeVector3f(colliderNode["Size"], entity.GetComponent<BoxColliderComponent>().Size);
+				colliderNode["IsTrigger"] << entity.GetComponent<BoxColliderComponent>().IsTrigger;
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<BoxColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<BoxColliderComponent>().Offset.Rotation);
+
+				colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<BoxColliderComponent>().PhysicsMaterialHandle;
+			}
+			if (entity.ContainsComponent<SphereColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
+				colliderNode |= ryml::MAP;
+				colliderNode["Radius"] << entity.GetComponent<SphereColliderComponent>().Radius;
+				colliderNode["IsTrigger"] << entity.GetComponent<SphereColliderComponent>().IsTrigger;
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<SphereColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<SphereColliderComponent>().Offset.Rotation);
+
+				colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<SphereColliderComponent>().PhysicsMaterialHandle;
+			}
+			if (entity.ContainsComponent<CapsuleColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["CapsuleColliderComponent"];
+				colliderNode |= ryml::MAP;
+				colliderNode["Radius"] << entity.GetComponent<CapsuleColliderComponent>().Radius;
+				colliderNode["Height"] << entity.GetComponent<CapsuleColliderComponent>().Height;
+				colliderNode["IsTrigger"] << entity.GetComponent<CapsuleColliderComponent>().IsTrigger;
+				Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<CapsuleColliderComponent>().Offset.Position);
+				Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<CapsuleColliderComponent>().Offset.Rotation);
+
+				colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
+				colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
+				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<CapsuleColliderComponent>().PhysicsMaterialHandle;
+			}
+			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["ConvexMeshColliderComponent"];
+				colliderNode |= ryml::MAP;
+				if (entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
+				{
+					colliderNode["MeshUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().MeshHandle;
+
+					colliderNode["IsTrigger"] << entity.GetComponent<ConvexMeshColliderComponent>().IsTrigger;
+					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Position);
+					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Rotation);
+
+					colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
+					colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
+					colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().PhysicsMaterialHandle;
+				}
+			}
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+			{
+				ryml::NodeRef colliderNode = entityNode["ConcaveMeshColliderComponent"];
+				colliderNode |= ryml::MAP;
+				if (entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle != Constants::InvalidUUID)
+				{
+					colliderNode["MeshUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().MeshHandle;
+
+					colliderNode["IsTrigger"] << entity.GetComponent<ConcaveMeshColliderComponent>().IsTrigger;
+					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Position);
+					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Rotation);
+
+					colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
+					colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
+					colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().PhysicsMaterialHandle;
+				}
 			}
 			if (entity.ContainsComponent<StaticMeshComponent>())
 			{
@@ -317,11 +395,118 @@ namespace Ember {
 				if (entityNode.has_child("RigidBodyComponent"))
 				{
 					ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
-					Vector3f velocity;
-					Util::DeserializeVector3f(rbNode["Velocity"], velocity);
 
-					RigidBodyComponent rbc(velocity);
+					RigidBodyComponent rbc;
+					rbNode["Type"] >> (int&)rbc.Type;
+					rbNode["Mass"] >> rbc.Mass;
+					rbNode["GravityEnabled"] >> rbc.GravityEnabled;
+
 					deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
+				}
+
+				if (entityNode.has_child("BoxColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
+					BoxColliderComponent bcc;
+					Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], bcc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], bcc.Offset.Rotation);
+					colliderNode["Category"] >> bcc.Category;
+					colliderNode["CollisionMask"] >> bcc.CollisionMask;
+					colliderNode["IsTrigger"] >> bcc.IsTrigger;
+					uint64_t bccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
+					bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
+					deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
+				}
+
+				if (entityNode.has_child("SphereColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
+					SphereColliderComponent scc;
+					colliderNode["Radius"] >> scc.Radius;
+					colliderNode["IsTrigger"] >> scc.IsTrigger;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], scc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], scc.Offset.Rotation);
+					colliderNode["Category"] >> scc.Category;
+					colliderNode["CollisionMask"] >> scc.CollisionMask;
+					uint64_t sccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> sccPhysMatId;
+					scc.PhysicsMaterialHandle = (UUID)sccPhysMatId;
+					deserializedEntity.AttachComponent<SphereColliderComponent>(scc);
+				}
+
+				if (entityNode.has_child("CapsuleColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["CapsuleColliderComponent"];
+					CapsuleColliderComponent ccc;
+					colliderNode["Radius"] >> ccc.Radius;
+					colliderNode["Height"] >> ccc.Height;
+					colliderNode["IsTrigger"] >> ccc.IsTrigger;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
+					else if (colliderNode.has_child("Offset"))
+						Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
+					colliderNode["Category"] >> ccc.Category;
+					colliderNode["CollisionMask"] >> ccc.CollisionMask;
+					uint64_t cccPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> cccPhysMatId;
+					ccc.PhysicsMaterialHandle = (UUID)cccPhysMatId;
+					deserializedEntity.AttachComponent<CapsuleColliderComponent>(ccc);
+				}
+
+				if (entityNode.has_child("ConvexMeshColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["ConvexMeshColliderComponent"];
+					uint64_t meshId;
+					colliderNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
+					ConvexMeshColliderComponent ccc;
+					ccc.MeshHandle = meshUUID;
+					colliderNode["IsTrigger"] >> ccc.IsTrigger;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
+					colliderNode["Category"] >> ccc.Category;
+					colliderNode["CollisionMask"] >> ccc.CollisionMask;
+					uint64_t convexPhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> convexPhysMatId;
+					ccc.PhysicsMaterialHandle = (UUID)convexPhysMatId;
+					deserializedEntity.AttachComponent<ConvexMeshColliderComponent>(ccc);
+				}
+
+				if (entityNode.has_child("ConcaveMeshColliderComponent"))
+				{
+					ryml::NodeRef colliderNode = entityNode["ConcaveMeshColliderComponent"];
+					uint64_t meshId;
+					colliderNode["MeshUUID"] >> meshId;
+					UUID meshUUID = (UUID)meshId;
+
+					ConcaveMeshColliderComponent cmcc;
+					cmcc.MeshHandle = meshUUID;
+					colliderNode["IsTrigger"] >> cmcc.IsTrigger;
+					if (colliderNode.has_child("OffsetPosition"))
+						Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
+					if (colliderNode.has_child("OffsetRotation"))
+						Util::DeserializeVector3f(colliderNode["OffsetRotation"], cmcc.Offset.Rotation);
+					colliderNode["Category"] >> cmcc.Category;
+					colliderNode["CollisionMask"] >> cmcc.CollisionMask;
+					uint64_t concavePhysMatId;
+					colliderNode["PhysicsMaterialUUID"] >> concavePhysMatId;
+					cmcc.PhysicsMaterialHandle = (UUID)concavePhysMatId;
+					deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(cmcc);
 				}
 
 				if (entityNode.has_child("StaticMeshComponent"))
