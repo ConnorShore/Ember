@@ -233,7 +233,6 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		ColliderOffset Offset;
-		Vector3f Scale = Vector3f(1.0f);
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -260,7 +259,6 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		ColliderOffset Offset;
-		Vector3f Scale = Vector3f(1.0f);
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;

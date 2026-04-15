@@ -50,7 +50,6 @@ namespace Ember {
 
 		state.new_usertype<ConvexMeshColliderComponent>("ConvexMeshColliderComponent",
 			"MeshHandle", &ConvexMeshColliderComponent::MeshHandle,
-			"Scale", &ConvexMeshColliderComponent::Scale,
 			"Offset", &ConvexMeshColliderComponent::Offset,
 			"Category", &ConvexMeshColliderComponent::Category,
 			"CollisionMask", &ConvexMeshColliderComponent::CollisionMask
@@ -58,7 +57,6 @@ namespace Ember {
 
 		state.new_usertype<ConcaveMeshColliderComponent>("ConcaveMeshColliderComponent",
 			"MeshHandle", &ConcaveMeshColliderComponent::MeshHandle,
-			"Scale", &ConcaveMeshColliderComponent::Scale,
 			"Offset", &ConcaveMeshColliderComponent::Offset,
 			"Category", &ConcaveMeshColliderComponent::Category,
 			"CollisionMask", &ConcaveMeshColliderComponent::CollisionMask

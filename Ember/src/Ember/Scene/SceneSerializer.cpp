@@ -129,7 +129,6 @@ namespace Ember {
 
 					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Position);
 					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConvexMeshColliderComponent>().Offset.Rotation);
-					Util::SerializeVector3f(colliderNode["Scale"], entity.GetComponent<ConvexMeshColliderComponent>().Scale);
 
 					colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
@@ -146,7 +145,6 @@ namespace Ember {
 
 					Util::SerializeVector3f(colliderNode["OffsetPosition"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Position);
 					Util::SerializeVector3f(colliderNode["OffsetRotation"], entity.GetComponent<ConcaveMeshColliderComponent>().Offset.Rotation);
-					Util::SerializeVector3f(colliderNode["Scale"], entity.GetComponent<ConcaveMeshColliderComponent>().Scale);
 
 					colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
 					colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
@@ -472,8 +470,6 @@ namespace Ember {
 						Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 					if (colliderNode.has_child("OffsetRotation"))
 						Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
-					if (colliderNode.has_child("Scale"))
-						Util::DeserializeVector3f(colliderNode["Scale"], ccc.Scale);
 					colliderNode["Category"] >> ccc.Category;
 					colliderNode["CollisionMask"] >> ccc.CollisionMask;
 					uint64_t convexPhysMatId;
@@ -495,8 +491,6 @@ namespace Ember {
 						Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
 					if (colliderNode.has_child("OffsetRotation"))
 						Util::DeserializeVector3f(colliderNode["OffsetRotation"], cmcc.Offset.Rotation);
-					if (colliderNode.has_child("Scale"))
-						Util::DeserializeVector3f(colliderNode["Scale"], cmcc.Scale);
 					colliderNode["Category"] >> cmcc.Category;
 					colliderNode["CollisionMask"] >> cmcc.CollisionMask;
 					uint64_t concavePhysMatId;

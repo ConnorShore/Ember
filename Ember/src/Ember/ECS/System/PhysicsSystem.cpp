@@ -615,9 +615,9 @@ namespace Ember {
 		rp3d::ConvexMesh* convexMesh = m_PhysicsCommon->createConvexMesh(*mesh.RP3DVertexArray, messages);
 
 		rp3d::Vector3 scaling(
-			ctx.ChildWorldScale.x * mesh.Scale.x,
-			ctx.ChildWorldScale.y * mesh.Scale.y,
-			ctx.ChildWorldScale.z * mesh.Scale.z
+			ctx.ChildWorldScale.x,
+			ctx.ChildWorldScale.y,
+			ctx.ChildWorldScale.z
 		);
 		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
@@ -649,9 +649,9 @@ namespace Ember {
 		mesh.TriangleMesh = m_PhysicsCommon->createTriangleMesh(*mesh.TriangleArray, messages);
 
 		rp3d::Vector3 scaling(
-			ctx.ChildWorldScale.x * mesh.Scale.x,
-			ctx.ChildWorldScale.y * mesh.Scale.y,
-			ctx.ChildWorldScale.z * mesh.Scale.z
+			ctx.ChildWorldScale.x,
+			ctx.ChildWorldScale.y,
+			ctx.ChildWorldScale.z
 		);
 		AttachAndUpdateMass(mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
