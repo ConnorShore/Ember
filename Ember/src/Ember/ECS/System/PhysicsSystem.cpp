@@ -619,6 +619,7 @@ namespace Ember {
 		collider->setIsTrigger(true);
 
 		// Apply collision filters
+		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test

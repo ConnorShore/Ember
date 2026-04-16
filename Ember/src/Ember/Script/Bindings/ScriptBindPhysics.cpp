@@ -34,7 +34,7 @@ namespace Ember {
 
 		// Custom filter bindings
 		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
-		for (int i = 2; i < 15; i++) {
+		for (int i = 1; i < 16; i++) {
 			std::string customName = filterManager.GetFilterNameBySlot(i);
 			if (!customName.empty()) {
 				collisionFilterTable[customName] = (1 << i);
