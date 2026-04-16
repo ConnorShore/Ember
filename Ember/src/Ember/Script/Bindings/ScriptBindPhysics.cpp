@@ -1,9 +1,11 @@
 #include "ebpch.h"
 #include "ScriptBindPhysics.h"
 
+#include "Ember/Core/ProjectManager.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Physics/CollisionFilterManager.h"
 #include "Ember/Physics/Raycast.h"
+#include "Ember/Physics/Collision.h"
 
 namespace Ember {
 
@@ -23,6 +25,22 @@ namespace Ember {
 			"GetFilterNameBySlot", &CollisionFilterManager::GetFilterNameBySlot
 		);
 
+		sol::table collisionFilterTable = state.create_table("CollisionFilter");
+
+		// Defaults
+		collisionFilterTable["Default"] = CollisionFilterPreset::Default;
+		collisionFilterTable["Environment"] = CollisionFilterPreset::Environment;
+		collisionFilterTable["All"] = CollisionFilterPreset::All;
+
+		// Custom filter bindings
+		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
+		for (int i = 2; i < 15; i++) {
+			std::string customName = filterManager.GetFilterNameBySlot(i);
+			if (!customName.empty()) {
+				collisionFilterTable[customName] = (1 << i);
+			}
+		}
+
 		state.new_usertype<LuaRaycastHit>("RaycastHit",
 			"Hit", &LuaRaycastHit::Hit,
 			"CollisionPoint", &LuaRaycastHit::CollisionPoint,
@@ -30,9 +48,9 @@ namespace Ember {
 			"HitEntity", &LuaRaycastHit::HitEntity
 		);
 
-		// Create the Raycast static table
-		auto raycastTable = state.create_table("Raycast");
-		raycastTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end) {
+		// Create the Physics static table
+		auto physicsTable = state.create_table("Physics");
+		physicsTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end) {
 
 			RaycastData rawData = Raycast::CastRay(start, end);
 
@@ -46,6 +64,14 @@ namespace Ember {
 
 			return luaHit;
 		});
+		physicsTable.set_function("CheckSphereCollision", sol::overload(
+			[](const Vector3f& position, float radius) {
+				return Collision::CheckSphere(position, radius);
+			},
+			[](const Vector3f& position, float radius, CollisionFilter filter) {
+				return Collision::CheckSphere(position, radius, filter);
+			}
+		));
 	}
 
 }

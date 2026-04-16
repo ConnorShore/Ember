@@ -32,9 +32,9 @@ namespace Ember {
 	{
 		// Lock the foundational layers to specific bits so they never shift
 		m_Slots[0] = "Default";     // Bit 0: 0x0001
-		m_Slots[1] = "Player";      // Bit 1: 0x0002
-		m_Slots[2] = "Enemy";       // Bit 2: 0x0004
-		m_Slots[3] = "Environment"; // Bit 3: 0x0008
+		m_Slots[1] = "Environment"; // Bit 1: 0x0002
+		m_Slots[2] = "Player";      // Bit 2: 0x0004
+		m_Slots[3] = "Enemy";       // Bit 3: 0x0008
 	}
 
 	std::string CollisionFilterManager::GetFilterNameBySlot(uint32_t index) const
@@ -89,7 +89,7 @@ namespace Ember {
 	std::vector<std::string> CollisionFilterManager::GetCustomFilters() const
 	{
 		std::vector<std::string> names;
-		for (int i = 1; i < 16; i++)
+		for (int i = 1; i < 16; i++)	// Exclude Default
 		{
 			if (!m_Slots[i].empty())
 				names.push_back(m_Slots[i]);

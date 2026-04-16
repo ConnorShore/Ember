@@ -4,6 +4,7 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Physics/RaycastCallback.h"
+#include "Ember/Physics/OverlapTestCallback.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -594,6 +595,42 @@ namespace Ember {
 		}
 
 		return ret;
+	}
+
+	bool PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale)
+	{
+		return false;
+	}
+
+	bool PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	{
+		// Create a temporary invisible STATIC RigidBody at the target position
+		rp3d::Vector3 pos(position.x, position.y, position.z);
+		rp3d::Transform transform(pos, rp3d::Quaternion::identity());
+
+		rp3d::RigidBody* dummyBody = m_PhysicsWorld->createRigidBody(transform);
+		dummyBody->setType(rp3d::BodyType::KINEMATIC);
+
+		// Create the temporary sphere shape and attach it
+		rp3d::SphereShape* sphereShape = m_PhysicsCommon->createSphereShape(radius);
+		rp3d::Collider* collider = dummyBody->addCollider(sphereShape, rp3d::Transform::identity());
+
+		// Make it a trigger so it doesn't physically push objects away during the test
+		collider->setIsTrigger(true);
+
+		// Apply collision filters
+		collider->setCollideWithMaskBits(filter);
+
+		// Run the test
+		OverlapTestCallback callback;
+		m_PhysicsWorld->testOverlap(dummyBody, callback);
+
+		// Clean up the memory instantly
+		dummyBody->removeCollider(collider);
+		m_PhysicsCommon->destroySphereShape(sphereShape);
+		m_PhysicsWorld->destroyRigidBody(dummyBody);
+
+		return callback.HasHit();
 	}
 
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)
