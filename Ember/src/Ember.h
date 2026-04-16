@@ -67,6 +67,9 @@
 #include "Ember/Asset/AssetRegistrySerializer.h"
 #include "Ember/Asset/MeshHeader.h"
 #include "Ember/Asset/MeshSerializer.h"
+#include "Ember/Asset/MaterialSerializer.h"
+#include "Ember/Asset/PhysicsMaterial.h"
+#include "Ember/Asset/Prefab.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 

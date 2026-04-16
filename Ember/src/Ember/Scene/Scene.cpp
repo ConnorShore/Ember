@@ -1,8 +1,10 @@
 #include "ebpch.h"
 #include "Scene.h"
+#include "SceneSerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Core/ProjectManager.h"
 
 #include "Ember/ECS/System/ScriptSystem.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
@@ -249,6 +251,30 @@ namespace Ember {
 		return DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
 	}
 
+	SharedPtr<Prefab> Scene::CreatePrefab(Entity entity, const std::string& filepath)
+	{
+		if (entity == Constants::Entities::InvalidEntityID || filepath.empty())
+			return nullptr;
+
+		// Serialize the entity and its children to a prefab file
+		SceneSerializer serializer(this);
+		if (!serializer.SerializePrefab(entity, filepath))
+		{
+			return nullptr;
+		}
+
+		// Load entity as a prefab asset
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefab = assetManager.Load<Prefab>(filepath);
+		prefab->SetIsEngineAsset(false);
+
+		// Add prefab component to entity
+		PrefabComponent pc;
+		entity.AttachComponent(pc);
+
+		return prefab;
+	}
+
 	void Scene::SetEntityParent(UUID childUUID, Entity newParent)
 	{
 		EB_CORE_ASSERT(newParent.ContainsComponent<RelationshipComponent>(), "New parent entity must have a RelationshipComponent!");
@@ -474,6 +500,18 @@ namespace Ember {
 
 		ProcessModelNode(rootEntity, model->GetRootNode(), model, animatorEntity);
 		return rootEntity;
+	}
+
+	Entity Scene::InstantiatePrefab(const std::string& prefabFile)
+	{
+		std::string modelName = std::filesystem::path(prefabFile).stem().string();
+		auto& am = Application::Instance().GetAssetManager();
+
+		SharedPtr<Prefab> prefab = am.GetAsset<Prefab>(modelName);
+
+		SceneSerializer serializer(this);
+		Entity root = serializer.DeserializePrefab(prefab);
+		return root;
 	}
 
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)

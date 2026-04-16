@@ -1,10 +1,13 @@
 #include "efpch.h"
 #include "SceneHierarchyPanel.h"
-#include "Ember/Scene/Entity.h"
 #include "Utils/Presets.h"
 #include "UI/DragDropTypes.h"
+
+#include "Ember/Scene/Entity.h"
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Input/Input.h>
+#include <Ember/Scene/SceneSerializer.h>
+#include <Ember/Core/ProjectManager.h>
 
 namespace Ember {
 
@@ -197,7 +200,15 @@ namespace Ember {
 		}
 		else
 		{
+			// Make prefab instances visually distinct with an orange color
+			bool isPrefab = entity.ContainsComponent<PrefabComponent>();
+			if (isPrefab)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.88f, 0.40f, 0.10f, 1.00f));
+
 			opened = ImGui::TreeNodeEx(id, flags, "%s", entity.GetName().c_str());
+
+			if (isPrefab)
+				ImGui::PopStyleColor();
 		}
 
 		// Drag drop for parent/child relationships
@@ -302,6 +313,10 @@ namespace Ember {
 			if (ImGui::MenuItem("Duplicate Entity", "CTRL+D"))
 			{
 				DuplicateEntity(entity);
+			}
+			if (ImGui::MenuItem("Create Prefab From Entity"))
+			{
+				CreatePrefab(entity);
 			}
 			if (ImGui::MenuItem("Delete Entity", "DEL"))
 			{
@@ -427,6 +442,22 @@ namespace Ember {
 
 		auto newEntity = m_Context->ActiveScene->DuplicateEntity(entity);
 		SetSelectedEntity(newEntity);
+	}
+
+	void SceneHierarchyPanel::CreatePrefab(Entity entity)
+	{
+		std::string filePath = (ProjectManager::GetActive()->GetAssetDirectory() / "Prefabs" / (entity.GetName() + ".ebprefab")).string();
+		SharedPtr<Prefab> prefab = m_Context->ActiveScene->CreatePrefab(entity, filePath);
+		if (prefab == nullptr)
+		{
+			auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);
+			m_Context->EventCallback(evt);
+			return;
+		}
+
+		// Success notification
+		auto evt = UINotificationEvent(std::format("Prefab {} created!", prefab->GetName()));
+		m_Context->EventCallback(evt);
 	}
 
 	void SceneHierarchyPanel::RenameEntity(Entity entity)

@@ -28,6 +28,7 @@ namespace Ember {
 		void CreateEntity(Entity entity);
 		void CreateEmptyEntity();
 		void DuplicateEntity(Entity entity);
+		void CreatePrefab(Entity entity);
 		void RenameEntity(Entity entity);
 
 		bool OnKeyPressed(const KeyPressedEvent& event);

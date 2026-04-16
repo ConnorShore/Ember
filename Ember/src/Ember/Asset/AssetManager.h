@@ -11,6 +11,7 @@
 #include "AnimationSerializer.h"
 #include "SkeletonSerializer.h"
 #include "PhysicsMaterialSerializer.h"
+#include "Prefab.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -97,6 +98,8 @@ namespace Ember {
 				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				newAsset = PhysicsMaterialSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, Prefab>)
+				newAsset = SharedPtr<Prefab>::Create(uuid, name, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);

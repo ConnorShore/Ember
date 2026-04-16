@@ -13,7 +13,8 @@ namespace Ember {
 		AssetScript,
 		AssetShader,
 		AssetPhysicsMaterial,
-		SceneEntity,
+		AssetPrefab,
+		SceneEntity
 	};
 
 	class DragDropUtils
@@ -30,6 +31,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetScript: return "ASSET_SCRIPT";
 			case DragDropPayloadType::AssetShader: return "ASSET_SHADER";
 			case DragDropPayloadType::AssetPhysicsMaterial: return "ASSET_PHYSICS_MATERIAL";
+			case DragDropPayloadType::AssetPrefab: return "ASSET_PREFAB";
 			case DragDropPayloadType::SceneEntity: return "SCENE_ENTITY";
 			default: return "Unknown";
 			}
@@ -43,6 +45,7 @@ namespace Ember {
 			if (str == "ASSET_SCRIPT") return DragDropPayloadType::AssetScript;
 			if (str == "ASSET_SHADER") return DragDropPayloadType::AssetShader;
 			if (str == "ASSET_PHYSICS_MATERIAL") return DragDropPayloadType::AssetPhysicsMaterial;
+			if (str == "ASSET_PREFAB") return DragDropPayloadType::AssetPrefab;
 			if (str == "SCENE_ENTITY") return DragDropPayloadType::SceneEntity;
 			return DragDropPayloadType::None;
 		}
@@ -60,6 +63,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetShader: return "*.glsl;";
 			case DragDropPayloadType::AssetPhysicsMaterial: return "*.ebpmat;";
 			case DragDropPayloadType::AssetScript: return "*.lua;";
+			case DragDropPayloadType::AssetPrefab: return "*.ebprefab";
 			default: return "*.*";
 			}
 		}
@@ -79,6 +83,8 @@ namespace Ember {
 				return DragDropPayloadType::AssetPhysicsMaterial;
 			if (extension == ".lua")
 				return DragDropPayloadType::AssetScript;
+			if (extension == ".ebprefab")
+				return DragDropPayloadType::AssetPrefab;
 			return DragDropPayloadType::None;
 		}
 	};

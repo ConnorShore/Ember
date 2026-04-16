@@ -53,6 +53,7 @@ namespace Ember {
 		void RemovePendingComponents();
 
 		void CreateEntityFromModel(const std::string& modelFilePath);
+		void CreateEntityFromPrefab(const std::string& prefabFilePath);
 
 		void OutlineEntity(Entity entity);
 
