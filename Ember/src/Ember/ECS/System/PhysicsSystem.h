@@ -4,6 +4,7 @@
 #include "System.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Physics/RaycastData.h"
+#include "Ember/Physics/CollisionTestCallback.h"
 
 // forward declarations
 namespace reactphysics3d {
@@ -52,8 +53,10 @@ namespace Ember {
 
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
-		bool TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale);
+		bool TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter = CollisionFilterPreset::All);
 		bool TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All);
+
+		CollisionCallbackData TestCollision(Entity entity);
 
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();

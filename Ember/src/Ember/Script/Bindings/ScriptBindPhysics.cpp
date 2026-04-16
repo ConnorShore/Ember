@@ -63,13 +63,21 @@ namespace Ember {
 				luaHit.HitEntity = Entity(rawData.RigidBodyEntity, scene);
 
 			return luaHit;
-		});
-		physicsTable.set_function("CheckSphereCollision", sol::overload(
+			});
+		physicsTable.set_function("CheckOverlapBox", sol::overload(
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale) {
+				return Collision::CheckOverlapBox(position, rotation, scale);
+			},
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter) {
+				return Collision::CheckOverlapBox(position, rotation, scale, filter);
+			}
+		));
+		physicsTable.set_function("CheckOverlapSphere", sol::overload(
 			[](const Vector3f& position, float radius) {
-				return Collision::CheckSphere(position, radius);
+				return Collision::CheckOverlapSphere(position, radius);
 			},
 			[](const Vector3f& position, float radius, CollisionFilter filter) {
-				return Collision::CheckSphere(position, radius, filter);
+				return Collision::CheckOverlapSphere(position, radius, filter);
 			}
 		));
 	}

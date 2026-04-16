@@ -597,14 +597,46 @@ namespace Ember {
 		return ret;
 	}
 
-	bool PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale)
+	bool PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
-		return false;
+		// Create a temporary invisible KINEMATIC RigidBody at the target position
+		rp3d::Vector3 halfExtents(scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f);
+		Quaternion rotationQuat = Math::ToQuaternion(rotation);
+
+		rp3d::Transform transform(
+			rp3d::Vector3(position.x, position.y, position.z),
+			rp3d::Quaternion(rotationQuat.x, rotationQuat.y, rotationQuat.z, rotationQuat.w)
+		);
+
+		rp3d::RigidBody* dummyBody = m_PhysicsWorld->createRigidBody(transform);
+		dummyBody->setType(rp3d::BodyType::KINEMATIC);
+
+		// Create the temporary sphere shape and attach it
+		rp3d::BoxShape* boxShape = m_PhysicsCommon->createBoxShape(halfExtents);
+		rp3d::Collider* collider = dummyBody->addCollider(boxShape, rp3d::Transform::identity());
+
+		// Make it a trigger so it doesn't physically push objects away during the test
+		collider->setIsTrigger(true);
+
+		// Apply collision filters
+		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
+		collider->setCollideWithMaskBits(filter);
+
+		// Run the test
+		OverlapTestCallback callback;
+		m_PhysicsWorld->testOverlap(dummyBody, callback);
+
+		// Clean up the memory instantly
+		dummyBody->removeCollider(collider);
+		m_PhysicsCommon->destroyBoxShape(boxShape);
+		m_PhysicsWorld->destroyRigidBody(dummyBody);
+
+		return callback.HasHit();
 	}
 
 	bool PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
-		// Create a temporary invisible STATIC RigidBody at the target position
+		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 pos(position.x, position.y, position.z);
 		rp3d::Transform transform(pos, rp3d::Quaternion::identity());
 
@@ -632,6 +664,23 @@ namespace Ember {
 		m_PhysicsWorld->destroyRigidBody(dummyBody);
 
 		return callback.HasHit();
+	}
+
+	CollisionCallbackData PhysicsSystem::TestCollision(Entity entity)
+	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
+		// Pass the specific rigid body into the callback so we can fix the normal direction!
+		CollisionTestCallback callback(rb.Body);
+		m_PhysicsWorld->testCollision(rb.Body, callback);
+
+		return callback.GetCollisionData();
 	}
 
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)

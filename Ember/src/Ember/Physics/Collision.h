@@ -8,6 +8,7 @@ namespace Ember {
 	class Collision
 	{
 	public:
-		static bool CheckSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All);
+		static bool CheckOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter = CollisionFilterPreset::All);
+		static bool CheckOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All);
 	};
 }

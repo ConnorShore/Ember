@@ -1,13 +1,13 @@
 #pragma once
 
-#include <reactphysics3d/reactphysics3d.h>
+#include <reactphysics3d/collision/OverlapCallback.h>
 
 namespace Ember {
 
-	class OverlapTestCallback : public rp3d::OverlapCallback
+	class OverlapTestCallback : public reactphysics3d::OverlapCallback
 	{
 	public:
-		virtual void onOverlap(rp3d::OverlapCallback::CallbackData& callbackData) override
+		virtual void onOverlap(reactphysics3d::OverlapCallback::CallbackData& callbackData) override
 		{
 			// If this function is called, our dummy body is touching something!
 			// Note: callbackData contains an array of overlap pairs, so you could 
