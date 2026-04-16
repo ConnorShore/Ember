@@ -8,6 +8,7 @@
 #include "Bindings/ScriptBindPhysics.h"
 #include "Bindings/ScriptBindComponents.h"
 #include "Bindings/ScriptBindAssets.h"
+#include "Bindings/ScriptBindScene.h"
 
 namespace Ember {
 
@@ -60,6 +61,7 @@ namespace Ember {
     void ScriptEngine::BindAPI(Scene* scene)
     {
         BindCore(*s_LuaState);
+		BindScene(*s_LuaState, scene);
         BindEntity(*s_LuaState);
         BindInput(*s_LuaState);
         BindMath(*s_LuaState);

@@ -527,6 +527,9 @@ namespace Ember {
 		AnimatorComponent(const AnimatorComponent&) = default;
 	};
 
-	struct PrefabComponent {};
+	struct PrefabComponent 
+	{
+		UUID PrefabHandle = Constants::InvalidUUID;
+	};
 
 }

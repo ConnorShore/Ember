@@ -814,7 +814,14 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromPrefab(const std::string& prefabFilePath)
 	{
-		Entity prefEntity = m_Context.ActiveScene->InstantiatePrefab(prefabFilePath);
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefabAsset = assetManager.Load<Prefab>(prefabFilePath);
+
+		// Instantiate prefab at origin
+		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
+		// using raycasting
+		Vector3f origin = Vector3f(0.0f);
+		Entity prefEntity = m_Context.ActiveScene->InstantiatePrefab(prefabAsset, &origin);
 		m_Context.SelectedEntity = prefEntity;
 	}
 

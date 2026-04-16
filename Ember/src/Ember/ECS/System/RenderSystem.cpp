@@ -965,7 +965,19 @@ namespace Ember {
 			auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
 			physicsDebugShader->Bind();
 
-			m_PhysicsDebugLineVBO->SetData(vertices.data(), vertices.size() * sizeof(DebugVertex));
+			uint32_t requiredSize = static_cast<uint32_t>(vertices.size() * sizeof(DebugVertex));
+			if (requiredSize > m_PhysicsDebugLineVBO->GetSize())
+			{
+				// Immutable GPU storage cannot be resized — recreate the VBO and rebind it to the VAO
+				m_PhysicsDebugLineVBO = VertexBuffer::Create(requiredSize);
+				m_PhysicsDebugLineVBO->SetLayout({
+					{ ShaderDataType::Float3, "v_Position" },
+					{ ShaderDataType::Float4, "v_Color" }
+					});
+				m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+			}
+
+			m_PhysicsDebugLineVBO->SetData(vertices.data(), requiredSize);
 			m_PhysicsDebugLineVAO->Bind();
 			RenderAction::DrawLines(m_PhysicsDebugLineVAO, static_cast<uint32_t>(vertices.size()));
 		}

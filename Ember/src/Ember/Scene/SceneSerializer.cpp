@@ -229,14 +229,14 @@ namespace Ember {
 			scriptNode |= ryml::MAP;
 			scriptNode["ScriptUUID"] << (uint64_t)script.ScriptHandle;
 		}
-		if (entity.ContainsComponent<OutlineComponent>())
-		{
-			auto& outlineComp = entity.GetComponent<OutlineComponent>();
-			ryml::NodeRef outlineNode = entityNode["OutlineComponent"];
-			outlineNode |= ryml::MAP;
-			Util::SerializeVector3f(outlineNode["Color"], outlineComp.Color);
-			outlineNode["Thickness"] << outlineComp.Thickness;
-		}
+		//if (entity.ContainsComponent<OutlineComponent>())
+		//{
+		//	auto& outlineComp = entity.GetComponent<OutlineComponent>();
+		//	ryml::NodeRef outlineNode = entityNode["OutlineComponent"];
+		//	outlineNode |= ryml::MAP;
+		//	Util::SerializeVector3f(outlineNode["Color"], outlineComp.Color);
+		//	outlineNode["Thickness"] << outlineComp.Thickness;
+		//}
 		if (entity.ContainsComponent<AnimatorComponent>())
 		{
 			auto& animator = entity.GetComponent<AnimatorComponent>();
@@ -256,6 +256,13 @@ namespace Ember {
 			billboardNode["StaticSize"] << billboard.StaticSize;
 			billboardNode["Size"] << billboard.Size;
 			billboardNode["RenderRuntime"] << billboard.RenderRuntime;
+		}
+		if (entity.ContainsComponent<PrefabComponent>())
+		{
+			auto& prefab = entity.GetComponent<PrefabComponent>();
+			ryml::NodeRef prefabNode = entityNode["PrefabComponent"];
+			prefabNode |= ryml::MAP;
+			prefabNode["PrefabUUID"] << (uint64_t)prefab.PrefabHandle;
 		}
 	}
 
@@ -327,7 +334,11 @@ namespace Ember {
 			ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
 
 			RigidBodyComponent rbc;
-			rbNode["Type"] >> (int&)rbc.Type;
+
+			int typeVal;
+			rbNode["Type"] >> typeVal;
+			rbc.Type = static_cast<RigidBodyComponent::BodyType>(typeVal);
+
 			rbNode["Mass"] >> rbc.Mass;
 			rbNode["GravityEnabled"] >> rbc.GravityEnabled;
 
@@ -565,14 +576,14 @@ namespace Ember {
 			deserializedEntity.AttachComponent<ScriptComponent>(sc);
 		}
 
-		if (entityNode.has_child("OutlineComponent"))
-		{
-			ryml::NodeRef outlineNode = entityNode["OutlineComponent"];
-			OutlineComponent oc;
-			Util::DeserializeVector3f(outlineNode["Color"], oc.Color);
-			outlineNode["Thickness"] >> oc.Thickness;
-			deserializedEntity.AttachComponent<OutlineComponent>(oc);
-		}
+		//if (entityNode.has_child("OutlineComponent"))
+		//{
+		//	ryml::NodeRef outlineNode = entityNode["OutlineComponent"];
+		//	OutlineComponent oc;
+		//	Util::DeserializeVector3f(outlineNode["Color"], oc.Color);
+		//	outlineNode["Thickness"] >> oc.Thickness;
+		//	deserializedEntity.AttachComponent<OutlineComponent>(oc);
+		//}
 
 		if (entityNode.has_child("AnimatorComponent"))
 		{
@@ -610,6 +621,16 @@ namespace Ember {
 			billboardNode["RenderRuntime"] >> bc.RenderRuntime;
 
 			deserializedEntity.AttachComponent<BillboardComponent>(bc);
+		}
+
+		if (entityNode.has_child("PrefabComponent"))
+		{
+			ryml::NodeRef prefabNode = entityNode["PrefabComponent"];
+			uint64_t prefabId;
+			prefabNode["PrefabUUID"] >> prefabId;
+			PrefabComponent pc;
+			pc.PrefabHandle = (UUID)prefabId;
+			deserializedEntity.AttachComponent<PrefabComponent>(pc);
 		}
 	}
 

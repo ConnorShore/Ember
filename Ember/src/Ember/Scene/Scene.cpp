@@ -136,7 +136,8 @@ namespace Ember {
 					PointLightComponent,
 					RelationshipComponent,
 					AnimatorComponent,
-					BillboardComponent
+					BillboardComponent,
+					PrefabComponent
 				>(srcEntity, destEntity);
 		}
 
@@ -270,6 +271,7 @@ namespace Ember {
 
 		// Add prefab component to entity
 		PrefabComponent pc;
+		pc.PrefabHandle = prefab->GetUUID();
 		entity.AttachComponent(pc);
 
 		return prefab;
@@ -502,15 +504,19 @@ namespace Ember {
 		return rootEntity;
 	}
 
-	Entity Scene::InstantiatePrefab(const std::string& prefabFile)
+	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
-		std::string modelName = std::filesystem::path(prefabFile).stem().string();
-		auto& am = Application::Instance().GetAssetManager();
-
-		SharedPtr<Prefab> prefab = am.GetAsset<Prefab>(modelName);
-
+		// Deserialize the prefab into a new entity hierarchy
 		SceneSerializer serializer(this);
-		Entity root = serializer.DeserializePrefab(prefab);
+		Entity root = serializer.DeserializePrefab(prefabAsset);
+
+		// Set position if specified
+		if (position != nullptr)
+		{
+			auto& transform = root.GetComponent<TransformComponent>();
+			transform.Position = *position;
+		}
+
 		return root;
 	}
 
