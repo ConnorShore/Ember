@@ -317,15 +317,29 @@ namespace Ember {
 		uint32_t textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
 		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(textureID)), ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		// Drag drop zone for models
+		// Drag drop zone for models and prefabs
 		if (ImGui::BeginDragDropTarget())
 		{
-			std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			// Models
 			{
-				std::string filePath = std::string((char*)payload->Data, payload->DataSize);
-				CreateEntityFromModel(filePath);
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					CreateEntityFromModel(filePath);
+				}
 			}
+
+			// Prefabs
+			{
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					CreateEntityFromPrefab(filePath);
+				}
+			}
+
 			ImGui::EndDragDropTarget();
 		}
 
@@ -796,6 +810,19 @@ namespace Ember {
 	{
 		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(modelFilePath);
 		m_Context.SelectedEntity = modelEntity;
+	}
+
+	void EditorLayer::CreateEntityFromPrefab(const std::string& prefabFilePath)
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefabAsset = assetManager.Load<Prefab>(prefabFilePath);
+
+		// Instantiate prefab at origin
+		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
+		// using raycasting
+		Vector3f origin = Vector3f(0.0f);
+		Entity prefEntity = m_Context.ActiveScene->InstantiatePrefab(prefabAsset, &origin);
+		m_Context.SelectedEntity = prefEntity;
 	}
 
 	void EditorLayer::OutlineEntity(Entity entity)

@@ -9,6 +9,7 @@
 #include "Ember/Asset/Model.h"
 #include "Ember/Tools/EditorCamera.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Asset/Prefab.h"
 
 #include <unordered_map>
 
@@ -47,6 +48,9 @@ namespace Ember {
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
 		Entity DuplicateEntity(Entity entity);
+
+		SharedPtr<Prefab> CreatePrefab(Entity entity, const std::string& filepath);
+
 		void SetEntityParent(UUID childUUID, Entity newParent);
 		void RemoveParent(Entity child);
 
@@ -92,6 +96,7 @@ namespace Ember {
 		void RemoveEntity(Entity entity);
 
 		Entity InstantiateModel(const std::string& modelFile);
+		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position);
 
 		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
 

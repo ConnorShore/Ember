@@ -1,8 +1,10 @@
 #include "ebpch.h"
 #include "Scene.h"
+#include "SceneSerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Core/ProjectManager.h"
 
 #include "Ember/ECS/System/ScriptSystem.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
@@ -134,7 +136,8 @@ namespace Ember {
 					PointLightComponent,
 					RelationshipComponent,
 					AnimatorComponent,
-					BillboardComponent
+					BillboardComponent,
+					PrefabComponent
 				>(srcEntity, destEntity);
 		}
 
@@ -247,6 +250,31 @@ namespace Ember {
 	Entity Scene::DuplicateEntity(Entity entity)
 	{
 		return DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
+	}
+
+	SharedPtr<Prefab> Scene::CreatePrefab(Entity entity, const std::string& filepath)
+	{
+		if (entity == Constants::Entities::InvalidEntityID || filepath.empty())
+			return nullptr;
+
+		// Serialize the entity and its children to a prefab file
+		SceneSerializer serializer(this);
+		if (!serializer.SerializePrefab(entity, filepath))
+		{
+			return nullptr;
+		}
+
+		// Load entity as a prefab asset
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefab = assetManager.Load<Prefab>(filepath);
+		prefab->SetIsEngineAsset(false);
+
+		// Add prefab component to entity
+		PrefabComponent pc;
+		pc.PrefabHandle = prefab->GetUUID();
+		entity.AttachComponent(pc);
+
+		return prefab;
 	}
 
 	void Scene::SetEntityParent(UUID childUUID, Entity newParent)
@@ -474,6 +502,48 @@ namespace Ember {
 
 		ProcessModelNode(rootEntity, model->GetRootNode(), model, animatorEntity);
 		return rootEntity;
+	}
+
+	static void InitializePrefabPhysics(EntityID entity, PhysicsSystem* physicsSystem, Scene* scene)
+	{
+		physicsSystem->InitializeEntity(entity, scene);
+
+		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				InitializePrefabPhysics(child.GetEntityHandle(), physicsSystem, scene);
+		}
+	}
+
+	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
+	{
+		// Deserialize the prefab into a new entity hierarchy
+		SceneSerializer serializer(this);
+		Entity root = serializer.DeserializePrefab(prefabAsset);
+
+		// Set position if specified
+		if (position != nullptr)
+		{
+			auto& transform = root.GetComponent<TransformComponent>();
+			transform.Position = *position;
+		}
+
+		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
+		// are created at the correct world positions below.
+		auto& systemManager = Application::Instance().GetSystemManager();
+		auto transformSystem = systemManager.GetSystem<TransformSystem>();
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
+
+		// At runtime the ConnectAndRetroact hooks are bound to the editor scene's registry,
+		// not the runtime scene's copy. Physics bodies are therefore never auto-created
+		// when components are attached via deserialization. Explicitly initialize physics
+		// for every entity in the spawned hierarchy now that WorldTransforms are correct.
+		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
+		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
+
+		return root;
 	}
 
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)

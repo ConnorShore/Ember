@@ -19,7 +19,8 @@ namespace Ember {
 		Shader,
 		Material,
 		Script,
-		PhysicsMaterial
+		PhysicsMaterial,
+		Prefab
 	};
 
 
@@ -37,6 +38,7 @@ namespace Ember {
 		case AssetType::Animation: return "Animation";
 		case AssetType::Skeleton: return "Skeleton";
 		case AssetType::PhysicsMaterial: return "PhysicsMaterial";
+		case AssetType::Prefab: return "Prefab";
 		default: EB_CORE_ASSERT(false, "Unknown asset type!"); return "";
 		}
 	}
@@ -52,6 +54,7 @@ namespace Ember {
 		if (typeStr == "Animation") return AssetType::Animation;
 		if (typeStr == "Skeleton") return AssetType::Skeleton;
 		if (typeStr == "PhysicsMaterial") return AssetType::PhysicsMaterial;
+		if (typeStr == "Prefab") return AssetType::Prefab;
 		
 		EB_CORE_ASSERT(false, "Unknown asset type!"); 
 		return AssetType::None;

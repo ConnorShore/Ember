@@ -12,13 +12,13 @@ Assets:
     Name: Lantern_ORM_Mat0
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_ORM_Mat0.png'
   - Type: Texture
-    UUID: 12756682284774851501
-    Name: moonless_golf_4k
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\moonless_golf_4k.hdr'
-  - Type: Texture
     UUID: 844457925654129773
     Name: Fox_Tex_0.png
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
+  - Type: Texture
+    UUID: 12756682284774851501
+    Name: moonless_golf_4k
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\moonless_golf_4k.hdr'
   - Type: Texture
     UUID: 2177168009304926995
     Name: Lantern_Tex_3.png
@@ -36,10 +36,6 @@ Assets:
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Scripts\NewScript.lua'
   - Type: Material
-    UUID: 9235652788431923194
-    Name: Lantern_LanternPost_Mat
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPost_Mat.ebmat'
-  - Type: Material
     UUID: 14259139745694361247
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
@@ -52,6 +48,10 @@ Assets:
     Name: Fox_fox_material
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox_material.ebmat'
   - Type: Material
+    UUID: 9235652788431923194
+    Name: Lantern_LanternPost_Mat
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPost_Mat.ebmat'
+  - Type: Material
     UUID: 1736256064260583025
     Name: Sphere_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
@@ -59,10 +59,6 @@ Assets:
     UUID: 7260500247662306663
     Name: Cube_StandardUnlit_Clone
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardUnlit_Clone.ebmat'
-  - Type: Mesh
-    UUID: 3343826297804333935
-    Name: Lantern_LanternPole_Body_Prim0
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Body_Prim0.ebmesh'
   - Type: Mesh
     UUID: 7192262471407756962
     Name: Lantern_LanternPole_Chain_Prim0
@@ -75,6 +71,10 @@ Assets:
     UUID: 3033507380462941629
     Name: Fox_fox1_Prim0
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox1_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 3343826297804333935
+    Name: Lantern_LanternPole_Body_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Body_Prim0.ebmesh'
   - Type: Skeleton
     UUID: 14397647678188599878
     Name: Fox
@@ -99,3 +99,7 @@ Assets:
     UUID: 9787688241411138515
     Name: Lantern
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern.ebmodel'
+  - Type: Prefab
+    UUID: 1813234409562538226
+    Name: Cube
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Prefabs\Cube.ebprefab'

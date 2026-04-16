@@ -3,7 +3,9 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
-#include "Ember/Utils/PlatformUtil.h"
+#include <Ember/Utils/PlatformUtil.h>
+#include <Ember/Asset/Prefab.h>
+#include <Ember/Event/UIEvent.h>
 
 #include <Ember-Tools/GLTFImporter.h>
 
@@ -155,7 +157,68 @@ namespace Ember {
 				ImGui::PopID();
 			}
 
+			// This completely separates the files from the drop target.
 			ImGui::EndTable();
+		}
+
+		// Create the dropzone
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::Dummy(ImGui::GetContentRegionAvail());
+		ImGui::PopStyleVar();
+
+		// 3. HANDLE THE DROP TARGETS
+		if (ImGui::BeginDragDropTarget())
+		{
+			// Target A: Moving an existing Asset Prefab around the filesystem
+			std::string prefabPayload = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(prefabPayload.c_str()))
+			{
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+				std::filesystem::path destPath = m_CurrentDirectory / std::filesystem::path(filePath).filename();
+				std::error_code ec;
+				std::filesystem::copy(filePath, destPath, std::filesystem::copy_options::overwrite_existing, ec);
+				if (ec)
+				{
+					EB_CORE_ERROR("Failed to copy asset to '{0}': {1}", destPath.string(), ec.message());
+				}
+				else
+				{
+					EB_CORE_INFO("Successfully copied asset to: {0}", destPath.string());
+					Application::Instance().GetAssetManager().Load<Prefab>(destPath.string());
+				}
+			}
+
+			// Target B: Dropping a Scene Entity to create a BRAND NEW Prefab!
+			std::string entityPayload = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(entityPayload.c_str()))
+			{
+				UUID entityUUID = *(const UUID*)payload->Data;
+
+				if (m_Context && m_Context->ActiveScene)
+				{
+					Entity entity = m_Context->ActiveScene->GetEntity(entityUUID);
+					if (entity != Constants::Entities::InvalidEntityID)
+					{
+						// Construct the save path using the active directory
+						std::string filePath = (m_CurrentDirectory / (entity.GetName() + ".ebprefab")).string();
+
+						// Create the prefab asset and save it to disk
+						SharedPtr<Prefab> prefab = m_Context->ActiveScene->CreatePrefab(entity, filePath);
+						if (prefab == nullptr)
+						{
+							auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);
+							m_Context->EventCallback(evt);
+							return;
+						}
+
+						// Success notification
+						auto evt = UINotificationEvent(std::format("Prefab {} created!", prefab->GetName()));
+						m_Context->EventCallback(evt);
+					}
+				}
+			}
+
+			ImGui::EndDragDropTarget();
 		}
 	}
 
@@ -293,6 +356,17 @@ namespace Ember {
 				{
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetScript);
 					std::string file = SelectAndLoadFile(std::format("Script Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
+					if (!file.empty())
+					{
+						asset = Application::Instance().GetAssetManager().Load<Script>(file);
+						asset->SetIsEngineAsset(false);
+					}
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::MenuItem("Prefab"))
+				{
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetPrefab);
+					std::string file = SelectAndLoadFile(std::format("Prefab Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 					{
 						asset = Application::Instance().GetAssetManager().Load<Script>(file);
