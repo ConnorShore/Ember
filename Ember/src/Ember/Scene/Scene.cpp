@@ -504,6 +504,19 @@ namespace Ember {
 		return rootEntity;
 	}
 
+	static void InitializePrefabPhysics(EntityID entity, PhysicsSystem* physicsSystem, Scene* scene)
+	{
+		physicsSystem->InitializeEntity(entity, scene);
+
+		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				InitializePrefabPhysics(child.GetEntityHandle(), physicsSystem, scene);
+		}
+	}
+
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
 		// Deserialize the prefab into a new entity hierarchy
@@ -516,6 +529,19 @@ namespace Ember {
 			auto& transform = root.GetComponent<TransformComponent>();
 			transform.Position = *position;
 		}
+
+		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
+		// are created at the correct world positions below.
+		auto& systemManager = Application::Instance().GetSystemManager();
+		auto transformSystem = systemManager.GetSystem<TransformSystem>();
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
+
+		// At runtime the ConnectAndRetroact hooks are bound to the editor scene's registry,
+		// not the runtime scene's copy. Physics bodies are therefore never auto-created
+		// when components are attached via deserialization. Explicitly initialize physics
+		// for every entity in the spawned hierarchy now that WorldTransforms are correct.
+		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
+		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
 
 		return root;
 	}
