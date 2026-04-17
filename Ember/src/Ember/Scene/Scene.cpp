@@ -11,6 +11,7 @@
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/ECS/System/CharacterControllerSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -119,8 +120,8 @@ namespace Ember {
 			// NOTE: Do not copy IDComponent here, we just set it above.
 			Utils::CopyComponents<
 					TransformComponent,
-					StaticMeshComponent,  // NEW
-					SkinnedMeshComponent, // NEW
+					StaticMeshComponent,
+					SkinnedMeshComponent,
 					MaterialComponent,
 					SpriteComponent,
 					CameraComponent,
@@ -137,8 +138,18 @@ namespace Ember {
 					RelationshipComponent,
 					AnimatorComponent,
 					BillboardComponent,
-					PrefabComponent
+					PrefabComponent,
+					CharacterControllerComponent
 				>(srcEntity, destEntity);
+
+			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
+			if (srcEntity.ContainsComponent<CharacterControllerComponent>() != destEntity.ContainsComponent<CharacterControllerComponent>())
+				EB_CORE_WARN("CopyScene: CharacterControllerComponent copy mismatch on entity '{}'!", destEntity.GetName());
+			if (!srcEntity.ContainsComponent<CharacterControllerComponent>() && srcEntity.ContainsComponent<ScriptComponent>())
+				EB_CORE_WARN("CopyScene: Entity '{}' has a ScriptComponent but no CharacterControllerComponent in the source scene!", srcEntity.GetName());
+
+			// Reset physics runtime pointers so the new scene doesn't alias the source scene's physics objects
+			Utils::ResetPhysicsRuntimeState(destEntity);
 		}
 
 		// Copy registry assets and systems to new scene
@@ -161,6 +172,8 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		ScriptEngine::OnRuntimeStart(this);
 	}
 
@@ -168,14 +181,25 @@ namespace Ember {
 	{
 		ScriptEngine::OnRuntimeStop();
 
+		// Reset physics body pointers on all entities before re-initializing the physics world,
+		// since they became dangling when the runtime scene's physics world was created.
+		auto entityView = m_Registry->Query<IDComponent>();
+		for (auto entityID : entityView)
+		{
+			Entity entity{ entityID, this };
+			Utils::ResetPhysicsRuntimeState(entity);
+		}
+
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
@@ -360,7 +384,8 @@ namespace Ember {
 			SpotLightComponent,
 			PointLightComponent,
 			AnimatorComponent,
-			BillboardComponent
+			BillboardComponent,
+			CharacterControllerComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

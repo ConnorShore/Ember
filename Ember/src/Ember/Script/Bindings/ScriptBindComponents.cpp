@@ -91,6 +91,17 @@ namespace Ember {
 				c.IsPlaying = true;
 			}
 		);
+
+		state.new_usertype<CharacterControllerComponent>("CharacterControllerComponent",
+			"WalkSpeed", &CharacterControllerComponent::WalkSpeed,
+			"JumpForce", &CharacterControllerComponent::JumpForce,
+			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
+			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
+			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
+
+			"Move", &CharacterControllerComponent::Move,
+			"Jump", &CharacterControllerComponent::Jump
+		);
 	}
 
 }

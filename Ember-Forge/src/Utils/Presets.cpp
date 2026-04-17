@@ -4,6 +4,32 @@
 
 namespace Ember {
 
+	Entity Presets::CreateCharacterController(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("Character_Controller");
+
+		StaticMeshComponent mc(Constants::Assets::CapsuleMeshUUID);
+		newEntity.AttachComponent<StaticMeshComponent>(mc);
+
+		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<MaterialComponent>(mtC);
+
+		CharacterControllerComponent ccc;
+		newEntity.AttachComponent<CharacterControllerComponent>(ccc);
+
+		RigidBodyComponent rbc;
+		rbc.Type = RigidBodyComponent::BodyType::Kinematic;
+		newEntity.AttachComponent<RigidBodyComponent>(rbc);
+
+		CapsuleColliderComponent colC;
+		colC.AttachedBody = rbc.Body;
+		newEntity.AttachComponent<CapsuleColliderComponent>(colC);
+
+		// TODO: Add basic script for character movement (WASD + Jump)
+
+		return newEntity;
+	}
+
 	Entity Presets::CreateCube(const SharedPtr<Scene>& scene)
 	{
 		Entity newEntity = scene->AddEntity("Cube");

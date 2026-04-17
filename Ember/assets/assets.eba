@@ -1,1 +1,5 @@
-Assets: []
+Assets:
+  - Type: Script
+    UUID: 8422630553721103124
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'

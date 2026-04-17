@@ -5,6 +5,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Physics/RaycastData.h"
 #include "Ember/Physics/CollisionTestCallback.h"
+#include "Ember/Scene/Entity.h"
 
 // forward declarations
 namespace reactphysics3d {

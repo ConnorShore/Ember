@@ -8,6 +8,8 @@ namespace Ember {
 	class Presets
 	{
 	public:
+		static Entity CreateCharacterController(const SharedPtr<Scene>& scene);
+
 		static Entity CreateCube(const SharedPtr<Scene>& scene);
 		static Entity CreateQuad(const SharedPtr<Scene>& scene);
 		static Entity CreateSphere(const SharedPtr<Scene>& scene);

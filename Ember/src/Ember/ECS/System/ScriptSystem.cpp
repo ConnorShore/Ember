@@ -85,7 +85,7 @@ namespace Ember {
 				sol::protected_function onUpdate = script.Instance["OnUpdate"];
 				if (onUpdate.valid())
 				{
-					sol::protected_function_result updateResult = onUpdate(script.Instance, delta.Seconds());
+					sol::protected_function_result updateResult = onUpdate(script.Instance, entity, delta.Seconds());
 
 					if (!updateResult.valid())
 					{

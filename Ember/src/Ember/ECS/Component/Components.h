@@ -293,6 +293,34 @@ namespace Ember {
 		ConcaveMeshColliderComponent(const ConcaveMeshColliderComponent&) = default;
 	};
 
+	struct CharacterControllerComponent
+	{
+		// User defined properties
+		float WalkSpeed = 5.0f;
+		float JumpForce = 8.0f;
+		float GravityMultiplier = 1.0f;
+		float MaxSlopeAngle = 45.0f;
+		float MaxStepHeight = 0.25f;
+
+		// Read-only properties for Lua scripts (not serialized)
+		bool IsGrounded = false;
+		Vector3f Velocity = Vector3f(0.0f);
+		Vector3f RequestedMovement = Vector3f(0.0f);
+
+		void Move(const Vector3f& requestedMovement)
+		{
+			RequestedMovement = requestedMovement;
+		}
+
+		void Jump()
+		{
+			RequestedMovement += Vector3f(0.0f, JumpForce, 0.0f);
+		}
+
+		CharacterControllerComponent() = default;
+		CharacterControllerComponent(const CharacterControllerComponent&) = default;
+	};
+
 	struct SpriteComponent
 	{
 		Vector4f Color = Vector4f(1.0f);

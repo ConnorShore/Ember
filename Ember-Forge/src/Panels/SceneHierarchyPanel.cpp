@@ -66,6 +66,17 @@ namespace Ember {
 				CreateEmptyEntity();
 			}
 
+			if (ImGui::BeginMenu("Create Dynamic"))
+			{
+				if (ImGui::MenuItem("Character Controller"))
+				{
+					auto entity = Presets::CreateCharacterController(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("Create Primitive"))
 			{
 				if (ImGui::MenuItem("Cube"))

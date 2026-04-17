@@ -264,6 +264,17 @@ namespace Ember {
 			prefabNode |= ryml::MAP;
 			prefabNode["PrefabUUID"] << (uint64_t)prefab.PrefabHandle;
 		}
+		if (entity.ContainsComponent<CharacterControllerComponent>())
+		{
+			auto& controller = entity.GetComponent<CharacterControllerComponent>();
+			ryml::NodeRef controllerNode = entityNode["CharacterControllerComponent"];
+			controllerNode |= ryml::MAP;
+			controllerNode["WalkSpeed"] << controller.WalkSpeed;
+			controllerNode["JumpForce"] << controller.JumpForce;
+			controllerNode["GravityMultiplier"] << controller.GravityMultiplier;
+			controllerNode["MaxSlopeAngle"] << controller.MaxSlopeAngle;
+			controllerNode["MaxStepHeight"] << controller.MaxStepHeight;
+		}
 	}
 
 	// =========================================================================
@@ -631,6 +642,18 @@ namespace Ember {
 			PrefabComponent pc;
 			pc.PrefabHandle = (UUID)prefabId;
 			deserializedEntity.AttachComponent<PrefabComponent>(pc);
+		}
+
+		if (entityNode.has_child("CharacterControllerComponent"))
+		{
+			ryml::NodeRef controllerNode = entityNode["CharacterControllerComponent"];
+			CharacterControllerComponent ccc;
+			controllerNode["WalkSpeed"] >> ccc.WalkSpeed;
+			controllerNode["JumpForce"] >> ccc.JumpForce;
+			controllerNode["GravityMultiplier"] >> ccc.GravityMultiplier;
+			controllerNode["MaxSlopeAngle"] >> ccc.MaxSlopeAngle;
+			controllerNode["MaxStepHeight"] >> ccc.MaxStepHeight;
+			deserializedEntity.AttachComponent<CharacterControllerComponent>(ccc);
 		}
 	}
 
