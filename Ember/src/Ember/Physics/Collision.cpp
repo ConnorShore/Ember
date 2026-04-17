@@ -11,10 +11,10 @@ namespace Ember {
 		return physicsSystem->TestOverlapBox(position, rotation, scale, filter);
 	}
 
-	bool Collision::CheckOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	bool Collision::CheckOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */, reactphysics3d::RigidBody* bodyToIgnore /* = nullptr */)
 	{
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
-		return physicsSystem->TestOverlapSphere(position, radius, filter);
+		return physicsSystem->TestOverlapSphere(position, radius, filter, bodyToIgnore);
 	}
 
 }

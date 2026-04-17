@@ -634,7 +634,7 @@ namespace Ember {
 		return callback.HasHit();
 	}
 
-	bool PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	bool PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */, rp3d::RigidBody* bodyToIgnore /* = nullptr */)
 	{
 		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 pos(position.x, position.y, position.z);
@@ -655,7 +655,7 @@ namespace Ember {
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
-		OverlapTestCallback callback;
+		OverlapTestCallback callback(bodyToIgnore);
 		m_PhysicsWorld->testOverlap(dummyBody, callback);
 
 		// Clean up the memory instantly

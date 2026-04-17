@@ -55,7 +55,7 @@ namespace Ember {
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
 		bool TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter = CollisionFilterPreset::All);
-		bool TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All);
+		bool TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All, rp3d::RigidBody* bodyToIgnore = nullptr);
 
 		CollisionCallbackData TestCollision(Entity entity);
 

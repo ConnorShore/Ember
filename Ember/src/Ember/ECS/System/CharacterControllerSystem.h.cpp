@@ -31,12 +31,13 @@ namespace Ember {
 
 			Quaternion currentRotation = Math::ToQuaternion(transform.Rotation);
 
-			// 1. Grounded Check (Subtracted height, using Environment filter)
-			Vector3f feetPos = transform.Position - Vector3f(0.0f, collider.Height * 0.5f, 0.0f);
-			controller.IsGrounded = Collision::CheckOverlapSphere(feetPos, collider.Radius * 0.9f, CollisionFilterPreset::Environment);
+			// Grounded check
+			float checkRadius = collider.Radius * 1.01;	// Ensure it is slightly below the collider
+			float yOffset = (collider.Height * 0.5f) - checkRadius;
+			Vector3f feetPos = transform.Position - Vector3f(0.0f, yOffset, 0.0f);
+			controller.IsGrounded = Collision::CheckOverlapSphere(feetPos, checkRadius, CollisionFilterPreset::Environment, rb.Body);
 
-
-			// 2. Apply Persistent Physics (Gravity)
+			// Apply Gravity
 			if (!controller.IsGrounded)
 			{
 				// Player is falling! Pull their persistent velocity down.
@@ -47,31 +48,29 @@ namespace Ember {
 			{
 				// Player is on the ground. We don't want gravity to keep building up to -9000,
 				// but we want a tiny bit of downward force so they stick to ramps as they walk down them.
-				controller.Velocity.y = -2.0f;
+				//controller.Velocity.y = -2.0f;
+				controller.Velocity.y = -1.0f;
 			}
 
-			// 3. Combine Input (Requested) with Physics (Velocity)
+			// Combine Input (Requested) with Physics (Velocity)
 			Vector3f currentFrameDisplacement = controller.RequestedMovement + (controller.Velocity * (float)delta);
 
-			// 4. The Move & Slide Loop
+			// The Move & Slide Loop
 			int maxIterations = 3;
 			for (int i = 0; i < maxIterations; i++)
 			{
-				// A. Propose the move
+				// Propose the movement for collision testing
 				transform.Position += currentFrameDisplacement;
 				rb.Body->setTransform(rp3d::Transform(
 					rp3d::Vector3(transform.Position.x, transform.Position.y, transform.Position.z),
 					rp3d::Quaternion(currentRotation.x, currentRotation.y, currentRotation.z, currentRotation.w)
 				));
 
-				// B. Test for hits
+				// Test for collision
 				CollisionCallbackData collisionData = physicsSystem->TestCollision(entity);
 				if (!collisionData.HasHit)
-				{
-					break; // Freedom! We moved without hitting anything.
-				}
+					break; // No hit, move freely
 
-				// C. We hit a wall! The displacement for this micro-step is consumed.
 				currentFrameDisplacement = Vector3f(0.0f);
 
 				for (const auto& contact : collisionData.Contacts)

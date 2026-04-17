@@ -98,6 +98,7 @@ namespace Ember {
 			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
 			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
 			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
+			"IsGrounded", &CharacterControllerComponent::IsGrounded,
 
 			"Move", &CharacterControllerComponent::Move,
 			"Jump", &CharacterControllerComponent::Jump
