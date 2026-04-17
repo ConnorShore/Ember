@@ -99,6 +99,7 @@ namespace Ember {
 			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
 			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
 			"IsGrounded", &CharacterControllerComponent::IsGrounded,
+			"GroundEntity", &CharacterControllerComponent::GroundEntity,
 
 			"Move", &CharacterControllerComponent::Move,
 			"Jump", &CharacterControllerComponent::Jump

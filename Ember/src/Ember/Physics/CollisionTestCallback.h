@@ -3,6 +3,7 @@
 #include "Ember/Math/Math.h"
 
 #include <reactphysics3d/collision/CollisionCallback.h>
+#include <reactphysics3d/body/RigidBody.h>
 #include <vector>
 
 namespace Ember {

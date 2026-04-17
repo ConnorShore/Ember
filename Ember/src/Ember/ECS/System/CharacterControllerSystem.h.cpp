@@ -31,11 +31,22 @@ namespace Ember {
 
 			Quaternion currentRotation = Math::ToQuaternion(transform.Rotation);
 
+			// Sync the current position and rotation into the physics body before any queries
+			// so the grounded check and collision tests see an up-to-date kinematic body.
+			rb.Body->setTransform(rp3d::Transform(
+				rp3d::Vector3(transform.Position.x, transform.Position.y, transform.Position.z),
+				rp3d::Quaternion(currentRotation.x, currentRotation.y, currentRotation.z, currentRotation.w)
+			));
+
 			// Grounded check
-			float checkRadius = collider.Radius * 1.01;	// Ensure it is slightly below the collider
-			float yOffset = (collider.Height * 0.5f) - checkRadius;
+			const float groundCheckMargin = 0.05f;	// account for small gaps between the capsule and the ground due to rotation and physics resolution
+			float checkRadius = collider.Radius;
+			float yOffset = (collider.Height * 0.5f) - checkRadius + groundCheckMargin;
 			Vector3f feetPos = transform.Position - Vector3f(0.0f, yOffset, 0.0f);
-			controller.IsGrounded = Collision::CheckOverlapSphere(feetPos, checkRadius, CollisionFilterPreset::Environment, rb.Body);
+
+			auto overlapData = Collision::CheckOverlapSphereWithData(feetPos, checkRadius, entity, CollisionFilterPreset::Environment);
+			controller.IsGrounded = overlapData.HasHit;
+			controller.GroundEntity = overlapData.CollidedEntity;
 
 			// Apply Gravity
 			if (!controller.IsGrounded)
@@ -48,8 +59,8 @@ namespace Ember {
 			{
 				// Player is on the ground. We don't want gravity to keep building up to -9000,
 				// but we want a tiny bit of downward force so they stick to ramps as they walk down them.
-				//controller.Velocity.y = -2.0f;
-				controller.Velocity.y = -1.0f;
+				// Zero out x,z to kill momentum from ramps, but keep a little y to keep them grounded.
+				controller.Velocity = { 0.0f, -2.0f, 0.0f };
 			}
 
 			// Combine Input (Requested) with Physics (Velocity)
@@ -67,23 +78,41 @@ namespace Ember {
 				));
 
 				// Test for collision
-				CollisionCallbackData collisionData = physicsSystem->TestCollision(entity);
+				CollisionCallbackData collisionData = Collision::TestCollision(entity);
 				if (!collisionData.HasHit)
 					break; // No hit, move freely
 
-				currentFrameDisplacement = Vector3f(0.0f);
+				//currentFrameDisplacement = Vector3f(0.0f);
 
 				for (const auto& contact : collisionData.Contacts)
 				{
 					// Push the player instantly out of the wall
 					transform.Position += contact.Normal * contact.PenetrationDepth;
 
-					// Adjust our persistent velocity so we slide against the wall/ramp 
-					// instead of smashing into it and losing all momentum.
+					// Calculate the angle of the surface we just hit
+					float floorAngle = Math::Degrees(acos(Math::Dot(contact.Normal, Vector3f(0.0f, 1.0f, 0.0f))));
+					bool isWalkableSlope = floorAngle <= controller.MaxSlopeAngle;
+
+					// Slide the current frame's movement
+					float dispDot = Math::Dot(currentFrameDisplacement, contact.Normal);
+					if (dispDot < 0.0f)
+						currentFrameDisplacement -= contact.Normal * dispDot;
+
+					// Slide the persistent velocity (Gravity/Jumping)
 					float velDot = Math::Dot(controller.Velocity, contact.Normal);
 					if (velDot < 0.0f)
 					{
-						controller.Velocity -= contact.Normal * velDot;
+						if (isWalkableSlope)
+						{
+							// If we are on a walkable ramp, DO NOT project gravity into horizontal sliding!
+							// Just kill the downward velocity going into the ramp.
+							controller.Velocity.y = 0.0f;
+						}
+						else
+						{
+							// It's a wall. Slide normally
+							controller.Velocity -= contact.Normal * velDot;
+						}
 					}
 				}
 			}

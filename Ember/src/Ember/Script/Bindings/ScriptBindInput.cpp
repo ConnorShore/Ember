@@ -7,6 +7,7 @@ namespace Ember {
 
 	void BindInput(sol::state& state)
 	{
+		// Key bindings
 		state.new_enum("KeyCode",
 			"Unknown", KeyCode::Unknown,
 			"Space", KeyCode::Space,
@@ -139,6 +140,18 @@ namespace Ember {
 
 		state.set_function("IsKeyPressed", &Input::IsKeyPressed);
 		state.set_function("IsKeyHeld", &Input::IsKeyHeld);
+
+		// Mouse bindings
+		state.new_enum("MouseButton",
+			"Left", MouseButton::Left,
+			"Right", MouseButton::Right,
+			"Middle", MouseButton::Middle
+		);
+
+		state.set_function("IsMouseButtonPressed", &Input::IsMouseButtonPressed);
+		state.set_function("GetMousePosition", &Input::GetMousePosition);
+		state.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
+
 	}
 
 }

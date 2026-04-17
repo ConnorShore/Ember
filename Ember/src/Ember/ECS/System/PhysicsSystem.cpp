@@ -4,7 +4,6 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Physics/RaycastCallback.h"
-#include "Ember/Physics/OverlapTestCallback.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -597,8 +596,16 @@ namespace Ember {
 		return ret;
 	}
 
-	bool PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
 		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 halfExtents(scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f);
 		Quaternion rotationQuat = Math::ToQuaternion(rotation);
@@ -623,7 +630,7 @@ namespace Ember {
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
-		OverlapTestCallback callback;
+		OverlapTestCallback callback(rb.Body, dummyBody);
 		m_PhysicsWorld->testOverlap(dummyBody, callback);
 
 		// Clean up the memory instantly
@@ -631,11 +638,19 @@ namespace Ember {
 		m_PhysicsCommon->destroyBoxShape(boxShape);
 		m_PhysicsWorld->destroyRigidBody(dummyBody);
 
-		return callback.HasHit();
+		return callback.GetOverlapData();
 	}
 
-	bool PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter /* = CollisionFilterPreset::All */, rp3d::RigidBody* bodyToIgnore /* = nullptr */)
+	OverlapTestData PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
 		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 pos(position.x, position.y, position.z);
 		rp3d::Transform transform(pos, rp3d::Quaternion::identity());
@@ -655,7 +670,7 @@ namespace Ember {
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
-		OverlapTestCallback callback(bodyToIgnore);
+		OverlapTestCallback callback(rb.Body, dummyBody);
 		m_PhysicsWorld->testOverlap(dummyBody, callback);
 
 		// Clean up the memory instantly
@@ -663,7 +678,7 @@ namespace Ember {
 		m_PhysicsCommon->destroySphereShape(sphereShape);
 		m_PhysicsWorld->destroyRigidBody(dummyBody);
 
-		return callback.HasHit();
+		return callback.GetOverlapData();
 	}
 
 	CollisionCallbackData PhysicsSystem::TestCollision(Entity entity)

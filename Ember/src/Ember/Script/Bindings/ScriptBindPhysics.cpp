@@ -65,21 +65,40 @@ namespace Ember {
 			return luaHit;
 			});
 		physicsTable.set_function("CheckOverlapBox", sol::overload(
-			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale) {
-				return Collision::CheckOverlapBox(position, rotation, scale);
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
+				return Collision::CheckOverlapBox(position, rotation, scale, entity);
 			},
-			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter) {
-				return Collision::CheckOverlapBox(position, rotation, scale, filter);
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapBox(position, rotation, scale, entity, filter);
+			}
+		));
+		physicsTable.set_function("CheckOverlapBoxWithData", sol::overload(
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
+				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity);
+			},
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity, filter);
 			}
 		));
 		physicsTable.set_function("CheckOverlapSphere", sol::overload(
-			[](const Vector3f& position, float radius) {
-				return Collision::CheckOverlapSphere(position, radius);
+			[](const Vector3f& position, float radius, Entity entity) {
+				return Collision::CheckOverlapSphere(position, radius, entity);
 			},
-			[](const Vector3f& position, float radius, CollisionFilter filter) {
-				return Collision::CheckOverlapSphere(position, radius, filter);
+			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapSphere(position, radius, entity, filter);
 			}
 		));
+		physicsTable.set_function("CheckOverlapSphereWithData", sol::overload(
+			[](const Vector3f& position, float radius, Entity entity) {
+				return Collision::CheckOverlapSphereWithData(position, radius, entity);
+			},
+			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapSphereWithData(position, radius, entity, filter);
+			}
+		));
+		physicsTable.set_function("TestCollision", [](Entity entity) {
+			return Collision::TestCollision(entity);
+		});
 	}
 
 }

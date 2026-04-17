@@ -5,6 +5,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Physics/RaycastData.h"
 #include "Ember/Physics/CollisionTestCallback.h"
+#include "Ember/Physics/OverlapTestCallback.h"
 #include "Ember/Scene/Entity.h"
 
 // forward declarations
@@ -54,8 +55,8 @@ namespace Ember {
 
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
-		bool TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, CollisionFilter filter = CollisionFilterPreset::All);
-		bool TestOverlapSphere(const Vector3f& position, float radius, CollisionFilter filter = CollisionFilterPreset::All, rp3d::RigidBody* bodyToIgnore = nullptr);
+		OverlapTestData TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter = CollisionFilterPreset::All);
+		OverlapTestData TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter = CollisionFilterPreset::All);
 
 		CollisionCallbackData TestCollision(Entity entity);
 

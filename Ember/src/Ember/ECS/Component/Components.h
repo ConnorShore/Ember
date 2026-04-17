@@ -304,6 +304,7 @@ namespace Ember {
 
 		// Read-only properties for Lua scripts (not serialized)
 		bool IsGrounded = false;
+		EntityID GroundEntity = Constants::Entities::InvalidEntityID;
 		Vector3f Velocity = Vector3f(0.0f);
 		Vector3f RequestedMovement = Vector3f(0.0f);
 
