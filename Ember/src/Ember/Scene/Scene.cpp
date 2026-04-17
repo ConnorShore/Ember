@@ -542,9 +542,43 @@ namespace Ember {
 		}
 	}
 
+	static void SyncPrefabPhysicsTransforms(EntityID entity, Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		if (registry.ContainsComponent<RigidBodyComponent>(entity))
+		{
+			auto& rb = registry.GetComponent<RigidBodyComponent>(entity);
+			if (rb.Body)
+			{
+				auto& transform = registry.GetComponent<TransformComponent>(entity);
+
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+				Quaternion q = Math::ToQuaternion(worldRot);
+
+				rb.Body->setTransform(rp3d::Transform(
+					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
+					rp3d::Quaternion(q.x, q.y, q.z, q.w)
+				));
+			}
+		}
+
+		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				SyncPrefabPhysicsTransforms(child.GetEntityHandle(), scene);
+		}
+	}
+
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
-		// Deserialize the prefab into a new entity hierarchy
+		// Deserialize the prefab into a new entity hierarchy.
+		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
+		// using the prefab's stored transform — we must re-sync them below if a spawn
+		// position override is provided.
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 
@@ -561,12 +595,13 @@ namespace Ember {
 		auto transformSystem = systemManager.GetSystem<TransformSystem>();
 		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
 
-		// At runtime the ConnectAndRetroact hooks are bound to the editor scene's registry,
-		// not the runtime scene's copy. Physics bodies are therefore never auto-created
-		// when components are attached via deserialization. Explicitly initialize physics
-		// for every entity in the spawned hierarchy now that WorldTransforms are correct.
+		// Initialize physics for any entities that don't have bodies yet, then
+		// re-sync ALL existing physics bodies to the (potentially overridden) world
+		// transforms. This is needed because ConnectAndRetroact hooks may have already
+		// created bodies at the prefab's default position during DeserializePrefab.
 		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
+		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
 
 		return root;
 	}

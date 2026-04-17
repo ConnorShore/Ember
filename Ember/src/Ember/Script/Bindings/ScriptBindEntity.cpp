@@ -116,7 +116,7 @@ namespace Ember {
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
-			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
+				"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
 		);
 	}
 

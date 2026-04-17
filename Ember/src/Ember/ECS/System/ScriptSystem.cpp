@@ -14,8 +14,6 @@ namespace Ember {
 
 	void ScriptSystem::OnAttach()
 	{
-		m_LuaState.open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::string);
-		BindAPI();
 		EB_CORE_INFO("ScriptSystem attached!");
 	}
 
