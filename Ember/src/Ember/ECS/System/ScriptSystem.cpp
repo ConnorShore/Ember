@@ -14,8 +14,6 @@ namespace Ember {
 
 	void ScriptSystem::OnAttach()
 	{
-		m_LuaState.open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::string);
-		BindAPI();
 		EB_CORE_INFO("ScriptSystem attached!");
 	}
 
@@ -85,7 +83,7 @@ namespace Ember {
 				sol::protected_function onUpdate = script.Instance["OnUpdate"];
 				if (onUpdate.valid())
 				{
-					sol::protected_function_result updateResult = onUpdate(script.Instance, delta.Seconds());
+					sol::protected_function_result updateResult = onUpdate(script.Instance, entity, delta.Seconds());
 
 					if (!updateResult.valid())
 					{

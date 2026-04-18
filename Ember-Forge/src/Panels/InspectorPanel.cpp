@@ -17,6 +17,8 @@
 #include "ComponentUI/Collision/CapsuleColliderComponent.h"
 #include "ComponentUI/Collision/ConcaveMeshColliderComponentUI.h"
 #include "ComponentUI/Collision/ConvexMeshColliderComponentUI.h"
+#include "ComponentUI/CharacterControllerComponent.h"
+#include "ComponentUI/LifetimeComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -43,6 +45,8 @@ namespace Ember {
 	{
 		// --- CORE ---
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<CharacterControllerComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<LifetimeComponentUI>::Create(m_Context));
 
 		// --- RENDERING ---
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<CameraComponentUI>::Create(m_Context));

@@ -13,8 +13,17 @@ namespace Ember {
 		auto sceneTable = state.create_table("Scene");
 		sceneTable.set_function("InstantiatePrefab", [scene](const std::string& assetName, const Vector3f& position) {
 			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
-			scene->InstantiatePrefab(prefabAsset, &position);
+			return scene->InstantiatePrefab(prefabAsset, &position);
 		});
+		sceneTable.set_function("RemoveEntity", sol::overload(
+			[scene](Entity entity) {
+				scene->RemoveEntity(entity);
+			},
+			[scene](EntityID entityID) {
+				Entity entity(entityID, scene);
+				scene->RemoveEntity(entity);
+			}
+		));
 	}
 
 }

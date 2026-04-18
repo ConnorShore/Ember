@@ -12,6 +12,7 @@
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Physics/ColliderUserData.h"
 #include "Ember/Asset/PhysicsMaterial.h"
 
 #include <sol/sol.hpp>
@@ -178,6 +179,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size)
@@ -202,6 +204,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius)
@@ -227,6 +230,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height)
@@ -252,6 +256,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -280,6 +285,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;
@@ -291,6 +297,36 @@ namespace Ember {
 			: MeshHandle(meshHandle) {
 		}
 		ConcaveMeshColliderComponent(const ConcaveMeshColliderComponent&) = default;
+	};
+
+	struct CharacterControllerComponent
+	{
+		// User defined properties
+		float WalkSpeed = 5.0f;
+		float JumpForce = 5.0f;
+		float GravityMultiplier = 1.0f;
+		float MaxSlopeAngle = 45.0f;
+		float MaxStepHeight = 0.25f;
+
+		// Read-only properties for Lua scripts (not serialized)
+		bool IsGrounded = false;
+		EntityID GroundEntity = Constants::Entities::InvalidEntityID;
+		Vector3f Velocity = Vector3f(0.0f);
+		Vector3f RequestedMovement = Vector3f(0.0f);
+
+		void Move(const Vector3f& requestedMovement)
+		{
+			RequestedMovement = requestedMovement;
+		}
+
+		void Jump()
+		{
+			if (IsGrounded)
+				Velocity.y = JumpForce;
+		}
+
+		CharacterControllerComponent() = default;
+		CharacterControllerComponent(const CharacterControllerComponent&) = default;
 	};
 
 	struct SpriteComponent
@@ -530,6 +566,19 @@ namespace Ember {
 	struct PrefabComponent 
 	{
 		UUID PrefabHandle = Constants::InvalidUUID;
+
+		PrefabComponent() = default;
+		PrefabComponent(UUID prefabUUID) : PrefabHandle(prefabUUID) {}
+		PrefabComponent(const PrefabComponent&) = default;
+	};
+
+	struct LifetimeComponent
+	{
+		float Lifetime = 0.0f; // Total lifetime in seconds
+
+		LifetimeComponent() = default;
+		LifetimeComponent(float lifetime) : Lifetime(lifetime) {}
+		LifetimeComponent(const LifetimeComponent&) = default;
 	};
 
 }

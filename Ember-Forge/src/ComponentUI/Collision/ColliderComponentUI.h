@@ -55,12 +55,14 @@ namespace Ember {
 			if (ImGui::TreeNode("Collision Filters"))
 			{
 				if (UI::PropertyGrid::Begin("CollisionFilterProps"))
-				{
-					RenderFilterDropdown("Category", component.Category);
-					RenderFilterDropdown("Collision Mask", component.CollisionMask);
+					{
+						if (RenderFilterDropdown("Category", component.Category))
+							component.NeedsRebuild = true;
+						if (RenderFilterDropdown("Collision Mask", component.CollisionMask))
+							component.NeedsRebuild = true;
 
-					UI::PropertyGrid::End();
-				}
+						UI::PropertyGrid::End();
+					}
 				ImGui::TreePop();
 			}
 
@@ -76,9 +78,10 @@ namespace Ember {
 		}
 
 	private:
-		void RenderFilterDropdown(const std::string& label, Ember::CollisionFilter& collisionFilter)
+		bool RenderFilterDropdown(const std::string& label, CollisionFilter& collisionFilter)
 		{
-			auto& filterManager = Ember::ProjectManager::GetActive()->GetCollisionFilterManager();
+			bool changed = false;
+			auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
 
 			std::vector<std::string> activeFilterNames = filterManager.GetActiveFilters(collisionFilter);
 
@@ -90,11 +93,13 @@ namespace Ember {
 
 			if (UI::PropertyGrid::BeginComboBox(label.c_str(), name))
 			{
-				std::vector<std::string> filterNames = filterManager.GetCustomFilters();
+				std::vector<std::string> filterNames = filterManager.GetFilters();
 				for (const auto& filterName : filterNames)
 				{
-					
-					Ember::CollisionFilter filterValue = filterManager.GetFilter(filterName);
+					if (filterName == "Default")
+						continue; // Skip the Default filter as it's always on by design
+
+					CollisionFilter filterValue = filterManager.GetFilter(filterName);
 
 					bool isSelected = (collisionFilter & filterValue) == filterValue;
 					if (ImGui::Checkbox(filterName.c_str(), &isSelected))
@@ -103,20 +108,22 @@ namespace Ember {
 							collisionFilter |= filterValue; // Set the bit
 						else
 							collisionFilter &= ~filterValue; // Unset the bit
+						changed = true;
 					}
 				}
 
 				ImGui::Separator();
 
-				if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
-					collisionFilter = 0x0000; // All bits off
+					if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
+						{ collisionFilter = 0x0000; changed = true; }
 
-				if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
-					collisionFilter = 0xFFFF; // All 16 bits on
+					if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
+						{ collisionFilter = 0xFFFF; changed = true; }
 
-				UI::PropertyGrid::EndComboBox();
-			}
-		}
+					UI::PropertyGrid::EndComboBox();
+					}
+					return changed;
+				}
 
 		void RenderPhysicsMaterialSection(T& component)
 		{

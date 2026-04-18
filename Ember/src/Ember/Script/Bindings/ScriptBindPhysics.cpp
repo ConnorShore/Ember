@@ -1,9 +1,11 @@
 #include "ebpch.h"
 #include "ScriptBindPhysics.h"
 
+#include "Ember/Core/ProjectManager.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Physics/CollisionFilterManager.h"
 #include "Ember/Physics/Raycast.h"
+#include "Ember/Physics/Collision.h"
 
 namespace Ember {
 
@@ -23,6 +25,22 @@ namespace Ember {
 			"GetFilterNameBySlot", &CollisionFilterManager::GetFilterNameBySlot
 		);
 
+		sol::table collisionFilterTable = state.create_table("CollisionFilter");
+
+		// Defaults
+		collisionFilterTable["Default"] = CollisionFilterPreset::Default;
+		collisionFilterTable["Environment"] = CollisionFilterPreset::Environment;
+		collisionFilterTable["All"] = CollisionFilterPreset::All;
+
+		// Custom filter bindings
+		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
+		for (int i = 1; i < 16; i++) {
+			std::string customName = filterManager.GetFilterNameBySlot(i);
+			if (!customName.empty()) {
+				collisionFilterTable[customName] = (1 << i);
+			}
+		}
+
 		state.new_usertype<LuaRaycastHit>("RaycastHit",
 			"Hit", &LuaRaycastHit::Hit,
 			"CollisionPoint", &LuaRaycastHit::CollisionPoint,
@@ -30,9 +48,15 @@ namespace Ember {
 			"HitEntity", &LuaRaycastHit::HitEntity
 		);
 
-		// Create the Raycast static table
-		auto raycastTable = state.create_table("Raycast");
-		raycastTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end) {
+		state.new_usertype<OverlapTestData>("OverlapData",
+			"HasHit", &OverlapTestData::HasHit,
+			"CollidedEntity", &OverlapTestData::CollidedEntity,
+			"CollidedEntityFilter", &OverlapTestData::CollidedEntityFilter
+		);
+
+		// Create the Physics static table
+		auto physicsTable = state.create_table("Physics");
+		physicsTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end) {
 
 			RaycastData rawData = Raycast::CastRay(start, end);
 
@@ -45,6 +69,44 @@ namespace Ember {
 				luaHit.HitEntity = Entity(rawData.RigidBodyEntity, scene);
 
 			return luaHit;
+			});
+		physicsTable.set_function("CheckOverlapBox", sol::overload(
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
+				return Collision::CheckOverlapBox(position, rotation, scale, entity);
+			},
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapBox(position, rotation, scale, entity, filter);
+			}
+		));
+		physicsTable.set_function("CheckOverlapBoxWithData", sol::overload(
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
+				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity);
+			},
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity, filter);
+			}
+		));
+		physicsTable.set_function("CheckOverlapSphere", sol::overload(
+			[](Entity entity) {
+				return Collision::CheckOverlapSphere(entity);
+			},
+			[](const Vector3f& position, float radius, Entity entity) {
+				return Collision::CheckOverlapSphere(position, radius, entity);
+			},
+			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapSphere(position, radius, entity, filter);
+			}
+		));
+		physicsTable.set_function("CheckOverlapSphereWithData", sol::overload(
+			[](const Vector3f& position, float radius, Entity entity) {
+				return Collision::CheckOverlapSphereWithData(position, radius, entity);
+			},
+			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+				return Collision::CheckOverlapSphereWithData(position, radius, entity, filter);
+			}
+		));
+		physicsTable.set_function("TestCollision", [](Entity entity) {
+			return Collision::TestCollision(entity);
 		});
 	}
 

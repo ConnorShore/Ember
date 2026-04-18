@@ -11,6 +11,8 @@ namespace Ember {
 			"Position", &TransformComponent::Position,
 			"Rotation", &TransformComponent::Rotation,
 			"Scale", &TransformComponent::Scale,
+			"WorldPosition", sol::property([](TransformComponent& c) { return Vector3f(c.GetWorldTransform()[3]); }),
+			"WorldRotation", sol::property([](TransformComponent& c) { return Math::ToEulerAngles(glm::quat_cast(c.GetWorldTransform())); }),
 			"GetForward", &TransformComponent::GetForward
 		);
 
@@ -90,6 +92,19 @@ namespace Ember {
 				c.CurrentBlendTime = 0.0f;
 				c.IsPlaying = true;
 			}
+		);
+
+		state.new_usertype<CharacterControllerComponent>("CharacterControllerComponent",
+			"WalkSpeed", &CharacterControllerComponent::WalkSpeed,
+			"JumpForce", &CharacterControllerComponent::JumpForce,
+			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
+			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
+			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
+			"IsGrounded", &CharacterControllerComponent::IsGrounded,
+			"GroundEntity", &CharacterControllerComponent::GroundEntity,
+
+			"Move", &CharacterControllerComponent::Move,
+			"Jump", &CharacterControllerComponent::Jump
 		);
 	}
 

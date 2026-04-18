@@ -12,10 +12,7 @@ namespace Ember {
 
 	void CollisionFilterManager::InitWithCustomFilters(const std::vector<std::string>& customFilters)
 	{
-		// Only set default as others may have been overridden by the user, we want to preserve those if possible
-		m_Slots[0] = "Default";     // Bit 0: 0x0001
-
-		uint32_t slotIndex = 1;
+		uint32_t slotIndex = 0;
 		for (const auto& filterName : customFilters)
 		{
 			if (slotIndex >= 16)
@@ -31,10 +28,10 @@ namespace Ember {
 	void CollisionFilterManager::InitDefaultFilters()
 	{
 		// Lock the foundational layers to specific bits so they never shift
-		m_Slots[0] = "Default";     // Bit 0: 0x0001
+		// Slot 0 = 0x0001, slot 1 = 0x0002, etc. "Default" (0) is not a bit and has no slot.
+		m_Slots[0] = "Environment"; // Bit 0: 0x0001
 		m_Slots[1] = "Player";      // Bit 1: 0x0002
 		m_Slots[2] = "Enemy";       // Bit 2: 0x0004
-		m_Slots[3] = "Environment"; // Bit 3: 0x0008
 	}
 
 	std::string CollisionFilterManager::GetFilterNameBySlot(uint32_t index) const
@@ -46,7 +43,7 @@ namespace Ember {
 
 	void CollisionFilterManager::SetFilterNameAtSlot(uint32_t index, const std::string& name)
 	{
-		if (index > 0 && index < 16) // > 0 prevents overwriting the "Default" slot!
+		if (index < 16)
 			m_Slots[index] = name;
 	}
 
@@ -89,7 +86,7 @@ namespace Ember {
 	std::vector<std::string> CollisionFilterManager::GetCustomFilters() const
 	{
 		std::vector<std::string> names;
-		for (int i = 1; i < 16; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			if (!m_Slots[i].empty())
 				names.push_back(m_Slots[i]);

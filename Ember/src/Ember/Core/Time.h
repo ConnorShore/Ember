@@ -21,6 +21,7 @@ namespace Ember {
 
 		operator float() const { return m_Time; }
 		float operator+=(const TimeStep& other) { m_Time += other.m_Time; return m_Time; }
+		bool operator==(const TimeStep& other) const { return m_Time == other.m_Time; }
 
 	private:
 		float m_Time;

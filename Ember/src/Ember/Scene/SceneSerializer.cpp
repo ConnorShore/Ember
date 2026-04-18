@@ -264,6 +264,24 @@ namespace Ember {
 			prefabNode |= ryml::MAP;
 			prefabNode["PrefabUUID"] << (uint64_t)prefab.PrefabHandle;
 		}
+		if (entity.ContainsComponent<CharacterControllerComponent>())
+		{
+			auto& controller = entity.GetComponent<CharacterControllerComponent>();
+			ryml::NodeRef controllerNode = entityNode["CharacterControllerComponent"];
+			controllerNode |= ryml::MAP;
+			controllerNode["WalkSpeed"] << controller.WalkSpeed;
+			controllerNode["JumpForce"] << controller.JumpForce;
+			controllerNode["GravityMultiplier"] << controller.GravityMultiplier;
+			controllerNode["MaxSlopeAngle"] << controller.MaxSlopeAngle;
+			controllerNode["MaxStepHeight"] << controller.MaxStepHeight;
+		}
+		if (entity.ContainsComponent<LifetimeComponent>())
+		{
+			auto& lifetime = entity.GetComponent<LifetimeComponent>();
+			ryml::NodeRef prefabNode = entityNode["LifetimeComponent"];
+			prefabNode |= ryml::MAP;
+			prefabNode["Lifetime"] << lifetime.Lifetime;
+		}
 	}
 
 	// =========================================================================
@@ -631,6 +649,26 @@ namespace Ember {
 			PrefabComponent pc;
 			pc.PrefabHandle = (UUID)prefabId;
 			deserializedEntity.AttachComponent<PrefabComponent>(pc);
+		}
+
+		if (entityNode.has_child("CharacterControllerComponent"))
+		{
+			ryml::NodeRef controllerNode = entityNode["CharacterControllerComponent"];
+			CharacterControllerComponent ccc;
+			controllerNode["WalkSpeed"] >> ccc.WalkSpeed;
+			controllerNode["JumpForce"] >> ccc.JumpForce;
+			controllerNode["GravityMultiplier"] >> ccc.GravityMultiplier;
+			controllerNode["MaxSlopeAngle"] >> ccc.MaxSlopeAngle;
+			controllerNode["MaxStepHeight"] >> ccc.MaxStepHeight;
+			deserializedEntity.AttachComponent<CharacterControllerComponent>(ccc);
+		}
+
+		if (entityNode.has_child("LifetimeComponent"))
+		{
+			ryml::NodeRef lifetimeNode = entityNode["LifetimeComponent"];
+			LifetimeComponent ltc;
+			lifetimeNode["Lifetime"] >> ltc.Lifetime;
+			deserializedEntity.AttachComponent<LifetimeComponent>(ltc);
 		}
 	}
 

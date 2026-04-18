@@ -11,6 +11,8 @@
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/ECS/System/CharacterControllerSystem.h"
+#include "Ember/ECS/System/LifecycleSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -119,8 +121,8 @@ namespace Ember {
 			// NOTE: Do not copy IDComponent here, we just set it above.
 			Utils::CopyComponents<
 					TransformComponent,
-					StaticMeshComponent,  // NEW
-					SkinnedMeshComponent, // NEW
+					StaticMeshComponent,
+					SkinnedMeshComponent,
 					MaterialComponent,
 					SpriteComponent,
 					CameraComponent,
@@ -137,8 +139,19 @@ namespace Ember {
 					RelationshipComponent,
 					AnimatorComponent,
 					BillboardComponent,
-					PrefabComponent
+					PrefabComponent,
+					CharacterControllerComponent,
+					LifetimeComponent
 				>(srcEntity, destEntity);
+
+			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
+			if (srcEntity.ContainsComponent<CharacterControllerComponent>() != destEntity.ContainsComponent<CharacterControllerComponent>())
+				EB_CORE_WARN("CopyScene: CharacterControllerComponent copy mismatch on entity '{}'!", destEntity.GetName());
+			if (!srcEntity.ContainsComponent<CharacterControllerComponent>() && srcEntity.ContainsComponent<ScriptComponent>())
+				EB_CORE_WARN("CopyScene: Entity '{}' has a ScriptComponent but no CharacterControllerComponent in the source scene!", srcEntity.GetName());
+
+			// Reset physics runtime pointers so the new scene doesn't alias the source scene's physics objects
+			Utils::ResetPhysicsRuntimeState(destEntity);
 		}
 
 		// Copy registry assets and systems to new scene
@@ -150,6 +163,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<LifecycleSystem>()->OnSceneAttach(this);
 
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
@@ -161,6 +175,8 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		ScriptEngine::OnRuntimeStart(this);
 	}
 
@@ -168,14 +184,27 @@ namespace Ember {
 	{
 		ScriptEngine::OnRuntimeStop();
 
+		// Reset physics body pointers on all entities before re-initializing the physics world,
+		// since they became dangling when the runtime scene's physics world was created.
+		auto entityView = m_Registry->Query<IDComponent>();
+		for (auto entityID : entityView)
+		{
+			Entity entity{ entityID, this };
+			Utils::ResetPhysicsRuntimeState(entity);
+		}
+
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
+
+		systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
@@ -360,7 +389,9 @@ namespace Ember {
 			SpotLightComponent,
 			PointLightComponent,
 			AnimatorComponent,
-			BillboardComponent
+			BillboardComponent,
+			CharacterControllerComponent,
+			LifetimeComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used
@@ -517,9 +548,43 @@ namespace Ember {
 		}
 	}
 
+	static void SyncPrefabPhysicsTransforms(EntityID entity, Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		if (registry.ContainsComponent<RigidBodyComponent>(entity))
+		{
+			auto& rb = registry.GetComponent<RigidBodyComponent>(entity);
+			if (rb.Body)
+			{
+				auto& transform = registry.GetComponent<TransformComponent>(entity);
+
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+				Quaternion q = Math::ToQuaternion(worldRot);
+
+				rb.Body->setTransform(rp3d::Transform(
+					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
+					rp3d::Quaternion(q.x, q.y, q.z, q.w)
+				));
+			}
+		}
+
+		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				SyncPrefabPhysicsTransforms(child.GetEntityHandle(), scene);
+		}
+	}
+
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
-		// Deserialize the prefab into a new entity hierarchy
+		// Deserialize the prefab into a new entity hierarchy.
+		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
+		// using the prefab's stored transform — we must re-sync them below if a spawn
+		// position override is provided.
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 
@@ -536,12 +601,13 @@ namespace Ember {
 		auto transformSystem = systemManager.GetSystem<TransformSystem>();
 		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
 
-		// At runtime the ConnectAndRetroact hooks are bound to the editor scene's registry,
-		// not the runtime scene's copy. Physics bodies are therefore never auto-created
-		// when components are attached via deserialization. Explicitly initialize physics
-		// for every entity in the spawned hierarchy now that WorldTransforms are correct.
+		// Initialize physics for any entities that don't have bodies yet, then
+		// re-sync ALL existing physics bodies to the (potentially overridden) world
+		// transforms. This is needed because ConnectAndRetroact hooks may have already
+		// created bodies at the prefab's default position during DeserializePrefab.
 		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
+		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
 
 		return root;
 	}

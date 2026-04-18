@@ -252,6 +252,11 @@ namespace Ember {
 			return glm::angleAxis(radians, vec);
 		}
 
+		static inline Vector3f ProjectOnPlane(const Vector3f& vector, const Vector3f& planeNormal)
+		{
+			return vector - Dot(vector, planeNormal) * planeNormal;
+		}
+
 	};
 
 }

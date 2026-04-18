@@ -4,6 +4,7 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Physics/RaycastCallback.h"
+#include "Ember/Physics/ColliderUserData.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -115,7 +116,8 @@ namespace Ember {
 		collider.Collider = rb.Body->addCollider(shape, localTransform);
 
 		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
-		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
+		collider.UserData = { entity, collider.Category };
+		collider.Collider->setUserData(&collider.UserData);
 
 		// Set trigger
 		collider.Collider->setIsTrigger(collider.IsTrigger);
@@ -594,6 +596,108 @@ namespace Ember {
 		}
 
 		return ret;
+	}
+
+	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
+		// Create a temporary invisible KINEMATIC RigidBody at the target position
+		rp3d::Vector3 halfExtents(scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f);
+		Quaternion rotationQuat = Math::ToQuaternion(rotation);
+
+		rp3d::Transform transform(
+			rp3d::Vector3(position.x, position.y, position.z),
+			rp3d::Quaternion(rotationQuat.x, rotationQuat.y, rotationQuat.z, rotationQuat.w)
+		);
+
+		rp3d::RigidBody* dummyBody = m_PhysicsWorld->createRigidBody(transform);
+		dummyBody->setType(rp3d::BodyType::KINEMATIC);
+
+		// Create the temporary sphere shape and attach it
+		rp3d::BoxShape* boxShape = m_PhysicsCommon->createBoxShape(halfExtents);
+		rp3d::Collider* collider = dummyBody->addCollider(boxShape, rp3d::Transform::identity());
+
+		// Make it a trigger so it doesn't physically push objects away during the test
+		collider->setIsTrigger(true);
+
+		// Apply collision filters
+		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
+		collider->setCollideWithMaskBits(filter);
+
+		// Run the test
+		OverlapTestCallback callback(rb.Body, dummyBody);
+		m_PhysicsWorld->testOverlap(dummyBody, callback);
+
+		// Clean up the memory instantly
+		dummyBody->removeCollider(collider);
+		m_PhysicsCommon->destroyBoxShape(boxShape);
+		m_PhysicsWorld->destroyRigidBody(dummyBody);
+
+		return callback.GetOverlapData();
+	}
+
+	OverlapTestData PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
+		// Create a temporary invisible KINEMATIC RigidBody at the target position
+		rp3d::Vector3 pos(position.x, position.y, position.z);
+		rp3d::Transform transform(pos, rp3d::Quaternion::identity());
+
+		rp3d::RigidBody* dummyBody = m_PhysicsWorld->createRigidBody(transform);
+		dummyBody->setType(rp3d::BodyType::KINEMATIC);
+
+		// Create the temporary sphere shape and attach it
+		rp3d::SphereShape* sphereShape = m_PhysicsCommon->createSphereShape(radius);
+		rp3d::Collider* collider = dummyBody->addCollider(sphereShape, rp3d::Transform::identity());
+
+		// Make it a trigger so it doesn't physically push objects away during the test
+		collider->setIsTrigger(true);
+
+		// Apply collision filters
+		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
+		collider->setCollideWithMaskBits(filter);
+
+		// Run the test
+		OverlapTestCallback callback(rb.Body, dummyBody);
+		m_PhysicsWorld->testOverlap(dummyBody, callback);
+
+		// Clean up the memory instantly
+		dummyBody->removeCollider(collider);
+		m_PhysicsCommon->destroySphereShape(sphereShape);
+		m_PhysicsWorld->destroyRigidBody(dummyBody);
+
+		return callback.GetOverlapData();
+	}
+
+	CollisionCallbackData PhysicsSystem::TestCollision(Entity entity)
+	{
+		if (!entity.ContainsComponent<RigidBodyComponent>())
+		{
+			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
+			return {};
+		}
+
+		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+
+		// Pass the specific rigid body into the callback so we can fix the normal direction!
+		CollisionTestCallback callback(rb.Body);
+		m_PhysicsWorld->testCollision(rb.Body, callback);
+
+		return callback.GetCollisionData();
 	}
 
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)

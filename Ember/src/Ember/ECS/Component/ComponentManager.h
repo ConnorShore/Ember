@@ -163,6 +163,7 @@ namespace Ember {
 		{
 			ComponentType type = GetComponentType<T>();
 
+			EB_CORE_ASSERT(type < m_ComponentArrays.size() && m_ComponentArrays[type] != nullptr, "Component type has never been registered in this scene!");
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
 			return memoryArrays->GetComponent(entity);
 		}

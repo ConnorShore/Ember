@@ -137,6 +137,11 @@ namespace Ember {
 				// Default can't be changed
 				ImGui::TextDisabled("Default");
 			}
+			else if (i == 1)
+			{
+				// Environment can't be changed
+				ImGui::TextDisabled("Environment");
+			}
 			else
 			{
 				std::string currentName = filterManager.GetFilterNameBySlot(i);

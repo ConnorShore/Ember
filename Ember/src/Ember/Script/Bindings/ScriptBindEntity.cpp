@@ -8,38 +8,50 @@ namespace Ember {
 
 	static sol::object GetComponentFromString(const std::string& componentTypeStr, Entity& entity, sol::state& state)
 	{
+		auto guardGet = [&](bool has, auto getter) -> sol::object
+		{
+			if (!has)
+			{
+				EB_CORE_ERROR("Entity '{}' (ID: {}) does not have component '{}'!", entity.GetName(), entity.GetEntityHandle(), componentTypeStr);
+				return sol::lua_nil;
+			}
+			return getter();
+		};
+
 		if (componentTypeStr == "IDComponent")
-			return sol::make_object(state, &entity.GetComponent<IDComponent>());
+			return guardGet(entity.ContainsComponent<IDComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<IDComponent>()); });
 		if (componentTypeStr == "TagComponent")
-			return sol::make_object(state, &entity.GetComponent<TagComponent>());
+			return guardGet(entity.ContainsComponent<TagComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<TagComponent>()); });
 		if (componentTypeStr == "RelationshipComponent")
-			return sol::make_object(state, &entity.GetComponent<RelationshipComponent>());
+			return guardGet(entity.ContainsComponent<RelationshipComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<RelationshipComponent>()); });
 		if (componentTypeStr == "TransformComponent")
-			return sol::make_object(state, &entity.GetComponent<TransformComponent>());
+			return guardGet(entity.ContainsComponent<TransformComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<TransformComponent>()); });
 		if (componentTypeStr == "RigidBodyComponent")
-			return sol::make_object(state, &entity.GetComponent<RigidBodyComponent>());
+			return guardGet(entity.ContainsComponent<RigidBodyComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<RigidBodyComponent>()); });
 		if (componentTypeStr == "SpriteComponent")
-			return sol::make_object(state, &entity.GetComponent<SpriteComponent>());
+			return guardGet(entity.ContainsComponent<SpriteComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<SpriteComponent>()); });
 		if (componentTypeStr == "StaticMeshComponent")
-			return sol::make_object(state, &entity.GetComponent<StaticMeshComponent>());
+			return guardGet(entity.ContainsComponent<StaticMeshComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<StaticMeshComponent>()); });
 		if (componentTypeStr == "SkinnedMeshComponent")
-			return sol::make_object(state, &entity.GetComponent<SkinnedMeshComponent>());
+			return guardGet(entity.ContainsComponent<SkinnedMeshComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<SkinnedMeshComponent>()); });
 		if (componentTypeStr == "MaterialComponent")
-			return sol::make_object(state, &entity.GetComponent<MaterialComponent>());
+			return guardGet(entity.ContainsComponent<MaterialComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<MaterialComponent>()); });
 		if (componentTypeStr == "CameraComponent")
-			return sol::make_object(state, &entity.GetComponent<CameraComponent>());
+			return guardGet(entity.ContainsComponent<CameraComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<CameraComponent>()); });
 		if (componentTypeStr == "DirectionalLightComponent")
-			return sol::make_object(state, &entity.GetComponent<DirectionalLightComponent>());
+			return guardGet(entity.ContainsComponent<DirectionalLightComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<DirectionalLightComponent>()); });
 		if (componentTypeStr == "SpotLightComponent")
-			return sol::make_object(state, &entity.GetComponent<SpotLightComponent>());
+			return guardGet(entity.ContainsComponent<SpotLightComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<SpotLightComponent>()); });
 		if (componentTypeStr == "PointLightComponent")
-			return sol::make_object(state, &entity.GetComponent<PointLightComponent>());
+			return guardGet(entity.ContainsComponent<PointLightComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<PointLightComponent>()); });
 		if (componentTypeStr == "OutlineComponent")
-			return sol::make_object(state, &entity.GetComponent<OutlineComponent>());
+			return guardGet(entity.ContainsComponent<OutlineComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<OutlineComponent>()); });
 		if (componentTypeStr == "BillboardComponent")
-			return sol::make_object(state, &entity.GetComponent<BillboardComponent>());
+			return guardGet(entity.ContainsComponent<BillboardComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<BillboardComponent>()); });
 		if (componentTypeStr == "AnimatorComponent")
-			return sol::make_object(state, &entity.GetComponent<AnimatorComponent>());
+			return guardGet(entity.ContainsComponent<AnimatorComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<AnimatorComponent>()); });
+		if (componentTypeStr == "CharacterControllerComponent")
+			return guardGet(entity.ContainsComponent<CharacterControllerComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<CharacterControllerComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -85,6 +97,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<BillboardComponent>());
 		if (componentTypeStr == "AnimatorComponent")
 			return sol::make_object(state, entity.ContainsComponent<AnimatorComponent>());
+		if (componentTypeStr == "CharacterControllerComponent")
+			return sol::make_object(state, entity.ContainsComponent<CharacterControllerComponent>());
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -102,7 +116,7 @@ namespace Ember {
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
-			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
+				"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
 		);
 	}
 
