@@ -560,6 +560,19 @@ namespace Ember {
 	struct PrefabComponent 
 	{
 		UUID PrefabHandle = Constants::InvalidUUID;
+
+		PrefabComponent() = default;
+		PrefabComponent(UUID prefabUUID) : PrefabHandle(prefabUUID) {}
+		PrefabComponent(const PrefabComponent&) = default;
+	};
+
+	struct LifetimeComponent
+	{
+		float Lifetime = 0.0f; // Total lifetime in seconds
+
+		LifetimeComponent() = default;
+		LifetimeComponent(float lifetime) : Lifetime(lifetime) {}
+		LifetimeComponent(const LifetimeComponent&) = default;
 	};
 
 }

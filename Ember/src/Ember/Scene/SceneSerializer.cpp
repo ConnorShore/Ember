@@ -275,6 +275,13 @@ namespace Ember {
 			controllerNode["MaxSlopeAngle"] << controller.MaxSlopeAngle;
 			controllerNode["MaxStepHeight"] << controller.MaxStepHeight;
 		}
+		if (entity.ContainsComponent<LifetimeComponent>())
+		{
+			auto& lifetime = entity.GetComponent<LifetimeComponent>();
+			ryml::NodeRef prefabNode = entityNode["LifetimeComponent"];
+			prefabNode |= ryml::MAP;
+			prefabNode["Lifetime"] << lifetime.Lifetime;
+		}
 	}
 
 	// =========================================================================
@@ -654,6 +661,14 @@ namespace Ember {
 			controllerNode["MaxSlopeAngle"] >> ccc.MaxSlopeAngle;
 			controllerNode["MaxStepHeight"] >> ccc.MaxStepHeight;
 			deserializedEntity.AttachComponent<CharacterControllerComponent>(ccc);
+		}
+
+		if (entityNode.has_child("LifetimeComponent"))
+		{
+			ryml::NodeRef lifetimeNode = entityNode["LifetimeComponent"];
+			LifetimeComponent ltc;
+			lifetimeNode["Lifetime"] >> ltc.Lifetime;
+			deserializedEntity.AttachComponent<LifetimeComponent>(ltc);
 		}
 	}
 

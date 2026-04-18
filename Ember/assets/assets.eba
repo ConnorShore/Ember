@@ -1,29 +1,33 @@
 Assets:
   - Type: Script
-    UUID: 8422630553721103124
-    Name: NewScript
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
+    UUID: 16587777693882004979
+    Name: NewScript(1)
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Bullet.lua'
   - Type: Script
     UUID: 9585085455667977396
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
+  - Type: Script
+    UUID: 8422630553721103124
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
   - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 5345865544332564414
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 5345865544332564414
+    Name: Ground (Copy)_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Physics Materials\RoughFloor.ebpmat'
   - Type: Prefab
-    UUID: 12239307062309329387
+    UUID: 9930530190584862612
     Name: Bullet
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Prefabs\Bullet.ebprefab'

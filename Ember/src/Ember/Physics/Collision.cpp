@@ -22,6 +22,16 @@ namespace Ember {
 		return CheckOverlapSphereWithData(position, radius, entity, filter).HasHit;
 	}
 
+	bool Collision::CheckOverlapSphere(Entity entity)
+	{
+		EB_CORE_ASSERT(entity.ContainsComponent<SphereColliderComponent>(), "Entity must have a SphereColliderComponent to use this function overload");
+
+		auto collider = entity.GetComponent<SphereColliderComponent>();
+		auto position = entity.GetComponent<TransformComponent>().Position + collider.Offset.Position;
+
+		return CheckOverlapSphereWithData(position, collider.Radius, entity, collider.CollisionMask).HasHit;
+	}
+
 	OverlapTestData Collision::CheckOverlapSphereWithData(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
 	{
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();

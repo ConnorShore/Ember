@@ -15,6 +15,9 @@ namespace Ember {
 			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
 			return scene->InstantiatePrefab(prefabAsset, &position);
 		});
+		sceneTable.set_function("RemoveEntity", [scene](Entity entity) {
+			scene->RemoveEntity(entity);
+		});
 	}
 
 }

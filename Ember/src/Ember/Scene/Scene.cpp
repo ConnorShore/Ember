@@ -12,6 +12,7 @@
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
+#include "Ember/ECS/System/LifecycleSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -139,7 +140,8 @@ namespace Ember {
 					AnimatorComponent,
 					BillboardComponent,
 					PrefabComponent,
-					CharacterControllerComponent
+					CharacterControllerComponent,
+					LifetimeComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -161,6 +163,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<LifecycleSystem>()->OnSceneAttach(this);
 
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
@@ -198,6 +201,8 @@ namespace Ember {
 	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
+
+		systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
@@ -385,7 +390,8 @@ namespace Ember {
 			PointLightComponent,
 			AnimatorComponent,
 			BillboardComponent,
-			CharacterControllerComponent
+			CharacterControllerComponent,
+			LifetimeComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

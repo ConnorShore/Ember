@@ -11,6 +11,7 @@
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
+#include "Ember/ECS/System/LifecycleSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -48,6 +49,7 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<RenderSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<CharacterControllerSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<LifecycleSystem>::Create());
 
 		EB_CORE_INFO("Application created!");
 	}

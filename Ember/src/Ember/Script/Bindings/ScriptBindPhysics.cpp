@@ -81,6 +81,9 @@ namespace Ember {
 			}
 		));
 		physicsTable.set_function("CheckOverlapSphere", sol::overload(
+			[](Entity entity) {
+				return Collision::CheckOverlapSphere(entity);
+			},
 			[](const Vector3f& position, float radius, Entity entity) {
 				return Collision::CheckOverlapSphere(position, radius, entity);
 			},
