@@ -23,6 +23,10 @@ Assets:
     UUID: 5345865544332564414
     Name: Ground (Copy)_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 15812231264559602920
+    Name: Enemy_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor

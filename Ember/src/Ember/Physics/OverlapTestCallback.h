@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ColliderUserData.h"
 #include "Ember/ECS/Types.h"
 
 #include <reactphysics3d/collision/OverlapCallback.h>
@@ -10,6 +11,9 @@ namespace Ember {
 	{
 		bool HasHit = false;
 		EntityID CollidedEntity = Constants::Entities::InvalidEntityID;
+		CollisionFilter CollidedEntityFilter = CollisionFilterPreset::Default;
+
+		operator bool() const { return HasHit; }
 	};
 
 	class OverlapTestCallback : public reactphysics3d::OverlapCallback
@@ -36,8 +40,17 @@ namespace Ember {
 				if (collidedBody == nullptr || collidedBody == m_ProbeBody || collidedBody == m_BodyToIgnore)
 					continue;
 
+				// User data is stored on the collider, not the body - grab it from the first collider
+				if (collidedBody->getNbColliders() == 0)
+					continue;
+
+				ColliderUserData* collisionData = static_cast<ColliderUserData*>(collidedBody->getCollider(0)->getUserData());
+				if (collisionData == nullptr)
+					continue;
+
 				m_OverlapData.HasHit = true;
-				m_OverlapData.CollidedEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(collidedBody->getUserData()));
+				m_OverlapData.CollidedEntity = collisionData->EntityID;
+				m_OverlapData.CollidedEntityFilter = collisionData->Filter;
 				return;
 			}
 		}

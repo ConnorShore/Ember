@@ -12,6 +12,7 @@
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Physics/ColliderUserData.h"
 #include "Ember/Asset/PhysicsMaterial.h"
 
 #include <sol/sol.hpp>
@@ -178,6 +179,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size)
@@ -202,6 +204,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius)
@@ -227,6 +230,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height)
@@ -252,6 +256,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -280,6 +285,7 @@ namespace Ember {
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
+		ColliderUserData UserData;
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;

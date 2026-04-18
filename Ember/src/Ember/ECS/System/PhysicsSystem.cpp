@@ -4,6 +4,7 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Physics/RaycastCallback.h"
+#include "Ember/Physics/ColliderUserData.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -115,7 +116,8 @@ namespace Ember {
 		collider.Collider = rb.Body->addCollider(shape, localTransform);
 
 		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
-		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
+		collider.UserData = { entity, collider.Category };
+		collider.Collider->setUserData(&collider.UserData);
 
 		// Set trigger
 		collider.Collider->setIsTrigger(collider.IsTrigger);
