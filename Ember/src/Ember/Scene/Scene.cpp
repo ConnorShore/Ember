@@ -210,6 +210,8 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
+
+		RemovePendingRemovals();
 	}
 
 	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
@@ -218,6 +220,8 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
+
+		RemovePendingRemovals();
 	}
 
 	void Scene::OnEvent(Event& event)
@@ -491,7 +495,7 @@ namespace Ember {
 		return entities;
 	}
 
-	void Scene::RemoveEntity(Entity entity)
+	void Scene::RemoveEntityFromScene(Entity entity)
 	{
 		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
 
@@ -500,7 +504,7 @@ namespace Ember {
 		for (UUID childUUID : childUUIDs)
 		{
 			Entity childEntity = GetEntity(childUUID);
-			RemoveEntity(childEntity);
+			RemoveEntityFromScene(childEntity);
 		}
 
 		// If contains a RigidBodyComponent, remove it from the PhysicsSystem's runtime simulation
@@ -516,6 +520,19 @@ namespace Ember {
 		UUID entityUUID = entity.GetUUID();
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
 		m_EntityUUIDMap.erase(entityUUID);
+	}
+
+	void Scene::RemoveEntity(Entity entity)
+	{
+		m_PendingRemovals.push_back(entity);
+	}
+
+	void Scene::RemovePendingRemovals()
+	{
+		for (Entity entity : m_PendingRemovals)
+			RemoveEntityFromScene(entity);
+
+		m_PendingRemovals.clear();
 	}
 
 	Entity Scene::GetEntityAtPixel(uint32_t x, uint32_t y)

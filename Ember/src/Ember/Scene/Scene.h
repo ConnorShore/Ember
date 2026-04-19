@@ -122,12 +122,16 @@ namespace Ember {
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID);
 		Entity DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot, UUID originalAnimatorUUID = Constants::InvalidUUID, UUID newAnimatorUUID = Constants::InvalidUUID);
 		
+		void RemoveEntityFromScene(Entity entity);
+		void RemovePendingRemovals();
 
 	private:
 		ScopedPtr<Registry> m_Registry;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 		// TODO: May want a entity name map for faster lookup by name
+
+		std::vector<Entity> m_PendingRemovals;
 
 		std::string m_Name;
 		std::string m_FilePath;

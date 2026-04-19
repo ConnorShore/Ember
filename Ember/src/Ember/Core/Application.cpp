@@ -64,7 +64,7 @@ namespace Ember {
 		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
 		serializer.Serialize("Ember/assets/assets.eba");
 
-		ScriptEngine::Shutdown();
+		//ScriptEngine::Shutdown();
 
 		EB_CORE_INFO("Application destroyed!");
 	}
