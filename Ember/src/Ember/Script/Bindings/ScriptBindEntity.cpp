@@ -116,12 +116,24 @@ namespace Ember {
 
 	void BindEntity(sol::state& state)
 	{
-		state.new_usertype<Entity>("Entity",
+		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
 			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
 		);
+
+		entityType.set_function("GetScriptInstance", [](Entity& entity, sol::this_state s) -> sol::object {
+			if (entity.ContainsComponent<ScriptComponent>())
+			{
+				auto& scriptComp = entity.GetComponent<ScriptComponent>();
+				if (scriptComp.Instance.valid())
+				{
+					return scriptComp.Instance;
+				}
+			}
+			return sol::make_object(s, sol::lua_nil);
+			});
 	}
 
 }
