@@ -11,14 +11,18 @@ Assets:
     UUID: 8422630553721103124
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
+  - Type: Script
+    UUID: 16541504524255684090
+    Name: Powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
   - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 10658966581415315879
-    Name: Cube_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+    UUID: 12147062781911719508
+    Name: Powerup_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 5345865544332564414
     Name: Ground (Copy)_StandardGeometry_Clone
@@ -27,11 +31,23 @@ Assets:
     UUID: 15812231264559602920
     Name: Enemy_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 10658966581415315879
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 9538612635053895722
+    Name: Powerup_StandardUnlit_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardUnlit_Clone.ebmat'
+  - Type: Material
+    UUID: 17497850881512429738
+    Name: Friendly_Enemy_StandardGeometry_Clone_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Friendly_Enemy_StandardGeometry_Clone_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Physics Materials\RoughFloor.ebpmat'
   - Type: Prefab
-    UUID: 9930530190584862612
+    UUID: 12388111664304859345
     Name: Bullet
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Prefabs\Bullet.ebprefab'

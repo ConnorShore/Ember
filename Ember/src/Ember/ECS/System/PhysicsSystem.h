@@ -6,6 +6,7 @@
 #include "Ember/Physics/RaycastData.h"
 #include "Ember/Physics/CollisionTestCallback.h"
 #include "Ember/Physics/OverlapTestCallback.h"
+#include "Ember/Physics/PhysicsEventListener.h"
 #include "Ember/Scene/Entity.h"
 
 // forward declarations
@@ -81,6 +82,8 @@ namespace Ember {
 		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;
 
 		rp3d::PhysicsWorld* m_PhysicsWorld = nullptr;	// TODO: Make scoped ptr
+
+		PhysicsEventListener m_PhysicsEventListener;
 
 		PhysicsSettings m_Settings;
 		DebugRenderSettings m_DebugRenderSettings;

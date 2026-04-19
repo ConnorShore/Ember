@@ -1,10 +1,12 @@
 #include "ebpch.h"
 #include "PhysicsSystem.h"
+#include "ScriptSystem.h"
 #include "Ember/Core/Core.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Physics/RaycastCallback.h"
 #include "Ember/Physics/ColliderUserData.h"
+#include "Ember/Physics/TriggerFilterOverlapCallback.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -191,6 +193,8 @@ namespace Ember {
 
 		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
 		RefreshPhysicsWorld();
+
+		m_PhysicsWorld->setEventListener(&m_PhysicsEventListener);
 
 		EB_CORE_INFO("Physics System attached!");
 	}
@@ -379,6 +383,18 @@ namespace Ember {
 			}
 		}
 
+		// Update script triggers
+		auto& overlapTriggers = m_PhysicsEventListener.GetOverlapData();
+		for (const auto& triggerEvent : overlapTriggers)
+		{
+			// Fire trigger event for both entities
+			ScriptSystem::FireTriggerEvent(triggerEvent.EntityA, triggerEvent.EntityB, triggerEvent.EventType, scene);
+			ScriptSystem::FireTriggerEvent(triggerEvent.EntityB, triggerEvent.EntityA, triggerEvent.EventType, scene);
+		}
+
+		m_PhysicsEventListener.ClearOverlapQueue();
+
+		// Update debug render data
 		UpdateDebugRenderData();
 	}
 
@@ -563,8 +579,14 @@ namespace Ember {
 
 	void PhysicsSystem::RestartPhysicsWorld()
 	{
-		m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+		if (m_PhysicsWorld) {
+			m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+		}
 		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
+
+		// Re-apply the listener and settings to the NEW world!
+		m_PhysicsWorld->setEventListener(&m_PhysicsEventListener);
+		RefreshPhysicsWorld();
 	}
 
 	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& endPoint)
@@ -693,9 +715,17 @@ namespace Ember {
 
 		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
 
-		// Pass the specific rigid body into the callback so we can fix the normal direction!
+		// Test overlapping colliders to filter out triggers before narrowphase collision checks
+		TriggerFilterOverlapCallback triggerCallback(rb.Body);
+		m_PhysicsWorld->testOverlap(rb.Body, triggerCallback);
+
+		auto overlappingColliders = triggerCallback.GetSolidBodies();
+
 		CollisionTestCallback callback(rb.Body);
-		m_PhysicsWorld->testCollision(rb.Body, callback);
+		for (rp3d::Body* solidBody : overlappingColliders)
+		{
+			m_PhysicsWorld->testCollision(rb.Body, solidBody,callback);
+		}
 
 		return callback.GetCollisionData();
 	}
