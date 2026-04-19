@@ -47,6 +47,7 @@ namespace Ember {
         Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
+		Entity GetEntityByName(const std::string& name);
 		Entity DuplicateEntity(Entity entity);
 
 		SharedPtr<Prefab> CreatePrefab(Entity entity, const std::string& filepath);
@@ -126,6 +127,7 @@ namespace Ember {
 		ScopedPtr<Registry> m_Registry;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
+		// TODO: May want a entity name map for faster lookup by name
 
 		std::string m_Name;
 		std::string m_FilePath;

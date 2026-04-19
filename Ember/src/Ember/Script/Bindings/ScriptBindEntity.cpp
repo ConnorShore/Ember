@@ -52,6 +52,8 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<AnimatorComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<AnimatorComponent>()); });
 		if (componentTypeStr == "CharacterControllerComponent")
 			return guardGet(entity.ContainsComponent<CharacterControllerComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<CharacterControllerComponent>()); });
+		if (componentTypeStr == "TextComponent")
+			return guardGet(entity.ContainsComponent<TextComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<TextComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -99,6 +101,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<AnimatorComponent>());
 		if (componentTypeStr == "CharacterControllerComponent")
 			return sol::make_object(state, entity.ContainsComponent<CharacterControllerComponent>());
+		if (componentTypeStr == "TextComponent")
+			return sol::make_object(state, entity.ContainsComponent<TextComponent>());
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -116,7 +120,7 @@ namespace Ember {
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
-				"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
+			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
 		);
 	}
 
