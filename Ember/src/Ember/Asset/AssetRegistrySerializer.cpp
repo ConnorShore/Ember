@@ -9,6 +9,7 @@
 #include "Ember/Asset/Skeleton.h" 
 #include "Ember/Asset/Animation.h"
 #include "Ember/Asset/Prefab.h"
+#include "Ember/Asset/Font.h"
 
 #include "Ember/Utils/SerializationUtils.h"
 
@@ -56,6 +57,7 @@ namespace Ember {
 
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<PhysicsMaterial>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Prefab>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Font>());
 
 		// Write out to disk
 		std::ofstream fout(filePath);
@@ -130,6 +132,8 @@ namespace Ember {
 				m_AssetManagerHandle->Load<PhysicsMaterial>(uuid, name, path, false);
 			else if (type == "Prefab")
 				m_AssetManagerHandle->Load<Prefab>(uuid, name, path, false);
+			else if (type == "Font")
+				m_AssetManagerHandle->Load<Font>(uuid, name, path, false);
 			else
 				EB_CORE_WARN("Unknown asset type '{0}' in registry! Skipping.", type);
 		}

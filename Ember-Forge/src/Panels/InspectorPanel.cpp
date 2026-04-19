@@ -19,6 +19,7 @@
 #include "ComponentUI/Collision/ConvexMeshColliderComponentUI.h"
 #include "ComponentUI/CharacterControllerComponent.h"
 #include "ComponentUI/LifetimeComponentUI.h"
+#include "ComponentUI/TextComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -53,6 +54,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<StaticMeshComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<SkinnedMeshComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<TextComponentUI>::Create(m_Context));
 
 		// --- LIGHTING ---
 		m_ComponentUIs[Category::Lighting].emplace_back(ScopedPtr<DirectionalLightComponentUI>::Create(m_Context));

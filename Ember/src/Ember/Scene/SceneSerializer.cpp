@@ -282,6 +282,15 @@ namespace Ember {
 			prefabNode |= ryml::MAP;
 			prefabNode["Lifetime"] << lifetime.Lifetime;
 		}
+		if (entity.ContainsComponent<TextComponent>())
+		{
+			auto& text = entity.GetComponent<TextComponent>();
+			ryml::NodeRef textNode = entityNode["TextComponent"];
+			textNode |= ryml::MAP;
+			textNode["Text"] << text.Text;
+			textNode["FontHandle"] << (uint64_t)text.FontHandle;
+			Util::SerializeVector4f(textNode["Color"], text.Color);
+		}
 	}
 
 	// =========================================================================
@@ -669,6 +678,18 @@ namespace Ember {
 			LifetimeComponent ltc;
 			lifetimeNode["Lifetime"] >> ltc.Lifetime;
 			deserializedEntity.AttachComponent<LifetimeComponent>(ltc);
+		}
+		
+		if (entityNode.has_child("TextComponent"))
+		{
+			ryml::NodeRef textNode = entityNode["TextComponent"];
+			TextComponent tc;
+			textNode["Text"] >> tc.Text;
+			uint64_t fontId;
+			textNode["FontHandle"] >> fontId;
+			tc.FontHandle = (UUID)fontId;
+			Util::DeserializeVector4f(textNode["Color"], tc.Color);
+			deserializedEntity.AttachComponent<TextComponent>(tc);
 		}
 	}
 

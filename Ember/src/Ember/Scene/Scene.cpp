@@ -141,7 +141,8 @@ namespace Ember {
 					BillboardComponent,
 					PrefabComponent,
 					CharacterControllerComponent,
-					LifetimeComponent
+					LifetimeComponent,
+					TextComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -391,7 +392,8 @@ namespace Ember {
 			AnimatorComponent,
 			BillboardComponent,
 			CharacterControllerComponent,
-			LifetimeComponent
+			LifetimeComponent,
+			TextComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

@@ -17,6 +17,7 @@ namespace Ember {
 	enum class TextureFormat
 	{
 		None = 0,
+		R8,
 		RG8,
 		RGB8,
 		RG16F,

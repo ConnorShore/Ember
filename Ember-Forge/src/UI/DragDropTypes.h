@@ -14,6 +14,7 @@ namespace Ember {
 		AssetShader,
 		AssetPhysicsMaterial,
 		AssetPrefab,
+		AssetFont,
 		SceneEntity
 	};
 
@@ -32,6 +33,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetShader: return "ASSET_SHADER";
 			case DragDropPayloadType::AssetPhysicsMaterial: return "ASSET_PHYSICS_MATERIAL";
 			case DragDropPayloadType::AssetPrefab: return "ASSET_PREFAB";
+			case DragDropPayloadType::AssetFont: return "ASSET_FONT";
 			case DragDropPayloadType::SceneEntity: return "SCENE_ENTITY";
 			default: return "Unknown";
 			}
@@ -46,6 +48,7 @@ namespace Ember {
 			if (str == "ASSET_SHADER") return DragDropPayloadType::AssetShader;
 			if (str == "ASSET_PHYSICS_MATERIAL") return DragDropPayloadType::AssetPhysicsMaterial;
 			if (str == "ASSET_PREFAB") return DragDropPayloadType::AssetPrefab;
+			if (str == "ASSET_FONT") return DragDropPayloadType::AssetFont;
 			if (str == "SCENE_ENTITY") return DragDropPayloadType::SceneEntity;
 			return DragDropPayloadType::None;
 		}
@@ -64,6 +67,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetPhysicsMaterial: return "*.ebpmat;";
 			case DragDropPayloadType::AssetScript: return "*.lua;";
 			case DragDropPayloadType::AssetPrefab: return "*.ebprefab";
+			case DragDropPayloadType::AssetFont: return "*.ttf;*.otf;.ebfont;";
 			default: return "*.*";
 			}
 		}
@@ -85,6 +89,8 @@ namespace Ember {
 				return DragDropPayloadType::AssetScript;
 			if (extension == ".ebprefab")
 				return DragDropPayloadType::AssetPrefab;
+			if (extension == ".ttf" || extension == ".otf" || extension == ".ebfont")
+				return DragDropPayloadType::AssetFont;
 			return DragDropPayloadType::None;
 		}
 	};

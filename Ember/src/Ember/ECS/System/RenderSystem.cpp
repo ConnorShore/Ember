@@ -849,20 +849,35 @@ namespace Ember {
 
 		Renderer2D::BeginFrame();
 
+		// Draw Sprites
 		View view = registry.Query<SpriteComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{
-				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color);
+				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color);
 			}
 			else
 			{
 				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture2D>(sprite.TextureHandle);
-				Renderer2D::DrawQuad(Vector2f(transform.Position.x, transform.Position.y),
-					Vector2f(transform.Scale.x, transform.Scale.y), sprite.Color, textureAsset);
+				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color, textureAsset);
+			}
+		}
+
+		// Draw Text
+		View textView = registry.Query<TextComponent, TransformComponent>();
+		for (EntityID entity : textView)
+		{
+			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
+
+			if (textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
+			{
+				auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
+				if (fontAsset)
+				{
+					Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset);
+				}
 			}
 		}
 

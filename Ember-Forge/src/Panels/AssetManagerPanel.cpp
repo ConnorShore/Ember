@@ -4,8 +4,8 @@
 #include "UI/PropertyGrid.h"
 
 #include <Ember/Utils/PlatformUtil.h>
-#include <Ember/Asset/Prefab.h>
 #include <Ember/Event/UIEvent.h>
+#include <Ember/Asset/Font.h>
 
 #include <Ember-Tools/GLTFImporter.h>
 
@@ -370,6 +370,17 @@ namespace Ember {
 					if (!file.empty())
 					{
 						asset = Application::Instance().GetAssetManager().Load<Script>(file);
+						asset->SetIsEngineAsset(false);
+					}
+					ImGui::CloseCurrentPopup();
+				}
+				if (ImGui::MenuItem("Font"))
+				{
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetFont);
+					std::string file = SelectAndLoadFile(std::format("Font Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
+					if (!file.empty())
+					{
+						asset = Application::Instance().GetAssetManager().Load<Font>(file);
 						asset->SetIsEngineAsset(false);
 					}
 					ImGui::CloseCurrentPopup();

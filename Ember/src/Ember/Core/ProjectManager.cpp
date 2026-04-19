@@ -27,6 +27,7 @@ namespace Ember {
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Textures");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Scripts");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Prefabs");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "Fonts");
 
 
 		// TODO: Probably should copy default engine assets into this directory
