@@ -19,6 +19,8 @@ namespace Ember {
 		Vector4f Color;
 		Vector2f TextureCoords;
 		float TextureIndex;
+
+		EntityID EntityID; // For editor picking
 	};
 
 	// Per-frame batch state: CPU-side vertex buffer is filled by DrawQuad calls
@@ -68,7 +70,8 @@ namespace Ember {
 			{ ShaderDataType::Float3, "v_Position" },
 			{ ShaderDataType::Float4, "v_Color" },
 			{ ShaderDataType::Float2, "v_TextureCoords"},
-			{ ShaderDataType::Float, "v_TextureIndex"}
+			{ ShaderDataType::Float, "v_TextureIndex"},
+			{ ShaderDataType::Int, "v_EntityID" }
 			});
 
 		// Pre-generate index data: every 4 vertices form a quad drawn as 2 triangles (6 indices)
@@ -231,7 +234,7 @@ namespace Ember {
 		s_RendererData->QuadIndicesInBatch += 6;
 	}
 
-	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture, const Vector2f* customTexCoords)
+	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture, const Vector2f* customTexCoords, EntityID entity)
 	{
 		float texIndex = 0.0f;
 
@@ -263,13 +266,14 @@ namespace Ember {
 			s_RendererData->QuadBufferCurrent->Color = color;
 			s_RendererData->QuadBufferCurrent->TextureCoords = customTexCoords[i];
 			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
+			s_RendererData->QuadBufferCurrent->EntityID = (int)entity;
 			s_RendererData->QuadBufferCurrent++;
 		}
 
 		s_RendererData->QuadIndicesInBatch += 6;
 	}
 
-	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, bool isScreenSpace /* = false */)
+	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, EntityID entity, bool isScreenSpace /* = false */)
 	{
 		if (!font || !font->GetAtlasTexture()) return;
 
@@ -320,7 +324,7 @@ namespace Ember {
 			};
 
 			Matrix4f letterTransform = Math::Translate(Vector3f(localX, localY, 0.0f)) * Math::Scale(Vector3f(quadWidth, quadHeight, 1.0f));
-			DrawQuad(transform * letterTransform, color, atlasTexture, texCoords);
+			DrawQuad(transform * letterTransform, color, atlasTexture, texCoords, entity);
 		}
 	}
 
