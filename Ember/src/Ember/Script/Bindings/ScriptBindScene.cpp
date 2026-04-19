@@ -14,7 +14,7 @@ namespace Ember {
 		sceneTable.set_function("InstantiatePrefab", [scene](const std::string& assetName, const Vector3f& position) {
 			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
 			return scene->InstantiatePrefab(prefabAsset, &position);
-		});
+			});
 		sceneTable.set_function("RemoveEntity", sol::overload(
 			[scene](Entity entity) {
 				scene->RemoveEntity(entity);
@@ -24,6 +24,8 @@ namespace Ember {
 				scene->RemoveEntity(entity);
 			}
 		));
+		sceneTable.set_function("GetEntityByName", [scene](const std::string& name) {
+			return scene->GetEntityByName(name);
+		});
 	}
-
 }

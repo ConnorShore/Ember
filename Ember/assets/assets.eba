@@ -8,13 +8,13 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
-    UUID: 8422630553721103124
-    Name: NewScript
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
-  - Type: Script
     UUID: 16541504524255684090
     Name: Powerup
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
+  - Type: Script
+    UUID: 8422630553721103124
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
   - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
@@ -24,13 +24,13 @@ Assets:
     Name: Powerup_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 5345865544332564414
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 15812231264559602920
     Name: Enemy_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 5345865544332564414
+    Name: Ground (Copy)_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
@@ -51,3 +51,7 @@ Assets:
     UUID: 12388111664304859345
     Name: Bullet
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Prefabs\Bullet.ebprefab'
+  - Type: Font
+    UUID: 14182495134475918428
+    Name: Roboto-Regular
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Fonts\Roboto-Regular.ttf'

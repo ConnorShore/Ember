@@ -23,6 +23,7 @@ project "Ember-Forge"
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
+      "%{wks.location}/Ember/vendor/stb",
       "%{wks.location}/Ember/vendor/lua/src",
       "%{wks.location}/Ember/vendor/sol2/include",
       "%{wks.location}/Ember/vendor/rapidyaml/src",

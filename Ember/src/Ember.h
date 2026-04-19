@@ -70,6 +70,7 @@
 #include "Ember/Asset/MaterialSerializer.h"
 #include "Ember/Asset/PhysicsMaterial.h"
 #include "Ember/Asset/Prefab.h"
+#include "Ember/Asset/Font.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 

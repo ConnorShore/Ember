@@ -19,6 +19,8 @@ namespace Ember {
 		Vector4f Color;
 		Vector2f TextureCoords;
 		float TextureIndex;
+
+		EntityID EntityID; // For editor picking
 	};
 
 	// Per-frame batch state: CPU-side vertex buffer is filled by DrawQuad calls
@@ -68,7 +70,8 @@ namespace Ember {
 			{ ShaderDataType::Float3, "v_Position" },
 			{ ShaderDataType::Float4, "v_Color" },
 			{ ShaderDataType::Float2, "v_TextureCoords"},
-			{ ShaderDataType::Float, "v_TextureIndex"}
+			{ ShaderDataType::Float, "v_TextureIndex"},
+			{ ShaderDataType::Int, "v_EntityID" }
 			});
 
 		// Pre-generate index data: every 4 vertices form a quad drawn as 2 triangles (6 indices)
@@ -104,8 +107,8 @@ namespace Ember {
 
 	void Renderer2D::Shutdown()
 	{
-		s_RendererData.Reset();
 		delete[] s_RendererData->QuadBufferStart;
+		s_RendererData.Reset();
 	}
 
 	void Renderer2D::BeginFrame()
@@ -229,6 +232,100 @@ namespace Ember {
 		}
 
 		s_RendererData->QuadIndicesInBatch += 6;
+	}
+
+	void Renderer2D::DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture, const Vector2f* customTexCoords, EntityID entity)
+	{
+		float texIndex = 0.0f;
+
+		for (uint32_t i = 1; i < s_RendererData->TextureSlotIndex; i++)
+		{
+			if (s_RendererData->TextureSlots[i] == nullptr) break;
+			if (*texture == s_RendererData->TextureSlots[i])
+			{
+				texIndex = (float)i;
+				break;
+			}
+		}
+
+		if (texIndex == 0.0f)
+		{
+			if (s_RendererData->TextureSlotIndex >= s_RendererData->MaxTextureSlots)
+				NextBatch();
+
+			texIndex = (float)s_RendererData->TextureSlotIndex;
+			s_RendererData->TextureSlots[s_RendererData->TextureSlotIndex++] = texture;
+		}
+
+		if (s_RendererData->QuadIndicesInBatch >= s_RendererData->MaxIndices)
+			NextBatch();
+
+		for (uint32_t i = 0; i < 4; i++)
+		{
+			s_RendererData->QuadBufferCurrent->Position = transform * s_RendererData->QuadVertexPositions[i];
+			s_RendererData->QuadBufferCurrent->Color = color;
+			s_RendererData->QuadBufferCurrent->TextureCoords = customTexCoords[i];
+			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
+			s_RendererData->QuadBufferCurrent->EntityID = (int)entity;
+			s_RendererData->QuadBufferCurrent++;
+		}
+
+		s_RendererData->QuadIndicesInBatch += 6;
+	}
+
+	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, EntityID entity, bool isScreenSpace /* = false */)
+	{
+		if (!font || !font->GetAtlasTexture()) return;
+
+		auto atlasTexture = font->GetAtlasTexture();
+		const stbtt_bakedchar* glyphData = font->GetGlyphData();
+
+		// The cursor keeps track of where we are on the line
+		float cursorX = 0.0f;
+		float cursorY = 0.0f;
+
+		// stb_truetype generates quads in pixel units, so we need to convert to our normalized unit space
+		// if in 3D, but if in screen space we can just use pixel units directly (assuming an orthographic projection that matches the screen dimensions)
+		const float pixelsPerUnit = 32.0f;
+		const float scaleFactor = isScreenSpace ? 1.0f : (1.0f / 32.0f);
+
+		for (char c : text)
+		{
+			// Skip characters outside our baked ASCII range (like newlines for now)
+			if (c < Font::FirstChar || c >= Font::FirstChar + Font::CharCount)
+				continue;
+
+			stbtt_aligned_quad q;
+			stbtt_GetBakedQuad(glyphData, atlasTexture->GetWidth(), atlasTexture->GetHeight(),
+				c - Font::FirstChar, &cursorX, &cursorY, &q, 1);
+
+			// Calculate the size of this specific letter
+			float quadWidth = q.x1 - q.x0;
+			float quadHeight = q.y1 - q.y0;
+
+			// Center the local quad so it aligns with our Engine's [-0.5, 0.5] quad vertices
+			float localX = q.x0 + (quadWidth / 2.0f);
+
+			// stbtt generates Y-down coordinates, so we invert Y for OpenGL
+			float localY = -(q.y0 + (quadHeight / 2.0f));
+
+			// Multiply sizes and positions by the scale factor
+			localX *= scaleFactor;
+			localY *= scaleFactor;
+			quadWidth *= scaleFactor;
+			quadHeight *= scaleFactor;
+
+			// Map the specific bounding box of the letter in the Atlas to our Quad's vertices
+			Vector2f texCoords[4] = {
+				{ q.s0, q.t1 }, // Bottom-Left
+				{ q.s1, q.t1 }, // Bottom-Right
+				{ q.s1, q.t0 }, // Top-Right
+				{ q.s0, q.t0 }  // Top-Left
+			};
+
+			Matrix4f letterTransform = Math::Translate(Vector3f(localX, localY, 0.0f)) * Math::Scale(Vector3f(quadWidth, quadHeight, 1.0f));
+			DrawQuad(transform * letterTransform, color, atlasTexture, texCoords, entity);
+		}
 	}
 
 }

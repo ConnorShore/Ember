@@ -20,10 +20,9 @@ namespace Ember {
 		Material,
 		Script,
 		PhysicsMaterial,
-		Prefab
+		Prefab,
+		Font
 	};
-
-
 
 	static std::string GetAssetTypeString(AssetType type)
 	{
@@ -39,6 +38,7 @@ namespace Ember {
 		case AssetType::Skeleton: return "Skeleton";
 		case AssetType::PhysicsMaterial: return "PhysicsMaterial";
 		case AssetType::Prefab: return "Prefab";
+		case AssetType::Font: return "Font";
 		default: EB_CORE_ASSERT(false, "Unknown asset type!"); return "";
 		}
 	}
@@ -55,6 +55,7 @@ namespace Ember {
 		if (typeStr == "Skeleton") return AssetType::Skeleton;
 		if (typeStr == "PhysicsMaterial") return AssetType::PhysicsMaterial;
 		if (typeStr == "Prefab") return AssetType::Prefab;
+		if (typeStr == "Font") return AssetType::Font;
 		
 		EB_CORE_ASSERT(false, "Unknown asset type!"); 
 		return AssetType::None;

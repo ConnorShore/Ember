@@ -581,4 +581,17 @@ namespace Ember {
 		LifetimeComponent(const LifetimeComponent&) = default;
 	};
 
+	struct TextComponent
+	{
+		std::string Text;
+		Vector4f Color = Vector4f(1.0f);
+		UUID FontHandle = Constants::InvalidUUID;
+		bool ScreenSpace = true;
+
+		TextComponent() = default;
+		TextComponent(const std::string& text, const Vector4f& color, UUID fontHandle, bool screenSpace)
+			: Text(text), Color(color), FontHandle(fontHandle), ScreenSpace(screenSpace) {}
+		TextComponent(const TextComponent&) = default;
+	};
+
 }

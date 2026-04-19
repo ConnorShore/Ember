@@ -106,6 +106,12 @@ namespace Ember {
 			"Move", &CharacterControllerComponent::Move,
 			"Jump", &CharacterControllerComponent::Jump
 		);
+
+		state.new_usertype<TextComponent>("TextComponent",
+			"Text", &TextComponent::Text,
+			//"Font", //TODO: Make this take in a string and look up the asset handle to assign
+			"Color", &TextComponent::Color
+		);
 	}
 
 }

@@ -7,6 +7,19 @@
 namespace Ember {
 	namespace OpenGL {
 
+		static GLint BytesPerPixelToGlType(int bytesPerPixel)
+		{
+			switch (bytesPerPixel)
+			{
+			case 1: return GL_RED;
+			case 2: return GL_RG;
+			case 3: return GL_RGB;
+			case 4: 
+			default:
+				return GL_RGBA;
+			}
+		}
+
 		Texture2D::Texture2D()
 			: Texture2D("Default", 1, 1, nullptr)
 		{
@@ -86,8 +99,17 @@ namespace Ember {
 
 			glTextureStorage2D(m_Id, m_NumMipMaps, TextureFormatToOpenGLInternalFormat(format), m_Width, m_Height);
 
+			// Swizzle Trick for Font Atlases
+			if (m_BytesPerPixel == 1)
+			{
+				glTextureParameteri(m_Id, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+				glTextureParameteri(m_Id, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+				glTextureParameteri(m_Id, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+				glTextureParameteri(m_Id, GL_TEXTURE_SWIZZLE_A, GL_RED);
+			}
+
 			if (data)
-				glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+				glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, BytesPerPixelToGlType(m_BytesPerPixel), GL_UNSIGNED_BYTE, data);
 		}
 
 		Texture2D::Texture2D(UUID uuid, const std::string& name, uint32_t width, uint32_t height, const void* data)
@@ -112,7 +134,7 @@ namespace Ember {
 
 		void Texture2D::SetData(const void* data, uint32_t size)
 		{
-			glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, BytesPerPixelToGlType(m_BytesPerPixel), GL_UNSIGNED_BYTE, data);
 		}
 
 	}

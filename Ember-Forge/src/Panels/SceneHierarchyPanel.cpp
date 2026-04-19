@@ -53,7 +53,7 @@ namespace Ember {
 		if (m_Context->CurrentSceneState != SceneState::Edit)
 			return;
 
-		if (Input::IsKeyPressed(KeyCode::Space))
+		if (Input::IsKeyPressed(KeyCode::Space) && !ImGui::GetIO().WantTextInput)
 		{
 			ImGui::OpenPopup("SceneHierarchyContextWindow");
 		}

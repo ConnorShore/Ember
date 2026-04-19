@@ -12,6 +12,7 @@
 #include "SkeletonSerializer.h"
 #include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
+#include "Font.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -100,6 +101,8 @@ namespace Ember {
 				newAsset = PhysicsMaterialSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, Prefab>)
 				newAsset = SharedPtr<Prefab>::Create(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, Font>)
+				newAsset = SharedPtr<Font>::Create(uuid, name, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
@@ -175,6 +178,14 @@ namespace Ember {
 		{
 			EB_CORE_ASSERT(m_AssetNames.contains(name), "Attempted to retrieve asset that doesn't exist!");
 			return DynamicPointerCast<T>(m_Assets.at(m_AssetNames.at(name)));
+		}
+
+		template<IsCoreAsset T>
+		SharedPtr<T> GetAssetByPath(const std::string& path) const
+		{
+			auto absolutePath = std::filesystem::absolute(path).string();
+			EB_CORE_ASSERT(m_AssetPaths.contains(absolutePath), "Attempted to retrieve asset that doesn't exist!");
+			return DynamicPointerCast<T>(m_Assets.at(m_AssetPaths.at(absolutePath)));
 		}
 
 		template<IsCoreAsset T>

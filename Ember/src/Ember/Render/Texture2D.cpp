@@ -16,6 +16,7 @@ namespace Ember {
 	{
 		switch (format)
 		{
+		case TextureFormat::R8:			return GL_R8;
 		case TextureFormat::RG8:		return GL_RG8;
 		case TextureFormat::RGB8:		return GL_RGB8;
 		case TextureFormat::RG16F:		return GL_RG16F;
@@ -34,6 +35,7 @@ namespace Ember {
 	{
 		switch (internalFormat)
 		{
+		case GL_R8:			return TextureFormat::R8;
 		case GL_RG8:		return TextureFormat::RG8;
 		case GL_RGB8:		return TextureFormat::RGB8;
 		case GL_RG16F:		return TextureFormat::RG16F;
@@ -51,6 +53,7 @@ namespace Ember {
 	{
 		switch (format)
 		{
+		case TextureFormat::R8:			return 1;
 		case TextureFormat::RG8:		return 2;
 		case TextureFormat::RGB8:		return 3;
 		case TextureFormat::RG16F:		return 4;
