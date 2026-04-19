@@ -62,7 +62,9 @@ namespace Ember {
 		void RenderTransparentEntities(Scene* scene);
 		void RenderInfiniteGrid();
 		void RenderBillboards(Scene* scene, bool isRuntime);
-		void Render2DEntities(Scene* scene);
+		//void Render2DEntities(Scene* scene);
+		void RenderWorldSpace2D(Scene* scene);
+		void RenderScreenSpaceUI(Scene* scene);
 		void HandlePostProcessing(Scene* scene);
 		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
 		void RenderDebug(Scene* scene);

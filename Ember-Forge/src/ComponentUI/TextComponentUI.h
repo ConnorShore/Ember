@@ -23,6 +23,7 @@ namespace Ember {
 			{
 				UI::PropertyGrid::InputText("Text", component.Text);
 				UI::PropertyGrid::Color4("Color", component.Color);
+				UI::PropertyGrid::Checkbox("Screen Space", component.ScreenSpace);
 
 				// Font asset selector
 				auto& assetManager = Application::Instance().GetAssetManager();

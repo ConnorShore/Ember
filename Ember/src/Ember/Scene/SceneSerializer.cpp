@@ -290,6 +290,7 @@ namespace Ember {
 			textNode["Text"] << text.Text;
 			textNode["FontHandle"] << (uint64_t)text.FontHandle;
 			Util::SerializeVector4f(textNode["Color"], text.Color);
+			textNode["ScreenSpace"] << text.ScreenSpace;
 		}
 	}
 
@@ -689,6 +690,7 @@ namespace Ember {
 			textNode["FontHandle"] >> fontId;
 			tc.FontHandle = (UUID)fontId;
 			Util::DeserializeVector4f(textNode["Color"], tc.Color);
+			textNode["ScreenSpace"] >> tc.ScreenSpace;
 			deserializedEntity.AttachComponent<TextComponent>(tc);
 		}
 	}

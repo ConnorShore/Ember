@@ -269,7 +269,7 @@ namespace Ember {
 		s_RendererData->QuadIndicesInBatch += 6;
 	}
 
-	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font)
+	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, bool isScreenSpace /* = false */)
 	{
 		if (!font || !font->GetAtlasTexture()) return;
 
@@ -281,8 +281,9 @@ namespace Ember {
 		float cursorY = 0.0f;
 
 		// stb_truetype generates quads in pixel units, so we need to convert to our normalized unit space
+		// if in 3D, but if in screen space we can just use pixel units directly (assuming an orthographic projection that matches the screen dimensions)
 		const float pixelsPerUnit = 32.0f;
-		const float scaleFactor = 1.0f / pixelsPerUnit;
+		const float scaleFactor = isScreenSpace ? 1.0f : (1.0f / 32.0f);
 
 		for (char c : text)
 		{

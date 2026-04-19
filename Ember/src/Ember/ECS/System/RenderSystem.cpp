@@ -192,17 +192,22 @@ namespace Ember {
 		RenderForwardEntities(scene);
 		RenderTransparentEntities(scene);
 
-		// Render Editor Grid
 		if (!isRuntime)
 			RenderInfiniteGrid();
 
 		RenderBillboards(scene, isRuntime);
 
+		// --- NEW: Draw World-Space 2D BEFORE Post-Processing ---
+		RenderWorldSpace2D(scene);
+
+		// Post Processing & Tone Mapping
 		HandlePostProcessing(scene);
 
-		// Overlays
-		Render2DEntities(scene);
+		// Debug lines
 		RenderDebug(scene);
+
+		// --- NEW: Draw Screen-Space UI AFTER Final Composite ---
+		RenderScreenSpaceUI(scene);
 
 		ResetRenderState();
 	}
@@ -841,17 +846,64 @@ namespace Ember {
 		RenderAction::UseBlending(false);
 	}
 
-	void RenderSystem::Render2DEntities(Scene* scene)
+	//void RenderSystem::Render2DEntities(Scene* scene)
+	//{
+	//	auto& registry = scene->GetRegistry();
+
+	//	RenderAction::UseDepthTest(false);
+
+	//	Renderer2D::BeginFrame();
+
+	//	// Draw Sprites
+	//	View view = registry.Query<SpriteComponent, TransformComponent>();
+	//	for (EntityID entity : view)
+	//	{
+	//		auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
+	//		if (sprite.TextureHandle == Constants::InvalidUUID)
+	//		{
+	//			Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color);
+	//		}
+	//		else
+	//		{
+	//			auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture2D>(sprite.TextureHandle);
+	//			Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color, textureAsset);
+	//		}
+	//	}
+
+	//	// Draw Text
+	//	View textView = registry.Query<TextComponent, TransformComponent>();
+	//	for (EntityID entity : textView)
+	//	{
+	//		auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
+
+	//		if (textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
+	//		{
+	//			auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
+	//			if (fontAsset)
+	//			{
+	//				Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset);
+	//			}
+	//		}
+	//	}
+
+	//	Renderer2D::EndFrame();
+	//}
+
+	void RenderSystem::RenderWorldSpace2D(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
 
-		RenderAction::UseDepthTest(false);
+		m_HdrSceneBuffer->Bind(); // Draw into the 3D scene
+
+		// Enable depth testing so walls hide text, but disable writing so text doesn't cut holes
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseDepthMask(false);
+		RenderAction::UseBlending(true);
 
 		Renderer2D::BeginFrame();
 
-		// Draw Sprites
-		View view = registry.Query<SpriteComponent, TransformComponent>();
-		for (EntityID entity : view)
+		// Draw World-Space Sprites
+		for (EntityID entity : registry.Query<SpriteComponent, TransformComponent>())
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.TextureHandle == Constants::InvalidUUID)
@@ -865,23 +917,86 @@ namespace Ember {
 			}
 		}
 
-		// Draw Text
-		View textView = registry.Query<TextComponent, TransformComponent>();
-		for (EntityID entity : textView)
+		// Draw World-Space Text
+		for (EntityID entity : registry.Query<TextComponent, TransformComponent>())
 		{
 			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
-
-			if (textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
+			if (!textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
 			{
 				auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
 				if (fontAsset)
-				{
-					Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset);
-				}
+					Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset, false);
 			}
 		}
 
 		Renderer2D::EndFrame();
+
+		RenderAction::UseDepthMask(true); // Always restore state!
+		m_HdrSceneBuffer->Unbind();
+	}
+
+	void RenderSystem::RenderScreenSpaceUI(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		// Bind the final screen/editor output target
+		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+
+		// UI ignores the 3D world completely
+		RenderAction::UseDepthTest(false);
+		RenderAction::UseDepthMask(false);
+		RenderAction::UseBlending(true);
+
+		// --- THE CAMERA SWAP ---
+		// Create an Orthographic matrix perfectly sized to the viewport resolution
+		float width = (float)m_RenderSceneState.ViewportDimensions.z;
+		float height = (float)m_RenderSceneState.ViewportDimensions.w;
+
+		// Note: Depending on your OpenGL setup, you may need to invert the top/bottom 
+		// if your UI renders upside down.
+		Matrix4f orthoProj = Math::Orthographic(0.0f, width, 0.0f, height, -1.0f, 1.0f);
+
+		// Push the Ortho matrix to the shader's Camera UBO
+		m_CameraUniformBuffer->SetData(&orthoProj, sizeof(Matrix4f));
+
+		Renderer2D::BeginFrame();
+
+		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
+		for (EntityID entity : registry.Query<SpriteComponent, TransformComponent>())
+		{
+			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
+			if (sprite.TextureHandle == Constants::InvalidUUID)
+			{
+				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color);
+			}
+			else
+			{
+				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture2D>(sprite.TextureHandle);
+				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color, textureAsset);
+			}
+		}
+
+		// Draw Screen-Space Text (e.g. Ammo, Health)
+		for (EntityID entity : registry.Query<TextComponent, TransformComponent>())
+		{
+			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
+			if (textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
+			{
+				auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
+				if (fontAsset)
+					Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset, true);
+			}
+		}
+
+		Renderer2D::EndFrame();
+
+		// --- RESTORE THE 3D CAMERA ---
+		// Put the 3D ViewProjection matrix back in the UBO so the next frame starts correctly
+		Matrix4f viewProjectionMat = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
+
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseDepthMask(true);
 	}
 
 	void RenderSystem::HandlePostProcessing(Scene* scene)
