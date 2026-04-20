@@ -16,6 +16,10 @@ Assets:
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
   - Type: Material
+    UUID: 10658966581415315879
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
@@ -31,10 +35,6 @@ Assets:
     UUID: 15812231264559602920
     Name: Enemy_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 10658966581415315879
-    Name: Cube_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 17497850881512429738
     Name: Friendly_Enemy_StandardGeometry_Clone_Clone

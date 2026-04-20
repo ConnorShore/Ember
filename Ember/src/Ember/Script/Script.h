@@ -4,7 +4,7 @@
 #include "ScriptProperty.h"
 
 #include <sol/sol.hpp>
-#include <unordered_map>
+#include <vector>
 
 namespace Ember {
 
@@ -16,10 +16,10 @@ namespace Ember {
 
 		static AssetType GetStaticType() { return AssetType::Script; }
 
-		void SetExposedProperties(const std::unordered_map<std::string, ScriptProperty>& properties) { m_ExposedProperties = properties; }
-		const std::unordered_map<std::string, ScriptProperty>& GetExposedProperties() const { return m_ExposedProperties; }
+		void SetExposedProperties(const std::vector<ScriptProperty>& properties) { m_ExposedProperties = properties; }
+		const std::vector<ScriptProperty>& GetExposedProperties() const { return m_ExposedProperties; }
 
 	private:
-		std::unordered_map<std::string, ScriptProperty> m_ExposedProperties;
+		std::vector<ScriptProperty> m_ExposedProperties;
 	};
 }

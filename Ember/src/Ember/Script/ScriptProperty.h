@@ -7,12 +7,13 @@
 enum class ScriptPropertyType
 {
 	Unknown = 0,
-	Number,
-	String,
-	Bool
+	Bool,
+	Int,
+	Float,
+	String
 };
 
-using ScriptPropertyValue = std::variant<float, bool, std::string>;
+using ScriptPropertyValue = std::variant<float, int, bool, std::string>;
 
 struct ScriptProperty
 {

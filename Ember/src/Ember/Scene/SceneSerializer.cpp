@@ -9,6 +9,7 @@
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
+#include <string>
 #include <fstream>
 #include <sstream>
 #include <queue>
@@ -228,6 +229,36 @@ namespace Ember {
 			auto scriptNode = entityNode["ScriptComponent"];
 			scriptNode |= ryml::MAP;
 			scriptNode["ScriptUUID"] << (uint64_t)script.ScriptHandle;
+
+			ryml::NodeRef overridesNode = scriptNode["UserPropertyOverrides"];
+			overridesNode |= ryml::SEQ;
+
+			for (const auto& [name, prop] : script.UserPropertyOverrides)
+			{
+				auto propNode = overridesNode.append_child();
+				propNode |= ryml::MAP;
+
+				propNode["Name"] << name;
+				propNode["Type"] << (int)prop.Type;
+
+				switch (prop.Type)
+				{
+				case ScriptPropertyType::Float:
+					propNode["Value"] << std::get<float>(prop.Value);
+					break;
+				case ScriptPropertyType::Int:
+					propNode["Value"] << std::get<int>(prop.Value);
+					break;
+				case ScriptPropertyType::Bool:
+					propNode["Value"] << std::get<bool>(prop.Value);
+					break;
+				case ScriptPropertyType::String:
+					propNode["Value"] << std::get<std::string>(prop.Value);
+					break;
+				default:
+					break;
+				}
+			}
 		}
 		//if (entity.ContainsComponent<OutlineComponent>())
 		//{
@@ -600,7 +631,61 @@ namespace Ember {
 			uint64_t uuidVal;
 			scriptNode["ScriptUUID"] >> uuidVal;
 
+			std::unordered_map<std::string, ScriptProperty> scriptUserOverrides;
+			if (scriptNode.has_child("UserPropertyOverrides"))
+			{
+				ryml::NodeRef overridesNode = scriptNode["UserPropertyOverrides"];
+				for (ryml::NodeRef propNode : overridesNode.children())
+				{
+					std::string propName;
+					propNode["Name"] >> propName;
+
+					int typeInt;
+					propNode["Type"] >> typeInt;
+					ScriptPropertyType propType = (ScriptPropertyType)typeInt;
+
+					ScriptPropertyValue propValue;
+
+					switch (propType)
+					{
+					case ScriptPropertyType::Float:
+					{
+						float val;
+						propNode["Value"] >> val;
+						propValue = val;
+						break;
+					}
+					case ScriptPropertyType::Int:
+					{
+						int val;
+						propNode["Value"] >> val;
+						propValue = val;
+						break;
+					}
+					case ScriptPropertyType::Bool:
+					{
+						bool val;
+						propNode["Value"] >> val;
+						propValue = val;
+						break;
+					}
+					case ScriptPropertyType::String:
+					{
+						std::string val;
+						propNode["Value"] >> val;
+						propValue = val;
+						break;
+					}
+					default:
+						break;
+					}
+
+					scriptUserOverrides[propName] = { propName, propValue, propType };
+				}
+			}
+
 			ScriptComponent sc((UUID)uuidVal);
+			sc.UserPropertyOverrides = scriptUserOverrides;
 			deserializedEntity.AttachComponent<ScriptComponent>(sc);
 		}
 

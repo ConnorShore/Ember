@@ -51,6 +51,14 @@ namespace Ember {
 						script.Instance = luaState.create_table();
 						script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
 
+						// Inject user property overrides from the component
+						for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
+						{
+							// Shove the C++ override directly into the Lua table
+							sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
+							script.Instance[name] = objValue;
+						}
+
 						// Call OnCreate
 						sol::protected_function onCreate = scriptClass["OnCreate"];
 						if (onCreate.valid())
@@ -61,14 +69,6 @@ namespace Ember {
 								sol::error err = createResult;
 								EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
 							}
-						}
-
-						// Inject user property overrides from the component
-						for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
-						{
-							// Shove the C++ override directly into the Lua table
-							sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
-							script.Instance[name] = objValue;
 						}
 					}
 					else

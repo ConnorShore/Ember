@@ -215,14 +215,28 @@ namespace Ember {
 			ImGui::PushID(scriptAsset->GetName().c_str());
 			if (UI::PropertyGrid::Begin("Exposed Properties"))
 			{
-				for (const auto& [defaultPropName, defaultPropValue] : defaultProperties)
+				for (const auto& defaultProp : defaultProperties)
 				{
-					bool hasOverride = component.UserPropertyOverrides.find(defaultPropName) != component.UserPropertyOverrides.end();
-					ScriptProperty activeProp = hasOverride ? component.UserPropertyOverrides[defaultPropName] : defaultPropValue;
+					bool hasOverride = component.UserPropertyOverrides.find(defaultProp.Name) != component.UserPropertyOverrides.end();
+					ScriptProperty activeProp = hasOverride ? component.UserPropertyOverrides[defaultProp.Name] : defaultProp;
 
 					switch (activeProp.Type)
 					{
-					case ScriptPropertyType::Number:
+					case ScriptPropertyType::Bool:
+					{
+						bool val = std::get<bool>(activeProp.Value);
+						if (UI::PropertyGrid::Checkbox(activeProp.Name, val))
+							ScriptEngine::SetScriptPropertyOverride<bool>(component, activeProp.Name, val);
+						break;
+					}
+					case ScriptPropertyType::Int:
+					{
+						int val = std::get<int>(activeProp.Value);
+						if (UI::PropertyGrid::Int(activeProp.Name, val))
+							ScriptEngine::SetScriptPropertyOverride<int>(component, activeProp.Name, val);
+						break;
+					}
+					case ScriptPropertyType::Float:
 					{
 						float val = std::get<float>(activeProp.Value);
 						if (UI::PropertyGrid::Float(activeProp.Name, val))
@@ -231,16 +245,9 @@ namespace Ember {
 					}
 					case ScriptPropertyType::String:
 					{
-						std::string strVal = std::get<std::string>(activeProp.Value);
-						if (UI::PropertyGrid::InputText(activeProp.Name, strVal))
-							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, strVal);
-						break;
-					}
-					case ScriptPropertyType::Bool:
-					{
-						bool boolVal = std::get<bool>(activeProp.Value);
-						if (UI::PropertyGrid::Checkbox(activeProp.Name, boolVal))
-							ScriptEngine::SetScriptPropertyOverride<bool>(component, activeProp.Name, boolVal);
+						std::string val = std::get<std::string>(activeProp.Value);
+						if (UI::PropertyGrid::InputText(activeProp.Name, val))
+							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, val);
 						break;
 					}
 					default:

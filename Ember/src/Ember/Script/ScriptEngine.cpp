@@ -78,10 +78,11 @@ namespace Ember {
         return *s_LuaState;
     }
 
-	std::unordered_map<std::string, ScriptProperty> ScriptEngine::GetScriptProperties(const SharedPtr<Script>& scriptAsset)
+	std::vector<ScriptProperty> ScriptEngine::GetScriptProperties(const SharedPtr<Script>& scriptAsset)
 	{
 		// Evaluate the script to get the base table
-		sol::protected_function_result result = GetState().script_file(scriptAsset->GetFilePath());
+		std::string filePath = scriptAsset->GetFilePath();
+		sol::protected_function_result result = GetState().script_file(filePath);
         if (!result.valid())
         {
             sol::error err = result;
@@ -91,7 +92,7 @@ namespace Ember {
 
         sol::table scriptClass = result;
 
-		std::unordered_map<std::string, ScriptProperty> properties;
+		std::vector<ScriptProperty> properties;
 		properties.reserve(scriptClass.size());
 
         for (auto& [key, value] : scriptClass)
@@ -107,9 +108,24 @@ namespace Ember {
             switch (value.get_type())
             {
                 case sol::type::number:
-                    type = ScriptPropertyType::Number;
-					val = value.as<float>();
-                    break;
+				{
+					// Push value to top of stack so we can inspect it
+					value.push();
+					bool isInteger = lua_isinteger(GetState(), -1);
+					lua_pop(GetState(), 1);	// Pop it off
+
+					if (isInteger)
+					{
+						type = ScriptPropertyType::Int;
+						val = value.as<int>();
+					}
+					else
+					{
+						type = ScriptPropertyType::Float;
+						val = value.as<float>();
+					}
+					break;
+				}
                 case sol::type::string:
 					type = ScriptPropertyType::String;
 					val = value.as<std::string>();
@@ -123,7 +139,7 @@ namespace Ember {
                     continue; // Skip unsupported types
 			}
 
-			properties[name] = { name, val, type };
+			properties.emplace_back( name, val, type);
 		}
 
         return properties;
