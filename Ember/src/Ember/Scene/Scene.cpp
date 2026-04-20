@@ -281,7 +281,7 @@ namespace Ember {
 		return Entity();
 	}
 
-	Entity Scene::GetEntityByName(const std::string& name)
+	Entity Scene::GetEntityC(const std::string& name)
 	{
 		auto view = m_Registry->Query<TagComponent>();
 		for (auto entity : view)

@@ -177,6 +177,8 @@ namespace Ember {
 			// Script template
 			std::ofstream newScriptFile(filepath);
 			newScriptFile << "local " << scriptName << " = {}\n\n";
+			newScriptFile << "-- Expose properties to the editor by adding them to this table. For Example:\n";
+			newScriptFile << "-- " <<  scriptName << ".MyExampleVar = 10\n\n";
 			newScriptFile << "function " << scriptName << ":OnCreate(entity)\n\nend\n\n";
 			newScriptFile << "function " << scriptName << ":OnUpdate(entity, delta)\n\nend\n\n";
 			newScriptFile << "return " << scriptName;

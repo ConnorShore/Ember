@@ -2,7 +2,7 @@
 #include "ScriptBindEntity.h"
 
 #include "Ember/ECS/Component/Components.h"
-#include "Ember/Scene/Entity.h"
+#include "Ember/Scene/Scene.h"
 
 namespace Ember {
 
@@ -114,11 +114,98 @@ namespace Ember {
 		return sol::lua_nil;
 	}
 
+	static sol::object AddComponentFromString(const std::string& componentTypeStr, Entity& entity, sol::state& state)
+	{
+		// Helper lambda that deduces the component type, attaches a blank one, and returns it.
+		auto addAndReturn = [&](auto dummyType) -> sol::object
+			{
+				using ComponentType = decltype(dummyType);
+
+				// Don't add it twice! Just return the existing one if they call it again.
+				if (entity.ContainsComponent<ComponentType>())
+				{
+					EB_CORE_WARN("Entity '{}' already has component '{}'!", entity.GetName(), componentTypeStr);
+					return sol::make_object(state, &entity.GetComponent<ComponentType>());
+				}
+
+				// Create a new blank component
+				ComponentType newComp;
+				scene->AttachComponent(entity, newComp);
+				return sol::make_object(state, &entity.GetComponent<ComponentType>());
+			};
+
+		// Pass a default-constructed instance to deduce the type
+		if (componentTypeStr == "TransformComponent") return addAndReturn(TransformComponent{});
+		if (componentTypeStr == "RigidBodyComponent") return addAndReturn(RigidBodyComponent{});
+		if (componentTypeStr == "SpriteComponent") return addAndReturn(SpriteComponent{});
+		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
+		if (componentTypeStr == "CameraComponent") return addAndReturn(CameraComponent{});
+		if (componentTypeStr == "PointLightComponent") return addAndReturn(PointLightComponent{});
+		if (componentTypeStr == "DirectionalLightComponent") return addAndReturn(DirectionalLightComponent{});
+		if (componentTypeStr == "SpotLightComponent") return addAndReturn(SpotLightComponent{});
+		if (componentTypeStr == "OutlineComponent") return addAndReturn(OutlineComponent{});
+		if (componentTypeStr == "BillboardComponent") return addAndReturn(BillboardComponent{});
+		if (componentTypeStr == "AnimatorComponent") return addAndReturn(AnimatorComponent{});
+		if (componentTypeStr == "CharacterControllerComponent") return addAndReturn(CharacterControllerComponent{});
+		if (componentTypeStr == "StaticMeshComponent") return addAndReturn(StaticMeshComponent{});
+		if (componentTypeStr == "SkinnedMeshComponent") return addAndReturn(SkinnedMeshComponent{});
+		if (componentTypeStr == "MaterialComponent") return addAndReturn(MaterialComponent{});
+		if (componentTypeStr == "RigidBodyComponent") return addAndReturn(RigidBodyComponent{});
+		if (componentTypeStr == "BoxColliderComponent") return addAndReturn(BoxColliderComponent{});
+		if (componentTypeStr == "SphereColliderComponent") return addAndReturn(SphereColliderComponent{});
+		if (componentTypeStr == "CapsuleColliderComponent") return addAndReturn(CapsuleColliderComponent{});
+		if (componentTypeStr == "ConcaveMeshColliderComponent") return addAndReturn(ConcaveMeshColliderComponent{});
+		if (componentTypeStr == "ConvexMeshColliderComponent") return addAndReturn(ConvexMeshColliderComponent{});
+		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
+		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
+		
+		if (componentTypeStr == "ScriptComponent")
+		{
+			EB_CORE_ASSERT(false, "Cannot add script components from Lua!");
+			return sol::lua_nil;
+		}
+
+		EB_CORE_ASSERT(false, "Unknown component type: {}", componentTypeStr);
+		return sol::lua_nil;
+	}
+
+	void DetachComponentFromString(const std::string& componentTypeStr, Entity& entity)
+	{
+		if (componentTypeStr == "TransformComponent") return entity.DetachComponent<TransformComponent>();
+		if (componentTypeStr == "RigidBodyComponent") return entity.DetachComponent<RigidBodyComponent>();
+		if (componentTypeStr == "SpriteComponent") return entity.DetachComponent<SpriteComponent>();
+		if (componentTypeStr == "TextComponent") return entity.DetachComponent<TextComponent>();
+		if (componentTypeStr == "CameraComponent") return entity.DetachComponent<CameraComponent>();
+		if (componentTypeStr == "PointLightComponent") return entity.DetachComponent<PointLightComponent>();
+		if (componentTypeStr == "DirectionalLightComponent") return entity.DetachComponent<DirectionalLightComponent>();
+		if (componentTypeStr == "SpotLightComponent") return entity.DetachComponent<SpotLightComponent>();
+		if (componentTypeStr == "OutlineComponent") return entity.DetachComponent<OutlineComponent>();
+		if (componentTypeStr == "BillboardComponent") return entity.DetachComponent<BillboardComponent>();
+		if (componentTypeStr == "AnimatorComponent") return entity.DetachComponent<AnimatorComponent>();
+		if (componentTypeStr == "CharacterControllerComponent") return entity.DetachComponent<CharacterControllerComponent>();
+		if (componentTypeStr == "StaticMeshComponent") return entity.DetachComponent<StaticMeshComponent>();
+		if (componentTypeStr == "SkinnedMeshComponent") return entity.DetachComponent<SkinnedMeshComponent>();
+		if (componentTypeStr == "MaterialComponent") return entity.DetachComponent<MaterialComponent>();
+		if (componentTypeStr == "RigidBodyComponent") return entity.DetachComponent<RigidBodyComponent>();
+		if (componentTypeStr == "BoxColliderComponent") return entity.DetachComponent<BoxColliderComponent>();
+		if (componentTypeStr == "SphereColliderComponent") return entity.DetachComponent<SphereColliderComponent>();
+		if (componentTypeStr == "CapsuleColliderComponent") return entity.DetachComponent<CapsuleColliderComponent>();
+		if (componentTypeStr == "ConcaveMeshColliderComponent") return entity.DetachComponent<ConcaveMeshColliderComponent>();
+		if (componentTypeStr == "ConvexMeshColliderComponent") return entity.DetachComponent<ConvexMeshColliderComponent>();
+		if (componentTypeStr == "TextComponent") return entity.DetachComponent<TextComponent>();
+		if (componentTypeStr == "LifetimeComponent") return entity.DetachComponent<LifetimeComponent>();
+		if (componentTypeStr == "ScriptComponent") return entity.DetachComponent<ScriptComponent>();
+
+		EB_CORE_ASSERT(false, "Failed to detach component. Unknown component type: {}", componentTypeStr);
+	}
+
 	void BindEntity(sol::state& state)
 	{
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
+			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
+			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
 			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
 		);

@@ -1,5 +1,9 @@
 Assets:
   - Type: Script
+    UUID: 16541504524255684090
+    Name: Powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
+  - Type: Script
     UUID: 16587777693882004979
     Name: NewScript(1)
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Bullet.lua'
@@ -8,17 +12,9 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
-    UUID: 16541504524255684090
-    Name: Powerup
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
-  - Type: Script
     UUID: 8422630553721103124
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
-  - Type: Material
-    UUID: 10658966581415315879
-    Name: Cube_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
@@ -27,6 +23,10 @@ Assets:
     UUID: 12147062781911719508
     Name: Powerup_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 10658966581415315879
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 5345865544332564414
     Name: Ground (Copy)_StandardGeometry_Clone

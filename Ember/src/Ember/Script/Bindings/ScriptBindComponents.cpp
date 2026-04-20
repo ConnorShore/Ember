@@ -64,6 +64,74 @@ namespace Ember {
 			"CollisionMask", &ConcaveMeshColliderComponent::CollisionMask
 		);
 
+		state.new_usertype<CharacterControllerComponent>("CharacterControllerComponent",
+			"WalkSpeed", &CharacterControllerComponent::WalkSpeed,
+			"JumpForce", &CharacterControllerComponent::JumpForce,
+			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
+			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
+			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
+			"IsGrounded", &CharacterControllerComponent::IsGrounded,
+			"GroundEntity", &CharacterControllerComponent::GroundEntity,
+
+			"Move", &CharacterControllerComponent::Move,
+			"Jump", &CharacterControllerComponent::Jump
+		);
+
+		state.new_usertype<SpriteComponent>("SpriteRendererComponent",
+			"Color", &SpriteComponent::Color,
+			"TextureHandle", &SpriteComponent::TextureHandle
+		);
+
+		state.new_usertype<StaticMeshComponent>("StaticMeshComponent",
+			"MeshHandle", &StaticMeshComponent::MeshHandle
+		);
+
+		state.new_usertype<SkinnedMeshComponent>("SkinnedMeshComponent",
+			"MeshHandle", &SkinnedMeshComponent::MeshHandle,
+			"AnimatorEntityHandle", &SkinnedMeshComponent::AnimatorEntityHandle
+		);
+
+		state.new_usertype<MaterialComponent>("MaterialComponent",
+			"MaterialHandle", &MaterialComponent::MaterialHandle,
+			"GetInstanced", &MaterialComponent::GetInstanced,
+			"CloneMaterial", &MaterialComponent::CloneMaterial
+		);
+
+		state.new_usertype<CameraComponent>("CameraComponent",
+			// TODO: Come back to this
+		);
+
+		state.new_usertype<DirectionalLightComponent>("DirectionalLightComponent",
+			"Color", &DirectionalLightComponent::Color,
+			"Intensity", &DirectionalLightComponent::Intensity
+		);
+
+		state.new_usertype<PointLightComponent>("PointLightComponent",
+			"Color", &PointLightComponent::Color,
+			"Intensity", &PointLightComponent::Intensity,
+			"Radius", &PointLightComponent::Radius
+		);
+
+		state.new_usertype<SpotLightComponent>("SpotLightComponent",
+			"Color", &SpotLightComponent::Color,
+			"Intensity", &SpotLightComponent::Intensity,
+			"CutOffAngle", &SpotLightComponent::CutOffAngle,
+			"OuterCutOffAngle", &SpotLightComponent::CutOffAngle
+		);
+
+		state.new_usertype<OutlineComponent>("OutlineComponent",
+			"Color", &OutlineComponent::Color,
+			"Thickness", &OutlineComponent::Thickness
+		);
+
+		state.new_usertype<BillboardComponent>("BillboardComponent",
+			"Tint", &BillboardComponent::Tint,
+			"TextureHandle", &BillboardComponent::TextureHandle,
+			"Size", &BillboardComponent::Size,
+			"IsSpherical", &BillboardComponent::Spherical,
+			"IsStaticSize", &BillboardComponent::StaticSize
+		);
+
 		state.new_usertype<AnimatorComponent>("AnimatorComponent",
 			"CurrentAnimationHandle", &AnimatorComponent::CurrentAnimationHandle,
 			"CurrentTime", sol::property(
@@ -94,17 +162,8 @@ namespace Ember {
 			}
 		);
 
-		state.new_usertype<CharacterControllerComponent>("CharacterControllerComponent",
-			"WalkSpeed", &CharacterControllerComponent::WalkSpeed,
-			"JumpForce", &CharacterControllerComponent::JumpForce,
-			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
-			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
-			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
-			"IsGrounded", &CharacterControllerComponent::IsGrounded,
-			"GroundEntity", &CharacterControllerComponent::GroundEntity,
-
-			"Move", &CharacterControllerComponent::Move,
-			"Jump", &CharacterControllerComponent::Jump
+		state.new_usertype<LifetimeComponent>("LifetimeComponent",
+			"Lifetime", &LifetimeComponent::Lifetime
 		);
 
 		state.new_usertype<TextComponent>("TextComponent",
