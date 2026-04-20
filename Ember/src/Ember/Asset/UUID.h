@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <format>
 #include <functional>
 
 namespace Ember {
@@ -40,3 +41,10 @@ namespace std {
 		}
 	};
 }
+
+template<>
+struct std::formatter<Ember::UUID> : std::formatter<uint64_t> {
+	auto format(const Ember::UUID& uuid, std::format_context& ctx) const {
+		return std::formatter<uint64_t>::format(static_cast<uint64_t>(uuid), ctx);
+	}
+};

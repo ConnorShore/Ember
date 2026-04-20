@@ -18,7 +18,12 @@ namespace Ember {
 		if (result.valid())
 		{
 			EB_CORE_TRACE("ScriptImporter: Successfully verified syntax for '{0}'", filePath);
-			return SharedPtr<Script>::Create(uuid, name, filePath);
+
+			// Load default exposed script properties
+			auto scriptAsset = SharedPtr<Script>::Create(uuid, name, filePath);
+			scriptAsset->SetExposedProperties(ScriptEngine::GetScriptProperties(scriptAsset));
+
+			return scriptAsset;
 		}
 		else
 		{

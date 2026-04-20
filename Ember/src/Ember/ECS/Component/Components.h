@@ -332,8 +332,9 @@ namespace Ember {
 	struct SpriteComponent
 	{
 		Vector4f Color = Vector4f(1.0f);
-		UUID TextureHandle = Constants::InvalidUUID;;
+		UUID TextureHandle = Constants::InvalidUUID;
 
+		SpriteComponent() = default;
 		SpriteComponent(const Vector4f color) : Color(color) {}
 		SpriteComponent(UUID texId) : TextureHandle(texId) {}
 		SpriteComponent(const Vector4f color, UUID texId) : Color(color), TextureHandle(texId) {}
@@ -507,6 +508,9 @@ namespace Ember {
 
 		sol::table Instance;
 		bool Initialized = false;
+
+		// Cache user property overrides
+		std::unordered_map<std::string, ScriptProperty> UserPropertyOverrides;
 
 		ScriptComponent() = default;
 		ScriptComponent(UUID scriptUUID) : ScriptHandle(scriptUUID) {}

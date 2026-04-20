@@ -4,6 +4,8 @@
 
 namespace Ember {
 
+	class Scene;
+
 	void BindEntity(sol::state& state);
 
 }
