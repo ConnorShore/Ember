@@ -48,7 +48,7 @@ namespace Ember {
 		BindInput(*s_LuaState);
 		BindMath(*s_LuaState);
 		BindPhysics(*s_LuaState, scene);
-		BindComponents(*s_LuaState);
+		BindAllComponents(*s_LuaState);
 		BindAssets(*s_LuaState);
 	}
 

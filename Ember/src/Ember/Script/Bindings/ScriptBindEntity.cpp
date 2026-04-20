@@ -130,7 +130,7 @@ namespace Ember {
 
 				// Create a new blank component
 				ComponentType newComp;
-				scene->AttachComponent(entity, newComp);
+				entity.AttachComponent(newComp);
 				return sol::make_object(state, &entity.GetComponent<ComponentType>());
 			};
 
