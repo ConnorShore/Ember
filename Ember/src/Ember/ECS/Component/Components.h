@@ -508,6 +508,9 @@ namespace Ember {
 		sol::table Instance;
 		bool Initialized = false;
 
+		// Cache user property overrides
+		std::unordered_map<std::string, ScriptProperty> UserPropertyOverrides;
+
 		ScriptComponent() = default;
 		ScriptComponent(UUID scriptUUID) : ScriptHandle(scriptUUID) {}
 		ScriptComponent(const ScriptComponent&) = default;

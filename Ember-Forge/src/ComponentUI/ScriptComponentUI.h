@@ -1,12 +1,17 @@
 #pragma once
+
 #include "ComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+
 #include <Ember/Core/ProjectManager.h>
+#include <Ember/Script/ScriptEngine.h>
 #include <Ember/Utils/PlatformUtil.h>
+#include <imgui/imgui.h>
 #include <filesystem>
 #include <fstream>
 #include <format>
+
 
 namespace Ember {
 
@@ -24,6 +29,7 @@ namespace Ember {
 
 			DrawProperties(component, scriptDir, openCreateModal);
 			DrawCreateModal(component, scriptDir, openCreateModal);
+			RenderExposedScriptProperties(component);
 		}
 
 	private:
@@ -187,6 +193,66 @@ namespace Ember {
 
 			// Open in VS Code (or default editor)
 			system(("code " + filepath).c_str());
+		}
+
+		void RenderExposedScriptProperties(ScriptComponent& component)
+		{
+			if (component.ScriptHandle == Constants::InvalidUUID)
+				return;
+
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto scriptAsset = assetManager.GetAsset<Script>(component.ScriptHandle);
+			if (!scriptAsset)
+				return;
+
+			auto& defaultProperties = scriptAsset->GetExposedProperties(); // The ones parsed from the .lua file
+			if (defaultProperties.empty())
+				return;
+
+			ImGui::Separator();
+			ImGui::TextDisabled("Script Properties");
+
+			ImGui::PushID(scriptAsset->GetName().c_str());
+			if (UI::PropertyGrid::Begin("Exposed Properties"))
+			{
+				for (const auto& [defaultPropName, defaultPropValue] : defaultProperties)
+				{
+					bool hasOverride = component.UserPropertyOverrides.find(defaultPropName) != component.UserPropertyOverrides.end();
+					ScriptProperty activeProp = hasOverride ? component.UserPropertyOverrides[defaultPropName] : defaultPropValue;
+
+					switch (activeProp.Type)
+					{
+					case ScriptPropertyType::Number:
+					{
+						float val = std::get<float>(activeProp.Value);
+						if (UI::PropertyGrid::Float(activeProp.Name, val))
+							ScriptEngine::SetScriptPropertyOverride<float>(component, activeProp.Name, val);
+						break;
+					}
+					case ScriptPropertyType::String:
+					{
+						std::string strVal = std::get<std::string>(activeProp.Value);
+						if (UI::PropertyGrid::InputText(activeProp.Name, strVal))
+							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, strVal);
+						break;
+					}
+					case ScriptPropertyType::Bool:
+					{
+						bool boolVal = std::get<bool>(activeProp.Value);
+						if (UI::PropertyGrid::Checkbox(activeProp.Name, boolVal))
+							ScriptEngine::SetScriptPropertyOverride<bool>(component, activeProp.Name, boolVal);
+						break;
+					}
+					default:
+						EB_CORE_WARN("Unsupported script property type for '{}'", activeProp.Name);
+						break;
+					}
+				}
+
+				UI::PropertyGrid::End();
+			}
+			
+			ImGui::PopID();
 		}
 	};
 }

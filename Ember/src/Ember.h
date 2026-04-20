@@ -81,6 +81,10 @@
 #include "Ember/Core/Project.h"
 #include "Ember/Core/ProjectManager.h"
 
+#include "Ember/Script/Script.h"
+#include "Ember/Script/ScriptProperty.h"
+#include "Ember/Script/ScriptEngine.h"
+
 // Vendor includes
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>

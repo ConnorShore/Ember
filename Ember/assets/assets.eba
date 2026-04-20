@@ -24,25 +24,25 @@ Assets:
     Name: Powerup_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 15812231264559602920
-    Name: Enemy_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 5345865544332564414
     Name: Ground (Copy)_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 15812231264559602920
+    Name: Enemy_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 9538612635053895722
-    Name: Powerup_StandardUnlit_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardUnlit_Clone.ebmat'
-  - Type: Material
     UUID: 17497850881512429738
     Name: Friendly_Enemy_StandardGeometry_Clone_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Friendly_Enemy_StandardGeometry_Clone_Clone.ebmat'
+  - Type: Material
+    UUID: 9538612635053895722
+    Name: Powerup_StandardUnlit_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardUnlit_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor

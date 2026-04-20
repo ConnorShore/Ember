@@ -62,6 +62,14 @@ namespace Ember {
 								EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
 							}
 						}
+
+						// Inject user property overrides from the component
+						for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
+						{
+							// Shove the C++ override directly into the Lua table
+							sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
+							script.Instance[name] = objValue;
+						}
 					}
 					else
 					{
