@@ -22,7 +22,7 @@ namespace Ember {
 	{
 		auto& registry = scene->GetRegistry();
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
-		auto view = registry.Query<CharacterControllerComponent, TransformComponent, RigidBodyComponent, CapsuleColliderComponent>();
+		auto view = registry.ActiveQuery<CharacterControllerComponent, TransformComponent, RigidBodyComponent, CapsuleColliderComponent>();
 
 		for (EntityID e : view)
 		{

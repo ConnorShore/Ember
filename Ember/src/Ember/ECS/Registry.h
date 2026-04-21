@@ -12,7 +12,12 @@
 
 namespace Ember {
 
-	template<typename Driver, typename... Filters>
+	struct DisabledComponent;
+
+	//template<typename Driver, typename ExcludeType, typename... Filters>
+	//class View;
+
+	template<typename Driver, typename FilterTuple, typename ExcludeType>
 	class View;
 
 	template<typename T>
@@ -195,8 +200,25 @@ namespace Ember {
 			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}
 
+		//template<typename Driver, typename... Args>
+		//inline View<Driver, Args...> Query();
+
+		// 1. Standard Query (No Excludes)
 		template<typename Driver, typename... Args>
-		inline View<Driver, Args...> Query();
+		inline auto Query();
+
+		// 2. Explicit Exclude Query
+		// Notice how ExcludeType bypasses the variadic pack deduction errors!
+		template<typename Driver, typename... Args, typename ExcludeType>
+		inline auto Query(ExcludeType);
+
+		// 3. Gameplay Wrapper (Auto-hides DisabledComponent)
+		template<typename Driver, typename... Args>
+		inline auto ActiveQuery();
+
+		// 4. Gameplay Wrapper WITH additional custom excludes
+		template<typename Driver, typename... Args, typename ExcludeType>
+		inline auto ActiveQuery(ExcludeType);
 
 		// Returns a reference to the vector of active entities that have component T
 		template<typename T>
@@ -220,9 +242,36 @@ namespace Ember {
 #include "View.h"
 
 namespace Ember {
+	//template<typename Driver, typename... Args>
+	//inline View<Driver, Args...> Registry::Query()
+	//{
+	//	return View<Driver, Args...>(this);
+	//}
+
 	template<typename Driver, typename... Args>
-	inline View<Driver, Args...> Registry::Query()
+	inline auto Registry::Query()
 	{
-		return View<Driver, Args...>(this);
+		return View<Driver, std::tuple<Args...>, Exclude<>>(this);
+	}
+
+	template<typename Driver, typename... Args, typename ExcludeType>
+	inline auto Registry::Query(ExcludeType)
+	{
+		return View<Driver, std::tuple<Args...>, ExcludeType>(this);
+	}
+
+	template<typename Driver, typename... Args>
+	inline auto Registry::ActiveQuery()
+	{
+		return View<Driver, std::tuple<Args...>, Exclude<DisabledComponent>>(this);
+	}
+
+	template<typename Driver, typename... Args, typename ExcludeType>
+	inline auto Registry::ActiveQuery(ExcludeType)
+	{
+		// Merges their custom excludes with the DisabledComponent!
+		using MergedExcludes = typename MergeExcludes<ExcludeType, Exclude<DisabledComponent>>::Type;
+
+		return View<Driver, std::tuple<Args...>, MergedExcludes>(this);
 	}
 }

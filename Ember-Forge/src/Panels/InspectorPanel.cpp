@@ -102,6 +102,27 @@ namespace Ember {
 			// Entity Header
 			DrawEntityHeader(entity);
 
+			// Enable/Disable section (TODO: Figure out more elegant way to enable/disable an entity)
+			ImGui::Separator();
+			bool isActive = !entity.ContainsComponent<DisabledComponent>();
+			if (UI::PropertyGrid::Begin("EntityActive"))
+			{
+				if (UI::PropertyGrid::Checkbox("Active", isActive))
+				{
+					if (isActive)
+					{
+						if (entity.ContainsComponent<DisabledComponent>())
+							entity.DetachComponent<DisabledComponent>();
+					}
+					else
+					{
+						if (!entity.ContainsComponent<DisabledComponent>())
+							entity.AttachComponent<DisabledComponent>();
+					}
+				}
+				UI::PropertyGrid::End();
+			}
+
 			// Entity Components
 			for (auto& [Category, components] : m_ComponentUIs)
 			{

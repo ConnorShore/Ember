@@ -9,7 +9,7 @@ namespace Ember {
 	{
 		// Update lifecycle entities times and remove any that have expired
 		auto& registry = scene->GetRegistry();
-		auto view = registry.Query<LifetimeComponent>();
+		auto view = registry.ActiveQuery<LifetimeComponent>();
 
 		std::vector<EntityID> entitiesToRemove;	// TODO: Find way to optimize vector resizing
 		for (auto entity : view)

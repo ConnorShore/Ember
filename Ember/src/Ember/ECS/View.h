@@ -1,7 +1,5 @@
 #pragma once
-
 #include "Ember/ECS/Types.h"
-
 #include <vector>
 
 namespace Ember {
@@ -12,8 +10,13 @@ namespace Ember {
 
 	class Registry;
 
-	template<typename Driver, typename... Filters>
-	class View
+	// Base Template (Notice how it uses 3 strict types now, no loose packs!)
+	template<typename Driver, typename FilterTuple, typename ExcludeType>
+	class View;
+
+	// Partial Specialization (Unpacks the std::tuple and Exclude struct)
+	template<typename Driver, typename... Filters, typename... Excludes>
+	class View<Driver, std::tuple<Filters...>, Exclude<Excludes...>>
 	{
 	public:
 		View(Registry* registry)
@@ -46,13 +49,25 @@ namespace Ember {
 			bool operator!=(const Iterator& other) const { return m_Index != other.m_Index || m_Entities != other.m_Entities; }
 
 		private:
-			// Skip entities that have the Driver component but are missing any Filter components
 			void FindValidEntities()
-				{
-					uint32_t entityCt = static_cast<uint32_t>(m_Entities->size());
+			{
+				uint32_t entityCt = static_cast<uint32_t>(m_Entities->size());
 				while (m_Index < entityCt)
 				{
-					if (m_Registry->ContainsComponents<Filters...>((*m_Entities)[m_Index]))
+					EntityID currentEntity = (*m_Entities)[m_Index];
+
+					// 1. Check if the entity has all the required Filters
+					bool hasFilters = true;
+					if constexpr (sizeof...(Filters) > 0)
+						hasFilters = m_Registry->ContainsComponents<Filters...>(currentEntity);
+
+					// 2. Check if the entity has ANY of the Excluded components using a C++17 Fold Expression
+					bool hasExcludes = false;
+					if constexpr (sizeof...(Excludes) > 0)
+						hasExcludes = (m_Registry->ContainsComponent<Excludes>(currentEntity) || ...);
+
+					// If it has what we want, and DOES NOT have what we exclude, we found a match!
+					if (hasFilters && !hasExcludes)
 						break;
 
 					m_Index++;

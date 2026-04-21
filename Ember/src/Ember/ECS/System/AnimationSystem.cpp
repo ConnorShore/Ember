@@ -90,7 +90,7 @@ namespace Ember {
 	void AnimationSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		View view = scene->GetRegistry().Query<AnimatorComponent>();
+		View view = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
 
 		for (EntityID entity : view)
 		{

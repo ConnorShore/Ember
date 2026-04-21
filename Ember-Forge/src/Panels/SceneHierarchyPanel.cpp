@@ -200,13 +200,20 @@ namespace Ember {
 			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 		}
 
+		// Render entity tree node item
+		bool isDisabled = entity.ContainsComponent<DisabledComponent>();
+		if (isDisabled)
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.00f));
+
 		// Renaming state
 		bool isRenaming = (m_RenamingEntity == entity);
 		auto id = (void*)(uint64_t)(uint32_t)entity.GetEntityHandle();
 
+
 		bool opened;
 		if (isRenaming)
 		{
+			// If disabled, tint the text darker
 			opened = ImGui::TreeNodeEx(id, flags, "");
 		}
 		else
@@ -221,6 +228,10 @@ namespace Ember {
 			if (isPrefab)
 				ImGui::PopStyleColor();
 		}
+
+		// turn off the disabled tint
+		if (isDisabled)
+			ImGui::PopStyleColor();
 
 		// Drag drop for parent/child relationships
 		{

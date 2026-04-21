@@ -304,7 +304,7 @@ namespace Ember {
 	void RenderSystem::SetSceneCamera(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
-		View cameraView = registry.Query<CameraComponent, TransformComponent>();
+		View cameraView = registry.ActiveQuery<CameraComponent, TransformComponent>();
 		for (EntityID cameraEntity : cameraView)
 		{
 			auto [camera, transform] = registry.GetComponents<CameraComponent, TransformComponent>(cameraEntity);
@@ -334,7 +334,7 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 
 		// Get directional light view matrix to create shadow map
-		View lightView = registry.Query<DirectionalLightComponent, TransformComponent>();
+		View lightView = registry.ActiveQuery<DirectionalLightComponent, TransformComponent>();
 		uint32_t index = 0;
 		for (EntityID entity : lightView)
 		{
@@ -372,7 +372,7 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 
 		// Get spotlight view matrix to create shadow map
-		View lightView = registry.Query<SpotLightComponent, TransformComponent>();
+		View lightView = registry.ActiveQuery<SpotLightComponent, TransformComponent>();
 		uint32_t index = 0;
 		for (EntityID entity : lightView)
 		{
@@ -614,7 +614,7 @@ namespace Ember {
 
 		// Directional Lights
 		{
-			View view = registry.Query<DirectionalLightComponent, TransformComponent>();
+			View view = registry.ActiveQuery<DirectionalLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActiveDirectionalLights >= Constants::Renderer::MaxDirectionalLights)
@@ -633,7 +633,7 @@ namespace Ember {
 
 		// Spotlights
 		{
-			View view = registry.Query<SpotLightComponent, TransformComponent>();
+			View view = registry.ActiveQuery<SpotLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActiveSpotLights >= Constants::Renderer::MaxSpotLights)
@@ -655,7 +655,7 @@ namespace Ember {
 
 		// Point Lights
 		{
-			View view = registry.Query<PointLightComponent, TransformComponent>();
+			View view = registry.ActiveQuery<PointLightComponent, TransformComponent>();
 			for (EntityID entity : view)
 			{
 				if (lightData.ActivePointLights >= Constants::Renderer::MaxPointLights)
@@ -798,7 +798,7 @@ namespace Ember {
 
 		billboardShader->Bind();
 
-		View view = registry.Query<BillboardComponent, TransformComponent>();
+		View view = registry.ActiveQuery<BillboardComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
 			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
@@ -878,7 +878,7 @@ namespace Ember {
 		Renderer2D::BeginFrame();
 
 		// Draw World-Space Sprites
-		for (EntityID entity : registry.Query<SpriteComponent, TransformComponent>())
+		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.TextureHandle == Constants::InvalidUUID)
@@ -893,7 +893,7 @@ namespace Ember {
 		}
 
 		// Draw World-Space Text
-		for (EntityID entity : registry.Query<TextComponent, TransformComponent>())
+		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
 			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
 			if (!textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
@@ -937,7 +937,7 @@ namespace Ember {
 		Renderer2D::BeginFrame();
 
 		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
-		for (EntityID entity : registry.Query<SpriteComponent, TransformComponent>())
+		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.TextureHandle == Constants::InvalidUUID)
@@ -952,7 +952,7 @@ namespace Ember {
 		}
 
 		// Draw Screen-Space Text (e.g. Ammo, Health)
-		for (EntityID entity : registry.Query<TextComponent, TransformComponent>())
+		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
 			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
 			if (textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
@@ -1046,7 +1046,7 @@ namespace Ember {
 
 		// Grab outline components for selected entities
 		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
-		View view = registry.Query<OutlineComponent>();
+		View view = registry.ActiveQuery<OutlineComponent>();
 		for (EntityID entity : view)
 		{
 			auto [outline] = registry.GetComponents<OutlineComponent>(entity);
@@ -1211,11 +1211,11 @@ namespace Ember {
 		};
 
 		// Sort Static Meshes
-		for (EntityID entity : registry.Query<StaticMeshComponent, MaterialComponent, TransformComponent>()) {
+		for (EntityID entity : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) {
 			sortLogic(entity);
 		}
 		// Sort Skinned Meshes
-		for (EntityID entity : registry.Query<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) {
+		for (EntityID entity : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) {
 			sortLogic(entity);
 		}
 	}
