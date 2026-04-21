@@ -27,6 +27,7 @@ namespace Ember {
 
 		void CreateEntity(Entity entity);
 		void CreateEmptyEntity();
+		void CreateChildEntity(Entity parentEntity);
 		void DuplicateEntity(Entity entity);
 		void CreatePrefab(Entity entity);
 		void RenameEntity(Entity entity);

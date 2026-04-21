@@ -76,6 +76,8 @@ namespace Ember {
 		SharedPtr<Framebuffer> m_GBuffer;
 		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;
 		SharedPtr<Framebuffer> m_SpotShadowMapBuffer;
+		SharedPtr<Framebuffer> m_LdrBufferA;	// Ping Pong buffer for LDR post-processing
+		SharedPtr<Framebuffer> m_LdrBufferB;	// Ping Pong buffer for LDR post-processing
 
 		std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
 		SharedPtr<Framebuffer> m_HdrSceneBuffer;

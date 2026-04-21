@@ -37,6 +37,11 @@ namespace Ember {
 		sceneTable.set_function("InstantiatePrefab", [scene](const std::string& assetName, const Vector3f& position) {
 			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
 			return scene->InstantiatePrefab(prefabAsset, &position);
-			});
+		});
+
+		sceneTable.set_function("SetActiveCamera", [scene](const std::string& entityName) {
+			Entity cameraEntity = scene->GetEntity(entityName);
+			scene->SetActiveCamera(cameraEntity);
+		});
 	}
 }

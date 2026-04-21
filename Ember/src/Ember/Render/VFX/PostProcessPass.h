@@ -6,6 +6,12 @@
 
 namespace Ember {
 
+	enum class PostProcessStage
+	{
+		HDR = 0, // Pre-Composite (Bloom, Lens Flares)
+		LDR = 1  // Post-Composite (FXAA, Vignette, Film Grain)
+	};
+
 	class PostProcessPass : public SharedResource
 	{
 	public:
@@ -13,6 +19,8 @@ namespace Ember {
 		virtual void Init() = 0;
 		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) = 0;
 		virtual void OnViewportResize(uint32_t width, uint32_t height) {}
+
+		virtual PostProcessStage GetStage() const = 0;
 
 		bool Enabled = true;
 

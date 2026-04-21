@@ -319,7 +319,7 @@ namespace Ember {
 			}
 			if (ImGui::MenuItem("Add Child Entity"))
 			{
-				// TODO: Add this functionality
+				CreateChildEntity(entity);
 			}
 			if (ImGui::MenuItem("Duplicate Entity", "CTRL+D"))
 			{
@@ -444,6 +444,41 @@ namespace Ember {
 	{
 		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
 		CreateEntity(entity);
+	}
+
+	void SceneHierarchyPanel::CreateChildEntity(Entity parentEntity)
+	{
+		auto childEntity = m_Context->ActiveScene->AddEntity("Child_Entity");
+
+		// Set parent to new ChildEntity
+		RelationshipComponent& relationship = childEntity.GetComponent<RelationshipComponent>();
+		relationship.ParentHandle = parentEntity.GetUUID();
+		childEntity.AttachComponent<RelationshipComponent>(relationship);
+
+		// Set relationship on parent to include new ChildEntity
+		if (!parentEntity.ContainsComponent<RelationshipComponent>())
+		{
+			RelationshipComponent parentRelationship;
+			parentRelationship.Children.push_back(childEntity.GetUUID());
+			parentEntity.AttachComponent<RelationshipComponent>(parentRelationship);
+		}
+		else
+		{
+			auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
+			parentRelationship.Children.push_back(childEntity.GetUUID());
+			parentEntity.AttachComponent<RelationshipComponent>(parentRelationship);
+		}
+
+		// Place new child at parent's location
+		//EB_CORE_ASSERT(parentEntity.ContainsComponent<TransformComponent>() && childEntity.ContainsComponent<TransformComponent>(), "Entity must contain transform component!");
+		//auto& parentTransform = parentEntity.GetComponent<TransformComponent>();
+		//auto& childTransform = childEntity.GetComponent<TransformComponent>();
+		//childTransform.Position = parentTransform.Position;
+		//childTransform.Rotation = parentTransform.Rotation;
+		//childTransform.Scale = parentTransform.Scale;
+		//childTransform.WorldTransform = parentTransform.WorldTransform;and chil
+
+		SetSelectedEntity(childEntity);
 	}
 
 	void SceneHierarchyPanel::DuplicateEntity(Entity entity)

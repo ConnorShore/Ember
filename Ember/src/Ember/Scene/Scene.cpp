@@ -230,6 +230,19 @@ namespace Ember {
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 	}
 
+	void Scene::SetActiveCamera(Entity cameraEntity)
+	{
+		EB_CORE_ASSERT(cameraEntity.ContainsComponent<CameraComponent>(), "Entity '{}' does not have a CameraComponent!", cameraEntity.GetName());
+
+		// Loop through and disable all camera, and enable the one we want
+		auto view = m_Registry->Query<CameraComponent>();
+		for (auto entity : view)
+		{
+			auto& camera = m_Registry->GetComponent<CameraComponent>(entity);
+			camera.IsActive = (entity == cameraEntity.GetEntityHandle());
+		}
+	}
+
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
@@ -515,6 +528,8 @@ namespace Ember {
 			physicsSystem->RemoveRigidBody(rigidBody);
 		}
 
+		// Remove from parent
+		RemoveParent(entity);
 
 		// Remove from ECS and our Map
 		UUID entityUUID = entity.GetUUID();

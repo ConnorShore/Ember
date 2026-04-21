@@ -145,7 +145,7 @@ namespace Ember {
 
 		inline void DetachComponent(EntityID entity, ComponentType type)
 		{
-			// 1. Trigger callbacks if they exist
+			// Trigger callbacks if they exist
 			if (m_ComponentDetachRegistry.find(type) != m_ComponentDetachRegistry.end())
 			{
 				// You will need a method in your ComponentManager that returns the raw void* component data given an entity and type ID
@@ -154,7 +154,7 @@ namespace Ember {
 				m_ComponentDetachRegistry[type]->TriggerErased(entity, rawComponentData);
 			}
 
-			// 2. Remove it
+			// Remove it
 			m_EntityManager->DetachComponent(entity, type);
 			m_ComponentManager->DetachComponent(entity, type);
 		}
