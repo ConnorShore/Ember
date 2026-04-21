@@ -4,6 +4,7 @@
 #include "UI/PropertyGrid.h"
 
 #include <Ember/Render/VFX/BloomPass.h>
+#include <Ember/Render/VFX/FXAAPass.h>
 #include <Ember/ECS/System/RenderSystem.h>
 #include <Ember/Event/UIEvent.h>
 
@@ -22,6 +23,7 @@ namespace Ember {
 
 		RenderSkyboxSettings();
 		RenderBloomSettings();
+		RenderFXAASettings();
 		
 		ImGui::End();
 	}
@@ -89,6 +91,26 @@ namespace Ember {
 			}
 
 
+			UI::Nodes::EndExpandableNode();
+		}
+	}
+
+	void EnvironmentPanel::RenderFXAASettings()
+	{
+		if (UI::Nodes::BeginExpandableNode("FXAA"))
+		{
+			auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
+			ImGui::Checkbox("Enable", &fxaaPass->Enabled);
+			if (UI::PropertyGrid::Begin("##FXAAPropertyGrid"))
+			{
+				ImGui::BeginDisabled(!fxaaPass->Enabled);
+				UI::PropertyGrid::Float("Sub Pixel Quality", fxaaPass->SubpixelQuality, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Edge Threshold Min", fxaaPass->EdgeThresholdMin, 0.0001f, 0.0f, 0.0833f, "%.4f");
+				UI::PropertyGrid::Float("Edge Threshold Max", fxaaPass->EdgeThresholdMax, 0.001f, 0.063f, 0.333f, "%.4f");
+				ImGui::EndDisabled();
+
+				UI::PropertyGrid::End();
+			}
 			UI::Nodes::EndExpandableNode();
 		}
 	}

@@ -26,7 +26,7 @@ namespace Ember::Constants {
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
 
-	// TODO: Update sections to have massive regeions 10000, 20000, 20001, etc
+	// TODO: Update sections to have massive regions 10000, 20000, 20001, etc
 	namespace Assets {
 
 		inline const char* DefaultWhiteTex = "DefaultWhite";
@@ -80,6 +80,10 @@ namespace Ember::Constants {
 		inline const uint64_t StandardSkinnedShadowShadUUID = 27;
 		inline const char* PhysicsDebugShad = "PhysicsDebug";
 		inline const uint64_t PhysicsDebugShadUUID = 28;
+		inline const char* FXAAShad = "FXAA";
+		inline const uint64_t FXAAShadUUID = 29;
+		inline const char* BlitShad = "Blit";
+		inline const uint64_t BlitShadUUID = 1000;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -150,6 +154,11 @@ namespace Ember::Constants {
 		inline const char* IrradianceMap = "u_IrradianceMap";
 		inline const char* PrefilterMap = "u_PrefilterMap";
 		inline const char* BRDFLUT = "u_BRDFLUT";
+
+		inline const char* InvViewportDimensions = "u_InvViewportDimensions";
+		inline const char* EdgeThresholdMin = "u_EdgeThresholdMin";
+		inline const char* EdgeThresholdMax = "u_EdgeThresholdMax";
+		inline const char* SubpixelQuality = "u_SubpixelQuality";
 
 		inline const char* BoneMatrices = "u_BoneMatrices";
 

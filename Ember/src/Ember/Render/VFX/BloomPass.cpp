@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "BloomPass.h"
+
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Core/Application.h"

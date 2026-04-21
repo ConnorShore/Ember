@@ -15,5 +15,6 @@ namespace Ember {
 	private:
 		void RenderSkyboxSettings();
 		void RenderBloomSettings();
+		void RenderFXAASettings();
 	};
 }

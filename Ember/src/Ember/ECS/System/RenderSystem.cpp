@@ -10,6 +10,7 @@
 #include "Ember/Render/PrimitiveGenerator.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
+#include "Ember/Render/VFX/FXAAPass.h"
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Scene/Scene.h"
 
@@ -117,6 +118,18 @@ namespace Ember {
 			m_PostProcessBufferA = Framebuffer::Create(specs);
 			m_PostProcessBufferB = Framebuffer::Create(specs);
 		}
+		// LDR Post Process Buffers (For FXAA, Vignette, etc.)
+		{
+			Ember::FramebufferSpecification specs;
+			specs.Width = 1;
+			specs.Height = 1;
+			specs.AttachmentSpecs = {
+				Ember::FramebufferTextureFormat::RGBA8, // Standard 0-1 colors!
+				Ember::FramebufferTextureFormat::Depth24Stencil8
+			};
+			m_LdrBufferA = Framebuffer::Create(specs);
+			m_LdrBufferB = Framebuffer::Create(specs);
+		}
 
 		// Uniform Buffer Objects at fixed binding points shared across all shaders
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);          // binding 0: ViewProjection
@@ -131,6 +144,8 @@ namespace Ember {
 		auto outlinePass = SharedPtr<OutlinePass>::Create();
 		outlinePass->SetGBuffer(m_GBuffer);
 		m_PostProcessStack.emplace_back(outlinePass);
+
+		m_PostProcessStack.emplace_back(SharedPtr<FXAAPass>::Create());
 		////////////////////////////////////////////////////////////////////
 
 		m_Skybox = SharedPtr<Skybox>::Create(Constants::Assets::DefaultSkyboxUUID);
@@ -249,6 +264,9 @@ namespace Ember {
 		m_HdrSceneBuffer->ViewportResize(width, height);
 		m_PostProcessBufferA->ViewportResize(width, height);
 		m_PostProcessBufferB->ViewportResize(width, height);
+
+		m_LdrBufferA->ViewportResize(width, height);
+		m_LdrBufferB->ViewportResize(width, height);
 
 		for (auto& pass : m_PostProcessStack)
 			pass->OnViewportResize(width, height);
@@ -956,25 +974,76 @@ namespace Ember {
 		RenderAction::UseDepthMask(true);
 	}
 
+	//void RenderSystem::HandlePostProcessing(Scene* scene)
+	//{
+	//	auto& registry = scene->GetRegistry();
+
+	//	// TODO: Down the line, passing textures between shaders is slow so eventually want to 
+	//	//  move to only a ping pong shader pass and a final composite shader.
+	//	//  The ping pong pass will handle every post processing effect that needs the ping pong approach
+	//	//  and the final composite shader will be an "uber shader" contain logic for every post processing effect
+	//	//  that doesn't need the ping pong approach (i.e. outline, bloom, vignette, etc)
+	//	//  This will drastically improve performance but will require a bit of an architectural change in how post processing passes are handled, 
+	//	//  so for now we will just handle each post process effect as its own pass and optimize later
+
+	//	RenderAction::UseDepthTest(false);
+
+	//	// Ping-pong between two buffers: each pass reads from currentInput and writes to currentOutput
+	//	SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
+	//	SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
+
+	//	// TODO: Need a more elegant way to handle these special VFX cases
+	//	// Grab outline components for selected entities
+	//	std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
+	//	View view = registry.Query<OutlineComponent>();
+	//	for (EntityID entity : view)
+	//	{
+	//		auto [outline] = registry.GetComponents<OutlineComponent>(entity);
+	//		outlinedEntityMap[entity] = outline;
+	//	}
+
+	//	// Pass over all post processing items
+	//	for (auto& pass : m_PostProcessStack)
+	//	{
+	//		// TODO: Come up with solution for handling special cases
+	//		if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
+	//		{
+	//			if (pass->Enabled)
+	//			{
+	//				// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
+	//				for (const auto& [entityID, outline] : outlinedEntityMap)
+	//				{
+	//					outlinePass->SetGBuffer(m_GBuffer);
+	//					outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
+	//					outlinePass->SetSelectedEntityID(entityID);
+	//					outlinePass->SetOutlineColor(outline.Color);
+	//					outlinePass->SetOutlineThickness(outline.Thickness);
+
+	//					pass->Render(currentInput, currentOutput);
+	//					currentInput = currentOutput;
+	//					currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+	//				}
+	//			}
+	//			
+	//			continue;
+	//		}
+
+	//		if (pass->Enabled)
+	//		{
+	//			pass->Render(currentInput, currentOutput);
+	//			currentInput = currentOutput;
+	//			currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+	//		}
+	//	}
+
+	//	RenderFinalComposite(currentInput);
+	//}
+
 	void RenderSystem::HandlePostProcessing(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
-
-		// TODO: Down the line, passing textures between shaders is slow so eventually want to 
-		//  move to only a ping pong shader pass and a final composite shader.
-		//  The ping pong pass will handle every post processing effect that needs the ping pong approach
-		//  and the final composite shader will be an "uber shader" contain logic for every post processing effect
-		//  that doesn't need the ping pong approach (i.e. outline, bloom, vignette, etc)
-		//  This will drastically improve performance but will require a bit of an architectural change in how post processing passes are handled, 
-		//  so for now we will just handle each post process effect as its own pass and optimize later
-
 		RenderAction::UseDepthTest(false);
 
-		// Ping-pong between two buffers: each pass reads from currentInput and writes to currentOutput
-		SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
-		SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
-
-		// TODO: Need a more elegant way to handle these special VFX cases
 		// Grab outline components for selected entities
 		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
 		View view = registry.Query<OutlineComponent>();
@@ -984,41 +1053,87 @@ namespace Ember {
 			outlinedEntityMap[entity] = outline;
 		}
 
-		// Pass over all post processing items
+		// --- PHASE 1: HDR PASSES (Bloom, Outlines) ---
+		SharedPtr<Framebuffer> currentHdrInput = m_HdrSceneBuffer;
+		SharedPtr<Framebuffer> currentHdrOutput = m_PostProcessBufferA;
+
 		for (auto& pass : m_PostProcessStack)
 		{
-			// TODO: Come up with solution for handling special cases
-			if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
+			if (pass->Enabled && pass->GetStage() == PostProcessStage::HDR)
 			{
-				if (pass->Enabled)
+				// Special Case: Outline Pass needs specific buffers and loops per entity
+				if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
 				{
-					// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
 					for (const auto& [entityID, outline] : outlinedEntityMap)
 					{
 						outlinePass->SetGBuffer(m_GBuffer);
+						// MUST pass m_HdrSceneBuffer specifically so it can read Depth and IDs!
 						outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
 						outlinePass->SetSelectedEntityID(entityID);
 						outlinePass->SetOutlineColor(outline.Color);
 						outlinePass->SetOutlineThickness(outline.Thickness);
 
-						pass->Render(currentInput, currentOutput);
-						currentInput = currentOutput;
-						currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
-					}
-				}
-				
-				continue;
-			}
+						pass->Render(currentHdrInput, currentHdrOutput);
 
-			if (pass->Enabled)
-			{
-				pass->Render(currentInput, currentOutput);
-				currentInput = currentOutput;
-				currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+						// Ping Pong
+						currentHdrInput = currentHdrOutput;
+						currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+					}
+					continue; // Skip the standard render call below
+				}
+
+				// Standard HDR Passes (e.g. Bloom)
+				pass->Render(currentHdrInput, currentHdrOutput);
+
+				// Ping Pong
+				currentHdrInput = currentHdrOutput;
+				currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
 			}
 		}
 
-		RenderFinalComposite(currentInput);
+		// --- PHASE 2: TONE MAPPING (The Bridge) ---
+		m_LdrBufferA->Bind();
+		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
+
+		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
+		finalShader->Bind();
+		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
+
+		finalShader->SetInt(Constants::Uniforms::Scene, 0);
+
+		RenderAction::SetTextureUnit(0, currentHdrInput->GetColorAttachmentID(0));
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+		m_LdrBufferA->Unbind();
+
+		// --- PHASE 3: LDR PASSES (FXAA) ---
+		SharedPtr<Framebuffer> currentLdrInput = m_LdrBufferA;
+		SharedPtr<Framebuffer> currentLdrOutput = m_LdrBufferB;
+
+		for (auto& pass : m_PostProcessStack)
+		{
+			if (pass->Enabled && pass->GetStage() == PostProcessStage::LDR)
+			{
+				pass->Render(currentLdrInput, currentLdrOutput);
+
+				// Ping Pong
+				currentLdrInput = currentLdrOutput;
+				currentLdrOutput = (currentLdrOutput == m_LdrBufferA) ? m_LdrBufferB : m_LdrBufferA;
+			}
+		}
+
+		// --- PHASE 4: BLIT TO SCREEN ---
+		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
+		RenderAction::SetViewport(m_RenderSceneState.ViewportDimensions);
+		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
+
+		auto blitShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::BlitShad);
+		blitShader->Bind();
+
+		blitShader->SetInt(Constants::Uniforms::Scene, 0);
+
+		RenderAction::SetTextureUnit(0, currentLdrInput->GetColorAttachmentID(0));
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}
 
 	void RenderSystem::RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer)
@@ -1033,7 +1148,7 @@ namespace Ember {
 		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
 		finalShader->Bind();
 
-		// TODO: Move FinalComposite to a PostProcessPass and handle these uniforms there instead of hardcoding them here
+		// TODO: Move FinalComposite to a PostProcessPass and handle these uniforms there instead of hard coding them here
 		// Set the exposure (hook this up to an ImGui slider later)
 		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
 		finalShader->SetInt(Constants::Uniforms::Scene, 0);

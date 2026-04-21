@@ -42,6 +42,8 @@ namespace Ember {
 		void OnUpdateEdit(TimeStep delta, EditorCamera& camera);
 		void OnEvent(Event& event);
 
+		void SetActiveCamera(Entity cameraEntity);
+
 		void OnViewportResize(uint32_t width, uint32_t height);
 
         Entity AddEntity(const std::string& name = "");

@@ -190,7 +190,7 @@ namespace Ember {
 		}
 
 
-		bool Float(const std::string& label, float& value, float step /*= 0.1f*/, float min /* = 0.0f */, float max /* = 0.0f */)
+		bool Float(const std::string& label, float& value, float step /*= 0.1f*/, float min /* = 0.0f */, float max /* = 0.0f */, const std::string& format /*= ".2f"*/)
 		{
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
@@ -198,7 +198,7 @@ namespace Ember {
 			ImGui::Text(label.c_str());
 			ImGui::TableNextColumn();
 			ImGui::PushItemWidth(-FLT_MIN);
-			return ImGui::DragFloat(std::format("##{}", label).c_str(), &value, step, min, max, "%.2f");
+			return ImGui::DragFloat(std::format("##{}", label).c_str(), &value, step, min, max, format.c_str());
 		}
 
 		bool Float2(const std::string& label, Vector2f& value, float step /*= 0.1f*/, float min /* = 0.0f */, float max /* = 0.0f */)

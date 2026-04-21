@@ -15,6 +15,8 @@ namespace Ember {
 		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) override;
 		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 
+		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::HDR; }
+
 	public:
 		float Threshold = 1.5f;
 		float Knee = 0.15f;
