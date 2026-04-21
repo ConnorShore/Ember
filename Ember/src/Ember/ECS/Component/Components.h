@@ -34,6 +34,12 @@
 
 namespace Ember {
 
+	struct DisabledComponent
+	{
+		DisabledComponent() = default;
+		DisabledComponent(const DisabledComponent&) = default;
+	};
+
 	struct ColliderOffset
 	{
 		Vector3f Position = { 0.0f, 0.0f, 0.0f };

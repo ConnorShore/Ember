@@ -104,6 +104,11 @@ namespace Ember {
 		if (componentTypeStr == "TextComponent")
 			return sol::make_object(state, entity.ContainsComponent<TextComponent>());
 
+		if (componentTypeStr == "DisabledComponent")
+		{
+			EB_CORE_ASSERT(false, "Cannot check for script components from Lua. Use SetActive(bool) method!");
+			return sol::lua_nil;
+		}
 		if (componentTypeStr == "ScriptComponent")
 		{
 			EB_CORE_ASSERT(false, "Cannot check for script components from Lua!");
@@ -159,6 +164,11 @@ namespace Ember {
 		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
 		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
 		
+		if (componentTypeStr == "DisabledComponent")
+		{
+			EB_CORE_ASSERT(false, "Cannot add script components from Lua. Use SetActive(bool) method!");
+			return sol::lua_nil;
+		}
 		if (componentTypeStr == "ScriptComponent")
 		{
 			EB_CORE_ASSERT(false, "Cannot add script components from Lua!");
@@ -204,6 +214,7 @@ namespace Ember {
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
+			"SetActive", [&state](Entity& e, bool active) { if (active) e.DetachComponent<DisabledComponent>(); else { DisabledComponent dc; e.AttachComponent(dc); }},
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
@@ -220,7 +231,7 @@ namespace Ember {
 				}
 			}
 			return sol::make_object(s, sol::lua_nil);
-			});
+		});
 	}
 
 }

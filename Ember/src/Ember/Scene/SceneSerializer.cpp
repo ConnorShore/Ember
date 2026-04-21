@@ -6,6 +6,7 @@
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/Render/VFX/BloomPass.h"
+#include "Ember/Render/VFX/FXAAPass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -322,6 +323,12 @@ namespace Ember {
 			textNode["FontHandle"] << (uint64_t)text.FontHandle;
 			Util::SerializeVector4f(textNode["Color"], text.Color);
 			textNode["ScreenSpace"] << text.ScreenSpace;
+		}
+		if (entity.ContainsComponent<DisabledComponent>())
+		{
+			auto disabledNode = entityNode["DisabledComponent"];
+			disabledNode |= ryml::MAP;
+			disabledNode["IsDisabled"] << true;
 		}
 	}
 
@@ -778,6 +785,14 @@ namespace Ember {
 			textNode["ScreenSpace"] >> tc.ScreenSpace;
 			deserializedEntity.AttachComponent<TextComponent>(tc);
 		}
+
+		if (entityNode.has_child("DisabledComponent"))
+		{
+			// No props just attach the component to mark the entity as disabled
+
+			DisabledComponent dc;
+			deserializedEntity.AttachComponent<DisabledComponent>(dc);
+		}
 	}
 
 
@@ -809,6 +824,7 @@ namespace Ember {
 		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 		auto skybox = renderSystem->GetSkybox();
 		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
 
 		ryml::NodeRef envNode = root["Environment"];
 		envNode |= ryml::MAP;
@@ -826,6 +842,13 @@ namespace Ember {
 		bloomNode["Knee"] << bloomPass->Knee;
 		bloomNode["Intensity"] << bloomPass->Intensity;
 		bloomNode["BlurRadius"] << bloomPass->BlurRadius;
+
+		ryml::NodeRef fxaaNode = envNode["FXAA"];
+		fxaaNode |= ryml::MAP;
+		fxaaNode["Enabled"] << fxaaPass->Enabled;
+		fxaaNode["SubpixelQuality"] << fxaaPass->SubpixelQuality;
+		fxaaNode["EdgeThresholdMin"] << fxaaPass->EdgeThresholdMin;
+		fxaaNode["EdgeThresholdMax"] << fxaaPass->EdgeThresholdMax;
 
 		std::ofstream fout(filepath);
 		fout << tree;
@@ -884,6 +907,7 @@ namespace Ember {
 			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 			auto skybox = renderSystem->GetSkybox();
 			auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+			auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
 
 			ryml::NodeRef envNode = root["Environment"];
 
@@ -918,6 +942,16 @@ namespace Ember {
 				bloomNode["Knee"] >> bloomPass->Knee;
 				bloomNode["Intensity"] >> bloomPass->Intensity;
 				bloomNode["BlurRadius"] >> bloomPass->BlurRadius;
+			}
+
+			if (envNode.has_child("FXAA"))
+			{
+				auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
+				ryml::NodeRef fxaaNode = envNode["FXAA"];
+				fxaaNode["Enabled"] >> fxaaPass->Enabled;
+				fxaaNode["SubpixelQuality"] >> fxaaPass->SubpixelQuality;
+				fxaaNode["EdgeThresholdMin"] >> fxaaPass->EdgeThresholdMin;
+				fxaaNode["EdgeThresholdMax"] >> fxaaPass->EdgeThresholdMax;
 			}
 		}
 

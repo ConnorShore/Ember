@@ -19,7 +19,7 @@ namespace Ember {
 
 	void TransformSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
-		View view = scene->GetRegistry().Query<RelationshipComponent, TransformComponent>();
+		View view = scene->GetRegistry().ActiveQuery<RelationshipComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
 			auto [relationship, transform] = scene->GetRegistry().GetComponents<RelationshipComponent, TransformComponent>(entity);

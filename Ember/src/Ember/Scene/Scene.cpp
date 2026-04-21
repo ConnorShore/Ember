@@ -142,7 +142,8 @@ namespace Ember {
 					PrefabComponent,
 					CharacterControllerComponent,
 					LifetimeComponent,
-					TextComponent
+					TextComponent,
+					DisabledComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -235,7 +236,7 @@ namespace Ember {
 		EB_CORE_ASSERT(cameraEntity.ContainsComponent<CameraComponent>(), "Entity '{}' does not have a CameraComponent!", cameraEntity.GetName());
 
 		// Loop through and disable all camera, and enable the one we want
-		auto view = m_Registry->Query<CameraComponent>();
+		auto view = m_Registry->ActiveQuery<CameraComponent>();
 		for (auto entity : view)
 		{
 			auto& camera = m_Registry->GetComponent<CameraComponent>(entity);
@@ -422,7 +423,8 @@ namespace Ember {
 			BillboardComponent,
 			CharacterControllerComponent,
 			LifetimeComponent,
-			TextComponent
+			TextComponent,
+			DisabledComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

@@ -23,7 +23,7 @@ namespace Ember {
 
 	void ScriptSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
-		auto view = scene->GetRegistry().Query<ScriptComponent>();
+		auto view = scene->GetRegistry().ActiveQuery<ScriptComponent>();
 
 		sol::state& luaState = ScriptEngine::GetState();
 

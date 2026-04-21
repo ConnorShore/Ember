@@ -322,6 +322,23 @@ namespace Ember {
 				});
 			}
 		);
+
+		// Disabled component attach/detach.  Need to enable/disable rigid body for this component
+		registry.ConnectAndRetroact<DisabledComponent>(
+			[this, scene](EntityID entity, DisabledComponent& dc) {
+				auto& registry = scene->GetRegistry();
+				auto& rbComp = registry.GetComponent<RigidBodyComponent>(entity);
+				rbComp.Body->setIsActive(false);
+			}
+		);
+
+		registry.OnComponentDetached<DisabledComponent>().Connect(
+			[this, scene](EntityID entity, DisabledComponent& dc) {
+				auto& registry = scene->GetRegistry();
+				auto& rbComp = registry.GetComponent<RigidBodyComponent>(entity);
+				rbComp.Body->setIsActive(true);
+			}
+		);
 	}
 
 	void PhysicsSystem::OnSceneDetach(Scene* scene)
@@ -348,7 +365,7 @@ namespace Ember {
 		// Kinematic: entity drives physics      (WorldTransform → rp3d)
 		// Static:    no movement, no sync needed
 		auto& registry = scene->GetRegistry();
-		auto view = registry.Query<RigidBodyComponent, TransformComponent>();
+		auto view = registry.ActiveQuery<RigidBodyComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
 			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
@@ -402,7 +419,7 @@ namespace Ember {
 	{
 		// Sync ECS -> Physics (So when you drag objects with your mouse, the collider moves!)
 		auto& registry = scene->GetRegistry();
-		auto view = registry.Query<RigidBodyComponent, TransformComponent>();
+		auto view = registry.ActiveQuery<RigidBodyComponent, TransformComponent>();
 
 		for (EntityID entity : view)
 		{
@@ -429,7 +446,7 @@ namespace Ember {
 		}
 
 		// Rebuild colliders whose properties were changed in the inspector
-		auto boxView = registry.Query<BoxColliderComponent>();
+		auto boxView = registry.ActiveQuery<BoxColliderComponent>();
 		for (EntityID entity : boxView)
 		{
 			auto& box = registry.GetComponent<BoxColliderComponent>(entity);
@@ -441,7 +458,7 @@ namespace Ember {
 			}
 		}
 
-		auto sphereView = registry.Query<SphereColliderComponent>();
+		auto sphereView = registry.ActiveQuery<SphereColliderComponent>();
 		for (EntityID entity : sphereView)
 		{
 			auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
@@ -453,7 +470,7 @@ namespace Ember {
 			}
 		}
 
-		auto capsuleView = registry.Query<CapsuleColliderComponent>();
+		auto capsuleView = registry.ActiveQuery<CapsuleColliderComponent>();
 		for (EntityID entity : capsuleView)
 		{
 			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
@@ -465,7 +482,7 @@ namespace Ember {
 			}
 		}
 
-		auto convexView = registry.Query<ConvexMeshColliderComponent>();
+		auto convexView = registry.ActiveQuery<ConvexMeshColliderComponent>();
 		for (EntityID entity : convexView)
 		{
 			auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
@@ -482,7 +499,7 @@ namespace Ember {
 			}
 		}
 
-		auto concaveView = registry.Query<ConcaveMeshColliderComponent>();
+		auto concaveView = registry.ActiveQuery<ConcaveMeshColliderComponent>();
 		for (EntityID entity : concaveView)
 		{
 			auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
