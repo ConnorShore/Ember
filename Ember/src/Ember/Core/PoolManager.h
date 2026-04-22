@@ -20,6 +20,7 @@ namespace Ember {
 		void DestroyPools();
 
 		Entity RetrieveFromPool(Scene* scene, const std::string& poolID);
+		Entity RetrieveFromPool(Scene* scene, const std::string& poolID, const Vector3f& position);
 		void ReturnToPool(EntityID entity, const std::string& poolID);
 
 	private:

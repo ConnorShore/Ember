@@ -27,7 +27,11 @@ namespace Ember
 		~Pool() = default;
 
 		Entity Retrieve();
+		Entity Retrieve(const Vector3f& position);
 		void Return(EntityID entity);
+
+		// TODO: This may not be necessary since the scene gets destroyed anyway
+		void Clear();
 
 	private:
 		EntityID CreatePooledEntity(const SharedPtr<Prefab>& prefab);

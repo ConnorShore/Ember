@@ -20,10 +20,6 @@ Assets:
     Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup2_Powerup_StandardUnlit_Clone_Clone.ebmat'
   - Type: Material
-    UUID: 5345865544332564414
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 13862054512284898396
     Name: Bullet_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
@@ -47,6 +43,10 @@ Assets:
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 5345865544332564414
+    Name: Ground (Copy)_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor

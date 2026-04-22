@@ -53,8 +53,13 @@ namespace Ember {
 			scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize);
 		});
 
-		sceneTable.set_function("RetrieveFromPool", [scene](const std::string& poolID) {
-			return scene->GetPoolManager().RetrieveFromPool(scene, poolID);
-		});
+		sceneTable.set_function("RetrieveFromPool", sol::overload(
+			[scene](const std::string& poolID) {
+				return scene->GetPoolManager().RetrieveFromPool(scene, poolID);
+			},
+			[scene](const std::string& poolID, const Vector3f& position) {
+				return scene->GetPoolManager().RetrieveFromPool(scene, poolID, position);
+			}
+		));
 	}
 }
