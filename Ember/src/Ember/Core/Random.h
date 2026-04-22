@@ -14,7 +14,7 @@ namespace Ember {
 
 		inline static float Float()
 		{
-			return (float)s_FloatDistribution(s_RandomEngine) / (float)std::numeric_limits<uint32_t>::max();
+			return s_FloatDistribution(s_RandomEngine);
 		}
 
 	private:

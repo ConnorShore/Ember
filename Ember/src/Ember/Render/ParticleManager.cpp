@@ -22,7 +22,11 @@ namespace Ember {
 		particle.Position = position;
 
 		// Apply props with variation when necessary
-		particle.Velocity = component.Velocity + component.VelocityVariation * (Random::Float() - 0.5f);
+		particle.Velocity = component.Velocity + component.VelocityVariation * Vector3f(
+			Random::Float() - 0.5f,
+			Random::Float() - 0.5f,
+			Random::Float() - 0.5f
+		);
 
 		particle.ColorBegin = component.ColorBegin;
 		particle.ColorEnd = component.ColorEnd;
@@ -62,6 +66,16 @@ namespace Ember {
 			particle.CurrentColor = Math::Lerp(particle.ColorEnd, particle.ColorBegin, lifeRatio);
 			particle.CurrentScale = Math::Lerp(particle.ScaleEnd, particle.ScaleBegin, lifeRatio);
 		}
+	}
+
+	void ParticleManager::Reset()
+	{
+		for (auto& particle : m_ParticlePool)
+		{
+			particle.Active = false;
+		}
+
+		m_ParticleIndex = m_MaxParticles - 1; // Reset index to the end of the pool
 	}
 
 }

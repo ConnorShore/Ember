@@ -16,6 +16,8 @@ namespace Ember {
 		void Emit(const ParticleEmitterComponent& component, const Vector3f& position);
 		void OnUpdate(TimeStep delta);
 
+		void Reset();
+
 		uint32_t GetMaxParticles() const { return m_MaxParticles; }
 
 		const std::vector<Particle>& GetParticles() const { return m_ParticlePool; }

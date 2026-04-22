@@ -355,8 +355,8 @@ namespace Ember {
 			Util::SerializeVector3f(emitterNode["Velocity"], emitter.Velocity);
 			Util::SerializeVector3f(emitterNode["VelocityVariation"], emitter.VelocityVariation);
 
-			Util::DeserializeVector4f(emitterNode["ColorBegin"], emitter.ColorBegin);
-			Util::DeserializeVector4f(emitterNode["ColorEnd"], emitter.ColorEnd);
+			Util::SerializeVector4f(emitterNode["ColorBegin"], emitter.ColorBegin);
+			Util::SerializeVector4f(emitterNode["ColorEnd"], emitter.ColorEnd);
 
 			emitterNode["ScaleBegin"] << emitter.ScaleBegin;
 			emitterNode["ScaleEnd"] << emitter.ScaleEnd;

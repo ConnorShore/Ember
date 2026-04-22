@@ -639,7 +639,7 @@ namespace Ember {
 
 		// Visuals (Interpolated over lifetime)
 		Vector4f ColorBegin = { 1.0f, 0.0f, 0.0f, 1.0f };
-		Vector4f ColorEnd = { 0.0f, 0.0f, 1.0f, 0.0f }; // Fades to invisible blue
+		Vector4f ColorEnd = { 0.0f, 0.0f, 1.0f, 0.0f }; // Fades to blue and transparent
 
 		float ScaleBegin = 1.0f;
 		float ScaleEnd = 0.1f;

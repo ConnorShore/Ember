@@ -115,9 +115,7 @@ namespace Ember {
 				}
 
 				if (elem.Instanced)
-				{
-					glVertexArrayBindingDivisor(m_Id, m_CurrentVertexBufferInd, 1);
-				}
+					glVertexArrayBindingDivisor(m_Id, vboIndex, 1);
 				
 				glVertexArrayAttribBinding(m_Id, m_CurrentVertexBufferInd++, vboIndex);
 			}

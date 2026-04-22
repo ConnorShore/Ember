@@ -815,7 +815,8 @@ namespace Ember {
 
 		for (const auto& particle : pool)
 		{
-			if (!particle.Active) continue;
+			if (!particle.Active)
+				continue;
 
 			ParticleVertex data;
 			data.Position = particle.Position;
@@ -846,6 +847,10 @@ namespace Ember {
 		Vector3f camUp = Vector3f(m_RenderSceneState.CameraTransform[1]);
 		particleShad->SetFloat3("u_CameraRight", camRight);
 		particleShad->SetFloat3("u_CameraUp", camUp);
+		particleShad->SetInt("u_Image", 0);
+
+		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
+		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
 
 		// 4. THE SINGLE DRAW CALL
 		uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
@@ -1047,71 +1052,6 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 		RenderAction::UseDepthMask(true);
 	}
-
-	//void RenderSystem::HandlePostProcessing(Scene* scene)
-	//{
-	//	auto& registry = scene->GetRegistry();
-
-	//	// TODO: Down the line, passing textures between shaders is slow so eventually want to 
-	//	//  move to only a ping pong shader pass and a final composite shader.
-	//	//  The ping pong pass will handle every post processing effect that needs the ping pong approach
-	//	//  and the final composite shader will be an "uber shader" contain logic for every post processing effect
-	//	//  that doesn't need the ping pong approach (i.e. outline, bloom, vignette, etc)
-	//	//  This will drastically improve performance but will require a bit of an architectural change in how post processing passes are handled, 
-	//	//  so for now we will just handle each post process effect as its own pass and optimize later
-
-	//	RenderAction::UseDepthTest(false);
-
-	//	// Ping-pong between two buffers: each pass reads from currentInput and writes to currentOutput
-	//	SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
-	//	SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
-
-	//	// TODO: Need a more elegant way to handle these special VFX cases
-	//	// Grab outline components for selected entities
-	//	std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
-	//	View view = registry.Query<OutlineComponent>();
-	//	for (EntityID entity : view)
-	//	{
-	//		auto [outline] = registry.GetComponents<OutlineComponent>(entity);
-	//		outlinedEntityMap[entity] = outline;
-	//	}
-
-	//	// Pass over all post processing items
-	//	for (auto& pass : m_PostProcessStack)
-	//	{
-	//		// TODO: Come up with solution for handling special cases
-	//		if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
-	//		{
-	//			if (pass->Enabled)
-	//			{
-	//				// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
-	//				for (const auto& [entityID, outline] : outlinedEntityMap)
-	//				{
-	//					outlinePass->SetGBuffer(m_GBuffer);
-	//					outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
-	//					outlinePass->SetSelectedEntityID(entityID);
-	//					outlinePass->SetOutlineColor(outline.Color);
-	//					outlinePass->SetOutlineThickness(outline.Thickness);
-
-	//					pass->Render(currentInput, currentOutput);
-	//					currentInput = currentOutput;
-	//					currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
-	//				}
-	//			}
-	//			
-	//			continue;
-	//		}
-
-	//		if (pass->Enabled)
-	//		{
-	//			pass->Render(currentInput, currentOutput);
-	//			currentInput = currentOutput;
-	//			currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
-	//		}
-	//	}
-
-	//	RenderFinalComposite(currentInput);
-	//}
 
 	void RenderSystem::HandlePostProcessing(Scene* scene)
 	{
