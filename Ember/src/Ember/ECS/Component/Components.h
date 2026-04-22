@@ -604,4 +604,26 @@ namespace Ember {
 		TextComponent(const TextComponent&) = default;
 	};
 
+	struct PoolComponent
+	{
+		std::string PoolID;	// i.e. "Bullet"
+
+		PoolComponent() = default;
+		PoolComponent(const std::string& id) : PoolID(id) {}
+		PoolComponent(const PoolComponent&) = default;
+	};
+
+	struct PoolConfigComponent
+	{
+		std::string PoolID;
+		uint32_t Capacity = 0;
+		UUID PrefabHandle = Constants::InvalidUUID;
+
+		PoolConfigComponent() = default;
+		PoolConfigComponent(const std::string& id, uint32_t capacity, UUID prefabHandle)
+			: PoolID(id), Capacity(capacity), PrefabHandle(prefabHandle) {
+		}
+		PoolConfigComponent(const PoolConfigComponent&) = default;
+	};
+
 }

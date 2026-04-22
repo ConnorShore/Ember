@@ -10,6 +10,7 @@
 #include "Ember/Tools/EditorCamera.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Asset/Prefab.h"
+#include "Ember/Core/PoolManager.h"
 
 #include <unordered_map>
 
@@ -113,6 +114,7 @@ namespace Ember {
 		inline T& GetComponent(const Entity& entity);
 
 		inline Registry& GetRegistry() { return *m_Registry; }
+		inline PoolManager& GetPoolManager() { return *m_PoolManager; }
 
 		inline const std::string& GetName() const { return m_Name; }
 
@@ -129,6 +131,7 @@ namespace Ember {
 
 	private:
 		ScopedPtr<Registry> m_Registry;
+		ScopedPtr<PoolManager> m_PoolManager;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 		// TODO: May want a entity name map for faster lookup by name

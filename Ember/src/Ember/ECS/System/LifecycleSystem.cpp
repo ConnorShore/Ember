@@ -18,7 +18,17 @@ namespace Ember {
 			comp.Lifetime -= delta.Seconds();
 
 			if (comp.Lifetime <= 0.0f)
-				entitiesToRemove.push_back(entity);
+			{
+				if (registry.ContainsComponent<PoolComponent>(entity))
+				{
+					auto poolID = registry.GetComponent<PoolComponent>(entity).PoolID;
+					scene->GetPoolManager().ReturnToPool(entity, poolID);
+				}
+				else
+				{
+					entitiesToRemove.push_back(entity);
+				}
+			}
 		}
 
 		// Remove expired entities after the loop to avoid modifying the registry while iterating
