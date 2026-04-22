@@ -49,7 +49,7 @@ namespace Ember {
 	}
 
 	Pool::Pool(Scene* scene, const std::string& poolID, const SharedPtr<Prefab>& prefab, uint32_t initialSize)
-		: m_Id(poolID), m_SceneHandle(scene)
+		: m_Id(poolID), m_SceneHandle(scene), m_Capacity(initialSize), m_PrefabUUID(prefab->GetUUID())
 	{
 		m_AvailableEntities = std::queue<EntityID>();
 
@@ -63,9 +63,18 @@ namespace Ember {
 	{
 		if (m_AvailableEntities.empty())
 		{
-			// TOOD: Dynamically size up the pool if it runs out of entities instead of just returning an invalid id
+#ifdef EB_DEBUG
+			// Dynamically resize for debug builds to prevent frustrating crashes during development, 
+			// but warn about it and suggest increasing the initial size for better performance
+			uint32_t newSize = (uint32_t)(m_Capacity * 1.5f);
+			EB_CORE_WARN("Pool '{}' has run out of available entities! Increasing size to {}", m_Id, newSize);
+
+			Resize(newSize);
+			return Retrieve();
+#else
 			EB_CORE_WARN("Pool '{}' has run out of available entities! Consider increasing the initial size.", m_Id);
 			return Entity(Constants::Entities::InvalidEntityID, m_SceneHandle);
+#endif
 		}
 
 		EntityID entity = m_AvailableEntities.front();
@@ -89,8 +98,16 @@ namespace Ember {
 	{
 		if (m_AvailableEntities.empty())
 		{
+#ifdef EB_DEBUG
+			uint32_t newSize = (uint32_t)(m_Capacity * 1.5f);
+			EB_CORE_WARN("Pool '{}' has run out of available entities! Increasing size to {}", m_Id, newSize);
+
+			Resize(newSize);
+			return Retrieve(position);
+#else
 			EB_CORE_WARN("Pool '{}' has run out of available entities! Consider increasing the initial size.", m_Id);
 			return Entity(Constants::Entities::InvalidEntityID, m_SceneHandle);
+#endif
 		}
 
 		EntityID entity = m_AvailableEntities.front();
@@ -142,4 +159,20 @@ namespace Ember {
 
 		return entity;
 	}
+
+#ifdef EB_DEBUG
+	void Pool::Resize(uint32_t newSize)
+	{
+		auto prefab = m_SceneHandle->GetAsset<Prefab>(m_PrefabUUID);
+
+		m_AvailableEntities = std::queue<EntityID>();
+		for (size_t i = 0; i < newSize; i++)
+			m_AvailableEntities.push(CreatePooledEntity(prefab));
+
+		m_Capacity = newSize;
+	}
+#else
+	void Pool::Resize(const SharedPtr<Prefab>& prefab, uint32_t newSize) {}
+#endif
+
 }

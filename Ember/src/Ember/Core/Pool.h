@@ -15,10 +15,6 @@ namespace Ember
 	class Prefab;
 	class Entity;
 
-	// Pool ideas:
-	//  - Pool Manager will manage multiple pools, and will be responsible for allocating and deallocating memory for the pools
-	//  - Entity is marked to be in a pool with PoolComponent (which will have a single member variable, pool id)
-
 	class Pool
 	{
 	public:
@@ -35,11 +31,14 @@ namespace Ember
 
 	private:
 		EntityID CreatePooledEntity(const SharedPtr<Prefab>& prefab);
+		void Resize(uint32_t newSize);
 
 	private:
 		std::string m_Id;
 		Scene* m_SceneHandle;
 		std::queue<EntityID> m_AvailableEntities;
+		uint32_t m_Capacity;
+		UUID m_PrefabUUID;
 	};
 
 }
