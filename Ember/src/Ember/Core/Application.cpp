@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
+#include "Random.h"
 #include "Ember/Input/Input.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
@@ -12,6 +13,7 @@
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
+#include "Ember/ECS/System/ParticleSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -37,6 +39,7 @@ namespace Ember {
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
 		m_AssetManager->LoadDefaults();
 
+		Random::Init();
 		ScriptEngine::Init();
 
 		//AssetRegistrySerializer serializer(m_AssetManager.Ptr());
@@ -47,6 +50,7 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<AnimationSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<ParticleSystem>::Create(Constants::Renderer::MaxParticles));
 		m_SystemManager->RegisterSystem(SharedPtr<RenderSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<CharacterControllerSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<LifecycleSystem>::Create());

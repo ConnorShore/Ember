@@ -60,6 +60,9 @@ namespace Ember {
 		auto physicsDebugShad = Load<Shader>(Constants::Assets::PhysicsDebugShadUUID, Constants::Assets::PhysicsDebugShad, "Ember/assets/shaders/PhysicsDebug.glsl");
 		auto fxaaShad = Load<Shader>(Constants::Assets::FXAAShadUUID, Constants::Assets::FXAAShad, "Ember/assets/shaders/FXAA.glsl");
 		auto blitShad = Load<Shader>(Constants::Assets::BlitShadUUID, Constants::Assets::BlitShad, "Ember/assets/shaders/FinalBlit.glsl");
+		ShaderMacros particleShadMacros;
+		particleShadMacros["MAX_PARTICLES"] = std::to_string(Constants::Renderer::MaxParticles);
+		auto particleShad = Load<Shader>(Constants::Assets::ParticleShadUUID, Constants::Assets::ParticleShad, "Ember/assets/shaders/Particles.glsl", particleShadMacros);
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

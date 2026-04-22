@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "RenderSystem.h"
 #include "PhysicsSystem.h"
+#include "ParticleSystem.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
@@ -166,7 +167,23 @@ namespace Ember {
 		m_PhysicsDebugLineVAO = VertexArray::Create();
 
 		// Notice we dropped the '0' here, using our fixed method!
-		m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+		m_PhysicsDebugLineVAO->AddVertexBuffer(m_PhysicsDebugLineVBO);
+
+		// Particle setup
+		auto quadVAO = PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray();
+		auto quadVBO = quadVAO->GetVertexBuffer();
+		auto quadIBO = quadVAO->GetIndexBuffer();
+		m_ParticleVBO = VertexBuffer::Create(Constants::Renderer::MaxParticles * sizeof(ParticleVertex));
+		m_ParticleVBO->SetLayout({
+			{ ShaderDataType::Float3, "i_Position", true /* Instanced */ },
+			{ ShaderDataType::Float, "i_Scale", true  /* Instanced */ },
+			{ ShaderDataType::Float4, "i_Color", true  /* Instanced */ }
+		});
+
+		m_ParticleVAO = VertexArray::Create();
+		m_ParticleVAO->AddVertexBuffer(quadVBO);
+		m_ParticleVAO->AddVertexBuffer(m_ParticleVBO);
+		m_ParticleVAO->SetIndexBuffer(quadIBO);
 
 		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
@@ -210,9 +227,10 @@ namespace Ember {
 		if (!isRuntime)
 			RenderInfiniteGrid();
 
+		RenderParticles(scene);
 		RenderBillboards(scene, isRuntime);
 
-		// --- NEW: Draw World-Space 2D BEFORE Post-Processing ---
+		// Draw World-Space 2D BEFORE Post-Processing
 		RenderWorldSpace2D(scene);
 
 		// Post Processing & Tone Mapping
@@ -221,9 +239,10 @@ namespace Ember {
 		// Debug lines
 		RenderDebug(scene);
 
-		// --- NEW: Draw Screen-Space UI AFTER Final Composite ---
+		// Draw Screen-Space UI AFTER Final Composite
 		RenderScreenSpaceUI(scene);
 
+		// Reset any modified render state so other systems aren't affected (like the Editor's Gizmo system)
 		ResetRenderState();
 	}
 
@@ -785,6 +804,61 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 	}
 
+	void RenderSystem::RenderParticles(Scene* scene)
+	{
+		auto& particleManager = Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
+		const auto& pool = particleManager.GetParticles();
+
+		// 1. Pack the active data
+		std::vector<ParticleVertex> instanceData;
+		instanceData.reserve(pool.size());
+
+		for (const auto& particle : pool)
+		{
+			if (!particle.Active) continue;
+
+			ParticleVertex data;
+			data.Position = particle.Position;
+			data.Scale = particle.CurrentScale; // Assuming uniform scaling for now
+			data.Color = particle.CurrentColor;
+
+			instanceData.push_back(data);
+		}
+
+		uint32_t dataSize = (uint32_t)(instanceData.size() * sizeof(ParticleVertex));
+
+		if (dataSize == 0) return; // Nothing to draw!
+
+		// 2. Upload to the GPU (Requires adding a SetData method to your VertexBuffer API)
+		m_ParticleVBO->SetData(instanceData.data(), dataSize);
+
+		// 3. Render state
+		RenderAction::UseBlending(true);
+		RenderAction::UseDepthMask(false); // Read depth, but don't write depth!
+
+		m_HdrSceneBuffer->Bind();
+
+		auto particleShad = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
+		particleShad->Bind();
+
+		// The shader needs the camera up/right vectors to build the billboard matrix!
+		Vector3f camRight = Vector3f(m_RenderSceneState.CameraTransform[0]);
+		Vector3f camUp = Vector3f(m_RenderSceneState.CameraTransform[1]);
+		particleShad->SetFloat3("u_CameraRight", camRight);
+		particleShad->SetFloat3("u_CameraUp", camUp);
+
+		// 4. THE SINGLE DRAW CALL
+		uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
+		uint32_t instanceCount = (uint32_t)instanceData.size();
+
+		RenderAction::DrawIndexedInstanced(m_ParticleVAO, indexCount, instanceCount);
+
+		m_HdrSceneBuffer->Unbind();
+
+		RenderAction::UseDepthMask(true);
+		RenderAction::UseBlending(false);
+	}
+
 	void RenderSystem::RenderBillboards(Scene* scene, bool isRuntime)
 	{
 		auto& registry = scene->GetRegistry();
@@ -1176,7 +1250,7 @@ namespace Ember {
 					{ ShaderDataType::Float3, "v_Position" },
 					{ ShaderDataType::Float4, "v_Color" }
 					});
-				m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+				m_PhysicsDebugLineVAO->AddVertexBuffer(m_PhysicsDebugLineVBO);
 			}
 
 			m_PhysicsDebugLineVBO->SetData(vertices.data(), requiredSize);

@@ -16,6 +16,7 @@
 
 #include "Ember/Core/Logger.h"
 #include "Ember/Core/Time.h"
+#include "Ember/Core/Random.h"
 
 #include "Ember/Core/ScopedPointer.h"
 #include "Ember/Core/SharedPointer.h"
@@ -39,6 +40,8 @@
 #include "Ember/Render/CubeMap.h"
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/UniformBuffer.h"
+#include "Ember/Render/Particle.h"
+#include "Ember/Render/ParticleManager.h"
 
 #include "Ember/Render/VFX/PostProcessPass.h"
 #include "Ember/Render/VFX/BloomPass.h"
@@ -54,6 +57,12 @@
 #include "Ember/ECS/Registry.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/ECS/System/RenderSystem.h"
+#include "Ember/ECS/System/PhysicsSystem.h"
+#include "Ember/ECS/System/LifecycleSystem.h"
+#include "Ember/ECS/System/ScriptSystem.h"
+#include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/ECS/System/ParticleSystem.h"
+#include "Ember/ECS/System/AnimationSystem.h"
 
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"

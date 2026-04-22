@@ -626,4 +626,34 @@ namespace Ember {
 		PoolConfigComponent(const PoolConfigComponent&) = default;
 	};
 
+
+	struct ParticleEmitterComponent
+	{
+		// How many particles to spawn per second
+		float EmissionRate = 50.0f;
+		float EmissionAccumulator = 0.0f; // Runtime only: Accumulates time to determine when to emit particles
+
+		// Physics
+		Vector3f Velocity = { 0.0f, 1.0f, 0.0f };
+		Vector3f VelocityVariation = { 0.5f, 0.1f, 0.5f };
+
+		// Visuals (Interpolated over lifetime)
+		Vector4f ColorBegin = { 1.0f, 0.0f, 0.0f, 1.0f };
+		Vector4f ColorEnd = { 0.0f, 0.0f, 1.0f, 0.0f }; // Fades to invisible blue
+
+		float ScaleBegin = 1.0f;
+		float ScaleEnd = 0.1f;
+		float ScaleVariation = 0.3f;
+
+		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
+
+		float LifeTime = 1.0f;
+		float LifeTimeVariation = 0.2f;
+
+		bool IsActive = true;
+
+		ParticleEmitterComponent() = default;
+		ParticleEmitterComponent(const ParticleEmitterComponent&) = default;
+	};
+
 }

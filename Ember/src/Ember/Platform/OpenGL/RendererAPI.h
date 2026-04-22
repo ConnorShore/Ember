@@ -33,6 +33,8 @@ namespace Ember {
 			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) override;
 			virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt) override;
 
+			virtual void DrawIndexedInstanced(const SharedPtr<VertexArray>& vertexArray, uint32_t indexCount, uint32_t instanceCount) override;
+
 			virtual void DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount) override;
 		};
 

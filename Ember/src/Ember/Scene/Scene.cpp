@@ -145,7 +145,8 @@ namespace Ember {
 					TextComponent,
 					DisabledComponent,
 					PoolComponent,
-					PoolConfigComponent
+					PoolConfigComponent,
+					ParticleEmitterComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -440,7 +441,8 @@ namespace Ember {
 			TextComponent,
 			DisabledComponent,
 			PoolComponent,
-			PoolConfigComponent
+			PoolConfigComponent,
+			ParticleEmitterComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

@@ -17,7 +17,8 @@ namespace Ember {
 		auto ibo = IndexBuffer::Create(indices);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetBuffer(vbo, ibo);
+		m_VertexArray->AddVertexBuffer(vbo);
+		m_VertexArray->SetIndexBuffer(ibo);
 	}
 
 	SkinnedMesh::SkinnedMesh(const std::string& name, const std::vector<float>& vertices, const std::vector<uint32_t>& indices)
@@ -40,7 +41,8 @@ namespace Ember {
 		auto ibo = IndexBuffer::Create(indices);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetBuffer(vbo, ibo);
+		m_VertexArray->AddVertexBuffer(vbo);
+		m_VertexArray->SetIndexBuffer(ibo);
 	}
 
 	SkinnedMesh::~SkinnedMesh()
