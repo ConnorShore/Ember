@@ -330,6 +330,22 @@ namespace Ember {
 			disabledNode |= ryml::MAP;
 			disabledNode["IsDisabled"] << true;
 		}
+		if (entity.ContainsComponent<PoolComponent>())
+		{
+			auto& pool = entity.GetComponent<PoolComponent>();
+			ryml::NodeRef poolNode = entityNode["PoolComponent"];
+			poolNode |= ryml::MAP;
+			poolNode["PoolID"] << pool.PoolID;
+		}
+		if (entity.ContainsComponent<PoolConfigComponent>())
+		{
+			auto& poolConfig = entity.GetComponent<PoolConfigComponent>();
+			ryml::NodeRef poolConfigNode = entityNode["PoolConfigComponent"];
+			poolConfigNode |= ryml::MAP;
+			poolConfigNode["PoolID"] << poolConfig.PoolID;
+			poolConfigNode["Capacity"] << poolConfig.Capacity;
+			poolConfigNode["PrefabHandle"] << (uint64_t)poolConfig.PrefabHandle;
+		}
 	}
 
 	// =========================================================================
@@ -792,6 +808,31 @@ namespace Ember {
 
 			DisabledComponent dc;
 			deserializedEntity.AttachComponent<DisabledComponent>(dc);
+		}
+
+		if (entityNode.has_child("PoolComponent"))
+		{
+			ryml::NodeRef poolNode = entityNode["PoolComponent"];
+
+			PoolComponent pc;
+			poolNode["PoolID"] >> pc.PoolID;
+
+			deserializedEntity.AttachComponent<PoolComponent>(pc);
+		}
+
+		if (entityNode.has_child("PoolConfigComponent"))
+		{
+			ryml::NodeRef poolNode = entityNode["PoolConfigComponent"];
+
+			PoolConfigComponent pcc;
+			poolNode["PoolID"] >> pcc.PoolID;
+			poolNode["Capacity"] >> pcc.Capacity;
+
+			uint64_t prefabId;
+			poolNode["PrefabHandle"] >> prefabId;
+			pcc.PrefabHandle = (UUID)prefabId;
+
+			deserializedEntity.AttachComponent<PoolConfigComponent>(pcc);
 		}
 	}
 

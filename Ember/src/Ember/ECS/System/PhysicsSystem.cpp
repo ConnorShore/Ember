@@ -327,16 +327,22 @@ namespace Ember {
 		registry.ConnectAndRetroact<DisabledComponent>(
 			[this, scene](EntityID entity, DisabledComponent& dc) {
 				auto& registry = scene->GetRegistry();
+				if (!registry.ContainsComponent<RigidBodyComponent>(entity))
+					return;
 				auto& rbComp = registry.GetComponent<RigidBodyComponent>(entity);
-				rbComp.Body->setIsActive(false);
+				if (rbComp.Body)
+					rbComp.Body->setIsActive(false);
 			}
 		);
 
 		registry.OnComponentDetached<DisabledComponent>().Connect(
 			[this, scene](EntityID entity, DisabledComponent& dc) {
 				auto& registry = scene->GetRegistry();
+				if (!registry.ContainsComponent<RigidBodyComponent>(entity))
+					return;
 				auto& rbComp = registry.GetComponent<RigidBodyComponent>(entity);
-				rbComp.Body->setIsActive(true);
+				if (rbComp.Body)
+					rbComp.Body->setIsActive(true);
 			}
 		);
 	}

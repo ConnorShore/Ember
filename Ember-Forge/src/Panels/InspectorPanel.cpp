@@ -20,6 +20,7 @@
 #include "ComponentUI/CharacterControllerComponent.h"
 #include "ComponentUI/LifetimeComponentUI.h"
 #include "ComponentUI/TextComponentUI.h"
+#include "ComponentUI/PoolConfigComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -48,6 +49,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<CharacterControllerComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<LifetimeComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<PoolConfigComponentUI>::Create(m_Context));
 
 		// --- RENDERING ---
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<CameraComponentUI>::Create(m_Context));

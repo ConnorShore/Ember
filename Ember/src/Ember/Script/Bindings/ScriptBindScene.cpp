@@ -12,6 +12,7 @@ namespace Ember {
 	{
 		auto sceneTable = state.create_table("Scene");
 
+		// Entity
 		sceneTable.set_function("AddEntity", sol::overload(
 			[scene](const std::string& name) {
 				return scene->AddEntity(name);
@@ -34,14 +35,31 @@ namespace Ember {
 			return scene->GetEntity(name);
 		});
 
+		// Prefab
 		sceneTable.set_function("InstantiatePrefab", [scene](const std::string& assetName, const Vector3f& position) {
 			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
 			return scene->InstantiatePrefab(prefabAsset, &position);
 		});
 
+		// Camera
 		sceneTable.set_function("SetActiveCamera", [scene](const std::string& entityName) {
 			Entity cameraEntity = scene->GetEntity(entityName);
 			scene->SetActiveCamera(cameraEntity);
 		});
+
+		// Pools
+		sceneTable.set_function("CreatePool", [scene](const std::string& poolID, const std::string& prefabName, uint32_t initialSize) {
+			auto prefab = Application::Instance().GetAssetManager().GetAsset<Prefab>(prefabName);
+			scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize);
+		});
+
+		sceneTable.set_function("RetrieveFromPool", sol::overload(
+			[scene](const std::string& poolID) {
+				return scene->GetPoolManager().RetrieveFromPool(scene, poolID);
+			},
+			[scene](const std::string& poolID, const Vector3f& position) {
+				return scene->GetPoolManager().RetrieveFromPool(scene, poolID, position);
+			}
+		));
 	}
 }

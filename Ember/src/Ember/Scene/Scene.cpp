@@ -94,7 +94,7 @@ namespace Ember {
 	}
 
 	Scene::Scene(const std::string& name)
-		: m_Registry(ScopedPtr<Registry>::Create()), m_Name(name)
+		: m_Registry(ScopedPtr<Registry>::Create()), m_PoolManager(ScopedPtr<PoolManager>::Create()), m_Name(name)
 	{
 	}
 
@@ -143,7 +143,9 @@ namespace Ember {
 					CharacterControllerComponent,
 					LifetimeComponent,
 					TextComponent,
-					DisabledComponent
+					DisabledComponent,
+					PoolComponent,
+					PoolConfigComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -177,14 +179,26 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
+		// Initialize physics system
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+
+		// Initialize Pools
+		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
+		for (auto entity : view)
+		{
+			auto& config = m_Registry->GetComponent<PoolConfigComponent>(entity);
+			m_PoolManager->CreatePool(this, config.PoolID, config.PrefabHandle, config.Capacity);
+		}
+
 		ScriptEngine::OnRuntimeStart(this);
 	}
 
 	void Scene::OnRuntimeStop()
 	{
 		ScriptEngine::OnRuntimeStop();
+
+		m_PoolManager->DestroyPools();
 
 		// Reset physics body pointers on all entities before re-initializing the physics world,
 		// since they became dangling when the runtime scene's physics world was created.
@@ -424,7 +438,9 @@ namespace Ember {
 			CharacterControllerComponent,
 			LifetimeComponent,
 			TextComponent,
-			DisabledComponent
+			DisabledComponent,
+			PoolComponent,
+			PoolConfigComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used
@@ -541,6 +557,13 @@ namespace Ember {
 
 	void Scene::RemoveEntity(Entity entity)
 	{
+		if (entity.ContainsComponent<PoolComponent>())
+		{
+			auto& poolComp = entity.GetComponent<PoolComponent>();
+			m_PoolManager->ReturnToPool(entity, poolComp.PoolID);
+			return;
+		}
+
 		m_PendingRemovals.push_back(entity);
 	}
 
