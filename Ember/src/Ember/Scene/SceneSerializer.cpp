@@ -355,6 +355,11 @@ namespace Ember {
 			Util::SerializeVector3f(emitterNode["Velocity"], emitter.Velocity);
 			Util::SerializeVector3f(emitterNode["VelocityVariation"], emitter.VelocityVariation);
 
+			emitterNode["Drag"] << emitter.Drag;
+
+			emitterNode["AngularVelocity"] << emitter.AngularVelocity;
+			emitterNode["AngularVelocityVariation"] << emitter.AngularVelocityVariation;
+
 			Util::SerializeVector4f(emitterNode["ColorBegin"], emitter.ColorBegin);
 			Util::SerializeVector4f(emitterNode["ColorEnd"], emitter.ColorEnd);
 
@@ -368,6 +373,9 @@ namespace Ember {
 			emitterNode["LifetimeVariation"] << emitter.LifetimeVariation;
 
 			emitterNode["GravityMultiplier"] << emitter.GravityMultiplier;
+
+			emitterNode["AlignWithVelocity"] << emitter.AlignWithVelocity;
+			emitterNode["StretchFactor"] << emitter.StretchFactor;
 
 			emitterNode["IsActive"] << emitter.IsActive;
 		}
@@ -867,6 +875,9 @@ namespace Ember {
 			emitterNode["EmissionRate"] >> pec.EmissionRate;
 			Util::DeserializeVector3f(emitterNode["Velocity"], pec.Velocity);
 			Util::DeserializeVector3f(emitterNode["VelocityVariation"], pec.VelocityVariation);
+			emitterNode["Drag"] >> pec.Drag;
+			emitterNode["AngularVelocity"] >> pec.AngularVelocity;
+			emitterNode["AngularVelocityVariation"] >> pec.AngularVelocityVariation;
 			Util::DeserializeVector4f(emitterNode["ColorBegin"], pec.ColorBegin);
 			Util::DeserializeVector4f(emitterNode["ColorEnd"], pec.ColorEnd);
 			emitterNode["ScaleBegin"] >> pec.ScaleBegin;
@@ -878,6 +889,8 @@ namespace Ember {
 			emitterNode["Lifetime"] >> pec.Lifetime;
 			emitterNode["LifetimeVariation"] >> pec.LifetimeVariation;
 			emitterNode["GravityMultiplier"] >> pec.GravityMultiplier;
+			emitterNode["AlignWithVelocity"] >> pec.AlignWithVelocity;
+			emitterNode["StretchFactor"] >> pec.StretchFactor;
 			emitterNode["IsActive"] >> pec.IsActive;
 			deserializedEntity.AttachComponent<ParticleEmitterComponent>(pec);
 		}

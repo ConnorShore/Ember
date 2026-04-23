@@ -176,7 +176,8 @@ namespace Ember {
 		m_ParticleVBO = VertexBuffer::Create(Constants::Renderer::MaxParticles * sizeof(ParticleVertex));
 		m_ParticleVBO->SetLayout({
 			{ ShaderDataType::Float3, "i_Position", true /* Instanced */ },
-			{ ShaderDataType::Float, "i_Scale", true  /* Instanced */ },
+			{ ShaderDataType::Float, "i_Rotation", true /* Instanced */ },
+			{ ShaderDataType::Float2, "i_Scale", true  /* Instanced */ },
 			{ ShaderDataType::Float4, "i_Color", true  /* Instanced */ },
 			{ ShaderDataType::UInt, "i_TexIndex", true /* Instanced */}
 		});
@@ -834,8 +835,28 @@ namespace Ember {
 
 			ParticleVertex data;
 			data.Position = particle.Position;
-			data.Scale = particle.CurrentScale;
 			data.Color = particle.CurrentColor;
+
+			float speed = Math::Length(particle.Velocity);
+
+			// Calculate the rotation angle based on the velocity vector
+			float velocityAngle = std::atan2(particle.Velocity.y, particle.Velocity.x);
+			if (particle.AlignWithVelocity)
+			{
+				float speed = Math::Length(particle.Velocity);
+				data.Scale = {
+					particle.CurrentScale + (speed * particle.StretchFactor), // X stretches!
+					particle.CurrentScale                                     // Y stays normal
+				};
+
+				// Rotate in direction of velocity vector
+				data.Rotation = std::atan2(particle.Velocity.y, particle.Velocity.x);
+			}
+			else
+			{
+				data.Scale = { particle.CurrentScale, particle.CurrentScale };
+				data.Rotation = particle.Rotation;
+			}
 
 			// Find or assign a texture slot
 			uint32_t textureIndex = 0; // Default to white texture

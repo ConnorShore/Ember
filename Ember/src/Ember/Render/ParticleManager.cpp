@@ -25,6 +25,9 @@ namespace Ember {
 
 		particle.GravityMultiplier = component.GravityMultiplier;
 
+		particle.Drag = component.Drag;
+		particle.AngularVelocity = component.AngularVelocity + component.AngularVelocityVariation * (Random::Float() - 0.5f);
+
 		// Apply props with variation when necessary
 		particle.Velocity = component.Velocity + component.VelocityVariation * Vector3f(
 			Random::Float() - 0.5f,
@@ -40,6 +43,9 @@ namespace Ember {
 
 		particle.Lifetime = component.Lifetime + component.LifetimeVariation * (Random::Float() - 0.5f);
 		particle.LifeRemaining = particle.Lifetime;
+
+		particle.AlignWithVelocity = component.AlignWithVelocity;
+		particle.StretchFactor = component.StretchFactor;
 
 		particle.TextureHandle = component.TextureHandle;
 
@@ -64,9 +70,12 @@ namespace Ember {
 			}
 
 			particle.LifeRemaining -= delta;
-			
+
+			particle.Velocity *= std::exp(-particle.Drag * (float)delta);	// Apply drag
 			particle.Velocity += gravity * particle.GravityMultiplier * (float)delta;	// Apply gravity
 			particle.Position += particle.Velocity * (float)delta;
+
+			particle.Rotation += particle.AngularVelocity * (float)delta;
 
 			// Interpolate color and scale based on Life ratio!
 			float lifeRatio = particle.LifeRemaining / particle.Lifetime;

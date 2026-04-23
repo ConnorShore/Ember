@@ -639,6 +639,13 @@ namespace Ember {
 		Vector3f Velocity = { 0.0f, 1.0f, 0.0f };
 		Vector3f VelocityVariation = { 0.5f, 0.1f, 0.5f };
 
+		float Drag = 0.1f; // How much air resistance slows down particles over time
+		float AngularVelocity = 0.0f; // How fast particles rotate
+		float AngularVelocityVariation = 0.2f;
+
+		bool AlignWithVelocity = false; // If true, particles will rotate to face the direction they're moving
+		float StretchFactor = 0.0f; // If AlignWithVelocity is true, this controls how much particles stretch in the direction of movement (0 = no stretch, 1 = full stretch)
+
 		// Visuals (Interpolated over lifetime)
 		Vector4f ColorBegin = { 1.0f, 0.0f, 0.0f, 1.0f };
 		Vector4f ColorEnd = { 0.0f, 0.0f, 1.0f, 0.0f }; // Fades to blue and transparent
