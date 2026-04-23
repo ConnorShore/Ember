@@ -124,6 +124,8 @@ namespace Ember {
 			// Explicitly configure this specific generic buffer for shadows!
 			m_DirectionalShadowMapBuffer->SetDepthBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 		}
+		m_TextureOutputs["DirectionalShadowMap"] = m_DirectionalShadowMapBuffer->GetDepthAttachmentID();
+
 		// Spot ShadowMap Buffer
 		{
 			Ember::FramebufferSpecification specs;
@@ -138,6 +140,7 @@ namespace Ember {
 			// Explicitly configure this specific generic buffer for shadows!
 			m_SpotShadowMapBuffer->SetDepthBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 		}
+		m_TextureOutputs["SpotShadowMap"] = m_SpotShadowMapBuffer->GetDepthAttachmentID();
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 		m_ShadowShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardShadowShad);

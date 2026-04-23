@@ -10,6 +10,7 @@ namespace Ember {
 
 	class Scene;
 	class Camera;
+	class Skybox;
 
 	struct RenderContext
 	{
@@ -17,10 +18,13 @@ namespace Ember {
 		Camera* ActiveCamera;
 
 		Matrix4f CameraTransform;
+		Vector4f ViewportDimensions;
 
 		SharedPtr<UniformBuffer> CameraUniformBuffer;
 		SharedPtr<UniformBuffer> ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> LightUniformBuffer;
+
+		SharedPtr<Skybox> ActiveSkybox;
 
 		RenderQueueBuckets* RenderQueueBuckets;
 	};
