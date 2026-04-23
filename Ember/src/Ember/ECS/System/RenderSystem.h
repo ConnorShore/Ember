@@ -61,6 +61,7 @@ namespace Ember {
 		void RenderForwardEntities(Scene* scene);
 		void RenderTransparentEntities(Scene* scene);
 		void RenderInfiniteGrid();
+		void RenderParticles(Scene* scene);
 		void RenderBillboards(Scene* scene, bool isRuntime);
 		void RenderWorldSpace2D(Scene* scene);
 		void RenderScreenSpaceUI(Scene* scene);
@@ -94,6 +95,10 @@ namespace Ember {
 
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
+
+		// Particles
+		SharedPtr<VertexArray> m_ParticleVAO;
+		SharedPtr<VertexBuffer> m_ParticleVBO;
 
 		struct RenderQueueBuckets
 		{

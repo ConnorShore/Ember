@@ -76,6 +76,11 @@ namespace Ember {
 			glUniform1i(GetUniformLocation(name), value);
 		}
 
+		void Shader::SetIntArray(const std::string& name, const int* values, uint32_t count) const
+		{
+			glUniform1iv(GetUniformLocation(name), count, values);
+		}
+
 		int Shader::GetInt(const std::string& name) const
 		{
 			int location = GetUniformLocation(name);

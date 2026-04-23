@@ -146,6 +146,12 @@ namespace Ember {
 			glDrawElements(GL_TRIANGLES, indicesCt, GL_UNSIGNED_INT, nullptr);
 		}
 
+		void RendererAPI::DrawIndexedInstanced(const SharedPtr<VertexArray>& vertexArray, uint32_t indexCount, uint32_t instanceCount)
+		{
+			vertexArray->Bind();
+			glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr, instanceCount);
+		}
+
 		void RendererAPI::DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount)
 		{
 			vertexArray->Bind();

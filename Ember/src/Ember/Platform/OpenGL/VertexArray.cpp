@@ -66,35 +66,29 @@ namespace Ember {
 			glBindVertexArray(m_Id);
 		}
 
-		void VertexArray::SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer)
+		void VertexArray::AddVertexBuffer(const SharedPtr<VertexBuffer>& vertexBuffer)
 		{
 			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
 				"Vertex buffer must have a layout set before being used in a vertex array!");
 
-			m_VertexBuffer = vertexBuffer;
-			m_IndexBuffer = indexBuffer;
+			uint32_t vboIndex = m_VertexBuffers.size();
 
-			glVertexArrayVertexBuffer(m_Id, 0, vertexBuffer->GetID(), 0, vertexBuffer->GetLayout().GetStride());
-			glVertexArrayElementBuffer(m_Id, indexBuffer->GetID());
+			glVertexArrayVertexBuffer(m_Id, vboIndex, vertexBuffer->GetID(), 0, vertexBuffer->GetLayout().GetStride());
+			SetVertexBufferAttribs(vertexBuffer, vboIndex);
 
-			SetVertexBufferAttribs();
+			m_VertexBuffers.push_back(vertexBuffer);
 		}
 
-		void VertexArray::SetBuffer(const SharedPtr<VertexBuffer>& vertexBuffer)
+		void VertexArray::SetIndexBuffer(const SharedPtr<IndexBuffer>& indexBuffer)
 		{
-			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
-				"Vertex buffer must have a layout set before being used in a vertex array!");
-
-			m_VertexBuffer = vertexBuffer;
-			glVertexArrayVertexBuffer(m_Id, 0, vertexBuffer->GetID(), 0, vertexBuffer->GetLayout().GetStride());
-
-			SetVertexBufferAttribs();
+			m_IndexBuffer = indexBuffer;
+			glVertexArrayElementBuffer(m_Id, indexBuffer->GetID());
 		}
 
 		// Configures vertex attributes using DSA (Direct State Access) based on the buffer layout
-		void VertexArray::SetVertexBufferAttribs()
+		void VertexArray::SetVertexBufferAttribs(const SharedPtr<VertexBuffer>& buffer, uint32_t vboIndex)
 		{
-			for (auto& elem : m_VertexBuffer->GetLayout())
+			for (auto& elem : buffer->GetLayout())
 			{
 				glEnableVertexArrayAttrib(m_Id, m_CurrentVertexBufferInd);
 
@@ -119,12 +113,12 @@ namespace Ember {
 						elem.Offset
 					);
 				}
-				m_CurrentVertexBufferInd++;
-			}
 
-			// Bind all attributes to binding point 0 (single VBO)
-			for (uint32_t i = 0; i < m_CurrentVertexBufferInd; i++)
-				glVertexArrayAttribBinding(m_Id, i, 0);
+				if (elem.Instanced)
+					glVertexArrayBindingDivisor(m_Id, vboIndex, 1);
+				
+				glVertexArrayAttribBinding(m_Id, m_CurrentVertexBufferInd++, vboIndex);
+			}
 		}
 
 	}

@@ -68,6 +68,8 @@ namespace Ember {
 		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray) = 0;
 		virtual void DrawIndexed(const SharedPtr<VertexArray>& vertexArray, uint32_t indicesCt) = 0;
 
+		virtual void DrawIndexedInstanced(const SharedPtr<VertexArray>& vertexArray, uint32_t indexCount, uint32_t instanceCount) = 0;
+
 		virtual void DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount) = 0;
 
 	public:

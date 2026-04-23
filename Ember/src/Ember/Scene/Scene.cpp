@@ -13,6 +13,7 @@
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
+#include "Ember/ECS/System/ParticleSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -145,7 +146,8 @@ namespace Ember {
 					TextComponent,
 					DisabledComponent,
 					PoolComponent,
-					PoolConfigComponent
+					PoolConfigComponent,
+					ParticleEmitterComponent
 				>(srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -212,6 +214,8 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+
+		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
@@ -223,6 +227,7 @@ namespace Ember {
 		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
 
@@ -440,7 +445,8 @@ namespace Ember {
 			TextComponent,
 			DisabledComponent,
 			PoolComponent,
-			PoolConfigComponent
+			PoolConfigComponent,
+			ParticleEmitterComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

@@ -163,6 +163,7 @@ namespace Ember {
 		if (componentTypeStr == "ConvexMeshColliderComponent") return addAndReturn(ConvexMeshColliderComponent{});
 		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
 		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
+		if (componentTypeStr == "ParticleEmitterComponent") return addAndReturn(ParticleEmitterComponent{});
 		
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -205,6 +206,7 @@ namespace Ember {
 		if (componentTypeStr == "TextComponent") return entity.DetachComponent<TextComponent>();
 		if (componentTypeStr == "LifetimeComponent") return entity.DetachComponent<LifetimeComponent>();
 		if (componentTypeStr == "ScriptComponent") return entity.DetachComponent<ScriptComponent>();
+		if (componentTypeStr == "ParticleEmitterComponent") return entity.DetachComponent<ParticleEmitterComponent>();
 
 		EB_CORE_ASSERT(false, "Failed to detach component. Unknown component type: {}", componentTypeStr);
 	}

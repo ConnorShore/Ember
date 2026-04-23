@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "RenderSystem.h"
 #include "PhysicsSystem.h"
+#include "ParticleSystem.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
@@ -166,7 +167,25 @@ namespace Ember {
 		m_PhysicsDebugLineVAO = VertexArray::Create();
 
 		// Notice we dropped the '0' here, using our fixed method!
-		m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+		m_PhysicsDebugLineVAO->AddVertexBuffer(m_PhysicsDebugLineVBO);
+
+		// Particle setup
+		auto quadVAO = PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray();
+		auto quadVBO = quadVAO->GetVertexBuffer();
+		auto quadIBO = quadVAO->GetIndexBuffer();
+		m_ParticleVBO = VertexBuffer::Create(Constants::Renderer::MaxParticles * sizeof(ParticleVertex));
+		m_ParticleVBO->SetLayout({
+			{ ShaderDataType::Float3, "i_Position", true /* Instanced */ },
+			{ ShaderDataType::Float, "i_Rotation", true /* Instanced */ },
+			{ ShaderDataType::Float2, "i_Scale", true  /* Instanced */ },
+			{ ShaderDataType::Float4, "i_Color", true  /* Instanced */ },
+			{ ShaderDataType::UInt, "i_TexIndex", true /* Instanced */}
+		});
+
+		m_ParticleVAO = VertexArray::Create();
+		m_ParticleVAO->AddVertexBuffer(quadVBO);
+		m_ParticleVAO->AddVertexBuffer(m_ParticleVBO);
+		m_ParticleVAO->SetIndexBuffer(quadIBO);
 
 		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
@@ -210,9 +229,10 @@ namespace Ember {
 		if (!isRuntime)
 			RenderInfiniteGrid();
 
+		RenderParticles(scene);
 		RenderBillboards(scene, isRuntime);
 
-		// --- NEW: Draw World-Space 2D BEFORE Post-Processing ---
+		// Draw World-Space 2D BEFORE Post-Processing
 		RenderWorldSpace2D(scene);
 
 		// Post Processing & Tone Mapping
@@ -221,9 +241,10 @@ namespace Ember {
 		// Debug lines
 		RenderDebug(scene);
 
-		// --- NEW: Draw Screen-Space UI AFTER Final Composite ---
+		// Draw Screen-Space UI AFTER Final Composite
 		RenderScreenSpaceUI(scene);
 
+		// Reset any modified render state so other systems aren't affected (like the Editor's Gizmo system)
 		ResetRenderState();
 	}
 
@@ -785,6 +806,125 @@ namespace Ember {
 		m_HdrSceneBuffer->Unbind();
 	}
 
+	void RenderSystem::RenderParticles(Scene* scene)
+	{
+		RenderAction::UseBlending(true);
+		RenderAction::UseDepthTest(true);
+		RenderAction::UseDepthMask(false);
+
+		auto& particleManager = Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
+		auto pool = particleManager.GetParticles(); // Note: Copy or create a list of pointers so we can sort!
+
+		// --- 1. SORT PARTICLES BY DISTANCE ---
+		// (You can optimize this later, but for transparency it is mathematically required)
+		Vector3f camPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
+		std::sort(pool.begin(), pool.end(), [&camPos](const Particle& a, const Particle& b) {
+			return Math::Distance(a.Position, camPos) > Math::Distance(b.Position, camPos); // Back to Front
+			});
+
+		// --- 2. PACK DATA AND ASSIGN TEXTURE SLOTS ---
+		std::vector<ParticleVertex> instanceData;
+		instanceData.reserve(pool.size());
+
+		// Array to track which textures we have bound this frame
+		std::vector<UUID> textureSlots;
+
+		for (const auto& particle : pool)
+		{
+			if (!particle.Active) continue;
+
+			ParticleVertex data;
+			data.Position = particle.Position;
+			data.Color = particle.CurrentColor;
+
+			float speed = Math::Length(particle.Velocity);
+
+			// Calculate the rotation angle based on the velocity vector
+			float velocityAngle = std::atan2(particle.Velocity.y, particle.Velocity.x);
+			if (particle.AlignWithVelocity)
+			{
+				float speed = Math::Length(particle.Velocity);
+				data.Scale = {
+					particle.CurrentScale + (speed * particle.StretchFactor), // X stretches!
+					particle.CurrentScale                                     // Y stays normal
+				};
+
+				// Rotate in direction of velocity vector
+				data.Rotation = std::atan2(particle.Velocity.y, particle.Velocity.x);
+			}
+			else
+			{
+				data.Scale = { particle.CurrentScale, particle.CurrentScale };
+				data.Rotation = particle.Rotation;
+			}
+
+			// Find or assign a texture slot
+			uint32_t textureIndex = 0; // Default to white texture
+			if (particle.TextureHandle != Constants::InvalidUUID)
+			{
+				auto it = std::find(textureSlots.begin(), textureSlots.end(), particle.TextureHandle);
+				if (it != textureSlots.end())
+				{
+					textureIndex = (uint32_t)std::distance(textureSlots.begin(), it) + 1; // +1 because 0 is our default white texture
+				}
+				else
+				{
+					// New texture found! Add it to the list.
+					textureSlots.push_back(particle.TextureHandle);
+					textureIndex = (uint32_t)textureSlots.size();
+				}
+			}
+
+			data.TexIndex = textureIndex;
+			instanceData.push_back(data);
+		}
+
+		if (instanceData.empty())
+			return;
+
+		m_ParticleVBO->SetData(instanceData.data(), (uint32_t)(instanceData.size() * sizeof(ParticleVertex)));
+
+		// --- 3. BIND TEXTURES TO THE GPU ---
+		m_HdrSceneBuffer->Bind();
+		auto particleShad = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
+		particleShad->Bind();
+
+		// Bind Default White Texture to Slot 0
+		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
+		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
+
+		// Bind the rest of the textures found this frame
+		int samplers[32];
+		samplers[0] = 0; // Slot 0
+
+		for (uint32_t i = 0; i < textureSlots.size(); i++)
+		{
+			auto tex = Application::Instance().GetAssetManager().GetAsset<Texture2D>(textureSlots[i]);
+			RenderAction::SetTextureUnit(i + 1, tex->GetID());
+			samplers[i + 1] = i + 1;
+		}
+
+		// Tell the shader about the array of samplers
+		particleShad->SetIntArray("u_Textures", samplers, (uint32_t)textureSlots.size() + 1);
+
+		// The shader needs the camera up/right vectors to build the billboard matrix!
+		Vector3f camRight = Vector3f(m_RenderSceneState.CameraTransform[0]);
+		Vector3f camUp = Vector3f(m_RenderSceneState.CameraTransform[1]);
+		particleShad->SetFloat3(Constants::Uniforms::CameraRight, camRight);
+		particleShad->SetFloat3(Constants::Uniforms::CameraUp, camUp);
+
+		// 4. THE SINGLE DRAW CALL
+		uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
+		uint32_t instanceCount = (uint32_t)instanceData.size();
+
+		RenderAction::DrawIndexedInstanced(m_ParticleVAO, indexCount, instanceCount);
+
+		m_HdrSceneBuffer->Unbind();
+
+		RenderAction::UseDepthMask(true);
+		RenderAction::UseBlending(false);
+	}
+
 	void RenderSystem::RenderBillboards(Scene* scene, bool isRuntime)
 	{
 		auto& registry = scene->GetRegistry();
@@ -974,71 +1114,6 @@ namespace Ember {
 		RenderAction::UseDepthMask(true);
 	}
 
-	//void RenderSystem::HandlePostProcessing(Scene* scene)
-	//{
-	//	auto& registry = scene->GetRegistry();
-
-	//	// TODO: Down the line, passing textures between shaders is slow so eventually want to 
-	//	//  move to only a ping pong shader pass and a final composite shader.
-	//	//  The ping pong pass will handle every post processing effect that needs the ping pong approach
-	//	//  and the final composite shader will be an "uber shader" contain logic for every post processing effect
-	//	//  that doesn't need the ping pong approach (i.e. outline, bloom, vignette, etc)
-	//	//  This will drastically improve performance but will require a bit of an architectural change in how post processing passes are handled, 
-	//	//  so for now we will just handle each post process effect as its own pass and optimize later
-
-	//	RenderAction::UseDepthTest(false);
-
-	//	// Ping-pong between two buffers: each pass reads from currentInput and writes to currentOutput
-	//	SharedPtr<Framebuffer> currentInput = m_HdrSceneBuffer;
-	//	SharedPtr<Framebuffer> currentOutput = m_PostProcessBufferA;
-
-	//	// TODO: Need a more elegant way to handle these special VFX cases
-	//	// Grab outline components for selected entities
-	//	std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
-	//	View view = registry.Query<OutlineComponent>();
-	//	for (EntityID entity : view)
-	//	{
-	//		auto [outline] = registry.GetComponents<OutlineComponent>(entity);
-	//		outlinedEntityMap[entity] = outline;
-	//	}
-
-	//	// Pass over all post processing items
-	//	for (auto& pass : m_PostProcessStack)
-	//	{
-	//		// TODO: Come up with solution for handling special cases
-	//		if (auto outlinePass = DynamicPointerCast<OutlinePass>(pass))
-	//		{
-	//			if (pass->Enabled)
-	//			{
-	//				// Special case for outline pass since it needs the G-Buffer as well as the scene buffer
-	//				for (const auto& [entityID, outline] : outlinedEntityMap)
-	//				{
-	//					outlinePass->SetGBuffer(m_GBuffer);
-	//					outlinePass->SetHdrBuffer(m_HdrSceneBuffer);
-	//					outlinePass->SetSelectedEntityID(entityID);
-	//					outlinePass->SetOutlineColor(outline.Color);
-	//					outlinePass->SetOutlineThickness(outline.Thickness);
-
-	//					pass->Render(currentInput, currentOutput);
-	//					currentInput = currentOutput;
-	//					currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
-	//				}
-	//			}
-	//			
-	//			continue;
-	//		}
-
-	//		if (pass->Enabled)
-	//		{
-	//			pass->Render(currentInput, currentOutput);
-	//			currentInput = currentOutput;
-	//			currentOutput = (currentOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
-	//		}
-	//	}
-
-	//	RenderFinalComposite(currentInput);
-	//}
-
 	void RenderSystem::HandlePostProcessing(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
@@ -1176,7 +1251,7 @@ namespace Ember {
 					{ ShaderDataType::Float3, "v_Position" },
 					{ ShaderDataType::Float4, "v_Color" }
 					});
-				m_PhysicsDebugLineVAO->SetBuffer(m_PhysicsDebugLineVBO);
+				m_PhysicsDebugLineVAO->AddVertexBuffer(m_PhysicsDebugLineVBO);
 			}
 
 			m_PhysicsDebugLineVBO->SetData(vertices.data(), requiredSize);

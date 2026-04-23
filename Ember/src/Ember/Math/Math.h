@@ -227,6 +227,11 @@ namespace Ember {
 			return a + t * (b - a);
 		}
 
+		static inline Vector4f Lerp(const Vector4f& a, const Vector4f& b, float t)
+		{
+			return a + t * (b - a);
+		}
+
 		static inline Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t)
 		{
 			return glm::slerp(a, b, t);
@@ -255,6 +260,11 @@ namespace Ember {
 		static inline Vector3f ProjectOnPlane(const Vector3f& vector, const Vector3f& planeNormal)
 		{
 			return vector - Dot(vector, planeNormal) * planeNormal;
+		}
+
+		static inline float Distance(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::distance(a, b);
 		}
 
 	};

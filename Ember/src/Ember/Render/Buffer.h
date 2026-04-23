@@ -19,14 +19,15 @@ namespace Ember {
 		std::string Name;
 		ShaderDataType DataType;
 		uint32_t Count;
+		bool Instanced;
 		bool Normalize;
 		uint32_t Offset;
 
-		BufferElement(ShaderDataType dataType, const std::string& name, bool normalize = false)
-			: Name(name), DataType(dataType), Count(ShaderDataTypeCount(dataType)), Normalize(normalize), Offset(0) { }
+		BufferElement(ShaderDataType dataType, const std::string& name, bool instanced = false, bool normalize = false)
+			: Name(name), DataType(dataType), Count(ShaderDataTypeCount(dataType)), Instanced(instanced), Normalize(normalize), Offset(0) { }
 
-		BufferElement(ShaderDataType dataType, uint32_t count, bool normalize)
-			: DataType(dataType), Count(count), Normalize(normalize), Offset(0) { }
+		BufferElement(ShaderDataType dataType, uint32_t count, bool instanced = false, bool normalize = false)
+			: DataType(dataType), Count(count), Instanced(instanced), Normalize(normalize), Offset(0) { }
 	};
 
 	//////////////////////////////////////////////////////////////////////////

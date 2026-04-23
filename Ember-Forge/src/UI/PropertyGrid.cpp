@@ -273,8 +273,10 @@ namespace Ember {
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 
 			int numButtons = 0;
-			if (browseFunc) numButtons++;
-			if (clearFunc) numButtons++;
+			if (browseFunc)
+				numButtons++;
+			if (clearFunc)
+				numButtons++;
 
 			float fieldWidth = ImGui::GetContentRegionAvail().x - ((buttonSize + spacing) * numButtons);
 

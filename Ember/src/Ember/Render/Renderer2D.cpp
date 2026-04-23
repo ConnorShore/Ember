@@ -91,7 +91,8 @@ namespace Ember {
 		}
 
 		s_RendererData->QuadIndexBuffer = IndexBuffer::Create({ quadIndexBufferData, s_RendererData->MaxIndices });
-		s_RendererData->QuadVertexArray->SetBuffer(s_RendererData->QuadVertexBuffer, s_RendererData->QuadIndexBuffer);
+		s_RendererData->QuadVertexArray->AddVertexBuffer(s_RendererData->QuadVertexBuffer);
+		s_RendererData->QuadVertexArray->SetIndexBuffer(s_RendererData->QuadIndexBuffer);
 		delete[] quadIndexBufferData;
 
 		// Todo add to shader/texture libraries

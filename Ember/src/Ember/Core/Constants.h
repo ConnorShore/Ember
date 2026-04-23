@@ -22,6 +22,7 @@ namespace Ember::Constants {
 		inline constexpr uint32_t MaxPointLights = 256;
 
 		inline constexpr uint32_t MaxBones = 100;
+		inline constexpr uint32_t MaxParticles = 10000;
 
 		inline constexpr float DefaultAmbient = 0.03f;
 	}
@@ -84,6 +85,8 @@ namespace Ember::Constants {
 		inline const uint64_t FXAAShadUUID = 29;
 		inline const char* BlitShad = "Blit";
 		inline const uint64_t BlitShadUUID = 1000;
+		inline const char* ParticleShad = "Particle";
+		inline const uint64_t ParticleShadUUID = 1001;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
@@ -118,6 +121,8 @@ namespace Ember::Constants {
 		inline const char* NormalMatrix = "u_NormalMatrix";
 		inline const char* InverseView = "u_InverseView";
 		inline const char* InverseProjection = "u_InverseProjection";
+		inline const char* CameraUp = "u_CameraUp";
+		inline const char* CameraRight = "u_CameraRight";
 
 		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";

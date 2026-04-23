@@ -346,6 +346,39 @@ namespace Ember {
 			poolConfigNode["Capacity"] << poolConfig.Capacity;
 			poolConfigNode["PrefabHandle"] << (uint64_t)poolConfig.PrefabHandle;
 		}
+		if (entity.ContainsComponent<ParticleEmitterComponent>())
+		{
+			auto& emitter = entity.GetComponent<ParticleEmitterComponent>();
+			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
+			emitterNode |= ryml::MAP;
+			emitterNode["EmissionRate"] << emitter.EmissionRate;
+			Util::SerializeVector3f(emitterNode["Velocity"], emitter.Velocity);
+			Util::SerializeVector3f(emitterNode["VelocityVariation"], emitter.VelocityVariation);
+
+			emitterNode["Drag"] << emitter.Drag;
+
+			emitterNode["AngularVelocity"] << emitter.AngularVelocity;
+			emitterNode["AngularVelocityVariation"] << emitter.AngularVelocityVariation;
+
+			Util::SerializeVector4f(emitterNode["ColorBegin"], emitter.ColorBegin);
+			Util::SerializeVector4f(emitterNode["ColorEnd"], emitter.ColorEnd);
+
+			emitterNode["ScaleBegin"] << emitter.ScaleBegin;
+			emitterNode["ScaleEnd"] << emitter.ScaleEnd;
+			emitterNode["ScaleVariation"] << emitter.ScaleVariation;
+
+			emitterNode["TextureHandle"] << (uint64_t)emitter.TextureHandle;
+
+			emitterNode["Lifetime"] << emitter.Lifetime;
+			emitterNode["LifetimeVariation"] << emitter.LifetimeVariation;
+
+			emitterNode["GravityMultiplier"] << emitter.GravityMultiplier;
+
+			emitterNode["AlignWithVelocity"] << emitter.AlignWithVelocity;
+			emitterNode["StretchFactor"] << emitter.StretchFactor;
+
+			emitterNode["IsActive"] << emitter.IsActive;
+		}
 	}
 
 	// =========================================================================
@@ -833,6 +866,33 @@ namespace Ember {
 			pcc.PrefabHandle = (UUID)prefabId;
 
 			deserializedEntity.AttachComponent<PoolConfigComponent>(pcc);
+		}
+
+		if (entityNode.has_child("ParticleEmitterComponent"))
+		{
+			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
+			ParticleEmitterComponent pec;
+			emitterNode["EmissionRate"] >> pec.EmissionRate;
+			Util::DeserializeVector3f(emitterNode["Velocity"], pec.Velocity);
+			Util::DeserializeVector3f(emitterNode["VelocityVariation"], pec.VelocityVariation);
+			emitterNode["Drag"] >> pec.Drag;
+			emitterNode["AngularVelocity"] >> pec.AngularVelocity;
+			emitterNode["AngularVelocityVariation"] >> pec.AngularVelocityVariation;
+			Util::DeserializeVector4f(emitterNode["ColorBegin"], pec.ColorBegin);
+			Util::DeserializeVector4f(emitterNode["ColorEnd"], pec.ColorEnd);
+			emitterNode["ScaleBegin"] >> pec.ScaleBegin;
+			emitterNode["ScaleEnd"] >> pec.ScaleEnd;
+			emitterNode["ScaleVariation"] >> pec.ScaleVariation;
+			uint64_t texId;
+			emitterNode["TextureHandle"] >> texId;
+			pec.TextureHandle = (UUID)texId;
+			emitterNode["Lifetime"] >> pec.Lifetime;
+			emitterNode["LifetimeVariation"] >> pec.LifetimeVariation;
+			emitterNode["GravityMultiplier"] >> pec.GravityMultiplier;
+			emitterNode["AlignWithVelocity"] >> pec.AlignWithVelocity;
+			emitterNode["StretchFactor"] >> pec.StretchFactor;
+			emitterNode["IsActive"] >> pec.IsActive;
+			deserializedEntity.AttachComponent<ParticleEmitterComponent>(pec);
 		}
 	}
 
