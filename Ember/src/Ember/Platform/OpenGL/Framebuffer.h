@@ -19,9 +19,12 @@ namespace Ember {
 
 			virtual void AttachColorTexture(uint32_t textureId, int mipLevel = 0) override;
 			virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) override;
+			virtual void AttachDepthTextureLayer(uint32_t textureId, uint32_t mipLevel, uint32_t layer) override;
 
 			virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
 			virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;
+
+			virtual void SetDepthBorderColor(const Vector4f& color) override;
 
 			virtual inline uint32_t GetColorAttachmentID(uint32_t id) const override 
 			{

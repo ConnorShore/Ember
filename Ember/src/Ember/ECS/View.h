@@ -24,6 +24,27 @@ namespace Ember {
 		}
 		~View() = default;
 
+		EntityID Front() const
+		{
+			for (EntityID entity : m_Registry->GetActiveEntities<Driver>())
+			{
+				bool hasFilters = true;
+				if constexpr (sizeof...(Filters) > 0)
+					hasFilters = m_Registry->ContainsComponents<Filters...>(entity);
+				bool hasExcludes = false;
+				if constexpr (sizeof...(Excludes) > 0)
+					hasExcludes = (m_Registry->ContainsComponent<Excludes>(entity) || ...);
+				if (hasFilters && !hasExcludes)
+					return entity;
+			}
+			return Constants::Entities::InvalidEntityID;
+		}
+
+		bool Empty() const
+		{
+			return Front() == Constants::Entities::InvalidEntityID;
+		}
+
 		struct Iterator
 		{
 		public:

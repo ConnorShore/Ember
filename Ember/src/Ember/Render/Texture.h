@@ -4,6 +4,23 @@
 
 namespace Ember {
 
+	//////////////////////////////////////////////////////////////////////////
+	// Texture Format Utils
+	//////////////////////////////////////////////////////////////////////////
+
+	enum class TextureFormat
+	{
+		None = 0,
+		R8,
+		RG8,
+		RGB8,
+		RG16F,
+		RGB16F,
+		RGBA8,
+		RGBA16F,
+		RedInteger
+	};
+
 	// TODO: integrate texture type into textures
 	enum class TextureType
 	{

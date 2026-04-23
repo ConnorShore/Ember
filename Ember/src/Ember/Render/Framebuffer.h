@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ember/Core/Core.h"
+#include "Ember/Math/Math.h"
 
 #include <vector>
 
@@ -19,6 +20,7 @@ namespace Ember {
 		// Depth acts as a sentinel: any format >= Depth is a depth/stencil attachment
 		Depth,
 		Depth24,
+		Depth32,
 		Depth24Stencil8 = Depth,
 	};
 
@@ -50,6 +52,7 @@ namespace Ember {
 	{
 		uint32_t Width = 1;
 		uint32_t Height = 1;
+		uint32_t Layers = 1; // For texture arrays and 3D textures
 
 		FramebufferAttachmentSpecification AttachmentSpecs;
 	};
@@ -69,9 +72,12 @@ namespace Ember {
 
 		virtual void AttachColorTexture(uint32_t textureId, int mipLevel = 0) = 0;
 		virtual void AttachColorTextureLayer(uint32_t textureId, int mipLevel, int layer) = 0;
+		virtual void AttachDepthTextureLayer(uint32_t textureId, uint32_t mipLevel, uint32_t layer) = 0;
 
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const = 0;
 		virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) = 0;
+
+		virtual void SetDepthBorderColor(const Vector4f& color) = 0;
 
 		virtual uint32_t GetID() const = 0;
 

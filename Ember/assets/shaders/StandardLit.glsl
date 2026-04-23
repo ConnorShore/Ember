@@ -51,19 +51,21 @@ layout(binding = 0) uniform sampler2D u_AlbedoRoughness;
 layout(binding = 1) uniform sampler2D u_NormalMetallic;
 layout(binding = 2) uniform sampler2D u_PositionAO;
 layout(binding = 3) uniform sampler2D u_EmissionOut;
-layout(binding = 4) uniform sampler2D u_DirectionShadowMap;
-layout(binding = 5) uniform sampler2D u_SpotShadowMap;
+layout(binding = 4) uniform sampler2DArray u_DirectionShadowMap;
+layout(binding = 5) uniform sampler2DArray u_SpotShadowMap;
 layout(binding = 6) uniform samplerCube u_IrradianceMap;
 layout(binding = 7) uniform samplerCube u_PrefilterMap;
 layout(binding = 8) uniform sampler2D u_BRDFLUT;
 
 uniform vec3 u_CameraPos;
+uniform vec3 u_CameraForward;
 uniform float u_EnvironmentIntensity;
 
 layout(std140, binding = 1) uniform ShadowData
 {
-	mat4 u_DirectionalLightViewMat;
-	mat4 u_SpotLightViewMat;
+    mat4 u_DirectionalShadowMatrices[3];
+    mat4 u_SpotLightMatrix;
+    vec4 u_CascadeSplits;
 };
 
 layout(std140, binding = 2) uniform LightDataBlock
@@ -105,39 +107,41 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
+float CalculateShadow(vec4 posLightSpace, sampler2DArray shadowMap, float bias, float layer)
 {
 	if (posLightSpace.w <= 0.0)
-        return 0.0;
+		return 0.0;
 
-	// perform perspective divide
-    vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
+	vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
+	projCoords = projCoords * 0.5 + 0.5;
 	
-    // transform to [0,1] range
-    projCoords = projCoords * 0.5 + 0.5;
-	
-	// If it's outside the light's frustum entirely, it is NOT in shadow!
 	if(projCoords.z > 1.0 || projCoords.x > 1.0 || projCoords.x < 0.0 || projCoords.y > 1.0 || projCoords.y < 0.0)
-        return 0.0;
+		return 0.0;
 
-    // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
-
-	// PCF
+	float currentDepth = projCoords.z;
 	float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
+	
+	// A spread of 1.0 to 1.2 is usually best for a 5x5 kernel
+	float pcfSpread = 1.0; 
+	vec2 texelSize = (1.0 / vec2(textureSize(shadowMap, 0).xy)) * pcfSpread;
+	
+	// --- 5x5 PCF KERNEL ---
+	int halfKernel = 2; 
+	float sampleCount = 0.0;
+	
+	for(int x = -halfKernel; x <= halfKernel; ++x)
+	{
+		for(int y = -halfKernel; y <= halfKernel; ++y)
+		{
 			vec2 clampedUV = clamp(projCoords.xy + vec2(x, y) * texelSize, 0.0, 1.0);
-            float pcfDepth = texture(shadowMap, clampedUV).r; 
-            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
-        }    
-    }
-    shadow /= 9.0;
+			float pcfDepth = texture(shadowMap, vec3(clampedUV, layer)).r;
+			shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
+			sampleCount += 1.0;
+		}    
+	}
+	shadow /= sampleCount; // Divides by 25.0
 
-    return shadow;
+	return shadow;
 }
 
 vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actualAlbedo, float metallic, float roughness)
@@ -148,11 +152,74 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		vec3 L = normalize(-u_DirectionalLights[i].Direction);
 		vec3 H = normalize(V + L);
 
-		float dirBias = max(0.005 * (1.0 - dot(N, L)), 0.0005);
+		// --- CSM LAYER SELECTION ---
+		// 1. Calculate how far this pixel is from the camera
+		float depthValue = abs(dot(gPosition - u_CameraPos, u_CameraForward));
+
+		// 2. Figure out which cascade this pixel belongs to using the splits!
+		int layer = 2;
+		if (depthValue < u_CascadeSplits.x)
+			layer = 0;
+		else if (depthValue < u_CascadeSplits.y)
+			layer = 1;
+
+		// --- CASCADE BLENDING LOGIC ---
+		// Define how wide the transition zone is (e.g., blend over 3.0 world units)
+		float blendDistance = 3.0; 
+		float blendFactor = 0.0;
+		int nextLayer = layer;
+
+		// Calculate if we are close to the edge of our current cascade
+		if (layer == 0) 
+		{
+			float distToSplit = u_CascadeSplits.x - depthValue;
+			if (distToSplit < blendDistance) 
+			{
+				blendFactor = 1.0 - (distToSplit / blendDistance);
+				nextLayer = 1;
+			}
+		} 
+		else if (layer == 1) 
+		{
+			float distToSplit = u_CascadeSplits.y - depthValue;
+			if (distToSplit < blendDistance) 
+			{
+				blendFactor = 1.0 - (distToSplit / blendDistance);
+				nextLayer = 2;
+			}
+		}
+
+		// --- PRIMARY SHADOW SAMPLE ---
+		// 1. Scale the depth bias down for larger cascades!
+		float depthBiases[3] = float[](0.0005, 0.00005, 0.000005);
+		float constantDepthBias = depthBiases[layer];
+
+		// 2. Scale the normal bias up for larger cascades (because pixels get physically wider!)
+		float normalBiasMultipliers[3] = float[](0.05, 0.15, 0.5); 
 		
-		// Set shadow value
-		vec4 PosLightSpace = u_DirectionalLightViewMat * vec4(gPosition, 1.0);
-		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, dirBias);
+		float normalOffset = normalBiasMultipliers[layer] * (1.0 - max(dot(N, L), 0.0));
+		
+		// Push the position!
+		vec3 biasedPosition = gPosition + (N * normalOffset);
+		vec4 PosLightSpace = u_DirectionalShadowMatrices[layer] * vec4(biasedPosition, 1.0);
+		
+		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, constantDepthBias, float(layer));
+
+		// --- SECONDARY BLEND SAMPLE ---
+		if (blendFactor > 0.0) 
+		{
+			float nextConstantDepthBias = depthBiases[nextLayer]; // Get the correct depth bias!
+			float nextNormalOffset = normalBiasMultipliers[nextLayer] * (1.0 - max(dot(N, L), 0.0));
+			
+			vec3 nextBiasedPosition = gPosition + (N * nextNormalOffset);
+			vec4 nextPosLightSpace = u_DirectionalShadowMatrices[nextLayer] * vec4(nextBiasedPosition, 1.0);
+			
+			float nextShadow = CalculateShadow(nextPosLightSpace, u_DirectionShadowMap, nextConstantDepthBias, float(nextLayer));
+			
+			// Smoothly blend
+			shadow = mix(shadow, nextShadow, blendFactor);
+		}
+		// ------------------------------
 
 		float attenuation = 1.0;
 		vec3 radiance = u_DirectionalLights[i].Color * u_DirectionalLights[i].Intensity * attenuation;
@@ -164,15 +231,13 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		float G = max(GeometrySchlickGGXSub(N, V, roughness), 0.0) * max(GeometrySchlickGGXSub(N, L, roughness), 0.0);
 		vec3 F = Fresnel(V, H, F0);
 
-		vec3 KS = F;				// Specular factor
-		vec3 KD = vec3(1.0) - KS;	// diffuse factor
+		vec3 KS = F;
+		vec3 KD = vec3(1.0) - KS;
 		KD *= 1.0f - metallic;
 
 		vec3 numerator = D * G * F;
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 		vec3 specular =  numerator / denomenator;
-
-
 
 		result += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 	}
@@ -200,8 +265,8 @@ vec3 ApplySpotLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actual
 		{
 			float spotBias = max(0.0005 * (1.0 - dot(N, L)), 0.00005);
 
-			vec4 PosLightSpace = u_SpotLightViewMat * vec4(gPosition, 1.0);
-			float shadow = CalculateShadow(PosLightSpace, u_SpotShadowMap, spotBias);
+			vec4 PosLightSpace = u_SpotLightMatrix * vec4(gPosition, 1.0);
+			float shadow = CalculateShadow(PosLightSpace, u_SpotShadowMap, spotBias, 0.0);
 
 			float distance = length(u_SpotLights[i].Position - gPosition);
 			float attenuation = 1.0 / (distance * distance);

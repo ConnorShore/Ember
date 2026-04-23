@@ -1,24 +1,12 @@
 #include "ebpch.h"
 #include "Texture2D.h"
-#include "stb_image.h"
+#include "Ember/Platform/OpenGL/Utils/TextureUtils.h"
 
+#include "stb_image.h"
 #include <glad/glad.h>
 
 namespace Ember {
 	namespace OpenGL {
-
-		static GLint BytesPerPixelToGlType(int bytesPerPixel)
-		{
-			switch (bytesPerPixel)
-			{
-			case 1: return GL_RED;
-			case 2: return GL_RG;
-			case 3: return GL_RGB;
-			case 4: 
-			default:
-				return GL_RGBA;
-			}
-		}
 
 		Texture2D::Texture2D()
 			: Texture2D("Default", 1, 1, nullptr)

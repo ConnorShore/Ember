@@ -17,6 +17,7 @@ namespace Ember {
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
 			case FramebufferTextureFormat::RedInteger:		return GL_R32I;
 			case FramebufferTextureFormat::Depth24: 		return GL_DEPTH_COMPONENT24;
+			case FramebufferTextureFormat::Depth32: 		return GL_DEPTH_COMPONENT32;
 			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH24_STENCIL8;
 			case FramebufferTextureFormat::None:			return 0;
 			default:
@@ -33,7 +34,8 @@ namespace Ember {
 			case FramebufferTextureFormat::RG16F:
 			case FramebufferTextureFormat::RGBA16F:
 			case FramebufferTextureFormat::RedInteger:		return GL_COLOR_ATTACHMENT0 + index;
-			case FramebufferTextureFormat::Depth24:			return GL_DEPTH_ATTACHMENT;
+			case FramebufferTextureFormat::Depth24:
+			case FramebufferTextureFormat::Depth32:			return GL_DEPTH_ATTACHMENT;
 			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			case FramebufferTextureFormat::None:			return 0;
 			default:
@@ -87,6 +89,11 @@ namespace Ember {
 			glNamedFramebufferTextureLayer(m_Id, GL_COLOR_ATTACHMENT0, textureId, mipLevel, layer);
 		}
 
+		void Framebuffer::AttachDepthTextureLayer(uint32_t textureId, uint32_t mipLevel, uint32_t layer)
+		{
+			glNamedFramebufferTextureLayer(m_Id, GL_DEPTH_ATTACHMENT, textureId, mipLevel, layer);
+		}
+
 		// Reads a single pixel from an integer color attachment (used for entity ID picking)
 		int Framebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y) const
 		{
@@ -99,6 +106,18 @@ namespace Ember {
 		void Framebuffer::ClearAttachment(uint32_t attachmentIndex, int& clearValue)
 		{
 			glClearNamedFramebufferiv(m_Id, GL_COLOR, attachmentIndex, &clearValue);
+		}
+
+		void Framebuffer::SetDepthBorderColor(const Vector4f& color)
+		{
+			if (m_DepthAttachment == 0)
+				return;
+
+			glTextureParameteri(m_DepthAttachment, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTextureParameteri(m_DepthAttachment, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+			float colorArr[4] = { color.x, color.y, color.z, color.w };
+			glTextureParameterfv(m_DepthAttachment, GL_TEXTURE_BORDER_COLOR, colorArr);
 		}
 
 		// Tears down existing GPU resources and rebuilds all attachments from the spec.
@@ -130,15 +149,26 @@ namespace Ember {
 				{
 					// Create the color texture
 					uint32_t textureId;
-					glCreateTextures(GL_TEXTURE_2D, 1, &textureId);
-					glTextureStorage2D(textureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
+					if (m_Specification.Layers == 1)
+					{
+						glCreateTextures(GL_TEXTURE_2D, 1, &textureId);
+						glTextureStorage2D(textureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
+					}
+					else
+					{
+						glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &textureId);
+						glTextureStorage3D(textureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height, m_Specification.Layers);
+					}
 
 					glTextureParameteri(textureId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 					glTextureParameteri(textureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 					glTextureParameteri(textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTextureParameteri(textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-					glNamedFramebufferTexture(m_Id, glAttachment, textureId, 0);
+					if (m_Specification.Layers == 1)
+						glNamedFramebufferTexture(m_Id, glAttachment, textureId, 0);
+					else
+						glNamedFramebufferTextureLayer(m_Id, glAttachment, textureId, 0, 0);
 
 					drawBuffers.push_back(glAttachment);
 					m_ColorAttachments.push_back(textureId);
@@ -153,9 +183,19 @@ namespace Ember {
 					}
 
 					uint32_t depthTextureId;
-					glCreateTextures(GL_TEXTURE_2D, 1, &depthTextureId);
-					glTextureStorage2D(depthTextureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
-					glNamedFramebufferTexture(m_Id, glAttachment, depthTextureId, 0);
+					if (m_Specification.Layers == 1)
+					{
+						glCreateTextures(GL_TEXTURE_2D, 1, &depthTextureId);
+						glTextureStorage2D(depthTextureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height);
+						glNamedFramebufferTexture(m_Id, glAttachment, depthTextureId, 0);
+					}
+					else
+					{
+						glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &depthTextureId);
+						glTextureStorage3D(depthTextureId, 1, glColorFormat, m_Specification.Width, m_Specification.Height, m_Specification.Layers);
+						glNamedFramebufferTextureLayer(m_Id, glAttachment, depthTextureId, 0, 0);
+					}
+					
 
 					m_DepthAttachment = depthTextureId;
 					containsDepth = true;

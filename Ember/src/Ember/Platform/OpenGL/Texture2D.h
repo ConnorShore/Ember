@@ -7,6 +7,11 @@
 namespace Ember {
 	namespace OpenGL {
 
+		uint32_t TextureFormatToOpenGLInternalFormat(TextureFormat format);
+		TextureFormat TextureFormatFromOpenGLInternalFormat(uint32_t internalFormat);
+
+		uint32_t TextureFormatToBytesPerPixel(TextureFormat format);
+
 		class Texture2D : public Ember::Texture2D
 		{
 		public:
