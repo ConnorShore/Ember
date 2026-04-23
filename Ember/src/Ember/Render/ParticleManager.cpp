@@ -1,7 +1,9 @@
 #include "ebpch.h"
 #include "ParticleManager.h"
 
+#include "Ember/Core/Application.h"
 #include "Ember/Core/Random.h"
+#include "Ember/ECS/System/PhysicsSystem.h"
 
 namespace Ember {
 
@@ -21,6 +23,8 @@ namespace Ember {
 		particle.Active = true;
 		particle.Position = position;
 
+		particle.GravityMultiplier = component.GravityMultiplier;
+
 		// Apply props with variation when necessary
 		particle.Velocity = component.Velocity + component.VelocityVariation * Vector3f(
 			Random::Float() - 0.5f,
@@ -34,8 +38,8 @@ namespace Ember {
 		particle.ScaleBegin = component.ScaleBegin + component.ScaleVariation * (Random::Float() - 0.5f);
 		particle.ScaleEnd = component.ScaleEnd;
 
-		particle.LifeTime = component.LifeTime + component.LifeTimeVariation * (Random::Float() - 0.5f);
-		particle.LifeRemaining = particle.LifeTime;
+		particle.Lifetime = component.Lifetime + component.LifetimeVariation * (Random::Float() - 0.5f);
+		particle.LifeRemaining = particle.Lifetime;
 
 		particle.TextureHandle = component.TextureHandle;
 
@@ -45,6 +49,9 @@ namespace Ember {
 
 	void ParticleManager::OnUpdate(TimeStep delta)
 	{
+		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
+		Vector3f gravity = physicsSystem->GetSettings().GravityVector * physicsSystem->GetSettings().GravityStrength;
+
 		for (auto& particle : m_ParticlePool)
 		{
 			if (!particle.Active)
@@ -57,10 +64,12 @@ namespace Ember {
 			}
 
 			particle.LifeRemaining -= delta;
+			
+			particle.Velocity += gravity * particle.GravityMultiplier * (float)delta;	// Apply gravity
 			particle.Position += particle.Velocity * (float)delta;
 
 			// Interpolate color and scale based on Life ratio!
-			float lifeRatio = particle.LifeRemaining / particle.LifeTime;
+			float lifeRatio = particle.LifeRemaining / particle.Lifetime;
 
 			// Update particle color/scale based on emitter's start/end props and life ratio
 			particle.CurrentColor = Math::Lerp(particle.ColorEnd, particle.ColorBegin, lifeRatio);

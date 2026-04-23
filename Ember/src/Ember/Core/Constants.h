@@ -121,6 +121,8 @@ namespace Ember::Constants {
 		inline const char* NormalMatrix = "u_NormalMatrix";
 		inline const char* InverseView = "u_InverseView";
 		inline const char* InverseProjection = "u_InverseProjection";
+		inline const char* CameraUp = "u_CameraUp";
+		inline const char* CameraRight = "u_CameraRight";
 
 		inline const char* Image = "u_Image";
 		inline const char* Color = "u_Color";

@@ -43,6 +43,22 @@ namespace Ember {
 			"Color", &TextComponent::Color
 		);
 
+		state.new_usertype<ParticleEmitterComponent>("ParticleEmitterComponent",
+			"EmissionRate", &ParticleEmitterComponent::EmissionRate,
+			"Velocity", &ParticleEmitterComponent::Velocity,
+			"VelocityVariation", &ParticleEmitterComponent::VelocityVariation,
+			"ColorBegin", &ParticleEmitterComponent::ColorBegin,
+			"ColorEnd", &ParticleEmitterComponent::ColorEnd,
+			"ScaleBegin", &ParticleEmitterComponent::ScaleBegin,
+			"ScaleEnd", &ParticleEmitterComponent::ScaleEnd,
+			"ScaleVariation", &ParticleEmitterComponent::ScaleVariation,
+			"TextureHandle", &ParticleEmitterComponent::TextureHandle,
+			"Lifetime", &ParticleEmitterComponent::Lifetime,
+			"LifetimeVariation", &ParticleEmitterComponent::LifetimeVariation,
+			"GravityMultiplier", &ParticleEmitterComponent::GravityMultiplier,
+			"IsActive", &ParticleEmitterComponent::IsActive
+		);
+
 		state.new_usertype<CameraComponent>("CameraComponent",
 			"IsActive", &CameraComponent::IsActive,
 			"ProjectionType", sol::property(

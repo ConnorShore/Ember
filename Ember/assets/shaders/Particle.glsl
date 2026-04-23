@@ -9,6 +9,7 @@ layout(location = 2) in vec2 v_TexCoord;
 layout(location = 5) in vec3 i_Position;
 layout(location = 6) in float i_Scale;
 layout(location = 7) in vec4 i_Color;
+layout(location = 8) in uint i_TexIndex;
 
 layout(std140, binding = 0) uniform Camera
 {
@@ -20,11 +21,13 @@ uniform vec3 u_CameraUp;
 
 out vec4 Color;
 out vec2 TexCoord;
+flat out uint TexIndex; // Pass the texture
 
 void main()
 {
     Color = i_Color;
     TexCoord = v_TexCoord;
+    TexIndex = i_TexIndex;
     
     // Build a spherical billboard using the camera vectors!
     vec3 vertexPos = i_Position 
@@ -39,13 +42,14 @@ void main()
 
 in vec4 Color;
 in vec2 TexCoord;
+flat in uint TexIndex;
 
 out vec4 OutColor;
 
-uniform sampler2D u_Image; 
+uniform sampler2D u_Textures[32]; // Maximum texture slots
 
 void main()
 {
-    vec4 texColor = texture(u_Image, TexCoord); 
+    vec4 texColor = texture(u_Textures[TexIndex], TexCoord); 
     OutColor = texColor * Color;
 }

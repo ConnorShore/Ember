@@ -633,6 +633,8 @@ namespace Ember {
 		float EmissionRate = 50.0f;
 		float EmissionAccumulator = 0.0f; // Runtime only: Accumulates time to determine when to emit particles
 
+		float GravityMultiplier = 0.0f; // How much gravity affects the particles (0 = no gravity, 1 = normal gravity, -1 = floats up)
+
 		// Physics
 		Vector3f Velocity = { 0.0f, 1.0f, 0.0f };
 		Vector3f VelocityVariation = { 0.5f, 0.1f, 0.5f };
@@ -647,8 +649,8 @@ namespace Ember {
 
 		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
 
-		float LifeTime = 1.0f;
-		float LifeTimeVariation = 0.2f;
+		float Lifetime = 1.0f;
+		float LifetimeVariation = 0.2f;
 
 		bool IsActive = true;
 

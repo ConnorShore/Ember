@@ -262,6 +262,11 @@ namespace Ember {
 			return vector - Dot(vector, planeNormal) * planeNormal;
 		}
 
+		static inline float Distance(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::distance(a, b);
+		}
+
 	};
 
 }

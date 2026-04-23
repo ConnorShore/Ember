@@ -364,8 +364,10 @@ namespace Ember {
 
 			emitterNode["TextureHandle"] << (uint64_t)emitter.TextureHandle;
 
-			emitterNode["LifeTime"] << emitter.LifeTime;
-			emitterNode["LifeTimeVariation"] << emitter.LifeTimeVariation;
+			emitterNode["Lifetime"] << emitter.Lifetime;
+			emitterNode["LifetimeVariation"] << emitter.LifetimeVariation;
+
+			emitterNode["GravityMultiplier"] << emitter.GravityMultiplier;
 
 			emitterNode["IsActive"] << emitter.IsActive;
 		}
@@ -873,8 +875,9 @@ namespace Ember {
 			uint64_t texId;
 			emitterNode["TextureHandle"] >> texId;
 			pec.TextureHandle = (UUID)texId;
-			emitterNode["LifeTime"] >> pec.LifeTime;
-			emitterNode["LifeTimeVariation"] >> pec.LifeTimeVariation;
+			emitterNode["Lifetime"] >> pec.Lifetime;
+			emitterNode["LifetimeVariation"] >> pec.LifetimeVariation;
+			emitterNode["GravityMultiplier"] >> pec.GravityMultiplier;
 			emitterNode["IsActive"] >> pec.IsActive;
 			deserializedEntity.AttachComponent<ParticleEmitterComponent>(pec);
 		}

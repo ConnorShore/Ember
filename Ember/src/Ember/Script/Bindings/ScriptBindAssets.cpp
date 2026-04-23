@@ -43,16 +43,22 @@ namespace Ember {
 
 	void BindAssets(sol::state& state)
 	{
+		sol::table assetManager = state.create_named_table("AssetManager");
+		assetManager.set_function("GetAsset", [&state](const std::string& typeName, const std::string& assetName) -> sol::object {
+			return GetAssetFromTypeString(typeName, assetName, state);
+		});
+
 		state.new_usertype<Animation>("Animation",
 			"GetUUID", [](Animation& anim) { return anim.GetUUID(); },
 			"GetName", [](Animation& anim) { return anim.GetName(); },
 			"GetDuration", [](Animation& anim) { return anim.GetDuration(); }
 		);
 
-		sol::table assetManager = state.create_named_table("AssetManager");
-		assetManager.set_function("GetAsset", [&state](const std::string& typeName, const std::string& assetName) -> sol::object {
-			return GetAssetFromTypeString(typeName, assetName, state);
-		});
+		state.new_usertype<Texture>("Texture",
+			"GetUUID", [](Texture& tex) { return tex.GetUUID(); },
+			"GetName", [](Texture& tex) { return tex.GetName(); }
+		);
+
 	}
 
 }
