@@ -62,9 +62,6 @@ namespace Ember {
 		auto blitShad = Load<Shader>(Constants::Assets::BlitShadUUID, Constants::Assets::BlitShad, "Ember/assets/shaders/FinalBlit.glsl");
 		auto particleShad = Load<Shader>(Constants::Assets::ParticleShadUUID, Constants::Assets::ParticleShad, "Ember/assets/shaders/Particle.glsl");
 
-		//test shader
-		//auto testShader = Load<Shader>(9999, "TestShader", "Ember/assets/shaders/Test.glsl");
-
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);
 		geometryMaterial->SetUniform(Constants::Uniforms::Albedo, Vector3f(0.75f));

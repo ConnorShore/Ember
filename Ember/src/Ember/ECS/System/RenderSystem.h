@@ -73,8 +73,6 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
-		//SharedPtr<Texture2DArray> m_TestTextureArray;
-		//float m_SceneTime = 0.0f;
 		SharedPtr<StaticMesh> m_ScreenQuad;
 
 		SharedPtr<Framebuffer> m_GBuffer;

@@ -304,25 +304,6 @@ namespace Ember {
 		m_ParticleVAO->AddVertexBuffer(m_ParticleVBO);
 		m_ParticleVAO->SetIndexBuffer(quadIBO);
 
-		//TESTER
-		// 1x1 pixel, 4 bytes per pixel (RGBA)
-		//uint32_t width = 1;
-		//uint32_t height = 1;
-		//uint32_t layers = 3;
-
-		//// Create 12 bytes of raw data (3 layers * 1 pixel * 4 channels)
-		//unsigned char textureData[12] = {
-		//	255, 0, 0, 255,    // Layer 0: Solid Red
-		//	0, 255, 0, 255,    // Layer 1: Solid Green
-		//	0, 0, 255, 255     // Layer 2: Solid Blue
-		//};
-
-		//// Create the Array using your new class!
-		//m_TestTextureArray = Texture2DArray::Create(
-		//	Constants::InvalidUUID, "TestArray", Ember::TextureFormat::RGBA8,
-		//	width, height, layers, textureData, false
-		//);
-
 		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
 	}
@@ -373,35 +354,6 @@ namespace Ember {
 
 		// Draw World-Space 2D BEFORE Post-Processing
 		RenderWorldSpace2D(scene);
-
-
-
-		//// --- TEXTURE ARRAY TEST ---
-		//m_HdrSceneBuffer->Bind(); // Or whichever buffer you want to see this on
-
-		//auto testShader = Application::Instance().GetAssetManager().GetAsset<Shader>("TestShader");
-		//testShader->Bind();
-
-		//// Cycle through 0, 1, and 2 every second
-		////float time = Application::Instance().GetTime();
-		//m_SceneTime += 0.01f;
-		//float currentLayer = std::fmod(m_SceneTime, 3.0f); // Will smoothly transition 0 -> 1 -> 2
-		//currentLayer = std::floor(currentLayer);    // Snap it to integer values (0.0, 1.0, 2.0)
-
-		//testShader->SetFloat("u_LayerToTest", currentLayer);
-		//testShader->SetInt("u_TextureArray", 0);
-
-		//m_TestTextureArray->Bind(0);
-
-		//// Use your existing 2D renderer or PrimitiveGenerator to draw a simple quad in front of the camera
-		//Matrix4f quadTransform = m_RenderSceneState.CameraTransform * Math::Translate({ 0.0f, 0.0f, -5.0f }) * Math::Scale({ 2.0f, 2.0f, 1.0f });
-		//testShader->SetMatrix4(Constants::Uniforms::Transform, quadTransform);
-		//testShader->SetMatrix4(Constants::Uniforms::ViewProj, m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform));
-
-		//Renderer3D::Submit(PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray());
-
-		//m_HdrSceneBuffer->Unbind();
-		//// -------------------------
 
 		// Post Processing & Tone Mapping
 		HandlePostProcessing(scene);
@@ -517,45 +469,6 @@ namespace Ember {
 		CreateDirectionalShadowMap(scene);
 		CreateSpotlightShadowMap(scene);
 	}
-
-	//void RenderSystem::CreateDirectionalShadowMap(Scene* scene)
-	//{
-	//	auto& registry = scene->GetRegistry();
-
-	//	// Get directional light view matrix to create shadow map
-	//	View lightView = registry.ActiveQuery<DirectionalLightComponent, TransformComponent>();
-	//	uint32_t index = 0;
-	//	for (EntityID entity : lightView)
-	//	{
-	//		if (index >= Constants::Renderer::MaxDirectionalLights)
-	//			break;
-
-	//		auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
-	//		Vector3f lightDirection = transform.GetForward();
-
-	//		// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-	//		//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f,500.0f);
-	//		Matrix4f lightProjection = Math::Orthographic(-25.0f, 25.0f, -25.0f, 25.0f, -20.0f, 200.0f);
-
-	//		Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
-	//		Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
-	//		Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
-
-	//		// Avoid degenerate LookAt when light points straight up/down
-	//		if (std::abs(lightDirection.y) > 0.99f)
-	//			up = Vector3f(0.0f, 0.0f, 1.0f);
-
-	//		Matrix4f lightView = Math::LookAt(eye, target, up);
-	//		m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
-
-	//		// Set uniform buffer for directional light (offset 0)
-	//		m_ShadowUniformBuffer->SetData(&m_RenderSceneState.DirectionalLightViewMatrix, sizeof(Matrix4f), 0);
-
-	//		index++;
-	//	}
-
-	//	RenderGeometryForShadowMaps(scene, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
-	//}
 
 	void RenderSystem::CreateDirectionalShadowMap(Scene* scene)
 	{
