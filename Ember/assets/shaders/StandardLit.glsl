@@ -58,6 +58,7 @@ layout(binding = 7) uniform samplerCube u_PrefilterMap;
 layout(binding = 8) uniform sampler2D u_BRDFLUT;
 
 uniform vec3 u_CameraPos;
+uniform vec3 u_CameraForward;
 uniform float u_EnvironmentIntensity;
 
 layout(std140, binding = 1) uniform ShadowData
@@ -153,7 +154,7 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 
 		// --- CSM LAYER SELECTION ---
 		// 1. Calculate how far this pixel is from the camera
-		float depthValue = distance(u_CameraPos, gPosition);
+		float depthValue = abs(dot(gPosition - u_CameraPos, u_CameraForward));
 
 		// 2. Figure out which cascade this pixel belongs to using the splits!
 		int layer = 2;
@@ -189,24 +190,33 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		}
 
 		// --- PRIMARY SHADOW SAMPLE ---
-		float biasModifiers[3] = float[](0.0005, 0.0002, 0.00005);
-		float baseBias = biasModifiers[layer];
-		float dirBias = max(baseBias * 10.0 * (1.0 - dot(N, L)), baseBias);
+		// 1. Scale the depth bias down for larger cascades!
+		float depthBiases[3] = float[](0.0005, 0.00005, 0.000005);
+		float constantDepthBias = depthBiases[layer];
 
-		vec4 PosLightSpace = u_DirectionalShadowMatrices[layer] * vec4(gPosition, 1.0);
-		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, dirBias, float(layer));
+		// 2. Scale the normal bias up for larger cascades (because pixels get physically wider!)
+		float normalBiasMultipliers[3] = float[](0.05, 0.15, 0.5); 
+		
+		float normalOffset = normalBiasMultipliers[layer] * (1.0 - max(dot(N, L), 0.0));
+		
+		// Push the position!
+		vec3 biasedPosition = gPosition + (N * normalOffset);
+		vec4 PosLightSpace = u_DirectionalShadowMatrices[layer] * vec4(biasedPosition, 1.0);
+		
+		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, constantDepthBias, float(layer));
 
 		// --- SECONDARY BLEND SAMPLE ---
-		// If we are in the transition zone, sample the NEXT cascade and lerp them!
 		if (blendFactor > 0.0) 
 		{
-			float nextBaseBias = biasModifiers[nextLayer];
-			float nextDirBias = max(nextBaseBias * 10.0 * (1.0 - dot(N, L)), nextBaseBias);
-    
-			vec4 nextPosLightSpace = u_DirectionalShadowMatrices[nextLayer] * vec4(gPosition, 1.0);
-			float nextShadow = CalculateShadow(nextPosLightSpace, u_DirectionShadowMap, nextDirBias, float(nextLayer));
-    
-			// Smoothly blend between the sharp shadow and the blurry shadow
+			float nextConstantDepthBias = depthBiases[nextLayer]; // Get the correct depth bias!
+			float nextNormalOffset = normalBiasMultipliers[nextLayer] * (1.0 - max(dot(N, L), 0.0));
+			
+			vec3 nextBiasedPosition = gPosition + (N * nextNormalOffset);
+			vec4 nextPosLightSpace = u_DirectionalShadowMatrices[nextLayer] * vec4(nextBiasedPosition, 1.0);
+			
+			float nextShadow = CalculateShadow(nextPosLightSpace, u_DirectionShadowMap, nextConstantDepthBias, float(nextLayer));
+			
+			// Smoothly blend
 			shadow = mix(shadow, nextShadow, blendFactor);
 		}
 		// ------------------------------

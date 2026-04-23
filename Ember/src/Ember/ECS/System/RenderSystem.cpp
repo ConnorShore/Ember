@@ -97,6 +97,13 @@ namespace Ember {
 		if (maxZ < 0) maxZ /= zMult;
 		else maxZ *= zMult;
 
+		// Add some padding to the bounds to reduce shadow acne and peter panning
+		constexpr float padding = 2.0f;
+		minX -= padding;
+		maxX += padding;
+		minY -= padding;
+		maxY += padding;
+
 		// 6. Build the final Orthographic projection
 		Matrix4f lightProjection = Math::Orthographic(minX, maxX, minY, maxY, minZ, maxZ);
 
@@ -573,17 +580,18 @@ namespace Ember {
 
 		ShadowDataBlock shadowData = {};
 
+		float blendOverlap = 3.0f; // TODO: This must match frag shader, move to uniform
+
 		// We have 3 layers.
 		uint32_t cascadeCount = 3;
 		for (uint32_t i = 0; i < cascadeCount; ++i)
 		{
 			// Figure out the near/far planes for THIS specific cascade
-			float cascadeNear = (i == 0) ? cameraNear : m_ShadowCascadeLevels[i - 1];
-			float cascadeFar = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
+			float cascadeNear = (i == 0) ? cameraNear : m_ShadowCascadeLevels[i - 1] - blendOverlap;
+			float cascadeFar = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i] + blendOverlap;
 
-			// GET THE MAGIC MATRIX!
 			Matrix4f lightSpaceMat = GetLightSpaceMatrix(
-				cascadeNear, cascadeFar,
+				cascadeNear, cascadeFar, // Use the expanded planes!
 				m_RenderSceneState.ActiveCamera,
 				m_RenderSceneState.CameraTransform,
 				lightDirection
@@ -597,31 +605,14 @@ namespace Ember {
 				(i == 1) ? Vector4f(0.0f, 1.0f, 0.0f, 1.0f) :
 				Vector4f(0.0f, 0.5f, 1.0f, 1.0f);
 
-			//// Near Face (Z = -1)
-			//DebugRenderer::DrawLine(corners[0], corners[2], color);
-			//DebugRenderer::DrawLine(corners[2], corners[6], color);
-			//DebugRenderer::DrawLine(corners[6], corners[4], color);
-			//DebugRenderer::DrawLine(corners[4], corners[0], color);
-
-			//// Far Face (Z = 1)
-			//DebugRenderer::DrawLine(corners[1], corners[3], color);
-			//DebugRenderer::DrawLine(corners[3], corners[7], color);
-			//DebugRenderer::DrawLine(corners[7], corners[5], color);
-			//DebugRenderer::DrawLine(corners[5], corners[1], color);
-
-			//// Connecting Edges
-			//DebugRenderer::DrawLine(corners[0], corners[1], color);
-			//DebugRenderer::DrawLine(corners[2], corners[3], color);
-			//DebugRenderer::DrawLine(corners[4], corners[5], color);
-			//DebugRenderer::DrawLine(corners[6], corners[7], color);
-			//// -------------------------------------
-
 			// Save it so we can upload it to the UBO later
 			shadowData.DirectionalShadowMatrices[i] = lightSpaceMat;
 			shadowData.CascadeSplits[i] = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
 
-			m_RenderSceneState.DirectionalLightViewMatrices[i] = lightSpaceMat;
-			m_RenderSceneState.CascadeSplits[i] = shadowData.CascadeSplits[i];
+			// IMPORTANT: Still store the REAL splits in the UBO so the shader 
+			// knows where the mathematical center of the blend is!
+			shadowData.DirectionalShadowMatrices[i] = lightSpaceMat;
+			shadowData.CascadeSplits[i] = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
 
 			// Route the Framebuffer to write to THIS specific layer of the array
 			m_DirectionalShadowMapBuffer->AttachDepthTextureLayer(m_DirectionalShadowMapBuffer->GetDepthAttachmentID(), 0, i);
@@ -858,6 +849,10 @@ namespace Ember {
 
 		litShader->Bind();
 		litShader->SetFloat3(Constants::Uniforms::CameraPosition, m_RenderSceneState.CameraTransform[3]);
+
+		// Extract the forward vector (-Z axis) from the Camera's World Transform
+		Vector3f cameraForward = -Vector3f(m_RenderSceneState.CameraTransform[2]);
+		litShader->SetFloat3(Constants::Uniforms::CameraForward, cameraForward); // Make sure you add this to your Constants::Uniforms!
 
 		if (m_Skybox->Enabled())
 			litShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, m_Skybox->GetIntensity());
