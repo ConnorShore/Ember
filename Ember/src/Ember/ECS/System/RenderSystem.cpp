@@ -510,14 +510,6 @@ namespace Ember {
 				lightDirection
 			);
 
-			// --- DEBUG DRAWING THE CASCADE BOX ---
-			std::vector<Vector4f> corners = GetFrustumCornersWorldSpace(lightSpaceMat);
-
-			// Color code: 0 = Red, 1 = Green, 2 = Blue
-			Vector4f color = (i == 0) ? Vector4f(1.0f, 0.0f, 0.0f, 1.0f) :
-				(i == 1) ? Vector4f(0.0f, 1.0f, 0.0f, 1.0f) :
-				Vector4f(0.0f, 0.5f, 1.0f, 1.0f);
-
 			// Save it so we can upload it to the UBO later
 			shadowData.DirectionalShadowMatrices[i] = lightSpaceMat;
 			shadowData.CascadeSplits[i] = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
