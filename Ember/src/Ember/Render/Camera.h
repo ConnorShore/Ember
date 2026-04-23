@@ -2,6 +2,8 @@
 
 #include "Ember/Math/Math.h"
 
+#include <string>
+
 namespace Ember {
 
 	class Camera
@@ -42,6 +44,8 @@ namespace Ember {
 		inline ProjectionType GetProjectionType() const { return m_ProjectionType; }
 		inline OrthographicProps& GetOrthographicProps() { return m_OrthographicProps; }
 		inline PerspectiveProps& GetPerspectiveProps() { return m_PerspectiveProps; }
+
+		inline float GetAspectRatio() const { return m_AspectRatio; }
 
 	private:
 		void CalculateProjectionMatrix();

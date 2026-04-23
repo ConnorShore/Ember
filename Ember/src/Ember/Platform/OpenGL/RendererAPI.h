@@ -24,6 +24,7 @@ namespace Ember {
 			virtual void SetFramebuffer(uint32_t framebufferId) override;
 			virtual void GetPreviousFramebuffer(int* outFramebufferId) override;
 
+
 			virtual void CopyDepthBuffer(uint32_t gBufferId, uint32_t outputBuffer, Vector4<int> viewportDims) override;
 
 			virtual void GetViewportDimensions(int* outViewportDims) override;

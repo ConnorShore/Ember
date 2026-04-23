@@ -51,8 +51,8 @@ layout(binding = 0) uniform sampler2D u_AlbedoRoughness;
 layout(binding = 1) uniform sampler2D u_NormalMetallic;
 layout(binding = 2) uniform sampler2D u_PositionAO;
 layout(binding = 3) uniform sampler2D u_EmissionOut;
-layout(binding = 4) uniform sampler2D u_DirectionShadowMap;
-layout(binding = 5) uniform sampler2D u_SpotShadowMap;
+layout(binding = 4) uniform sampler2DArray u_DirectionShadowMap;
+layout(binding = 5) uniform sampler2DArray u_SpotShadowMap;
 layout(binding = 6) uniform samplerCube u_IrradianceMap;
 layout(binding = 7) uniform samplerCube u_PrefilterMap;
 layout(binding = 8) uniform sampler2D u_BRDFLUT;
@@ -62,8 +62,9 @@ uniform float u_EnvironmentIntensity;
 
 layout(std140, binding = 1) uniform ShadowData
 {
-	mat4 u_DirectionalLightViewMat;
-	mat4 u_SpotLightViewMat;
+    mat4 u_DirectionalShadowMatrices[3];
+    mat4 u_SpotLightMatrix;
+    vec4 u_CascadeSplits;
 };
 
 layout(std140, binding = 2) uniform LightDataBlock
@@ -105,7 +106,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
+float CalculateShadow(vec4 posLightSpace, sampler2DArray shadowMap, float bias, float layer)
 {
 	if (posLightSpace.w <= 0.0)
         return 0.0;
@@ -125,13 +126,13 @@ float CalculateShadow(vec4 posLightSpace, sampler2D shadowMap, float bias)
 
 	// PCF
 	float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -1; x <= 1; ++x)
     {
         for(int y = -1; y <= 1; ++y)
         {
 			vec2 clampedUV = clamp(projCoords.xy + vec2(x, y) * texelSize, 0.0, 1.0);
-            float pcfDepth = texture(shadowMap, clampedUV).r; 
+			float pcfDepth = texture(shadowMap, vec3(clampedUV, layer)).r;
             shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
         }    
     }
@@ -151,8 +152,8 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		float dirBias = max(0.005 * (1.0 - dot(N, L)), 0.0005);
 		
 		// Set shadow value
-		vec4 PosLightSpace = u_DirectionalLightViewMat * vec4(gPosition, 1.0);
-		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, dirBias);
+		vec4 PosLightSpace = u_DirectionalShadowMatrices[0] * vec4(gPosition, 1.0);
+		float shadow = CalculateShadow(PosLightSpace, u_DirectionShadowMap, dirBias, 0.0);
 
 		float attenuation = 1.0;
 		vec3 radiance = u_DirectionalLights[i].Color * u_DirectionalLights[i].Intensity * attenuation;
@@ -171,8 +172,6 @@ vec3 ApplyDirectionalLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3
 		vec3 numerator = D * G * F;
 		float denomenator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.0001;
 		vec3 specular =  numerator / denomenator;
-
-
 
 		result += (1.0 - shadow) * (KD * actualAlbedo / PI + specular) * radiance * NdotL;
 	}
@@ -200,8 +199,8 @@ vec3 ApplySpotLighting(vec3 gPosition, vec3 gNormal, vec3 V, vec3 N, vec3 actual
 		{
 			float spotBias = max(0.0005 * (1.0 - dot(N, L)), 0.00005);
 
-			vec4 PosLightSpace = u_SpotLightViewMat * vec4(gPosition, 1.0);
-			float shadow = CalculateShadow(PosLightSpace, u_SpotShadowMap, spotBias);
+			vec4 PosLightSpace = u_SpotLightMatrix * vec4(gPosition, 1.0);
+			float shadow = CalculateShadow(PosLightSpace, u_SpotShadowMap, spotBias, 0.0);
 
 			float distance = length(u_SpotLights[i].Position - gPosition);
 			float attenuation = 1.0 / (distance * distance);

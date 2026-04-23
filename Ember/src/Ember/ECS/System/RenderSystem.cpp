@@ -16,6 +16,88 @@
 #include "Ember/Scene/Scene.h"
 
 namespace Ember {
+	// Some helpers for the time being (will be moved to own render passes in the future)
+	static std::vector<Vector4f> GetFrustumCornersWorldSpace(const Matrix4f& proj, const Matrix4f& view)
+	{
+		const auto inv = Math::Inverse(proj * view);
+
+		std::vector<Vector4f> frustumCorners;
+		for (unsigned int x = 0; x < 2; ++x)
+		{
+			for (unsigned int y = 0; y < 2; ++y)
+			{
+				for (unsigned int z = 0; z < 2; ++z)
+				{
+					const Vector4f pt =
+						inv * Vector4f(
+							2.0f * x - 1.0f,
+							2.0f * y - 1.0f,
+							2.0f * z - 1.0f,
+							1.0f);
+					frustumCorners.push_back(pt / pt.w);
+				}
+			}
+		}
+
+		return frustumCorners;
+	}
+
+	static Matrix4f GetLightSpaceMatrix(const float nearPlane, const float farPlane, Camera& camera, const Matrix4f& cameraTransform, const Vector3f& lightDir)
+	{
+		// 1. Create a projection matrix for ONLY this specific cascade slice
+		Matrix4f proj = Math::Perspective(camera.GetPerspectiveProps().FieldOfView, camera.GetAspectRatio(), nearPlane, farPlane);
+		Matrix4f view = Math::Inverse(cameraTransform);
+
+		std::vector<Vector4f> corners = GetFrustumCornersWorldSpace(proj, view);
+
+		// 2. Find the exact center of this cascade slice
+		Vector3f center = Vector3f(0.0f, 0.0f, 0.0f);
+		for (const auto& v : corners)
+		{
+			center += Vector3f(v.x, v.y, v.z);
+		}
+		center /= (float)corners.size();
+
+		// 3. Build a Light View Matrix looking at the center of the cascade
+		// We pull the light position back along the light direction.
+		Matrix4f lightView = Math::LookAt(center - lightDir, center, Vector3f(0.0f, 1.0f, 0.0f));
+
+		// 4. Find the min/max X, Y, Z of the corners in LIGHT SPACE
+		// This tells us exactly how big our Orthographic bounding box needs to be
+		float minX = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::lowest();
+		float minY = std::numeric_limits<float>::max();
+		float maxY = std::numeric_limits<float>::lowest();
+		float minZ = std::numeric_limits<float>::max();
+		float maxZ = std::numeric_limits<float>::lowest();
+
+		for (const auto& v : corners)
+		{
+			Vector4f trf = lightView * v;
+			minX = std::min(minX, trf.x);
+			maxX = std::max(maxX, trf.x);
+			minY = std::min(minY, trf.y);
+			maxY = std::max(maxY, trf.y);
+			minZ = std::min(minZ, trf.z);
+			maxZ = std::max(maxZ, trf.z);
+		}
+
+		// 5. THE Z-MULTIPLIER HACK (Crucial for shadows!)
+		// If a tall building is behind the camera, it won't be inside the camera frustum,
+		// but it STILL needs to cast a shadow into the frustum! We multiply the Z bounds 
+		// heavily to catch geometry "behind" the light's view.
+		constexpr float zMult = 10.0f;
+		if (minZ < 0) minZ *= zMult;
+		else minZ /= zMult;
+
+		if (maxZ < 0) maxZ /= zMult;
+		else maxZ *= zMult;
+
+		// 6. Build the final Orthographic projection
+		Matrix4f lightProjection = Math::Orthographic(minX, maxX, minY, maxY, minZ, maxZ);
+
+		return lightProjection * lightView;
+	}
 
 	// UBO light data structs - layout matches std140 in the lighting shader
 	struct DirectionalLightData
@@ -61,6 +143,18 @@ namespace Ember {
 		int _Padding; // Pad the final ints to 16 bytes
 	};
 
+	struct ShadowDataBlock
+	{
+		// The 3 matrices for cascades (64 bytes * 3 = 192 bytes)
+		Matrix4f DirectionalShadowMatrices[3];
+
+		// The SpotLight matrix (64 bytes)
+		Matrix4f SpotLightMatrix;
+
+		// x = Cascade 0 Split, y = Cascade 1 Split, z = Cascade 2 Split (16 bytes)
+		Vector4f CascadeSplits;
+	};
+
 	void RenderSystem::OnAttach()
 	{
 		Renderer2D::Init();
@@ -89,20 +183,32 @@ namespace Ember {
 			Ember::FramebufferSpecification specs;
 			specs.Width = 2048;
 			specs.Height = 2048;
+			specs.Layers = 3;
 			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::Depth24Stencil8
+				Ember::FramebufferTextureFormat::Depth32
 			};
 			m_DirectionalShadowMapBuffer = Framebuffer::Create(specs);
+
+			// Explicitly configure this specific generic buffer for shadows!
+			m_DirectionalShadowMapBuffer->SetDepthBorderColor({1.0f, 1.0f, 1.0f, 1.0f});
+
+			// Resize our render state arrays to match the number of cascades we're supporting
+			m_RenderSceneState.DirectionalLightViewMatrices.resize(3);
+			m_RenderSceneState.CascadeSplits.resize(3);
 		}
 		// Spot ShadowMap Buffer
 		{
 			Ember::FramebufferSpecification specs;
 			specs.Width = 2048;
 			specs.Height = 2048;
+			specs.Layers = 1;	// Only one spotlight shadow at a time for now, but we could easily expand this to support multiple spotlights in the future if needed
 			specs.AttachmentSpecs = {
-				Ember::FramebufferTextureFormat::Depth24Stencil8
+				Ember::FramebufferTextureFormat::Depth32
 			};
 			m_SpotShadowMapBuffer = Framebuffer::Create(specs);
+
+			// Explicitly configure this specific generic buffer for shadows!
+			m_SpotShadowMapBuffer->SetDepthBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 		}
 		// Post Process Framebuffers
 		{
@@ -134,7 +240,7 @@ namespace Ember {
 
 		// Uniform Buffer Objects at fixed binding points shared across all shaders
 		m_CameraUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f), 0);          // binding 0: ViewProjection
-		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(Matrix4f) * 2, 1);      // binding 1: DirLight + SpotLight VP
+		m_ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowDataBlock), 1);      // binding 1: DirLight + SpotLight VP
 		m_LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataBlock), 2);     // binding 2: All light data
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
@@ -219,6 +325,10 @@ namespace Ember {
 
 	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool isRuntime)
 	{
+		// TODO: Make a generic RenderPass interface and have each of these stages be a separate class that inherits from it, 
+		// so we can easily reorder/add/remove passes without modifying the core RenderSystem code
+		// Each pass would have its own shaders, input/output buffers, and render state configuration, and the RenderSystem would just execute them in order
+
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		if (!m_RenderSceneState.IsCameraFound)
@@ -227,8 +337,7 @@ namespace Ember {
 		SortEntitiesByRenderQueue(scene);
 
 		// --- Shadow pass ---
-		CreateDirectionalShadowMap(scene);
-		CreateSpotlightShadowMap(scene);
+		CreateShadowMaps(scene);
 
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		RenderDeferredGeometry(scene);
@@ -398,42 +507,103 @@ namespace Ember {
 		CreateSpotlightShadowMap(scene);
 	}
 
+	//void RenderSystem::CreateDirectionalShadowMap(Scene* scene)
+	//{
+	//	auto& registry = scene->GetRegistry();
+
+	//	// Get directional light view matrix to create shadow map
+	//	View lightView = registry.ActiveQuery<DirectionalLightComponent, TransformComponent>();
+	//	uint32_t index = 0;
+	//	for (EntityID entity : lightView)
+	//	{
+	//		if (index >= Constants::Renderer::MaxDirectionalLights)
+	//			break;
+
+	//		auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+	//		Vector3f lightDirection = transform.GetForward();
+
+	//		// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
+	//		//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f,500.0f);
+	//		Matrix4f lightProjection = Math::Orthographic(-25.0f, 25.0f, -25.0f, 25.0f, -20.0f, 200.0f);
+
+	//		Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
+	//		Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
+	//		Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+
+	//		// Avoid degenerate LookAt when light points straight up/down
+	//		if (std::abs(lightDirection.y) > 0.99f)
+	//			up = Vector3f(0.0f, 0.0f, 1.0f);
+
+	//		Matrix4f lightView = Math::LookAt(eye, target, up);
+	//		m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
+
+	//		// Set uniform buffer for directional light (offset 0)
+	//		m_ShadowUniformBuffer->SetData(&m_RenderSceneState.DirectionalLightViewMatrix, sizeof(Matrix4f), 0);
+
+	//		index++;
+	//	}
+
+	//	RenderGeometryForShadowMaps(scene, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
+	//}
+
 	void RenderSystem::CreateDirectionalShadowMap(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
 
-		// Get directional light view matrix to create shadow map
+		// Assuming you only have one directional light for shadows for now
 		View lightView = registry.ActiveQuery<DirectionalLightComponent, TransformComponent>();
-		uint32_t index = 0;
-		for (EntityID entity : lightView)
+		if (lightView.Empty())
+			return;
+
+		EntityID lightEntity = lightView.Front();
+		auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(lightEntity);
+		Vector3f lightDirection = transform.GetForward();
+
+		m_DirectionalShadowMapBuffer->Bind();
+		RenderAction::SetViewport(0, 0, 2048, 2048);
+		RenderAction::UseDepthTest(true);
+
+		// The near and far plane of the main camera
+		float cameraNear = m_RenderSceneState.ActiveCamera.GetOrthographicProps().NearClip;
+		float cameraFar = m_RenderSceneState.ActiveCamera.GetOrthographicProps().FarClip;
+
+		ShadowDataBlock shadowData = {};
+
+		// We have 3 layers.
+		uint32_t cascadeCount = 3;
+		for (uint32_t i = 0; i < cascadeCount; ++i)
 		{
-			if (index >= Constants::Renderer::MaxDirectionalLights)
-				break;
+			// Figure out the near/far planes for THIS specific cascade
+			float cascadeNear = (i == 0) ? cameraNear : m_ShadowCascadeLevels[i - 1];
+			float cascadeFar = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
 
-			auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
-			Vector3f lightDirection = transform.GetForward();
+			// GET THE MAGIC MATRIX!
+			Matrix4f lightSpaceMat = GetLightSpaceMatrix(
+				cascadeNear, cascadeFar,
+				m_RenderSceneState.ActiveCamera,
+				m_RenderSceneState.CameraTransform,
+				lightDirection
+			);
 
-			// TODO: These props are just hard coded but will eventually move to "Dynamic Shadow Frustums" and "Cascaded Shadow Maps"
-			//Matrix4f lightProjection = Math::Orthographic(-35.0f, 35.0f, -35.0f, 35.0f, 1.0f,500.0f);
-			Matrix4f lightProjection = Math::Orthographic(-25.0f, 25.0f, -25.0f, 25.0f, -20.0f, 200.0f);
+			// Save it so we can upload it to the UBO later
+			shadowData.DirectionalShadowMatrices[i] = lightSpaceMat;
+			shadowData.CascadeSplits[i] = (i == cascadeCount - 1) ? cameraFar : m_ShadowCascadeLevels[i];
 
-			Vector3f target = Vector3f(0.0f, 0.0f, 0.0f);
-			Vector3f eye = target - (Math::Normalize(lightDirection) * 40.0f); // Pull back 40 units
-			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
+			m_RenderSceneState.DirectionalLightViewMatrices[i] = lightSpaceMat;
+			m_RenderSceneState.CascadeSplits[i] = shadowData.CascadeSplits[i];
 
-			// Avoid degenerate LookAt when light points straight up/down
-			if (std::abs(lightDirection.y) > 0.99f)
-				up = Vector3f(0.0f, 0.0f, 1.0f);
+			// Route the Framebuffer to write to THIS specific layer of the array
+			m_DirectionalShadowMapBuffer->AttachDepthTextureLayer(m_DirectionalShadowMapBuffer->GetDepthAttachmentID(), 0, i);
 
-			Matrix4f lightView = Math::LookAt(eye, target, up);
-			m_RenderSceneState.DirectionalLightViewMatrix = lightProjection * lightView;
+			// Clear ONLY this layer!
+			RenderAction::Clear(Ember::RendererAPI::RenderBit::Depth);
 
-			// Set uniform buffer for directional light (offset 0)
-			m_ShadowUniformBuffer->SetData(&m_RenderSceneState.DirectionalLightViewMatrix, sizeof(Matrix4f), 0);
-
-			index++;
+			// Render the scene from this cascade's perspective
+			RenderGeometryForShadowMaps(scene, lightSpaceMat, m_DirectionalShadowMapBuffer);
 		}
-		RenderGeometryForShadowMaps(scene, m_RenderSceneState.DirectionalLightViewMatrix, m_DirectionalShadowMapBuffer);
+		
+		m_ShadowUniformBuffer->SetData(&shadowData, sizeof(ShadowDataBlock), 0);
+		m_DirectionalShadowMapBuffer->Unbind();
 	}
 
 	void RenderSystem::CreateSpotlightShadowMap(Scene* scene)
@@ -462,8 +632,12 @@ namespace Ember {
 			Matrix4f lightView = Math::LookAt(eye, target, up);
 			m_RenderSceneState.SpotLightViewMatrix = lightProjection * lightView;
 
-			// Set uniform buffer for spotlight (offset -> 1 mat4)
-			m_ShadowUniformBuffer->SetData(&m_RenderSceneState.SpotLightViewMatrix, sizeof(Matrix4f), sizeof(Matrix4f));
+			// Set uniform buffer for spotlight (offset -> 3 mat4)
+			m_ShadowUniformBuffer->SetData(
+				&m_RenderSceneState.SpotLightViewMatrix,
+				sizeof(Matrix4f),
+				sizeof(Matrix4f) * 3
+			);
 
 			index++;
 		}
@@ -879,7 +1053,8 @@ namespace Ember {
 
 		for (const auto& particle : pool)
 		{
-			if (!particle.Active) continue;
+			if (!particle.Active)
+				continue;
 
 			ParticleVertex data;
 			data.Position = particle.Position;

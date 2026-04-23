@@ -1,1 +1,81 @@
-Assets: []
+Assets:
+  - Type: Texture
+    UUID: 17395862681736986445
+    Name: BloodParticle
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\BloodParticle.png'
+  - Type: Texture
+    UUID: 10818316536060883226
+    Name: moonless_golf_4k
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\moonless_golf_4k.hdr'
+  - Type: Texture
+    UUID: 15361559888818349168
+    Name: SmokeParticle
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
+  - Type: Script
+    UUID: 16587777693882004979
+    Name: NewScript(1)
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Bullet.lua'
+  - Type: Script
+    UUID: 9585085455667977396
+    Name: BulletSpawnScript
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
+  - Type: Script
+    UUID: 16541504524255684090
+    Name: Powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
+  - Type: Script
+    UUID: 8422630553721103124
+    Name: NewScript
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
+  - Type: Script
+    UUID: 10670335993004288059
+    Name: CampFire
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
+  - Type: Material
+    UUID: 220883245630972619
+    Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup2_Powerup_StandardUnlit_Clone_Clone.ebmat'
+  - Type: Material
+    UUID: 12262935542249108056
+    Name: Log_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Log_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 13862054512284898396
+    Name: Bullet_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 15812231264559602920
+    Name: Enemy_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 10658966581415315879
+    Name: Cube_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 12147062781911719508
+    Name: Powerup_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 17497850881512429738
+    Name: Friendly_Enemy_StandardGeometry_Clone_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Friendly_Enemy_StandardGeometry_Clone_Clone.ebmat'
+  - Type: Material
+    UUID: 9538612635053895722
+    Name: Powerup_StandardUnlit_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardUnlit_Clone.ebmat'
+  - Type: Material
+    UUID: 5345865544332564414
+    Name: Ground (Copy)_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
+  - Type: PhysicsMaterial
+    UUID: 18418573740781660937
+    Name: RoughFloor
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Physics Materials\RoughFloor.ebpmat'
+  - Type: Prefab
+    UUID: 12388111664304859345
+    Name: Bullet
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Prefabs\Bullet.ebprefab'
+  - Type: Font
+    UUID: 14182495134475918428
+    Name: Roboto-Regular
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Fonts\Roboto-Regular.ttf'

@@ -73,8 +73,8 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
-		SharedPtr<Texture2DArray> m_TestTextureArray;
-		float m_SceneTime = 0.0f;
+		//SharedPtr<Texture2DArray> m_TestTextureArray;
+		//float m_SceneTime = 0.0f;
 		SharedPtr<StaticMesh> m_ScreenQuad;
 
 		SharedPtr<Framebuffer> m_GBuffer;
@@ -121,7 +121,10 @@ namespace Ember {
 		{
 			Camera ActiveCamera;
 			Matrix4f CameraTransform;
-			Matrix4f DirectionalLightViewMatrix;
+
+			std::vector<Matrix4f> DirectionalLightViewMatrices;
+			std::vector<float> CascadeSplits;
+
 			Matrix4f SpotLightViewMatrix;
 			bool IsCameraFound;
 			Vector4<int> ViewportDimensions;
@@ -131,11 +134,23 @@ namespace Ember {
 			{
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
+				DirectionalLightViewMatrices.clear();
+				CascadeSplits.clear();
+
+				// Reset light and cascades to 3 for now
+				DirectionalLightViewMatrices.resize(3, Matrix4f(1.0f));
+				CascadeSplits.resize(3, 0.0f);
 			}
 
 		} m_RenderSceneState;
 
 		Scene* m_CurrentScene = nullptr;
+
+		// These are the actual distance values from the camera. 
+		// Cascade 0: CameraNear -> 15.0f
+		// Cascade 1: 15.0f -> 50.0f
+		// Cascade 2: 50.0f -> CameraFar
+		std::vector<float> m_ShadowCascadeLevels = { 15.0f, 50.0f };
 
 	};
 
