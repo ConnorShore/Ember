@@ -17,9 +17,9 @@
 
 namespace Ember {
 	// Some helpers for the time being (will be moved to own render passes in the future)
-	static std::vector<Vector4f> GetFrustumCornersWorldSpace(const Matrix4f& proj, const Matrix4f& view)
+	static std::vector<Vector4f> GetFrustumCornersWorldSpace(const Matrix4f& viewProj)
 	{
-		const auto inv = Math::Inverse(proj * view);
+		const auto inv = Math::Inverse(viewProj);
 
 		std::vector<Vector4f> frustumCorners;
 		for (unsigned int x = 0; x < 2; ++x)
@@ -28,18 +28,22 @@ namespace Ember {
 			{
 				for (unsigned int z = 0; z < 2; ++z)
 				{
-					const Vector4f pt =
-						inv * Vector4f(
-							2.0f * x - 1.0f,
-							2.0f * y - 1.0f,
-							2.0f * z - 1.0f,
-							1.0f);
+					const Vector4f pt = inv * Vector4f(
+						2.0f * x - 1.0f,
+						2.0f * y - 1.0f,
+						2.0f * z - 1.0f,
+						1.0f);
 					frustumCorners.push_back(pt / pt.w);
 				}
 			}
 		}
-
 		return frustumCorners;
+	}
+
+	static std::vector<Vector4f> GetFrustumCornersWorldSpace(const Matrix4f& proj, const Matrix4f& view)
+	{
+		Matrix4f viewProj = proj * view;
+		return GetFrustumCornersWorldSpace(viewProj);
 	}
 
 	static Matrix4f GetLightSpaceMatrix(const float nearPlane, const float farPlane, Camera& camera, const Matrix4f& cameraTransform, const Vector3f& lightDir)
@@ -181,8 +185,8 @@ namespace Ember {
 		// Direction ShadowMap Buffer
 		{
 			Ember::FramebufferSpecification specs;
-			specs.Width = 2048;
-			specs.Height = 2048;
+			specs.Width = 4096;
+			specs.Height = 4096;
 			specs.Layers = 3;
 			specs.AttachmentSpecs = {
 				Ember::FramebufferTextureFormat::Depth32
@@ -564,8 +568,8 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 
 		// The near and far plane of the main camera
-		float cameraNear = m_RenderSceneState.ActiveCamera.GetOrthographicProps().NearClip;
-		float cameraFar = m_RenderSceneState.ActiveCamera.GetOrthographicProps().FarClip;
+		float cameraNear = m_RenderSceneState.ActiveCamera.GetPerspectiveProps().NearClip;
+		float cameraFar = m_RenderSceneState.ActiveCamera.GetPerspectiveProps().FarClip;
 
 		ShadowDataBlock shadowData = {};
 
@@ -584,6 +588,33 @@ namespace Ember {
 				m_RenderSceneState.CameraTransform,
 				lightDirection
 			);
+
+			// --- DEBUG DRAWING THE CASCADE BOX ---
+			std::vector<Vector4f> corners = GetFrustumCornersWorldSpace(lightSpaceMat);
+
+			// Color code: 0 = Red, 1 = Green, 2 = Blue
+			Vector4f color = (i == 0) ? Vector4f(1.0f, 0.0f, 0.0f, 1.0f) :
+				(i == 1) ? Vector4f(0.0f, 1.0f, 0.0f, 1.0f) :
+				Vector4f(0.0f, 0.5f, 1.0f, 1.0f);
+
+			//// Near Face (Z = -1)
+			//DebugRenderer::DrawLine(corners[0], corners[2], color);
+			//DebugRenderer::DrawLine(corners[2], corners[6], color);
+			//DebugRenderer::DrawLine(corners[6], corners[4], color);
+			//DebugRenderer::DrawLine(corners[4], corners[0], color);
+
+			//// Far Face (Z = 1)
+			//DebugRenderer::DrawLine(corners[1], corners[3], color);
+			//DebugRenderer::DrawLine(corners[3], corners[7], color);
+			//DebugRenderer::DrawLine(corners[7], corners[5], color);
+			//DebugRenderer::DrawLine(corners[5], corners[1], color);
+
+			//// Connecting Edges
+			//DebugRenderer::DrawLine(corners[0], corners[1], color);
+			//DebugRenderer::DrawLine(corners[2], corners[3], color);
+			//DebugRenderer::DrawLine(corners[4], corners[5], color);
+			//DebugRenderer::DrawLine(corners[6], corners[7], color);
+			//// -------------------------------------
 
 			// Save it so we can upload it to the UBO later
 			shadowData.DirectionalShadowMatrices[i] = lightSpaceMat;

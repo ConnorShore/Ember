@@ -148,10 +148,9 @@ namespace Ember {
 
 		// These are the actual distance values from the camera. 
 		// Cascade 0: CameraNear -> 15.0f
-		// Cascade 1: 15.0f -> 50.0f
-		// Cascade 2: 50.0f -> CameraFar
-		std::vector<float> m_ShadowCascadeLevels = { 15.0f, 50.0f };
-
+		// Cascade 1: 15.0f -> 60.0f
+		// Cascade 2: 60.0f -> 300.0f or CameraFar
+		std::vector<float> m_ShadowCascadeLevels = { 5.0f, 40.0f, 300.0f };
 	};
 
 }

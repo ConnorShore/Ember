@@ -62,7 +62,7 @@ namespace Ember {
 		LoadDefaultAssets();
 
 		// Editor Camera Setup
-		m_Camera = EditorCamera(65.0f, 1.778f, 0.1f, 5000.0f);
+		m_Camera = EditorCamera(65.0f, 1.778f, 0.3f, 300.0f);
 		m_Camera.SetFocalPoint(Vector3f(0.0f, 0.0f, 0.0f));
 		m_Camera.SetPitch(Math::Radians(30.0f));
 		m_Camera.SetYaw(Math::Radians(45.0f));
