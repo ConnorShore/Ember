@@ -10,6 +10,7 @@
 #include "Ember/Render/Skybox.h"
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Render/VFX/PostProcessPass.h"
+#include "Ember/Render/Texture2DArray.h"
 
 #include <vector>
 
@@ -72,6 +73,8 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
+		SharedPtr<Texture2DArray> m_TestTextureArray;
+		float m_SceneTime = 0.0f;
 		SharedPtr<StaticMesh> m_ScreenQuad;
 
 		SharedPtr<Framebuffer> m_GBuffer;

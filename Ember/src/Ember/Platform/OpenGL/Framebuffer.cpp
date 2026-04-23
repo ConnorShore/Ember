@@ -17,6 +17,7 @@ namespace Ember {
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
 			case FramebufferTextureFormat::RedInteger:		return GL_R32I;
 			case FramebufferTextureFormat::Depth24: 		return GL_DEPTH_COMPONENT24;
+			case FramebufferTextureFormat::Depth32: 		return GL_DEPTH_COMPONENT32;
 			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH24_STENCIL8;
 			case FramebufferTextureFormat::None:			return 0;
 			default:
@@ -33,7 +34,8 @@ namespace Ember {
 			case FramebufferTextureFormat::RG16F:
 			case FramebufferTextureFormat::RGBA16F:
 			case FramebufferTextureFormat::RedInteger:		return GL_COLOR_ATTACHMENT0 + index;
-			case FramebufferTextureFormat::Depth24:			return GL_DEPTH_ATTACHMENT;
+			case FramebufferTextureFormat::Depth24:
+			case FramebufferTextureFormat::Depth32:			return GL_DEPTH_ATTACHMENT;
 			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			case FramebufferTextureFormat::None:			return 0;
 			default:

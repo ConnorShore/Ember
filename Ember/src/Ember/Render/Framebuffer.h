@@ -19,6 +19,7 @@ namespace Ember {
 		// Depth acts as a sentinel: any format >= Depth is a depth/stencil attachment
 		Depth,
 		Depth24,
+		Depth32,
 		Depth24Stencil8 = Depth,
 	};
 
