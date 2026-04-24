@@ -181,6 +181,8 @@ namespace Ember {
 
 	void Scene::OnRuntimeStart()
 	{
+		m_IsRuntime = true;
+
 		// Initialize physics system
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
@@ -198,6 +200,8 @@ namespace Ember {
 
 	void Scene::OnRuntimeStop()
 	{
+		m_IsRuntime = false;
+
 		ScriptEngine::OnRuntimeStop();
 
 		m_PoolManager->DestroyPools();

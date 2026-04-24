@@ -121,6 +121,8 @@ namespace Ember {
 		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
 		inline const std::string& GetFilePath() const { return m_FilePath; }
 
+		inline bool IsRuntime() const { return m_IsRuntime; }
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID);
@@ -140,6 +142,8 @@ namespace Ember {
 
 		std::string m_Name;
 		std::string m_FilePath;
+
+		bool m_IsRuntime = false;
 	};
 
 }
