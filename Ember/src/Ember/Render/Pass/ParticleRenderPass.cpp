@@ -15,7 +15,7 @@ namespace Ember {
 
 	void ParticleRenderPass::Init()
 	{
-		m_ParticleManager = Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
+		m_ParticleManager = &Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
 		
 		auto quadVAO = PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray();
 		auto quadVBO = quadVAO->GetVertexBuffer();
@@ -34,6 +34,8 @@ namespace Ember {
 		m_ParticleVAO->AddVertexBuffer(m_ParticleVBO);
 		m_ParticleVAO->SetIndexBuffer(quadIBO);
 
+		m_ParticleShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
+
 		m_TextureSlots.fill(Constants::InvalidUUID); // Mark all texture slots as empty
 		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID; // Slot 0 is reserved for the default white texture
 	}
@@ -47,13 +49,15 @@ namespace Ember {
 		RenderAction::UseDepthMask(false);
 
 		// Create a copy of the particle list so we can sort without modifying the original order in the manager
-		auto pool = m_ParticleManager.GetParticles();
+		auto pool = m_ParticleManager->GetParticles();
 
 		SortParticlesByCameraDistance(context, pool);
 		uint32_t usedTextureSlots = PackDataForGPU(context, pool);
 
 		if (m_InstancedData.empty())
 			return;
+
+		m_FramebufferInputs["HDRScene"]->Bind();
 
 		BindTextures(context, usedTextureSlots);
 		DrawParticles();
@@ -62,6 +66,11 @@ namespace Ember {
 
 		RenderAction::UseDepthMask(true);
 		RenderAction::UseBlending(false);
+	}
+
+	void ParticleRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+
 	}
 
 	void ParticleRenderPass::Shutdown()
@@ -145,11 +154,9 @@ namespace Ember {
 
 	void ParticleRenderPass::BindTextures(const RenderContext& context, uint32_t usedTextureSlots)
 	{
-		m_FramebufferInputs["HDRScene"]->Bind();
-		auto particleShad = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
-		particleShad->Bind();
+		m_ParticleShader->Bind();
 
-		// Bind Default White Texture to Slot 0
+		// Bind Default White Texture to Slot 0 (TODO: May not need this)
 		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
 		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
 
@@ -165,13 +172,13 @@ namespace Ember {
 		}
 
 		// Tell the shader about the array of samplers
-		particleShad->SetIntArray("u_Textures", samplers, usedTextureSlots);
+		m_ParticleShader->SetIntArray("u_Textures", samplers, usedTextureSlots);
 
 		// The shader needs the camera up/right vectors to build the billboard matrix!
 		Vector3f camRight = Vector3f(context.CameraTransform[0]);
 		Vector3f camUp = Vector3f(context.CameraTransform[1]);
-		particleShad->SetFloat3(Constants::Uniforms::CameraRight, camRight);
-		particleShad->SetFloat3(Constants::Uniforms::CameraUp, camUp);
+		m_ParticleShader->SetFloat3(Constants::Uniforms::CameraRight, camRight);
+		m_ParticleShader->SetFloat3(Constants::Uniforms::CameraUp, camUp);
 	}
 
 	void ParticleRenderPass::DrawParticles()

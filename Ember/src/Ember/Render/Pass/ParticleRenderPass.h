@@ -8,6 +8,7 @@
 namespace Ember {
 
 	class ParticleManager;
+	struct ParticleVertex;
 	struct Particle;
 
 	class ParticleRenderPass : public RenderPass
@@ -18,6 +19,7 @@ namespace Ember {
 
 		virtual void Init() override;
 		virtual void Execute(RenderContext& context) override;
+		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 		virtual void Shutdown() override;
 
 	private:
@@ -27,7 +29,7 @@ namespace Ember {
 		void DrawParticles();
 
 	private:
-		ParticleManager& m_ParticleManager;
+		ParticleManager* m_ParticleManager = nullptr;
 		
 		SharedPtr<VertexArray> m_ParticleVAO;
 		SharedPtr<VertexBuffer> m_ParticleVBO;

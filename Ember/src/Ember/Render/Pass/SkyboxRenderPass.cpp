@@ -47,6 +47,11 @@ namespace Ember {
 		m_FramebufferInputs["HDRScene"]->Unbind();
 	}
 
+	void SkyboxRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+
+	}
+
 	void SkyboxRenderPass::Shutdown()
 	{
 	}

@@ -25,6 +25,7 @@ namespace Ember {
 		m_FramebufferOutputs["HDRScene"] = m_HdrSceneBuffer;
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
+		m_LightingShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::StandardLitShad);
 	}
 
 	void DeferredLightingRenderPass::Execute(RenderContext& context)
@@ -49,30 +50,27 @@ namespace Ember {
 		int clearValue = Constants::Entities::InvalidEntityID;
 		m_HdrSceneBuffer->ClearAttachment(2, clearValue);
 
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto litShader = assetManager.GetAsset<Shader>(Constants::Assets::StandardLitShad);
-
-		litShader->Bind();
-		litShader->SetFloat3(Constants::Uniforms::CameraPosition, context.CameraTransform[3]);
+		m_LightingShader->Bind();
+		m_LightingShader->SetFloat3(Constants::Uniforms::CameraPosition, context.CameraTransform[3]);
 
 		// Extract the forward vector (-Z axis) from the Camera's World Transform
 		Vector3f cameraForward = -Vector3f(context.CameraTransform[2]);
-		litShader->SetFloat3(Constants::Uniforms::CameraForward, cameraForward); // Make sure you add this to your Constants::Uniforms!
+		m_LightingShader->SetFloat3(Constants::Uniforms::CameraForward, cameraForward); // Make sure you add this to your Constants::Uniforms!
 
 		if (context.ActiveSkybox->Enabled())
-			litShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, context.ActiveSkybox->GetIntensity());
+			m_LightingShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, context.ActiveSkybox->GetIntensity());
 		else
-			litShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, 0.0f);
+			m_LightingShader->SetFloat(Constants::Uniforms::EnvironmentIntensity, 0.0f);
 
-		litShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
-		litShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
-		litShader->SetInt(Constants::Uniforms::PositionAO, 2);
-		litShader->SetInt(Constants::Uniforms::EmissionOut, 3);
-		litShader->SetInt(Constants::Uniforms::DirectionShadowMap, 4);
-		litShader->SetInt(Constants::Uniforms::SpotShadowMap, 5);
-		litShader->SetInt(Constants::Uniforms::IrradianceMap, 6);
-		litShader->SetInt(Constants::Uniforms::PrefilterMap, 7);
-		litShader->SetInt(Constants::Uniforms::BRDFLUT, 8);
+		m_LightingShader->SetInt(Constants::Uniforms::AlbedoRoughness, 0);
+		m_LightingShader->SetInt(Constants::Uniforms::NormalMetallic, 1);
+		m_LightingShader->SetInt(Constants::Uniforms::PositionAO, 2);
+		m_LightingShader->SetInt(Constants::Uniforms::EmissionOut, 3);
+		m_LightingShader->SetInt(Constants::Uniforms::DirectionShadowMap, 4);
+		m_LightingShader->SetInt(Constants::Uniforms::SpotShadowMap, 5);
+		m_LightingShader->SetInt(Constants::Uniforms::IrradianceMap, 6);
+		m_LightingShader->SetInt(Constants::Uniforms::PrefilterMap, 7);
+		m_LightingShader->SetInt(Constants::Uniforms::BRDFLUT, 8);
 
 		RenderAction::SetTextureUnit(0, m_TextureInputs["AlbedoRoughness"]);
 		RenderAction::SetTextureUnit(1, m_TextureInputs["NormalMetallic"]);
@@ -87,13 +85,17 @@ namespace Ember {
 		LightDataBlock lightData = {};
 
 		// Directional Lights
-		auto& registry = context.ActiveScene->GetRegistry();
 		RenderDirectionalLights(context, lightData, registry);
 		RenderSpotLights(context, lightData, registry);
 		RenderPointLights(context, lightData, registry);
 
 		context.LightUniformBuffer->SetData(&lightData, sizeof(LightDataBlock), 0);
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+	void DeferredLightingRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+		m_HdrSceneBuffer->ViewportResize(width, height);
 	}
 
 	void DeferredLightingRenderPass::Shutdown()

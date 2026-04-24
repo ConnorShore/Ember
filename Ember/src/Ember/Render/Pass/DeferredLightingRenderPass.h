@@ -13,9 +13,10 @@ namespace Ember {
 		DeferredLightingRenderPass() = default;
 		virtual ~DeferredLightingRenderPass() = default;
 
-		void Init() override;
-		void Execute(RenderContext& context) override;
-		void Shutdown() override;
+		virtual void Init() override;
+		virtual void Execute(RenderContext& context) override;
+		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
+		virtual void Shutdown() override;
 
 	private:
 		void RenderDirectionalLights(RenderContext& context, LightDataBlock& lightData, Registry& registry);

@@ -60,11 +60,20 @@ namespace Ember {
 
 		// Render LDR Passes
 		auto& currentLdrInput = RenderLDRPasses(context, m_LdrBufferA, m_LdrBufferB);
+		m_TextureOutputs["FinalScene"] = currentLdrInput->GetColorAttachmentID(0);
 
 		// Blit final LDR result to the screen
 		// TODO: Seemingly redundant code with RenderSystem::RenderFinalComposite,
 		// May see if I can just set an output buffer
-		BlitToScreen(context, currentLdrInput);
+		//BlitToScreen(context, currentLdrInput);
+	}
+
+	void PostProcessRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+		m_PostProcessBufferA->ViewportResize(width, height);
+		m_PostProcessBufferB->ViewportResize(width, height);
+		m_LdrBufferA->ViewportResize(width, height);
+		m_LdrBufferB->ViewportResize(width, height);
 	}
 
 	void PostProcessRenderPass::Shutdown()
@@ -73,9 +82,6 @@ namespace Ember {
 
 	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput, SharedPtr<Framebuffer>& currentHdrOutput)
 	{
-		SharedPtr<Framebuffer> currentHdrInput = m_FramebufferInputs["HDRScene"];
-		SharedPtr<Framebuffer> currentHdrOutput = m_PostProcessBufferA;
-
 		auto& registry = context.ActiveScene->GetRegistry();
 
 		// Grab outline components for selected entities
@@ -145,9 +151,6 @@ namespace Ember {
 
 	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput)
 	{
-		SharedPtr<Framebuffer> currentLdrInput = m_LdrBufferA;
-		SharedPtr<Framebuffer> currentLdrOutput = m_LdrBufferB;
-
 		for (auto& pass : m_PostProcessStack)
 		{
 			if (pass->Enabled && pass->GetStage() == PostProcessStage::LDR)
@@ -163,18 +166,18 @@ namespace Ember {
 		return currentLdrInput;
 	}
 
-	void PostProcessRenderPass::BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput)
-	{
-		RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
-		RenderAction::SetViewport(context.ViewportDimensions);
-		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
+	//void PostProcessRenderPass::BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput)
+	//{
+	//	RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
+	//	RenderAction::SetViewport(context.ViewportDimensions);
+	//	RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 
-		m_BlitShader->Bind();
+	//	m_BlitShader->Bind();
 
-		m_BlitShader->SetInt(Constants::Uniforms::Scene, 0);
+	//	m_BlitShader->SetInt(Constants::Uniforms::Scene, 0);
 
-		RenderAction::SetTextureUnit(0, currentLdrInput->GetColorAttachmentID(0));
-		Renderer3D::Submit(m_ScreenQuadVAO);
-	}
+	//	RenderAction::SetTextureUnit(0, currentLdrInput->GetColorAttachmentID(0));
+	//	Renderer3D::Submit(m_ScreenQuadVAO);
+	//}
 
 }

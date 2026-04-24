@@ -2,21 +2,21 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Render/RenderContext.h"
+#include "Ember/Render/Framebuffer.h"
 
 #include <unordered_map>
 #include <string>
 
 namespace Ember {
 
-	class Framebuffer;
-
-	class RenderPass
+	class RenderPass : public SharedResource
 	{
 	public:
 		virtual ~RenderPass() = default;
 
 		virtual void Init() = 0;
 		virtual void Execute(RenderContext& context) = 0;
+		virtual void OnViewportResize(uint32_t width, uint32_t height) = 0;
 		virtual void Shutdown() = 0;
 
 		virtual void SetTextureInput(const std::string& name, uint32_t textureID)

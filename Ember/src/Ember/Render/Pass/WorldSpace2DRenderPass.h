@@ -7,9 +7,13 @@ namespace Ember {
 	class WorldSpace2DRenderPass : public RenderPass
 	{
 	public:
-		void Init() override;
-		void Execute(RenderContext& context) override;
-		void Shutdown() override;
+		WorldSpace2DRenderPass() = default;
+		virtual ~WorldSpace2DRenderPass() = default;
+
+		virtual void Init() override;
+		virtual void Execute(RenderContext& context) override;
+		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
+		virtual void Shutdown() override;
 
 	private:
 		void DrawSprites(AssetManager& assetManager, Registry& registry);

@@ -115,6 +115,11 @@ namespace Ember {
 		Renderer3D::EndFrame();
 	}
 
+	void DeferredGeometryRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+		m_GBuffer->ViewportResize(width, height);
+	}
+
 	void DeferredGeometryRenderPass::Shutdown()
 	{
 	}

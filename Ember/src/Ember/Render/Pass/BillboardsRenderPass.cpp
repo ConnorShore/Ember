@@ -58,6 +58,11 @@ namespace Ember {
 		RenderAction::UseBlending(false);
 	}
 
+	void BillboardsRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+
+	}
+
 	void BillboardsRenderPass::Shutdown()
 	{
 	}
@@ -98,6 +103,8 @@ namespace Ember {
 
 			billboardTransform = Math::Translate(worldPos) * Math::Rotate(yaw, Vector3f(0.0f, 1.0f, 0.0f)) * Math::Scale(finalScale);
 		}
+
+		return billboardTransform;
 	}
 
 }

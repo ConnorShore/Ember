@@ -40,6 +40,11 @@ namespace Ember {
 		m_FramebufferInputs["HDRScene"]->Unbind();
 	}
 
+	void EditorGridRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+
+	}
+
 	void EditorGridRenderPass::Shutdown()
 	{
 	}

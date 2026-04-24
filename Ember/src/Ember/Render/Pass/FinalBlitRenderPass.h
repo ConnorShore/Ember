@@ -4,11 +4,11 @@
 
 namespace Ember {
 
-	class EditorGridRenderPass : public RenderPass
+	class FinalBlitRenderPass : public RenderPass
 	{
 	public:
-		EditorGridRenderPass() = default;
-		virtual ~EditorGridRenderPass() = default;
+		FinalBlitRenderPass() = default;
+		virtual ~FinalBlitRenderPass() = default;
 
 		virtual void Init() override;
 		virtual void Execute(RenderContext& context) override;
@@ -16,8 +16,8 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		SharedPtr<Shader> m_GridShader;
-		SharedPtr<Mesh> m_ScreenQuad;
+		SharedPtr<Shader> m_BlitShader;
+		SharedPtr<VertexArray> m_ScreenQuadVAO;
 	};
 
 }

@@ -17,7 +17,7 @@ namespace Ember {
 		auto& registry = context.ActiveScene->GetRegistry();
 
 		// Bind the final screen/editor output target
-		RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
+		//RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
 
 		// UI ignores the 3D world completely
 		RenderAction::UseDepthTest(false);
@@ -37,8 +37,6 @@ namespace Ember {
 
 		Renderer2D::BeginFrame();
 
-		auto& registry = context.ActiveScene->GetRegistry();
-
 		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
 		RenderSprites(registry);
 
@@ -53,6 +51,11 @@ namespace Ember {
 
 		RenderAction::UseDepthTest(true);
 		RenderAction::UseDepthMask(true);
+	}
+
+	void ScreenSpace2DRenderPass::OnViewportResize(uint32_t width, uint32_t height)
+	{
+
 	}
 
 	void ScreenSpace2DRenderPass::Shutdown()
