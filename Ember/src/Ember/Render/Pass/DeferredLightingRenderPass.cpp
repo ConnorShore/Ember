@@ -22,6 +22,7 @@ namespace Ember {
 			Ember::FramebufferTextureFormat::Depth24Stencil8
 		};
 		m_HdrSceneBuffer = Framebuffer::Create(specs);
+		m_FramebufferOutputs["HDRScene"] = m_HdrSceneBuffer;
 
 		m_ScreenQuad = PrimitiveGenerator::CreateQuad(2.0f, 2.0f);
 	}

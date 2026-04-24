@@ -8,6 +8,8 @@
 
 namespace Ember {
 
+	class Framebuffer;
+
 	class RenderPass
 	{
 	public:
@@ -28,8 +30,22 @@ namespace Ember {
 			return m_TextureOutputs.at(name);
 		}
 
+		virtual void SetFramebufferInput(const std::string& name, const SharedPtr<Framebuffer>& framebuffer)
+		{
+			m_FramebufferInputs[name] = framebuffer;
+		}
+
+		virtual SharedPtr<Framebuffer> GetFramebufferOutput(const std::string& name) const
+		{
+			EB_CORE_ASSERT(m_FramebufferOutputs.find(name) != m_FramebufferOutputs.end(), "Framebuffer output with name {} not found!", name);
+			return m_FramebufferOutputs.at(name);
+		}
+
 	protected:
 		std::unordered_map<std::string, uint32_t> m_TextureInputs;
 		std::unordered_map<std::string, uint32_t> m_TextureOutputs;
+
+		std::unordered_map<std::string, SharedPtr<Framebuffer>> m_FramebufferInputs;
+		std::unordered_map<std::string, SharedPtr<Framebuffer>> m_FramebufferOutputs;
 	};
 }
