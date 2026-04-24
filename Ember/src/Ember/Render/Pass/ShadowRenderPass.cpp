@@ -149,7 +149,8 @@ namespace Ember {
 
 	void ShadowRenderPass::Execute(RenderContext& context)
 	{
-
+		CreateDirectionalShadowMap(context);
+		CreateSpotlightShadowMap(context);
 	}
 
 	void ShadowRenderPass::Shutdown()

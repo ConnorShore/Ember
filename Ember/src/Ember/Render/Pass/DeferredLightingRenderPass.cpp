@@ -32,11 +32,6 @@ namespace Ember {
 	{
 		auto& registry = context.ActiveScene->GetRegistry();
 
-		// TODO: Set this maybe when creating the context
-		int dims[4] = { 0 };
-		RenderAction::GetViewportDimensions(dims);
-		context.ViewportDimensions = Vector4<int>(dims[0], dims[1], dims[2], dims[3]);
-
 		RenderAction::UseDepthTest(false);
 		RenderAction::UseFaceCulling(false);
 

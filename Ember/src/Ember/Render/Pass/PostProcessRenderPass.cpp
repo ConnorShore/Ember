@@ -53,7 +53,7 @@ namespace Ember {
 		RenderAction::UseDepthTest(false);
 
 		// Render HDR Passes
-		auto& currentHdrInput = RenderHDRPasses(context, m_FramebufferInputs["HDRScene"], m_PostProcessBufferA);
+		auto currentHdrInput = RenderHDRPasses(context, m_FramebufferInputs["HDRScene"], m_PostProcessBufferA);
 
 		// Tone Mapping Pass (HDR -> LDR)
 		RenderToneMapping(context, currentHdrInput);
@@ -80,7 +80,7 @@ namespace Ember {
 	{
 	}
 
-	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput, SharedPtr<Framebuffer>& currentHdrOutput)
+	SharedPtr<Framebuffer> PostProcessRenderPass::RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput)
 	{
 		auto& registry = context.ActiveScene->GetRegistry();
 

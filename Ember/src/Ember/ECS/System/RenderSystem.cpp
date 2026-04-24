@@ -74,7 +74,6 @@ namespace Ember {
 		m_RenderPasses.emplace_back(SharedPtr<WorldSpace2DRenderPass>::Create());
 		m_RenderPasses.emplace_back(SharedPtr<PostProcessRenderPass>::Create(m_PostProcessStack));
 		m_RenderPasses.emplace_back(SharedPtr<DebugRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<WorldSpace2DRenderPass>::Create());
 		m_RenderPasses.emplace_back(SharedPtr<ScreenSpace2DRenderPass>::Create());
 		m_RenderPasses.emplace_back(SharedPtr<FinalBlitRenderPass>::Create());
 
@@ -101,6 +100,11 @@ namespace Ember {
 
 		if (!m_RenderSceneState.IsCameraFound)
 			return;
+
+		// Set viewport dimensions before executing passes
+		int dims[4] = { 0 };
+		RenderAction::GetViewportDimensions(dims);
+		m_RenderSceneState.ViewportDimensions = Vector4<int>(dims[0], dims[1], dims[2], dims[3]);
 
 		// Setup render context
 		RenderContext renderContext;
@@ -136,7 +140,7 @@ namespace Ember {
 		deferredLightingPass->Execute(renderContext);
 
 		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
-		RenderAction::CopyDepthBuffer(deferredGeometryPass->GetFramebufferOutput("GBuffer"), deferredLightingPass->GetFramebufferOutput("HDRScene"), m_RenderSceneState.ViewportDimensions);
+		RenderAction::CopyDepthBuffer(deferredGeometryPass->GetFramebufferOutput("GBuffer")->GetID(), deferredLightingPass->GetFramebufferOutput("HDRScene")->GetID(), m_RenderSceneState.ViewportDimensions);
 
 		// --- Skybox ---
 		auto skyboxPass = GetRenderPass<SkyboxRenderPass>();

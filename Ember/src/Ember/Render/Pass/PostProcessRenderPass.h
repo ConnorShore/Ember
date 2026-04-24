@@ -24,7 +24,7 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		SharedPtr<Framebuffer>& RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput, SharedPtr<Framebuffer>& currentHdrOutput);
+		SharedPtr<Framebuffer> RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput);
 		void RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput);
 		SharedPtr<Framebuffer>& RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput);
 		void BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput);

@@ -18,7 +18,7 @@ namespace Ember {
 		Camera* ActiveCamera;
 
 		Matrix4f CameraTransform;
-		Vector4f ViewportDimensions;
+		Vector4<int> ViewportDimensions;
 
 		SharedPtr<UniformBuffer> CameraUniformBuffer;
 		SharedPtr<UniformBuffer> ShadowUniformBuffer;

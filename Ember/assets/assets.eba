@@ -4,13 +4,13 @@ Assets:
     Name: BloodParticle
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\BloodParticle.png'
   - Type: Texture
-    UUID: 15361559888818349168
-    Name: SmokeParticle
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
-  - Type: Texture
     UUID: 10818316536060883226
     Name: moonless_golf_4k
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\moonless_golf_4k.hdr'
+  - Type: Texture
+    UUID: 15361559888818349168
+    Name: SmokeParticle
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
   - Type: Script
     UUID: 16587777693882004979
     Name: NewScript(1)
@@ -20,6 +20,10 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
+    UUID: 10670335993004288059
+    Name: CampFire
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
+  - Type: Script
     UUID: 16541504524255684090
     Name: Powerup
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
@@ -27,10 +31,6 @@ Assets:
     UUID: 8422630553721103124
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
-  - Type: Script
-    UUID: 10670335993004288059
-    Name: CampFire
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
   - Type: Material
     UUID: 220883245630972619
     Name: Powerup2_Powerup_StandardUnlit_Clone_Clone

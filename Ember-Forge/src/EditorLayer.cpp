@@ -78,6 +78,11 @@ namespace Ember {
 		};
 		m_OutputFramebuffer = Framebuffer::Create(specs);
 
+		// Notify scene of the initial viewport size so render pass FBOs are sized correctly from the start
+		m_ViewportSize = { (float)specs.Width, (float)specs.Height };
+		m_Context.ActiveScene->OnViewportResize(specs.Width, specs.Height);
+		m_Camera.SetViewportSize(specs.Width, specs.Height);
+
 		for (auto& panel : m_Panels)
 			panel->OnAttach();
 
