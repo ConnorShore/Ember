@@ -17,6 +17,10 @@ namespace Ember {
 
 	void EditorGridRenderPass::Execute(RenderContext& context)
 	{
+		// Only render when not in play mode
+		if (context.ActiveScene->IsRuntime())
+			return;
+
 		m_FramebufferInputs["HDRScene"]->Bind();
 
 		RenderAction::UseDepthTest(true);

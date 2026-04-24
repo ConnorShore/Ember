@@ -24,7 +24,7 @@ namespace Ember {
 
 	private:
 		void SortParticlesByCameraDistance(const RenderContext& context, std::vector<Particle>& particlesToSort);
-		uint32_t PackDataForGPU(const RenderContext& context, const std::vector<Particle>& sortedParticles);
+		void PackDataForGPU(const RenderContext& context, const std::vector<Particle>& sortedParticles);
 		void BindTextures(const RenderContext& context, uint32_t usedTextureSlots);
 		void DrawParticles();
 
@@ -37,6 +37,7 @@ namespace Ember {
 
 		std::vector<ParticleVertex> m_InstancedData;
 		std::array<UUID, 32> m_TextureSlots; // Max of 32 texture slots in the shader (including the default white texture at slot 0)
+		uint8_t m_CurrentTexSlotIndex = 1;
 	};
 
 }

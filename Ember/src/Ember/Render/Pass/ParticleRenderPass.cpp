@@ -38,6 +38,7 @@ namespace Ember {
 
 		m_TextureSlots.fill(Constants::InvalidUUID); // Mark all texture slots as empty
 		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID; // Slot 0 is reserved for the default white texture
+		m_CurrentTexSlotIndex = 1;	// Start assigning from slot 1 since slot 0 is reserved
 	}
 
 	void ParticleRenderPass::Execute(RenderContext& context)
@@ -52,14 +53,14 @@ namespace Ember {
 		auto pool = m_ParticleManager->GetParticles();
 
 		SortParticlesByCameraDistance(context, pool);
-		uint32_t usedTextureSlots = PackDataForGPU(context, pool);
+		PackDataForGPU(context, pool);
 
 		if (m_InstancedData.empty())
 			return;
 
 		m_FramebufferInputs["HDRScene"]->Bind();
 
-		BindTextures(context, usedTextureSlots);
+		BindTextures(context, m_CurrentTexSlotIndex);
 		DrawParticles();
 
 		m_FramebufferInputs["HDRScene"]->Unbind();
@@ -86,12 +87,12 @@ namespace Ember {
 	}
 
 	// Returns the number of texture slots used (including the default white texture at slot 0)
-	uint32_t ParticleRenderPass::PackDataForGPU(const RenderContext& context, const std::vector<Particle>& sortedParticles)
+	void ParticleRenderPass::PackDataForGPU(const RenderContext& context, const std::vector<Particle>& sortedParticles)
 	{
 		m_InstancedData.reserve(sortedParticles.size());
 
-		// Array to track which textures we have bound this frame
-		uint32_t usedTextureSlots = 1; // Start at 1 since 0 is reserved for the default white texture
+		// See what is the first index in m_TextureSlots that is still empty (value = 0)
+		//uint32_t usedTextureSlots = 1; // Start with max slots, we'll decrease if we find empty ones
 		for (const auto& particle : sortedParticles)
 		{
 			if (!particle.Active)
@@ -123,7 +124,7 @@ namespace Ember {
 			}
 
 			// Find or assign a texture slot
-			uint32_t textureIndex = 0; // Default to white texture
+			uint32_t textureIndex = 1; // Default to white texture
 			if (particle.TextureHandle != Constants::InvalidUUID)
 			{
 				auto it = std::find(m_TextureSlots.begin(), m_TextureSlots.end(), particle.TextureHandle);
@@ -136,8 +137,8 @@ namespace Ember {
 				else
 				{
 					// New texture found! Add it to the list.
-					m_TextureSlots[usedTextureSlots++] = particle.TextureHandle;
-					textureIndex = usedTextureSlots;
+					m_TextureSlots[m_CurrentTexSlotIndex++] = particle.TextureHandle;
+					textureIndex = m_CurrentTexSlotIndex;
 				}
 			}
 
@@ -146,10 +147,9 @@ namespace Ember {
 		}
 
 		if (m_InstancedData.empty())
-			return 0;
+			return;
 
 		m_ParticleVBO->SetData(m_InstancedData.data(), (uint32_t)(m_InstancedData.size() * sizeof(ParticleVertex)));
-		return usedTextureSlots;
 	}
 
 	void ParticleRenderPass::BindTextures(const RenderContext& context, uint32_t usedTextureSlots)

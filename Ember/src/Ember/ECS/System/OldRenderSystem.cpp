@@ -959,125 +959,125 @@
 //		m_HdrSceneBuffer->Unbind();
 //	}
 //
-//	void RenderSystem::RenderParticles(Scene* scene)
-//	{
-//		RenderAction::UseBlending(true);
-//		RenderAction::UseDepthTest(true);
-//		RenderAction::UseDepthMask(false);
-//
-//		auto& particleManager = Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
-//		auto pool = particleManager.GetParticles(); // Note: Copy or create a list of pointers so we can sort!
-//
-//		// --- 1. SORT PARTICLES BY DISTANCE ---
-//		// (You can optimize this later, but for transparency it is mathematically required)
-//		Vector3f camPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
-//		std::sort(pool.begin(), pool.end(), [&camPos](const Particle& a, const Particle& b) {
-//			return Math::Distance(a.Position, camPos) > Math::Distance(b.Position, camPos); // Back to Front
-//			});
-//
-//		// --- 2. PACK DATA AND ASSIGN TEXTURE SLOTS ---
-//		std::vector<ParticleVertex> instanceData;
-//		instanceData.reserve(pool.size());
-//
-//		// Array to track which textures we have bound this frame
-//		std::vector<UUID> textureSlots;
-//
-//		for (const auto& particle : pool)
-//		{
-//			if (!particle.Active)
-//				continue;
-//
-//			ParticleVertex data;
-//			data.Position = particle.Position;
-//			data.Color = particle.CurrentColor;
-//
-//			float speed = Math::Length(particle.Velocity);
-//
-//			// Calculate the rotation angle based on the velocity vector
-//			float velocityAngle = std::atan2(particle.Velocity.y, particle.Velocity.x);
-//			if (particle.AlignWithVelocity)
-//			{
-//				float speed = Math::Length(particle.Velocity);
-//				data.Scale = {
-//					particle.CurrentScale + (speed * particle.StretchFactor), // X stretches!
-//					particle.CurrentScale                                     // Y stays normal
-//				};
-//
-//				// Rotate in direction of velocity vector
-//				data.Rotation = std::atan2(particle.Velocity.y, particle.Velocity.x);
-//			}
-//			else
-//			{
-//				data.Scale = { particle.CurrentScale, particle.CurrentScale };
-//				data.Rotation = particle.Rotation;
-//			}
-//
-//			// Find or assign a texture slot
-//			uint32_t textureIndex = 0; // Default to white texture
-//			if (particle.TextureHandle != Constants::InvalidUUID)
-//			{
-//				auto it = std::find(textureSlots.begin(), textureSlots.end(), particle.TextureHandle);
-//				if (it != textureSlots.end())
-//				{
-//					textureIndex = (uint32_t)std::distance(textureSlots.begin(), it) + 1; // +1 because 0 is our default white texture
-//				}
-//				else
-//				{
-//					// New texture found! Add it to the list.
-//					textureSlots.push_back(particle.TextureHandle);
-//					textureIndex = (uint32_t)textureSlots.size();
-//				}
-//			}
-//
-//			data.TexIndex = textureIndex;
-//			instanceData.push_back(data);
-//		}
-//
-//		if (instanceData.empty())
-//			return;
-//
-//		m_ParticleVBO->SetData(instanceData.data(), (uint32_t)(instanceData.size() * sizeof(ParticleVertex)));
-//
-//		// --- 3. BIND TEXTURES TO THE GPU ---
-//		m_HdrSceneBuffer->Bind();
-//		auto particleShad = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
-//		particleShad->Bind();
-//
-//		// Bind Default White Texture to Slot 0
-//		auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
-//		RenderAction::SetTextureUnit(0, defaultWhite->GetID());
-//
-//		// Bind the rest of the textures found this frame
-//		int samplers[32];
-//		samplers[0] = 0; // Slot 0
-//
-//		for (uint32_t i = 0; i < textureSlots.size(); i++)
-//		{
-//			auto tex = Application::Instance().GetAssetManager().GetAsset<Texture2D>(textureSlots[i]);
-//			RenderAction::SetTextureUnit(i + 1, tex->GetID());
-//			samplers[i + 1] = i + 1;
-//		}
-//
-//		// Tell the shader about the array of samplers
-//		particleShad->SetIntArray("u_Textures", samplers, (uint32_t)textureSlots.size() + 1);
-//
-//		// The shader needs the camera up/right vectors to build the billboard matrix!
-//		Vector3f camRight = Vector3f(m_RenderSceneState.CameraTransform[0]);
-//		Vector3f camUp = Vector3f(m_RenderSceneState.CameraTransform[1]);
-//		particleShad->SetFloat3(Constants::Uniforms::CameraRight, camRight);
-//		particleShad->SetFloat3(Constants::Uniforms::CameraUp, camUp);
-//
-//		// 4. THE SINGLE DRAW CALL
-//		uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
-//		uint32_t instanceCount = (uint32_t)instanceData.size();
-//
-//		RenderAction::DrawIndexedInstanced(m_ParticleVAO, indexCount, instanceCount);
-//
-//		m_HdrSceneBuffer->Unbind();
-//
-//		RenderAction::UseDepthMask(true);
-//		RenderAction::UseBlending(false);
-//	}
+	//void RenderSystem::RenderParticles(Scene* scene)
+	//{
+	//	RenderAction::UseBlending(true);
+	//	RenderAction::UseDepthTest(true);
+	//	RenderAction::UseDepthMask(false);
+
+	//	auto& particleManager = Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
+	//	auto pool = particleManager.GetParticles(); // Note: Copy or create a list of pointers so we can sort!
+
+	//	// --- 1. SORT PARTICLES BY DISTANCE ---
+	//	// (You can optimize this later, but for transparency it is mathematically required)
+	//	Vector3f camPos = Vector3f(m_RenderSceneState.CameraTransform[3]);
+	//	std::sort(pool.begin(), pool.end(), [&camPos](const Particle& a, const Particle& b) {
+	//		return Math::Distance(a.Position, camPos) > Math::Distance(b.Position, camPos); // Back to Front
+	//		});
+
+	//	// --- 2. PACK DATA AND ASSIGN TEXTURE SLOTS ---
+	//	std::vector<ParticleVertex> instanceData;
+	//	instanceData.reserve(pool.size());
+
+	//	// Array to track which textures we have bound this frame
+	//	std::vector<UUID> textureSlots;
+
+	//	for (const auto& particle : pool)
+	//	{
+	//		if (!particle.Active)
+	//			continue;
+
+	//		ParticleVertex data;
+	//		data.Position = particle.Position;
+	//		data.Color = particle.CurrentColor;
+
+	//		float speed = Math::Length(particle.Velocity);
+
+	//		// Calculate the rotation angle based on the velocity vector
+	//		float velocityAngle = std::atan2(particle.Velocity.y, particle.Velocity.x);
+	//		if (particle.AlignWithVelocity)
+	//		{
+	//			float speed = Math::Length(particle.Velocity);
+	//			data.Scale = {
+	//				particle.CurrentScale + (speed * particle.StretchFactor), // X stretches!
+	//				particle.CurrentScale                                     // Y stays normal
+	//			};
+
+	//			// Rotate in direction of velocity vector
+	//			data.Rotation = std::atan2(particle.Velocity.y, particle.Velocity.x);
+	//		}
+	//		else
+	//		{
+	//			data.Scale = { particle.CurrentScale, particle.CurrentScale };
+	//			data.Rotation = particle.Rotation;
+	//		}
+
+	//		// Find or assign a texture slot
+	//		uint32_t textureIndex = 0; // Default to white texture
+	//		if (particle.TextureHandle != Constants::InvalidUUID)
+	//		{
+	//			auto it = std::find(textureSlots.begin(), textureSlots.end(), particle.TextureHandle);
+	//			if (it != textureSlots.end())
+	//			{
+	//				textureIndex = (uint32_t)std::distance(textureSlots.begin(), it) + 1; // +1 because 0 is our default white texture
+	//			}
+	//			else
+	//			{
+	//				// New texture found! Add it to the list.
+	//				textureSlots.push_back(particle.TextureHandle);
+	//				textureIndex = (uint32_t)textureSlots.size();
+	//			}
+	//		}
+
+	//		data.TexIndex = textureIndex;
+	//		instanceData.push_back(data);
+	//	}
+
+	//	if (instanceData.empty())
+	//		return;
+
+	//	m_ParticleVBO->SetData(instanceData.data(), (uint32_t)(instanceData.size() * sizeof(ParticleVertex)));
+
+	//	// --- 3. BIND TEXTURES TO THE GPU ---
+	//	m_HdrSceneBuffer->Bind();
+	//	auto particleShad = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ParticleShad);
+	//	particleShad->Bind();
+
+	//	// Bind Default White Texture to Slot 0
+	//	auto defaultWhite = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
+	//	RenderAction::SetTextureUnit(0, defaultWhite->GetID());
+
+	//	// Bind the rest of the textures found this frame
+	//	int samplers[32];
+	//	samplers[0] = 0; // Slot 0
+
+	//	for (uint32_t i = 0; i < textureSlots.size(); i++)
+	//	{
+	//		auto tex = Application::Instance().GetAssetManager().GetAsset<Texture2D>(textureSlots[i]);
+	//		RenderAction::SetTextureUnit(i + 1, tex->GetID());
+	//		samplers[i + 1] = i + 1;
+	//	}
+
+	//	// Tell the shader about the array of samplers
+	//	particleShad->SetIntArray("u_Textures", samplers, (uint32_t)textureSlots.size() + 1);
+
+	//	// The shader needs the camera up/right vectors to build the billboard matrix!
+	//	Vector3f camRight = Vector3f(m_RenderSceneState.CameraTransform[0]);
+	//	Vector3f camUp = Vector3f(m_RenderSceneState.CameraTransform[1]);
+	//	particleShad->SetFloat3(Constants::Uniforms::CameraRight, camRight);
+	//	particleShad->SetFloat3(Constants::Uniforms::CameraUp, camUp);
+
+	//	// 4. THE SINGLE DRAW CALL
+	//	uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
+	//	uint32_t instanceCount = (uint32_t)instanceData.size();
+
+	//	RenderAction::DrawIndexedInstanced(m_ParticleVAO, indexCount, instanceCount);
+
+	//	m_HdrSceneBuffer->Unbind();
+
+	//	RenderAction::UseDepthMask(true);
+	//	RenderAction::UseBlending(false);
+	//}
 //
 //	void RenderSystem::RenderBillboards(Scene* scene, bool isRuntime)
 //	{

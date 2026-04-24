@@ -27,6 +27,8 @@ namespace Ember {
 		SharedPtr<Skybox> ActiveSkybox;
 
 		RenderQueueBuckets* RenderQueueBuckets;
+
+		bool IsRuntime;
 	};
 
 }
