@@ -4,13 +4,13 @@ Assets:
     Name: BloodParticle
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\BloodParticle.png'
   - Type: Texture
-    UUID: 15361559888818349168
-    Name: SmokeParticle
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
-  - Type: Texture
     UUID: 10818316536060883226
     Name: moonless_golf_4k
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\moonless_golf_4k.hdr'
+  - Type: Texture
+    UUID: 15361559888818349168
+    Name: SmokeParticle
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
   - Type: Script
     UUID: 16587777693882004979
     Name: NewScript(1)
@@ -48,13 +48,13 @@ Assets:
     Name: Enemy_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 12147062781911719508
-    Name: Powerup_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 12147062781911719508
+    Name: Powerup_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 17497850881512429738
     Name: Friendly_Enemy_StandardGeometry_Clone_Clone

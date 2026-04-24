@@ -11,6 +11,8 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Render/VFX/PostProcessPass.h"
 #include "Ember/Render/Texture2DArray.h"
+#include "Ember/Render/RenderQueueBuckets.h"
+#include "Ember/Render/Pass/RenderPass.h"
 
 #include <vector>
 
@@ -31,10 +33,10 @@ namespace Ember {
 
 		EntityID GetEntityIDAtPixel(uint32_t x, uint32_t y);
 
-		SharedPtr<Skybox> GetSkybox() const { return m_Skybox; }
+		inline SharedPtr<Skybox> GetSkybox() const { return m_Skybox; }
 
 		template<std::derived_from<PostProcessPass> T>
-		SharedPtr<PostProcessPass> GetPostProcessPass() const
+		inline SharedPtr<PostProcessPass> GetPostProcessPass() const
 		{
 			for (const auto& pass : m_PostProcessStack)
 			{
@@ -52,79 +54,44 @@ namespace Ember {
 		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
 		void InitializeRenderState();
 		void SetSceneCamera(Scene* scene);
-		void CreateShadowMaps(Scene* scene);
-		void RenderGeometryForShadowMaps(Scene* scene, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer);
-		void CreateDirectionalShadowMap(Scene* scene);
-		void CreateSpotlightShadowMap(Scene* scene);
-		void RenderDeferredGeometry(Scene* scene);
-		void RenderDeferredLighting(Scene* scene);
-		void RenderSkybox(Scene* scene);
-		void RenderForwardEntities(Scene* scene);
-		void RenderTransparentEntities(Scene* scene);
-		void RenderInfiniteGrid();
-		void RenderParticles(Scene* scene);
-		void RenderBillboards(Scene* scene, bool isRuntime);
-		void RenderWorldSpace2D(Scene* scene);
-		void RenderScreenSpaceUI(Scene* scene);
-		void HandlePostProcessing(Scene* scene);
-		void RenderFinalComposite(const SharedPtr<Framebuffer>& outputBuffer);
-		void RenderDebug(Scene* scene);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Scene* scene);
 
+		template<std::derived_from<RenderPass> T>
+		inline SharedPtr<RenderPass> GetRenderPass() const
+		{
+			for (const auto& pass : m_RenderPasses)
+			{
+				if (auto renderPass = DynamicPointerCast<T>(pass))
+				{
+					return renderPass;
+				}
+			}
+			EB_CORE_ERROR("System of type {0} not found in RenderSystem!", typeid(T).name());
+			return nullptr;
+		}
+
 	private:
-		SharedPtr<StaticMesh> m_ScreenQuad;
-
-		SharedPtr<Framebuffer> m_GBuffer;
-		SharedPtr<Framebuffer> m_DirectionalShadowMapBuffer;
-		SharedPtr<Framebuffer> m_SpotShadowMapBuffer;
-		SharedPtr<Framebuffer> m_LdrBufferA;	// Ping Pong buffer for LDR post-processing
-		SharedPtr<Framebuffer> m_LdrBufferB;	// Ping Pong buffer for LDR post-processing
-
 		std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
-		SharedPtr<Framebuffer> m_HdrSceneBuffer;
-		SharedPtr<Framebuffer> m_PostProcessBufferA;
-		SharedPtr<Framebuffer> m_PostProcessBufferB;
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
 
-		// Physics Debug Data
-		SharedPtr<VertexArray> m_PhysicsDebugLineVAO;
-		SharedPtr<VertexBuffer> m_PhysicsDebugLineVBO;
+		// TODO: Make this a render graph
+		std::vector<SharedPtr<RenderPass>> m_RenderPasses;
+
+		RenderQueueBuckets m_RenderQueueBuckets;
 
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
-
-		// Particles
-		SharedPtr<VertexArray> m_ParticleVAO;
-		SharedPtr<VertexBuffer> m_ParticleVBO;
-
-		struct RenderQueueBuckets
-		{
-			std::vector<EntityID> Opaque;
-			std::vector<EntityID> Forward;
-			std::vector<EntityID> Transparent;
-
-			void Clear()
-			{
-				Opaque.clear();
-				Forward.clear();
-				Transparent.clear();
-			}
-		} m_RenderQueueBuckets;
 
 		struct RenderSceneState
 		{
 			Camera ActiveCamera;
 			Matrix4f CameraTransform;
-
-			std::vector<Matrix4f> DirectionalLightViewMatrices;
-			std::vector<float> CascadeSplits;
-
-			Matrix4f SpotLightViewMatrix;
 			bool IsCameraFound;
+
 			Vector4<int> ViewportDimensions;
 			int OutputFramebufferId;
 
@@ -132,23 +99,9 @@ namespace Ember {
 			{
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
-				DirectionalLightViewMatrices.clear();
-				CascadeSplits.clear();
-
-				// Reset light and cascades to 3 for now
-				DirectionalLightViewMatrices.resize(3, Matrix4f(1.0f));
-				CascadeSplits.resize(3, 0.0f);
 			}
 
 		} m_RenderSceneState;
-
-		Scene* m_CurrentScene = nullptr;
-
-		// These are the actual distance values from the camera. 
-		// Cascade 0: CameraNear -> 15.0f
-		// Cascade 1: 15.0f -> 60.0f
-		// Cascade 2: 60.0f -> 300.0f or CameraFar
-		std::vector<float> m_ShadowCascadeLevels = { 5.0f, 40.0f, 300.0f };
 	};
 
 }
