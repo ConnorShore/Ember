@@ -29,6 +29,7 @@ namespace Ember {
 			Ember::FramebufferTextureFormat::Depth24Stencil8	// Depth
 		};
 		m_GBuffer = Framebuffer::Create(specs);
+		m_FramebufferOutputs["GBuffer"] = m_GBuffer;
 
 		m_TextureOutputs["AlbedoRoughness"] = m_GBuffer->GetColorAttachmentID(0);
 		m_TextureOutputs["NormalMetallic"] = m_GBuffer->GetColorAttachmentID(1);
