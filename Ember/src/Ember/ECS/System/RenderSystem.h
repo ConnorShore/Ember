@@ -81,22 +81,17 @@ namespace Ember {
 		// TODO: Make this a render graph
 		std::vector<SharedPtr<RenderPass>> m_RenderPasses;
 
+		RenderQueueBuckets m_RenderQueueBuckets;
+
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
 
-		RenderQueueBuckets m_RenderQueueBuckets;
-
-		// TODO: See what can be removed from RenderSceneState
 		struct RenderSceneState
 		{
 			Camera ActiveCamera;
 			Matrix4f CameraTransform;
-			
-			std::vector<Matrix4f> DirectionalLightViewMatrices;
-			std::vector<float> CascadeSplits;
-
-			Matrix4f SpotLightViewMatrix;
 			bool IsCameraFound;
+
 			Vector4<int> ViewportDimensions;
 			int OutputFramebufferId;
 
@@ -104,12 +99,6 @@ namespace Ember {
 			{
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
-				DirectionalLightViewMatrices.clear();
-				CascadeSplits.clear();
-
-				// Reset light and cascades to 3 for now
-				DirectionalLightViewMatrices.resize(3, Matrix4f(1.0f));
-				CascadeSplits.resize(3, 0.0f);
 			}
 
 		} m_RenderSceneState;
