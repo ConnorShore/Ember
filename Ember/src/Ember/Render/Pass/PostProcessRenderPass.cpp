@@ -44,7 +44,10 @@ namespace Ember {
 		}
 
 		m_ScreenQuadVAO = PrimitiveGenerator::CreateQuad(2.0f, 2.0f)->GetVertexArray();
-		m_BlitShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::BlitShad);
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		m_BlitShader = assetManager.GetAsset<Shader>(Constants::Assets::BlitShad);
+		m_ToneMapShader = assetManager.GetAsset<Shader>(Constants::Assets::ToneMapShadUUID);
 	}
 
 	void PostProcessRenderPass::Execute(RenderContext& context)
@@ -61,11 +64,6 @@ namespace Ember {
 		// Render LDR Passes
 		auto& currentLdrInput = RenderLDRPasses(context, m_LdrBufferA, m_LdrBufferB);
 		m_TextureOutputs["FinalScene"] = currentLdrInput->GetColorAttachmentID(0);
-
-		// Blit final LDR result to the screen
-		// TODO: Seemingly redundant code with RenderSystem::RenderFinalComposite,
-		// May see if I can just set an output buffer
-		//BlitToScreen(context, currentLdrInput);
 	}
 
 	void PostProcessRenderPass::OnViewportResize(uint32_t width, uint32_t height)
@@ -138,11 +136,9 @@ namespace Ember {
 		RenderAction::SetViewport(context.ViewportDimensions);
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
-		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
-		finalShader->Bind();
-		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
-
-		finalShader->SetInt(Constants::Uniforms::Scene, 0);
+		m_ToneMapShader->Bind();
+		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
+		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
 
 		RenderAction::SetTextureUnit(0, currentHdrInput->GetColorAttachmentID(0));
 		Renderer3D::Submit(m_ScreenQuadVAO);
@@ -165,19 +161,5 @@ namespace Ember {
 
 		return currentLdrInput;
 	}
-
-	//void PostProcessRenderPass::BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput)
-	//{
-	//	RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
-	//	RenderAction::SetViewport(context.ViewportDimensions);
-	//	RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
-
-	//	m_BlitShader->Bind();
-
-	//	m_BlitShader->SetInt(Constants::Uniforms::Scene, 0);
-
-	//	RenderAction::SetTextureUnit(0, currentLdrInput->GetColorAttachmentID(0));
-	//	Renderer3D::Submit(m_ScreenQuadVAO);
-	//}
 
 }

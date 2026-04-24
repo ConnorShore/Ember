@@ -45,12 +45,12 @@ namespace Ember {
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShadUUID, Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
 		ShaderMacros outlineMacros;
 		outlineMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
-		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
-		auto finalCompositeShader = Load<Shader>(Constants::Assets::FinalCompositeShad, "Ember/assets/shaders/FinalComposite.glsl");
+		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShadUUID, Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
+		auto toneMappingShader = Load<Shader>(Constants::Assets::ToneMapShadUUID, Constants::Assets::ToneMapShad, "Ember/assets/shaders/ToneMapping.glsl");
 		ShaderMacros infiniteGridMacros;
 		infiniteGridMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
-		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
-		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
+		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShadUUID, Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
+		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShadUUID, Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
 		auto bloomPrefilter = Load<Shader>(Constants::Assets::BloomPrefilterShadUUID, Constants::Assets::BloomPrefilterShad, "Ember/assets/shaders/BloomPrefilter.glsl");
 		auto skyboxShader = Load<Shader>(Constants::Assets::SkyboxShadUUID, Constants::Assets::SkyboxShad, "Ember/assets/shaders/Skybox.glsl");
 		auto equirectangularToCubemapShad = Load<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID, Constants::Assets::EquirectangularToCubemapShad, "Ember/assets/shaders/EquirectangularToCubemap.glsl");

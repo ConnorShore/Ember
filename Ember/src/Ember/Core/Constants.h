@@ -59,8 +59,8 @@ namespace Ember::Constants {
 		inline const uint64_t BloomShadUUID = 16;
 		inline const char* OutlineShad = "Outline";
 		inline const uint64_t OutlineShadUUID = 17;
-		inline const char* FinalCompositeShad = "FinalComposite";
-		inline const uint64_t FinalCompositeShadUUID = 18;
+		inline const char* ToneMapShad = "ToneMap";
+		inline const uint64_t ToneMapShadUUID = 18;
 		inline const char* InfiniteGridShad = "InfiniteGrid";
 		inline const uint64_t InfiniteGridShadUUID = 19;
 		inline const char* BillboardShad = "Billboard";

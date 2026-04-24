@@ -24,6 +24,7 @@ namespace Ember {
 		RenderSkyboxSettings();
 		RenderBloomSettings();
 		RenderFXAASettings();
+		RenderColorGradeSettings();
 		
 		ImGui::End();
 	}
@@ -111,6 +112,85 @@ namespace Ember {
 
 				UI::PropertyGrid::End();
 			}
+			UI::Nodes::EndExpandableNode();
+		}
+	}
+
+	void EnvironmentPanel::RenderColorGradeSettings()
+	{
+		if (UI::Nodes::BeginExpandableNode("Color Grading"))
+		{
+			//auto colorGradePass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
+			bool colorGradeEnabled = true;
+			ImGui::Checkbox("Enable", &colorGradeEnabled);
+
+			// temp props (will come from colorGradePass once setup)
+			float Exposure = 0.0f;
+			float Temperature = 0.0f;
+			float Tint = 0.0f;
+
+			float Contrast = 1.0f;
+			float Saturation = 1.0f;
+
+			Vector4f Lift = { 1.0f, 1.0f, 1.0f, 0.0f };
+			Vector4f Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
+			Vector4f Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
+
+			if (ImGui::TreeNode("Exposure"))
+			{
+				if (UI::PropertyGrid::Begin("##ExposureProps"))
+				{
+					ImGui::BeginDisabled(!colorGradeEnabled);
+					UI::PropertyGrid::Float("Exposure", Exposure, 0.01f, -3.0f, 3.0f);
+					ImGui::EndDisabled();
+
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("White Balance"))
+			{
+				if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
+				{
+					ImGui::BeginDisabled(!colorGradeEnabled);
+					UI::PropertyGrid::Float("Temperature", Temperature, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::Float("Tint", Tint, 0.01f, -1.0f, 1.0f);
+					ImGui::EndDisabled();
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Color Adjustments"))
+			{
+				if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
+				{
+					ImGui::BeginDisabled(!colorGradeEnabled);
+					UI::PropertyGrid::Float("Contrast", Contrast, 0.01f, 0.0f, 2.0f);
+					UI::PropertyGrid::Float("Saturation", Saturation, 0.01f, 0.0f, 2.0f);
+					ImGui::EndDisabled();
+
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Lift, Gamma, Gain"))
+			{
+				if (UI::PropertyGrid::Begin("##LGGProps"))
+				{
+					ImGui::BeginDisabled(!colorGradeEnabled);
+					UI::PropertyGrid::Color4("Lift", Lift);
+					UI::PropertyGrid::Color4("Gamma", Gamma);
+					UI::PropertyGrid::Color4("Gain", Gain);
+					ImGui::EndDisabled();
+
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
 			UI::Nodes::EndExpandableNode();
 		}
 	}

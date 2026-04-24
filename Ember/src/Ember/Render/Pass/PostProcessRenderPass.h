@@ -32,7 +32,7 @@ namespace Ember {
 	private:
 		SharedPtr<Framebuffer> m_PostProcessBufferA, m_PostProcessBufferB;
 		SharedPtr<Framebuffer> m_LdrBufferA, m_LdrBufferB;
-		SharedPtr<Shader> m_BlitShader;
+		SharedPtr<Shader> m_BlitShader, m_ToneMapShader;
 		SharedPtr<VertexArray> m_ScreenQuadVAO;
 
 		PostProcessStack& m_PostProcessStack;
