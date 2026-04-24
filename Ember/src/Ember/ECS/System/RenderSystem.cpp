@@ -55,6 +55,9 @@ namespace Ember {
 		RenderAction::UseCubeMapSeamless(true);
 
 		// Initialize post process passes
+		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
+		m_PostProcessStack.emplace_back(SharedPtr<OutlinePass>::Create());
+		m_PostProcessStack.emplace_back(SharedPtr<FXAAPass>::Create());
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
 
