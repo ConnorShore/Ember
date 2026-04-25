@@ -29,6 +29,11 @@ uniform float u_Tint;
 uniform float u_Contrast;
 uniform float u_Saturation;
 
+// Lift, gamma, gain uniforms
+uniform vec4 u_Lift;
+uniform vec4 u_Gamma;
+uniform vec4 u_Gain;
+
 void applyWhiteBalance(inout vec3 color)
 {
     float tempScale = 1.0 + (u_Temperature * 0.15); 
@@ -60,6 +65,26 @@ void applyWhiteBalance(inout vec3 color)
     color = lmsToRgb * lmsColor;
 }
 
+void applyLiftGammaGain(inout vec3 color)
+{
+    // Calculate the final applied values!
+    // mix(Neutral, UserColor, Intensity)
+    // If alpha is 0.0, it returns the Neutral value. 
+    // If alpha is 1.0, it returns 100% of the User's chosen color.
+    vec3 appliedLift  = mix(vec3(0.0), u_Lift.rgb,  u_Lift.a);
+    vec3 appliedGain  = mix(vec3(1.0), u_Gain.rgb,  u_Gain.a);
+    vec3 appliedGamma = mix(vec3(1.0), u_Gamma.rgb, u_Gamma.a);
+    
+    // Lift: Adds color mostly to the shadows
+    color = color + (appliedLift * (1.0 - color));
+    
+    // Gain: Multiplies the color (pushes highlights)
+    color = color * appliedGain;
+    
+    // Gamma: Power function for midtones
+    color = pow(max(color, vec3(0.0)), 1.0 / appliedGamma);
+}
+
 void applyColorAdjustment(inout vec3 color)
 {
     // Apply Contrast
@@ -81,6 +106,7 @@ void main()
 {
     vec3 sceneColor = texture(u_Scene, TexCoord).rgb;
     applyWhiteBalance(sceneColor);
+    applyLiftGammaGain(sceneColor);
     applyColorAdjustment(sceneColor);
     OutColor = vec4(sceneColor, 1.0);
 }

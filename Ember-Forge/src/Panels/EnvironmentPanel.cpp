@@ -33,13 +33,13 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderSkyboxSettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("Skybox"))
-		{
-			auto skybox = Application::Instance().GetSystem<RenderSystem>()->GetSkybox();
-			bool enabled = skybox->Enabled();
-			if (ImGui::Checkbox("Enable", &enabled))
-				skybox->SetEnabled(enabled);
+		auto skybox = Application::Instance().GetSystem<RenderSystem>()->GetSkybox();
+		bool enabled = skybox->Enabled();
 
+		if (UI::Nodes::BeginEnabledExpandableNode("Skybox", enabled, [&]() {
+			skybox->SetEnabled(enabled);
+		}))
+		{
 			if (UI::PropertyGrid::Begin("##SkyboxPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!skybox->Enabled());
@@ -74,11 +74,9 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderBloomSettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("Bloom"))
+		auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("Bloom", bloomPass->Enabled))
 		{
-			auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
-			ImGui::Checkbox("Enable", &bloomPass->Enabled);
-
 			if (UI::PropertyGrid::Begin("##BloomPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!bloomPass->Enabled);
@@ -100,10 +98,9 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderFXAASettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("FXAA"))
+		auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("FXAA", fxaaPass->Enabled))
 		{
-			auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
-			ImGui::Checkbox("Enable", &fxaaPass->Enabled);
 			if (UI::PropertyGrid::Begin("##FXAAPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!fxaaPass->Enabled);
@@ -120,22 +117,18 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderColorGradeSettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("Color Grading"))
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("Color Grading", colorGradePass->Enabled))
 		{
 			auto toneMapPass = StaticPointerCast<ToneMapPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ToneMapPass>());
-			auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
 			auto& colorGradeProps = colorGradePass->Settings;
 
-			ImGui::Checkbox("Enable", &colorGradePass->Enabled);
-
+			ImGui::BeginDisabled(!colorGradePass->Enabled);
 			if (ImGui::TreeNode("Exposure"))
 			{
 				if (UI::PropertyGrid::Begin("##ExposureProps"))
 				{
-					ImGui::BeginDisabled(!colorGradePass->Enabled);
 					UI::PropertyGrid::Float("Exposure", toneMapPass->Exposure, 0.01f, 0.0f, 10.0f);
-					ImGui::EndDisabled();
-
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
@@ -145,10 +138,8 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
 				{
-					ImGui::BeginDisabled(!colorGradePass->Enabled);
 					UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
 					UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
-					ImGui::EndDisabled();
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
@@ -158,10 +149,8 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
 				{
-					ImGui::BeginDisabled(!colorGradePass->Enabled);
 					UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
 					UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
-					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();
 				}
@@ -172,16 +161,15 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##LGGProps"))
 				{
-					ImGui::BeginDisabled(!colorGradePass->Enabled);
 					UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
 					UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
 					UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
-					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
 			}
+			ImGui::EndDisabled();
 
 			UI::Nodes::EndExpandableNode();
 		}

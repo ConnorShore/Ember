@@ -27,7 +27,7 @@ namespace Ember {
 			float Contrast = 1.0f;
 			float Saturation = 1.0f;
 
-			Vector4f Lift = { 1.0f, 1.0f, 1.0f, 0.0f };
+			Vector4f Lift = { 0.0f, 0.0f, 0.0f, 0.0f };
 			Vector4f Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
 			Vector4f Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
 		};

@@ -36,6 +36,11 @@ namespace Ember {
 		m_ColorGradeShaderEditor->SetFloat("u_Contrast", Settings.Contrast);
 		m_ColorGradeShaderEditor->SetFloat("u_Saturation", Settings.Saturation);
 
+		// Lift, Gamma, Gain uniforms
+		m_ColorGradeShaderEditor->SetFloat4("u_Lift", Settings.Lift);
+		m_ColorGradeShaderEditor->SetFloat4("u_Gamma", Settings.Gamma);
+		m_ColorGradeShaderEditor->SetFloat4("u_Gain", Settings.Gain);
+
 		m_ColorGradeShaderEditor->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
 
