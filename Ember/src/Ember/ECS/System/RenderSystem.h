@@ -50,13 +50,6 @@ namespace Ember {
 			return nullptr;
 		}
 
-	private:
-		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
-		void InitializeRenderState();
-		void SetSceneCamera(Scene* scene);
-		void ResetRenderState();
-		void SortEntitiesByRenderQueue(Scene* scene);
-
 		template<std::derived_from<RenderPass> T>
 		inline SharedPtr<RenderPass> GetRenderPass() const
 		{
@@ -70,6 +63,13 @@ namespace Ember {
 			EB_CORE_ERROR("System of type {0} not found in RenderSystem!", typeid(T).name());
 			return nullptr;
 		}
+
+	private:
+		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
+		void InitializeRenderState();
+		void SetSceneCamera(Scene* scene);
+		void ResetRenderState();
+		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
 		std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;

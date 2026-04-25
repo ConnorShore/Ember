@@ -3,8 +3,10 @@
 #include "UI/Nodes.h"
 #include "UI/PropertyGrid.h"
 
+#include <Ember/Render/Pass/PostProcessRenderPass.h>
 #include <Ember/Render/VFX/BloomPass.h>
 #include <Ember/Render/VFX/FXAAPass.h>
+#include <Ember/Render/VFX/ColorGradePass.h>
 #include <Ember/ECS/System/RenderSystem.h>
 #include <Ember/Event/UIEvent.h>
 
@@ -120,28 +122,18 @@ namespace Ember {
 	{
 		if (UI::Nodes::BeginExpandableNode("Color Grading"))
 		{
-			//auto colorGradePass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
-			bool colorGradeEnabled = true;
-			ImGui::Checkbox("Enable", &colorGradeEnabled);
+			auto postProcessRenderPass = StaticPointerCast<PostProcessRenderPass>(Application::Instance().GetSystem<RenderSystem>()->GetRenderPass<PostProcessRenderPass>());
+			auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
+			auto& colorGradeProps = colorGradePass->Settings;
 
-			// temp props (will come from colorGradePass once setup)
-			float Exposure = 0.0f;
-			float Temperature = 0.0f;
-			float Tint = 0.0f;
-
-			float Contrast = 1.0f;
-			float Saturation = 1.0f;
-
-			Vector4f Lift = { 1.0f, 1.0f, 1.0f, 0.0f };
-			Vector4f Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
-			Vector4f Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
+			ImGui::Checkbox("Enable", &colorGradePass->Enabled);
 
 			if (ImGui::TreeNode("Exposure"))
 			{
 				if (UI::PropertyGrid::Begin("##ExposureProps"))
 				{
-					ImGui::BeginDisabled(!colorGradeEnabled);
-					UI::PropertyGrid::Float("Exposure", Exposure, 0.01f, -3.0f, 3.0f);
+					ImGui::BeginDisabled(!colorGradePass->Enabled);
+					UI::PropertyGrid::Float("Exposure", postProcessRenderPass->Exposure, 0.01f, 0.0f, 10.0f);
 					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();
@@ -153,9 +145,9 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
 				{
-					ImGui::BeginDisabled(!colorGradeEnabled);
-					UI::PropertyGrid::Float("Temperature", Temperature, 0.01f, -1.0f, 1.0f);
-					UI::PropertyGrid::Float("Tint", Tint, 0.01f, -1.0f, 1.0f);
+					ImGui::BeginDisabled(!colorGradePass->Enabled);
+					UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
 					ImGui::EndDisabled();
 					UI::PropertyGrid::End();
 				}
@@ -166,9 +158,9 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
 				{
-					ImGui::BeginDisabled(!colorGradeEnabled);
-					UI::PropertyGrid::Float("Contrast", Contrast, 0.01f, 0.0f, 2.0f);
-					UI::PropertyGrid::Float("Saturation", Saturation, 0.01f, 0.0f, 2.0f);
+					ImGui::BeginDisabled(!colorGradePass->Enabled);
+					UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
+					UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
 					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();
@@ -180,10 +172,10 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##LGGProps"))
 				{
-					ImGui::BeginDisabled(!colorGradeEnabled);
-					UI::PropertyGrid::Color4("Lift", Lift);
-					UI::PropertyGrid::Color4("Gamma", Gamma);
-					UI::PropertyGrid::Color4("Gain", Gain);
+					ImGui::BeginDisabled(!colorGradePass->Enabled);
+					UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
+					UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
+					UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
 					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();

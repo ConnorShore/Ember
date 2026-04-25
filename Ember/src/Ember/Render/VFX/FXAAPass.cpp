@@ -10,7 +10,7 @@ namespace Ember {
 	void FXAAPass::Init()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		m_FXAAShader = assetManager.GetAsset<Shader>(Constants::Assets::FXAAShad);
+		m_FXAAShader = assetManager.GetAsset<Shader>(Constants::Assets::FXAAShadUUID);
 	}
 
 	void FXAAPass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)

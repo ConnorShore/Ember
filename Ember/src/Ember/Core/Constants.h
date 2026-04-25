@@ -87,6 +87,10 @@ namespace Ember::Constants {
 		inline const uint64_t BlitShadUUID = 1000;
 		inline const char* ParticleShad = "Particle";
 		inline const uint64_t ParticleShadUUID = 1001;
+		inline const char* ColorGradeEditorShad = "ColorGradeEditor";
+		inline const uint64_t ColorGradeEditorShadUUID = 1002;
+		inline const char* ColorGradeRuntimeShad = "ColorGradeRuntime";
+		inline const uint64_t ColorGradeRuntimeShadUUID = 1003;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;

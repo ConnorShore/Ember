@@ -130,6 +130,7 @@ namespace Ember {
 		return currentHdrInput;
 	}
 
+	// TODO: Probably move this to its own pass so it can contain the Exposure setting
 	void PostProcessRenderPass::RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput)
 	{
 		m_LdrBufferA->Bind();
@@ -137,7 +138,7 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
 		m_ToneMapShader->Bind();
-		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
+		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, Exposure);
 		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
 
 		RenderAction::SetTextureUnit(0, currentHdrInput->GetColorAttachmentID(0));

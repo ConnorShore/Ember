@@ -1,0 +1,50 @@
+#include "ebpch.h"
+#include "ColorGradePass.h"
+
+#include "Ember/Core/Application.h"
+#include "Ember/Render/RenderAction.h"
+#include "Ember/Render/Renderer3D.h"
+
+namespace Ember {
+
+	void ColorGradePass::Init()
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		m_ColorGradeShaderEditor = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeEditorShadUUID);
+		m_ColorGradeShaderRuntime = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID);
+	}
+
+	void ColorGradePass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	{
+		// TODO: Post processing passes should probably get a handle of the render context
+	}
+
+	void ColorGradePass::RenderEditor(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	{
+		outputBuffer->Bind();
+
+		m_ColorGradeShaderEditor->Bind();
+
+		// Set uniforms here
+
+		m_ColorGradeShaderEditor->SetInt(Constants::Uniforms::Scene, 0);
+		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+	void ColorGradePass::RenderRuntime(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	{
+		outputBuffer->Bind();
+
+		m_ColorGradeShaderRuntime->Bind();
+
+		// Set uniforms here
+
+		m_ColorGradeShaderRuntime->SetInt(Constants::Uniforms::Scene, 0);
+		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
+	}
+
+}

@@ -23,11 +23,14 @@ namespace Ember {
 		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 		virtual void Shutdown() override;
 
+	public:
+		// Directly expose props for UI modification
+		float Exposure = 1.0f;
+
 	private:
 		SharedPtr<Framebuffer> RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput);
 		void RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput);
 		SharedPtr<Framebuffer>& RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput);
-		void BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput);
 
 	private:
 		SharedPtr<Framebuffer> m_PostProcessBufferA, m_PostProcessBufferB;
