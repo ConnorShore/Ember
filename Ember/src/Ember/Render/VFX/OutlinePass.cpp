@@ -11,12 +11,9 @@ namespace Ember {
 		m_OutlineShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::OutlineShad);
 	}
 
-	void OutlinePass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	void OutlinePass::Render(PostProcessPassContext& context)
 	{
-		//if (m_SelectedEntityID == Constants::Entities::InvalidEntityID || m_GBuffer == nullptr || m_HdrBuffer == nullptr)
-		//	return;
-
-		outputBuffer->Bind();
+		context.OutputBuffer->Bind();
 		RenderAction::SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(RendererAPI::RenderBit::Color);
 
@@ -25,10 +22,10 @@ namespace Ember {
 		// Feed the shader the scene color, bright channel, and entity ID buffers from
 		// both the GBuffer (opaque) and HDR buffer (forward) so outlines work on all objects
 		m_OutlineShader->SetInt("u_Scene", 0);
-		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
 
 		m_OutlineShader->SetInt("u_BrightScene", 1);
-		RenderAction::SetTextureUnit(1, inputBuffer->GetColorAttachmentID(1));
+		RenderAction::SetTextureUnit(1, context.InputBuffer->GetColorAttachmentID(1));
 
 		// Bind Opaque IDs (G-Buffer)
 		m_OutlineShader->SetInt("u_OpaqueIDBuffer", 2);
@@ -48,7 +45,7 @@ namespace Ember {
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 
-		outputBuffer->Unbind();
+		context.OutputBuffer->Unbind();
 	}
 
 }

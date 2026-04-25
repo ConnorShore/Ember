@@ -26,5 +26,5 @@ void main()
     // TODO: Apply color grading here using a color grading LUT
 
     vec3 sceneColor = texture(u_Scene, TexCoord).rgb;
-    OutColor = vec4(sceneColor.r, 0.0, 0.0, 1.0);
+    OutColor = vec4(sceneColor, 1.0);
 }

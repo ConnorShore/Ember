@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderPass.h"
+#include "Ember/Render/VFX/PostProcessPass.h"
 
 namespace Ember {
 
@@ -24,13 +25,13 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	public:
-		// Directly expose props for UI modification
+		// Directly expose props for UI modification (TODO: Move to a separate ToneMappingPass)
 		float Exposure = 1.0f;
 
 	private:
-		SharedPtr<Framebuffer> RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput);
-		void RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput);
-		SharedPtr<Framebuffer>& RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput);
+		SharedPtr<Framebuffer> RenderHDRPasses(PostProcessPassContext& passContext);
+		void RenderToneMapping(PostProcessPassContext& passContext);
+		SharedPtr<Framebuffer>& RenderLDRPasses(PostProcessPassContext& passContext);
 
 	private:
 		SharedPtr<Framebuffer> m_PostProcessBufferA, m_PostProcessBufferB;

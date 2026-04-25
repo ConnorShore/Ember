@@ -7,7 +7,6 @@
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 
-#include "Ember/Render/VFX/PostProcessPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
 
 namespace Ember {
@@ -52,17 +51,24 @@ namespace Ember {
 
 	void PostProcessRenderPass::Execute(RenderContext& context)
 	{
+		PostProcessPassContext passContext(context);
+
 		auto& registry = context.ActiveScene->GetRegistry();
 		RenderAction::UseDepthTest(false);
 
 		// Render HDR Passes
-		auto currentHdrInput = RenderHDRPasses(context, m_FramebufferInputs["HDRScene"], m_PostProcessBufferA);
+		passContext.InputBuffer = m_FramebufferInputs["HDRScene"];
+		passContext.OutputBuffer = m_PostProcessBufferA;
+		auto currentHdrInput = RenderHDRPasses(passContext);
 
 		// Tone Mapping Pass (HDR -> LDR)
-		RenderToneMapping(context, currentHdrInput);
+		passContext.InputBuffer = currentHdrInput;
+		RenderToneMapping(passContext);
 
 		// Render LDR Passes
-		auto& currentLdrInput = RenderLDRPasses(context, m_LdrBufferA, m_LdrBufferB);
+		passContext.InputBuffer = m_LdrBufferA;
+		passContext.OutputBuffer = m_LdrBufferB;
+		auto& currentLdrInput = RenderLDRPasses(passContext);
 		m_TextureOutputs["FinalScene"] = currentLdrInput->GetColorAttachmentID(0);
 	}
 
@@ -78,9 +84,9 @@ namespace Ember {
 	{
 	}
 
-	SharedPtr<Framebuffer> PostProcessRenderPass::RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput)
+	SharedPtr<Framebuffer> PostProcessRenderPass::RenderHDRPasses(PostProcessPassContext& passContext)
 	{
-		auto& registry = context.ActiveScene->GetRegistry();
+		auto& registry = passContext.RenderCtx.ActiveScene->GetRegistry();
 
 		// Grab outline components for selected entities
 		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
@@ -109,58 +115,57 @@ namespace Ember {
 						outlinePass->SetOutlineColor(outline.Color);
 						outlinePass->SetOutlineThickness(outline.Thickness);
 
-						pass->Render(currentHdrInput, currentHdrOutput);
+						pass->Render(passContext);
 
 						// Ping Pong
-						currentHdrInput = currentHdrOutput;
-						currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+						passContext.InputBuffer = passContext.OutputBuffer;
+						passContext.OutputBuffer = (passContext.OutputBuffer == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
 					}
 					continue; // Skip the standard render call below
 				}
 
 				// Standard HDR Passes (e.g. Bloom)
-				pass->Render(currentHdrInput, currentHdrOutput);
+				pass->Render(passContext);
 
 				// Ping Pong
-				currentHdrInput = currentHdrOutput;
-				currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+				passContext.InputBuffer = passContext.OutputBuffer;
+				passContext.OutputBuffer = (passContext.OutputBuffer == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
 			}
 		}
 
-		return currentHdrInput;
+		return passContext.InputBuffer;
 	}
 
 	// TODO: Probably move this to its own pass so it can contain the Exposure setting
-	void PostProcessRenderPass::RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput)
+	void PostProcessRenderPass::RenderToneMapping(PostProcessPassContext& passContext)
 	{
 		m_LdrBufferA->Bind();
-		RenderAction::SetViewport(context.ViewportDimensions);
+		RenderAction::SetViewport(passContext.RenderCtx.ViewportDimensions);
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
 		m_ToneMapShader->Bind();
 		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, Exposure);
 		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
 
-		RenderAction::SetTextureUnit(0, currentHdrInput->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, passContext.InputBuffer->GetColorAttachmentID(0));
 		Renderer3D::Submit(m_ScreenQuadVAO);
 		m_LdrBufferA->Unbind();
 	}
 
-	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput)
+	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(PostProcessPassContext& passContext)
 	{
 		for (auto& pass : m_PostProcessStack)
 		{
 			if (pass->Enabled && pass->GetStage() == PostProcessStage::LDR)
 			{
-				pass->Render(currentLdrInput, currentLdrOutput);
+				pass->Render(passContext);
 
 				// Ping Pong
-				currentLdrInput = currentLdrOutput;
-				currentLdrOutput = (currentLdrOutput == m_LdrBufferA) ? m_LdrBufferB : m_LdrBufferA;
+				passContext.InputBuffer = passContext.OutputBuffer;
+				passContext.OutputBuffer = (passContext.OutputBuffer == m_LdrBufferA) ? m_LdrBufferB : m_LdrBufferA;
 			}
 		}
 
-		return currentLdrInput;
+		return passContext.InputBuffer;
 	}
-
 }

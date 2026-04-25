@@ -24,5 +24,5 @@ uniform sampler2D u_Scene;
 void main()
 {
     vec3 sceneColor = texture(u_Scene, TexCoord).rgb;
-    OutColor = vec4(0.0, 0.0, sceneColor.b, 1.0);
+    OutColor = vec4(sceneColor, 1.0);
 }

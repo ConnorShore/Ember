@@ -13,7 +13,7 @@ namespace Ember {
 		virtual ~OutlinePass() = default;
 
 		virtual void Init() override;
-		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) override;
+		virtual void Render(PostProcessPassContext& context) override;
 
 		virtual void SetSelectedEntityID(EntityID entityID) { m_SelectedEntityID = entityID; }
 		virtual void SetGBuffer(SharedPtr<Framebuffer> gBuffer) { m_GBuffer = gBuffer; }

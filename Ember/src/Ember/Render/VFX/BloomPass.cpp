@@ -39,7 +39,7 @@ namespace Ember {
 	}
 
 	// Three stages: (1) extract bright pixels, (2) ping-pong Gaussian blur, (3) composite onto scene
-	void BloomPass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	void BloomPass::Render(PostProcessPassContext& context)
 	{
 		// Bloom Prefilter Pass //
 		m_BloomExtractionBuffer->Bind();
@@ -52,7 +52,7 @@ namespace Ember {
 		m_BloomPrefilterShader->SetFloat(Constants::Uniforms::Knee, Knee);
 
 		m_BloomPrefilterShader->SetInt(Constants::Uniforms::Scene, 0);
-		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 
@@ -89,10 +89,10 @@ namespace Ember {
 		//////
 
 		// Bloom Pass //
-		outputBuffer->Bind();
+		context.OutputBuffer->Bind();
 
 		// Apply the bloom effect by blending the blurred bright areas back onto the scene
-		RenderAction::SetViewport(0, 0, outputBuffer->GetSpecification().Width, outputBuffer->GetSpecification().Height);
+		RenderAction::SetViewport(0, 0, context.OutputBuffer->GetSpecification().Width, context.OutputBuffer->GetSpecification().Height);
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
 		RenderAction::UseDepthTest(false);
 
@@ -103,7 +103,7 @@ namespace Ember {
 		m_BloomCompositeShader->SetInt(Constants::Uniforms::Scene, 0);
 		m_BloomCompositeShader->SetInt(Constants::Uniforms::BloomBlur, 1);
 
-		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
 		RenderAction::SetTextureUnit(1, m_PingPongBuffers[!horizontalPass]->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());

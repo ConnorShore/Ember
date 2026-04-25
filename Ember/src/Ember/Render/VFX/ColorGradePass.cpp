@@ -14,9 +14,12 @@ namespace Ember {
 		m_ColorGradeShaderRuntime = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID);
 	}
 
-	void ColorGradePass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	void ColorGradePass::Render(PostProcessPassContext& context)
 	{
-		// TODO: Post processing passes should probably get a handle of the render context
+		if (context.RenderCtx.IsRuntime)
+			RenderRuntime(context.InputBuffer, context.OutputBuffer);
+		else
+			RenderEditor(context.InputBuffer, context.OutputBuffer);
 	}
 
 	void ColorGradePass::RenderEditor(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)

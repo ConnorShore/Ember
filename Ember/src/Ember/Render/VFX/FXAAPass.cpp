@@ -13,9 +13,9 @@ namespace Ember {
 		m_FXAAShader = assetManager.GetAsset<Shader>(Constants::Assets::FXAAShadUUID);
 	}
 
-	void FXAAPass::Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer)
+	void FXAAPass::Render(PostProcessPassContext& context)
 	{
-		outputBuffer->Bind();
+		context.OutputBuffer->Bind();
 
 		m_FXAAShader->Bind();
 
@@ -25,7 +25,7 @@ namespace Ember {
 		m_FXAAShader->SetFloat(Constants::Uniforms::SubpixelQuality, SubpixelQuality);
 
 		m_FXAAShader->SetInt(Constants::Uniforms::Scene, 0);
-		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}

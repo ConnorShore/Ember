@@ -12,7 +12,7 @@ namespace Ember {
 		virtual ~FXAAPass() = default;
 
 		virtual void Init() override;
-		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) override;
+		virtual void Render(PostProcessPassContext& context) override;
 
 		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::LDR; }
 

@@ -118,6 +118,7 @@ namespace Ember {
 		renderContext.CameraUniformBuffer = m_CameraUniformBuffer;
 		renderContext.ShadowUniformBuffer = m_ShadowUniformBuffer;
 		renderContext.ViewportDimensions = m_RenderSceneState.ViewportDimensions;
+		renderContext.IsRuntime = isRuntime;
 
 		SortEntitiesByRenderQueue(scene);
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;

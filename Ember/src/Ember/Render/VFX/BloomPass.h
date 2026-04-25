@@ -12,7 +12,7 @@ namespace Ember {
 		virtual ~BloomPass() = default;
 
 		virtual void Init() override;
-		virtual void Render(SharedPtr<Framebuffer> inputBuffer, SharedPtr<Framebuffer> outputBuffer) override;
+		virtual void Render(PostProcessPassContext& context) override;
 		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 
 		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::HDR; }
