@@ -20,6 +20,7 @@ namespace Ember {
 	public:
 		struct ColorGradeSettings
 		{
+			// TODO: Probably at some point want to break out different color grade settings to their own passes
 			float Temperature = 0.0f;
 			float Tint = 0.0f;
 

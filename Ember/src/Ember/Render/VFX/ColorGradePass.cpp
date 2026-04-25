@@ -28,7 +28,13 @@ namespace Ember {
 
 		m_ColorGradeShaderEditor->Bind();
 
-		// Set uniforms here
+		// White balance uniforms
+		m_ColorGradeShaderEditor->SetFloat("u_Temperature", Settings.Temperature);
+		m_ColorGradeShaderEditor->SetFloat("u_Tint", Settings.Tint);
+
+		// Color adjustment uniforms
+		m_ColorGradeShaderEditor->SetFloat("u_Contrast", Settings.Contrast);
+		m_ColorGradeShaderEditor->SetFloat("u_Saturation", Settings.Saturation);
 
 		m_ColorGradeShaderEditor->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
