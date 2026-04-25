@@ -63,6 +63,7 @@ namespace Ember {
 
 		// Tone Mapping Pass (HDR -> LDR)
 		passContext.InputBuffer = currentHdrInput;
+		passContext.OutputBuffer = m_LdrBufferA;
 		RenderToneMapping(passContext);
 
 		// Render LDR Passes
@@ -139,17 +140,14 @@ namespace Ember {
 	// TODO: Probably move this to its own pass so it can contain the Exposure setting
 	void PostProcessRenderPass::RenderToneMapping(PostProcessPassContext& passContext)
 	{
-		m_LdrBufferA->Bind();
-		RenderAction::SetViewport(passContext.RenderCtx.ViewportDimensions);
-		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
-
-		m_ToneMapShader->Bind();
-		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, Exposure);
-		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
-
-		RenderAction::SetTextureUnit(0, passContext.InputBuffer->GetColorAttachmentID(0));
-		Renderer3D::Submit(m_ScreenQuadVAO);
-		m_LdrBufferA->Unbind();
+		for (auto& pass : m_PostProcessStack)
+		{
+			if (pass->GetStage() == PostProcessStage::ToneMap)
+			{
+				pass->Render(passContext);
+				return;
+			}
+		}
 	}
 
 	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(PostProcessPassContext& passContext)

@@ -3,10 +3,10 @@
 #include "UI/Nodes.h"
 #include "UI/PropertyGrid.h"
 
-#include <Ember/Render/Pass/PostProcessRenderPass.h>
 #include <Ember/Render/VFX/BloomPass.h>
 #include <Ember/Render/VFX/FXAAPass.h>
 #include <Ember/Render/VFX/ColorGradePass.h>
+#include <Ember/Render/VFX/ToneMapPass.h>
 #include <Ember/ECS/System/RenderSystem.h>
 #include <Ember/Event/UIEvent.h>
 
@@ -122,7 +122,7 @@ namespace Ember {
 	{
 		if (UI::Nodes::BeginExpandableNode("Color Grading"))
 		{
-			auto postProcessRenderPass = StaticPointerCast<PostProcessRenderPass>(Application::Instance().GetSystem<RenderSystem>()->GetRenderPass<PostProcessRenderPass>());
+			auto toneMapPass = StaticPointerCast<ToneMapPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ToneMapPass>());
 			auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
 			auto& colorGradeProps = colorGradePass->Settings;
 
@@ -133,7 +133,7 @@ namespace Ember {
 				if (UI::PropertyGrid::Begin("##ExposureProps"))
 				{
 					ImGui::BeginDisabled(!colorGradePass->Enabled);
-					UI::PropertyGrid::Float("Exposure", postProcessRenderPass->Exposure, 0.01f, 0.0f, 10.0f);
+					UI::PropertyGrid::Float("Exposure", toneMapPass->Exposure, 0.01f, 0.0f, 10.0f);
 					ImGui::EndDisabled();
 
 					UI::PropertyGrid::End();

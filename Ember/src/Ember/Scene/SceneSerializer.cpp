@@ -5,10 +5,10 @@
 #include "Ember/Utils/SerializationUtils.h"
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
-#include "Ember/Render/Pass/PostProcessRenderPass.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/FXAAPass.h"
 #include "Ember/Render/VFX/ColorGradePass.h"
+#include "Ember/Render/VFX/ToneMapPass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -929,7 +929,7 @@ namespace Ember {
 		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
 		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
 		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
-		auto postProcessRenderPass = StaticPointerCast<PostProcessRenderPass>(renderSystem->GetRenderPass<PostProcessRenderPass>());
+		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
 
 		ryml::NodeRef envNode = root["Environment"];
 		envNode |= ryml::MAP;
@@ -958,7 +958,7 @@ namespace Ember {
 		ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 		colorGradeNode |= ryml::MAP;
 		colorGradeNode["Enabled"] << colorGradingPass->Enabled;
-		colorGradeNode["Exposure"] << postProcessRenderPass->Exposure;
+		colorGradeNode["Exposure"] << toneMapPass->Exposure;
 		colorGradeNode["Temperature"] << colorGradingPass->Settings.Temperature;
 		colorGradeNode["Tint"] << colorGradingPass->Settings.Tint;
 		colorGradeNode["Contrast"] << colorGradingPass->Settings.Contrast;
@@ -1074,11 +1074,11 @@ namespace Ember {
 			if (envNode.has_child("ColorGrading"))
 			{
 				auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
-				auto postProcessRenderPass = StaticPointerCast<PostProcessRenderPass>(renderSystem->GetRenderPass<PostProcessRenderPass>());
+				auto tonemapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
 
 				ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 				colorGradeNode["Enabled"] >> colorGradingPass->Enabled;
-				colorGradeNode["Exposure"] >> postProcessRenderPass->Exposure;
+				colorGradeNode["Exposure"] >> tonemapPass->Exposure;
 				colorGradeNode["Temperature"] >> colorGradingPass->Settings.Temperature;
 				colorGradeNode["Tint"] >> colorGradingPass->Settings.Tint;
 				colorGradeNode["Contrast"] >> colorGradingPass->Settings.Contrast;

@@ -21,6 +21,7 @@
 #include "Ember/Render/VFX/OutlinePass.h"
 #include "Ember/Render/VFX/FXAAPass.h"
 #include "Ember/Render/VFX/ColorGradePass.h"
+#include "Ember/Render/VFX/ToneMapPass.h"
 
 #include "Ember/Render/Pass/ShadowRenderPass.h"
 #include "Ember/Render/Pass/DebugRenderPass.h"
@@ -60,6 +61,7 @@ namespace Ember {
 		m_PostProcessStack.emplace_back(SharedPtr<OutlinePass>::Create());
 		m_PostProcessStack.emplace_back(SharedPtr<FXAAPass>::Create());
 		m_PostProcessStack.emplace_back(SharedPtr<ColorGradePass>::Create());
+		m_PostProcessStack.emplace_back(SharedPtr<ToneMapPass>::Create());
 		for (auto& pass : m_PostProcessStack)
 			pass->Init();
 

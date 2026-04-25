@@ -24,10 +24,6 @@ namespace Ember {
 		virtual void OnViewportResize(uint32_t width, uint32_t height) override;
 		virtual void Shutdown() override;
 
-	public:
-		// Directly expose props for UI modification (TODO: Move to a separate ToneMappingPass)
-		float Exposure = 1.0f;
-
 	private:
 		SharedPtr<Framebuffer> RenderHDRPasses(PostProcessPassContext& passContext);
 		void RenderToneMapping(PostProcessPassContext& passContext);

@@ -9,8 +9,9 @@ namespace Ember {
 
 	enum class PostProcessStage
 	{
-		HDR = 0, // Pre-Composite (Bloom, Lens Flares)
-		LDR = 1  // Post-Composite (FXAA, Vignette, Film Grain)
+		HDR = 0,	// Pre-Composite (Bloom, Lens Flares)
+		LDR = 1,	// Post-Composite (FXAA, Vignette, Film Grain)
+		ToneMap = 2	// Converts HDR to LDR
 	};
 
 	struct PostProcessPassContext
