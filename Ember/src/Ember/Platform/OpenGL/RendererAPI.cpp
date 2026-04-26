@@ -70,6 +70,21 @@ namespace Ember {
 				glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 		}
 
+		void RendererAPI::UseScissorTest(bool use)
+		{
+			if (use)
+				glEnable(GL_SCISSOR_TEST);
+			else
+				glDisable(GL_SCISSOR_TEST);
+		}
+
+		bool RendererAPI::IsScissorTestEnabled() const
+		{
+			GLboolean scissorTestWasEnabled;
+			glGetBooleanv(GL_SCISSOR_TEST, &scissorTestWasEnabled);
+			return scissorTestWasEnabled == GL_TRUE;
+		}
+
 		void RendererAPI::UseDepthFunction(DepthFunction func)
 		{
 			switch (func)

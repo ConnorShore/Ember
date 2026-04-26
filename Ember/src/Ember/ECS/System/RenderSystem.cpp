@@ -253,20 +253,33 @@ namespace Ember {
 
 	void RenderSystem::BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath /*= ""*/)
 	{
+		// Save the current scissor state, then disable it so we can draw to the whole 256x16 buffer
+		// Prevents issues with ImGui's scissor test interfering with the baking process
+		bool isScissorEnabled = RenderAction::IsScissorTestEnabled();
+		RenderAction::UseScissorTest(false);
+
 		m_ColorGradeLUTBuffer->Bind();
 
 		RenderAction::SetViewport(0, 0, 256, 16);
+
+		// (This ensures if the quad fails to draw, you get a black image, not a white one)
+		RenderAction::SetClearColor({ 1.0f, 0.0f, 1.0f, 1.0f });
 		RenderAction::Clear();
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 
-		// Bind your Color Grading Shader and set the Uniforms
 		auto colorGradeShader = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeEditorShadUUID);
 		colorGradeShader->Bind();
 
-		// Bind the Neutral LUT as the "u_Scene" input!
+		colorGradeShader->SetInt(Constants::Uniforms::Scene, 0);
 		auto neutralLUT = assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
 		RenderAction::SetTextureUnit(0, neutralLUT->GetID());
+
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass<ColorGradePass>());
+		auto inputLUT = colorGradePass->GetBaseBakedLUT();
+
+		colorGradeShader->SetInt("u_BaseBakedLUT", 1);
+		RenderAction::SetTextureUnit(1, inputLUT->GetID());
 
 		colorGradeShader->SetFloat("u_Temperature", settings.Temperature);
 		colorGradeShader->SetFloat("u_Tint", settings.Tint);
@@ -276,21 +289,19 @@ namespace Ember {
 		colorGradeShader->SetFloat4("u_Gamma", settings.Gamma);
 		colorGradeShader->SetFloat4("u_Gain", settings.Gain);
 
-		// Draw a Full Screen Quad
 		Renderer3D::Submit(m_ScreenQuadVAO);
 
-		// glReadPixels grabs the data from the currently bound Framebuffer
 		const void* bakedData = m_ColorGradeLUTBuffer->ReadPixels(0, 0, 0, 256, 16);
 
 		m_ColorGradeLUTBuffer->Unbind();
 
-		if (!savePath.empty())
-		{// Flip the image vertically (OpenGL reads bottom-to-top, PNGs are top-to-bottom)
-		// (stb_image_write actually has a flip flag you can set!)
-			stbi_flip_vertically_on_write(true);
+		// Restore previous scissor state
+		if (isScissorEnabled)
+			RenderAction::UseScissorTest(true);
 
-			// Save to disk!
-			// This file is now a physical asset in your project directory!
+		if (!savePath.empty())
+		{
+			stbi_flip_vertically_on_write(true);
 			stbi_write_png(savePath.c_str(), 256, 16, 3, bakedData, 256 * 3);
 			EB_CORE_INFO("Baked Color Grade LUT saved to {}", savePath);
 		}

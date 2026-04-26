@@ -19,6 +19,9 @@ namespace Ember {
 		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::LDR; }
 
 		inline void SetBakedLUT(const SharedPtr<Framebuffer>& colorGradeLUTBuffer) { m_ColorGradeLUTBuffer = colorGradeLUTBuffer; }
+		inline void SetBaseBakedLUT(const SharedPtr<Texture2D>& baseBakedLUTTexture) { m_BaseBakedLUTTexture = baseBakedLUTTexture; }
+
+		inline const SharedPtr<Texture2D>& GetBaseBakedLUT() const { return m_BaseBakedLUTTexture; }
 
 		ColorGradeSettings Settings;
 
@@ -30,6 +33,7 @@ namespace Ember {
 		SharedPtr<Shader> m_ColorGradeShaderEditor;
 		SharedPtr<Shader> m_ColorGradeShaderRuntime;
 		SharedPtr<Framebuffer> m_ColorGradeLUTBuffer;
+		SharedPtr<Texture2D> m_BaseBakedLUTTexture;
 	};
 
 }

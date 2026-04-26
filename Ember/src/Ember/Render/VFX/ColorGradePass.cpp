@@ -13,6 +13,7 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		m_ColorGradeShaderEditor = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeEditorShadUUID);
 		m_ColorGradeShaderRuntime = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID);
+		m_BaseBakedLUTTexture = assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
 	}
 
 	void ColorGradePass::Render(PostProcessPassContext& context)
@@ -44,6 +45,9 @@ namespace Ember {
 
 		m_ColorGradeShaderEditor->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+
+		m_ColorGradeShaderEditor->SetInt("u_BaseBakedLUT", 1);
+		RenderAction::SetTextureUnit(1, m_BaseBakedLUTTexture->GetID());
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}

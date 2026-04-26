@@ -16,6 +16,17 @@ namespace Ember {
 		Vector4f Lift = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Vector4f Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
 		Vector4f Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
+
+		void Reset()
+		{
+			Temperature = 0.0f;
+			Tint = 0.0f;
+			Contrast = 1.0f;
+			Saturation = 1.0f;
+			Lift = { 0.0f, 0.0f, 0.0f, 0.0f };
+			Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
+			Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
+		}
 	};
 
 }

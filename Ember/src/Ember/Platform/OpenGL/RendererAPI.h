@@ -17,6 +17,8 @@ namespace Ember {
 			virtual void UseDepthMask(bool use) override;
 			virtual void UseBlending(bool use) override;
 			virtual void UseCubeMapSeamless(bool use) override;
+			virtual void UseScissorTest(bool use) override;
+			virtual bool IsScissorTestEnabled() const override;
 
 			virtual void UseDepthFunction(DepthFunction func) override;
 
