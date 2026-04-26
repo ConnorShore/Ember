@@ -1,6 +1,9 @@
 #include "ebpch.h"
 #include "AssetManager.h"
 #include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/LUTGenerator.h"
+
+#include <filesystem>
 
 namespace Ember {
 
@@ -23,6 +26,7 @@ namespace Ember {
 		auto blackTex = Create<Texture2D>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
 
 		auto defaultSkybox = Load<Texture2D>(Constants::Assets::DefaultSkyboxUUID, Constants::Assets::DefaultSkybox, "Ember/assets/textures/DefaultSkybox.hdr");
+		auto defaultNeutralLUT = Load<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID, Constants::Assets::DefaultNeutralColorLUT, "Ember/assets/textures/DefaultNeutralColorLUT.png");
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");

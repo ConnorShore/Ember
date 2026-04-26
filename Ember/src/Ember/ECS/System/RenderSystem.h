@@ -13,6 +13,7 @@
 #include "Ember/Render/Texture2DArray.h"
 #include "Ember/Render/RenderQueueBuckets.h"
 #include "Ember/Render/Pass/RenderPass.h"
+#include "Ember/Render/VFX/ColorGradeSettings.h"
 
 #include <vector>
 
@@ -24,10 +25,15 @@ namespace Ember {
 		RenderSystem() = default;
 		virtual ~RenderSystem() = default;
 
-		void OnAttach() override;
-		void OnDetach() override;
-		void OnUpdate(TimeStep delta, Scene* scene) override;
+		virtual void OnAttach() override;
+		virtual void OnDetach() override;
+
+		virtual void OnSceneAttach(Scene* scene) override;
+
+		virtual void OnUpdate(TimeStep delta, Scene* scene) override;
 		void OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform);
+
+		void BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath = "");
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -78,6 +84,8 @@ namespace Ember {
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
 
+		SharedPtr<Framebuffer> m_ColorGradeLUTBuffer;
+
 		// TODO: Make this a render graph
 		std::vector<SharedPtr<RenderPass>> m_RenderPasses;
 
@@ -85,6 +93,8 @@ namespace Ember {
 
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
+
+		SharedPtr<VertexArray> m_ScreenQuadVAO;
 
 		struct RenderSceneState
 		{

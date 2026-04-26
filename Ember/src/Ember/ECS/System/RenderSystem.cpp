@@ -56,6 +56,15 @@ namespace Ember {
 		m_Skybox = SharedPtr<Skybox>::Create(Constants::Assets::DefaultSkyboxUUID);
 		RenderAction::UseCubeMapSeamless(true);
 
+		// Framebuffer for color grading LUT baking
+		Ember::FramebufferSpecification specs;
+		specs.Width = 256;
+		specs.Height = 16;
+		specs.AttachmentSpecs = {
+			Ember::FramebufferTextureFormat::RGB8
+		};
+		m_ColorGradeLUTBuffer = Framebuffer::Create(specs);
+
 		// Initialize post process passes
 		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
 		m_PostProcessStack.emplace_back(SharedPtr<OutlinePass>::Create());
@@ -84,6 +93,8 @@ namespace Ember {
 		for (auto& pass : m_RenderPasses)
 			pass->Init();
 
+		m_ScreenQuadVAO = PrimitiveGenerator::CreateQuad(2.0f, 2.0f)->GetVertexArray();
+
 		m_RenderSceneState.Reset();
 		EB_CORE_INFO("RenderSystem is attached!");
 	}
@@ -96,6 +107,16 @@ namespace Ember {
 		Renderer2D::Shutdown();
 		Renderer3D::Shutdown();
 		EB_CORE_INFO("RenderSystem is detached!");
+	}
+
+	void RenderSystem::OnSceneAttach(Scene* scene)
+	{
+		if (scene->IsRuntime())
+		{
+			auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass<ColorGradePass>());
+			BakeColorGradeLUT(colorGradePass->Settings);
+			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+		}
 	}
 
 	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool isRuntime)
@@ -228,6 +249,53 @@ namespace Ember {
 
 		// Update the system
 		ExecuteRenderPipeline(scene, false);
+	}
+
+	void RenderSystem::BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath /*= ""*/)
+	{
+		m_ColorGradeLUTBuffer->Bind();
+
+		RenderAction::SetViewport(0, 0, 256, 16);
+		RenderAction::Clear();
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Bind your Color Grading Shader and set the Uniforms
+		auto colorGradeShader = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeEditorShadUUID);
+		colorGradeShader->Bind();
+
+		// Bind the Neutral LUT as the "u_Scene" input!
+		auto neutralLUT = assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
+		RenderAction::SetTextureUnit(0, neutralLUT->GetID());
+
+		colorGradeShader->SetFloat("u_Temperature", settings.Temperature);
+		colorGradeShader->SetFloat("u_Tint", settings.Tint);
+		colorGradeShader->SetFloat("u_Contrast", settings.Contrast);
+		colorGradeShader->SetFloat("u_Saturation", settings.Saturation);
+		colorGradeShader->SetFloat4("u_Lift", settings.Lift);
+		colorGradeShader->SetFloat4("u_Gamma", settings.Gamma);
+		colorGradeShader->SetFloat4("u_Gain", settings.Gain);
+
+		// Draw a Full Screen Quad
+		Renderer3D::Submit(m_ScreenQuadVAO);
+
+		// glReadPixels grabs the data from the currently bound Framebuffer
+		const void* bakedData = m_ColorGradeLUTBuffer->ReadPixels(0, 0, 0, 256, 16);
+
+		m_ColorGradeLUTBuffer->Unbind();
+
+		if (!savePath.empty())
+		{// Flip the image vertically (OpenGL reads bottom-to-top, PNGs are top-to-bottom)
+		// (stb_image_write actually has a flip flag you can set!)
+			stbi_flip_vertically_on_write(true);
+
+			// Save to disk!
+			// This file is now a physical asset in your project directory!
+			stbi_write_png(savePath.c_str(), 256, 16, 3, bakedData, 256 * 3);
+			EB_CORE_INFO("Baked Color Grade LUT saved to {}", savePath);
+		}
+
+		free((void*)bakedData);
 	}
 
 	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)

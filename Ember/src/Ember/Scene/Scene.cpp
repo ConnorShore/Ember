@@ -183,9 +183,10 @@ namespace Ember {
 	{
 		m_IsRuntime = true;
 
-		// Initialize physics system
+		// Initialize systems (TODO: Loop over them and make system use scene->IsRuntime() to decide what to do in their OnSceneAttach
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();

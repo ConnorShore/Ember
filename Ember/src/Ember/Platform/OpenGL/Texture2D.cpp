@@ -125,5 +125,12 @@ namespace Ember {
 			glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, BytesPerPixelToGlType(m_BytesPerPixel), GL_UNSIGNED_BYTE, data);
 		}
 
+		const void* Texture2D::GetData() const
+		{
+			void* data = malloc(m_Width * m_Height * m_BytesPerPixel);
+			glGetTextureImage(m_Id, 0, BytesPerPixelToGlType(m_BytesPerPixel), GL_UNSIGNED_BYTE, m_Width * m_Height * m_BytesPerPixel, data);
+			return data;
+		}
+
 	}
 }

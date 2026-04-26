@@ -27,6 +27,8 @@ namespace Ember {
 		virtual ~Texture2D() = default;
 
 		virtual void SetData(const void* data, uint32_t size) = 0;
+		virtual const void* GetData() const = 0;
+
 		virtual TextureFormat GetFormat() const = 0;
 
 		static SharedPtr<Texture2D> Create();

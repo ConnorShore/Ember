@@ -2,6 +2,7 @@
 #include "ColorGradePass.h"
 
 #include "Ember/Core/Application.h"
+#include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer3D.h"
 
@@ -53,10 +54,11 @@ namespace Ember {
 
 		m_ColorGradeShaderRuntime->Bind();
 
-		// Set uniforms here
-
 		m_ColorGradeShaderRuntime->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, inputBuffer->GetColorAttachmentID(0));
+
+		m_ColorGradeShaderRuntime->SetInt("u_BakedLUT", 1);
+		RenderAction::SetTextureUnit(1, m_ColorGradeLUTBuffer->GetColorAttachmentID(0));
 
 		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 	}

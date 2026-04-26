@@ -29,6 +29,7 @@ namespace Ember {
 			virtual void GenerateMipmaps() const override;
 
 			virtual void SetData(const void* data, uint32_t size) override;
+			virtual const void* GetData() const override;
 
 			inline virtual TextureFormat GetFormat() const override { return m_Format; }
 			inline virtual uint32_t GetNumMipMapLevels() const override { return m_NumMipMaps; }

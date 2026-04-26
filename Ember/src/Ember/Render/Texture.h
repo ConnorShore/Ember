@@ -31,6 +31,24 @@ namespace Ember {
 		CubeMap
 	};
 
+	inline static int TextureFormatBytesPerPixel(TextureFormat format)
+	{
+		switch (format)
+		{
+		case TextureFormat::R8: return 1;
+		case TextureFormat::RG8: return 2;
+		case TextureFormat::RGB8: return 3;
+		case TextureFormat::RG16F: return 4;
+		case TextureFormat::RGB16F: return 6;
+		case TextureFormat::RGBA8: return 4;
+		case TextureFormat::RGBA16F: return 8;
+		case TextureFormat::RedInteger: return 4;
+		case TextureFormat::None: return 0;
+		}
+
+		EB_CORE_ASSERT(false, "Unknown TextureFormat!");
+	}
+
 	class Texture : public Asset
 	{
 	public:

@@ -40,6 +40,8 @@ namespace Ember::Constants {
 		inline const uint64_t DefaultBlackTexUUID = 4;
 		inline const char* DefaultSkybox = "DefaultSkybox";
 		inline const uint64_t DefaultSkyboxUUID = 5;
+		inline const char* DefaultNeutralColorLUT = "DefaultNeutralColorLUT";
+		inline const uint64_t DefaultNeutralColorLUTUUID = 6;
 
 		inline const char* StandardGeometryShad = "StandardGeometry";
 		inline const uint64_t StandardGeometryShadUUID = 9;
