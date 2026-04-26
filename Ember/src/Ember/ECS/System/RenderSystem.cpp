@@ -66,31 +66,31 @@ namespace Ember {
 		m_ColorGradeLUTBuffer = Framebuffer::Create(specs);
 
 		// Initialize post process passes
-		m_PostProcessStack.emplace_back(SharedPtr<BloomPass>::Create());
-		m_PostProcessStack.emplace_back(SharedPtr<OutlinePass>::Create());
-		m_PostProcessStack.emplace_back(SharedPtr<FXAAPass>::Create());
-		m_PostProcessStack.emplace_back(SharedPtr<ColorGradePass>::Create());
-		m_PostProcessStack.emplace_back(SharedPtr<ToneMapPass>::Create());
-		for (auto& pass : m_PostProcessStack)
+		m_PostProcessStack["BloomPass"] = SharedPtr<BloomPass>::Create();
+		m_PostProcessStack["OutlinePass"] = SharedPtr<OutlinePass>::Create();
+		m_PostProcessStack["FXAAPass"] = SharedPtr<FXAAPass>::Create();
+		m_PostProcessStack["ColorGradePass"] = SharedPtr<ColorGradePass>::Create();
+		m_PostProcessStack["ToneMapPass"] = SharedPtr<ToneMapPass>::Create();
+		for (auto& [_, pass] : m_PostProcessStack)
 			pass->Init();
 
 		// Initialize render passes
-		m_RenderPasses.emplace_back(SharedPtr<ShadowRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<DeferredGeometryRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<DeferredLightingRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<SkyboxRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<ForwardEntitiesRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<TransparentEntitiesRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<EditorGridRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<ParticleRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<BillboardsRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<WorldSpace2DRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<PostProcessRenderPass>::Create(m_PostProcessStack));
-		m_RenderPasses.emplace_back(SharedPtr<DebugRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<ScreenSpace2DRenderPass>::Create());
-		m_RenderPasses.emplace_back(SharedPtr<FinalBlitRenderPass>::Create());
+		m_RenderPasses["ShadowRenderPass"] = SharedPtr<ShadowRenderPass>::Create();
+		m_RenderPasses["DeferredGeometryRenderPass"] = SharedPtr<DeferredGeometryRenderPass>::Create();
+		m_RenderPasses["DeferredLightingRenderPass"] = SharedPtr<DeferredLightingRenderPass>::Create();
+		m_RenderPasses["SkyboxRenderPass"] = SharedPtr<SkyboxRenderPass>::Create();
+		m_RenderPasses["ForwardEntitiesRenderPass"] = SharedPtr<ForwardEntitiesRenderPass>::Create();
+		m_RenderPasses["TransparentEntitiesRenderPass"] = SharedPtr<TransparentEntitiesRenderPass>::Create();
+		m_RenderPasses["EditorGridRenderPass"] = SharedPtr<EditorGridRenderPass>::Create();
+		m_RenderPasses["ParticleRenderPass"] = SharedPtr<ParticleRenderPass>::Create();
+		m_RenderPasses["BillboardsRenderPass"] = SharedPtr<BillboardsRenderPass>::Create();
+		m_RenderPasses["WorldSpace2DRenderPass"] = SharedPtr<WorldSpace2DRenderPass>::Create();
+		m_RenderPasses["PostProcessRenderPass"] = SharedPtr<PostProcessRenderPass>::Create(m_PostProcessStack);
+		m_RenderPasses["DebugRenderPass"] = SharedPtr<DebugRenderPass>::Create();
+		m_RenderPasses["ScreenSpace2DRenderPass"] = SharedPtr<ScreenSpace2DRenderPass>::Create();
+		m_RenderPasses["FinalBlitRenderPass"] = SharedPtr<FinalBlitRenderPass>::Create();
 
-		for (auto& pass : m_RenderPasses)
+		for (auto& [_, pass] : m_RenderPasses)
 			pass->Init();
 
 		m_ScreenQuadVAO = PrimitiveGenerator::CreateQuad(2.0f, 2.0f)->GetVertexArray();
@@ -101,7 +101,7 @@ namespace Ember {
 
 	void RenderSystem::OnDetach()
 	{
-		for (auto& pass : m_RenderPasses)
+		for (auto& [_,pass] : m_RenderPasses)
 			pass->Shutdown();
 
 		Renderer2D::Shutdown();
@@ -113,7 +113,7 @@ namespace Ember {
 	{
 		if (scene->IsRuntime())
 		{
-			auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass<ColorGradePass>());
+			auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
 			BakeColorGradeLUT(colorGradePass->Settings);
 			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
 		}
@@ -147,16 +147,16 @@ namespace Ember {
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
 
 		// --- Shadow pass ---
-		auto shadowPass = GetRenderPass<ShadowRenderPass>();
+		auto shadowPass = StaticPointerCast<ShadowRenderPass>(GetRenderPass("ShadowRenderPass"));
 		shadowPass->Execute(renderContext);
 
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		// Geometry
-		auto deferredGeometryPass = GetRenderPass<DeferredGeometryRenderPass>();
+		auto deferredGeometryPass = StaticPointerCast<DeferredGeometryRenderPass>(GetRenderPass("DeferredGeometryRenderPass"));
 		deferredGeometryPass->Execute(renderContext);
 
 		// Lighting
-		auto deferredLightingPass = GetRenderPass<DeferredLightingRenderPass>();
+		auto deferredLightingPass = StaticPointerCast<DeferredLightingRenderPass>(GetRenderPass("DeferredLightingRenderPass"));
 		deferredLightingPass->SetTextureInput("AlbedoRoughness", deferredGeometryPass->GetTextureOutput("AlbedoRoughness"));
 		deferredLightingPass->SetTextureInput("NormalMetallic", deferredGeometryPass->GetTextureOutput("NormalMetallic"));
 		deferredLightingPass->SetTextureInput("PositionAO", deferredGeometryPass->GetTextureOutput("PositionAO"));
@@ -169,39 +169,39 @@ namespace Ember {
 		RenderAction::CopyDepthBuffer(deferredGeometryPass->GetFramebufferOutput("GBuffer")->GetID(), deferredLightingPass->GetFramebufferOutput("HDRScene")->GetID(), m_RenderSceneState.ViewportDimensions);
 
 		// --- Skybox ---
-		auto skyboxPass = GetRenderPass<SkyboxRenderPass>();
+		auto skyboxPass = StaticPointerCast<SkyboxRenderPass>(GetRenderPass("SkyboxRenderPass"));
 		skyboxPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		skyboxPass->Execute(renderContext);
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
-		auto forwardPass = GetRenderPass<ForwardEntitiesRenderPass>();
+		auto forwardPass = StaticPointerCast<ForwardEntitiesRenderPass>(GetRenderPass("ForwardEntitiesRenderPass"));
 		forwardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		forwardPass->Execute(renderContext);
 
-		auto transparentPass = GetRenderPass<TransparentEntitiesRenderPass>();
+		auto transparentPass = StaticPointerCast<TransparentEntitiesRenderPass>(GetRenderPass("TransparentEntitiesRenderPass"));
 		transparentPass->Execute(renderContext);
 
 		// --- Editor-only grid ---
-		auto gridPass = GetRenderPass<EditorGridRenderPass>();
+		auto gridPass = StaticPointerCast<EditorGridRenderPass>(GetRenderPass("EditorGridRenderPass"));
 		gridPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		gridPass->Execute(renderContext);
 
 		// Particles and billboards
-		auto particlePass = GetRenderPass<ParticleRenderPass>();
+		auto particlePass = StaticPointerCast<ParticleRenderPass>(GetRenderPass("ParticleRenderPass"));
 		particlePass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		particlePass->Execute(renderContext);
 
-		auto billboardPass = GetRenderPass<BillboardsRenderPass>();
+		auto billboardPass = StaticPointerCast<BillboardsRenderPass>(GetRenderPass("BillboardsRenderPass"));
 		billboardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		billboardPass->Execute(renderContext);
 
 		// Draw World-Space 2D BEFORE Post-Processing
-		auto worldSpace2DPass = GetRenderPass<WorldSpace2DRenderPass>();
+		auto worldSpace2DPass = StaticPointerCast<WorldSpace2DRenderPass>(GetRenderPass("WorldSpace2DRenderPass"));
 		worldSpace2DPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		worldSpace2DPass->Execute(renderContext);
 
 		// Post Processing & Tone Mapping
-		auto postProcessPass = GetRenderPass<PostProcessRenderPass>();
+		auto postProcessPass = StaticPointerCast<PostProcessRenderPass>(GetRenderPass("PostProcessRenderPass"));
 		postProcessPass->SetFramebufferInput("GBuffer", deferredGeometryPass->GetFramebufferOutput("GBuffer"));
 		postProcessPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		postProcessPass->Execute(renderContext);
@@ -209,17 +209,17 @@ namespace Ember {
 		// Final Blit to screen
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 
-		auto finalBlitPass = GetRenderPass<FinalBlitRenderPass>();
+		auto finalBlitPass = StaticPointerCast<FinalBlitRenderPass>(GetRenderPass("FinalBlitRenderPass"));
 		finalBlitPass->SetTextureInput("FinalScene", postProcessPass->GetTextureOutput("FinalScene"));
 		finalBlitPass->Execute(renderContext);
 
 		// Debug lines
-		auto debugPass = GetRenderPass<DebugRenderPass>();
+		auto debugPass = StaticPointerCast<DebugRenderPass>(GetRenderPass("DebugRenderPass"));
 		debugPass->Execute(renderContext);
 
 		// Draw Screen-Space UI AFTER Final Composite
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
-		auto screenSpace2DPass = GetRenderPass<ScreenSpace2DRenderPass>();
+		auto screenSpace2DPass = StaticPointerCast<ScreenSpace2DRenderPass>(GetRenderPass("ScreenSpace2DRenderPass"));
 		screenSpace2DPass->Execute(renderContext);
 
 		// Reset any modified render state so other systems aren't affected (like the Editor's Gizmo system)
@@ -275,7 +275,7 @@ namespace Ember {
 		auto neutralLUT = assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
 		RenderAction::SetTextureUnit(0, neutralLUT->GetID());
 
-		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass<ColorGradePass>());
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
 		auto inputLUT = colorGradePass->GetBaseBakedLUT();
 
 		colorGradeShader->SetInt("u_BaseBakedLUT", 1);
@@ -311,10 +311,10 @@ namespace Ember {
 
 	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)
 	{
-		for (auto& pass : m_PostProcessStack)
+		for (auto& [_, pass] : m_PostProcessStack)
 			pass->OnViewportResize(width, height);
 
-		for (auto& pass : m_RenderPasses)
+		for (auto& [_, pass] : m_RenderPasses)
 			pass->OnViewportResize(width, height);
 	}
 
@@ -323,7 +323,7 @@ namespace Ember {
 	EntityID RenderSystem::GetEntityIDAtPixel(uint32_t x, uint32_t y)
 	{
 		// Check the Forward buffer first (since it is drawn on top of the world)
-		auto hdrSceneBuffer = GetRenderPass<DeferredLightingRenderPass>()->GetFramebufferOutput("HDRScene");
+		auto hdrSceneBuffer = StaticPointerCast<DeferredLightingRenderPass>(GetRenderPass("DeferredLightingRenderPass"))->GetFramebufferOutput("HDRScene");
 		
 		hdrSceneBuffer->Bind();
 		int forwardPixelData = hdrSceneBuffer->ReadPixel(2, x, y);
@@ -333,7 +333,7 @@ namespace Ember {
 			return (EntityID)forwardPixelData;
 
 		// If the Forward buffer was empty, fallback to the Opaque G-Buffer!
-		auto gBuffer = GetRenderPass<DeferredGeometryRenderPass>()->GetFramebufferOutput("GBuffer");
+		auto gBuffer = StaticPointerCast<DeferredGeometryRenderPass>(GetRenderPass("DeferredGeometryRenderPass"))->GetFramebufferOutput("GBuffer");
 		
 		gBuffer->Bind();
 		int opaquePixelData = gBuffer->ReadPixel(4, x, y);

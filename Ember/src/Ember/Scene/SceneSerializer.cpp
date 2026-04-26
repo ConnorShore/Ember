@@ -926,10 +926,10 @@ namespace Ember {
 		// Environment settings
 		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 		auto skybox = renderSystem->GetSkybox();
-		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
-		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
-		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
-		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
+		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass("BloomPass"));
+		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass("FXAAPass"));
+		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
+		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
 
 		ryml::NodeRef envNode = root["Environment"];
 		envNode |= ryml::MAP;
@@ -1051,7 +1051,7 @@ namespace Ember {
 
 			if (envNode.has_child("Bloom"))
 			{
-				auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+				auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass("BloomPass"));
 
 				ryml::NodeRef bloomNode = envNode["Bloom"];
 				bloomNode["Enabled"] >> bloomPass->Enabled;
@@ -1063,7 +1063,7 @@ namespace Ember {
 
 			if (envNode.has_child("FXAA"))
 			{
-				auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
+				auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass("FXAAPass"));
 				ryml::NodeRef fxaaNode = envNode["FXAA"];
 				fxaaNode["Enabled"] >> fxaaPass->Enabled;
 				fxaaNode["SubpixelQuality"] >> fxaaPass->SubpixelQuality;
@@ -1073,8 +1073,8 @@ namespace Ember {
 
 			if (envNode.has_child("ColorGrading"))
 			{
-				auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
-				auto tonemapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
+				auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
+				auto tonemapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
 
 				ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 				colorGradeNode["Enabled"] >> colorGradingPass->Enabled;

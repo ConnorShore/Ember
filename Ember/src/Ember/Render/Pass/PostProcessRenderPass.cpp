@@ -100,7 +100,7 @@ namespace Ember {
 
 		// Process HDR passes, ping-ponging between two buffers.
 		// The final output will be in currentHdrInput due to the ping-pong at the end of the loop
-		for (auto& pass : m_PostProcessStack)
+		for (auto& [_, pass] : m_PostProcessStack)
 		{
 			if (pass->Enabled && pass->GetStage() == PostProcessStage::HDR)
 			{
@@ -140,7 +140,7 @@ namespace Ember {
 	// TODO: Probably move this to its own pass so it can contain the Exposure setting
 	void PostProcessRenderPass::RenderToneMapping(PostProcessPassContext& passContext)
 	{
-		for (auto& pass : m_PostProcessStack)
+		for (auto& [_, pass] : m_PostProcessStack)
 		{
 			if (pass->GetStage() == PostProcessStage::ToneMap)
 			{
@@ -152,7 +152,7 @@ namespace Ember {
 
 	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(PostProcessPassContext& passContext)
 	{
-		for (auto& pass : m_PostProcessStack)
+		for (auto& [_, pass] : m_PostProcessStack)
 		{
 			if (pass->Enabled && pass->GetStage() == PostProcessStage::LDR)
 			{

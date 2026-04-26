@@ -75,7 +75,7 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderBloomSettings()
 	{
-		auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
+		auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("BloomPass"));
 		if (UI::Nodes::BeginEnabledExpandableNode("Bloom", bloomPass->Enabled))
 		{
 			if (UI::PropertyGrid::Begin("##BloomPropertyGrid"))
@@ -99,7 +99,7 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderFXAASettings()
 	{
-		auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
+		auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("FXAAPass"));
 		if (UI::Nodes::BeginEnabledExpandableNode("FXAA", fxaaPass->Enabled))
 		{
 			if (UI::PropertyGrid::Begin("##FXAAPropertyGrid"))
@@ -207,10 +207,11 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderColorGradeSettings()
 	{
-		auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
+		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
 		if (UI::Nodes::BeginEnabledExpandableNode("Color Grading", colorGradePass->Enabled))
 		{
-			auto toneMapPass = StaticPointerCast<ToneMapPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ToneMapPass>());
+			auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
 			auto& colorGradeProps = colorGradePass->Settings;
 
 			ImGui::BeginDisabled(!colorGradePass->Enabled);

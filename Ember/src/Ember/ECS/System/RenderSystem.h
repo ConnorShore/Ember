@@ -16,6 +16,7 @@
 #include "Ember/Render/VFX/ColorGradeSettings.h"
 
 #include <vector>
+#include <map>
 
 namespace Ember {
 
@@ -41,33 +42,16 @@ namespace Ember {
 
 		inline SharedPtr<Skybox> GetSkybox() const { return m_Skybox; }
 
-		template<std::derived_from<PostProcessPass> T>
-		inline SharedPtr<PostProcessPass> GetPostProcessPass() const
+		inline SharedPtr<PostProcessPass> GetPostProcessPass(const std::string& name) const
 		{
-			for (const auto& pass : m_PostProcessStack)
-			{
-				if (auto postProcessPass = DynamicPointerCast<T>(pass))
-				{
-					return postProcessPass;
-				}
-			}
-
-			EB_CORE_ERROR("System of type {0} not found in RenderSystem!", typeid(T).name());
-			return nullptr;
+			EB_CORE_ASSERT(m_PostProcessStack.find(name) != m_PostProcessStack.end(), "Post process pass with name {} not found!", name);
+			return m_PostProcessStack.at(name);
 		}
 
-		template<std::derived_from<RenderPass> T>
-		inline SharedPtr<RenderPass> GetRenderPass() const
+		inline SharedPtr<RenderPass> GetRenderPass(const std::string& name) const
 		{
-			for (const auto& pass : m_RenderPasses)
-			{
-				if (auto renderPass = DynamicPointerCast<T>(pass))
-				{
-					return renderPass;
-				}
-			}
-			EB_CORE_ERROR("System of type {0} not found in RenderSystem!", typeid(T).name());
-			return nullptr;
+			EB_CORE_ASSERT(m_RenderPasses.find(name) != m_RenderPasses.end(), "Render pass with name {} not found!", name);
+			return m_RenderPasses.at(name);
 		}
 
 	private:
@@ -78,7 +62,13 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 
 	private:
-		std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
+		//std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
+		//std::vector<SharedPtr<RenderPass>> m_RenderPasses;
+
+		// TODO: Make this a render graph
+		std::map<std::string, SharedPtr<RenderPass>> m_RenderPasses;
+		std::map<std::string, SharedPtr<PostProcessPass>> m_PostProcessStack;
+
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
@@ -86,8 +76,6 @@ namespace Ember {
 
 		SharedPtr<Framebuffer> m_ColorGradeLUTBuffer;
 
-		// TODO: Make this a render graph
-		std::vector<SharedPtr<RenderPass>> m_RenderPasses;
 
 		RenderQueueBuckets m_RenderQueueBuckets;
 

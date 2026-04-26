@@ -9,7 +9,7 @@ namespace Ember {
 	class Shader;
 	class PostProcessPass;
 
-	using PostProcessStack = std::vector<SharedPtr<PostProcessPass>>;
+	using PostProcessStack = std::map<std::string, SharedPtr<PostProcessPass>>;
 
 	class PostProcessRenderPass : public RenderPass
 	{
