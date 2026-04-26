@@ -66,7 +66,7 @@ namespace Ember {
 				return;
 
 			auto& component = entity.GetComponent<T>();
-			if (UI::Nodes::BeginExpandableNode(std::string(name), true, [&]() {
+			if (UI::Nodes::BeginRemoveableExpandableNode(std::string(name), [&]() {
 				m_Context->PendingComponentRemovals[entity].push_back(entity.GetComponentType<T>());
 				}))
 			{

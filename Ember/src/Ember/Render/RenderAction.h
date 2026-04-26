@@ -64,6 +64,16 @@ namespace Ember {
 			m_RendererApi->UseDepthFunction(func);
 		}
 
+		static inline void UseScissorTest(bool use)
+		{
+			m_RendererApi->UseScissorTest(use);
+		}
+
+		static inline bool IsScissorTestEnabled()
+		{
+			return m_RendererApi->IsScissorTestEnabled();
+		}
+
 		static inline void SetTextureUnit(uint32_t unit, uint32_t texture)
 		{
 			m_RendererApi->SetTextureUnit(unit, texture);

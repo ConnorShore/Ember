@@ -4,6 +4,9 @@
 
 namespace Ember {
 
+	class ColorGradePass;
+	class ToneMapPass;
+
 	class EnvironmentPanel : public Panel
 	{
 	public:
@@ -16,5 +19,7 @@ namespace Ember {
 		void RenderSkyboxSettings();
 		void RenderBloomSettings();
 		void RenderFXAASettings();
+		void RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass);
+		void RenderColorGradeSettings();
 	};
 }

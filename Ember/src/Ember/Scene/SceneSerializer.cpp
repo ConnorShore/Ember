@@ -7,6 +7,8 @@
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/FXAAPass.h"
+#include "Ember/Render/VFX/ColorGradePass.h"
+#include "Ember/Render/VFX/ToneMapPass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -926,6 +928,8 @@ namespace Ember {
 		auto skybox = renderSystem->GetSkybox();
 		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
 		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
+		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
+		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
 
 		ryml::NodeRef envNode = root["Environment"];
 		envNode |= ryml::MAP;
@@ -950,6 +954,18 @@ namespace Ember {
 		fxaaNode["SubpixelQuality"] << fxaaPass->SubpixelQuality;
 		fxaaNode["EdgeThresholdMin"] << fxaaPass->EdgeThresholdMin;
 		fxaaNode["EdgeThresholdMax"] << fxaaPass->EdgeThresholdMax;
+
+		ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
+		colorGradeNode |= ryml::MAP;
+		colorGradeNode["Enabled"] << colorGradingPass->Enabled;
+		colorGradeNode["Exposure"] << toneMapPass->Exposure;
+		colorGradeNode["Temperature"] << colorGradingPass->Settings.Temperature;
+		colorGradeNode["Tint"] << colorGradingPass->Settings.Tint;
+		colorGradeNode["Contrast"] << colorGradingPass->Settings.Contrast;
+		colorGradeNode["Saturation"] << colorGradingPass->Settings.Saturation;
+		Util::SerializeVector4f(colorGradeNode["Lift"], colorGradingPass->Settings.Lift);
+		Util::SerializeVector4f(colorGradeNode["Gamma"], colorGradingPass->Settings.Gamma);
+		Util::SerializeVector4f(colorGradeNode["Gain"], colorGradingPass->Settings.Gain);
 
 		std::ofstream fout(filepath);
 		fout << tree;
@@ -1006,14 +1022,12 @@ namespace Ember {
 		if (root.has_child("Environment"))
 		{
 			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
-			auto skybox = renderSystem->GetSkybox();
-			auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
-			auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass<FXAAPass>());
 
 			ryml::NodeRef envNode = root["Environment"];
-
 			if (envNode.has_child("Skybox"))
 			{
+				auto skybox = renderSystem->GetSkybox();
+
 				ryml::NodeRef skyboxNode = envNode["Skybox"];
 				bool skyboxEnabled;
 				skyboxNode["Enabled"] >> skyboxEnabled;
@@ -1037,6 +1051,8 @@ namespace Ember {
 
 			if (envNode.has_child("Bloom"))
 			{
+				auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass<BloomPass>());
+
 				ryml::NodeRef bloomNode = envNode["Bloom"];
 				bloomNode["Enabled"] >> bloomPass->Enabled;
 				bloomNode["Threshold"] >> bloomPass->Threshold;
@@ -1053,6 +1069,23 @@ namespace Ember {
 				fxaaNode["SubpixelQuality"] >> fxaaPass->SubpixelQuality;
 				fxaaNode["EdgeThresholdMin"] >> fxaaPass->EdgeThresholdMin;
 				fxaaNode["EdgeThresholdMax"] >> fxaaPass->EdgeThresholdMax;
+			}
+
+			if (envNode.has_child("ColorGrading"))
+			{
+				auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass<ColorGradePass>());
+				auto tonemapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass<ToneMapPass>());
+
+				ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
+				colorGradeNode["Enabled"] >> colorGradingPass->Enabled;
+				colorGradeNode["Exposure"] >> tonemapPass->Exposure;
+				colorGradeNode["Temperature"] >> colorGradingPass->Settings.Temperature;
+				colorGradeNode["Tint"] >> colorGradingPass->Settings.Tint;
+				colorGradeNode["Contrast"] >> colorGradingPass->Settings.Contrast;
+				colorGradeNode["Saturation"] >> colorGradingPass->Settings.Saturation;
+				Util::DeserializeVector4f(colorGradeNode["Lift"], colorGradingPass->Settings.Lift);
+				Util::DeserializeVector4f(colorGradeNode["Gamma"], colorGradingPass->Settings.Gamma);
+				Util::DeserializeVector4f(colorGradeNode["Gain"], colorGradingPass->Settings.Gain);
 			}
 		}
 
@@ -1150,5 +1183,4 @@ namespace Ember {
 		// Return the root entity
 		return newEntities.empty() ? Entity() : newEntities[0];
 	}
-
 }

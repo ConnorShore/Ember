@@ -1,6 +1,9 @@
 #include "ebpch.h"
 #include "AssetManager.h"
 #include "Ember/Render/PrimitiveGenerator.h"
+#include "Ember/Render/LUTGenerator.h"
+
+#include <filesystem>
 
 namespace Ember {
 
@@ -23,6 +26,7 @@ namespace Ember {
 		auto blackTex = Create<Texture2D>(Constants::Assets::DefaultBlackTexUUID, Constants::Assets::DefaultBlackTex, 1, 1, &blackTextureData);
 
 		auto defaultSkybox = Load<Texture2D>(Constants::Assets::DefaultSkyboxUUID, Constants::Assets::DefaultSkybox, "Ember/assets/textures/DefaultSkybox.hdr");
+		auto defaultNeutralLUT = Load<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID, Constants::Assets::DefaultNeutralColorLUT, "Ember/assets/textures/DefaultNeutralColorLUT.png");
 
 		// Shaders
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, "Ember/assets/shaders/StandardGeometry.glsl");
@@ -45,12 +49,12 @@ namespace Ember {
 		auto bloomShader = Load<Shader>(Constants::Assets::BloomShadUUID, Constants::Assets::BloomShad, "Ember/assets/shaders/Bloom.glsl");
 		ShaderMacros outlineMacros;
 		outlineMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
-		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
-		auto finalCompositeShader = Load<Shader>(Constants::Assets::FinalCompositeShad, "Ember/assets/shaders/FinalComposite.glsl");
+		auto outlineShader = Load<Shader>(Constants::Assets::OutlineShadUUID, Constants::Assets::OutlineShad, "Ember/assets/shaders/Outline.glsl", outlineMacros);
+		auto toneMappingShader = Load<Shader>(Constants::Assets::ToneMapShadUUID, Constants::Assets::ToneMapShad, "Ember/assets/shaders/ToneMapping.glsl");
 		ShaderMacros infiniteGridMacros;
 		infiniteGridMacros["INVALID_ENTITY_ID"] = std::to_string(Constants::Entities::InvalidEntityID);
-		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
-		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
+		auto infiniteGridShader = Load<Shader>(Constants::Assets::InfiniteGridShadUUID, Constants::Assets::InfiniteGridShad, "Ember/assets/shaders/InfiniteGrid.glsl", infiniteGridMacros);
+		auto billboardShader = Load<Shader>(Constants::Assets::BillboardShadUUID, Constants::Assets::BillboardShad, "Ember/assets/shaders/Billboard.glsl");
 		auto bloomPrefilter = Load<Shader>(Constants::Assets::BloomPrefilterShadUUID, Constants::Assets::BloomPrefilterShad, "Ember/assets/shaders/BloomPrefilter.glsl");
 		auto skyboxShader = Load<Shader>(Constants::Assets::SkyboxShadUUID, Constants::Assets::SkyboxShad, "Ember/assets/shaders/Skybox.glsl");
 		auto equirectangularToCubemapShad = Load<Shader>(Constants::Assets::EquirectangularToCubemapShadUUID, Constants::Assets::EquirectangularToCubemapShad, "Ember/assets/shaders/EquirectangularToCubemap.glsl");
@@ -61,6 +65,8 @@ namespace Ember {
 		auto fxaaShad = Load<Shader>(Constants::Assets::FXAAShadUUID, Constants::Assets::FXAAShad, "Ember/assets/shaders/FXAA.glsl");
 		auto blitShad = Load<Shader>(Constants::Assets::BlitShadUUID, Constants::Assets::BlitShad, "Ember/assets/shaders/FinalBlit.glsl");
 		auto particleShad = Load<Shader>(Constants::Assets::ParticleShadUUID, Constants::Assets::ParticleShad, "Ember/assets/shaders/Particle.glsl");
+		auto colorGradeEditorShad = Load<Shader>(Constants::Assets::ColorGradeEditorShadUUID, Constants::Assets::ColorGradeEditorShad, "Ember/assets/shaders/ColorGradeEditor.glsl");
+		auto colorGradeRuntimeShad = Load<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID, Constants::Assets::ColorGradeRuntimeShad, "Ember/assets/shaders/ColorGradeRuntime.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

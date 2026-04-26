@@ -52,6 +52,8 @@ namespace Ember {
 		virtual void UseDepthMask(bool use) = 0;
 		virtual void UseBlending(bool use) = 0;
 		virtual void UseCubeMapSeamless(bool use) = 0;
+		virtual void UseScissorTest(bool use) = 0;
+		virtual bool IsScissorTestEnabled() const = 0;
 
 		virtual void UseDepthFunction(DepthFunction func) = 0;
 

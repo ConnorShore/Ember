@@ -5,7 +5,10 @@
 
 #include <Ember/Render/VFX/BloomPass.h>
 #include <Ember/Render/VFX/FXAAPass.h>
+#include <Ember/Render/VFX/ColorGradePass.h>
+#include <Ember/Render/VFX/ToneMapPass.h>
 #include <Ember/ECS/System/RenderSystem.h>
+#include <Ember/Core/ProjectManager.h>
 #include <Ember/Event/UIEvent.h>
 
 namespace Ember {
@@ -24,19 +27,20 @@ namespace Ember {
 		RenderSkyboxSettings();
 		RenderBloomSettings();
 		RenderFXAASettings();
+		RenderColorGradeSettings();
 		
 		ImGui::End();
 	}
 
 	void EnvironmentPanel::RenderSkyboxSettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("Skybox"))
-		{
-			auto skybox = Application::Instance().GetSystem<RenderSystem>()->GetSkybox();
-			bool enabled = skybox->Enabled();
-			if (ImGui::Checkbox("Enable", &enabled))
-				skybox->SetEnabled(enabled);
+		auto skybox = Application::Instance().GetSystem<RenderSystem>()->GetSkybox();
+		bool enabled = skybox->Enabled();
 
+		if (UI::Nodes::BeginEnabledExpandableNode("Skybox", enabled, [&]() {
+			skybox->SetEnabled(enabled);
+		}))
+		{
 			if (UI::PropertyGrid::Begin("##SkyboxPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!skybox->Enabled());
@@ -71,11 +75,9 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderBloomSettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("Bloom"))
+		auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("Bloom", bloomPass->Enabled))
 		{
-			auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<BloomPass>());
-			ImGui::Checkbox("Enable", &bloomPass->Enabled);
-
 			if (UI::PropertyGrid::Begin("##BloomPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!bloomPass->Enabled);
@@ -97,10 +99,9 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderFXAASettings()
 	{
-		if (UI::Nodes::BeginExpandableNode("FXAA"))
+		auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("FXAA", fxaaPass->Enabled))
 		{
-			auto fxaaPass = StaticPointerCast<FXAAPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<FXAAPass>());
-			ImGui::Checkbox("Enable", &fxaaPass->Enabled);
 			if (UI::PropertyGrid::Begin("##FXAAPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!fxaaPass->Enabled);
@@ -111,6 +112,157 @@ namespace Ember {
 
 				UI::PropertyGrid::End();
 			}
+			UI::Nodes::EndExpandableNode();
+		}
+	}
+
+	void EnvironmentPanel::RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass)
+	{
+		ColorGradeSettings& colorGradeProps = colorGradePass->Settings;
+		if (UI::PropertyGrid::Begin("##ColorGradePropertyGrid"))
+		{
+			// Texture Drop
+			std::string droppedFilePath;
+			if (UI::PropertyGrid::DragDropTexture("LUT Texture", colorGradePass->GetBaseBakedLUT()->GetUUID(), droppedFilePath, [&]() {
+				auto neutralLUT = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
+				colorGradePass->SetBaseBakedLUT(neutralLUT);
+				}))
+			{
+				std::string lutTexName = std::filesystem::path(droppedFilePath).stem().string();
+				auto newLUTTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), lutTexName, droppedFilePath, false);
+				colorGradePass->SetBaseBakedLUT(newLUTTex);
+			}
+
+			UI::PropertyGrid::End();
+		}
+
+		ImGui::Separator();
+
+		// Save the current settings to a new LUT file
+		if (ImGui::Button("Save As File"))
+		{
+			ImGui::OpenPopup("Save LUT As");
+		}
+
+		// Spawn Save As Popup
+		if (ImGui::BeginPopupModal("Save LUT As", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			static char lutName[128] = "NewColorGradeLUT";
+			ImGui::InputText("LUT Name", lutName, sizeof(lutName));
+
+			ImGui::Spacing();
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				auto texDir = ProjectManager::GetActive()->GetAssetDirectory() / "Textures";
+				std::string newTexPath = (texDir / std::format("{}.png", lutName)).string();
+				if (std::filesystem::exists(std::filesystem::absolute(newTexPath)))
+				{
+					ImGui::OpenPopup("File Exists");
+				}
+				else
+				{
+					// Bake the lut and save to disk and as an asset
+					auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+					renderSystem->BakeColorGradeLUT(colorGradeProps, newTexPath);
+					auto newLUTTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), lutName, newTexPath, false);
+
+					// Reset buffer and close
+					strcpy(lutName, "NewColorGradeLUT");
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			// Nested Warning Popup
+			if (ImGui::BeginPopupModal("File Exists", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				ImGui::Text("A script with that name already exists.\nPlease choose a different name.");
+				ImGui::Spacing();
+				if (ImGui::Button("OK", ImVec2(120, 0)))
+				{
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::SameLine();
+
+		// Reset to default settings
+		if (ImGui::Button("Reset to Default"))
+		{
+			colorGradePass->Settings.Reset();
+			toneMapPass->Exposure = 1.0f;
+		}
+	}
+
+	void EnvironmentPanel::RenderColorGradeSettings()
+	{
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ColorGradePass>());
+		if (UI::Nodes::BeginEnabledExpandableNode("Color Grading", colorGradePass->Enabled))
+		{
+			auto toneMapPass = StaticPointerCast<ToneMapPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass<ToneMapPass>());
+			auto& colorGradeProps = colorGradePass->Settings;
+
+			ImGui::BeginDisabled(!colorGradePass->Enabled);
+			RenderColorGradeLUTSettings(colorGradePass, toneMapPass);
+
+			if (ImGui::TreeNode("Exposure"))
+			{
+				if (UI::PropertyGrid::Begin("##ExposureProps"))
+				{
+					UI::PropertyGrid::Float("Exposure", toneMapPass->Exposure, 0.01f, 0.0f, 10.0f);
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("White Balance"))
+			{
+				if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
+				{
+					UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Color Adjustments"))
+			{
+				if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
+				{
+					UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
+					UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
+
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Lift, Gamma, Gain"))
+			{
+				if (UI::PropertyGrid::Begin("##LGGProps"))
+				{
+					UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
+					UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
+					UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
+
+					UI::PropertyGrid::End();
+				}
+				ImGui::TreePop();
+			}
+			ImGui::EndDisabled();
+
 			UI::Nodes::EndExpandableNode();
 		}
 	}

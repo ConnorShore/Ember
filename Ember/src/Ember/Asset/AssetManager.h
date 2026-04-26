@@ -60,6 +60,42 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
+		bool SaveAssetToFile(UUID assetUUID, const std::string& filePath)
+		{
+			if (!m_Assets.contains(assetUUID))
+			{
+				EB_CORE_ERROR("Attempted to save asset that doesn't exist!");
+				return false;
+			}
+			auto asset = m_Assets.at(assetUUID);
+			if (asset->GetType() != T::GetStaticType())
+			{
+				EB_CORE_ERROR("Attempted to save asset with the wrong type!");
+				return false;
+			}
+			std::string absolutePath = std::filesystem::absolute(filePath).string();
+			if constexpr (std::same_as<T, Texture2D>)
+				return TextureImporter::Save(SharedPtr<Texture2D>(DynamicPointerCast<Texture2D>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Shader>)
+				return ShaderImporter::Save(SharedPtr<Shader>(DynamicPointerCast<Shader>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Mesh>)
+				return MeshSerializer::Serialize(SharedPtr<Mesh>(DynamicPointerCast<Mesh>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Model>)
+				return ModelSerializer::Serialize(SharedPtr<Model>(DynamicPointerCast<Model>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Animation>)
+				return AnimationSerializer::Serialize(SharedPtr<Animation>(DynamicPointerCast<Animation>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Skeleton>)
+				return SkeletonSerializer::Serialize(SharedPtr<Skeleton>(DynamicPointerCast<Skeleton>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, PhysicsMaterial>)
+				return PhysicsMaterialSerializer::Serialize(SharedPtr<PhysicsMaterial>(DynamicPointerCast<PhysicsMaterial>(asset)), absolutePath);
+			else
+			{
+				EB_CORE_ERROR("Attempted to save an asset type that doesn't support saving!");
+				return false;
+			}
+		}
+
+		template<IsCoreAsset T>
 		SharedPtr<T> Load(const std::string& filePath)
 		{
 			std::string fileName = std::filesystem::path(filePath).stem().string();

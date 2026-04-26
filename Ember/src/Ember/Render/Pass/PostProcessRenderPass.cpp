@@ -7,7 +7,6 @@
 #include "Ember/Render/Renderer3D.h"
 #include "Ember/Render/PrimitiveGenerator.h"
 
-#include "Ember/Render/VFX/PostProcessPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
 
 namespace Ember {
@@ -44,28 +43,34 @@ namespace Ember {
 		}
 
 		m_ScreenQuadVAO = PrimitiveGenerator::CreateQuad(2.0f, 2.0f)->GetVertexArray();
-		m_BlitShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::BlitShad);
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		m_BlitShader = assetManager.GetAsset<Shader>(Constants::Assets::BlitShad);
+		m_ToneMapShader = assetManager.GetAsset<Shader>(Constants::Assets::ToneMapShadUUID);
 	}
 
 	void PostProcessRenderPass::Execute(RenderContext& context)
 	{
+		PostProcessPassContext passContext(context);
+
 		auto& registry = context.ActiveScene->GetRegistry();
 		RenderAction::UseDepthTest(false);
 
 		// Render HDR Passes
-		auto currentHdrInput = RenderHDRPasses(context, m_FramebufferInputs["HDRScene"], m_PostProcessBufferA);
+		passContext.InputBuffer = m_FramebufferInputs["HDRScene"];
+		passContext.OutputBuffer = m_PostProcessBufferA;
+		auto currentHdrInput = RenderHDRPasses(passContext);
 
 		// Tone Mapping Pass (HDR -> LDR)
-		RenderToneMapping(context, currentHdrInput);
+		passContext.InputBuffer = currentHdrInput;
+		passContext.OutputBuffer = m_LdrBufferA;
+		RenderToneMapping(passContext);
 
 		// Render LDR Passes
-		auto& currentLdrInput = RenderLDRPasses(context, m_LdrBufferA, m_LdrBufferB);
+		passContext.InputBuffer = m_LdrBufferA;
+		passContext.OutputBuffer = m_LdrBufferB;
+		auto& currentLdrInput = RenderLDRPasses(passContext);
 		m_TextureOutputs["FinalScene"] = currentLdrInput->GetColorAttachmentID(0);
-
-		// Blit final LDR result to the screen
-		// TODO: Seemingly redundant code with RenderSystem::RenderFinalComposite,
-		// May see if I can just set an output buffer
-		//BlitToScreen(context, currentLdrInput);
 	}
 
 	void PostProcessRenderPass::OnViewportResize(uint32_t width, uint32_t height)
@@ -80,9 +85,9 @@ namespace Ember {
 	{
 	}
 
-	SharedPtr<Framebuffer> PostProcessRenderPass::RenderHDRPasses(RenderContext& context, SharedPtr<Framebuffer> currentHdrInput, SharedPtr<Framebuffer> currentHdrOutput)
+	SharedPtr<Framebuffer> PostProcessRenderPass::RenderHDRPasses(PostProcessPassContext& passContext)
 	{
-		auto& registry = context.ActiveScene->GetRegistry();
+		auto& registry = passContext.RenderCtx.ActiveScene->GetRegistry();
 
 		// Grab outline components for selected entities
 		std::unordered_map<EntityID, OutlineComponent> outlinedEntityMap;
@@ -111,73 +116,54 @@ namespace Ember {
 						outlinePass->SetOutlineColor(outline.Color);
 						outlinePass->SetOutlineThickness(outline.Thickness);
 
-						pass->Render(currentHdrInput, currentHdrOutput);
+						pass->Render(passContext);
 
 						// Ping Pong
-						currentHdrInput = currentHdrOutput;
-						currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+						passContext.InputBuffer = passContext.OutputBuffer;
+						passContext.OutputBuffer = (passContext.OutputBuffer == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
 					}
 					continue; // Skip the standard render call below
 				}
 
 				// Standard HDR Passes (e.g. Bloom)
-				pass->Render(currentHdrInput, currentHdrOutput);
+				pass->Render(passContext);
 
 				// Ping Pong
-				currentHdrInput = currentHdrOutput;
-				currentHdrOutput = (currentHdrOutput == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
+				passContext.InputBuffer = passContext.OutputBuffer;
+				passContext.OutputBuffer = (passContext.OutputBuffer == m_PostProcessBufferA) ? m_PostProcessBufferB : m_PostProcessBufferA;
 			}
 		}
 
-		return currentHdrInput;
+		return passContext.InputBuffer;
 	}
 
-	void PostProcessRenderPass::RenderToneMapping(RenderContext& context, SharedPtr<Framebuffer>& currentHdrInput)
+	// TODO: Probably move this to its own pass so it can contain the Exposure setting
+	void PostProcessRenderPass::RenderToneMapping(PostProcessPassContext& passContext)
 	{
-		m_LdrBufferA->Bind();
-		RenderAction::SetViewport(context.ViewportDimensions);
-		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
-
-		auto finalShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FinalCompositeShad);
-		finalShader->Bind();
-		finalShader->SetFloat(Constants::Uniforms::Exposure, 1.0f);
-
-		finalShader->SetInt(Constants::Uniforms::Scene, 0);
-
-		RenderAction::SetTextureUnit(0, currentHdrInput->GetColorAttachmentID(0));
-		Renderer3D::Submit(m_ScreenQuadVAO);
-		m_LdrBufferA->Unbind();
+		for (auto& pass : m_PostProcessStack)
+		{
+			if (pass->GetStage() == PostProcessStage::ToneMap)
+			{
+				pass->Render(passContext);
+				return;
+			}
+		}
 	}
 
-	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput, SharedPtr<Framebuffer>& currentLdrOutput)
+	SharedPtr<Framebuffer>& PostProcessRenderPass::RenderLDRPasses(PostProcessPassContext& passContext)
 	{
 		for (auto& pass : m_PostProcessStack)
 		{
 			if (pass->Enabled && pass->GetStage() == PostProcessStage::LDR)
 			{
-				pass->Render(currentLdrInput, currentLdrOutput);
+				pass->Render(passContext);
 
 				// Ping Pong
-				currentLdrInput = currentLdrOutput;
-				currentLdrOutput = (currentLdrOutput == m_LdrBufferA) ? m_LdrBufferB : m_LdrBufferA;
+				passContext.InputBuffer = passContext.OutputBuffer;
+				passContext.OutputBuffer = (passContext.OutputBuffer == m_LdrBufferA) ? m_LdrBufferB : m_LdrBufferA;
 			}
 		}
 
-		return currentLdrInput;
+		return passContext.InputBuffer;
 	}
-
-	//void PostProcessRenderPass::BlitToScreen(RenderContext& context, SharedPtr<Framebuffer>& currentLdrInput)
-	//{
-	//	RenderAction::SetFramebuffer(m_FramebufferInputs["OutputFrameBuffer"]);
-	//	RenderAction::SetViewport(context.ViewportDimensions);
-	//	RenderAction::Clear(Ember::RendererAPI::RenderBit::Color | Ember::RendererAPI::RenderBit::Depth);
-
-	//	m_BlitShader->Bind();
-
-	//	m_BlitShader->SetInt(Constants::Uniforms::Scene, 0);
-
-	//	RenderAction::SetTextureUnit(0, currentLdrInput->GetColorAttachmentID(0));
-	//	Renderer3D::Submit(m_ScreenQuadVAO);
-	//}
-
 }

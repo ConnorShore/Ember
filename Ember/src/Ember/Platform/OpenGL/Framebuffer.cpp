@@ -12,6 +12,7 @@ namespace Ember {
 		{
 			switch (format)
 			{
+			case FramebufferTextureFormat::RGB8:			return GL_RGB8;
 			case FramebufferTextureFormat::RGBA8:			return GL_RGBA8;
 			case FramebufferTextureFormat::RG16F:			return GL_RG16F;
 			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA16F;
@@ -26,10 +27,49 @@ namespace Ember {
 			}
 		}
 
+		GLuint FramebufferTextureFormatToGLInternalFormat(FramebufferTextureFormat format)
+		{
+			switch (format)
+			{
+			case FramebufferTextureFormat::RGB8:			return GL_RGB;
+			case FramebufferTextureFormat::RGBA8:			return GL_RGBA;
+			case FramebufferTextureFormat::RG16F:			return GL_RG;
+			case FramebufferTextureFormat::RGBA16F:			return GL_RGBA;
+			case FramebufferTextureFormat::RedInteger:		return GL_RedInteger;
+			case FramebufferTextureFormat::Depth24:
+			case FramebufferTextureFormat::Depth32:
+			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH_STENCIL;
+			case FramebufferTextureFormat::None:			return 0;
+			default:
+				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
+				return 0;
+			}
+		}
+
+		GLuint FramebufferTextureFormatToGLBaseType(FramebufferTextureFormat format)
+		{
+			switch (format)
+			{
+			case FramebufferTextureFormat::RGB8:
+			case FramebufferTextureFormat::RGBA8:			return GL_UNSIGNED_BYTE;
+			case FramebufferTextureFormat::RG16F:
+			case FramebufferTextureFormat::RGBA16F:			return GL_FLOAT;
+			case FramebufferTextureFormat::RedInteger:		return GL_INT;
+			case FramebufferTextureFormat::Depth24:
+			case FramebufferTextureFormat::Depth32:
+			case FramebufferTextureFormat::Depth24Stencil8:	return GL_UNSIGNED_INT;
+			case FramebufferTextureFormat::None:			return 0;
+			default:
+				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
+				return 0;
+			}
+		}
+
 		GLuint FramebufferAttachmentTypeToGLAttachmentType(FramebufferTextureFormat format, uint32_t index)
 		{
 			switch (format)
 			{
+			case FramebufferTextureFormat::RGB8:
 			case FramebufferTextureFormat::RGBA8:
 			case FramebufferTextureFormat::RG16F:
 			case FramebufferTextureFormat::RGBA16F:
@@ -38,6 +78,25 @@ namespace Ember {
 			case FramebufferTextureFormat::Depth32:			return GL_DEPTH_ATTACHMENT;
 			case FramebufferTextureFormat::Depth24Stencil8:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			case FramebufferTextureFormat::None:			return 0;
+			default:
+				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
+				return 0;
+			}
+		}
+
+		int BytesPerPixelForTextureFormat(FramebufferTextureFormat format)
+		{
+			switch (format)
+			{
+			case FramebufferTextureFormat::RGB8: return 3;
+			case FramebufferTextureFormat::RGBA8: return 4;
+			case FramebufferTextureFormat::RG16F: return 4;
+			case FramebufferTextureFormat::RGBA16F: return 8;
+			case FramebufferTextureFormat::RedInteger: return 4;
+			case FramebufferTextureFormat::Depth24: return 3;
+			case FramebufferTextureFormat::Depth32: return 4;
+			case FramebufferTextureFormat::Depth24Stencil8: return 4;
+			case FramebufferTextureFormat::None: return 0;
 			default:
 				EB_CORE_ASSERT(false, "Unknown FramebufferTextureFormat!");
 				return 0;
@@ -98,8 +157,29 @@ namespace Ember {
 		int Framebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y) const
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+
+			FramebufferTextureFormat format = m_Specification.AttachmentSpecs.Attachments[attachmentIndex].TextureFormat;
+			GLuint glFormat = FramebufferTextureFormatToGLInternalFormat(format);
+			GLuint glType = FramebufferTextureFormatToGLBaseType(format);
+
 			int pixelData;
-			glReadPixels(x, y, 1, 1, GL_RedInteger, GL_INT, &pixelData);
+			glReadPixels(x, y, 1, 1, glFormat, glType, &pixelData);
+
+			return pixelData;
+		}
+
+		const void* Framebuffer::ReadPixels(uint32_t attachmentIndex, int x, int y, uint32_t width, uint32_t height) const
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+
+			FramebufferTextureFormat format = m_Specification.AttachmentSpecs.Attachments[attachmentIndex].TextureFormat;
+			int bytesPerPixelForAttachment = BytesPerPixelForTextureFormat(format);
+			GLuint glFormat = FramebufferTextureFormatToGLInternalFormat(format);
+			GLuint glType = FramebufferTextureFormatToGLBaseType(format);
+
+			void* pixelData = malloc(width * height * bytesPerPixelForAttachment);
+			glReadPixels(x, y, width, height, glFormat, glType, pixelData);
+
 			return pixelData;
 		}
 

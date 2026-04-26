@@ -40,6 +40,8 @@ namespace Ember::Constants {
 		inline const uint64_t DefaultBlackTexUUID = 4;
 		inline const char* DefaultSkybox = "DefaultSkybox";
 		inline const uint64_t DefaultSkyboxUUID = 5;
+		inline const char* DefaultNeutralColorLUT = "DefaultNeutralColorLUT";
+		inline const uint64_t DefaultNeutralColorLUTUUID = 6;
 
 		inline const char* StandardGeometryShad = "StandardGeometry";
 		inline const uint64_t StandardGeometryShadUUID = 9;
@@ -59,8 +61,8 @@ namespace Ember::Constants {
 		inline const uint64_t BloomShadUUID = 16;
 		inline const char* OutlineShad = "Outline";
 		inline const uint64_t OutlineShadUUID = 17;
-		inline const char* FinalCompositeShad = "FinalComposite";
-		inline const uint64_t FinalCompositeShadUUID = 18;
+		inline const char* ToneMapShad = "ToneMap";
+		inline const uint64_t ToneMapShadUUID = 18;
 		inline const char* InfiniteGridShad = "InfiniteGrid";
 		inline const uint64_t InfiniteGridShadUUID = 19;
 		inline const char* BillboardShad = "Billboard";
@@ -87,6 +89,10 @@ namespace Ember::Constants {
 		inline const uint64_t BlitShadUUID = 1000;
 		inline const char* ParticleShad = "Particle";
 		inline const uint64_t ParticleShadUUID = 1001;
+		inline const char* ColorGradeEditorShad = "ColorGradeEditor";
+		inline const uint64_t ColorGradeEditorShadUUID = 1002;
+		inline const char* ColorGradeRuntimeShad = "ColorGradeRuntime";
+		inline const uint64_t ColorGradeRuntimeShadUUID = 1003;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;
