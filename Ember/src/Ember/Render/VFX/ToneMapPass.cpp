@@ -3,14 +3,12 @@
 
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer3D.h"
-#include "Ember/Render/PrimitiveGenerator.h"
 
 namespace Ember {
 
 	void ToneMapPass::Init()
 	{
 		m_ToneMapShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::ToneMapShadUUID);
-		m_ScreenQuadVAO = PrimitiveGenerator::CreateQuad(2.0f, 2.0f)->GetVertexArray();
 	}
 
 	void ToneMapPass::Render(PostProcessPassContext& context)
@@ -24,7 +22,7 @@ namespace Ember {
 		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
 
 		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
-		Renderer3D::Submit(m_ScreenQuadVAO);
+		Renderer3D::Submit(m_ScreenQuad->GetVertexArray());
 		context.OutputBuffer->Unbind();
 	}
 

@@ -20,7 +20,10 @@ namespace Ember {
 			auto [transform, emitter] = registry.GetComponents<TransformComponent, ParticleEmitterComponent>(entity);
 
 			if (!emitter.IsActive)
+			{
+				emitter.EmissionAccumulator = 0.0f;
 				continue;
+			}
 
 			// Calculate how many particles to spawn this frame based on DeltaTime
 			emitter.EmissionAccumulator += emitter.EmissionRate * delta;

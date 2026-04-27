@@ -57,6 +57,7 @@ namespace Ember {
 		RenderAction::UseDepthTest(false);
 
 		// Render HDR Passes
+		passContext.DepthBuffer = m_FramebufferInputs["GBuffer"];
 		passContext.InputBuffer = m_FramebufferInputs["HDRScene"];
 		passContext.OutputBuffer = m_PostProcessBufferA;
 		auto currentHdrInput = RenderHDRPasses(passContext);
