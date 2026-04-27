@@ -18,6 +18,7 @@ namespace Ember {
 	private:
 		void RenderSkyboxSettings();
 		void RenderBloomSettings();
+		void RenderFogSettings();
 		void RenderFXAASettings();
 		void RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass);
 		void RenderColorGradeSettings();

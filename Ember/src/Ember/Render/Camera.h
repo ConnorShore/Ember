@@ -45,6 +45,22 @@ namespace Ember {
 		inline OrthographicProps& GetOrthographicProps() { return m_OrthographicProps; }
 		inline PerspectiveProps& GetPerspectiveProps() { return m_PerspectiveProps; }
 
+		inline float GetNearClip() const
+		{
+			if (m_ProjectionType == ProjectionType::Orthographic)
+				return m_OrthographicProps.NearClip;
+			else
+				return m_PerspectiveProps.NearClip;
+		}
+
+		inline float GetFarClip() const
+		{
+			if (m_ProjectionType == ProjectionType::Orthographic)
+				return m_OrthographicProps.FarClip;
+			else
+				return m_PerspectiveProps.FarClip;
+		}
+
 		inline float GetAspectRatio() const { return m_AspectRatio; }
 
 	private:

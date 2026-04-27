@@ -4,6 +4,7 @@
 #include "UI/PropertyGrid.h"
 
 #include <Ember/Render/VFX/BloomPass.h>
+#include <Ember/Render/VFX/FogPass.h>
 #include <Ember/Render/VFX/FXAAPass.h>
 #include <Ember/Render/VFX/ColorGradePass.h>
 #include <Ember/Render/VFX/ToneMapPass.h>
@@ -26,6 +27,7 @@ namespace Ember {
 
 		RenderSkyboxSettings();
 		RenderBloomSettings();
+		RenderFogSettings();
 		RenderFXAASettings();
 		RenderColorGradeSettings();
 		
@@ -92,7 +94,26 @@ namespace Ember {
 				UI::PropertyGrid::End();
 			}
 
+			UI::Nodes::EndExpandableNode();
+		}
+	}
 
+	void EnvironmentPanel::RenderFogSettings()
+	{
+		auto fogPass = StaticPointerCast<FogPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("FogPass"));
+		if (UI::Nodes::BeginEnabledExpandableNode("Fog", fogPass->Enabled))
+		{
+			if (UI::PropertyGrid::Begin("##FogPropertyGrid"))
+			{
+				ImGui::BeginDisabled(!fogPass->Enabled);
+				UI::PropertyGrid::Color3("Color", fogPass->Color);
+				UI::PropertyGrid::Float("Density", fogPass->Density, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Start Distance", fogPass->StartDistance, 0.01f, 0.0f, 100000.0f);
+				UI::PropertyGrid::Float("Falloff", fogPass->Falloff, 0.01f, 0.0f, 100000.0f);
+				ImGui::EndDisabled();
+
+				UI::PropertyGrid::End();
+			}
 			UI::Nodes::EndExpandableNode();
 		}
 	}

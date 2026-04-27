@@ -18,7 +18,6 @@ namespace Ember {
 
 	private:
 		SharedPtr<Shader> m_ToneMapShader;
-		SharedPtr<VertexArray> m_ScreenQuadVAO;
 	};
 
 }

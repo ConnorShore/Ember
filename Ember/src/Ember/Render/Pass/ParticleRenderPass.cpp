@@ -44,13 +44,22 @@ namespace Ember {
 	void ParticleRenderPass::Execute(RenderContext& context)
 	{
 		m_InstancedData.clear();
+		m_TextureSlots.fill(Constants::InvalidUUID);
+		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID;
+		m_CurrentTexSlotIndex = 1;
 
 		RenderAction::UseBlending(true);
 		RenderAction::UseDepthTest(true);
 		RenderAction::UseDepthMask(false);
 
-		// Create a copy of the particle list so we can sort without modifying the original order in the manager
-		auto pool = m_ParticleManager->GetParticles();
+		// Only copy active particles to avoid sorting the entire pool every frame
+		std::vector<Particle> pool;
+		pool.reserve(m_ParticleManager->GetMaxParticles());
+		for (const auto& p : m_ParticleManager->GetParticles())
+		{
+			if (p.Active)
+				pool.push_back(p);
+		}
 
 		SortParticlesByCameraDistance(context, pool);
 		PackDataForGPU(context, pool);
@@ -82,7 +91,7 @@ namespace Ember {
 	{
 		Vector3f camPos = Vector3f(context.CameraTransform[3]);
 		std::sort(particlesToSort.begin(), particlesToSort.end(), [&camPos](const Particle& a, const Particle& b) {
-			return Math::Distance(a.Position, camPos) > Math::Distance(b.Position, camPos); // Back to Front
+			return Math::Distance2(a.Position, camPos) > Math::Distance2(b.Position, camPos); // Back to Front
 		});
 	}
 

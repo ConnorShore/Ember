@@ -22,6 +22,7 @@
 #include "Ember/Render/VFX/FXAAPass.h"
 #include "Ember/Render/VFX/ColorGradePass.h"
 #include "Ember/Render/VFX/ToneMapPass.h"
+#include "Ember/Render/VFX/FogPass.h"
 
 #include "Ember/Render/Pass/ShadowRenderPass.h"
 #include "Ember/Render/Pass/DebugRenderPass.h"
@@ -67,10 +68,11 @@ namespace Ember {
 
 		// Initialize post process passes
 		m_PostProcessStack["BloomPass"] = SharedPtr<BloomPass>::Create();
+		m_PostProcessStack["FogPass"] = SharedPtr<FogPass>::Create();
 		m_PostProcessStack["OutlinePass"] = SharedPtr<OutlinePass>::Create();
+		m_PostProcessStack["ToneMapPass"] = SharedPtr<ToneMapPass>::Create();
 		m_PostProcessStack["FXAAPass"] = SharedPtr<FXAAPass>::Create();
 		m_PostProcessStack["ColorGradePass"] = SharedPtr<ColorGradePass>::Create();
-		m_PostProcessStack["ToneMapPass"] = SharedPtr<ToneMapPass>::Create();
 		for (auto& [_, pass] : m_PostProcessStack)
 			pass->Init();
 

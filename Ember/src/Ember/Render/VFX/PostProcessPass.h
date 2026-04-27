@@ -19,6 +19,8 @@ namespace Ember {
 		RenderContext& RenderCtx;
 		SharedPtr<Framebuffer> InputBuffer;
 		SharedPtr<Framebuffer> OutputBuffer;
+		
+		SharedPtr<Framebuffer> DepthBuffer;
 
 		PostProcessPassContext(RenderContext& renderContext) : RenderCtx(renderContext) {}
 	};
