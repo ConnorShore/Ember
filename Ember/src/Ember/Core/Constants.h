@@ -95,6 +95,8 @@ namespace Ember::Constants {
 		inline const uint64_t ColorGradeRuntimeShadUUID = 1003;
 		inline const char* FogShad = "Fog";
 		inline const uint64_t FogShadUUID = 1004;
+		inline const char* VignetteShad = "Vignette";
+		inline const uint64_t VignetteShadUUID = 1005;
 
 		inline const char* DefaultMat = "DefaultMaterial";
 		inline const uint64_t DefaultMatUUID = 30;

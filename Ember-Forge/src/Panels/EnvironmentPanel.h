@@ -20,6 +20,7 @@ namespace Ember {
 		void RenderBloomSettings();
 		void RenderFogSettings();
 		void RenderFXAASettings();
+		void RenderVignetteSettings();
 		void RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass);
 		void RenderColorGradeSettings();
 	};

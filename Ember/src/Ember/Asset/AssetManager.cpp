@@ -68,6 +68,7 @@ namespace Ember {
 		auto colorGradeEditorShad = Load<Shader>(Constants::Assets::ColorGradeEditorShadUUID, Constants::Assets::ColorGradeEditorShad, "Ember/assets/shaders/ColorGradeEditor.glsl");
 		auto colorGradeRuntimeShad = Load<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID, Constants::Assets::ColorGradeRuntimeShad, "Ember/assets/shaders/ColorGradeRuntime.glsl");
 		auto fogShad = Load<Shader>(Constants::Assets::FogShadUUID, Constants::Assets::FogShad, "Ember/assets/shaders/Fog.glsl");
+		auto vignetteShad = Load<Shader>(Constants::Assets::VignetteShadUUID, Constants::Assets::VignetteShad, "Ember/assets/shaders/Vignette.glsl");
 
 		// Materials
 		auto geometryMaterial = Create<Material>(Constants::Assets::StandardGeometryMatUUID, Constants::Assets::StandardGeometryMat, geometryShader, RenderQueue::Opaque);

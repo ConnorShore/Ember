@@ -25,7 +25,7 @@ namespace Ember {
 		bool BeginEnabledExpandableNode(const std::string& title, bool& enabled, UICallbackFunc callbackFunc /* = nullptr */)
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags =
-				ImGuiTreeNodeFlags_DefaultOpen |
+				//ImGuiTreeNodeFlags_DefaultOpen |
 				ImGuiTreeNodeFlags_Framed |
 				ImGuiTreeNodeFlags_SpanAvailWidth |
 				ImGuiTreeNodeFlags_AllowOverlap |
