@@ -8,6 +8,7 @@
 #include <Ember/Render/VFX/FXAAPass.h>
 #include <Ember/Render/VFX/ColorGradePass.h>
 #include <Ember/Render/VFX/ToneMapPass.h>
+#include <Ember/Render/VFX/VignettePass.h>
 #include <Ember/ECS/System/RenderSystem.h>
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Event/UIEvent.h>
@@ -27,8 +28,9 @@ namespace Ember {
 
 		RenderSkyboxSettings();
 		RenderBloomSettings();
-		RenderFogSettings();
 		RenderFXAASettings();
+		RenderFogSettings();
+		RenderVignetteSettings();
 		RenderColorGradeSettings();
 		
 		ImGui::End();
@@ -129,6 +131,26 @@ namespace Ember {
 				UI::PropertyGrid::Float("Sub Pixel Quality", fxaaPass->SubpixelQuality, 0.001f, 0.0f, 1.0f);
 				UI::PropertyGrid::Float("Edge Threshold Min", fxaaPass->EdgeThresholdMin, 0.0001f, 0.0f, 0.0833f, "%.4f");
 				UI::PropertyGrid::Float("Edge Threshold Max", fxaaPass->EdgeThresholdMax, 0.001f, 0.063f, 0.333f, "%.4f");
+				ImGui::EndDisabled();
+
+				UI::PropertyGrid::End();
+			}
+			UI::Nodes::EndExpandableNode();
+		}
+	}
+
+	void EnvironmentPanel::RenderVignetteSettings()
+	{
+		auto vignettePass = StaticPointerCast<VignettePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("VignettePass"));
+		if (UI::Nodes::BeginEnabledExpandableNode("Vignette", vignettePass->Enabled))
+		{
+			if (UI::PropertyGrid::Begin("##VignettePropertyGrid"))
+			{
+				ImGui::BeginDisabled(!vignettePass->Enabled);
+				UI::PropertyGrid::Color3("Color", vignettePass->Color);
+				UI::PropertyGrid::Float("Intensity", vignettePass->Intensity, 0.01f, 0.0f, 5.0f);
+				UI::PropertyGrid::Float("Size", vignettePass->Size, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Smoothness", vignettePass->Smoothness, 0.001f, 0.0f, 1.0f);
 				ImGui::EndDisabled();
 
 				UI::PropertyGrid::End();

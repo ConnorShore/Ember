@@ -9,6 +9,8 @@
 #include "Ember/Render/VFX/FXAAPass.h"
 #include "Ember/Render/VFX/ColorGradePass.h"
 #include "Ember/Render/VFX/ToneMapPass.h"
+#include "Ember/Render/VFX/FogPass.h"
+#include "Ember/Render/VFX/VignettePass.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -930,6 +932,8 @@ namespace Ember {
 		auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass("FXAAPass"));
 		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
 		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
+		auto fogPass = StaticPointerCast<FogPass>(renderSystem->GetPostProcessPass("FogPass"));
+		auto vignettePass = StaticPointerCast<VignettePass>(renderSystem->GetPostProcessPass("VignettePass"));
 
 		ryml::NodeRef envNode = root["Environment"];
 		envNode |= ryml::MAP;
@@ -948,12 +952,27 @@ namespace Ember {
 		bloomNode["Intensity"] << bloomPass->Intensity;
 		bloomNode["BlurRadius"] << bloomPass->BlurRadius;
 
+		ryml::NodeRef fogNode = envNode["Fog"];
+		fogNode |= ryml::MAP;
+		fogNode["Enabled"] << fogPass->Enabled;
+		Util::SerializeVector3f(fogNode["Color"], fogPass->Color);
+		fogNode["Density"] << fogPass->Density;
+		fogNode["StartDistance"] << fogPass->StartDistance;
+		fogNode["EndDisFallofftance"] << fogPass->Falloff;
+
 		ryml::NodeRef fxaaNode = envNode["FXAA"];
 		fxaaNode |= ryml::MAP;
 		fxaaNode["Enabled"] << fxaaPass->Enabled;
 		fxaaNode["SubpixelQuality"] << fxaaPass->SubpixelQuality;
 		fxaaNode["EdgeThresholdMin"] << fxaaPass->EdgeThresholdMin;
 		fxaaNode["EdgeThresholdMax"] << fxaaPass->EdgeThresholdMax;
+
+		ryml::NodeRef vignetteNode = envNode["Vignette"];
+		vignetteNode |= ryml::MAP;
+		Util::SerializeVector3f(vignetteNode["Color"], vignettePass->Color);
+		vignetteNode["Intensity"] << vignettePass->Intensity;
+		vignetteNode["Smoothness"] << vignettePass->Smoothness;
+		vignetteNode["Size"] << vignettePass->Size;
 
 		ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 		colorGradeNode |= ryml::MAP;
@@ -1061,6 +1080,17 @@ namespace Ember {
 				bloomNode["BlurRadius"] >> bloomPass->BlurRadius;
 			}
 
+			if (envNode.has_child("Fog"))
+			{
+				auto fogPass = StaticPointerCast<FogPass>(renderSystem->GetPostProcessPass("FogPass"));
+				ryml::NodeRef fogNode = envNode["Fog"];
+				fogNode["Enabled"] >> fogPass->Enabled;
+				Util::DeserializeVector3f(fogNode["Color"], fogPass->Color);
+				fogNode["Density"] >> fogPass->Density;
+				fogNode["StartDistance"] >> fogPass->StartDistance;
+				fogNode["Falloff"] >> fogPass->Falloff;
+			}
+
 			if (envNode.has_child("FXAA"))
 			{
 				auto fxaaPass = StaticPointerCast<FXAAPass>(renderSystem->GetPostProcessPass("FXAAPass"));
@@ -1069,6 +1099,16 @@ namespace Ember {
 				fxaaNode["SubpixelQuality"] >> fxaaPass->SubpixelQuality;
 				fxaaNode["EdgeThresholdMin"] >> fxaaPass->EdgeThresholdMin;
 				fxaaNode["EdgeThresholdMax"] >> fxaaPass->EdgeThresholdMax;
+			}
+
+			if (envNode.has_child("Vignette"))
+			{
+				auto vignettePass = StaticPointerCast<VignettePass>(renderSystem->GetPostProcessPass("VignettePass"));
+				ryml::NodeRef vignetteNode = envNode["Vignette"];
+				Util::DeserializeVector3f(vignetteNode["Color"], vignettePass->Color);
+				vignetteNode["Intensity"] >> vignettePass->Intensity;
+				vignetteNode["Smoothness"] >> vignettePass->Smoothness;
+				vignetteNode["Size"] >> vignettePass->Size;
 			}
 
 			if (envNode.has_child("ColorGrading"))

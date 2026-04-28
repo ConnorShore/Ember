@@ -8,6 +8,7 @@ namespace Ember {
 
 	void FogPass::Init()
 	{
+		Enabled = false;	// Disabled by default
 		m_FogShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::FogShadUUID);
 	}
 

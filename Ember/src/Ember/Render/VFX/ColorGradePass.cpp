@@ -10,6 +10,8 @@ namespace Ember {
 
 	void ColorGradePass::Init()
 	{
+		Enabled = false;	// Disabled by default
+
 		auto& assetManager = Application::Instance().GetAssetManager();
 		m_ColorGradeShaderEditor = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeEditorShadUUID);
 		m_ColorGradeShaderRuntime = assetManager.GetAsset<Shader>(Constants::Assets::ColorGradeRuntimeShadUUID);
