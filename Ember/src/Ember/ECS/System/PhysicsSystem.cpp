@@ -7,6 +7,7 @@
 #include "Ember/Physics/RaycastCallback.h"
 #include "Ember/Physics/ColliderUserData.h"
 #include "Ember/Physics/TriggerFilterOverlapCallback.h"
+#include "Ember/Physics/VolumeOverlapCallback.h"
 
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -195,6 +196,8 @@ namespace Ember {
 		RefreshPhysicsWorld();
 
 		m_PhysicsWorld->setEventListener(&m_PhysicsEventListener);
+
+		InitCameraSensor();
 
 		EB_CORE_INFO("Physics System attached!");
 	}
@@ -603,13 +606,27 @@ namespace Ember {
 	void PhysicsSystem::RestartPhysicsWorld()
 	{
 		if (m_PhysicsWorld) {
+			// Destroy the world first — this cleans up all bodies and colliders (including
+			// the camera sensor body) before we release the shape they reference.
 			m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
+
+			// Now it's safe to release the shape owned by PhysicsCommon.
+			if (m_CameraSensorShape)
+			{
+				m_PhysicsCommon->destroySphereShape(static_cast<rp3d::SphereShape*>(m_CameraSensorShape));
+				m_CameraSensorShape = nullptr;
+			}
+
+			m_CameraSensorBody = nullptr;
 		}
 		m_PhysicsWorld = m_PhysicsCommon->createPhysicsWorld();
 
 		// Re-apply the listener and settings to the NEW world!
 		m_PhysicsWorld->setEventListener(&m_PhysicsEventListener);
 		RefreshPhysicsWorld();
+
+		// Recreate the camera sensor in the new world (old one was destroyed above).
+		InitCameraSensor();
 	}
 
 	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& endPoint)
@@ -753,6 +770,46 @@ namespace Ember {
 		return callback.GetCollisionData();
 	}
 
+	std::vector<VolumeOverlapData> PhysicsSystem::GetOverlappingVolumes(const Vector3f& cameraPosition)
+	{
+		// 1. Teleport the persistent camera sensor to the active camera position
+		rp3d::Transform transform(
+			rp3d::Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
+			rp3d::Quaternion::identity()
+		);
+		m_CameraSensorBody->setTransform(transform);
+
+		// 2. Initialize the callback with the position (for math) and the body (to ignore)
+		VolumeOverlapCallback callback(cameraPosition, m_CameraSensorBody);
+
+		// 3. Test the overlaps! Because of the collision mask we set during Init, 
+		// this will instantly skip the ground, the walls, and the player.
+		m_PhysicsWorld->testOverlap(m_CameraSensorBody, callback);
+
+		// 4. Move the sensor far out of the world so it can't interfere with the
+		// next physics step (kinematic bodies stay wherever setTransform left them).
+		m_CameraSensorBody->setTransform(rp3d::Transform(rp3d::Vector3(0.0f, -99999.0f, 0.0f), rp3d::Quaternion::identity()));
+
+		return callback.GetOverlaps();
+	}
+	
+	void PhysicsSystem::InitCameraSensor()
+	{
+		// 1. Create a persistent Kinematic body sitting at the origin
+		m_CameraSensorBody = m_PhysicsWorld->createRigidBody(rp3d::Transform::identity());
+		m_CameraSensorBody->setType(rp3d::BodyType::KINEMATIC);
+
+		// 2. Attach a tiny sphere to represent the camera lens
+		m_CameraSensorShape = m_PhysicsCommon->createSphereShape(0.1f);
+		rp3d::Collider* collider = m_CameraSensorBody->addCollider(m_CameraSensorShape, rp3d::Transform::identity());
+		collider->setIsTrigger(true);
+
+		// 3. CRITICAL: Set filters so this ONLY checks against VFX Volumes.
+		// Category is left at rp3d's default (0x0001) so volumes whose mask is 0xFFFF will see it.
+		// The mask is set to VFX only so the sensor ignores everything else (floor, player, etc).
+		collider->setCollideWithMaskBits(CollisionFilterPreset::VFX);
+	}
+	
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)
 	{
 		// Decompose the World Transform to safely strip away the scale

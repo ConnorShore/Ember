@@ -23,5 +23,8 @@ namespace Ember {
 		void RenderVignetteSettings();
 		void RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass);
 		void RenderColorGradeSettings();
+
+	private:
+		PostProcessVolumeSettings m_PostProcessVolumeSettings;
 	};
 }

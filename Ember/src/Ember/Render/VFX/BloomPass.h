@@ -1,4 +1,5 @@
 #include "PostProcessPass.h"
+#include "VFXTypes.h"
 #include "Ember/Render/Shader.h"
 
 #include <array>
@@ -18,10 +19,7 @@ namespace Ember {
 		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::HDR; }
 
 	public:
-		float Threshold = 1.5f;
-		float Knee = 0.15f;
-		float Intensity = 0.8f;
-		float BlurRadius = 0.7f;
+		BloomSettings Settings;
 
 	private:
 		const uint32_t m_Passes = 10;

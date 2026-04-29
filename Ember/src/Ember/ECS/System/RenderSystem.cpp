@@ -8,6 +8,7 @@
 #include "Ember/Scene/Scene.h"
 
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/System/PhysicsSystem.h"
 
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer2D.h"
@@ -147,6 +148,10 @@ namespace Ember {
 		renderContext.ViewportDimensions = m_RenderSceneState.ViewportDimensions;
 		renderContext.IsRuntime = isRuntime;
 
+		// Blend and set final post processing settings based on volume overrides in the scene
+		SetFinalPostProcessSettings(scene);
+
+		// Sort entities into render queue buckets
 		SortEntitiesByRenderQueue(scene);
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
 
@@ -408,6 +413,96 @@ namespace Ember {
 		for (EntityID entity : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) {
 			sortLogic(entity);
 		}
+	}
+
+	void RenderSystem::SetFinalPostProcessSettings(Scene* scene)
+	{
+		if (!scene->IsRuntime())
+			return;
+
+		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
+		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3]);
+
+		EB_CORE_INFO("Found {} overlapping post process volumes", volumes.size());
+
+		// Get components from volume data
+		std::vector<std::pair<PostProcessVolumeComponent, float>> componentDistMap;
+
+		auto& registry = scene->GetRegistry();
+		for (const auto& overlapData : volumes)
+		{
+			// Retrieve the actual component data
+			auto& volumeComponent = registry.GetComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity);
+			componentDistMap.emplace_back(volumeComponent, overlapData.SignedDistanceToEdge);
+		}
+
+		// Sort volumes by priority so higher priority volumes will override lower ones when blending
+		std::sort(componentDistMap.begin(), componentDistMap.end(), [](const std::pair<PostProcessVolumeComponent, float>& a, const std::pair<PostProcessVolumeComponent, float>& b) {
+			return a.first.Priority > b.first.Priority;
+		});
+
+		// Blend settings from all overlapping volumes based on their blend distance and priority
+		// 1. Start with your Global Baseline (Priority 0)
+		PostProcessVolumeSettings finalSettings = m_GlobalVolumeSettings;	// TODO: Have environment panel set these values
+
+		// 2. Iterate through sorted active volumes (Lowest -> Highest)
+		//auto& registry = scene->GetRegistry();
+		//for (const auto& overlapData : volumes)
+		//{
+		//	// Retrieve the actual component data
+		//	auto& volumeComponent = registry.GetComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity);
+		for (const auto& [volumeComponent, dist] : componentDistMap)
+		{
+			// 3. Calculate Blend Weight (0.0 to 1.0)
+			// Positive distance = outside, Negative = inside.
+			float blendWeight = 1.0f;
+
+			if (volumeComponent.BlendRadius > 0.0f)
+			{
+				// Distance from the boundary to the inner core of the blend radius
+				float depthInside = -dist;
+
+				// Normalize between 0.0 and 1.0
+				blendWeight = depthInside / volumeComponent.BlendRadius;
+				blendWeight = std::clamp(blendWeight, 0.0f, 1.0f);
+			}
+
+			// If we are completely outside the blend radius, skip this volume
+			if (blendWeight <= 0.0f)
+				continue;
+
+			// 4. Accumulate Settings (Lerp)
+			// Only blend the properties that this specific volume wants to override!
+			if (volumeComponent.OverrideExposure) {
+				finalSettings.ToneMap.Exposure = Math::Lerp(finalSettings.ToneMap.Exposure, volumeComponent.Settings.ToneMap.Exposure, blendWeight);
+			}
+
+			if (volumeComponent.OverrideBloom) {
+				finalSettings.Bloom.Intensity = Math::Lerp(finalSettings.Bloom.Intensity, volumeComponent.Settings.Bloom.Intensity, blendWeight);
+				finalSettings.Bloom.Threshold = Math::Lerp(finalSettings.Bloom.Threshold, volumeComponent.Settings.Bloom.Threshold, blendWeight);
+				finalSettings.Bloom.Knee = Math::Lerp(finalSettings.Bloom.Knee, volumeComponent.Settings.Bloom.Knee, blendWeight);
+				finalSettings.Bloom.BlurRadius = Math::Lerp(finalSettings.Bloom.BlurRadius, volumeComponent.Settings.Bloom.BlurRadius, blendWeight);
+			}
+
+			if (volumeComponent.OverrideColorGrade) {
+				finalSettings.ColorGrade.Contrast = Math::Lerp(finalSettings.ColorGrade.Contrast, volumeComponent.Settings.ColorGrade.Contrast, blendWeight);
+				finalSettings.ColorGrade.Saturation = Math::Lerp(finalSettings.ColorGrade.Saturation, volumeComponent.Settings.ColorGrade.Saturation, blendWeight);
+				finalSettings.ColorGrade.Temperature = Math::Lerp(finalSettings.ColorGrade.Temperature, volumeComponent.Settings.ColorGrade.Temperature, blendWeight);
+				finalSettings.ColorGrade.Tint = Math::Lerp(finalSettings.ColorGrade.Tint, volumeComponent.Settings.ColorGrade.Tint, blendWeight);
+				finalSettings.ColorGrade.Lift = Math::Lerp(finalSettings.ColorGrade.Lift, volumeComponent.Settings.ColorGrade.Lift, blendWeight);
+				finalSettings.ColorGrade.Gamma = Math::Lerp(finalSettings.ColorGrade.Gamma, volumeComponent.Settings.ColorGrade.Gamma, blendWeight);
+				finalSettings.ColorGrade.Gain = Math::Lerp(finalSettings.ColorGrade.Gain, volumeComponent.Settings.ColorGrade.Gain, blendWeight);
+			}
+
+			if (volumeComponent.OverrideFog) {
+				finalSettings.Fog.Color = Math::Lerp(finalSettings.Fog.Color, volumeComponent.Settings.Fog.Color, blendWeight);
+				finalSettings.Fog.Density = Math::Lerp(finalSettings.Fog.Density, volumeComponent.Settings.Fog.Density, blendWeight);
+				finalSettings.Fog.Falloff = Math::Lerp(finalSettings.Fog.Falloff, volumeComponent.Settings.Fog.Falloff, blendWeight);
+				finalSettings.Fog.StartDistance = Math::Lerp(finalSettings.Fog.StartDistance, volumeComponent.Settings.Fog.StartDistance, blendWeight);
+			}
+		}
+
+		m_RenderSceneState.FinalPostProcessVolumeSettings = finalSettings;
 	}
 
 }

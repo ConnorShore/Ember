@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PostProcessPass.h"
+#include "VFXTypes.h"
 
 namespace Ember {
 
@@ -14,7 +15,7 @@ namespace Ember {
 		virtual void Render(PostProcessPassContext& context) override;
 		inline virtual PostProcessStage GetStage() const override { return PostProcessStage::ToneMap; }
 
-		float Exposure = 1.0f;
+		ToneMapSettings Settings;
 
 	private:
 		SharedPtr<Shader> m_ToneMapShader;

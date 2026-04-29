@@ -22,9 +22,9 @@ namespace Ember {
 		m_FogShader->Bind();
 
 		// Pass the uniforms from your Environment Settings
-		m_FogShader->SetFloat("u_FogDensity", Density);
-		m_FogShader->SetFloat3("u_FogColor", Color);
-		m_FogShader->SetFloat("u_FogStart", StartDistance);
+		m_FogShader->SetFloat("u_FogDensity", Settings.Density);
+		m_FogShader->SetFloat3("u_FogColor", Settings.Color);
+		m_FogShader->SetFloat("u_FogStart", Settings.StartDistance);
 
 		// Pass the active camera's clipping planes
 		float cameraNearClip = context.RenderCtx.ActiveCamera->GetNearClip();

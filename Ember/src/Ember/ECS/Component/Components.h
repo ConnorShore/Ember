@@ -8,6 +8,7 @@
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/Render/VFX/VFXTypes.h"
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
@@ -663,6 +664,23 @@ namespace Ember {
 
 		ParticleEmitterComponent() = default;
 		ParticleEmitterComponent(const ParticleEmitterComponent&) = default;
+	};
+
+	struct PostProcessVolumeComponent
+	{
+		PostProcessVolumeSettings Settings;
+		uint32_t Priority;
+
+		float BlendRadius = 1.0f;
+
+		bool OverrideBloom = false;
+		bool OverrideColorGrade = false;
+		bool OverrideFog = false;
+		bool OverrideVignette = false;
+		bool OverrideExposure = false;
+
+		PostProcessVolumeComponent() = default;
+		PostProcessVolumeComponent(const PostProcessVolumeComponent&) = default;
 	};
 
 }

@@ -7,6 +7,7 @@
 #include "Ember/Physics/CollisionTestCallback.h"
 #include "Ember/Physics/OverlapTestCallback.h"
 #include "Ember/Physics/PhysicsEventListener.h"
+#include "Ember/Physics/VolumeOverlapCallback.h"
 #include "Ember/Scene/Entity.h"
 
 // forward declarations
@@ -61,6 +62,8 @@ namespace Ember {
 
 		CollisionCallbackData TestCollision(Entity entity);
 
+		std::vector<VolumeOverlapData> GetOverlappingVolumes(const Vector3f& cameraPosition);
+
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();
 
@@ -69,6 +72,7 @@ namespace Ember {
 		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 	private:
+		void InitCameraSensor();
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
 		void CreateBoxCollider(EntityID entity, BoxColliderComponent& box, Scene* scene);
 		void CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene);
@@ -82,6 +86,8 @@ namespace Ember {
 		ScopedPtr<rp3d::PhysicsCommon> m_PhysicsCommon = nullptr;
 
 		rp3d::PhysicsWorld* m_PhysicsWorld = nullptr;	// TODO: Make scoped ptr
+		rp3d::RigidBody* m_CameraSensorBody = nullptr;
+		rp3d::CollisionShape* m_CameraSensorShape = nullptr;
 
 		PhysicsEventListener m_PhysicsEventListener;
 

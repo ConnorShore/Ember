@@ -34,6 +34,10 @@ namespace Ember {
 		RenderColorGradeSettings();
 		
 		ImGui::End();
+
+		// Update global post process volume settings in the render system
+		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+		renderSystem->SetGlobalPostProcessVolumeSettings(m_PostProcessVolumeSettings);
 	}
 
 	void EnvironmentPanel::RenderSkyboxSettings()
@@ -86,10 +90,15 @@ namespace Ember {
 			{
 				ImGui::BeginDisabled(!bloomPass->Enabled);
 
-				UI::PropertyGrid::Float("Threshold", bloomPass->Threshold, 0.01f, 0.0f, 10.0f);
-				UI::PropertyGrid::Float("Soft Knee", bloomPass->Knee, 0.01f, 0.0f, 1.0f);
-				UI::PropertyGrid::Float("Intensity", bloomPass->Intensity, 0.01f, 0.0f, 5.0f);
-				UI::PropertyGrid::Float("Blur Radius", bloomPass->BlurRadius, 0.01f, 0.1f, 5.0f);
+				UI::PropertyGrid::Float("Threshold", m_PostProcessVolumeSettings.Bloom.Threshold, 0.01f, 0.0f, 10.0f);
+				UI::PropertyGrid::Float("Soft Knee", m_PostProcessVolumeSettings.Bloom.Knee, 0.01f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Intensity", m_PostProcessVolumeSettings.Bloom.Intensity, 0.01f, 0.0f, 5.0f);
+				UI::PropertyGrid::Float("Blur Radius", m_PostProcessVolumeSettings.Bloom.BlurRadius, 0.01f, 0.1f, 5.0f);
+
+				//UI::PropertyGrid::Float("Threshold", bloomPass->Settings.Threshold, 0.01f, 0.0f, 10.0f);
+				//UI::PropertyGrid::Float("Soft Knee", bloomPass->Settings.Knee, 0.01f, 0.0f, 1.0f);
+				//UI::PropertyGrid::Float("Intensity", bloomPass->Settings.Intensity, 0.01f, 0.0f, 5.0f);
+				//UI::PropertyGrid::Float("Blur Radius", bloomPass->Settings.BlurRadius, 0.01f, 0.1f, 5.0f);
 
 				ImGui::EndDisabled();
 
@@ -108,10 +117,14 @@ namespace Ember {
 			if (UI::PropertyGrid::Begin("##FogPropertyGrid"))
 			{
 				ImGui::BeginDisabled(!fogPass->Enabled);
-				UI::PropertyGrid::Color3("Color", fogPass->Color);
-				UI::PropertyGrid::Float("Density", fogPass->Density, 0.001f, 0.0f, 1.0f);
-				UI::PropertyGrid::Float("Start Distance", fogPass->StartDistance, 0.01f, 0.0f, 100000.0f);
-				UI::PropertyGrid::Float("Falloff", fogPass->Falloff, 0.01f, 0.0f, 100000.0f);
+				UI::PropertyGrid::Color3("Color", m_PostProcessVolumeSettings.Fog.Color);
+				UI::PropertyGrid::Float("Density", m_PostProcessVolumeSettings.Fog.Density, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Start Distance", m_PostProcessVolumeSettings.Fog.StartDistance, 0.01f, 0.0f, 100000.0f);
+				UI::PropertyGrid::Float("Falloff", m_PostProcessVolumeSettings.Fog.Falloff, 0.01f, 0.0f, 100000.0f);
+				//UI::PropertyGrid::Color3("Color", fogPass->Settings.Color);
+				//UI::PropertyGrid::Float("Density", fogPass->Settings.Density, 0.001f, 0.0f, 1.0f);
+				//UI::PropertyGrid::Float("Start Distance", fogPass->Settings.StartDistance, 0.01f, 0.0f, 100000.0f);
+				//UI::PropertyGrid::Float("Falloff", fogPass->Settings.Falloff, 0.01f, 0.0f, 100000.0f);
 				ImGui::EndDisabled();
 
 				UI::PropertyGrid::End();
@@ -147,10 +160,10 @@ namespace Ember {
 			if (UI::PropertyGrid::Begin("##VignettePropertyGrid"))
 			{
 				ImGui::BeginDisabled(!vignettePass->Enabled);
-				UI::PropertyGrid::Color3("Color", vignettePass->Color);
-				UI::PropertyGrid::Float("Intensity", vignettePass->Intensity, 0.01f, 0.0f, 5.0f);
-				UI::PropertyGrid::Float("Size", vignettePass->Size, 0.001f, 0.0f, 1.0f);
-				UI::PropertyGrid::Float("Smoothness", vignettePass->Smoothness, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Color3("Color", vignettePass->Settings.Color);
+				UI::PropertyGrid::Float("Intensity", vignettePass->Settings.Intensity, 0.01f, 0.0f, 5.0f);
+				UI::PropertyGrid::Float("Size", vignettePass->Settings.Size, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Smoothness", vignettePass->Settings.Smoothness, 0.001f, 0.0f, 1.0f);
 				ImGui::EndDisabled();
 
 				UI::PropertyGrid::End();
@@ -244,7 +257,7 @@ namespace Ember {
 		if (ImGui::Button("Reset to Default"))
 		{
 			colorGradePass->Settings.Reset();
-			toneMapPass->Exposure = 1.0f;
+			toneMapPass->Settings.Exposure = 1.0f;
 		}
 	}
 
@@ -264,7 +277,7 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##ExposureProps"))
 				{
-					UI::PropertyGrid::Float("Exposure", toneMapPass->Exposure, 0.01f, 0.0f, 10.0f);
+					UI::PropertyGrid::Float("Exposure", m_PostProcessVolumeSettings.ToneMap.Exposure, 0.01f, 0.0f, 10.0f);
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
@@ -274,8 +287,8 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
 				{
-					UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
-					UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::Float("Temperature", m_PostProcessVolumeSettings.ColorGrade.Temperature, 0.01f, -1.0f, 1.0f);
+					UI::PropertyGrid::Float("Tint", m_PostProcessVolumeSettings.ColorGrade.Tint, 0.01f, -1.0f, 1.0f);
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
@@ -285,8 +298,8 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
 				{
-					UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
-					UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
+					UI::PropertyGrid::Float("Contrast", m_PostProcessVolumeSettings.ColorGrade.Contrast, 0.01f, 0.0f, 2.0f);
+					UI::PropertyGrid::Float("Saturation", m_PostProcessVolumeSettings.ColorGrade.Saturation, 0.01f, 0.0f, 2.0f);
 
 					UI::PropertyGrid::End();
 				}
@@ -297,14 +310,60 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin("##LGGProps"))
 				{
-					UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
-					UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
-					UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
+					UI::PropertyGrid::Color4("Lift", m_PostProcessVolumeSettings.ColorGrade.Lift);
+					UI::PropertyGrid::Color4("Gamma", m_PostProcessVolumeSettings.ColorGrade.Gamma);
+					UI::PropertyGrid::Color4("Gain", m_PostProcessVolumeSettings.ColorGrade.Gain);
 
 					UI::PropertyGrid::End();
 				}
 				ImGui::TreePop();
 			}
+
+			//if (ImGui::TreeNode("Exposure"))
+			//{
+			//	if (UI::PropertyGrid::Begin("##ExposureProps"))
+			//	{
+			//		UI::PropertyGrid::Float("Exposure", toneMapPass->Settings.Exposure, 0.01f, 0.0f, 10.0f);
+			//		UI::PropertyGrid::End();
+			//	}
+			//	ImGui::TreePop();
+			//}
+
+			//if (ImGui::TreeNode("White Balance"))
+			//{
+			//	if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
+			//	{
+			//		UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
+			//		UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
+			//		UI::PropertyGrid::End();
+			//	}
+			//	ImGui::TreePop();
+			//}
+
+			//if (ImGui::TreeNode("Color Adjustments"))
+			//{
+			//	if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
+			//	{
+			//		UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
+			//		UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
+
+			//		UI::PropertyGrid::End();
+			//	}
+			//	ImGui::TreePop();
+			//}
+
+			//if (ImGui::TreeNode("Lift, Gamma, Gain"))
+			//{
+			//	if (UI::PropertyGrid::Begin("##LGGProps"))
+			//	{
+			//		UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
+			//		UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
+			//		UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
+
+			//		UI::PropertyGrid::End();
+			//	}
+			//	ImGui::TreePop();
+			//}
 			ImGui::EndDisabled();
 
 			UI::Nodes::EndExpandableNode();

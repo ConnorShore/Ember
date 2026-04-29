@@ -20,6 +20,8 @@ namespace Ember {
 		static Entity CreateSpotLight(const SharedPtr<Scene>& scene);
 
 		static Entity Create3DCamera(const SharedPtr<Scene>& scene, const Vector3f& position = Vector3f(0.0f), const Quaternion& orientation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+
+		static Entity CreatePostProcessVolume(const SharedPtr<Scene>& scene);
 	};
 
 }

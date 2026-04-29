@@ -13,7 +13,6 @@
 #include "Ember/Render/Texture2DArray.h"
 #include "Ember/Render/RenderQueueBuckets.h"
 #include "Ember/Render/Pass/RenderPass.h"
-#include "Ember/Render/VFX/ColorGradeSettings.h"
 
 #include <vector>
 #include <map>
@@ -54,21 +53,21 @@ namespace Ember {
 			return m_RenderPasses.at(name);
 		}
 
+		void SetGlobalPostProcessVolumeSettings(const PostProcessVolumeSettings& settings) { m_GlobalVolumeSettings = settings; }
+
 	private:
 		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
 		void InitializeRenderState();
 		void SetSceneCamera(Scene* scene);
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Scene* scene);
+		void SetFinalPostProcessSettings(Scene* scene);
+
 
 	private:
-		//std::vector<SharedPtr<PostProcessPass>> m_PostProcessStack;
-		//std::vector<SharedPtr<RenderPass>> m_RenderPasses;
-
 		// TODO: Make this a render graph
 		std::map<std::string, SharedPtr<RenderPass>> m_RenderPasses;
 		std::map<std::string, SharedPtr<PostProcessPass>> m_PostProcessStack;
-
 
 		SharedPtr<UniformBuffer> m_CameraUniformBuffer;
 		SharedPtr<UniformBuffer> m_ShadowUniformBuffer;
@@ -76,13 +75,14 @@ namespace Ember {
 
 		SharedPtr<Framebuffer> m_ColorGradeLUTBuffer;
 
-
 		RenderQueueBuckets m_RenderQueueBuckets;
 
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
 
 		SharedPtr<VertexArray> m_ScreenQuadVAO;
+
+		PostProcessVolumeSettings m_GlobalVolumeSettings;	// Baseline settings that all volumes will blend on top of
 
 		struct RenderSceneState
 		{
@@ -92,6 +92,8 @@ namespace Ember {
 
 			Vector4<int> ViewportDimensions;
 			int OutputFramebufferId;
+
+			PostProcessVolumeSettings FinalPostProcessVolumeSettings;
 
 			void Reset()
 			{
