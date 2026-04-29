@@ -17,6 +17,7 @@
 #include "Ember/Render/DebugRenderer.h"
 #include "Ember/Render/RenderContext.h"
 #include "Ember/Render/UniformBufferTypes.h"
+#include "Ember/Render/Frustum.h"
 
 #include "Ember/Render/VFX/BloomPass.h"
 #include "Ember/Render/VFX/OutlinePass.h"
@@ -158,6 +159,96 @@ namespace Ember {
 
 		// Sort entities into render queue buckets
 		SortEntitiesByRenderQueue(scene);
+
+		// Remove entities in render buckets that aren't within frustum (frustum culling)
+		Matrix4f viewProj = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+		Frustum cameraFrustum(viewProj);
+		for (auto& bucket : { &m_RenderQueueBuckets.Opaque, &m_RenderQueueBuckets.Forward, &m_RenderQueueBuckets.Transparent })
+		{
+			bucket->erase(std::remove_if(bucket->begin(), bucket->end(), [&](EntityID entityID)
+				{
+					Entity entity(entityID, scene);
+					if (scene->GetRegistry().ContainsComponent<StaticMeshComponent>(entityID))
+					{
+						auto transform = scene->GetRegistry().GetComponent<TransformComponent>(entityID);
+						auto meshComp = scene->GetRegistry().GetComponent<StaticMeshComponent>(entityID);
+						auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
+
+						Vector3f localMin = mesh->GetMinBounds();
+						Vector3f localMax = mesh->GetMaxBounds();
+						Matrix4f worldMat = transform.GetWorldTransform();
+
+						// 1. Define the 8 corners of the local bounding box
+						Vector3f corners[8] = {
+							{localMin.x, localMin.y, localMin.z},
+							{localMax.x, localMin.y, localMin.z},
+							{localMin.x, localMax.y, localMin.z},
+							{localMax.x, localMax.y, localMin.z},
+							{localMin.x, localMin.y, localMax.z},
+							{localMax.x, localMin.y, localMax.z},
+							{localMin.x, localMax.y, localMax.z},
+							{localMax.x, localMax.y, localMax.z}
+						};
+
+						// 2. Initialize world bounds to extreme values
+						Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
+						Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
+
+						// 3. Transform all 8 corners to world space and find the new AABB limits
+						for (int i = 0; i < 8; i++) {
+							Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
+							worldMin = Math::Min(worldMin, worldCorner);
+							worldMax = Math::Max(worldMax, worldCorner);
+						}
+
+						bool ret = cameraFrustum.IsBoxVisible(worldMin, worldMax);
+						if (!ret)
+							EB_CORE_INFO("Entity {0} is invisible", entity.GetName());
+						return !ret;
+					}
+
+					if (scene->GetRegistry().ContainsComponent<SkinnedMeshComponent>(entityID))
+					{
+						auto transform = scene->GetRegistry().GetComponent<TransformComponent>(entityID);
+						auto meshComp = scene->GetRegistry().GetComponent<SkinnedMeshComponent>(entityID);
+						auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
+						
+						Vector3f localMin = mesh->GetMinBounds();
+						Vector3f localMax = mesh->GetMaxBounds();
+						Matrix4f worldMat = transform.GetWorldTransform();
+
+						// 1. Define the 8 corners of the local bounding box
+						Vector3f corners[8] = {
+							{localMin.x, localMin.y, localMin.z},
+							{localMax.x, localMin.y, localMin.z},
+							{localMin.x, localMax.y, localMin.z},
+							{localMax.x, localMax.y, localMin.z},
+							{localMin.x, localMin.y, localMax.z},
+							{localMax.x, localMin.y, localMax.z},
+							{localMin.x, localMax.y, localMax.z},
+							{localMax.x, localMax.y, localMax.z}
+						};
+
+						// 2. Initialize world bounds to extreme values
+						Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
+						Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
+
+						// 3. Transform all 8 corners to world space and find the new AABB limits
+						for (int i = 0; i < 8; i++) {
+							Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
+							worldMin = Math::Min(worldMin, worldCorner);
+							worldMax = Math::Max(worldMax, worldCorner);
+						}
+
+						bool ret = cameraFrustum.IsBoxVisible(worldMin, worldMax);
+						if (!ret)
+							EB_CORE_INFO("Entity {0} is invisible", entity.GetName());
+						return !ret;
+					}
+					return false;
+				}), bucket->end());
+		}
+
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
 
 		// --- Shadow pass ---
