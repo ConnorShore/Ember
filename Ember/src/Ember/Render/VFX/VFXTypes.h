@@ -25,6 +25,8 @@ namespace Ember {
 		Vector4f Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
 		Vector4f Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
 
+		// TODO: Add UUID for LUT texture and logic for baking/saving LUTs on a per-volume basis
+
 		void Reset()
 		{
 			Temperature = 0.0f;
@@ -60,6 +62,11 @@ namespace Ember {
 
 	struct PostProcessVolumeSettings
 	{
+		bool BloomEnabled = false;
+		bool ColorGradeEnabled = false;
+		bool FogEnabled = false;
+		bool VignetteEnabled = false;
+
 		BloomSettings Bloom;
 		ColorGradeSettings ColorGrade;
 		FogSettings Fog;

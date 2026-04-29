@@ -15,11 +15,30 @@
 
 namespace Ember {
 
-
 	EnvironmentPanel::EnvironmentPanel(EditorContext* context)
 		: Panel("Environment", context)
 	{
+		// Enable bloom and color grade by default
+		m_PostProcessVolumeSettings.BloomEnabled = true;
+		m_PostProcessVolumeSettings.ColorGradeEnabled = true;
 
+	}
+
+	void EnvironmentPanel::OnAttach()
+	{
+		// Populate m_PostProcessVolumeSettings with default values from the render system's passes
+		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+		auto bloomPass = StaticPointerCast<BloomPass>(renderSystem->GetPostProcessPass("BloomPass"));
+		auto colorGradingPass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
+		auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
+		auto fogPass = StaticPointerCast<FogPass>(renderSystem->GetPostProcessPass("FogPass"));
+		auto vignettePass = StaticPointerCast<VignettePass>(renderSystem->GetPostProcessPass("VignettePass"));
+
+		m_PostProcessVolumeSettings.Bloom = bloomPass->Settings;
+		m_PostProcessVolumeSettings.ColorGrade = colorGradingPass->Settings;
+		m_PostProcessVolumeSettings.ToneMap = toneMapPass->Settings;
+		m_PostProcessVolumeSettings.Fog = fogPass->Settings;
+		m_PostProcessVolumeSettings.Vignette = vignettePass->Settings;
 	}
 
 	void EnvironmentPanel::OnImGuiRender()
@@ -83,22 +102,16 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderBloomSettings()
 	{
-		auto bloomPass = StaticPointerCast<BloomPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("BloomPass"));
-		if (UI::Nodes::BeginEnabledExpandableNode("Bloom", bloomPass->Enabled))
+		if (UI::Nodes::BeginEnabledExpandableNode("Bloom", m_PostProcessVolumeSettings.BloomEnabled))
 		{
 			if (UI::PropertyGrid::Begin("##BloomPropertyGrid"))
 			{
-				ImGui::BeginDisabled(!bloomPass->Enabled);
+				ImGui::BeginDisabled(!m_PostProcessVolumeSettings.BloomEnabled);
 
 				UI::PropertyGrid::Float("Threshold", m_PostProcessVolumeSettings.Bloom.Threshold, 0.01f, 0.0f, 10.0f);
 				UI::PropertyGrid::Float("Soft Knee", m_PostProcessVolumeSettings.Bloom.Knee, 0.01f, 0.0f, 1.0f);
 				UI::PropertyGrid::Float("Intensity", m_PostProcessVolumeSettings.Bloom.Intensity, 0.01f, 0.0f, 5.0f);
 				UI::PropertyGrid::Float("Blur Radius", m_PostProcessVolumeSettings.Bloom.BlurRadius, 0.01f, 0.1f, 5.0f);
-
-				//UI::PropertyGrid::Float("Threshold", bloomPass->Settings.Threshold, 0.01f, 0.0f, 10.0f);
-				//UI::PropertyGrid::Float("Soft Knee", bloomPass->Settings.Knee, 0.01f, 0.0f, 1.0f);
-				//UI::PropertyGrid::Float("Intensity", bloomPass->Settings.Intensity, 0.01f, 0.0f, 5.0f);
-				//UI::PropertyGrid::Float("Blur Radius", bloomPass->Settings.BlurRadius, 0.01f, 0.1f, 5.0f);
 
 				ImGui::EndDisabled();
 
@@ -111,20 +124,15 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderFogSettings()
 	{
-		auto fogPass = StaticPointerCast<FogPass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("FogPass"));
-		if (UI::Nodes::BeginEnabledExpandableNode("Fog", fogPass->Enabled))
+		if (UI::Nodes::BeginEnabledExpandableNode("Fog", m_PostProcessVolumeSettings.FogEnabled))
 		{
 			if (UI::PropertyGrid::Begin("##FogPropertyGrid"))
 			{
-				ImGui::BeginDisabled(!fogPass->Enabled);
+				ImGui::BeginDisabled(!m_PostProcessVolumeSettings.FogEnabled);
 				UI::PropertyGrid::Color3("Color", m_PostProcessVolumeSettings.Fog.Color);
 				UI::PropertyGrid::Float("Density", m_PostProcessVolumeSettings.Fog.Density, 0.001f, 0.0f, 1.0f);
 				UI::PropertyGrid::Float("Start Distance", m_PostProcessVolumeSettings.Fog.StartDistance, 0.01f, 0.0f, 100000.0f);
 				UI::PropertyGrid::Float("Falloff", m_PostProcessVolumeSettings.Fog.Falloff, 0.01f, 0.0f, 100000.0f);
-				//UI::PropertyGrid::Color3("Color", fogPass->Settings.Color);
-				//UI::PropertyGrid::Float("Density", fogPass->Settings.Density, 0.001f, 0.0f, 1.0f);
-				//UI::PropertyGrid::Float("Start Distance", fogPass->Settings.StartDistance, 0.01f, 0.0f, 100000.0f);
-				//UI::PropertyGrid::Float("Falloff", fogPass->Settings.Falloff, 0.01f, 0.0f, 100000.0f);
 				ImGui::EndDisabled();
 
 				UI::PropertyGrid::End();
@@ -154,16 +162,15 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderVignetteSettings()
 	{
-		auto vignettePass = StaticPointerCast<VignettePass>(Application::Instance().GetSystem<RenderSystem>()->GetPostProcessPass("VignettePass"));
-		if (UI::Nodes::BeginEnabledExpandableNode("Vignette", vignettePass->Enabled))
+		if (UI::Nodes::BeginEnabledExpandableNode("Vignette", m_PostProcessVolumeSettings.VignetteEnabled))
 		{
 			if (UI::PropertyGrid::Begin("##VignettePropertyGrid"))
 			{
-				ImGui::BeginDisabled(!vignettePass->Enabled);
-				UI::PropertyGrid::Color3("Color", vignettePass->Settings.Color);
-				UI::PropertyGrid::Float("Intensity", vignettePass->Settings.Intensity, 0.01f, 0.0f, 5.0f);
-				UI::PropertyGrid::Float("Size", vignettePass->Settings.Size, 0.001f, 0.0f, 1.0f);
-				UI::PropertyGrid::Float("Smoothness", vignettePass->Settings.Smoothness, 0.001f, 0.0f, 1.0f);
+				ImGui::BeginDisabled(!m_PostProcessVolumeSettings.VignetteEnabled);
+				UI::PropertyGrid::Color3("Color", m_PostProcessVolumeSettings.Vignette.Color);
+				UI::PropertyGrid::Float("Intensity", m_PostProcessVolumeSettings.Vignette.Intensity, 0.01f, 0.0f, 5.0f);
+				UI::PropertyGrid::Float("Size", m_PostProcessVolumeSettings.Vignette.Size, 0.001f, 0.0f, 1.0f);
+				UI::PropertyGrid::Float("Smoothness", m_PostProcessVolumeSettings.Vignette.Smoothness, 0.001f, 0.0f, 1.0f);
 				ImGui::EndDisabled();
 
 				UI::PropertyGrid::End();
@@ -174,6 +181,7 @@ namespace Ember {
 
 	void EnvironmentPanel::RenderColorGradeLUTSettings(const SharedPtr<ColorGradePass>& colorGradePass, const SharedPtr<ToneMapPass>& toneMapPass)
 	{
+		// TOOD: Set color grade lut to ColorGradeSettings
 		ColorGradeSettings& colorGradeProps = colorGradePass->Settings;
 		if (UI::PropertyGrid::Begin("##ColorGradePropertyGrid"))
 		{
@@ -265,12 +273,12 @@ namespace Ember {
 	{
 		auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 		auto colorGradePass = StaticPointerCast<ColorGradePass>(renderSystem->GetPostProcessPass("ColorGradePass"));
-		if (UI::Nodes::BeginEnabledExpandableNode("Color Grading", colorGradePass->Enabled))
+		if (UI::Nodes::BeginEnabledExpandableNode("Color Grading", m_PostProcessVolumeSettings.ColorGradeEnabled))
 		{
 			auto toneMapPass = StaticPointerCast<ToneMapPass>(renderSystem->GetPostProcessPass("ToneMapPass"));
 			auto& colorGradeProps = colorGradePass->Settings;
 
-			ImGui::BeginDisabled(!colorGradePass->Enabled);
+			ImGui::BeginDisabled(!m_PostProcessVolumeSettings.ColorGradeEnabled);
 			RenderColorGradeLUTSettings(colorGradePass, toneMapPass);
 
 			if (ImGui::TreeNode("Exposure"))
@@ -318,52 +326,6 @@ namespace Ember {
 				}
 				ImGui::TreePop();
 			}
-
-			//if (ImGui::TreeNode("Exposure"))
-			//{
-			//	if (UI::PropertyGrid::Begin("##ExposureProps"))
-			//	{
-			//		UI::PropertyGrid::Float("Exposure", toneMapPass->Settings.Exposure, 0.01f, 0.0f, 10.0f);
-			//		UI::PropertyGrid::End();
-			//	}
-			//	ImGui::TreePop();
-			//}
-
-			//if (ImGui::TreeNode("White Balance"))
-			//{
-			//	if (UI::PropertyGrid::Begin("##WhiteBalanceProps"))
-			//	{
-			//		UI::PropertyGrid::Float("Temperature", colorGradeProps.Temperature, 0.01f, -1.0f, 1.0f);
-			//		UI::PropertyGrid::Float("Tint", colorGradeProps.Tint, 0.01f, -1.0f, 1.0f);
-			//		UI::PropertyGrid::End();
-			//	}
-			//	ImGui::TreePop();
-			//}
-
-			//if (ImGui::TreeNode("Color Adjustments"))
-			//{
-			//	if (UI::PropertyGrid::Begin("##ColorAdjustmentProps"))
-			//	{
-			//		UI::PropertyGrid::Float("Contrast", colorGradeProps.Contrast, 0.01f, 0.0f, 2.0f);
-			//		UI::PropertyGrid::Float("Saturation", colorGradeProps.Saturation, 0.01f, 0.0f, 2.0f);
-
-			//		UI::PropertyGrid::End();
-			//	}
-			//	ImGui::TreePop();
-			//}
-
-			//if (ImGui::TreeNode("Lift, Gamma, Gain"))
-			//{
-			//	if (UI::PropertyGrid::Begin("##LGGProps"))
-			//	{
-			//		UI::PropertyGrid::Color4("Lift", colorGradeProps.Lift);
-			//		UI::PropertyGrid::Color4("Gamma", colorGradeProps.Gamma);
-			//		UI::PropertyGrid::Color4("Gain", colorGradeProps.Gain);
-
-			//		UI::PropertyGrid::End();
-			//	}
-			//	ImGui::TreePop();
-			//}
 			ImGui::EndDisabled();
 
 			UI::Nodes::EndExpandableNode();

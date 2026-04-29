@@ -149,7 +149,12 @@ namespace Ember {
 		renderContext.IsRuntime = isRuntime;
 
 		// Blend and set final post processing settings based on volume overrides in the scene
-		SetFinalPostProcessSettings(scene);
+		if (isRuntime)
+			SetFinalPostProcessSettings(scene);
+		else
+			m_RenderSceneState.FinalPostProcessVolumeSettings = m_GlobalVolumeSettings;
+
+		renderContext.FinalPostProcessVolumeSettings = &m_RenderSceneState.FinalPostProcessVolumeSettings;
 
 		// Sort entities into render queue buckets
 		SortEntitiesByRenderQueue(scene);
@@ -210,6 +215,7 @@ namespace Ember {
 		worldSpace2DPass->Execute(renderContext);
 
 		// Post Processing & Tone Mapping
+		ApplyPostProcessSettings();
 		auto postProcessPass = StaticPointerCast<PostProcessRenderPass>(GetRenderPass("PostProcessRenderPass"));
 		postProcessPass->SetFramebufferInput("GBuffer", deferredGeometryPass->GetFramebufferOutput("GBuffer"));
 		postProcessPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
@@ -442,18 +448,10 @@ namespace Ember {
 		});
 
 		// Blend settings from all overlapping volumes based on their blend distance and priority
-		// 1. Start with your Global Baseline (Priority 0)
-		PostProcessVolumeSettings finalSettings = m_GlobalVolumeSettings;	// TODO: Have environment panel set these values
-
-		// 2. Iterate through sorted active volumes (Lowest -> Highest)
-		//auto& registry = scene->GetRegistry();
-		//for (const auto& overlapData : volumes)
-		//{
-		//	// Retrieve the actual component data
-		//	auto& volumeComponent = registry.GetComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity);
+		PostProcessVolumeSettings finalSettings = m_GlobalVolumeSettings;
 		for (const auto& [volumeComponent, dist] : componentDistMap)
 		{
-			// 3. Calculate Blend Weight (0.0 to 1.0)
+			// Calculate Blend Weight (0.0 to 1.0)
 			// Positive distance = outside, Negative = inside.
 			float blendWeight = 1.0f;
 
@@ -473,18 +471,17 @@ namespace Ember {
 
 			// 4. Accumulate Settings (Lerp)
 			// Only blend the properties that this specific volume wants to override!
-			if (volumeComponent.OverrideExposure) {
-				finalSettings.ToneMap.Exposure = Math::Lerp(finalSettings.ToneMap.Exposure, volumeComponent.Settings.ToneMap.Exposure, blendWeight);
-			}
 
-			if (volumeComponent.OverrideBloom) {
+			if (volumeComponent.Settings.BloomEnabled) {
 				finalSettings.Bloom.Intensity = Math::Lerp(finalSettings.Bloom.Intensity, volumeComponent.Settings.Bloom.Intensity, blendWeight);
 				finalSettings.Bloom.Threshold = Math::Lerp(finalSettings.Bloom.Threshold, volumeComponent.Settings.Bloom.Threshold, blendWeight);
 				finalSettings.Bloom.Knee = Math::Lerp(finalSettings.Bloom.Knee, volumeComponent.Settings.Bloom.Knee, blendWeight);
 				finalSettings.Bloom.BlurRadius = Math::Lerp(finalSettings.Bloom.BlurRadius, volumeComponent.Settings.Bloom.BlurRadius, blendWeight);
+				finalSettings.BloomEnabled = true;
 			}
 
-			if (volumeComponent.OverrideColorGrade) {
+			if (volumeComponent.Settings.ColorGradeEnabled) {
+				finalSettings.ToneMap.Exposure = Math::Lerp(finalSettings.ToneMap.Exposure, volumeComponent.Settings.ToneMap.Exposure, blendWeight);
 				finalSettings.ColorGrade.Contrast = Math::Lerp(finalSettings.ColorGrade.Contrast, volumeComponent.Settings.ColorGrade.Contrast, blendWeight);
 				finalSettings.ColorGrade.Saturation = Math::Lerp(finalSettings.ColorGrade.Saturation, volumeComponent.Settings.ColorGrade.Saturation, blendWeight);
 				finalSettings.ColorGrade.Temperature = Math::Lerp(finalSettings.ColorGrade.Temperature, volumeComponent.Settings.ColorGrade.Temperature, blendWeight);
@@ -492,17 +489,56 @@ namespace Ember {
 				finalSettings.ColorGrade.Lift = Math::Lerp(finalSettings.ColorGrade.Lift, volumeComponent.Settings.ColorGrade.Lift, blendWeight);
 				finalSettings.ColorGrade.Gamma = Math::Lerp(finalSettings.ColorGrade.Gamma, volumeComponent.Settings.ColorGrade.Gamma, blendWeight);
 				finalSettings.ColorGrade.Gain = Math::Lerp(finalSettings.ColorGrade.Gain, volumeComponent.Settings.ColorGrade.Gain, blendWeight);
+				finalSettings.ColorGradeEnabled = true;
 			}
 
-			if (volumeComponent.OverrideFog) {
+			if (volumeComponent.Settings.FogEnabled) {
 				finalSettings.Fog.Color = Math::Lerp(finalSettings.Fog.Color, volumeComponent.Settings.Fog.Color, blendWeight);
 				finalSettings.Fog.Density = Math::Lerp(finalSettings.Fog.Density, volumeComponent.Settings.Fog.Density, blendWeight);
 				finalSettings.Fog.Falloff = Math::Lerp(finalSettings.Fog.Falloff, volumeComponent.Settings.Fog.Falloff, blendWeight);
 				finalSettings.Fog.StartDistance = Math::Lerp(finalSettings.Fog.StartDistance, volumeComponent.Settings.Fog.StartDistance, blendWeight);
+				finalSettings.FogEnabled = true;
+			}
+
+			if (volumeComponent.Settings.VignetteEnabled) {
+				finalSettings.Vignette.Color = Math::Lerp(finalSettings.Vignette.Color, volumeComponent.Settings.Vignette.Color, blendWeight);
+				finalSettings.Vignette.Intensity = Math::Lerp(finalSettings.Vignette.Intensity, volumeComponent.Settings.Vignette.Intensity, blendWeight);
+				finalSettings.Vignette.Smoothness = Math::Lerp(finalSettings.Vignette.Smoothness, volumeComponent.Settings.Vignette.Smoothness, blendWeight);
+				finalSettings.Vignette.Size = Math::Lerp(finalSettings.Vignette.Size, volumeComponent.Settings.Vignette.Size, blendWeight);
+				finalSettings.VignetteEnabled = true;
 			}
 		}
 
 		m_RenderSceneState.FinalPostProcessVolumeSettings = finalSettings;
+	}
+
+	void RenderSystem::ApplyPostProcessSettings()
+	{
+		auto toneMapPass = StaticPointerCast<ToneMapPass>(GetPostProcessPass("ToneMapPass"));
+		toneMapPass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.ToneMap;
+		toneMapPass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.ColorGradeEnabled;
+
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
+		colorGradePass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.ColorGrade;
+		colorGradePass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.ColorGradeEnabled;
+		if (colorGradePass->Enabled)
+		{
+			// If the color grading settings have changed, we need to re-bake the LUT with the new settings for runtime
+			BakeColorGradeLUT(colorGradePass->Settings);
+			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+		}
+
+		auto bloomPass = StaticPointerCast<BloomPass>(GetPostProcessPass("BloomPass"));
+		bloomPass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.Bloom;
+		bloomPass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.BloomEnabled;
+
+		auto fogPass = StaticPointerCast<FogPass>(GetPostProcessPass("FogPass"));
+		fogPass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.Fog;
+		fogPass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.FogEnabled;
+
+		auto vignettePass = StaticPointerCast<VignettePass>(GetPostProcessPass("VignettePass"));
+		vignettePass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.Vignette;
+		vignettePass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.VignetteEnabled;
 	}
 
 }

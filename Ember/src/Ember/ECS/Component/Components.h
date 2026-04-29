@@ -673,12 +673,6 @@ namespace Ember {
 
 		float BlendRadius = 1.0f;
 
-		bool OverrideBloom = false;
-		bool OverrideColorGrade = false;
-		bool OverrideFog = false;
-		bool OverrideVignette = false;
-		bool OverrideExposure = false;
-
 		PostProcessVolumeComponent() = default;
 		PostProcessVolumeComponent(const PostProcessVolumeComponent&) = default;
 	};

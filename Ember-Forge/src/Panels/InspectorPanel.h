@@ -15,12 +15,13 @@ namespace Ember {
 	public:
 		enum class Category
 		{
-			Core = 0,
-			Rendering = 1,
-			Lighting = 2,
-			Physics = 3,
-			Animation = 4,
-			Scripting = 5
+			None = 0,
+			Core = 1,
+			Rendering = 2,
+			Lighting = 3,
+			Physics = 4,
+			Animation = 5,
+			Scripting = 6
 		};
 
 	public:

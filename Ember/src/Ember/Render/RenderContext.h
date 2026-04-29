@@ -26,6 +26,8 @@ namespace Ember {
 
 		SharedPtr<Skybox> ActiveSkybox;
 
+		PostProcessVolumeSettings* FinalPostProcessVolumeSettings;
+
 		RenderQueueBuckets* RenderQueueBuckets;
 
 		bool IsRuntime;

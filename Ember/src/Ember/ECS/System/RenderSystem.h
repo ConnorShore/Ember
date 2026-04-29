@@ -62,7 +62,7 @@ namespace Ember {
 		void ResetRenderState();
 		void SortEntitiesByRenderQueue(Scene* scene);
 		void SetFinalPostProcessSettings(Scene* scene);
-
+		void ApplyPostProcessSettings();
 
 	private:
 		// TODO: Make this a render graph

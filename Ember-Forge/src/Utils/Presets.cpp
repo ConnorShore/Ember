@@ -166,6 +166,7 @@ namespace Ember {
 		BoxColliderComponent boxCol;
 		boxCol.AttachedBody = rbc.Body;
 		boxCol.IsTrigger = true;
+		boxCol.Category = CollisionFilterPreset::VFX;
 		newEntity.AttachComponent<BoxColliderComponent>(boxCol);
 
 		PostProcessVolumeComponent ppvc;

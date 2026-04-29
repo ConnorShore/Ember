@@ -390,11 +390,11 @@ namespace Ember {
 			volNode |= ryml::MAP;
 			volNode["Priority"] << vol.Priority;
 			volNode["BlendRadius"] << vol.BlendRadius;
-			volNode["OverrideBloom"] << vol.OverrideBloom;
-			volNode["OverrideColorGrade"] << vol.OverrideColorGrade;
-			volNode["OverrideFog"] << vol.OverrideFog;
-			volNode["OverrideVignette"] << vol.OverrideVignette;
-			volNode["OverrideExposure"] << vol.OverrideExposure;
+
+			volNode["BloomEnabled"] << vol.Settings.BloomEnabled;
+			volNode["ColorGradeEnabled"] << vol.Settings.ColorGradeEnabled;
+			volNode["FogEnabled"] << vol.Settings.FogEnabled;
+			volNode["VignetteEnabled"] << vol.Settings.VignetteEnabled;
 
 			ryml::NodeRef bloomNode = volNode["Bloom"];
 			bloomNode |= ryml::MAP;
@@ -926,11 +926,11 @@ namespace Ember {
 			PostProcessVolumeComponent vol;
 			volNode["Priority"] >> vol.Priority;
 			volNode["BlendRadius"] >> vol.BlendRadius;
-			volNode["OverrideBloom"] >> vol.OverrideBloom;
-			volNode["OverrideColorGrade"] >> vol.OverrideColorGrade;
-			volNode["OverrideFog"] >> vol.OverrideFog;
-			volNode["OverrideVignette"] >> vol.OverrideVignette;
-			volNode["OverrideExposure"] >> vol.OverrideExposure;
+
+			volNode["BloomEnabled"] >> vol.Settings.BloomEnabled;
+			volNode["ColorGradeEnabled"] >> vol.Settings.ColorGradeEnabled;
+			volNode["FogEnabled"] >> vol.Settings.FogEnabled;
+			volNode["VignetteEnabled"] >> vol.Settings.VignetteEnabled;
 
 			if (volNode.has_child("Bloom"))
 			{

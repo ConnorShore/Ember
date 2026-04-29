@@ -13,6 +13,7 @@ namespace Ember {
 		EnvironmentPanel(EditorContext* context);
 		virtual ~EnvironmentPanel() = default;
 
+		void OnAttach() override;
 		void OnImGuiRender() override;
 
 	private:
