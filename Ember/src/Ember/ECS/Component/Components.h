@@ -187,6 +187,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size)
@@ -212,6 +213,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius)
@@ -238,6 +240,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height)
@@ -264,6 +267,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -293,6 +297,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;

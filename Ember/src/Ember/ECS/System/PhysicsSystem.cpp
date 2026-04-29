@@ -93,6 +93,12 @@ namespace Ember {
 
 		Vector3f childWorldPos, childWorldRot;
 		Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, ctx.ChildWorldScale);
+		// Override with column-length extraction for a numerically stable scale that matches ScaleChanged
+		ctx.ChildWorldScale = Vector3f(
+			glm::length(Vector3f(childTransform.WorldTransform[0])),
+			glm::length(Vector3f(childTransform.WorldTransform[1])),
+			glm::length(Vector3f(childTransform.WorldTransform[2]))
+		);
 
 		ctx.Rb = &rb;
 		return true;
@@ -454,12 +460,29 @@ namespace Ember {
 				}
 		}
 
-		// Rebuild colliders whose properties were changed in the inspector
+		// Helper: returns true if the entity's current world scale differs from a cached scale
+		auto ScaleChanged = [&](EntityID entity, const Vector3f& cachedScale) -> bool {
+			if (!registry.ContainsComponent<TransformComponent>(entity))
+				return false;
+			const auto& t = registry.GetComponent<TransformComponent>(entity);
+			// Extract scale as column lengths to avoid glm::decompose float imprecision
+			Vector3f worldScale(
+				glm::length(Vector3f(t.WorldTransform[0])),
+				glm::length(Vector3f(t.WorldTransform[1])),
+				glm::length(Vector3f(t.WorldTransform[2]))
+			);
+			const float epsilon = 1e-5f;
+			return glm::abs(worldScale.x - cachedScale.x) > epsilon ||
+				   glm::abs(worldScale.y - cachedScale.y) > epsilon ||
+				   glm::abs(worldScale.z - cachedScale.z) > epsilon;
+		};
+
+		// Rebuild colliders whose properties were changed in the inspector (or whose scale changed)
 		auto boxView = registry.ActiveQuery<BoxColliderComponent>();
 		for (EntityID entity : boxView)
 		{
 			auto& box = registry.GetComponent<BoxColliderComponent>(entity);
-			if (box.NeedsRebuild)
+			if (box.NeedsRebuild || ScaleChanged(entity, box.CachedWorldScale))
 			{
 				DetachCollider(box, [&]() { m_PhysicsCommon->destroyBoxShape(box.Shape); });
 				CreateBoxCollider(entity, box, scene);
@@ -471,7 +494,7 @@ namespace Ember {
 		for (EntityID entity : sphereView)
 		{
 			auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
-			if (sphere.NeedsRebuild)
+			if (sphere.NeedsRebuild || ScaleChanged(entity, sphere.CachedWorldScale))
 			{
 				DetachCollider(sphere, [&]() { m_PhysicsCommon->destroySphereShape(sphere.Shape); });
 				CreateSphereCollider(entity, sphere, scene);
@@ -483,7 +506,7 @@ namespace Ember {
 		for (EntityID entity : capsuleView)
 		{
 			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
-			if (capsule.NeedsRebuild)
+			if (capsule.NeedsRebuild || ScaleChanged(entity, capsule.CachedWorldScale))
 			{
 				DetachCollider(capsule, [&]() { m_PhysicsCommon->destroyCapsuleShape(capsule.Shape); });
 				CreateCapsuleCollider(entity, capsule, scene);
@@ -495,7 +518,7 @@ namespace Ember {
 		for (EntityID entity : convexView)
 		{
 			auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
-			if (mesh.NeedsRebuild)
+			if (mesh.NeedsRebuild || ScaleChanged(entity, mesh.CachedWorldScale))
 			{
 				DetachCollider(mesh, [&]() {
 					m_PhysicsCommon->destroyConvexMeshShape(mesh.Shape);
@@ -512,7 +535,7 @@ namespace Ember {
 		for (EntityID entity : concaveView)
 		{
 			auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
-			if (mesh.NeedsRebuild)
+			if (mesh.NeedsRebuild || ScaleChanged(entity, mesh.CachedWorldScale))
 			{
 				DetachCollider(mesh, [&]() {
 					m_PhysicsCommon->destroyConcaveMeshShape(mesh.Shape);
@@ -853,6 +876,7 @@ namespace Ember {
 
 		AttachAndUpdateMass(entity, box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, box.Offset));
+		box.CachedWorldScale = ctx.ChildWorldScale;
 	}
 
 	void PhysicsSystem::CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene)
@@ -871,6 +895,7 @@ namespace Ember {
 
 		AttachAndUpdateMass(entity, sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
+		sphere.CachedWorldScale = ctx.ChildWorldScale;
 	}
 
 	void PhysicsSystem::CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene)
@@ -899,6 +924,7 @@ namespace Ember {
 
 		AttachAndUpdateMass(entity, capsule, m_PhysicsCommon->createCapsuleShape(radius, cylinderHeight), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, capsule.Offset));
+		capsule.CachedWorldScale = ctx.ChildWorldScale;
 	}
 
 	void PhysicsSystem::CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene)
@@ -928,6 +954,7 @@ namespace Ember {
 		);
 		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
+		mesh.CachedWorldScale = ctx.ChildWorldScale;
 	}
 
 	void PhysicsSystem::CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene)
@@ -962,6 +989,7 @@ namespace Ember {
 		);
 		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
+		mesh.CachedWorldScale = ctx.ChildWorldScale;
 	}
 
 	void PhysicsSystem::ShowDebugRendererIfApplicable()
