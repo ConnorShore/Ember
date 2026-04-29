@@ -133,12 +133,21 @@ namespace Ember {
 			}
 
 			// Entity Components
-			for (auto& [Category, components] : m_ComponentUIs)
+			for (auto& [category, components] : m_ComponentUIs)
 			{
+				if (category == Category::None)
+					continue;	// We will render these at the end
+
 				for (auto& componentUI : components)
 				{
 					componentUI->Render(entity);
 				}
+			}
+
+			// Render components that don't fit into any category at the end
+			for (auto& componentUI : m_ComponentUIs[Category::None])
+			{
+				componentUI->Render(entity);
 			}
 
 			ImGui::End();

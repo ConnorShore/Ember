@@ -12,6 +12,8 @@
 #include <Ember/Render/VFX/ToneMapPass.h>
 #include <Ember/Render/VFX/VignettePass.h>
 
+#include <Ember/ECS/System/RenderSystem.h>
+
 #include <imgui/imgui.h>
 
 namespace Ember {
@@ -25,10 +27,24 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(PostProcessVolumeComponent& component) override
 		{
+			if (UI::PropertyGrid::Begin("##PostProcessVolumePreview"))
+			{
+				UI::PropertyGrid::Checkbox("Preview", m_Preview);
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::Separator();
+
 			RenderBloomSettings(component);
 			RenderFogSettings(component);
 			RenderVignetteSettings(component);
 			RenderColorGradeSettings(component);
+
+			if (m_Preview)
+			{
+				auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+				renderSystem->SetGlobalPostProcessVolumeSettings(component.Settings);
+			}
 		}
 
 	private:
@@ -151,95 +167,8 @@ namespace Ember {
 				UI::Nodes::EndExpandableNode();
 			}
 		}
-
-		//void RenderColorGradeLUTSettings(PostProcessVolumeComponent& component)
-		//{
-		//	ColorGradeSettings& colorGradeProps = component.Settings.ColorGrade;
-		//	if (UI::PropertyGrid::Begin("##ColorGradePropertyGrid"))
-		//	{
-		//		// Texture Drop
-		//		std::string droppedFilePath;
-		//		if (UI::PropertyGrid::DragDropTexture("LUT Texture", colorGradePass->GetBaseBakedLUT()->GetUUID(), droppedFilePath, [&]() {
-		//			auto neutralLUT = Application::Instance().GetAssetManager().GetAsset<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID);
-		//			colorGradePass->SetBaseBakedLUT(neutralLUT);
-		//			}))
-		//		{
-		//			std::string lutTexName = std::filesystem::path(droppedFilePath).stem().string();
-		//			auto newLUTTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), lutTexName, droppedFilePath, false);
-		//			colorGradePass->SetBaseBakedLUT(newLUTTex);
-		//		}
-
-		//		UI::PropertyGrid::End();
-		//	}
-
-		//	ImGui::Separator();
-
-		//	// Save the current settings to a new LUT file
-		//	if (ImGui::Button("Save As File"))
-		//	{
-		//		ImGui::OpenPopup("Save LUT As");
-		//	}
-
-		//	// Spawn Save As Popup
-		//	if (ImGui::BeginPopupModal("Save LUT As", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-		//	{
-		//		static char lutName[128] = "NewColorGradeLUT";
-		//		ImGui::InputText("LUT Name", lutName, sizeof(lutName));
-
-		//		ImGui::Spacing();
-
-		//		if (ImGui::Button("Create", ImVec2(120, 0)))
-		//		{
-		//			auto texDir = ProjectManager::GetActive()->GetAssetDirectory() / "Textures";
-		//			std::string newTexPath = (texDir / std::format("{}.png", lutName)).string();
-		//			if (std::filesystem::exists(std::filesystem::absolute(newTexPath)))
-		//			{
-		//				ImGui::OpenPopup("File Exists");
-		//			}
-		//			else
-		//			{
-		//				// Bake the lut and save to disk and as an asset
-		//				auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
-		//				renderSystem->BakeColorGradeLUT(colorGradeProps, newTexPath);
-		//				auto newLUTTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), lutName, newTexPath, false);
-
-		//				// Reset buffer and close
-		//				strcpy(lutName, "NewColorGradeLUT");
-		//				ImGui::CloseCurrentPopup();
-		//			}
-		//		}
-
-		//		ImGui::SameLine();
-
-		//		if (ImGui::Button("Cancel", ImVec2(120, 0)))
-		//		{
-		//			ImGui::CloseCurrentPopup();
-		//		}
-
-		//		// Nested Warning Popup
-		//		if (ImGui::BeginPopupModal("File Exists", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-		//		{
-		//			ImGui::Text("A script with that name already exists.\nPlease choose a different name.");
-		//			ImGui::Spacing();
-		//			if (ImGui::Button("OK", ImVec2(120, 0)))
-		//			{
-		//				ImGui::CloseCurrentPopup();
-		//			}
-		//			ImGui::EndPopup();
-		//		}
-
-		//		ImGui::EndPopup();
-		//	}
-
-		//	ImGui::SameLine();
-
-		//	// Reset to default settings
-		//	if (ImGui::Button("Reset to Default"))
-		//	{
-		//		colorGradePass->Settings.Reset();
-		//		toneMapPass->Settings.Exposure = 1.0f;
-		//	}
-		//}
+	private:
+		bool m_Preview = false;
 	};
 
 }
