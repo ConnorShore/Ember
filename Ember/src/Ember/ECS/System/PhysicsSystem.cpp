@@ -442,7 +442,10 @@ namespace Ember {
 
 			if (rb.Body != nullptr)
 				{
-					rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
+					// Enable debug for this body if the global toggle is on, or if it belongs
+					// to the selected post-process volume entity (so its collider is always visible)
+					bool isPostProcessDebugEntity = (m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID && entity == m_PostProcessDebugEntity);
+					rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled || isPostProcessDebugEntity);
 
 					// Sync body type and gravity so inspector changes are reflected before play
 					rb.Body->setType(ToRp3dBodyType(rb.Type));
@@ -996,12 +999,15 @@ namespace Ember {
 	{
 		if (m_PhysicsWorld)
 		{
-			m_PhysicsWorld->setIsDebugRenderingEnabled(m_DebugRenderSettings.Enabled);
+			bool hasPostProcessDebugEntity = m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID;
+			bool debugActive = m_DebugRenderSettings.Enabled || hasPostProcessDebugEntity;
 
-			if (m_DebugRenderSettings.Enabled)
+			m_PhysicsWorld->setIsDebugRenderingEnabled(debugActive);
+
+			if (debugActive)
 			{
 				auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
-				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLISION_SHAPE, m_DebugRenderSettings.DrawColliders);
+				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLISION_SHAPE, m_DebugRenderSettings.DrawColliders || hasPostProcessDebugEntity);
 				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::CONTACT_POINT, m_DebugRenderSettings.DrawContactPoints);
 				debugRenderer.setIsDebugItemDisplayed(rp3d::DebugRenderer::DebugItem::COLLIDER_AABB, m_DebugRenderSettings.DrawColliderAxes);
 			}
@@ -1014,7 +1020,7 @@ namespace Ember {
 		auto& debugRenderer = m_PhysicsWorld->getDebugRenderer();
 		debugRenderer.reset();
 
-		if (m_DebugRenderSettings.Enabled)
+		if (m_DebugRenderSettings.Enabled || m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID)
 		{
 			debugRenderer.computeDebugRenderingPrimitives(*m_PhysicsWorld);
 

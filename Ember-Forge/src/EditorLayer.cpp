@@ -566,7 +566,26 @@ namespace Ember {
 			}
 		}
 
- 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+
+		// Automatically show debug draw lines for the selected entity if any of its colliders
+		// have PreviewCollider enabled, without requiring the global physics debug draw toggle.
+		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+		if (physicsSystem)
+		{
+			auto& selected = m_Context.SelectedEntity;
+			bool hasPreview = selected != Constants::Entities::InvalidEntityID &&
+				((selected.ContainsComponent<BoxColliderComponent>()         && selected.GetComponent<BoxColliderComponent>().PreviewCollider)         ||
+				 (selected.ContainsComponent<SphereColliderComponent>()      && selected.GetComponent<SphereColliderComponent>().PreviewCollider)      ||
+				 (selected.ContainsComponent<CapsuleColliderComponent>()     && selected.GetComponent<CapsuleColliderComponent>().PreviewCollider)     ||
+				 (selected.ContainsComponent<ConvexMeshColliderComponent>()  && selected.GetComponent<ConvexMeshColliderComponent>().PreviewCollider)  ||
+				 (selected.ContainsComponent<ConcaveMeshColliderComponent>() && selected.GetComponent<ConcaveMeshColliderComponent>().PreviewCollider));
+
+			if (hasPreview)
+				physicsSystem->SetColliderPreviewEntity(selected.GetEntityHandle());
+			else
+				physicsSystem->ClearColliderPreviewEntity();
+		}
 	}
 
 	void EditorLayer::RenderTransformGizmos()

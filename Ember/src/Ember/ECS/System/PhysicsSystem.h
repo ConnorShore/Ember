@@ -71,6 +71,11 @@ namespace Ember {
 
 		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
+		// When the selected entity has a collider with PreviewCollider enabled, that collider
+		// is drawn in the viewport without needing the global physics debug draw toggle.
+		void SetColliderPreviewEntity(EntityID entity) { m_PostProcessDebugEntity = entity; }
+		void ClearColliderPreviewEntity() { m_PostProcessDebugEntity = Constants::Entities::InvalidEntityID; }
+
 	private:
 		void InitCameraSensor();
 		void CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody);
@@ -93,6 +98,8 @@ namespace Ember {
 
 		PhysicsSettings m_Settings;
 		DebugRenderSettings m_DebugRenderSettings;
+
+		EntityID m_PostProcessDebugEntity = Constants::Entities::InvalidEntityID;
 
 		float m_TimeAcumulator = 0.0f;
 	};

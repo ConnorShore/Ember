@@ -175,6 +175,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -201,6 +202,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -228,6 +230,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -255,6 +258,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -285,6 +289,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;

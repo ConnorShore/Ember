@@ -88,6 +88,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<BoxColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<BoxColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<SphereColliderComponent>())
 		{
@@ -101,6 +102,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<SphereColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<SphereColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<CapsuleColliderComponent>())
 		{
@@ -115,6 +117,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<CapsuleColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<CapsuleColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<ConvexMeshColliderComponent>())
 		{
@@ -131,6 +134,7 @@ namespace Ember {
 				colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
 				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().PhysicsMaterialHandle;
+				colliderNode["PreviewCollider"] << entity.GetComponent<ConvexMeshColliderComponent>().PreviewCollider;
 			}
 		}
 		if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
@@ -148,6 +152,7 @@ namespace Ember {
 				colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
 				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().PhysicsMaterialHandle;
+				colliderNode["PreviewCollider"] << entity.GetComponent<ConcaveMeshColliderComponent>().PreviewCollider;
 			}
 		}
 		if (entity.ContainsComponent<StaticMeshComponent>())
@@ -526,6 +531,8 @@ namespace Ember {
 			colliderNode["Category"] >> bcc.Category;
 			colliderNode["CollisionMask"] >> bcc.CollisionMask;
 			colliderNode["IsTrigger"] >> bcc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> bcc.PreviewCollider;
 			uint64_t bccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
 			bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
@@ -538,6 +545,8 @@ namespace Ember {
 			SphereColliderComponent scc;
 			colliderNode["Radius"] >> scc.Radius;
 			colliderNode["IsTrigger"] >> scc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> scc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], scc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
@@ -559,6 +568,8 @@ namespace Ember {
 			colliderNode["Radius"] >> ccc.Radius;
 			colliderNode["Height"] >> ccc.Height;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
@@ -583,6 +594,8 @@ namespace Ember {
 			ConvexMeshColliderComponent ccc;
 			ccc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 			if (colliderNode.has_child("OffsetRotation"))
@@ -605,6 +618,8 @@ namespace Ember {
 			ConcaveMeshColliderComponent cmcc;
 			cmcc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> cmcc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> cmcc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
 			if (colliderNode.has_child("OffsetRotation"))
