@@ -48,8 +48,8 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
 		m_BloomPrefilterShader->Bind();
-		m_BloomPrefilterShader->SetFloat(Constants::Uniforms::Threshold, Threshold);
-		m_BloomPrefilterShader->SetFloat(Constants::Uniforms::Knee, Knee);
+		m_BloomPrefilterShader->SetFloat(Constants::Uniforms::Threshold, Settings.Threshold);
+		m_BloomPrefilterShader->SetFloat(Constants::Uniforms::Knee, Settings.Knee);
 
 		m_BloomPrefilterShader->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));
@@ -74,7 +74,7 @@ namespace Ember {
 
 			RenderAction::SetViewport(0, 0, m_PingPongBuffers[horizontalPass]->GetSpecification().Width, m_PingPongBuffers[horizontalPass]->GetSpecification().Height);
 
-			m_BlurShader->SetFloat(Constants::Uniforms::BlurRadius, BlurRadius);
+			m_BlurShader->SetFloat(Constants::Uniforms::BlurRadius, Settings.BlurRadius);
 			m_BlurShader->SetInt(Constants::Uniforms::HorizontalPass, horizontalPass);
 			if (firstIter)
 				RenderAction::SetTextureUnit(0, m_BloomExtractionBuffer->GetColorAttachmentID(0));
@@ -98,7 +98,7 @@ namespace Ember {
 
 		m_BloomCompositeShader->Bind();
 
-		m_BloomCompositeShader->SetFloat(Constants::Uniforms::BloomIntensity, Intensity);
+		m_BloomCompositeShader->SetFloat(Constants::Uniforms::BloomIntensity, Settings.Intensity);
 
 		m_BloomCompositeShader->SetInt(Constants::Uniforms::Scene, 0);
 		m_BloomCompositeShader->SetInt(Constants::Uniforms::BloomBlur, 1);

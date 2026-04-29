@@ -147,8 +147,9 @@ namespace Ember {
 					DisabledComponent,
 					PoolComponent,
 					PoolConfigComponent,
-					ParticleEmitterComponent
-				>(srcEntity, destEntity);
+					ParticleEmitterComponent,
+					PostProcessVolumeComponent
+			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
 			if (srcEntity.ContainsComponent<CharacterControllerComponent>() != destEntity.ContainsComponent<CharacterControllerComponent>())
@@ -242,8 +243,8 @@ namespace Ember {
 	void Scene::OnUpdateEdit(TimeStep delta, EditorCamera& camera)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 
 		RemovePendingRemovals();
@@ -451,7 +452,8 @@ namespace Ember {
 			DisabledComponent,
 			PoolComponent,
 			PoolConfigComponent,
-			ParticleEmitterComponent
+			ParticleEmitterComponent,
+			PostProcessVolumeComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

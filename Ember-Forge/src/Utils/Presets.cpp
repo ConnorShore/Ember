@@ -155,4 +155,25 @@ namespace Ember {
 		return newEntity;
 	}
 
+	Entity Presets::CreatePostProcessVolume(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("PostProcessVolume");
+
+		RigidBodyComponent rbc;
+		rbc.Type = RigidBodyComponent::BodyType::Static;
+		newEntity.AttachComponent<RigidBodyComponent>(rbc);
+
+		BoxColliderComponent boxCol;
+		boxCol.AttachedBody = rbc.Body;
+		boxCol.IsTrigger = true;
+		boxCol.Category = CollisionFilterPreset::VFX;
+		boxCol.PreviewCollider = true;
+		newEntity.AttachComponent<BoxColliderComponent>(boxCol);
+
+		PostProcessVolumeComponent ppvc;
+		newEntity.AttachComponent<PostProcessVolumeComponent>(ppvc);
+
+		return newEntity;
+	}
+
 }

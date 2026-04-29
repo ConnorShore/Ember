@@ -18,7 +18,7 @@ namespace Ember {
 		RenderAction::Clear(Ember::RendererAPI::RenderBit::Color);
 
 		m_ToneMapShader->Bind();
-		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, Exposure);
+		m_ToneMapShader->SetFloat(Constants::Uniforms::Exposure, Settings.Exposure);
 		m_ToneMapShader->SetInt(Constants::Uniforms::Scene, 0);
 
 		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));

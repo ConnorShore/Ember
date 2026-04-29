@@ -29,9 +29,10 @@ namespace Ember {
 	{
 		// Lock the foundational layers to specific bits so they never shift
 		// Slot 0 = 0x0001, slot 1 = 0x0002, etc. "Default" (0) is not a bit and has no slot.
-		m_Slots[0] = "Environment"; // Bit 0: 0x0001
-		m_Slots[1] = "Player";      // Bit 1: 0x0002
-		m_Slots[2] = "Enemy";       // Bit 2: 0x0004
+		m_Slots[0] = "Environment";
+		m_Slots[1] = "VFX";
+		m_Slots[2] = "Player";      
+		m_Slots[3] = "Enemy";
 	}
 
 	std::string CollisionFilterManager::GetFilterNameBySlot(uint32_t index) const

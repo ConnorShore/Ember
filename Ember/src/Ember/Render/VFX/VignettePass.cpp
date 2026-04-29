@@ -19,10 +19,10 @@ namespace Ember {
 		m_VignetteShader->Bind();
 
 		m_VignetteShader->SetFloat("u_AspectRatio", context.RenderCtx.ActiveCamera->GetAspectRatio());
-		m_VignetteShader->SetFloat("u_Intensity", Intensity);
-		m_VignetteShader->SetFloat("u_Size", Size);
-		m_VignetteShader->SetFloat("u_Smoothness", Smoothness);
-		m_VignetteShader->SetFloat3("u_Color", Color);
+		m_VignetteShader->SetFloat("u_Intensity", Settings.Intensity);
+		m_VignetteShader->SetFloat("u_Size", Settings.Size);
+		m_VignetteShader->SetFloat("u_Smoothness", Settings.Smoothness);
+		m_VignetteShader->SetFloat3("u_Color", Settings.Color);
 
 		m_VignetteShader->SetInt(Constants::Uniforms::Scene, 0);
 		RenderAction::SetTextureUnit(0, context.InputBuffer->GetColorAttachmentID(0));

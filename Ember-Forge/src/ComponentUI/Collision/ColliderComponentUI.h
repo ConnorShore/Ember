@@ -3,6 +3,7 @@
 #include "ComponentUI/ComponentUI.h"
 
 #include <Ember/Core/ProjectManager.h>
+#include <Ember/ECS/System/PhysicsSystem.h>
 
 namespace Ember {
 
@@ -30,6 +31,25 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(T& component) override
 		{
+			// Preview checkbox — when enabled and the entity is selected, the collider is
+			// drawn in the viewport without needing the global physics debug draw toggle.
+			if (UI::PropertyGrid::Begin("ColliderPreviewProps"))
+			{
+				if (UI::PropertyGrid::Checkbox("Preview Collider", component.PreviewCollider))
+				{
+					auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+					if (physicsSystem)
+					{
+						Entity selected = this->m_Context->SelectedEntity;
+						if (selected != Constants::Entities::InvalidEntityID && component.PreviewCollider)
+							physicsSystem->SetColliderPreviewEntity(selected.GetEntityHandle());
+						else
+							physicsSystem->ClearColliderPreviewEntity();
+					}
+				}
+				UI::PropertyGrid::End();
+			}
+
 			RenderComponentProperties(component);
 
 			ImGui::PushID(&component);

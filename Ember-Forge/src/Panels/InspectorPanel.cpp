@@ -22,6 +22,7 @@
 #include "ComponentUI/TextComponentUI.h"
 #include "ComponentUI/PoolConfigComponentUI.h"
 #include "ComponentUI/ParticleEmitterComponent.h"
+#include "ComponentUI/PostProcessVolumeComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -33,6 +34,7 @@ namespace Ember {
 	{
 		switch (category)
 		{
+		case InspectorPanel::Category::None: return "None";
 		case InspectorPanel::Category::Core: return "Core";
 		case InspectorPanel::Category::Rendering: return "Rendering";
 		case InspectorPanel::Category::Lighting: return "Lighting";
@@ -78,6 +80,9 @@ namespace Ember {
 
 		// --- SCRIPTING ---
 		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
+
+		// --- NONE (These don't appear in the Add Component menu but are still rendered in the inspector if attached to an entity) ---
+		m_ComponentUIs[Category::None].emplace_back(ScopedPtr<PostProcessVolumeComponentUI>::Create(m_Context));
 	}
 
 	InspectorPanel::~InspectorPanel()
@@ -128,12 +133,21 @@ namespace Ember {
 			}
 
 			// Entity Components
-			for (auto& [Category, components] : m_ComponentUIs)
+			for (auto& [category, components] : m_ComponentUIs)
 			{
+				if (category == Category::None)
+					continue;	// We will render these at the end
+
 				for (auto& componentUI : components)
 				{
 					componentUI->Render(entity);
 				}
+			}
+
+			// Render components that don't fit into any category at the end
+			for (auto& componentUI : m_ComponentUIs[Category::None])
+			{
+				componentUI->Render(entity);
 			}
 
 			ImGui::End();

@@ -88,6 +88,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<BoxColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<BoxColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<BoxColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<BoxColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<SphereColliderComponent>())
 		{
@@ -101,6 +102,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<SphereColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<SphereColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<SphereColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<SphereColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<CapsuleColliderComponent>())
 		{
@@ -115,6 +117,7 @@ namespace Ember {
 			colliderNode["Category"] << entity.GetComponent<CapsuleColliderComponent>().Category;
 			colliderNode["CollisionMask"] << entity.GetComponent<CapsuleColliderComponent>().CollisionMask;
 			colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<CapsuleColliderComponent>().PhysicsMaterialHandle;
+			colliderNode["PreviewCollider"] << entity.GetComponent<CapsuleColliderComponent>().PreviewCollider;
 		}
 		if (entity.ContainsComponent<ConvexMeshColliderComponent>())
 		{
@@ -131,6 +134,7 @@ namespace Ember {
 				colliderNode["Category"] << entity.GetComponent<ConvexMeshColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<ConvexMeshColliderComponent>().CollisionMask;
 				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConvexMeshColliderComponent>().PhysicsMaterialHandle;
+				colliderNode["PreviewCollider"] << entity.GetComponent<ConvexMeshColliderComponent>().PreviewCollider;
 			}
 		}
 		if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
@@ -148,6 +152,7 @@ namespace Ember {
 				colliderNode["Category"] << entity.GetComponent<ConcaveMeshColliderComponent>().Category;
 				colliderNode["CollisionMask"] << entity.GetComponent<ConcaveMeshColliderComponent>().CollisionMask;
 				colliderNode["PhysicsMaterialUUID"] << entity.GetComponent<ConcaveMeshColliderComponent>().PhysicsMaterialHandle;
+				colliderNode["PreviewCollider"] << entity.GetComponent<ConcaveMeshColliderComponent>().PreviewCollider;
 			}
 		}
 		if (entity.ContainsComponent<StaticMeshComponent>())
@@ -383,6 +388,54 @@ namespace Ember {
 
 			emitterNode["IsActive"] << emitter.IsActive;
 		}
+		if (entity.ContainsComponent<PostProcessVolumeComponent>())
+		{
+			auto& vol = entity.GetComponent<PostProcessVolumeComponent>();
+			ryml::NodeRef volNode = entityNode["PostProcessVolumeComponent"];
+			volNode |= ryml::MAP;
+			volNode["Priority"] << vol.Priority;
+			volNode["BlendRadius"] << vol.BlendRadius;
+
+			volNode["BloomEnabled"] << vol.Settings.BloomEnabled;
+			volNode["ColorGradeEnabled"] << vol.Settings.ColorGradeEnabled;
+			volNode["FogEnabled"] << vol.Settings.FogEnabled;
+			volNode["VignetteEnabled"] << vol.Settings.VignetteEnabled;
+
+			ryml::NodeRef bloomNode = volNode["Bloom"];
+			bloomNode |= ryml::MAP;
+			bloomNode["Threshold"] << vol.Settings.Bloom.Threshold;
+			bloomNode["Knee"] << vol.Settings.Bloom.Knee;
+			bloomNode["Intensity"] << vol.Settings.Bloom.Intensity;
+			bloomNode["BlurRadius"] << vol.Settings.Bloom.BlurRadius;
+
+			ryml::NodeRef colorGradeNode = volNode["ColorGrade"];
+			colorGradeNode |= ryml::MAP;
+			colorGradeNode["Temperature"] << vol.Settings.ColorGrade.Temperature;
+			colorGradeNode["Tint"] << vol.Settings.ColorGrade.Tint;
+			colorGradeNode["Contrast"] << vol.Settings.ColorGrade.Contrast;
+			colorGradeNode["Saturation"] << vol.Settings.ColorGrade.Saturation;
+			Util::SerializeVector4f(colorGradeNode["Lift"], vol.Settings.ColorGrade.Lift);
+			Util::SerializeVector4f(colorGradeNode["Gamma"], vol.Settings.ColorGrade.Gamma);
+			Util::SerializeVector4f(colorGradeNode["Gain"], vol.Settings.ColorGrade.Gain);
+
+			ryml::NodeRef fogNode = volNode["Fog"];
+			fogNode |= ryml::MAP;
+			Util::SerializeVector3f(fogNode["Color"], vol.Settings.Fog.Color);
+			fogNode["Density"] << vol.Settings.Fog.Density;
+			fogNode["Falloff"] << vol.Settings.Fog.Falloff;
+			fogNode["StartDistance"] << vol.Settings.Fog.StartDistance;
+
+			ryml::NodeRef vignetteNode = volNode["Vignette"];
+			vignetteNode |= ryml::MAP;
+			Util::SerializeVector3f(vignetteNode["Color"], vol.Settings.Vignette.Color);
+			vignetteNode["Intensity"] << vol.Settings.Vignette.Intensity;
+			vignetteNode["Size"] << vol.Settings.Vignette.Size;
+			vignetteNode["Smoothness"] << vol.Settings.Vignette.Smoothness;
+
+			ryml::NodeRef toneMapNode = volNode["ToneMap"];
+			toneMapNode |= ryml::MAP;
+			toneMapNode["Exposure"] << vol.Settings.ToneMap.Exposure;
+		}
 	}
 
 	// =========================================================================
@@ -478,6 +531,8 @@ namespace Ember {
 			colliderNode["Category"] >> bcc.Category;
 			colliderNode["CollisionMask"] >> bcc.CollisionMask;
 			colliderNode["IsTrigger"] >> bcc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> bcc.PreviewCollider;
 			uint64_t bccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
 			bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
@@ -490,6 +545,8 @@ namespace Ember {
 			SphereColliderComponent scc;
 			colliderNode["Radius"] >> scc.Radius;
 			colliderNode["IsTrigger"] >> scc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> scc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], scc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
@@ -511,6 +568,8 @@ namespace Ember {
 			colliderNode["Radius"] >> ccc.Radius;
 			colliderNode["Height"] >> ccc.Height;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
@@ -535,6 +594,8 @@ namespace Ember {
 			ConvexMeshColliderComponent ccc;
 			ccc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 			if (colliderNode.has_child("OffsetRotation"))
@@ -557,6 +618,8 @@ namespace Ember {
 			ConcaveMeshColliderComponent cmcc;
 			cmcc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> cmcc.IsTrigger;
+			if (colliderNode.has_child("PreviewCollider"))
+				colliderNode["PreviewCollider"] >> cmcc.PreviewCollider;
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
 			if (colliderNode.has_child("OffsetRotation"))
@@ -872,6 +935,66 @@ namespace Ember {
 			deserializedEntity.AttachComponent<PoolConfigComponent>(pcc);
 		}
 
+		if (entityNode.has_child("PostProcessVolumeComponent"))
+		{
+			ryml::NodeRef volNode = entityNode["PostProcessVolumeComponent"];
+			PostProcessVolumeComponent vol;
+			volNode["Priority"] >> vol.Priority;
+			volNode["BlendRadius"] >> vol.BlendRadius;
+
+			volNode["BloomEnabled"] >> vol.Settings.BloomEnabled;
+			volNode["ColorGradeEnabled"] >> vol.Settings.ColorGradeEnabled;
+			volNode["FogEnabled"] >> vol.Settings.FogEnabled;
+			volNode["VignetteEnabled"] >> vol.Settings.VignetteEnabled;
+
+			if (volNode.has_child("Bloom"))
+			{
+				ryml::NodeRef bloomNode = volNode["Bloom"];
+				bloomNode["Threshold"] >> vol.Settings.Bloom.Threshold;
+				bloomNode["Knee"] >> vol.Settings.Bloom.Knee;
+				bloomNode["Intensity"] >> vol.Settings.Bloom.Intensity;
+				bloomNode["BlurRadius"] >> vol.Settings.Bloom.BlurRadius;
+			}
+
+			if (volNode.has_child("ColorGrade"))
+			{
+				ryml::NodeRef colorGradeNode = volNode["ColorGrade"];
+				colorGradeNode["Temperature"] >> vol.Settings.ColorGrade.Temperature;
+				colorGradeNode["Tint"] >> vol.Settings.ColorGrade.Tint;
+				colorGradeNode["Contrast"] >> vol.Settings.ColorGrade.Contrast;
+				colorGradeNode["Saturation"] >> vol.Settings.ColorGrade.Saturation;
+				Util::DeserializeVector4f(colorGradeNode["Lift"], vol.Settings.ColorGrade.Lift);
+				Util::DeserializeVector4f(colorGradeNode["Gamma"], vol.Settings.ColorGrade.Gamma);
+				Util::DeserializeVector4f(colorGradeNode["Gain"], vol.Settings.ColorGrade.Gain);
+			}
+
+			if (volNode.has_child("Fog"))
+			{
+				ryml::NodeRef fogNode = volNode["Fog"];
+				Util::DeserializeVector3f(fogNode["Color"], vol.Settings.Fog.Color);
+				fogNode["Density"] >> vol.Settings.Fog.Density;
+				fogNode["Falloff"] >> vol.Settings.Fog.Falloff;
+				fogNode["StartDistance"] >> vol.Settings.Fog.StartDistance;
+			}
+
+			if (volNode.has_child("Vignette"))
+			{
+				ryml::NodeRef vignetteNode = volNode["Vignette"];
+				Util::DeserializeVector3f(vignetteNode["Color"], vol.Settings.Vignette.Color);
+				vignetteNode["Intensity"] >> vol.Settings.Vignette.Intensity;
+				vignetteNode["Size"] >> vol.Settings.Vignette.Size;
+				vignetteNode["Smoothness"] >> vol.Settings.Vignette.Smoothness;
+			}
+
+			if (volNode.has_child("ToneMap"))
+			{
+				ryml::NodeRef toneMapNode = volNode["ToneMap"];
+				toneMapNode["Exposure"] >> vol.Settings.ToneMap.Exposure;
+			}
+
+			deserializedEntity.AttachComponent<PostProcessVolumeComponent>(vol);
+		}
+
 		if (entityNode.has_child("ParticleEmitterComponent"))
 		{
 			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
@@ -947,18 +1070,18 @@ namespace Ember {
 		ryml::NodeRef bloomNode = envNode["Bloom"];
 		bloomNode |= ryml::MAP;
 		bloomNode["Enabled"] << bloomPass->Enabled;
-		bloomNode["Threshold"] << bloomPass->Threshold;
-		bloomNode["Knee"] << bloomPass->Knee;
-		bloomNode["Intensity"] << bloomPass->Intensity;
-		bloomNode["BlurRadius"] << bloomPass->BlurRadius;
+		bloomNode["Threshold"] << bloomPass->Settings.Threshold;
+		bloomNode["Knee"] << bloomPass->Settings.Knee;
+		bloomNode["Intensity"] << bloomPass->Settings.Intensity;
+		bloomNode["BlurRadius"] << bloomPass->Settings.BlurRadius;
 
 		ryml::NodeRef fogNode = envNode["Fog"];
 		fogNode |= ryml::MAP;
 		fogNode["Enabled"] << fogPass->Enabled;
-		Util::SerializeVector3f(fogNode["Color"], fogPass->Color);
-		fogNode["Density"] << fogPass->Density;
-		fogNode["StartDistance"] << fogPass->StartDistance;
-		fogNode["EndDisFallofftance"] << fogPass->Falloff;
+		Util::SerializeVector3f(fogNode["Color"], fogPass->Settings.Color);
+		fogNode["Density"] << fogPass->Settings.Density;
+		fogNode["StartDistance"] << fogPass->Settings.StartDistance;
+		fogNode["Falloff"] << fogPass->Settings.Falloff;
 
 		ryml::NodeRef fxaaNode = envNode["FXAA"];
 		fxaaNode |= ryml::MAP;
@@ -969,15 +1092,15 @@ namespace Ember {
 
 		ryml::NodeRef vignetteNode = envNode["Vignette"];
 		vignetteNode |= ryml::MAP;
-		Util::SerializeVector3f(vignetteNode["Color"], vignettePass->Color);
-		vignetteNode["Intensity"] << vignettePass->Intensity;
-		vignetteNode["Smoothness"] << vignettePass->Smoothness;
-		vignetteNode["Size"] << vignettePass->Size;
+		Util::SerializeVector3f(vignetteNode["Color"], vignettePass->Settings.Color);
+		vignetteNode["Intensity"] << vignettePass->Settings.Intensity;
+		vignetteNode["Smoothness"] << vignettePass->Settings.Smoothness;
+		vignetteNode["Size"] << vignettePass->Settings.Size;
 
 		ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 		colorGradeNode |= ryml::MAP;
 		colorGradeNode["Enabled"] << colorGradingPass->Enabled;
-		colorGradeNode["Exposure"] << toneMapPass->Exposure;
+		colorGradeNode["Exposure"] << toneMapPass->Settings.Exposure;
 		colorGradeNode["Temperature"] << colorGradingPass->Settings.Temperature;
 		colorGradeNode["Tint"] << colorGradingPass->Settings.Tint;
 		colorGradeNode["Contrast"] << colorGradingPass->Settings.Contrast;
@@ -1074,10 +1197,10 @@ namespace Ember {
 
 				ryml::NodeRef bloomNode = envNode["Bloom"];
 				bloomNode["Enabled"] >> bloomPass->Enabled;
-				bloomNode["Threshold"] >> bloomPass->Threshold;
-				bloomNode["Knee"] >> bloomPass->Knee;
-				bloomNode["Intensity"] >> bloomPass->Intensity;
-				bloomNode["BlurRadius"] >> bloomPass->BlurRadius;
+				bloomNode["Threshold"] >> bloomPass->Settings.Threshold;
+				bloomNode["Knee"] >> bloomPass->Settings.Knee;
+				bloomNode["Intensity"] >> bloomPass->Settings.Intensity;
+				bloomNode["BlurRadius"] >> bloomPass->Settings.BlurRadius;
 			}
 
 			if (envNode.has_child("Fog"))
@@ -1085,10 +1208,10 @@ namespace Ember {
 				auto fogPass = StaticPointerCast<FogPass>(renderSystem->GetPostProcessPass("FogPass"));
 				ryml::NodeRef fogNode = envNode["Fog"];
 				fogNode["Enabled"] >> fogPass->Enabled;
-				Util::DeserializeVector3f(fogNode["Color"], fogPass->Color);
-				fogNode["Density"] >> fogPass->Density;
-				fogNode["StartDistance"] >> fogPass->StartDistance;
-				fogNode["Falloff"] >> fogPass->Falloff;
+				Util::DeserializeVector3f(fogNode["Color"], fogPass->Settings.Color);
+				fogNode["Density"] >> fogPass->Settings.Density;
+				fogNode["StartDistance"] >> fogPass->Settings.StartDistance;
+				fogNode["Falloff"] >> fogPass->Settings.Falloff;
 			}
 
 			if (envNode.has_child("FXAA"))
@@ -1105,10 +1228,10 @@ namespace Ember {
 			{
 				auto vignettePass = StaticPointerCast<VignettePass>(renderSystem->GetPostProcessPass("VignettePass"));
 				ryml::NodeRef vignetteNode = envNode["Vignette"];
-				Util::DeserializeVector3f(vignetteNode["Color"], vignettePass->Color);
-				vignetteNode["Intensity"] >> vignettePass->Intensity;
-				vignetteNode["Smoothness"] >> vignettePass->Smoothness;
-				vignetteNode["Size"] >> vignettePass->Size;
+				Util::DeserializeVector3f(vignetteNode["Color"], vignettePass->Settings.Color);
+				vignetteNode["Intensity"] >> vignettePass->Settings.Intensity;
+				vignetteNode["Smoothness"] >> vignettePass->Settings.Smoothness;
+				vignetteNode["Size"] >> vignettePass->Settings.Size;
 			}
 
 			if (envNode.has_child("ColorGrading"))
@@ -1118,7 +1241,7 @@ namespace Ember {
 
 				ryml::NodeRef colorGradeNode = envNode["ColorGrading"];
 				colorGradeNode["Enabled"] >> colorGradingPass->Enabled;
-				colorGradeNode["Exposure"] >> tonemapPass->Exposure;
+				colorGradeNode["Exposure"] >> tonemapPass->Settings.Exposure;
 				colorGradeNode["Temperature"] >> colorGradingPass->Settings.Temperature;
 				colorGradeNode["Tint"] >> colorGradingPass->Settings.Tint;
 				colorGradeNode["Contrast"] >> colorGradingPass->Settings.Contrast;

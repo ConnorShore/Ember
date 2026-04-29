@@ -8,6 +8,7 @@
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/Render/VFX/VFXTypes.h"
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
@@ -174,6 +175,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -186,6 +188,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size)
@@ -199,6 +202,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -211,6 +215,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius)
@@ -225,6 +230,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -237,6 +243,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height)
@@ -251,6 +258,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -263,6 +271,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -280,6 +289,7 @@ namespace Ember {
 		ColliderOffset Offset;
 
 		bool IsTrigger = false;
+		bool PreviewCollider = false;
 
 		CollisionFilter Category = CollisionFilterPreset::Default;
 		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
@@ -292,6 +302,7 @@ namespace Ember {
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
+		Vector3f CachedWorldScale = Vector3f(0.0f);
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;
@@ -663,6 +674,17 @@ namespace Ember {
 
 		ParticleEmitterComponent() = default;
 		ParticleEmitterComponent(const ParticleEmitterComponent&) = default;
+	};
+
+	struct PostProcessVolumeComponent
+	{
+		PostProcessVolumeSettings Settings;
+		uint32_t Priority;
+
+		float BlendRadius = 1.0f;
+
+		PostProcessVolumeComponent() = default;
+		PostProcessVolumeComponent(const PostProcessVolumeComponent&) = default;
 	};
 
 }

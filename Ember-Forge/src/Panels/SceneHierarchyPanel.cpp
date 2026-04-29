@@ -147,6 +147,17 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("VFX"))
+			{
+				if (ImGui::MenuItem("Post Process Volume"))
+				{
+					auto entity = Presets::CreatePostProcessVolume(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndPopup();
 		}
 	}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PostProcessPass.h"
-#include "ColorGradeSettings.h"
+#include "VFXTypes.h"
 
 namespace Ember {
 
