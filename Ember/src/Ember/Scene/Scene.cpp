@@ -14,6 +14,7 @@
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
+#include "Ember/ECS/System/AudioSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -188,6 +189,7 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
@@ -219,7 +221,7 @@ namespace Ember {
 
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
-		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
 
 		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
 	}

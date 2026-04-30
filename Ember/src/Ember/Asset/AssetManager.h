@@ -13,6 +13,7 @@
 #include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
 #include "Font.h"
+#include "AudioClip.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -139,6 +140,8 @@ namespace Ember {
 				newAsset = SharedPtr<Prefab>::Create(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Font>)
 				newAsset = SharedPtr<Font>::Create(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, AudioClip>)
+				newAsset = SharedPtr<AudioClip>::Create(uuid, name, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);

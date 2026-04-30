@@ -17,6 +17,7 @@ project "Ember"
       "vendor/glm",
       "vendor/imgui",
       "vendor/stb",
+      "vendor/miniaudio",
       "vendor/rapidyaml/src",
 		"vendor/rapidyaml/ext/c4core/src",
       "vendor/lua/src",
