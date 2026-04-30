@@ -4,6 +4,12 @@
 
 namespace Ember {
 
+	struct AABB
+	{
+		Vector3f WorldMin;
+		Vector3f WorldMax;
+	};
+
 	struct Plane {
 		Vector3f Normal;
 		float Distance;
@@ -79,7 +85,18 @@ namespace Ember {
 			}
 			return true; // Visible!
 		}
-
 	};
+
+	static void GetEntitiesInFrustum(const std::vector<std::pair<EntityID, AABB>>& entities, const Matrix4f& viewProjMatrix, std::vector<EntityID>& outEntities)
+	{
+		outEntities.reserve(entities.size());
+
+		Frustum viewFrustum(viewProjMatrix);
+		for (auto& [entityID, aabb] : entities)
+		{
+			if (viewFrustum.IsBoxVisible(aabb.WorldMin, aabb.WorldMax))
+				outEntities.push_back(entityID);
+		}
+	}
 
 }

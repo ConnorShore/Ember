@@ -5,6 +5,7 @@
 #include "UniformBufferTypes.h"
 #include "UniformBuffer.h"
 #include "RenderQueueBuckets.h"
+#include "Frustum.h"
 
 namespace Ember {
 
@@ -29,6 +30,7 @@ namespace Ember {
 		PostProcessVolumeSettings* FinalPostProcessVolumeSettings;
 
 		RenderQueueBuckets* RenderQueueBuckets;
+		std::vector<std::pair<EntityID, AABB>>* ActiveEntities;
 
 		bool IsRuntime;
 	};

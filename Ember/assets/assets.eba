@@ -28,13 +28,13 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
-    UUID: 16541504524255684090
-    Name: Powerup
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
-  - Type: Script
     UUID: 10670335993004288059
     Name: CampFire
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
+  - Type: Script
+    UUID: 16541504524255684090
+    Name: Powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
   - Type: Material
     UUID: 220883245630972619
     Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
