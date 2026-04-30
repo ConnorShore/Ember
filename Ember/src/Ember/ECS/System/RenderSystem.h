@@ -13,6 +13,7 @@
 #include "Ember/Render/Texture2DArray.h"
 #include "Ember/Render/RenderQueueBuckets.h"
 #include "Ember/Render/Pass/RenderPass.h"
+#include "Ember/Render/Frustum.h"
 
 #include <vector>
 #include <map>
@@ -60,6 +61,7 @@ namespace Ember {
 		void InitializeRenderState();
 		void SetSceneCamera(Scene* scene);
 		void ResetRenderState();
+		void StoreRenderableEntities(Scene* scene);
 		void SortEntitiesByRenderQueue(Scene* scene);
 		void SetFinalPostProcessSettings(Scene* scene);
 		void ApplyPostProcessSettings();
@@ -77,6 +79,8 @@ namespace Ember {
 
 		RenderQueueBuckets m_RenderQueueBuckets;
 
+		std::vector<std::pair<EntityID, AABB>> m_ActiveRenderableEntities;
+
 		// Skybox handler
 		SharedPtr<Skybox> m_Skybox;
 
@@ -88,6 +92,7 @@ namespace Ember {
 		{
 			Camera ActiveCamera;
 			Matrix4f CameraTransform;
+			Matrix4f CameraViewProjection;
 			bool IsCameraFound;
 
 			Vector4<int> ViewportDimensions;

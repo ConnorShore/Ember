@@ -156,6 +156,10 @@ namespace Ember {
 
 		renderContext.FinalPostProcessVolumeSettings = &m_RenderSceneState.FinalPostProcessVolumeSettings;
 
+		// Store entities in scene with renderable components and their AABBs for frustum culling in the render passes
+		StoreRenderableEntities(scene);
+		renderContext.ActiveEntities = &m_ActiveRenderableEntities;
+		
 		// Sort entities into render queue buckets
 		SortEntitiesByRenderQueue(scene);
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
@@ -257,6 +261,7 @@ namespace Ember {
 		// Set render scene state for camera info
 		m_RenderSceneState.ActiveCamera = camera;
 		m_RenderSceneState.CameraTransform = cameraTransform;
+		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
 
 		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(cameraTransform);
@@ -376,12 +381,12 @@ namespace Ember {
 			if (camera.IsActive)
 			{
 				m_RenderSceneState.ActiveCamera = camera.Camera;
-				m_RenderSceneState.CameraTransform = transform.WorldTransform;// Math::Translate(transform.Position)* Math::GetRotationMatrix(transform.Rotation);
+				m_RenderSceneState.CameraTransform = transform.WorldTransform;
 				m_RenderSceneState.IsCameraFound = true;
 
 				// set uniform buffer
-				Matrix4f viewProjectionMat = camera.Camera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
-				m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
+				m_RenderSceneState.CameraViewProjection = camera.Camera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
+				m_CameraUniformBuffer->SetData(&m_RenderSceneState.CameraViewProjection, sizeof(Matrix4f));
 
 				break;
 			}
@@ -393,31 +398,90 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 	}
 
-	void RenderSystem::SortEntitiesByRenderQueue(Scene* scene)
+	void RenderSystem::StoreRenderableEntities(Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
+		std::vector<std::pair<EntityID, AABB>> renderableEntities;
+		renderableEntities.reserve(m_ActiveRenderableEntities.size());
 
-		auto sortLogic = [&](EntityID entity) {
-			auto& material = registry.GetComponent<MaterialComponent>(entity);
+		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle)
+		{
+			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
+
+			auto transform = entity.GetComponent<TransformComponent>();
+
+			// Calculate AABB and check if in frustum
+			Vector3f localMin = mesh->GetMinBounds();
+			Vector3f localMax = mesh->GetMaxBounds();
+			Matrix4f worldMat = transform.GetWorldTransform();
+
+			// Define the 8 corners of the local bounding box
+			Vector3f corners[8] = {
+				{localMin.x, localMin.y, localMin.z},
+				{localMax.x, localMin.y, localMin.z},
+				{localMin.x, localMax.y, localMin.z},
+				{localMax.x, localMax.y, localMin.z},
+				{localMin.x, localMin.y, localMax.z},
+				{localMax.x, localMin.y, localMax.z},
+				{localMin.x, localMax.y, localMax.z},
+				{localMax.x, localMax.y, localMax.z}
+			};
+
+			// Initialize world bounds to extreme values
+			Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
+			Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
+
+			// Transform all 8 corners to world space and find the new AABB limits
+			for (int i = 0; i < 8; i++) {
+				Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
+				worldMin = Math::Min(worldMin, worldCorner);
+				worldMax = Math::Max(worldMax, worldCorner);
+			}
+
+			AABB worldAABB{ worldMin, worldMax };
+			renderableEntities.push_back(std::make_pair(entity, worldAABB));
+		};
+
+		// Store Static Meshes
+		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) 
+		{
+			Entity entity(entityId, scene);
+			auto meshUUID = entity.GetComponent<StaticMeshComponent>().MeshHandle;
+			createAndStoreEntityPair(entity, meshUUID);
+		}
+
+		// Store Skinned Meshes
+		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) 
+		{
+			Entity entity(entityId, scene);
+			auto meshUUID = entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
+			createAndStoreEntityPair(entity, meshUUID);
+		}
+
+		m_ActiveRenderableEntities = std::move(renderableEntities);
+	}
+
+	void RenderSystem::SortEntitiesByRenderQueue(Scene* scene)
+	{
+		Frustum frustum(m_RenderSceneState.CameraViewProjection);
+		for (auto& [entityID, aabb] : m_ActiveRenderableEntities)
+		{
+			Entity entity(entityID, scene);
+			auto& material = entity.GetComponent<MaterialComponent>();
 			if (material.MaterialHandle == Constants::InvalidUUID)
-				return;
+				continue;
+
+			// Check if the entity is in the camera frustum before sorting into render queues (frustum culling)
+			if (!frustum.IsBoxVisible(aabb.WorldMin, aabb.WorldMax))
+				continue;
 
 			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
 			switch (materialAsset->GetRenderQueue())
 			{
-			case RenderQueue::Opaque: m_RenderQueueBuckets.Opaque.push_back(entity); break;
-			case RenderQueue::Forward: m_RenderQueueBuckets.Forward.push_back(entity); break;
-			case RenderQueue::Transparent: m_RenderQueueBuckets.Transparent.push_back(entity); break;
+			case RenderQueue::Opaque: m_RenderQueueBuckets.Opaque.push_back(entityID); break;
+			case RenderQueue::Forward: m_RenderQueueBuckets.Forward.push_back(entityID); break;
+			case RenderQueue::Transparent: m_RenderQueueBuckets.Transparent.push_back(entityID); break;
 			}
-			};
-
-		// Sort Static Meshes
-		for (EntityID entity : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) {
-			sortLogic(entity);
-		}
-		// Sort Skinned Meshes
-		for (EntityID entity : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) {
-			sortLogic(entity);
 		}
 	}
 
@@ -428,8 +492,6 @@ namespace Ember {
 
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
 		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3]);
-
-		EB_CORE_INFO("Found {} overlapping post process volumes", volumes.size());
 
 		// Get components from volume data
 		std::vector<std::pair<PostProcessVolumeComponent, float>> componentDistMap;

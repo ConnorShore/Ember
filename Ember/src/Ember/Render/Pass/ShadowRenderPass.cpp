@@ -4,6 +4,7 @@
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer3D.h"
+#include "Ember/Render/Frustum.h"
 
 namespace Ember {
 
@@ -262,6 +263,9 @@ namespace Ember {
 
 	void ShadowRenderPass::RenderGeometryForShadowMaps(RenderContext& context, const Matrix4f& lightViewMatrix, const SharedPtr<Framebuffer>& shadowMapBuffer)
 	{
+		std::vector<EntityID> entities;
+		GetEntitiesInFrustum(*context.ActiveEntities, lightViewMatrix, entities);
+
 		auto& registry = context.ActiveScene->GetRegistry();
 		auto& assetManager = Application::Instance().GetAssetManager();
 
@@ -272,14 +276,14 @@ namespace Ember {
 		RenderAction::UseDepthTest(true);
 
 		// Split entities  so can bind each shader 1 time
-		int size = (int)context.RenderQueueBuckets->Opaque.size();
+		int size = (int)entities.size();
 		std::vector<EntityID> splitEntities(size);
 
 		int staticCount = 0;
 		int skinnedCount = 0;
 		for (int i = 0; i < size; i++)
 		{
-			EntityID entity = context.RenderQueueBuckets->Opaque[i];
+			EntityID entity = entities[i];
 			if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
 				splitEntities[size - 1 - skinnedCount++] = entity; // Add to end of list
 			else if (registry.ContainsComponent<StaticMeshComponent>(entity))
@@ -334,5 +338,4 @@ namespace Ember {
 
 		Renderer3D::EndFrame();
 	}
-
 }
