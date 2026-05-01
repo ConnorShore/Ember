@@ -7,6 +7,7 @@ namespace Ember {
 	void BindPhysicsComponents(sol::state& state);
 	void BindRenderingComponents(sol::state& state);
 	void BindLightingAndCameraComponents(sol::state& state);
+	void BindAudioComponents(sol::state& state);
 	void BindMiscComponents(sol::state& state);
 
 	// Master caller

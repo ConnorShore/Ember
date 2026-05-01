@@ -386,6 +386,18 @@ namespace Ember {
 					ImGui::CloseCurrentPopup();
 				}
 
+				if (ImGui::MenuItem("Audio"))
+				{
+					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetAudioClip);
+					std::string file = SelectAndLoadFile(std::format("Audio Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
+					if (!file.empty())
+					{
+						asset = Application::Instance().GetAssetManager().Load<AudioClip>(file);
+						asset->SetIsEngineAsset(false);
+					}
+					ImGui::CloseCurrentPopup();
+				}
+
 				if (asset != nullptr)
 				{
 					EB_CORE_INFO("Successfully imported asset: {0}", asset->GetName());

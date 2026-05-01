@@ -23,6 +23,7 @@
 #include "ComponentUI/PoolConfigComponentUI.h"
 #include "ComponentUI/ParticleEmitterComponent.h"
 #include "ComponentUI/PostProcessVolumeComponentUI.h"
+#include "ComponentUI/AudioSourceComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -39,6 +40,7 @@ namespace Ember {
 		case InspectorPanel::Category::Rendering: return "Rendering";
 		case InspectorPanel::Category::Lighting: return "Lighting";
 		case InspectorPanel::Category::Physics: return "Physics";
+		case InspectorPanel::Category::Audio: return "Audio";
 		case InspectorPanel::Category::Animation: return "Animation";
 		case InspectorPanel::Category::Scripting: return "Scripts";
 		default: return "Unknown";
@@ -74,6 +76,9 @@ namespace Ember {
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<CapsuleColliderComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<ConvexMeshColliderComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Physics].emplace_back(ScopedPtr<ConcaveMeshColliderComponentUI>::Create(m_Context));
+
+		// --- AUDIO ---
+		m_ComponentUIs[Category::Audio].emplace_back(ScopedPtr<AudioSourceComponentUI>::Create(m_Context));
 
 		// --- ANIMATION ---
 		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));

@@ -30,7 +30,9 @@ project "Ember"
       "src/**.h",
       "src/**.cpp",
       "vendor/stb/**.h",
-      "vendor/stb/**.cpp"
+      "vendor/stb/**.cpp",
+      "vendor/miniaudio/**.h",
+      "vendor/miniaudio/**.cpp"
    }
 
    links

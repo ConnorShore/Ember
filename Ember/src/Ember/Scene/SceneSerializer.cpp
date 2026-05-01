@@ -436,6 +436,16 @@ namespace Ember {
 			toneMapNode |= ryml::MAP;
 			toneMapNode["Exposure"] << vol.Settings.ToneMap.Exposure;
 		}
+		if (entity.ContainsComponent<AudioSourceComponent>())
+		{
+			auto& audioSource = entity.GetComponent<AudioSourceComponent>();
+			ryml::NodeRef audioNode = entityNode["AudioSourceComponent"];
+			audioNode |= ryml::MAP;
+			audioNode["AudioClipHandle"] << (uint64_t)audioSource.AudioClipHandle;
+			audioNode["Volume"] << audioSource.Properties.Volume;
+			audioNode["Looping"] << audioSource.Properties.Looping;
+			audioNode["Spatialized"] << audioSource.Properties.Spatialized;
+		}
 	}
 
 	// =========================================================================
@@ -1020,6 +1030,19 @@ namespace Ember {
 			emitterNode["StretchFactor"] >> pec.StretchFactor;
 			emitterNode["IsActive"] >> pec.IsActive;
 			deserializedEntity.AttachComponent<ParticleEmitterComponent>(pec);
+		}
+
+		if (entityNode.has_child("AudioSourceComponent"))
+		{
+			ryml::NodeRef audioNode = entityNode["AudioSourceComponent"];
+			AudioSourceComponent asc;
+			uint64_t audioClipId;
+			audioNode["AudioClipHandle"] >> audioClipId;
+			asc.AudioClipHandle = (UUID)audioClipId;
+			audioNode["Volume"] >> asc.Properties.Volume;
+			audioNode["Looping"] >> asc.Properties.Looping;
+			audioNode["Spatialized"] >> asc.Properties.Spatialized;
+			deserializedEntity.AttachComponent<AudioSourceComponent>(asc);
 		}
 	}
 
