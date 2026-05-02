@@ -204,10 +204,18 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		// TODO: Investigate why this works but if OnRuntimeStop is called before switching to editor scene, the physics crashes when stopping the runtime
-		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
+
+		m_Context.ActiveScene = m_EditorScene;
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+
+		// OnSceneAttach was called for the runtime scene copy during OnRuntimeStart, which
+		// called RestartPhysicsWorld and wiped the RP3D world that the editor scene's bodies
+		// lived in. Re-attach the physics system to the editor scene so it rebuilds a fresh
+		// world and recreates all editor bodies via ConnectAndRetroact.
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(m_EditorScene.Ptr());
+
 		m_Context.CurrentSceneState = SceneState::Edit;
 	}
 

@@ -215,12 +215,11 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
 
-		ScriptEngine::OnRuntimeStop();
-
 		m_PoolManager->DestroyPools();
+		ScriptEngine::OnRuntimeStop(this);
 
-		// Reset physics body pointers on all entities before re-initializing the physics world,
-		// since they became dangling when the runtime scene's physics world was created.
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
+
 		auto entityView = m_Registry->Query<IDComponent>();
 		for (auto entityID : entityView)
 		{
@@ -228,7 +227,6 @@ namespace Ember {
 			Utils::ResetPhysicsRuntimeState(entity);
 		}
 
-		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
 		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
 	}
 
@@ -549,6 +547,16 @@ namespace Ember {
 		return entities;
 	}
 
+	void Scene::ResetAllPhysicsState()
+	{
+		auto entityView = m_Registry->Query<IDComponent>();
+		for (auto entityID : entityView)
+		{
+			Entity entity{ entityID, this };
+			Utils::ResetPhysicsRuntimeState(entity);
+		}
+	}
+
 	void Scene::RemoveEntityFromScene(Entity entity)
 	{
 		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
@@ -561,9 +569,22 @@ namespace Ember {
 			RemoveEntityFromScene(childEntity);
 		}
 
-		// If contains a RigidBodyComponent, remove it from the PhysicsSystem's runtime simulation
+		// If contains a RigidBodyComponent, detach all colliders first (while the body is still alive
+		// so the component-detach hooks can safely call body->removeCollider), then destroy the body.
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
+			// Detach collider components so their hooks run before the body is destroyed
+			if (entity.ContainsComponent<BoxColliderComponent>())
+				entity.DetachComponent<BoxColliderComponent>();
+			if (entity.ContainsComponent<SphereColliderComponent>())
+				entity.DetachComponent<SphereColliderComponent>();
+			if (entity.ContainsComponent<CapsuleColliderComponent>())
+				entity.DetachComponent<CapsuleColliderComponent>();
+			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
+				entity.DetachComponent<ConvexMeshColliderComponent>();
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+				entity.DetachComponent<ConcaveMeshColliderComponent>();
+
 			auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 			auto& rigidBody = entity.GetComponent<RigidBodyComponent>();
 			physicsSystem->RemoveRigidBody(rigidBody);

@@ -13,6 +13,7 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Scene/Scene.h"
 
 #include <algorithm>
 
@@ -66,8 +67,25 @@ namespace Ember {
 		BindAPI(scene);
 	}
 
-	void ScriptEngine::OnRuntimeStop()
+	void ScriptEngine::OnRuntimeStop(Scene* scene)
 	{
+		// Null out all sol::table instances in ScriptComponents before destroying the Lua state.
+		// The runtime scene is still alive at this point; when it is later destroyed its registry
+		// destructs every ScriptComponent, and a sol::table destructor that touches a dead lua_State
+		// causes an access violation inside lua's gettable. Resetting them here is safe because
+		// scripts are no longer running.
+		if (scene)
+		{
+			auto& registry = scene->GetRegistry();
+			auto view = registry.Query<ScriptComponent>();
+			for (EntityID entity : view)
+			{
+				auto& sc = registry.GetComponent<ScriptComponent>(entity);
+				sc.Instance = sol::table{};
+				sc.Initialized = false;
+			}
+		}
+
 		// Wipe runtime state and create fresh one for the editor
 		delete s_LuaState;
 		s_LuaState = new sol::state();

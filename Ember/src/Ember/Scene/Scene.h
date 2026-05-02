@@ -123,6 +123,8 @@ namespace Ember {
 
 		inline bool IsRuntime() const { return m_IsRuntime; }
 
+		void ResetAllPhysicsState();
+
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
 		void ProcessModelNode(Entity currentEntity, const ModelNode& node, const SharedPtr<Model>& model, UUID animatorEntityUUID);
