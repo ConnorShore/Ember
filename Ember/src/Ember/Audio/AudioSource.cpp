@@ -8,6 +8,7 @@ namespace Ember {
 
 	AudioSource::~AudioSource()
 	{
+		Unload();
 	}
 
 	bool AudioSource::Load(const std::string& filePath)
@@ -30,7 +31,16 @@ namespace Ember {
 
 	void AudioSource::Unload()
 	{
-		ma_sound_uninit(&m_Sound);
+		if (m_IsLoaded)
+		{
+			ma_sound_stop(&m_Sound);
+			ma_sound_set_end_callback(&m_Sound, nullptr, nullptr);
+			ma_sound_uninit(&m_Sound);
+
+			m_IsLoaded = false;
+			IsPlaying = false;
+			IsQueued = false;
+		}
 	}
 
 	void AudioSource::Play(AudioSoundProperties& props)
@@ -40,6 +50,7 @@ namespace Ember {
 
 	void AudioSource::Stop()
 	{
+		ma_sound_stop(&m_Sound);
 		IsQueued = false;
 		IsPlaying = false;
 	}
@@ -53,6 +64,7 @@ namespace Ember {
 	{
 		AudioSource* source = static_cast<AudioSource*>(pUserData);
 		source->IsPlaying = false;
+		source->IsQueued = false;
 	}
 
 }

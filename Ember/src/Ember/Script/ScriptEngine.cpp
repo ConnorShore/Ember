@@ -9,6 +9,7 @@
 #include "Bindings/ScriptBindComponents.h"
 #include "Bindings/ScriptBindAssets.h"
 #include "Bindings/ScriptBindScene.h"
+#include "Bindings/ScriptBindAudio.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Component/Components.h"
@@ -50,6 +51,7 @@ namespace Ember {
 		BindPhysics(*s_LuaState, scene);
 		BindAllComponents(*s_LuaState);
 		BindAssets(*s_LuaState);
+		BindAudio(*s_LuaState, scene);
 	}
 
     // Creates a fresh Lua VM for each play session so scripts start with clean state

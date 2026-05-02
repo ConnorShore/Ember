@@ -700,4 +700,9 @@ namespace Ember {
 		AudioSourceComponent(const AudioSourceComponent&) = default;
 	};
 
+	struct SingleSoundComponent
+	{
+		// Leave empty
+	};
+
 }

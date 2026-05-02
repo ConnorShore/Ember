@@ -204,6 +204,7 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
+		// TODO: Investigate why this works but if OnRuntimeStop is called before switching to editor scene, the physics crashes when stopping the runtime
 		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();

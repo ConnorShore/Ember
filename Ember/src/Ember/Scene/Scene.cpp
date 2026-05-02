@@ -170,6 +170,8 @@ namespace Ember {
 
 	void Scene::OnAttach()
 	{
+		// TODO: Investigate flow of onAttach vs OnRuntimestart and see where these systems should be
+		//  If they should be here do we need to call them on OnDetach?
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<LifecycleSystem>()->OnSceneAttach(this);
@@ -179,6 +181,9 @@ namespace Ember {
 
 	void Scene::OnDetach()
 	{
+		//if (m_IsRuntime)
+		//	OnRuntimeStop();
+
 		EB_CORE_INFO("Scene '{}' detached!", m_Name);
 	}
 
@@ -190,7 +195,7 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
-		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
+		//systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
@@ -207,6 +212,9 @@ namespace Ember {
 	{
 		m_IsRuntime = false;
 
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
+
 		ScriptEngine::OnRuntimeStop();
 
 		m_PoolManager->DestroyPools();
@@ -220,9 +228,7 @@ namespace Ember {
 			Utils::ResetPhysicsRuntimeState(entity);
 		}
 
-		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
-
 		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
 	}
 

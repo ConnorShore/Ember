@@ -39,6 +39,16 @@ namespace Ember {
 		}
 	}
 
+	void AudioSystem::OnSceneDetach(Scene* scene)
+	{
+		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
+		for (auto entity : view)
+		{
+			auto& audioComp = scene->GetRegistry().GetComponent<AudioSourceComponent>(entity);
+			audioComp.Source.Unload();
+		}
+	}
+
 	void AudioSystem::OnDetach()
 	{
 		if (m_AudioEngine != nullptr)
@@ -48,14 +58,27 @@ namespace Ember {
 	void AudioSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
-		for (auto entity : view)
+		for (auto entityId : view)
 		{
-			auto& audioComp = scene->GetRegistry().GetComponent<AudioSourceComponent>(entity);
+			Entity entity(entityId, scene);
+
+			auto& audioComp = entity.GetComponent<AudioSourceComponent>();
 			auto& source = audioComp.Source;
 
-			// Has the user requested to play a sound that isn't currently playing?
+			// Check if single sound source
+			if (entity.ContainsComponent<SingleSoundComponent>())
+			{
+				if (!audioComp.Source.IsPlaying && !audioComp.Source.IsQueued)
+				{
+					scene->RemoveEntity(entity);
+				}
+			}
+
 			if (source.IsQueued && !source.IsPlaying)
 			{
+				// Rewind the sound to the beginning just in case it was played previously
+				ma_sound_seek_to_pcm_frame(source.GetSound(), 0);
+
 				// Tell the audio thread to start
 				ma_sound_start(source.GetSound());
 
@@ -81,6 +104,24 @@ namespace Ember {
 			EB_CORE_ERROR("Failed to initialize audio engine.");
 			return;
 		}
+	}
+
+	void AudioSystem::PlaySound(Scene* scene, const std::string& soundName, const Vector3f& position)
+	{
+		Entity emitter = scene->AddEntity("SoundEmitter");
+		emitter.GetComponent<TransformComponent>().Position = position;
+
+		// Attach and load the audio
+		auto filepath = Application::Instance().GetAssetManager().GetAsset<AudioClip>(soundName)->GetFilePath();
+		auto& audioComp = emitter.AttachComponent<AudioSourceComponent>();
+		audioComp.Source.Load(filepath);
+
+		// Tag it for auto-destruction and tell it to play
+		emitter.AttachComponent<SingleSoundComponent>();
+
+		AudioSoundProperties props;
+		//props.Spatialized = true;
+		audioComp.Source.Play(props);
 	}
 
 }
