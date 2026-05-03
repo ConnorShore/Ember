@@ -693,7 +693,7 @@ namespace Ember {
 	{
 		AudioSource Source;
 		AudioSoundProperties Properties;
-		UUID AudioClipHandle;
+		UUID AudioClipHandle = Constants::InvalidUUID;
 
 		AudioSourceComponent() = default;
 

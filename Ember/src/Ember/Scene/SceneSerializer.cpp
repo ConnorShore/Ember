@@ -525,14 +525,16 @@ namespace Ember {
 		{
 			ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
 
-			auto& rbc = deserializedEntity.AttachComponent<RigidBodyComponent>();
-
+			// Deserialize into a temporary first so the OnComponentAttached hook
+			// (which calls CreateRigidBody) sees the correct Type, Mass, GravityEnabled, etc
+			RigidBodyComponent rbc;
 			int typeVal;
 			rbNode["Type"] >> typeVal;
 			rbc.Type = static_cast<RigidBodyComponent::BodyType>(typeVal);
-
 			rbNode["Mass"] >> rbc.Mass;
 			rbNode["GravityEnabled"] >> rbc.GravityEnabled;
+
+			deserializedEntity.AttachComponent<RigidBodyComponent>(rbc);
 		}
 
 		if (entityNode.has_child("BoxColliderComponent"))

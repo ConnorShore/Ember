@@ -197,23 +197,20 @@ namespace Ember {
 			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}
 
-		//template<typename Driver, typename... Args>
-		//inline View<Driver, Args...> Query();
-
-		// 1. Standard Query (No Excludes)
+		// Standard Query (No Excludes)
 		template<typename Driver, typename... Args>
 		inline auto Query();
 
-		// 2. Explicit Exclude Query
+		// Explicit Exclude Query
 		// Notice how ExcludeType bypasses the variadic pack deduction errors!
 		template<typename Driver, typename... Args, typename ExcludeType>
 		inline auto Query(ExcludeType);
 
-		// 3. Gameplay Wrapper (Auto-hides DisabledComponent)
+		// Gameplay Wrapper (Auto-hides DisabledComponent)
 		template<typename Driver, typename... Args>
 		inline auto ActiveQuery();
 
-		// 4. Gameplay Wrapper WITH additional custom excludes
+		// Gameplay Wrapper WITH additional custom excludes
 		template<typename Driver, typename... Args, typename ExcludeType>
 		inline auto ActiveQuery(ExcludeType);
 

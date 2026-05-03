@@ -7,7 +7,6 @@
 #include <concepts>
 #include <tuple>
 #include <ranges>
-#include <new>
 
 namespace Ember {
 
@@ -42,20 +41,15 @@ namespace Ember {
 		template<typename... Args>
 		T& AttachComponent(EntityID entity, Args&&... args)
 		{
-			// If it already exists, replace it using Placement New
+			// If it already exists, replace it using standard assignment.
+			// This safely triggers the Move Assignment Operator, cleanly handling memory
 			if (SparseEntityArray[entity] != Constants::Entities::InvalidComponentID)
 			{
-				uint32_t componentIndex = SparseEntityArray[entity];
-
-				// Safely destroy the old component
-				DenseComponentArray[componentIndex].~T();
-
-				// Construct the new component directly into that exact memory address
-				new (&DenseComponentArray[componentIndex]) T(std::forward<Args>(args)...);
-				return DenseComponentArray[componentIndex];
+				DenseComponentArray[SparseEntityArray[entity]] = T(std::forward<Args>(args)...);
+				return DenseComponentArray[SparseEntityArray[entity]];
 			}
 
-			// 2. If it's new, construct it directly inside the array!
+			// If it's new, construct it directly inside the array
 			uint32_t componentIndex = static_cast<uint32_t>(DenseComponentArray.size());
 
 			DenseComponentArray.emplace_back(std::forward<Args>(args)...);
