@@ -20,7 +20,7 @@ namespace Ember {
 		{
 			MaterialComponent comp{ Constants::Assets::StandardGeometryMatUUID };
 			auto ret = comp.GetInstanced(entity.GetName() + "_Material");
-			m_Context->ActiveScene->AttachComponent(entity, comp);
+			m_Context->ActiveScene->AttachComponent<MaterialComponent>(entity, comp);
 		}
 
 	protected:

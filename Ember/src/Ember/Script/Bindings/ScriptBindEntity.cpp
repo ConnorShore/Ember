@@ -138,9 +138,8 @@ namespace Ember {
 				}
 
 				// Create a new blank component
-				ComponentType newComp;
-				entity.AttachComponent(newComp);
-				return sol::make_object(state, &entity.GetComponent<ComponentType>());
+				auto& newComp = entity.AttachComponent<ComponentType>();
+				return sol::make_object(state, &newComp);
 			};
 
 		// Pass a default-constructed instance to deduce the type
@@ -222,7 +221,7 @@ namespace Ember {
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
-			"SetActive", [&state](Entity& e, bool active) { if (active) e.DetachComponent<DisabledComponent>(); else { DisabledComponent dc; e.AttachComponent(dc); }},
+			"SetActive", [&state](Entity& e, bool active) { if (active) e.DetachComponent<DisabledComponent>(); else { e.AttachComponent<DisabledComponent>(); }},
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },

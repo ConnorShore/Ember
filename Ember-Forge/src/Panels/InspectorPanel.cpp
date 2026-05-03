@@ -179,9 +179,7 @@ namespace Ember {
 						for (auto& comp : comps)
 						{
 							if (ImGui::MenuItem(comp->GetName()))
-							{
 								comp->CreateComponentForEntity(entity);
-							}
 						}
 						ImGui::EndMenu();
 					}

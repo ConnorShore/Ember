@@ -863,7 +863,7 @@ namespace Ember {
 		// If the outline was queued for removal (e.g. from deselection), cancel it instead of double-adding
 		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
 		if (!removed)
-			entity.AttachComponent(m_OutlineEntitySelectedComp);
+			entity.AttachComponent<OutlineComponent>(m_OutlineEntitySelectedComp);
 	}
 
 	void EditorLayer::NewProject()

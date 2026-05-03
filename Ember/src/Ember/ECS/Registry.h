@@ -113,21 +113,18 @@ namespace Ember {
 			}
 		}
 
-		template<typename T>
-		inline T& AttachComponent(EntityID entity, T& component)
+		template<typename T, typename... Args>
+		inline T& AttachComponent(EntityID entity, Args&&... args)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
-
 			m_EntityManager->AttachComponent(entity, type);
-			T& ret = m_ComponentManager->AttachComponent<T>(entity, component);
 
-			// Trigger the attach callbacks after actually attaching the component
+			T& ret = m_ComponentManager->AttachComponent<T>(entity, std::forward<Args>(args)...);
 			if (m_ComponentAttachRegistry.find(type) != m_ComponentAttachRegistry.end())
 			{
 				auto* attachRegistry = StaticPointerCast<ComponentLifecycleRegistry<T>>(m_ComponentAttachRegistry[type]);
 				attachRegistry->Trigger(entity, ret);
 			}
-
 			return ret;
 		}
 
@@ -200,23 +197,20 @@ namespace Ember {
 			return std::forward_as_tuple(GetComponent<Args>(entity)...);
 		}
 
-		//template<typename Driver, typename... Args>
-		//inline View<Driver, Args...> Query();
-
-		// 1. Standard Query (No Excludes)
+		// Standard Query (No Excludes)
 		template<typename Driver, typename... Args>
 		inline auto Query();
 
-		// 2. Explicit Exclude Query
+		// Explicit Exclude Query
 		// Notice how ExcludeType bypasses the variadic pack deduction errors!
 		template<typename Driver, typename... Args, typename ExcludeType>
 		inline auto Query(ExcludeType);
 
-		// 3. Gameplay Wrapper (Auto-hides DisabledComponent)
+		// Gameplay Wrapper (Auto-hides DisabledComponent)
 		template<typename Driver, typename... Args>
 		inline auto ActiveQuery();
 
-		// 4. Gameplay Wrapper WITH additional custom excludes
+		// Gameplay Wrapper WITH additional custom excludes
 		template<typename Driver, typename... Args, typename ExcludeType>
 		inline auto ActiveQuery(ExcludeType);
 
