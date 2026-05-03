@@ -113,21 +113,18 @@ namespace Ember {
 			}
 		}
 
-		template<typename T>
-		inline T& AttachComponent(EntityID entity, T& component)
+		template<typename T, typename... Args>
+		inline T& AttachComponent(EntityID entity, Args&&... args)
 		{
 			ComponentType type = m_ComponentManager->GetComponentType<T>();
-
 			m_EntityManager->AttachComponent(entity, type);
-			T& ret = m_ComponentManager->AttachComponent<T>(entity, component);
 
-			// Trigger the attach callbacks after actually attaching the component
+			T& ret = m_ComponentManager->AttachComponent<T>(entity, std::forward<Args>(args)...);
 			if (m_ComponentAttachRegistry.find(type) != m_ComponentAttachRegistry.end())
 			{
 				auto* attachRegistry = StaticPointerCast<ComponentLifecycleRegistry<T>>(m_ComponentAttachRegistry[type]);
 				attachRegistry->Trigger(entity, ret);
 			}
-
 			return ret;
 		}
 

@@ -151,11 +151,11 @@ namespace Ember {
 	{
 		auto entity = m_SceneHandle->InstantiatePrefab(prefab, nullptr);
 
-		DisabledComponent dc;
-		entity.AttachComponent(dc);
+		//DisabledComponent dc;
+		entity.AttachComponent<DisabledComponent>();
 
-		PoolComponent pc(m_Id);
-		entity.AttachComponent(pc);
+		//PoolComponent pc(m_Id);
+		entity.AttachComponent<PoolComponent>(m_Id);
 
 		return entity;
 	}

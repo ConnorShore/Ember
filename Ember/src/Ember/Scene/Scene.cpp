@@ -150,7 +150,7 @@ namespace Ember {
 					PoolConfigComponent,
 					ParticleEmitterComponent,
 					PostProcessVolumeComponent,
-					AudioSourceComponent,
+					//AudioSourceComponent,
 					AudioListenerComponent
 			> (srcEntity, destEntity);
 
@@ -159,6 +159,20 @@ namespace Ember {
 				EB_CORE_WARN("CopyScene: CharacterControllerComponent copy mismatch on entity '{}'!", destEntity.GetName());
 			if (!srcEntity.ContainsComponent<CharacterControllerComponent>() && srcEntity.ContainsComponent<ScriptComponent>())
 				EB_CORE_WARN("CopyScene: Entity '{}' has a ScriptComponent but no CharacterControllerComponent in the source scene!", srcEntity.GetName());
+
+			// Special handling for AudioSourceComponent because of the raw ma_sound pointer that must not be copied
+			if (srcEntity.ContainsComponent<AudioSourceComponent>())
+			{
+				auto& srcAudio = srcEntity.GetComponent<AudioSourceComponent>();
+
+				// Attach a fresh, blank component to the duplicated entity
+				AudioSourceComponent newAudioComp;
+				newAudioComp.AudioClipHandle = srcAudio.AudioClipHandle;
+				newAudioComp.Properties = srcAudio.Properties;
+
+				// Use std::move to trigger the new R-Value overload!
+				destEntity.AttachComponent<AudioSourceComponent>(std::move(newAudioComp));
+			}
 
 			// Reset physics runtime pointers so the new scene doesn't alias the source scene's physics objects
 			Utils::ResetPhysicsRuntimeState(destEntity);
@@ -363,9 +377,8 @@ namespace Ember {
 		prefab->SetIsEngineAsset(false);
 
 		// Add prefab component to entity
-		PrefabComponent pc;
+		auto& pc = entity.AttachComponent<PrefabComponent>();
 		pc.PrefabHandle = prefab->GetUUID();
-		entity.AttachComponent(pc);
 
 		return prefab;
 	}
@@ -462,7 +475,7 @@ namespace Ember {
 			PoolConfigComponent,
 			ParticleEmitterComponent,
 			PostProcessVolumeComponent,
-			AudioSourceComponent,
+			//AudioSourceComponent,
 			AudioListenerComponent
 		>(entity, newEntity);
 
@@ -487,6 +500,18 @@ namespace Ember {
 				mesh.AnimatorEntityHandle = newAnimatorUUID;
 		}
 
+		if (entity.ContainsComponent<AudioSourceComponent>())
+		{
+			auto& srcAudio = entity.GetComponent<AudioSourceComponent>();
+
+			// Attach a fresh, blank component to the duplicated entity
+			auto& dstAudio = newEntity.AttachComponent<AudioSourceComponent>();
+
+			// Safely transfer the properties without touching the ma_sound pointer!
+			dstAudio.AudioClipHandle = srcAudio.AudioClipHandle;
+			dstAudio.Properties = srcAudio.Properties;
+		}
+
 		// Reset all runtime-only physics state copied from the source entity.
 		// Without this, the attach hooks saw non-null pointers and skipped creation,
 		// leaving both entities sharing the same physics objects.
@@ -496,8 +521,8 @@ namespace Ember {
 		// FindRigidBodyEntity can correctly climb the parent chain (e.g. a child
 		// collider whose rigid body lives on an ancestor).
 		auto oldRels = entity.GetComponent<RelationshipComponent>();
-		RelationshipComponent newRels;
 
+		auto& newRels = newEntity.AttachComponent<RelationshipComponent>();
 		if (isRoot)
 		{
 			newRels.ParentHandle = oldRels.ParentHandle;
@@ -514,9 +539,6 @@ namespace Ember {
 			newRels.ParentHandle = newParentId;
 		}
 
-		// Attach now (no children yet) so the parent chain is navigable for physics init.
-		newEntity.AttachComponent(newRels);
-
 		// Create fresh, independent physics objects for this entity
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 		physicsSystem->InitializeEntity(newEntity.GetEntityHandle(), this);
@@ -531,9 +553,6 @@ namespace Ember {
 				newRels.Children.push_back(duplicatedChild.GetUUID());
 			}
 		}
-
-		// Re-attach with the fully populated children list.
-		newEntity.AttachComponent(newRels);
 
 		return newEntity;
 	}

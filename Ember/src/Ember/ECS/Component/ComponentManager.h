@@ -7,6 +7,7 @@
 #include <concepts>
 #include <tuple>
 #include <ranges>
+#include <new>
 
 namespace Ember {
 
@@ -38,23 +39,28 @@ namespace Ember {
 			SparseEntityArray.resize(Constants::Entities::MaxEntities, Constants::Entities::InvalidComponentID);
 		}
 
-		T& InsertComponent(EntityID entity, T component)
+		template<typename... Args>
+		T& AttachComponent(EntityID entity, Args&&... args)
 		{
-			// If the entity already has this component, update it in place
+			// If it already exists, replace it using Placement New
 			if (SparseEntityArray[entity] != Constants::Entities::InvalidComponentID)
 			{
-				DenseComponentArray[SparseEntityArray[entity]] = component;
-				return DenseComponentArray[SparseEntityArray[entity]];
+				uint32_t componentIndex = SparseEntityArray[entity];
+
+				// Safely destroy the old component
+				DenseComponentArray[componentIndex].~T();
+
+				// Construct the new component directly into that exact memory address
+				new (&DenseComponentArray[componentIndex]) T(std::forward<Args>(args)...);
+				return DenseComponentArray[componentIndex];
 			}
 
-			// Add component to the dense component array and get its index
+			// 2. If it's new, construct it directly inside the array!
 			uint32_t componentIndex = static_cast<uint32_t>(DenseComponentArray.size());
 
-			// Map the component index to which entity its for
-			DenseComponentArray.push_back(component);
+			DenseComponentArray.emplace_back(std::forward<Args>(args)...);
 			DenseEntityArray.push_back(entity);
 
-			// Add entity to spare array to point to the mapper array to eventually point to the component
 			SparseEntityArray[entity] = componentIndex;
 			return DenseComponentArray[componentIndex];
 		}
@@ -89,7 +95,7 @@ namespace Ember {
 			uint32_t lastComponentIndex = static_cast<uint32_t>(DenseComponentArray.size() - 1);
 			uint32_t entityReplaceId = DenseEntityArray[lastComponentIndex];
 
-			DenseComponentArray[componentIndex] = DenseComponentArray[lastComponentIndex];
+			DenseComponentArray[componentIndex] = std::move(DenseComponentArray[lastComponentIndex]);
 
 			// Fix up the sparse mapping for the moved element
 			DenseEntityArray[componentIndex] = entityReplaceId;
@@ -117,20 +123,18 @@ namespace Ember {
 		ComponentManager() = default;
 		~ComponentManager() { m_ComponentArrays.clear(); }
 
-		template<typename T>
-		inline T& AttachComponent(EntityID entity, T component)
+		template<typename T, typename... Args>
+		inline T& AttachComponent(EntityID entity, Args&&... args)
 		{
 			ComponentType type = GetComponentType<T>();
-
-			// Add component type to components array if it doesn't exist yet
 			if (m_ComponentArrays.empty() || type > m_ComponentArrays.size() - 1)
 				m_ComponentArrays.resize(type + 1);
 
 			if (m_ComponentArrays[type] == nullptr)
 				m_ComponentArrays[type] = SharedPtr<ComponentMemoryArray<T>>::Create();
 
-			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
-			return memoryArrays->InsertComponent(entity, component);
+			auto memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
+			return memoryArrays->AttachComponent(entity, std::forward<Args>(args)...);
 		}
 
 		template<typename T>

@@ -691,13 +691,19 @@ namespace Ember {
 
 	struct AudioSourceComponent
 	{
-		UUID AudioClipHandle = Constants::InvalidUUID;
 		AudioSource Source;
 		AudioSoundProperties Properties;
-
+		UUID AudioClipHandle;
 
 		AudioSourceComponent() = default;
-		AudioSourceComponent(const AudioSourceComponent&) = default;
+
+		// Ban copies
+		AudioSourceComponent(const AudioSourceComponent&) = delete;
+		AudioSourceComponent& operator=(const AudioSourceComponent&) = delete;
+
+		// Use default move semantics
+		AudioSourceComponent(AudioSourceComponent&&) = default;
+		AudioSourceComponent& operator=(AudioSourceComponent&&) = default;
 	};
 
 	struct SingleSoundComponent

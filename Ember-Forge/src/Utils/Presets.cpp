@@ -8,22 +8,15 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Character_Controller");
 
-		StaticMeshComponent mc(Constants::Assets::CapsuleMeshUUID);
-		newEntity.AttachComponent<StaticMeshComponent>(mc);
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<CharacterControllerComponent>();
 
-		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		newEntity.AttachComponent<MaterialComponent>(mtC);
-
-		CharacterControllerComponent ccc;
-		newEntity.AttachComponent<CharacterControllerComponent>(ccc);
-
-		RigidBodyComponent rbc;
+		auto& rbc = newEntity.AttachComponent<RigidBodyComponent>();
 		rbc.Type = RigidBodyComponent::BodyType::Kinematic;
-		newEntity.AttachComponent<RigidBodyComponent>(rbc);
 
-		CapsuleColliderComponent colC;
+		auto& colC = newEntity.AttachComponent<CapsuleColliderComponent>();
 		colC.AttachedBody = rbc.Body;
-		newEntity.AttachComponent<CapsuleColliderComponent>(colC);
 
 		// TODO: Add basic script for character movement (WASD + Jump)
 
@@ -34,11 +27,8 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Cube");
 
-		StaticMeshComponent mc(Constants::Assets::CubeMeshUUID);
-		newEntity.AttachComponent<StaticMeshComponent>(mc);
-
-		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		newEntity.AttachComponent<MaterialComponent>(mtC);
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CubeMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
 
 		return newEntity;
 	}
@@ -48,11 +38,8 @@ namespace Ember {
 		Entity newEntity = scene->AddEntity("Quad");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it face parallel to the ground by default
 
-		StaticMeshComponent mc(Constants::Assets::QuadMeshUUID);
-		newEntity.AttachComponent<StaticMeshComponent>(mc);
-
-		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		newEntity.AttachComponent<MaterialComponent>(mtC);
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::QuadMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
 
 		return newEntity;
 	}
@@ -61,11 +48,8 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Sphere");
 
-		StaticMeshComponent mc(Constants::Assets::SphereMeshUUID);
-		newEntity.AttachComponent<StaticMeshComponent>(mc);
-
-		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		newEntity.AttachComponent<MaterialComponent>(mtC);
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::SphereMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
 
 		return newEntity;
 	}
@@ -74,11 +58,8 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Capsule");
 
-		StaticMeshComponent mc(Constants::Assets::CapsuleMeshUUID);
-		newEntity.AttachComponent<StaticMeshComponent>(mc);
-
-		MaterialComponent mtC(Constants::Assets::StandardGeometryMatUUID);
-		newEntity.AttachComponent<MaterialComponent>(mtC);
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
 
 		return newEntity;
 	}
@@ -87,14 +68,12 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Point_Light");
 		
-		PointLightComponent plc;
-		newEntity.AttachComponent<PointLightComponent>(plc);
+		newEntity.AttachComponent<PointLightComponent>();
 
 		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::PointLightTexUUID);
 
-		BillboardComponent bc;
+		auto& bc = newEntity.AttachComponent<BillboardComponent>();
 		bc.TextureHandle = lightTexture->GetUUID();
-		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
 	}
@@ -104,16 +83,13 @@ namespace Ember {
 		Entity newEntity = scene->AddEntity("Directional_Light");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-50.0f), Math::Radians(30.0f), 0.0f);	// Make it point diagonally downwards by default
 
-		DirectionalLightComponent dlc;
-		newEntity.AttachComponent<DirectionalLightComponent>(dlc);
-
+		newEntity.AttachComponent<DirectionalLightComponent>();
 
 		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID);
 
-		BillboardComponent bc;
+		auto& bc = newEntity.AttachComponent<BillboardComponent>();
 		bc.TextureHandle = lightTexture->GetUUID();
 		bc.Size = 1.5f;
-		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
 	}
@@ -123,14 +99,12 @@ namespace Ember {
 		Entity newEntity = scene->AddEntity("Spot_Light");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it point strait downwards by default
 
-		SpotLightComponent slc;
-		newEntity.AttachComponent<SpotLightComponent>(slc);
+		newEntity.AttachComponent<SpotLightComponent>();
 
 		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::SpotLightTexUUID);
 
-		BillboardComponent bc;
+		auto& bc = newEntity.AttachComponent<BillboardComponent>();
 		bc.TextureHandle = lightTexture->GetUUID();
-		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
 	}
@@ -142,15 +116,12 @@ namespace Ember {
 		transform.Position = position;
 		transform.Rotation = Math::ToEulerAngles(orientation);
 
-		CameraComponent cc;
-		newEntity.AttachComponent<CameraComponent>(cc);
-
+		newEntity.AttachComponent<CameraComponent>();
 
 		auto cameraTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::CameraTexUUID);
 
-		BillboardComponent bc;
+		auto& bc = newEntity.AttachComponent<BillboardComponent>();
 		bc.TextureHandle = cameraTexture->GetUUID();
-		newEntity.AttachComponent<BillboardComponent>(bc);
 
 		return newEntity;
 	}
@@ -159,19 +130,16 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("PostProcessVolume");
 
-		RigidBodyComponent rbc;
+		auto& rbc = newEntity.AttachComponent<RigidBodyComponent>();
 		rbc.Type = RigidBodyComponent::BodyType::Static;
-		newEntity.AttachComponent<RigidBodyComponent>(rbc);
 
-		BoxColliderComponent boxCol;
+		auto& boxCol = newEntity.AttachComponent<BoxColliderComponent>();
 		boxCol.AttachedBody = rbc.Body;
 		boxCol.IsTrigger = true;
 		boxCol.Category = CollisionFilterPreset::VFX;
 		boxCol.PreviewCollider = true;
-		newEntity.AttachComponent<BoxColliderComponent>(boxCol);
 
-		PostProcessVolumeComponent ppvc;
-		newEntity.AttachComponent<PostProcessVolumeComponent>(ppvc);
+		newEntity.AttachComponent<PostProcessVolumeComponent>();
 
 		return newEntity;
 	}

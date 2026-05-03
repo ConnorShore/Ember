@@ -104,8 +104,8 @@ namespace Ember {
 
 		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
 
-		template<typename T>
-		inline void AttachComponent(const Entity& entity, T& component);
+		template<typename T, typename... Args>
+		inline T& AttachComponent(const Entity& entity, Args&&... args);
 
 		template<typename T>
 		inline void DetachComponent(const Entity& entity);
@@ -154,11 +154,11 @@ namespace Ember {
 
 namespace Ember {
 
-	template<typename T>
-	inline void Scene::AttachComponent(const Entity& entity, T& component)
+	template<typename T, typename... Args>
+	inline T& Scene::AttachComponent(const Entity& entity, Args&&... args)
 	{
 		EntityID entityHandle = entity.GetEntityHandle();
-		m_Registry->AttachComponent<T>(entityHandle, component);
+		return m_Registry->AttachComponent<T>(entityHandle, std::forward<Args>(args)...);
 	}
 
 	template<typename T>

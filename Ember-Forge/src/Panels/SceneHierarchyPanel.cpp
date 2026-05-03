@@ -480,9 +480,8 @@ namespace Ember {
 		// Set relationship on parent to include new ChildEntity
 		if (!parentEntity.ContainsComponent<RelationshipComponent>())
 		{
-			RelationshipComponent parentRelationship;
+			auto& parentRelationship = parentEntity.AttachComponent<RelationshipComponent>();
 			parentRelationship.Children.push_back(childEntity.GetUUID());
-			parentEntity.AttachComponent<RelationshipComponent>(parentRelationship);
 		}
 		else
 		{
@@ -490,15 +489,6 @@ namespace Ember {
 			parentRelationship.Children.push_back(childEntity.GetUUID());
 			parentEntity.AttachComponent<RelationshipComponent>(parentRelationship);
 		}
-
-		// Place new child at parent's location
-		//EB_CORE_ASSERT(parentEntity.ContainsComponent<TransformComponent>() && childEntity.ContainsComponent<TransformComponent>(), "Entity must contain transform component!");
-		//auto& parentTransform = parentEntity.GetComponent<TransformComponent>();
-		//auto& childTransform = childEntity.GetComponent<TransformComponent>();
-		//childTransform.Position = parentTransform.Position;
-		//childTransform.Rotation = parentTransform.Rotation;
-		//childTransform.Scale = parentTransform.Scale;
-		//childTransform.WorldTransform = parentTransform.WorldTransform;and chil
 
 		SetSelectedEntity(childEntity);
 	}
