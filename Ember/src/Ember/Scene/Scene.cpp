@@ -150,7 +150,8 @@ namespace Ember {
 					PoolConfigComponent,
 					ParticleEmitterComponent,
 					PostProcessVolumeComponent,
-					AudioSourceComponent
+					AudioSourceComponent,
+					AudioListenerComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -195,7 +196,7 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
-		//systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
@@ -461,7 +462,8 @@ namespace Ember {
 			PoolConfigComponent,
 			ParticleEmitterComponent,
 			PostProcessVolumeComponent,
-			AudioSourceComponent
+			AudioSourceComponent,
+			AudioListenerComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

@@ -42,7 +42,7 @@ namespace Ember {
 			return *this;
 		}
 
-		inline ma_sound* GetSound() { return &m_Sound; }
+		inline ma_sound* GetSound() { return m_Sound; }
 		inline bool IsLoaded() const { return m_IsLoaded; }
 		
 	private:
@@ -50,7 +50,7 @@ namespace Ember {
 		static void OnSoundEnd(void* pUserData, ma_sound* pSound);
 
 	private:
-		ma_sound m_Sound;
+		ma_sound* m_Sound = nullptr;
 		bool m_IsLoaded = false;
 	};
 }

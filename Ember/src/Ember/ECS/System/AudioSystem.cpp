@@ -27,7 +27,8 @@ namespace Ember {
 
 	void AudioSystem::OnSceneAttach(Scene* scene)
 	{
-		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
+		// Use normal query to load all audio sources in the scene, not just active ones, since we want them to be ready to play immediately when activated
+		auto view = scene->GetRegistry().Query<AudioSourceComponent>();
 		for (auto entity : view)
 		{
 			auto& audioComp = scene->GetRegistry().GetComponent<AudioSourceComponent>(entity);
@@ -41,7 +42,7 @@ namespace Ember {
 
 	void AudioSystem::OnSceneDetach(Scene* scene)
 	{
-		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
+		auto view = scene->GetRegistry().Query<AudioSourceComponent>();
 		for (auto entity : view)
 		{
 			auto& audioComp = scene->GetRegistry().GetComponent<AudioSourceComponent>(entity);
@@ -57,6 +58,7 @@ namespace Ember {
 
 	void AudioSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		// Update audio sources
 		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
 		for (auto entityId : view)
 		{
@@ -71,11 +73,47 @@ namespace Ember {
 				if (!audioComp.Source.IsPlaying && !audioComp.Source.IsQueued)
 				{
 					scene->RemoveEntity(entity);
+					continue;
 				}
+			}
+
+			// Set sound location if it's spatialized
+			if (audioComp.Properties.Spatialized)
+			{
+				// Explicitly enable spatialization (or disable it if they unchecked the box!)
+				ma_sound_set_spatialization_enabled(source.GetSound(), MA_TRUE);
+
+				// Set 3D position of sound
+				auto& transform = entity.GetComponent<TransformComponent>();
+				ma_sound_set_position(source.GetSound(), transform.Position.x, transform.Position.y, transform.Position.z);
+
+				// Set min and max distance (Ensure MinDistance is > 0.0f !)
+				ma_sound_set_min_distance(source.GetSound(), audioComp.Properties.MinDistance);
+				ma_sound_set_max_distance(source.GetSound(), audioComp.Properties.MaxDistance);
+			}
+			else
+			{
+				// If it's a UI click or background music, turn spatialization OFF
+				ma_sound_set_spatialization_enabled(source.GetSound(), MA_FALSE);
 			}
 
 			if (source.IsQueued && !source.IsPlaying)
 			{
+				if (audioComp.Properties.Spatialized)
+				{
+					// Set 3D position of sound
+					auto& transform = entity.GetComponent<TransformComponent>();
+					ma_sound_set_position(source.GetSound(), transform.Position.x, transform.Position.y, transform.Position.z);
+
+					// Set min and max distance
+					ma_sound_set_min_distance(source.GetSound(), audioComp.Properties.MinDistance);
+					ma_sound_set_max_distance(source.GetSound(), audioComp.Properties.MaxDistance);
+				}
+
+				// Set volume and pitch
+				ma_sound_set_volume(source.GetSound(), audioComp.Properties.Volume);
+				ma_sound_set_pitch(source.GetSound(), audioComp.Properties.Pitch);
+
 				// Rewind the sound to the beginning just in case it was played previously
 				ma_sound_seek_to_pcm_frame(source.GetSound(), 0);
 
@@ -86,6 +124,25 @@ namespace Ember {
 				source.IsPlaying = true;
 				source.IsQueued = false;
 			}
+		}
+
+		// Update audio listeners
+		auto listenerView = scene->GetRegistry().ActiveQuery<AudioListenerComponent, TransformComponent>();
+		for (auto entity : listenerView)
+		{
+			auto& listener = scene->GetRegistry().GetComponent<AudioListenerComponent>(entity);
+			if (!listener.IsActive)
+				continue;
+
+			auto& transform = scene->GetRegistry().GetComponent<TransformComponent>(entity);
+			Vector3f pos = transform.Position;
+			Vector3f forward = transform.GetForward();
+			Vector3f up = transform.GetUp();
+
+			// Pass the specific ListenerIndex into miniaudio
+			ma_engine_listener_set_position(m_AudioEngine.Ptr(), listener.ListenerIndex, pos.x, pos.y, pos.z);
+			ma_engine_listener_set_direction(m_AudioEngine.Ptr(), listener.ListenerIndex, forward.x, forward.y, forward.z);
+			ma_engine_listener_set_world_up(m_AudioEngine.Ptr(), listener.ListenerIndex, up.x, up.y, up.z);
 		}
 	}
 

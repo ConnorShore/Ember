@@ -705,4 +705,10 @@ namespace Ember {
 		// Leave empty
 	};
 
+	struct AudioListenerComponent
+	{
+		uint32_t ListenerIndex = 0;
+		bool IsActive = true;
+	};
+
 }

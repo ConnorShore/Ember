@@ -8,13 +8,13 @@ Assets:
     Name: moonless_golf_4k
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\moonless_golf_4k.hdr'
   - Type: Texture
-    UUID: 13007419146709191088
-    Name: NewColorGradeLUT
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\NewColorGradeLUT.png'
-  - Type: Texture
     UUID: 15361559888818349168
     Name: SmokeParticle
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
+  - Type: Texture
+    UUID: 13007419146709191088
+    Name: NewColorGradeLUT
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\NewColorGradeLUT.png'
   - Type: Script
     UUID: 8422630553721103124
     Name: NewScript
@@ -91,3 +91,7 @@ Assets:
     UUID: 3650591276351466459
     Name: campfire
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\campfire.mp3'
+  - Type: AudioClip
+    UUID: 7389408278585673534
+    Name: gunshot
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\gunshot.mp3'

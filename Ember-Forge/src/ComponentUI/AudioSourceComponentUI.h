@@ -35,6 +35,18 @@ namespace Ember {
 				UI::PropertyGrid::Float("Pitch", component.Properties.Pitch, 0.01f);
 				UI::PropertyGrid::Checkbox("Looping", component.Properties.Looping);
 				UI::PropertyGrid::Checkbox("Spatialized", component.Properties.Spatialized);
+				if (UI::PropertyGrid::Float("Min Distance", component.Properties.MinDistance, 0.1f, 0.01f))
+				{
+					// Ensure MinDistance is > 0.0f to avoid issues with ma_sound_set_min_distance
+					if (component.Properties.MinDistance <= 0.0f)
+						component.Properties.MinDistance = 0.01f;
+				}
+				if (UI::PropertyGrid::Float("Max Distance", component.Properties.MaxDistance, 0.1f, 0.01f))
+				{
+					// Ensure MaxDistance is greater than MinDistance
+					if (component.Properties.MaxDistance <= component.Properties.MinDistance)
+						component.Properties.MaxDistance = component.Properties.MinDistance + 0.01f;
+				}
 
 				UI::PropertyGrid::End();
 			}
@@ -43,36 +55,6 @@ namespace Ember {
 	private:
 		void RenderAudioClipSelector(AudioSourceComponent& component)
 		{
-			//auto& assetManager = Application::Instance().GetAssetManager();
-			//std::string selectedAudioClip;
-			//bool clipExists = component.AudioClipHandle != Constants::InvalidUUID;
-			//if (clipExists)
-			//{
-			//	auto audioAsset = assetManager.GetAsset<AudioClip>(component.AudioClipHandle);
-			//	if (audioAsset)
-			//	{
-			//		UI::PropertyGrid::AssetReference("Audio Clip", audioAsset->GetName(), DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetAudioClip),
-			//			selectedAudioClip, nullptr, nullptr);
-			//	}
-			//}
-			//else
-			//{
-			//	UI::PropertyGrid::AssetReference("Audio Clip", "None (Audio Clip)", DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetAudioClip),
-			//		selectedAudioClip, nullptr, nullptr);
-			//}
-			//if (!selectedAudioClip.empty())
-			//{
-			//	auto audioAsset = assetManager.GetAssetByPath<AudioClip>(selectedAudioClip);
-			//	if (audioAsset != nullptr)
-			//		component.AudioClipHandle = audioAsset->GetUUID();
-			//	else
-			//	{
-			//		auto audioAsset = assetManager.Load<AudioClip>(selectedAudioClip);
-			//		component.AudioClipHandle = audioAsset ? audioAsset->GetUUID() : (UUID)Constants::InvalidUUID;
-			//	}
-			//}
-
-			
 			// Audio asset selector
 			auto& assetManager = Application::Instance().GetAssetManager();
 

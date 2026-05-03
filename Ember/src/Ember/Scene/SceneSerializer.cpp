@@ -445,6 +445,16 @@ namespace Ember {
 			audioNode["Volume"] << audioSource.Properties.Volume;
 			audioNode["Looping"] << audioSource.Properties.Looping;
 			audioNode["Spatialized"] << audioSource.Properties.Spatialized;
+			audioNode["MinDistance"] << audioSource.Properties.MinDistance;
+			audioNode["MaxDistance"] << audioSource.Properties.MaxDistance;
+		}
+		if (entity.ContainsComponent<AudioListenerComponent>())
+		{
+			auto& audioListener = entity.GetComponent<AudioListenerComponent>();
+			ryml::NodeRef listenerNode = entityNode["AudioListenerComponent"];
+			listenerNode |= ryml::MAP;
+			listenerNode["IsActive"] << audioListener.IsActive;
+			listenerNode["ListenerIndex"] << audioListener.ListenerIndex;
 		}
 	}
 
@@ -1042,7 +1052,18 @@ namespace Ember {
 			audioNode["Volume"] >> asc.Properties.Volume;
 			audioNode["Looping"] >> asc.Properties.Looping;
 			audioNode["Spatialized"] >> asc.Properties.Spatialized;
+			audioNode["MinDistance"] >> asc.Properties.MinDistance;
+			audioNode["MaxDistance"] >> asc.Properties.MaxDistance;
 			deserializedEntity.AttachComponent<AudioSourceComponent>(asc);
+		}
+
+		if (entityNode.has_child("AudioListenerComponent"))
+		{
+			ryml::NodeRef listenerNode = entityNode["AudioListenerComponent"];
+			AudioListenerComponent alc;
+			listenerNode["IsActive"] >> alc.IsActive;
+			listenerNode["ListenerIndex"] >> alc.ListenerIndex;
+			deserializedEntity.AttachComponent<AudioListenerComponent>(alc);
 		}
 	}
 

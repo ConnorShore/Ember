@@ -33,5 +33,10 @@ namespace Ember {
 				[](AudioSourceComponent& c) { c.Source.Restart(); }
 			)
 		);
+
+		state.new_usertype<AudioListenerComponent>("AudioListenerComponent",
+			"IsActive", &AudioListenerComponent::IsActive,
+			"ListenerIndex", &AudioListenerComponent::ListenerIndex
+		);
 	}
 }

@@ -15,15 +15,18 @@ namespace Ember {
 	{
 		auto audioSystem = Application::Instance().GetSystemManager().GetSystem<AudioSystem>();
 
-		ma_result result = ma_sound_init_from_file(audioSystem->GetAudioEngine(), filePath.c_str(), 0, NULL, NULL, &m_Sound);
+		m_Sound = new ma_sound();
+		ma_result result = ma_sound_init_from_file(audioSystem->GetAudioEngine(), filePath.c_str(), 0, NULL, NULL, m_Sound);
 		if (result != MA_SUCCESS)
 		{
 			EB_CORE_ERROR("Failed to load sound from file: {0}", filePath);
+			delete m_Sound;
+			m_Sound = nullptr;
 			return false;
 		}
 
 		// Register callback for when sound finishes playing
-		ma_sound_set_end_callback(&m_Sound, OnSoundEnd, this);
+		ma_sound_set_end_callback(m_Sound, OnSoundEnd, this);
 
 		m_IsLoaded = true;
 		return true;
@@ -31,11 +34,14 @@ namespace Ember {
 
 	void AudioSource::Unload()
 	{
-		if (m_IsLoaded)
+		if (m_IsLoaded && m_Sound != nullptr)
 		{
-			ma_sound_stop(&m_Sound);
-			ma_sound_set_end_callback(&m_Sound, nullptr, nullptr);
-			ma_sound_uninit(&m_Sound);
+			ma_sound_stop(m_Sound);
+			ma_sound_set_end_callback(m_Sound, nullptr, nullptr);
+			ma_sound_uninit(m_Sound);
+
+			delete m_Sound;
+			m_Sound = nullptr;
 
 			m_IsLoaded = false;
 			IsPlaying = false;
@@ -50,7 +56,7 @@ namespace Ember {
 
 	void AudioSource::Stop()
 	{
-		ma_sound_stop(&m_Sound);
+		ma_sound_stop(m_Sound);
 		IsQueued = false;
 		IsPlaying = false;
 	}

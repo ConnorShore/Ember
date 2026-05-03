@@ -24,6 +24,7 @@
 #include "ComponentUI/ParticleEmitterComponent.h"
 #include "ComponentUI/PostProcessVolumeComponentUI.h"
 #include "ComponentUI/AudioSourceComponentUI.h"
+#include "ComponentUI/AudioListenerComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -79,6 +80,7 @@ namespace Ember {
 
 		// --- AUDIO ---
 		m_ComponentUIs[Category::Audio].emplace_back(ScopedPtr<AudioSourceComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Audio].emplace_back(ScopedPtr<AudioListenerComponentUI>::Create(m_Context));
 
 		// --- ANIMATION ---
 		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
