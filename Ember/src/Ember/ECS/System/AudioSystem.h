@@ -3,6 +3,7 @@
 #include "System.h"
 
 #include "Ember/Math/Math.h"
+#include "Ember/Audio/AudioSoundProperties.h"
 
 #include "miniaudio.h"
 
@@ -20,7 +21,7 @@ namespace Ember {
 		void OnDetach() override;
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 
-		void PlaySound(Scene* scene, const std::string& soundName, const Vector3f& position);
+		void PlaySound(Scene* scene, const std::string& soundName, AudioSoundProperties& props, const Vector3f& position = Vector3f(0.0f));
 
 		ma_engine* GetAudioEngine() const { return m_AudioEngine.Ptr(); }
 

@@ -9,8 +9,8 @@ namespace Ember {
 		bool Looping = false;
 
 		bool Spatialized = false;
-		float MinDistance = 0.0f; // For spatialized sounds, the distance at which the sound is heard at full volume
-		float MaxDistance = 10.0f; // For spatialized sounds, the distance beyond which the sound is no longer audible
+		float MinDistance = 1.0f; // For spatialized sounds, the distance at which the sound is heard at full volume
+		float MaxDistance = 5.0f; // For spatialized sounds, the distance beyond which the sound is no longer audible
 	};
 
 }

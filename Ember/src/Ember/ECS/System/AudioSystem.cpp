@@ -163,7 +163,7 @@ namespace Ember {
 		}
 	}
 
-	void AudioSystem::PlaySound(Scene* scene, const std::string& soundName, const Vector3f& position)
+	void AudioSystem::PlaySound(Scene* scene, const std::string& soundName, AudioSoundProperties& props, const Vector3f& position /* = Vector3f(0.0f) */)
 	{
 		Entity emitter = scene->AddEntity("SoundEmitter");
 		emitter.GetComponent<TransformComponent>().Position = position;
@@ -175,9 +175,6 @@ namespace Ember {
 
 		// Tag it for auto-destruction and tell it to play
 		emitter.AttachComponent<SingleSoundComponent>();
-
-		AudioSoundProperties props;
-		//props.Spatialized = true;
 		audioComp.Source.Play(props);
 	}
 
