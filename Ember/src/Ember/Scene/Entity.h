@@ -23,11 +23,8 @@ namespace Ember {
 
 		~Entity() = default;
 
-		template<typename T>
-		inline T& AttachComponent();
-
-		template<typename T>
-		inline void AttachComponent(T& component);
+		template<typename T, typename... Args>
+		inline T& AttachComponent(Args&&... args);
 
 		template<typename T>
 		inline void DetachComponent();
@@ -80,17 +77,10 @@ struct std::hash<Ember::Entity>
 
 namespace Ember {
 
-	template<typename T>
-	inline void Entity::AttachComponent(T& component)
+	template<typename T, typename... Args>
+	inline T& Entity::AttachComponent(Args&&... args)
 	{
-		m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
-	}
-
-	template<typename T>
-	T& Entity::AttachComponent()
-	{
-		T component;
-		return m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, component);
+		return m_SceneHandle->GetRegistry().AttachComponent<T>(m_EntityHandle, std::forward<Args>(args)...);
 	}
 
 	template<typename T>

@@ -16,6 +16,10 @@ Assets:
     Name: SmokeParticle
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
   - Type: Script
+    UUID: 5212750190338405195
+    Name: GameMusic
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\GameMusic.lua'
+  - Type: Script
     UUID: 8422630553721103124
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
@@ -28,13 +32,13 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
-    UUID: 10670335993004288059
-    Name: CampFire
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
-  - Type: Script
     UUID: 16541504524255684090
     Name: Powerup
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
+  - Type: Script
+    UUID: 10670335993004288059
+    Name: CampFire
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
   - Type: Material
     UUID: 220883245630972619
     Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
@@ -83,3 +87,19 @@ Assets:
     UUID: 14182495134475918428
     Name: Roboto-Regular
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Fonts\Roboto-Regular.ttf'
+  - Type: AudioClip
+    UUID: 2192860293842243164
+    Name: powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\powerup.mp3'
+  - Type: AudioClip
+    UUID: 3650591276351466459
+    Name: campfire
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\campfire.mp3'
+  - Type: AudioClip
+    UUID: 7389408278585673534
+    Name: gunshot
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\gunshot.mp3'
+  - Type: AudioClip
+    UUID: 5480116838532938354
+    Name: game-music
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\game-music.mp3'

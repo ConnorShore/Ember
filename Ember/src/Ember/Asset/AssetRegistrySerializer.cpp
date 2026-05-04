@@ -40,7 +40,7 @@ namespace Ember {
 				ryml::NodeRef assetNode = assetsNode.append_child();
 				Util::SerializeGeneralAsset(assetNode, asset);
 			}
-			};
+		};
 
 		// Serialize all standard types (ordering matters)
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Texture>());
@@ -58,6 +58,7 @@ namespace Ember {
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<PhysicsMaterial>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Prefab>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Font>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<AudioClip>());
 
 		// Write out to disk
 		std::ofstream fout(filePath);
@@ -134,6 +135,8 @@ namespace Ember {
 				m_AssetManagerHandle->Load<Prefab>(uuid, name, path, false);
 			else if (type == "Font")
 				m_AssetManagerHandle->Load<Font>(uuid, name, path, false);
+			else if (type == "AudioClip")
+				m_AssetManagerHandle->Load<AudioClip>(uuid, name, path, false);
 			else
 				EB_CORE_WARN("Unknown asset type '{0}' in registry! Skipping.", type);
 		}

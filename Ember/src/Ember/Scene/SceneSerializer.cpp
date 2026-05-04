@@ -436,6 +436,26 @@ namespace Ember {
 			toneMapNode |= ryml::MAP;
 			toneMapNode["Exposure"] << vol.Settings.ToneMap.Exposure;
 		}
+		if (entity.ContainsComponent<AudioSourceComponent>())
+		{
+			auto& audioSource = entity.GetComponent<AudioSourceComponent>();
+			ryml::NodeRef audioNode = entityNode["AudioSourceComponent"];
+			audioNode |= ryml::MAP;
+			audioNode["AudioClipHandle"] << (uint64_t)audioSource.AudioClipHandle;
+			audioNode["Volume"] << audioSource.Properties.Volume;
+			audioNode["Looping"] << audioSource.Properties.Looping;
+			audioNode["Spatialized"] << audioSource.Properties.Spatialized;
+			audioNode["MinDistance"] << audioSource.Properties.MinDistance;
+			audioNode["MaxDistance"] << audioSource.Properties.MaxDistance;
+		}
+		if (entity.ContainsComponent<AudioListenerComponent>())
+		{
+			auto& audioListener = entity.GetComponent<AudioListenerComponent>();
+			ryml::NodeRef listenerNode = entityNode["AudioListenerComponent"];
+			listenerNode |= ryml::MAP;
+			listenerNode["IsActive"] << audioListener.IsActive;
+			listenerNode["ListenerIndex"] << audioListener.ListenerIndex;
+		}
 	}
 
 	// =========================================================================
@@ -493,24 +513,24 @@ namespace Ember {
 			Vector4f color;
 			Util::DeserializeVector4f(spriteNode["Color"], color);
 
+			auto& sc = deserializedEntity.AttachComponent<SpriteComponent>(color);
+
 			uint64_t texId;
 			spriteNode["TextureUUID"] >> texId;
 
-			SpriteComponent sc(color);
 			sc.TextureHandle = (UUID)texId;
-			deserializedEntity.AttachComponent<SpriteComponent>(sc);
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))
 		{
 			ryml::NodeRef rbNode = entityNode["RigidBodyComponent"];
 
+			// Deserialize into a temporary first so the OnComponentAttached hook
+			// (which calls CreateRigidBody) sees the correct Type, Mass, GravityEnabled, etc
 			RigidBodyComponent rbc;
-
 			int typeVal;
 			rbNode["Type"] >> typeVal;
 			rbc.Type = static_cast<RigidBodyComponent::BodyType>(typeVal);
-
 			rbNode["Mass"] >> rbc.Mass;
 			rbNode["GravityEnabled"] >> rbc.GravityEnabled;
 
@@ -520,7 +540,7 @@ namespace Ember {
 		if (entityNode.has_child("BoxColliderComponent"))
 		{
 			ryml::NodeRef colliderNode = entityNode["BoxColliderComponent"];
-			BoxColliderComponent bcc;
+			auto& bcc = deserializedEntity.AttachComponent<BoxColliderComponent>();
 			Util::DeserializeVector3f(colliderNode["Size"], bcc.Size);
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], bcc.Offset.Position);
@@ -536,13 +556,12 @@ namespace Ember {
 			uint64_t bccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
 			bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
-			deserializedEntity.AttachComponent<BoxColliderComponent>(bcc);
 		}
 
 		if (entityNode.has_child("SphereColliderComponent"))
 		{
 			ryml::NodeRef colliderNode = entityNode["SphereColliderComponent"];
-			SphereColliderComponent scc;
+			auto& scc = deserializedEntity.AttachComponent<SphereColliderComponent>();
 			colliderNode["Radius"] >> scc.Radius;
 			colliderNode["IsTrigger"] >> scc.IsTrigger;
 			if (colliderNode.has_child("PreviewCollider"))
@@ -558,13 +577,12 @@ namespace Ember {
 			uint64_t sccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> sccPhysMatId;
 			scc.PhysicsMaterialHandle = (UUID)sccPhysMatId;
-			deserializedEntity.AttachComponent<SphereColliderComponent>(scc);
 		}
 
 		if (entityNode.has_child("CapsuleColliderComponent"))
 		{
 			ryml::NodeRef colliderNode = entityNode["CapsuleColliderComponent"];
-			CapsuleColliderComponent ccc;
+			auto& ccc = deserializedEntity.AttachComponent<CapsuleColliderComponent>();
 			colliderNode["Radius"] >> ccc.Radius;
 			colliderNode["Height"] >> ccc.Height;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
@@ -581,7 +599,6 @@ namespace Ember {
 			uint64_t cccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> cccPhysMatId;
 			ccc.PhysicsMaterialHandle = (UUID)cccPhysMatId;
-			deserializedEntity.AttachComponent<CapsuleColliderComponent>(ccc);
 		}
 
 		if (entityNode.has_child("ConvexMeshColliderComponent"))
@@ -591,7 +608,7 @@ namespace Ember {
 			colliderNode["MeshUUID"] >> meshId;
 			UUID meshUUID = (UUID)meshId;
 
-			ConvexMeshColliderComponent ccc;
+			auto& ccc = deserializedEntity.AttachComponent<ConvexMeshColliderComponent>();
 			ccc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
 			if (colliderNode.has_child("PreviewCollider"))
@@ -605,7 +622,6 @@ namespace Ember {
 			uint64_t convexPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> convexPhysMatId;
 			ccc.PhysicsMaterialHandle = (UUID)convexPhysMatId;
-			deserializedEntity.AttachComponent<ConvexMeshColliderComponent>(ccc);
 		}
 
 		if (entityNode.has_child("ConcaveMeshColliderComponent"))
@@ -615,7 +631,7 @@ namespace Ember {
 			colliderNode["MeshUUID"] >> meshId;
 			UUID meshUUID = (UUID)meshId;
 
-			ConcaveMeshColliderComponent cmcc;
+			auto& cmcc = deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>();
 			cmcc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> cmcc.IsTrigger;
 			if (colliderNode.has_child("PreviewCollider"))
@@ -629,7 +645,6 @@ namespace Ember {
 			uint64_t concavePhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> concavePhysMatId;
 			cmcc.PhysicsMaterialHandle = (UUID)concavePhysMatId;
-			deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>(cmcc);
 		}
 
 		if (entityNode.has_child("StaticMeshComponent"))
@@ -638,9 +653,8 @@ namespace Ember {
 			uint64_t meshId;
 			meshNode["MeshUUID"] >> meshId;
 
-			StaticMeshComponent mc;
+			auto& mc = deserializedEntity.AttachComponent<StaticMeshComponent>();
 			mc.MeshHandle = (UUID)meshId;
-			deserializedEntity.AttachComponent<StaticMeshComponent>(mc);
 		}
 
 		if (entityNode.has_child("SkinnedMeshComponent"))
@@ -652,10 +666,9 @@ namespace Ember {
 			uint64_t animatorId;
 			meshNode["RootAnimator"] >> animatorId;
 
-			SkinnedMeshComponent mc;
+			auto& mc = deserializedEntity.AttachComponent<SkinnedMeshComponent>();
 			mc.MeshHandle = (UUID)meshId;
 			mc.AnimatorEntityHandle = getRemappedUUID(animatorId); // REMAPPED!
-			deserializedEntity.AttachComponent<SkinnedMeshComponent>(mc);
 		}
 
 		if (entityNode.has_child("MaterialComponent"))
@@ -665,20 +678,19 @@ namespace Ember {
 			uint64_t materialId;
 			materialNode["MaterialUUID"] >> materialId;
 
-			MaterialComponent matComp;
+			auto& matComp = deserializedEntity.AttachComponent<MaterialComponent>();
 			matComp.MaterialHandle = (UUID)materialId;
 			if (matComp.MaterialHandle == Constants::InvalidUUID)
 			{
 				EB_CORE_ERROR("Deserializer failed to load Material. Assigning Fallback.");
 				matComp.MaterialHandle = Constants::Assets::DefaultMatUUID;
 			}
-			deserializedEntity.AttachComponent<MaterialComponent>(matComp);
 		}
 
 		if (entityNode.has_child("CameraComponent"))
 		{
 			ryml::NodeRef cameraNode = entityNode["CameraComponent"];
-			CameraComponent cc;
+			auto& cc = deserializedEntity.AttachComponent<CameraComponent>();
 
 			if (cameraNode.has_child("Projection")) {
 				Matrix4f proj;
@@ -709,23 +721,21 @@ namespace Ember {
 				perspNode["NearClip"] >> cc.Camera.GetPerspectiveProps().NearClip;
 				perspNode["FarClip"] >> cc.Camera.GetPerspectiveProps().FarClip;
 			}
-
-			deserializedEntity.AttachComponent<CameraComponent>(cc);
 		}
 
 		if (entityNode.has_child("DirectionalLightComponent"))
 		{
 			ryml::NodeRef lightNode = entityNode["DirectionalLightComponent"];
-			DirectionalLightComponent dlc;
+			auto& dlc = deserializedEntity.AttachComponent<DirectionalLightComponent>();
 			Util::DeserializeVector3f(lightNode["Color"], dlc.Color);
 			lightNode["Intensity"] >> dlc.Intensity;
-			deserializedEntity.AttachComponent<DirectionalLightComponent>(dlc);
 		}
 
 		if (entityNode.has_child("SpotLightComponent"))
 		{
 			ryml::NodeRef lightNode = entityNode["SpotLightComponent"];
-			SpotLightComponent slc;
+
+			auto& slc = deserializedEntity.AttachComponent<SpotLightComponent>();
 			Util::DeserializeVector3f(lightNode["Color"], slc.Color);
 			lightNode["Intensity"] >> slc.Intensity;
 
@@ -734,18 +744,15 @@ namespace Ember {
 
 			lightNode["OuterCutOffAngle"] >> slc.OuterCutOffAngle;
 			slc.OuterCutOff = std::cos(slc.OuterCutOffAngle);
-
-			deserializedEntity.AttachComponent<SpotLightComponent>(slc);
 		}
 
 		if (entityNode.has_child("PointLightComponent"))
 		{
 			ryml::NodeRef lightNode = entityNode["PointLightComponent"];
-			PointLightComponent plc;
+			auto& plc = deserializedEntity.AttachComponent<PointLightComponent>();
 			Util::DeserializeVector3f(lightNode["Color"], plc.Color);
 			lightNode["Intensity"] >> plc.Intensity;
 			lightNode["Radius"] >> plc.Radius;
-			deserializedEntity.AttachComponent<PointLightComponent>(plc);
 		}
 
 		if (entityNode.has_child("ScriptComponent"))
@@ -807,9 +814,8 @@ namespace Ember {
 				}
 			}
 
-			ScriptComponent sc((UUID)uuidVal);
+			auto& sc = deserializedEntity.AttachComponent<ScriptComponent>((UUID)uuidVal);
 			sc.UserPropertyOverrides = scriptUserOverrides;
-			deserializedEntity.AttachComponent<ScriptComponent>(sc);
 		}
 
 		//if (entityNode.has_child("OutlineComponent"))
@@ -824,7 +830,7 @@ namespace Ember {
 		if (entityNode.has_child("AnimatorComponent"))
 		{
 			ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
-			AnimatorComponent ac;
+			auto& ac = deserializedEntity.AttachComponent<AnimatorComponent>();
 
 			uint64_t skelHandle = Constants::InvalidUUID;
 			if (animatorNode.has_child("SkeletonHandle"))
@@ -836,14 +842,12 @@ namespace Ember {
 
 			ac.SkeletonHandle = (UUID)skelHandle;
 			ac.CurrentAnimationHandle = (UUID)animHandle;
-
-			deserializedEntity.AttachComponent<AnimatorComponent>(ac);
 		}
 
 		if (entityNode.has_child("BillboardComponent"))
 		{
 			ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
-			BillboardComponent bc;
+			auto& bc = deserializedEntity.AttachComponent<BillboardComponent>();
 
 			uint64_t texHandle;
 			billboardNode["TextureHandle"] >> texHandle;
@@ -855,8 +859,6 @@ namespace Ember {
 			billboardNode["StaticSize"] >> bc.StaticSize;
 			billboardNode["Size"] >> bc.Size;
 			billboardNode["RenderRuntime"] >> bc.RenderRuntime;
-
-			deserializedEntity.AttachComponent<BillboardComponent>(bc);
 		}
 
 		if (entityNode.has_child("PrefabComponent"))
@@ -864,81 +866,71 @@ namespace Ember {
 			ryml::NodeRef prefabNode = entityNode["PrefabComponent"];
 			uint64_t prefabId;
 			prefabNode["PrefabUUID"] >> prefabId;
-			PrefabComponent pc;
+			auto& pc = deserializedEntity.AttachComponent<PrefabComponent>();
 			pc.PrefabHandle = (UUID)prefabId;
-			deserializedEntity.AttachComponent<PrefabComponent>(pc);
 		}
 
 		if (entityNode.has_child("CharacterControllerComponent"))
 		{
 			ryml::NodeRef controllerNode = entityNode["CharacterControllerComponent"];
-			CharacterControllerComponent ccc;
+			auto& ccc = deserializedEntity.AttachComponent<CharacterControllerComponent>();
 			controllerNode["WalkSpeed"] >> ccc.WalkSpeed;
 			controllerNode["JumpForce"] >> ccc.JumpForce;
 			controllerNode["GravityMultiplier"] >> ccc.GravityMultiplier;
 			controllerNode["MaxSlopeAngle"] >> ccc.MaxSlopeAngle;
 			controllerNode["MaxStepHeight"] >> ccc.MaxStepHeight;
-			deserializedEntity.AttachComponent<CharacterControllerComponent>(ccc);
 		}
 
 		if (entityNode.has_child("LifetimeComponent"))
 		{
 			ryml::NodeRef lifetimeNode = entityNode["LifetimeComponent"];
-			LifetimeComponent ltc;
+			auto& ltc = deserializedEntity.AttachComponent<LifetimeComponent>();
 			lifetimeNode["Lifetime"] >> ltc.Lifetime;
-			deserializedEntity.AttachComponent<LifetimeComponent>(ltc);
 		}
 		
 		if (entityNode.has_child("TextComponent"))
 		{
 			ryml::NodeRef textNode = entityNode["TextComponent"];
-			TextComponent tc;
+			auto& tc = deserializedEntity.AttachComponent<TextComponent>();
 			textNode["Text"] >> tc.Text;
 			uint64_t fontId;
 			textNode["FontHandle"] >> fontId;
 			tc.FontHandle = (UUID)fontId;
 			Util::DeserializeVector4f(textNode["Color"], tc.Color);
 			textNode["ScreenSpace"] >> tc.ScreenSpace;
-			deserializedEntity.AttachComponent<TextComponent>(tc);
 		}
 
 		if (entityNode.has_child("DisabledComponent"))
 		{
 			// No props just attach the component to mark the entity as disabled
-
-			DisabledComponent dc;
-			deserializedEntity.AttachComponent<DisabledComponent>(dc);
+			deserializedEntity.AttachComponent<DisabledComponent>();
 		}
 
 		if (entityNode.has_child("PoolComponent"))
 		{
 			ryml::NodeRef poolNode = entityNode["PoolComponent"];
 
-			PoolComponent pc;
+			auto& pc = deserializedEntity.AttachComponent<PoolComponent>();
 			poolNode["PoolID"] >> pc.PoolID;
-
-			deserializedEntity.AttachComponent<PoolComponent>(pc);
 		}
 
 		if (entityNode.has_child("PoolConfigComponent"))
 		{
 			ryml::NodeRef poolNode = entityNode["PoolConfigComponent"];
 
-			PoolConfigComponent pcc;
+			auto& pcc = deserializedEntity.AttachComponent<PoolConfigComponent>();
 			poolNode["PoolID"] >> pcc.PoolID;
 			poolNode["Capacity"] >> pcc.Capacity;
 
 			uint64_t prefabId;
 			poolNode["PrefabHandle"] >> prefabId;
 			pcc.PrefabHandle = (UUID)prefabId;
-
-			deserializedEntity.AttachComponent<PoolConfigComponent>(pcc);
 		}
 
 		if (entityNode.has_child("PostProcessVolumeComponent"))
 		{
 			ryml::NodeRef volNode = entityNode["PostProcessVolumeComponent"];
-			PostProcessVolumeComponent vol;
+			auto& vol = deserializedEntity.AttachComponent<PostProcessVolumeComponent>();
 			volNode["Priority"] >> vol.Priority;
 			volNode["BlendRadius"] >> vol.BlendRadius;
 
@@ -991,14 +983,12 @@ namespace Ember {
 				ryml::NodeRef toneMapNode = volNode["ToneMap"];
 				toneMapNode["Exposure"] >> vol.Settings.ToneMap.Exposure;
 			}
-
-			deserializedEntity.AttachComponent<PostProcessVolumeComponent>(vol);
 		}
 
 		if (entityNode.has_child("ParticleEmitterComponent"))
 		{
 			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
-			ParticleEmitterComponent pec;
+			auto& pec = deserializedEntity.AttachComponent<ParticleEmitterComponent>();
 			emitterNode["EmissionRate"] >> pec.EmissionRate;
 			Util::DeserializeVector3f(emitterNode["Velocity"], pec.Velocity);
 			Util::DeserializeVector3f(emitterNode["VelocityVariation"], pec.VelocityVariation);
@@ -1019,7 +1009,29 @@ namespace Ember {
 			emitterNode["AlignWithVelocity"] >> pec.AlignWithVelocity;
 			emitterNode["StretchFactor"] >> pec.StretchFactor;
 			emitterNode["IsActive"] >> pec.IsActive;
-			deserializedEntity.AttachComponent<ParticleEmitterComponent>(pec);
+		}
+
+		if (entityNode.has_child("AudioSourceComponent"))
+		{
+			ryml::NodeRef audioNode = entityNode["AudioSourceComponent"];
+			auto& audioSource = deserializedEntity.AttachComponent<AudioSourceComponent>();
+
+			uint64_t audioClipId;
+			audioNode["AudioClipHandle"] >> audioClipId;
+			audioSource.AudioClipHandle = (UUID)audioClipId;
+			audioNode["Volume"] >> audioSource.Properties.Volume;
+			audioNode["Looping"] >> audioSource.Properties.Looping;
+			audioNode["Spatialized"] >> audioSource.Properties.Spatialized;
+			audioNode["MinDistance"] >> audioSource.Properties.MinDistance;
+			audioNode["MaxDistance"] >> audioSource.Properties.MaxDistance;
+		}
+
+		if (entityNode.has_child("AudioListenerComponent"))
+		{
+			ryml::NodeRef listenerNode = entityNode["AudioListenerComponent"];
+			auto& alc = deserializedEntity.AttachComponent<AudioListenerComponent>();
+			listenerNode["IsActive"] >> alc.IsActive;
+			listenerNode["ListenerIndex"] >> alc.ListenerIndex;
 		}
 	}
 

@@ -14,6 +14,7 @@
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
+#include "Ember/ECS/System/AudioSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -148,7 +149,9 @@ namespace Ember {
 					PoolComponent,
 					PoolConfigComponent,
 					ParticleEmitterComponent,
-					PostProcessVolumeComponent
+					PostProcessVolumeComponent,
+					//AudioSourceComponent,
+					AudioListenerComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -156,6 +159,20 @@ namespace Ember {
 				EB_CORE_WARN("CopyScene: CharacterControllerComponent copy mismatch on entity '{}'!", destEntity.GetName());
 			if (!srcEntity.ContainsComponent<CharacterControllerComponent>() && srcEntity.ContainsComponent<ScriptComponent>())
 				EB_CORE_WARN("CopyScene: Entity '{}' has a ScriptComponent but no CharacterControllerComponent in the source scene!", srcEntity.GetName());
+
+			// Special handling for AudioSourceComponent because of the raw ma_sound pointer that must not be copied
+			if (srcEntity.ContainsComponent<AudioSourceComponent>())
+			{
+				auto& srcAudio = srcEntity.GetComponent<AudioSourceComponent>();
+
+				// Attach a fresh, blank component to the duplicated entity
+				AudioSourceComponent newAudioComp;
+				newAudioComp.AudioClipHandle = srcAudio.AudioClipHandle;
+				newAudioComp.Properties = srcAudio.Properties;
+
+				// Use std::move to trigger the new R-Value overload!
+				destEntity.AttachComponent<AudioSourceComponent>(std::move(newAudioComp));
+			}
 
 			// Reset physics runtime pointers so the new scene doesn't alias the source scene's physics objects
 			Utils::ResetPhysicsRuntimeState(destEntity);
@@ -168,6 +185,8 @@ namespace Ember {
 
 	void Scene::OnAttach()
 	{
+		// TODO: Investigate flow of onAttach vs OnRuntimestart and see where these systems should be
+		//  If they should be here do we need to call them on OnDetach?
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<LifecycleSystem>()->OnSceneAttach(this);
@@ -177,6 +196,9 @@ namespace Ember {
 
 	void Scene::OnDetach()
 	{
+		//if (m_IsRuntime)
+		//	OnRuntimeStop();
+
 		EB_CORE_INFO("Scene '{}' detached!", m_Name);
 	}
 
@@ -188,6 +210,7 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
@@ -204,22 +227,20 @@ namespace Ember {
 	{
 		m_IsRuntime = false;
 
-		ScriptEngine::OnRuntimeStop();
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
 
 		m_PoolManager->DestroyPools();
+		ScriptEngine::OnRuntimeStop(this);
 
-		// Reset physics body pointers on all entities before re-initializing the physics world,
-		// since they became dangling when the runtime scene's physics world was created.
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
+
 		auto entityView = m_Registry->Query<IDComponent>();
 		for (auto entityID : entityView)
 		{
 			Entity entity{ entityID, this };
 			Utils::ResetPhysicsRuntimeState(entity);
 		}
-
-		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
-		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 
 		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
 	}
@@ -236,6 +257,7 @@ namespace Ember {
 		systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<AudioSystem>()->OnUpdate(delta, this);
 
 		RemovePendingRemovals();
 	}
@@ -355,9 +377,8 @@ namespace Ember {
 		prefab->SetIsEngineAsset(false);
 
 		// Add prefab component to entity
-		PrefabComponent pc;
+		auto& pc = entity.AttachComponent<PrefabComponent>();
 		pc.PrefabHandle = prefab->GetUUID();
-		entity.AttachComponent(pc);
 
 		return prefab;
 	}
@@ -453,7 +474,9 @@ namespace Ember {
 			PoolComponent,
 			PoolConfigComponent,
 			ParticleEmitterComponent,
-			PostProcessVolumeComponent
+			PostProcessVolumeComponent,
+			//AudioSourceComponent,
+			AudioListenerComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used
@@ -477,6 +500,18 @@ namespace Ember {
 				mesh.AnimatorEntityHandle = newAnimatorUUID;
 		}
 
+		if (entity.ContainsComponent<AudioSourceComponent>())
+		{
+			auto& srcAudio = entity.GetComponent<AudioSourceComponent>();
+
+			// Attach a fresh, blank component to the duplicated entity
+			auto& dstAudio = newEntity.AttachComponent<AudioSourceComponent>();
+
+			// Safely transfer the properties without touching the ma_sound pointer!
+			dstAudio.AudioClipHandle = srcAudio.AudioClipHandle;
+			dstAudio.Properties = srcAudio.Properties;
+		}
+
 		// Reset all runtime-only physics state copied from the source entity.
 		// Without this, the attach hooks saw non-null pointers and skipped creation,
 		// leaving both entities sharing the same physics objects.
@@ -486,8 +521,8 @@ namespace Ember {
 		// FindRigidBodyEntity can correctly climb the parent chain (e.g. a child
 		// collider whose rigid body lives on an ancestor).
 		auto oldRels = entity.GetComponent<RelationshipComponent>();
-		RelationshipComponent newRels;
 
+		auto& newRels = newEntity.AttachComponent<RelationshipComponent>();
 		if (isRoot)
 		{
 			newRels.ParentHandle = oldRels.ParentHandle;
@@ -504,9 +539,6 @@ namespace Ember {
 			newRels.ParentHandle = newParentId;
 		}
 
-		// Attach now (no children yet) so the parent chain is navigable for physics init.
-		newEntity.AttachComponent(newRels);
-
 		// Create fresh, independent physics objects for this entity
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 		physicsSystem->InitializeEntity(newEntity.GetEntityHandle(), this);
@@ -522,9 +554,6 @@ namespace Ember {
 			}
 		}
 
-		// Re-attach with the fully populated children list.
-		newEntity.AttachComponent(newRels);
-
 		return newEntity;
 	}
 
@@ -539,6 +568,16 @@ namespace Ember {
 		return entities;
 	}
 
+	void Scene::ResetAllPhysicsState()
+	{
+		auto entityView = m_Registry->Query<IDComponent>();
+		for (auto entityID : entityView)
+		{
+			Entity entity{ entityID, this };
+			Utils::ResetPhysicsRuntimeState(entity);
+		}
+	}
+
 	void Scene::RemoveEntityFromScene(Entity entity)
 	{
 		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
@@ -551,9 +590,22 @@ namespace Ember {
 			RemoveEntityFromScene(childEntity);
 		}
 
-		// If contains a RigidBodyComponent, remove it from the PhysicsSystem's runtime simulation
+		// If contains a RigidBodyComponent, detach all colliders first (while the body is still alive
+		// so the component-detach hooks can safely call body->removeCollider), then destroy the body.
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
+			// Detach collider components so their hooks run before the body is destroyed
+			if (entity.ContainsComponent<BoxColliderComponent>())
+				entity.DetachComponent<BoxColliderComponent>();
+			if (entity.ContainsComponent<SphereColliderComponent>())
+				entity.DetachComponent<SphereColliderComponent>();
+			if (entity.ContainsComponent<CapsuleColliderComponent>())
+				entity.DetachComponent<CapsuleColliderComponent>();
+			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
+				entity.DetachComponent<ConvexMeshColliderComponent>();
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+				entity.DetachComponent<ConcaveMeshColliderComponent>();
+
 			auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 			auto& rigidBody = entity.GetComponent<RigidBodyComponent>();
 			physicsSystem->RemoveRigidBody(rigidBody);

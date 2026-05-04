@@ -54,6 +54,8 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<CharacterControllerComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<CharacterControllerComponent>()); });
 		if (componentTypeStr == "TextComponent")
 			return guardGet(entity.ContainsComponent<TextComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<TextComponent>()); });
+		if (componentTypeStr == "AudioSourceComponent")
+			return guardGet(entity.ContainsComponent<AudioSourceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AudioSourceComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -103,6 +105,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<CharacterControllerComponent>());
 		if (componentTypeStr == "TextComponent")
 			return sol::make_object(state, entity.ContainsComponent<TextComponent>());
+		if (componentTypeStr == "AudioSourceComponent")
+			return sol::make_object(state, entity.ContainsComponent<AudioSourceComponent>());
 
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -134,9 +138,8 @@ namespace Ember {
 				}
 
 				// Create a new blank component
-				ComponentType newComp;
-				entity.AttachComponent(newComp);
-				return sol::make_object(state, &entity.GetComponent<ComponentType>());
+				auto& newComp = entity.AttachComponent<ComponentType>();
+				return sol::make_object(state, &newComp);
 			};
 
 		// Pass a default-constructed instance to deduce the type
@@ -164,6 +167,7 @@ namespace Ember {
 		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
 		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
 		if (componentTypeStr == "ParticleEmitterComponent") return addAndReturn(ParticleEmitterComponent{});
+		if (componentTypeStr == "AudioSourceComponent") return addAndReturn(AudioSourceComponent{});
 		
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -207,6 +211,7 @@ namespace Ember {
 		if (componentTypeStr == "LifetimeComponent") return entity.DetachComponent<LifetimeComponent>();
 		if (componentTypeStr == "ScriptComponent") return entity.DetachComponent<ScriptComponent>();
 		if (componentTypeStr == "ParticleEmitterComponent") return entity.DetachComponent<ParticleEmitterComponent>();
+		if (componentTypeStr == "AudioSourceComponent") return entity.DetachComponent<AudioSourceComponent>();
 
 		EB_CORE_ASSERT(false, "Failed to detach component. Unknown component type: {}", componentTypeStr);
 	}
@@ -216,7 +221,7 @@ namespace Ember {
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
-			"SetActive", [&state](Entity& e, bool active) { if (active) e.DetachComponent<DisabledComponent>(); else { DisabledComponent dc; e.AttachComponent(dc); }},
+			"SetActive", [&state](Entity& e, bool active) { if (active) e.DetachComponent<DisabledComponent>(); else { e.AttachComponent<DisabledComponent>(); }},
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },

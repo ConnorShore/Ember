@@ -7,6 +7,9 @@ namespace Ember {
 
 	SystemManager::~SystemManager()
 	{
+		for (auto& system : m_Systems)
+			system->OnDetach();
+
 		m_Systems.clear();
 	}
 

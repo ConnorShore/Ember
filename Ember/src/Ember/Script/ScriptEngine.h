@@ -23,7 +23,7 @@ namespace Ember {
 		static void BindAPI(Scene* scene);
 
 		static void OnRuntimeStart(Scene* scene);
-		static void OnRuntimeStop();
+		static void OnRuntimeStop(Scene* scene);
 
 		static sol::state& GetState();
 		static std::vector<ScriptProperty> GetScriptProperties(const SharedPtr<Script>& scriptAsset);

@@ -221,6 +221,11 @@ namespace Ember {
 
 	void PhysicsSystem::OnSceneAttach(Scene* scene)
 	{
+		// Reset all stale physics pointers on the scene's entities before destroying the old
+		// RP3D world. Without this, ConnectAndRetroact skips body creation for any entity
+		// whose rb.Body is non-null (i.e. pointing into the about-to-be-destroyed world).
+		scene->ResetAllPhysicsState();
+
 		RestartPhysicsWorld();
 
 		auto& registry = scene->GetRegistry();

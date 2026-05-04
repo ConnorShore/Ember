@@ -204,9 +204,18 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		m_Context.ActiveScene = m_EditorScene; // Discard the runtime scene and revert back to the editor scene
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStop();
+
+		m_Context.ActiveScene = m_EditorScene;
+		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+
+		// OnSceneAttach was called for the runtime scene copy during OnRuntimeStart, which
+		// called RestartPhysicsWorld and wiped the RP3D world that the editor scene's bodies
+		// lived in. Re-attach the physics system to the editor scene so it rebuilds a fresh
+		// world and recreates all editor bodies via ConnectAndRetroact.
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(m_EditorScene.Ptr());
+
 		m_Context.CurrentSceneState = SceneState::Edit;
 	}
 
@@ -854,7 +863,7 @@ namespace Ember {
 		// If the outline was queued for removal (e.g. from deselection), cancel it instead of double-adding
 		bool removed = CancelComponentRemoval<OutlineComponent>(entity);
 		if (!removed)
-			entity.AttachComponent(m_OutlineEntitySelectedComp);
+			entity.AttachComponent<OutlineComponent>(m_OutlineEntitySelectedComp);
 	}
 
 	void EditorLayer::NewProject()

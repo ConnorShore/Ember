@@ -130,9 +130,7 @@ namespace Ember {
 	void Pool::Return(EntityID entity)
 	{
 		Entity e(entity, m_SceneHandle);
-
-		DisabledComponent dc;
-		e.AttachComponent<DisabledComponent>(dc);
+		e.AttachComponent<DisabledComponent>();
 
 		m_AvailableEntities.push(entity);
 	}
@@ -150,12 +148,8 @@ namespace Ember {
 	EntityID Pool::CreatePooledEntity(const SharedPtr<Prefab>& prefab)
 	{
 		auto entity = m_SceneHandle->InstantiatePrefab(prefab, nullptr);
-
-		DisabledComponent dc;
-		entity.AttachComponent(dc);
-
-		PoolComponent pc(m_Id);
-		entity.AttachComponent(pc);
+		entity.AttachComponent<DisabledComponent>();
+		entity.AttachComponent<PoolComponent>(m_Id);
 
 		return entity;
 	}
@@ -163,11 +157,16 @@ namespace Ember {
 #ifdef EB_DEBUG
 	void Pool::Resize(uint32_t newSize)
 	{
+		if (newSize <= m_Capacity)
+			return;
+
 		auto prefab = m_SceneHandle->GetAsset<Prefab>(m_PrefabUUID);
 
-		m_AvailableEntities = std::queue<EntityID>();
-		for (size_t i = 0; i < newSize; i++)
+		uint32_t elementsToAdd = newSize - m_Capacity;
+		for (uint32_t i = 0; i < elementsToAdd; i++)
+		{
 			m_AvailableEntities.push(CreatePooledEntity(prefab));
+		}
 
 		m_Capacity = newSize;
 	}

@@ -8,6 +8,7 @@ namespace Ember {
 		BindPhysicsComponents(state);
 		BindRenderingComponents(state);
 		BindLightingAndCameraComponents(state);
+		BindAudioComponents(state);
 		BindMiscComponents(state);
 	}
 }

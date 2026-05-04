@@ -15,6 +15,8 @@
 #include "Ember/Physics/CollisionFilter.h"
 #include "Ember/Physics/ColliderUserData.h"
 #include "Ember/Asset/PhysicsMaterial.h"
+#include "Ember/Audio/AudioSource.h"
+#include "Ember/Audio/AudioSoundProperties.h"
 
 #include <sol/sol.hpp>
 
@@ -685,6 +687,34 @@ namespace Ember {
 
 		PostProcessVolumeComponent() = default;
 		PostProcessVolumeComponent(const PostProcessVolumeComponent&) = default;
+	};
+
+	struct AudioSourceComponent
+	{
+		AudioSource Source;
+		AudioSoundProperties Properties;
+		UUID AudioClipHandle = Constants::InvalidUUID;
+
+		AudioSourceComponent() = default;
+
+		// Ban copies
+		AudioSourceComponent(const AudioSourceComponent&) = delete;
+		AudioSourceComponent& operator=(const AudioSourceComponent&) = delete;
+
+		// Use default move semantics
+		AudioSourceComponent(AudioSourceComponent&&) = default;
+		AudioSourceComponent& operator=(AudioSourceComponent&&) = default;
+	};
+
+	struct SingleSoundComponent
+	{
+		// Leave empty
+	};
+
+	struct AudioListenerComponent
+	{
+		uint32_t ListenerIndex = 0;
+		bool IsActive = true;
 	};
 
 }

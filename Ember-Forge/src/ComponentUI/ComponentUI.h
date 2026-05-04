@@ -46,8 +46,7 @@ namespace Ember {
 				return;
 			}
 
-			T comp = {};
-			m_Context->ActiveScene->AttachComponent(entity, comp);
+			m_Context->ActiveScene->AttachComponent<T>(entity);
 		}
 
 	protected:

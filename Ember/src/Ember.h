@@ -63,6 +63,7 @@
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
+#include "Ember/ECS/System/AudioSystem.h"
 
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"
@@ -80,6 +81,7 @@
 #include "Ember/Asset/PhysicsMaterial.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
+#include "Ember/Asset/AudioClip.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 
