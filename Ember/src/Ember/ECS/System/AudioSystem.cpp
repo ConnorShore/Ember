@@ -58,7 +58,29 @@ namespace Ember {
 
 	void AudioSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
-		// Update audio sources
+		UpdateAudioSources(scene);
+		UpdateAudioListeners(scene);
+	}
+
+	void AudioSystem::RestartEngine()
+	{
+		if (m_AudioEngine != nullptr) 
+		{
+			ma_engine_stop(m_AudioEngine.Ptr());
+			ma_engine_uninit(m_AudioEngine.Ptr());
+			m_AudioEngine = nullptr;
+		}
+
+		ma_result result;
+		result = ma_engine_init(NULL, m_AudioEngine.Ptr());
+		if (result != MA_SUCCESS) {
+			EB_CORE_ERROR("Failed to initialize audio engine.");
+			return;
+		}
+	}
+
+	void AudioSystem::UpdateAudioSources(Scene* scene)
+	{
 		auto view = scene->GetRegistry().ActiveQuery<AudioSourceComponent>();
 		for (auto entityId : view)
 		{
@@ -66,10 +88,12 @@ namespace Ember {
 
 			auto& audioComp = entity.GetComponent<AudioSourceComponent>();
 			auto& source = audioComp.Source;
+			auto& transform = entity.GetComponent<TransformComponent>();
 
 			// Check if single sound source
 			if (entity.ContainsComponent<SingleSoundComponent>())
 			{
+				// Remove finished sounds
 				if (!audioComp.Source.IsPlaying && !audioComp.Source.IsQueued)
 				{
 					scene->RemoveEntity(entity);
@@ -80,53 +104,25 @@ namespace Ember {
 			// Set sound location if it's spatialized
 			if (audioComp.Properties.Spatialized)
 			{
-				// Explicitly enable spatialization (or disable it if they unchecked the box!)
-				ma_sound_set_spatialization_enabled(source.GetSound(), MA_TRUE);
-
-				// Set 3D position of sound
 				auto& transform = entity.GetComponent<TransformComponent>();
 				ma_sound_set_position(source.GetSound(), transform.Position.x, transform.Position.y, transform.Position.z);
 
-				// Set min and max distance (Ensure MinDistance is > 0.0f !)
-				ma_sound_set_min_distance(source.GetSound(), audioComp.Properties.MinDistance);
-				ma_sound_set_max_distance(source.GetSound(), audioComp.Properties.MaxDistance);
-			}
-			else
-			{
-				// If it's a UI click or background music, turn spatialization OFF
-				ma_sound_set_spatialization_enabled(source.GetSound(), MA_FALSE);
 			}
 
+			// Start sound if queue'd and not yet playing
 			if (source.IsQueued && !source.IsPlaying)
 			{
-				if (audioComp.Properties.Spatialized)
-				{
-					// Set 3D position of sound
-					auto& transform = entity.GetComponent<TransformComponent>();
-					ma_sound_set_position(source.GetSound(), transform.Position.x, transform.Position.y, transform.Position.z);
-
-					// Set min and max distance
-					ma_sound_set_min_distance(source.GetSound(), audioComp.Properties.MinDistance);
-					ma_sound_set_max_distance(source.GetSound(), audioComp.Properties.MaxDistance);
-				}
-
-				// Set volume and pitch
-				ma_sound_set_volume(source.GetSound(), audioComp.Properties.Volume);
-				ma_sound_set_pitch(source.GetSound(), audioComp.Properties.Pitch);
-
-				// Rewind the sound to the beginning just in case it was played previously
-				ma_sound_seek_to_pcm_frame(source.GetSound(), 0);
-
-				// Tell the audio thread to start
-				ma_sound_start(source.GetSound());
+				StartSound(audioComp, transform.Position);
 
 				// Update our state machine
 				source.IsPlaying = true;
 				source.IsQueued = false;
 			}
 		}
+	}
 
-		// Update audio listeners
+	void AudioSystem::UpdateAudioListeners(Scene* scene)
+	{
 		auto listenerView = scene->GetRegistry().ActiveQuery<AudioListenerComponent, TransformComponent>();
 		for (auto entity : listenerView)
 		{
@@ -146,21 +142,41 @@ namespace Ember {
 		}
 	}
 
-	void AudioSystem::RestartEngine()
+	void AudioSystem::StartSound(AudioSourceComponent& sourceComp, const Vector3f& position)
 	{
-		if (m_AudioEngine != nullptr) 
+		auto& source = sourceComp.Source;
+
+		// Set spatial properties
+		if (sourceComp.Properties.Spatialized)
 		{
-			ma_engine_stop(m_AudioEngine.Ptr());
-			ma_engine_uninit(m_AudioEngine.Ptr());
-			m_AudioEngine = nullptr;
+			// Explicitly enable spatialization (or disable it if they unchecked the box!)
+			ma_sound_set_spatialization_enabled(source.GetSound(), MA_TRUE);
+
+			// Set 3D position of sound
+			ma_sound_set_position(source.GetSound(), position.x, position.y, position.z);
+
+			// Set min and max distance
+			ma_sound_set_min_distance(source.GetSound(), sourceComp.Properties.MinDistance);
+			ma_sound_set_max_distance(source.GetSound(), sourceComp.Properties.MaxDistance);
+		}
+		else
+		{
+			ma_sound_set_spatialization_enabled(source.GetSound(), MA_FALSE);
 		}
 
-		ma_result result;
-		result = ma_engine_init(NULL, m_AudioEngine.Ptr());
-		if (result != MA_SUCCESS) {
-			EB_CORE_ERROR("Failed to initialize audio engine.");
-			return;
-		}
+		// Set looping
+		if (sourceComp.Properties.Looping)
+			ma_sound_set_looping(source.GetSound(), MA_TRUE);
+
+		// Set volume and pitch
+		ma_sound_set_volume(source.GetSound(), sourceComp.Properties.Volume);
+		ma_sound_set_pitch(source.GetSound(), sourceComp.Properties.Pitch);
+
+		// Rewind the sound to the beginning just in case it was played previously
+		ma_sound_seek_to_pcm_frame(source.GetSound(), 0);
+
+		// Tell the audio thread to start
+		ma_sound_start(source.GetSound());
 	}
 
 	void AudioSystem::PlaySound(Scene* scene, const std::string& soundName, AudioSoundProperties& props, const Vector3f& position /* = Vector3f(0.0f) */)

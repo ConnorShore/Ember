@@ -9,6 +9,8 @@
 
 namespace Ember {
 
+	struct AudioSourceComponent;
+
 	class AudioSystem : public System
 	{
 	public:
@@ -27,6 +29,9 @@ namespace Ember {
 
 	private:
 		void RestartEngine();
+		void UpdateAudioSources(Scene* scene);
+		void UpdateAudioListeners(Scene* scene);
+		void StartSound(AudioSourceComponent& sourceComp, const Vector3f& position);
 
 	private:
 		ScopedPtr<ma_engine> m_AudioEngine;

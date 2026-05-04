@@ -35,17 +35,22 @@ namespace Ember {
 				UI::PropertyGrid::Float("Pitch", component.Properties.Pitch, 0.01f);
 				UI::PropertyGrid::Checkbox("Looping", component.Properties.Looping);
 				UI::PropertyGrid::Checkbox("Spatialized", component.Properties.Spatialized);
-				if (UI::PropertyGrid::Float("Min Distance", component.Properties.MinDistance, 0.1f, 0.01f))
+
+				// Spatialization properties
+				if (component.Properties.Spatialized)
 				{
-					// Ensure MinDistance is > 0.0f to avoid issues with ma_sound_set_min_distance
-					if (component.Properties.MinDistance <= 0.0f)
-						component.Properties.MinDistance = 0.01f;
-				}
-				if (UI::PropertyGrid::Float("Max Distance", component.Properties.MaxDistance, 0.1f, 0.01f))
-				{
-					// Ensure MaxDistance is greater than MinDistance
-					if (component.Properties.MaxDistance <= component.Properties.MinDistance)
-						component.Properties.MaxDistance = component.Properties.MinDistance + 0.01f;
+					if (UI::PropertyGrid::Float("Min Distance", component.Properties.MinDistance, 0.1f, 0.01f))
+					{
+						// Ensure MinDistance is > 0.0f to avoid issues with ma_sound_set_min_distance
+						if (component.Properties.MinDistance <= 0.0f)
+							component.Properties.MinDistance = 0.01f;
+					}
+					if (UI::PropertyGrid::Float("Max Distance", component.Properties.MaxDistance, 0.1f, 0.01f))
+					{
+						// Ensure MaxDistance is greater than MinDistance
+						if (component.Properties.MaxDistance <= component.Properties.MinDistance)
+							component.Properties.MaxDistance = component.Properties.MinDistance + 0.01f;
+					}
 				}
 
 				UI::PropertyGrid::End();
