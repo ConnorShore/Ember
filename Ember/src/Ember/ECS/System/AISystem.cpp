@@ -6,6 +6,16 @@
 
 namespace Ember {
 
+	// Define some colors
+	Vector4f unselectedColor(0.5f, 0.0f, 0.5f, 0.5f); // Semi-transparent purple for unselected paths
+	Vector4f selectedColor(1.0f, 0.0f, 1.0f, 1.0f);   // Magenta for highlighted paths
+	Vector4f waypointColor(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan for individual waypoints
+
+	// Normalize a segment pair so {A,B} and {B,A} map to the same key
+	auto makeSegmentKey = [](UUID a, UUID b) -> std::pair<UUID, UUID> {
+		return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
+	};
+
 	AISystem::AISystem()
 	{
 
@@ -35,54 +45,54 @@ namespace Ember {
 	{
 		auto& registry = scene->GetRegistry();
 
-		// Define some colors
-		Vector4f unselectedColor(0.5f, 0.0f, 0.5f, 0.5f); // Semi-transparent purple for unselected paths
-		Vector4f selectedColor(1.0f, 0.0f, 1.0f, 1.0f);   // Magenta for highlighted paths
-		Vector4f waypointColor(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan for individual waypoints
-
 		// We will track which paths should be highlighted
+		std::vector<EntityID> pathsToHighlight = RenderPreviewEntityPaths(scene);
+		RenderAllPathsDebug(scene, pathsToHighlight);
+	}
+
+	std::vector<EntityID> AISystem::RenderPreviewEntityPaths(Scene* scene)
+	{
+		if (m_PreviewEntity == Constants::Entities::InvalidEntityID)
+			return {};
+
+		auto& registry = scene->GetRegistry();
 		std::vector<EntityID> pathsToHighlight;
 
-		// 1. Determine what is currently selected
-		if (m_PreviewEntity != Constants::Entities::InvalidEntityID)
+		// Determine what is currently selected
+		Entity selectedEntity(m_PreviewEntity, scene);
+
+		// If the AI itself is selected, flag its path to be highlighted
+		if (selectedEntity.ContainsComponent<AIPathComponent>())
+			pathsToHighlight.push_back(selectedEntity.GetEntityHandle());
+
+		// If a Waypoint is selected, find EVERY path that uses this waypoint and highlight them!
+		if (selectedEntity.ContainsComponent<WaypointComponent>())
 		{
-			Entity selectedEntity(m_PreviewEntity, scene);
+			// Draw a sphere around the selected waypoint
+			auto& wpTransform = selectedEntity.GetComponent<TransformComponent>();
+			auto& wpComponent = selectedEntity.GetComponent<WaypointComponent>();
+			// Assuming you have a DrawSphere or DrawBox in your DebugRenderer
+			DebugRenderer::DrawOctahedron(wpTransform.GetWorldTransform()[3], 0.5f, waypointColor);
 
-			// If the AI itself is selected, flag its path to be highlighted
-			if (selectedEntity.ContainsComponent<AIPathComponent>())
-				pathsToHighlight.push_back(selectedEntity.GetEntityHandle());
-
-			// If a Waypoint is selected, find EVERY path that uses this waypoint and highlight them!
-			if (selectedEntity.ContainsComponent<WaypointComponent>())
+			if (wpComponent.ShowPaths)
 			{
-				// Draw a sphere around the selected waypoint
-				auto& wpTransform = selectedEntity.GetComponent<TransformComponent>();
-				auto& wpComponent = selectedEntity.GetComponent<WaypointComponent>();
-				// Assuming you have a DrawSphere or DrawBox in your DebugRenderer
-				DebugRenderer::DrawOctahedron(wpTransform.GetWorldTransform()[3], 0.5f, waypointColor);
-
-				if (wpComponent.ShowPaths)
+				auto view = registry.ActiveQuery<AIPathComponent>();
+				for (EntityID e : view)
 				{
-					auto view = registry.ActiveQuery<AIPathComponent>();
-					for (EntityID e : view)
-					{
-						auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-						// If this path contains the selected waypoint, highlight the whole path
-						if (std::find(pathComp.Waypoints.begin(), pathComp.Waypoints.end(), selectedEntity.GetUUID()) != pathComp.Waypoints.end())
-							pathsToHighlight.push_back(e);
-					}
+					auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+					// If this path contains the selected waypoint, highlight the whole path
+					if (std::find(pathComp.Waypoints.begin(), pathComp.Waypoints.end(), selectedEntity.GetUUID()) != pathComp.Waypoints.end())
+						pathsToHighlight.push_back(e);
 				}
 			}
 		}
 
-		// Draw all paths
-		struct PairUUIDHash {
-			std::size_t operator()(const std::pair<UUID, UUID>& p) const {
-				std::size_t h1 = std::hash<UUID>{}(p.first);
-				std::size_t h2 = std::hash<UUID>{}(p.second);
-				return h1 ^ (h2 << 32) ^ (h2 >> 32);
-			}
-		};
+		return pathsToHighlight;
+	}
+
+	void AISystem::RenderAllPathsDebug(Scene* scene, const std::vector<EntityID>& pathsToHighlight)
+	{
+		auto& registry = scene->GetRegistry();
 
 		// Normalize a segment pair so {A,B} and {B,A} map to the same key
 		auto makeSegmentKey = [](UUID a, UUID b) -> std::pair<UUID, UUID> {
@@ -90,9 +100,21 @@ namespace Ember {
 		};
 
 		// Pre-collect all segments belonging to highlighted paths so they can be drawn last (on top)
-		struct HighlightedSegment { Vector3f start, end; };
 		std::vector<HighlightedSegment> highlightedSegments;
 		std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> highlightedSegmentKeys;
+		CalculateHighlightedSegments(scene, pathsToHighlight, highlightedSegments, highlightedSegmentKeys);
+
+		// Pass 1: Draw unhighlighted segments, skipping any that overlap a highlighted segment (only if debug rendering is enabled)
+		RenderUnhighlightedSegments(scene, pathsToHighlight, highlightedSegmentKeys);
+
+		// Pass 2: Draw highlighted segments and their waypoint markers last, so they appear on top
+		// We draw these all the time even if debug rendering is disabled, since they represent the selected path(s)
+		RenderHighlightedSegments(scene, highlightedSegments);
+	}
+
+	void AISystem::CalculateHighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, std::vector<HighlightedSegment>& highlightedSegments, std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys)
+	{
+		auto& registry = scene->GetRegistry();
 
 		auto view = registry.ActiveQuery<AIPathComponent>();
 		for (EntityID e : view)
@@ -130,53 +152,59 @@ namespace Ember {
 					highlightedSegments.push_back({ startPos, endPos });
 			}
 		}
+	}
 
-		// Pass 1: Draw unhighlighted segments, skipping any that overlap a highlighted segment (only if debug rendering is enabled)
-		if (m_DebugRenderSettings.Enabled)
+	void AISystem::RenderUnhighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, const std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys)
+	{
+		if (!m_DebugRenderSettings.Enabled)
+			return;
+
+		auto& registry = scene->GetRegistry();
+
+		std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> drawnSegments;
+		auto view = registry.ActiveQuery<AIPathComponent>();
+		for (EntityID e : view)
 		{
-			std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> drawnSegments;
-			for (EntityID e : view)
+			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+			if (pathComp.Waypoints.size() < 2)
+				continue;
+
+			if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) != pathsToHighlight.end())
+				continue;
+
+			for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
 			{
-				auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-				if (pathComp.Waypoints.size() < 2)
+				UUID currentWP = pathComp.Waypoints[i];
+				UUID nextWP = Constants::InvalidUUID;
+
+				if (i < pathComp.Waypoints.size() - 1)
+					nextWP = pathComp.Waypoints[i + 1];
+				else if (pathComp.Loop)
+					nextWP = pathComp.Waypoints[0];
+
+				if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
 					continue;
 
-				if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) != pathsToHighlight.end())
+				auto key = makeSegmentKey(currentWP, nextWP);
+
+				// Skip if already drawn or if a highlighted path owns this segment
+				if (!drawnSegments.insert(key).second || highlightedSegmentKeys.count(key))
 					continue;
 
-				for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
-				{
-					UUID currentWP = pathComp.Waypoints[i];
-					UUID nextWP = Constants::InvalidUUID;
+				Entity currentWPEntity = scene->GetEntity(currentWP);
+				Entity nextWPEntity = scene->GetEntity(nextWP);
+				if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
+					continue;
 
-					if (i < pathComp.Waypoints.size() - 1)
-						nextWP = pathComp.Waypoints[i + 1];
-					else if (pathComp.Loop)
-						nextWP = pathComp.Waypoints[0];
-
-					if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
-						continue;
-
-					auto key = makeSegmentKey(currentWP, nextWP);
-
-					// Skip if already drawn or if a highlighted path owns this segment
-					if (!drawnSegments.insert(key).second || highlightedSegmentKeys.count(key))
-						continue;
-
-					Entity currentWPEntity = scene->GetEntity(currentWP);
-					Entity nextWPEntity = scene->GetEntity(nextWP);
-					if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
-						continue;
-
-					Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-					Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-					DebugRenderer::DrawLine(startPos, endPos, unselectedColor);
-				}
+				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+				DebugRenderer::DrawLine(startPos, endPos, unselectedColor);
 			}
 		}
+	}
 
-		// Pass 2: Draw highlighted segments and their waypoint markers last, so they appear on top
-		// We draw these all the time even if debug rendering is disabled, since they represent the selected path(s)
+	void AISystem::RenderHighlightedSegments(Scene* scene, const std::vector<HighlightedSegment>& highlightedSegments)
+	{
 		for (uint32_t i = 0; i < highlightedSegments.size(); i++)
 		{
 			auto& seg = highlightedSegments[i];

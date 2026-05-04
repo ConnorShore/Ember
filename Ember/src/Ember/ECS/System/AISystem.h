@@ -3,6 +3,8 @@
 #include "System.h"
 #include "Ember/Scene/Entity.h"
 
+#include <vector>
+
 namespace Ember {
 
 	struct AIDebugRenderSettings
@@ -28,7 +30,27 @@ namespace Ember {
 		AIDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 	private:
+		struct HighlightedSegment 
+		{ 
+			Vector3f start, end; 
+		};
 
+		struct PairUUIDHash {
+			std::size_t operator()(const std::pair<UUID, UUID>& p) const {
+				std::size_t h1 = std::hash<UUID>{}(p.first);
+				std::size_t h2 = std::hash<UUID>{}(p.second);
+				return h1 ^ (h2 << 32) ^ (h2 >> 32);
+			}
+		};
+
+	private:
+		std::vector<EntityID> RenderPreviewEntityPaths(Scene* scene);
+		void RenderAllPathsDebug(Scene* scene, const std::vector<EntityID>& pathsToHighlight);
+		void CalculateHighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, std::vector<HighlightedSegment>& highlightedSegments, std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys);
+		void RenderUnhighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, const std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys);
+		void RenderHighlightedSegments(Scene* scene, const std::vector<HighlightedSegment>& highlightedSegments);
+
+	private:
 		AIDebugRenderSettings m_DebugRenderSettings;
 		EntityID m_PreviewEntity = Constants::Entities::InvalidEntityID;
 	};
