@@ -296,6 +296,14 @@ namespace Ember {
 						ImGui::MenuItem("Draw AABBs", nullptr, &debugSettings.DrawColliderAxes);
 					}
 				}
+
+				auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
+				if (aiSystem)
+				{
+					auto& debugSettings = aiSystem->GetDebugRenderSettings();
+					ImGui::MenuItem("Draw AI Paths", nullptr, &debugSettings.Enabled);
+				}
+
 				ImGui::EndMenu();
 			}
 
@@ -605,12 +613,12 @@ namespace Ember {
 		{
 			auto& selected = m_Context.SelectedEntity;
 			bool hasPreview = selected != Constants::Entities::InvalidEntityID 
-				&& selected.ContainsComponent<AIPathComponent>();
+				&& (selected.ContainsComponent<AIPathComponent>() || selected.ContainsComponent<WaypointComponent>());
 
 			if (hasPreview)
-				aiSystem->SetPathPreviewEntity(selected.GetEntityHandle());
+				aiSystem->SetPreviewEntity(selected.GetEntityHandle());
 			else
-				aiSystem->ClearPathPreviewEntity();
+				aiSystem->ClearPreviewEntity();
 		}
 	}
 

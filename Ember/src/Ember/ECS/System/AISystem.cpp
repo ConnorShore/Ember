@@ -3,6 +3,7 @@
 
 #include "Ember/Render/DebugRenderer.h"
 
+
 namespace Ember {
 
 	AISystem::AISystem()
@@ -35,97 +36,156 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 
 		// Define some colors
-		Vector4f unselectedColor(0.2f, 0.2f, 0.2f, 0.5f); // Faint dark grey
-		Vector4f selectedColor(1.0f, 1.0f, 0.0f, 1.0f);   // Bright yellow
+		Vector4f unselectedColor(0.5f, 0.0f, 0.5f, 0.5f); // Semi-transparent purple for unselected paths
+		Vector4f selectedColor(1.0f, 0.0f, 1.0f, 1.0f);   // Magenta for highlighted paths
 		Vector4f waypointColor(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan for individual waypoints
 
 		// We will track which paths should be highlighted
 		std::vector<EntityID> pathsToHighlight;
 
 		// 1. Determine what is currently selected
-		if (m_PreviewPathEntity != Constants::Entities::InvalidEntityID)
+		if (m_PreviewEntity != Constants::Entities::InvalidEntityID)
 		{
-			Entity selectedEntity(m_PreviewPathEntity, scene);
+			Entity selectedEntity(m_PreviewEntity, scene);
 
 			// If the AI itself is selected, flag its path to be highlighted
 			if (selectedEntity.ContainsComponent<AIPathComponent>())
-			{
 				pathsToHighlight.push_back(selectedEntity.GetEntityHandle());
-			}
 
 			// If a Waypoint is selected, find EVERY path that uses this waypoint and highlight them!
 			if (selectedEntity.ContainsComponent<WaypointComponent>())
 			{
 				// Draw a sphere around the selected waypoint
 				auto& wpTransform = selectedEntity.GetComponent<TransformComponent>();
+				auto& wpComponent = selectedEntity.GetComponent<WaypointComponent>();
 				// Assuming you have a DrawSphere or DrawBox in your DebugRenderer
 				DebugRenderer::DrawOctahedron(wpTransform.GetWorldTransform()[3], 0.5f, waypointColor);
 
-				auto view = registry.ActiveQuery<AIPathComponent>();
-				for (EntityID e : view)
+				if (wpComponent.ShowPaths)
 				{
-					auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-					// If this path contains the selected waypoint, highlight the whole path
-					if (std::find(pathComp.Waypoints.begin(), pathComp.Waypoints.end(), selectedEntity.GetUUID()) != pathComp.Waypoints.end())
+					auto view = registry.ActiveQuery<AIPathComponent>();
+					for (EntityID e : view)
 					{
-						pathsToHighlight.push_back(e);
+						auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+						// If this path contains the selected waypoint, highlight the whole path
+						if (std::find(pathComp.Waypoints.begin(), pathComp.Waypoints.end(), selectedEntity.GetUUID()) != pathComp.Waypoints.end())
+							pathsToHighlight.push_back(e);
 					}
 				}
 			}
 		}
 
-		// 2. Draw all paths!
+		// Draw all paths
+		struct PairUUIDHash {
+			std::size_t operator()(const std::pair<UUID, UUID>& p) const {
+				std::size_t h1 = std::hash<UUID>{}(p.first);
+				std::size_t h2 = std::hash<UUID>{}(p.second);
+				return h1 ^ (h2 << 32) ^ (h2 >> 32);
+			}
+		};
+
+		// Normalize a segment pair so {A,B} and {B,A} map to the same key
+		auto makeSegmentKey = [](UUID a, UUID b) -> std::pair<UUID, UUID> {
+			return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
+		};
+
+		// Pre-collect all segments belonging to highlighted paths so they can be drawn last (on top)
+		struct HighlightedSegment { Vector3f start, end; };
+		std::vector<HighlightedSegment> highlightedSegments;
+		std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> highlightedSegmentKeys;
+
 		auto view = registry.ActiveQuery<AIPathComponent>();
 		for (EntityID e : view)
 		{
 			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-
-			// Skip empty paths
 			if (pathComp.Waypoints.size() < 2)
 				continue;
 
-			// Check if this path was flagged for highlighting
-			bool isHighlighted = std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) != pathsToHighlight.end();
-			Vector4f lineColor = isHighlighted ? selectedColor : unselectedColor;
+			if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) == pathsToHighlight.end())
+				continue;
 
-			// Draw the lines connecting the waypoints
 			for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
 			{
 				UUID currentWP = pathComp.Waypoints[i];
 				UUID nextWP = Constants::InvalidUUID;
 
-				// Handle looping vs non-looping paths
 				if (i < pathComp.Waypoints.size() - 1)
-				{
 					nextWP = pathComp.Waypoints[i + 1];
-				}
-				else if (pathComp.Loop) // If it loops, connect the last point back to the first
-				{
+				else if (pathComp.Loop)
 					nextWP = pathComp.Waypoints[0];
-				}
 
-				// If we have a valid segment, draw it
-				if (nextWP != Constants::InvalidUUID)
+				if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
+					continue;
+
+				Entity currentWPEntity = scene->GetEntity(currentWP);
+				Entity nextWPEntity = scene->GetEntity(nextWP);
+				if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
+					continue;
+
+				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+
+				auto key = makeSegmentKey(currentWP, nextWP);
+				if (highlightedSegmentKeys.insert(key).second)
+					highlightedSegments.push_back({ startPos, endPos });
+			}
+		}
+
+		// Pass 1: Draw unhighlighted segments, skipping any that overlap a highlighted segment (only if debug rendering is enabled)
+		if (m_DebugRenderSettings.Enabled)
+		{
+			std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> drawnSegments;
+			for (EntityID e : view)
+			{
+				auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+				if (pathComp.Waypoints.size() < 2)
+					continue;
+
+				if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) != pathsToHighlight.end())
+					continue;
+
+				for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
 				{
+					UUID currentWP = pathComp.Waypoints[i];
+					UUID nextWP = Constants::InvalidUUID;
+
+					if (i < pathComp.Waypoints.size() - 1)
+						nextWP = pathComp.Waypoints[i + 1];
+					else if (pathComp.Loop)
+						nextWP = pathComp.Waypoints[0];
+
+					if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
+						continue;
+
+					auto key = makeSegmentKey(currentWP, nextWP);
+
+					// Skip if already drawn or if a highlighted path owns this segment
+					if (!drawnSegments.insert(key).second || highlightedSegmentKeys.count(key))
+						continue;
+
 					Entity currentWPEntity = scene->GetEntity(currentWP);
 					Entity nextWPEntity = scene->GetEntity(nextWP);
+					if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
+						continue;
 
-					if (currentWPEntity.ContainsComponent<TransformComponent>() &&
-						nextWPEntity.ContainsComponent<TransformComponent>())
-					{
-						Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-						Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-
-						DebugRenderer::DrawLine(startPos, endPos, lineColor);
-
-						// If highlighted, draw spheres at the connection points
-						if (isHighlighted)
-						{
-							 DebugRenderer::DrawOctahedron(startPos, 0.3f, selectedColor);
-						}
-					}
+					Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+					Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+					DebugRenderer::DrawLine(startPos, endPos, unselectedColor);
 				}
 			}
+		}
+
+		// Pass 2: Draw highlighted segments and their waypoint markers last, so they appear on top
+		// We draw these all the time even if debug rendering is disabled, since they represent the selected path(s)
+		for (uint32_t i = 0; i < highlightedSegments.size(); i++)
+		{
+			auto& seg = highlightedSegments[i];
+			DebugRenderer::DrawLine(seg.start, seg.end, selectedColor);
+			DebugRenderer::DrawOctahedron(seg.start, 0.5f, selectedColor);
+
+			// Draw end node if last node
+			if (i == highlightedSegments.size() - 1)
+				DebugRenderer::DrawOctahedron(seg.end, 0.5f, selectedColor);
 		}
 	}
 

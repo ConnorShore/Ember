@@ -461,7 +461,7 @@ namespace Ember {
 			auto& waypoint = entity.GetComponent<WaypointComponent>();
 			ryml::NodeRef waypointNode = entityNode["WaypointComponent"];
 			waypointNode |= ryml::MAP;
-			// It can stay empty as its just a tag component
+			waypointNode["ShowPaths"] << waypoint.ShowPaths;
 		}
 		if (entity.ContainsComponent<AIPathComponent>())
 		{
@@ -1061,8 +1061,9 @@ namespace Ember {
 
 		if (entityNode.has_child("WaypointComponent"))
 		{
-			// No props just attach the component to mark the entity as a waypoint
-			deserializedEntity.AttachComponent<WaypointComponent>();
+			ryml::NodeRef waypointNode = entityNode["WaypointComponent"];
+			auto& wpc = deserializedEntity.AttachComponent<WaypointComponent>();
+			waypointNode["ShowPaths"] >> wpc.ShowPaths;
 		}
 
 		if (entityNode.has_child("AIPathComponent"))

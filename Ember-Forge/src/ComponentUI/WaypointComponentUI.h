@@ -14,7 +14,11 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(WaypointComponent& component) override
 		{
-			// Nothing to render since this is just a tag component
+			if (UI::PropertyGrid::Begin("WaypointProps"))
+			{
+				UI::PropertyGrid::Checkbox("Show Paths", component.ShowPaths);
+				UI::PropertyGrid::End();
+			}
 		}
 	};
 

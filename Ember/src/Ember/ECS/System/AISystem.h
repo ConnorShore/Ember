@@ -22,12 +22,15 @@ namespace Ember {
 
 		void OnEditorUpdate(TimeStep delta, Scene* scene);
 
-		void SetPathPreviewEntity(EntityID entityID) { m_PreviewPathEntity = entityID; }
-		void ClearPathPreviewEntity() { m_PreviewPathEntity = Constants::Entities::InvalidEntityID; }
+		void SetPreviewEntity(EntityID entityID) { m_PreviewEntity = entityID; }
+		void ClearPreviewEntity() { m_PreviewEntity = Constants::Entities::InvalidEntityID; }
+
+		AIDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
+
 	private:
 
 		AIDebugRenderSettings m_DebugRenderSettings;
-		EntityID m_PreviewPathEntity = Constants::Entities::InvalidEntityID;
+		EntityID m_PreviewEntity = Constants::Entities::InvalidEntityID;
 	};
 
 }

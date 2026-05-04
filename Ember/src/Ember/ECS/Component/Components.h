@@ -719,6 +719,8 @@ namespace Ember {
 
 	struct WaypointComponent
 	{
+		// Editor only prop to show all connected paths when waypoint entity is selected
+		bool ShowPaths = true;
 	};
 
 	struct AIPathComponent
