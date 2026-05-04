@@ -717,4 +717,22 @@ namespace Ember {
 		bool IsActive = true;
 	};
 
+	struct WaypointComponent
+	{
+	};
+
+	struct AIPathComponent
+	{
+		std::vector<UUID> Waypoints;	// Entity UUIDs of the waypoints to follow in order
+		float Speed = 1.0f;
+		bool Loop = true;
+		float ArrivalTolerance = 0.1f; // How close to a waypoint before we consider it "reached"
+
+		// Runtime only (not serialized)
+		uint32_t CurrentWaypointIndex = 0;
+
+		AIPathComponent() = default;
+		AIPathComponent(const AIPathComponent&) = default;
+	};
+
 }

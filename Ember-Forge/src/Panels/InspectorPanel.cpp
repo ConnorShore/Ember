@@ -25,6 +25,8 @@
 #include "ComponentUI/PostProcessVolumeComponentUI.h"
 #include "ComponentUI/AudioSourceComponentUI.h"
 #include "ComponentUI/AudioListenerComponentUI.h"
+#include "ComponentUI/WaypointComponentUI.h"
+#include "ComponentUI/AIPathComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -87,6 +89,10 @@ namespace Ember {
 
 		// --- SCRIPTING ---
 		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
+
+		// --- AI ---
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIPathComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
 
 		// --- NONE (These don't appear in the Add Component menu but are still rendered in the inspector if attached to an entity) ---
 		m_ComponentUIs[Category::None].emplace_back(ScopedPtr<PostProcessVolumeComponentUI>::Create(m_Context));

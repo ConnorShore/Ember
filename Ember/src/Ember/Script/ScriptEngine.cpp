@@ -50,7 +50,7 @@ namespace Ember {
 		BindInput(*s_LuaState);
 		BindMath(*s_LuaState);
 		BindPhysics(*s_LuaState, scene);
-		BindAllComponents(*s_LuaState);
+		BindAllComponents(*s_LuaState, scene);
 		BindAssets(*s_LuaState);
 		BindAudio(*s_LuaState, scene);
 	}

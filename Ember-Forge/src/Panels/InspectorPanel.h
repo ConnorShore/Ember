@@ -22,7 +22,8 @@ namespace Ember {
 			Physics,
 			Audio,
 			Animation,
-			Scripting
+			Scripting,
+			AI
 		};
 
 	public:

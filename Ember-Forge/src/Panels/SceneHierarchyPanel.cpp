@@ -147,6 +147,25 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("AI"))
+			{
+				if (ImGui::MenuItem("AI Character Controller"))
+				{
+					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+
+				if (ImGui::MenuItem("Waypoint"))
+				{
+					auto entity = Presets::CreateWaypoint(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("VFX"))
 			{
 				if (ImGui::MenuItem("Post Process Volume"))
@@ -286,9 +305,21 @@ namespace Ember {
 		}
 
 		// Select if click
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Left) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
+		// Right-click selects immediately so the context menu opens on the correct entity
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
 		{
 			SetSelectedEntity(entity);
+		}
+
+		// Left-click selects ONLY on mouse release, AND only if the mouse wasn't dragged.
+		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		{
+			// If the user dragged the mouse (to the inspector or to another entity), 
+			// this threshold check prevents the selection from changing!
+			if (!ImGui::IsMouseDragPastThreshold(ImGuiMouseButton_Left))
+			{
+				SetSelectedEntity(entity);
+			}
 		}
 
 		// Double-Click Rename Trigger

@@ -456,6 +456,31 @@ namespace Ember {
 			listenerNode["IsActive"] << audioListener.IsActive;
 			listenerNode["ListenerIndex"] << audioListener.ListenerIndex;
 		}
+		if (entity.ContainsComponent<WaypointComponent>())
+		{
+			auto& waypoint = entity.GetComponent<WaypointComponent>();
+			ryml::NodeRef waypointNode = entityNode["WaypointComponent"];
+			waypointNode |= ryml::MAP;
+			// It can stay empty as its just a tag component
+		}
+		if (entity.ContainsComponent<AIPathComponent>())
+		{
+			auto& aiPath = entity.GetComponent<AIPathComponent>();
+			ryml::NodeRef pathNode = entityNode["AIPathComponent"];
+			pathNode |= ryml::MAP;
+			
+			std::vector<UUID> waypointIDs = aiPath.Waypoints;
+			ryml::NodeRef waypointsNode = pathNode["Waypoints"];
+			waypointsNode |= ryml::SEQ;
+			for (const auto& id : waypointIDs)
+			{
+				waypointsNode.append_child() << (uint64_t)id;
+			}
+
+			pathNode["Loop"] << aiPath.Loop;
+			pathNode["Speed"] << aiPath.Speed;
+			pathNode["ArrivalTolerance"] << aiPath.ArrivalTolerance;
+		}
 	}
 
 	// =========================================================================
@@ -1032,6 +1057,32 @@ namespace Ember {
 			auto& alc = deserializedEntity.AttachComponent<AudioListenerComponent>();
 			listenerNode["IsActive"] >> alc.IsActive;
 			listenerNode["ListenerIndex"] >> alc.ListenerIndex;
+		}
+
+		if (entityNode.has_child("WaypointComponent"))
+		{
+			// No props just attach the component to mark the entity as a waypoint
+			deserializedEntity.AttachComponent<WaypointComponent>();
+		}
+
+		if (entityNode.has_child("AIPathComponent"))
+		{
+			ryml::NodeRef pathNode = entityNode["AIPathComponent"];
+			auto& aiPath = deserializedEntity.AttachComponent<AIPathComponent>();
+			if (pathNode.has_child("Waypoints"))
+			{
+				for (ryml::NodeRef waypointNode : pathNode["Waypoints"].children())
+				{
+					uint64_t waypointVal;
+					waypointNode >> waypointVal;
+					UUID waypointID = getRemappedUUID(waypointVal);
+					if (waypointID != Constants::InvalidUUID)
+						aiPath.Waypoints.push_back(waypointID);
+				}
+			}
+			pathNode["Loop"] >> aiPath.Loop;
+			pathNode["Speed"] >> aiPath.Speed;
+			pathNode["ArrivalTolerance"] >> aiPath.ArrivalTolerance;
 		}
 	}
 

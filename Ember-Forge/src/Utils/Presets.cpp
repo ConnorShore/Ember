@@ -23,6 +23,34 @@ namespace Ember {
 		return newEntity;
 	}
 
+	Entity Presets::CreateAICharacterController(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("AI_Character_Controller");
+
+		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
+		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<CharacterControllerComponent>();
+		newEntity.AttachComponent<AIPathComponent>();
+
+		auto& rbc = newEntity.AttachComponent<RigidBodyComponent>();
+		rbc.Type = RigidBodyComponent::BodyType::Kinematic;
+
+		auto& colC = newEntity.AttachComponent<CapsuleColliderComponent>();
+		colC.AttachedBody = rbc.Body;
+
+		// TODO: Add basic script for AI pathfinding movement between waypoints
+
+		return newEntity;
+	}
+
+	Entity Presets::CreateWaypoint(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("Waypoint");
+		newEntity.AttachComponent<WaypointComponent>();
+
+		return newEntity;
+	}
+
 	Entity Presets::CreateCube(const SharedPtr<Scene>& scene)
 	{
 		Entity newEntity = scene->AddEntity("Cube");

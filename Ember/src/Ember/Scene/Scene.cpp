@@ -150,8 +150,9 @@ namespace Ember {
 					PoolConfigComponent,
 					ParticleEmitterComponent,
 					PostProcessVolumeComponent,
-					//AudioSourceComponent,
-					AudioListenerComponent
+					AudioListenerComponent,
+					WaypointComponent,
+					AIPathComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -475,8 +476,9 @@ namespace Ember {
 			PoolConfigComponent,
 			ParticleEmitterComponent,
 			PostProcessVolumeComponent,
-			//AudioSourceComponent,
-			AudioListenerComponent
+			AudioListenerComponent,
+			WaypointComponent,
+			AIPathComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

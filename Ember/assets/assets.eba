@@ -24,6 +24,10 @@ Assets:
     Name: NewScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
   - Type: Script
+    UUID: 7020172594093713301
+    Name: EnemyPatrol
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\EnemyPatrol.lua'
+  - Type: Script
     UUID: 16587777693882004979
     Name: NewScript(1)
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Bullet.lua'
@@ -32,13 +36,13 @@ Assets:
     Name: BulletSpawnScript
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
   - Type: Script
-    UUID: 16541504524255684090
-    Name: Powerup
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
-  - Type: Script
     UUID: 10670335993004288059
     Name: CampFire
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
+  - Type: Script
+    UUID: 16541504524255684090
+    Name: Powerup
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
   - Type: Material
     UUID: 220883245630972619
     Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
@@ -75,6 +79,18 @@ Assets:
     UUID: 10658966581415315879
     Name: Cube_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 16074913669969596126
+    Name: Ground (Copy)_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 18176665314075073363
+    Name: Dirt_Ground (Copy)_StandardGeometry_Clone_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Dirt_Ground (Copy)_StandardGeometry_Clone_Clone.ebmat'
+  - Type: Material
+    UUID: 11437394191263865454
+    Name: AI_Character_Controller_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\AI_Character_Controller_StandardGeometry_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor
