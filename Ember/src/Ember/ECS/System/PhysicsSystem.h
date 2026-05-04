@@ -30,7 +30,7 @@ namespace Ember {
 		uint32_t VelocitySolverIterations = 10;
 	};
 
-	struct DebugRenderSettings
+	struct PhysicsDebugRenderSettings
 	{
 		bool Enabled = false;
 
@@ -69,7 +69,7 @@ namespace Ember {
 
 		void RestartPhysicsWorld();
 
-		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
+		PhysicsDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 		// When the selected entity has a collider with PreviewCollider enabled, that collider
 		// is drawn in the viewport without needing the global physics debug draw toggle.
@@ -97,7 +97,7 @@ namespace Ember {
 		PhysicsEventListener m_PhysicsEventListener;
 
 		PhysicsSettings m_Settings;
-		DebugRenderSettings m_DebugRenderSettings;
+		PhysicsDebugRenderSettings m_DebugRenderSettings;
 
 		EntityID m_PostProcessDebugEntity = Constants::Entities::InvalidEntityID;
 

@@ -23,6 +23,7 @@
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
+#include <Ember/ECS/System/AISystem.h>
 #include <Ember/Physics/Raycast.h>
 
 #include <random>
@@ -577,6 +578,8 @@ namespace Ember {
 
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 
+		// TODO: Move these system debug draw code blocks to own methods
+
 		// Automatically show debug draw lines for the selected entity if any of its colliders
 		// have PreviewCollider enabled, without requiring the global physics debug draw toggle.
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
@@ -594,6 +597,20 @@ namespace Ember {
 				physicsSystem->SetColliderPreviewEntity(selected.GetEntityHandle());
 			else
 				physicsSystem->ClearColliderPreviewEntity();
+		}
+
+		// Set AI preview path entity
+		auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
+		if (aiSystem)
+		{
+			auto& selected = m_Context.SelectedEntity;
+			bool hasPreview = selected != Constants::Entities::InvalidEntityID 
+				&& selected.ContainsComponent<AIPathComponent>();
+
+			if (hasPreview)
+				aiSystem->SetPathPreviewEntity(selected.GetEntityHandle());
+			else
+				aiSystem->ClearPathPreviewEntity();
 		}
 	}
 

@@ -36,6 +36,7 @@ namespace Ember {
 	public:
 		static void DrawLine(const Vector3f& pointA, const Vector3f& pointB, const Vector4f& color);
 		static void DrawTriangle(const Vector3f& pointA, const Vector3f& pointB, const Vector3f& pointC, const Vector4f& color);
+		static void DrawOctahedron(const Vector3f& center, float size, const Vector4f& color);
 
 		// Added getter for the RenderSystem
 		static const std::vector<DebugVertex>& GetVertices();

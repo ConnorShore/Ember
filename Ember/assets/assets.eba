@@ -91,6 +91,10 @@ Assets:
     UUID: 11437394191263865454
     Name: AI_Character_Controller_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\AI_Character_Controller_StandardGeometry_Clone.ebmat'
+  - Type: Material
+    UUID: 4084057428377107041
+    Name: AI_Enemy_AI_Character_Controller_StandardGeometry_Clone_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\AI_Enemy_AI_Character_Controller_StandardGeometry_Clone_Clone.ebmat'
   - Type: PhysicsMaterial
     UUID: 18418573740781660937
     Name: RoughFloor
