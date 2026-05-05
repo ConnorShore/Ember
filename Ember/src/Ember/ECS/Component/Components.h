@@ -744,6 +744,8 @@ namespace Ember {
 		UUID GridEntity = Constants::InvalidUUID;
 		float RecalculateInterval = 0.0f;
 
+		bool Dirty = false; // Set to true when the agent needs to update its mode
+
 		AIAgentComponent() = default;
 		AIAgentComponent(const AIAgentComponent&) = default;
 	};

@@ -11,20 +11,36 @@ namespace Ember {
 	{
 	public:
 		AIAgentComponentUI(EditorContext* context) : ComponentUI(context) { m_CanRemove = false; }
-		inline const char* GetName() const override { return "A.I. Agent Component"; }
+		inline const char* GetName() const override { return "AI Agent Component"; }
 
 	protected:
 		inline void RenderComponentImpl(AIAgentComponent& component) override
 		{
 			// Dropdown to select mode
+			if (UI::PropertyGrid::Begin("AIAgentMode"))
+			{
+				if (UI::PropertyGrid::BeginComboBox("Path Mode", (component.Mode == AIAgentComponent::PathMode::Manual) ? "Manual" : "Dynamic"))
+				{
+					if (UI::PropertyGrid::ComboBoxItem("Manual", component.Mode == AIAgentComponent::PathMode::Manual))
+					{
+						component.Mode = AIAgentComponent::PathMode::Manual;
+						component.Dirty = true;
+					}
+					if (UI::PropertyGrid::ComboBoxItem("Dynamic", component.Mode == AIAgentComponent::PathMode::Dynamic))
+					{
+						component.Mode = AIAgentComponent::PathMode::Dynamic;
+						component.Dirty = true;
+					}
+					UI::PropertyGrid::EndComboBox();
+				}
+				UI::PropertyGrid::End();
+			}
+
+			// Render different properties based on the selected mode
 			if (component.Mode == AIAgentComponent::PathMode::Manual)
-			{
 				RenderManualComponentProps(component);
-			}
 			else if (component.Mode == AIAgentComponent::PathMode::Dynamic)
-			{
 				RenderDynamicComponentProps(component);
-			}
 		}
 
 	private:

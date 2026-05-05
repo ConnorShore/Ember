@@ -9,7 +9,7 @@ namespace Ember {
 	{
 	public:
 		AIPathComponentUI(EditorContext* context) : ComponentUI(context) { m_CanRemove = false; }
-		inline const char* GetName() const override { return "A.I. Path Component"; }
+		inline const char* GetName() const override { return "AI Path Component"; }
 
 	protected:
 		inline void RenderComponentImpl(AIPathComponent& component) override

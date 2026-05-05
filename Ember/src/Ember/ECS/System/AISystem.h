@@ -22,10 +22,15 @@ namespace Ember {
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 		void OnDetach() override;
 
+		void OnSceneAttach(Scene* scene) override;
+		void OnSceneDetach(Scene* scene) override;
+
 		void OnEditorUpdate(TimeStep delta, Scene* scene);
 
 		void SetPreviewEntity(EntityID entityID) { m_PreviewEntity = entityID; }
 		void ClearPreviewEntity() { m_PreviewEntity = Constants::Entities::InvalidEntityID; }
+
+		void ApplyAgentModeSettings(Entity agentEntity, Scene* scene);
 
 		AIDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 

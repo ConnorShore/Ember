@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "ScriptBindComponents.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/System/AISystem.h"
 
 namespace Ember {
 
@@ -31,7 +32,15 @@ namespace Ember {
 		);
 
 		state.new_usertype<AIAgentComponent>("AIAgentComponent",
-			"Mode", &AIAgentComponent::Mode,
+			"Mode", sol::property(
+				[](AIAgentComponent& c) {
+					return c.Mode;
+				},
+				[scene](AIAgentComponent& c, AIAgentComponent::PathMode mode) {
+					c.Mode = mode;
+					c.Dirty = true;
+				}
+			),
 			"Waypoints", &AIAgentComponent::ManualWaypoints,
 			"Loop", &AIAgentComponent::Loop,
 			"TargetEntity", &AIAgentComponent::TargetEntity,

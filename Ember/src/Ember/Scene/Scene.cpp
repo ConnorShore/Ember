@@ -215,6 +215,7 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AISystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();

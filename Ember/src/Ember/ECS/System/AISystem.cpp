@@ -8,12 +8,12 @@
 namespace Ember {
 
 	// Define some colors
-	Vector4f unselectedColor(0.5f, 0.0f, 0.5f, 0.5f); // Semi-transparent purple for unselected paths
-	Vector4f selectedColor(1.0f, 0.0f, 1.0f, 1.0f);   // Magenta for highlighted paths
-	Vector4f waypointColor(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan for individual waypoints
+	constexpr Vector4f UnselectedColor(0.5f, 0.0f, 0.5f, 0.5f); // Semi-transparent purple for unselected paths
+	constexpr Vector4f SelectedColor(1.0f, 0.0f, 1.0f, 1.0f);   // Magenta for highlighted paths
+	constexpr Vector4f WaypointColor(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan for individual waypoints
 
 	// Normalize a segment pair so {A,B} and {B,A} map to the same key
-	auto makeSegmentKey = [](UUID a, UUID b) -> std::pair<UUID, UUID> {
+	auto MakeSegmentKey = [](UUID a, UUID b) -> std::pair<UUID, UUID> {
 		return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
 	};
 
@@ -39,32 +39,16 @@ namespace Ember {
 		for (EntityID e : view)
 		{
 			auto& agentComp = registry.GetComponent<AIAgentComponent>(e);
-			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+			if (agentComp.Dirty)
+				ApplyAgentModeSettings(Entity(e, scene), scene);
+
 			if (agentComp.Mode == AIAgentComponent::PathMode::Dynamic)
 			{
 				// Run A* when the interval timer elapses
 			}
 			else if (agentComp.Mode == AIAgentComponent::PathMode::Manual)
 			{
-				// TODO: Make it so this only happens when the path is dirty 
-				// (edited in editor or a waypoint moves) instead of every frame
-				std::vector<Vector3f> waypoints;
-				waypoints.reserve(agentComp.ManualWaypoints.size());
-
-				for (UUID wpUUID : agentComp.ManualWaypoints)
-				{
-					if (wpUUID == Constants::InvalidUUID)
-						continue;
-					Entity wpEntity = scene->GetEntity(wpUUID);
-					if (wpEntity.GetUUID() == Constants::InvalidUUID)
-						continue;
-					if (!wpEntity.ContainsComponent<TransformComponent>())
-						continue;
-					auto& wpTransform = wpEntity.GetComponent<TransformComponent>();
-					waypoints.push_back(wpTransform.GetWorldTransform()[3]);
-				}
-
-				pathComp.Waypoints = waypoints;
+				// Nothing to update for manual paths
 			}
 			else
 			{
@@ -78,6 +62,21 @@ namespace Ember {
 
 	}
 
+	void AISystem::OnSceneAttach(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+		
+		// Set agent mode settings when the scene begins
+		auto view = registry.ActiveQuery<AIAgentComponent>();
+		for (EntityID e : view)
+			ApplyAgentModeSettings(Entity(e, scene), scene);
+	}
+
+	void AISystem::OnSceneDetach(Scene* scene)
+	{
+
+	}
+
 	void AISystem::OnEditorUpdate(TimeStep delta, Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
@@ -87,6 +86,45 @@ namespace Ember {
 
 		RenderAllPathsDebug(scene, pathsToHighlight);
 		RenderNavigationGridsDebug(scene);
+	}
+
+	void AISystem::ApplyAgentModeSettings(Entity agentEntity, Scene* scene)
+	{
+		EB_CORE_ASSERT(agentEntity.ContainsComponent<AIAgentComponent>() && agentEntity.ContainsComponent<AIPathComponent>(), 
+			"Entity must have both AIAgentComponent and AIPathComponent");
+
+		auto& agentComp = agentEntity.GetComponent<AIAgentComponent>();
+		auto& pathComp = agentEntity.GetComponent<AIPathComponent>();
+
+		if (agentComp.Mode == AIAgentComponent::PathMode::Dynamic)
+		{
+			// Clear manual waypoints and path since we're switching to dynamic
+			pathComp.Waypoints.clear();
+			return;
+		}
+
+		if (agentComp.Mode == AIAgentComponent::PathMode::Manual)
+		{
+			// When switching to manual, we could either keep the existing path as-is or clear it. Here we choose to clear it.
+			pathComp.Waypoints.clear();
+			pathComp.Waypoints.reserve(agentComp.ManualWaypoints.size());
+
+			for (UUID wpUUID : agentComp.ManualWaypoints)
+			{
+				if (wpUUID == Constants::InvalidUUID)
+					continue;
+				Entity wpEntity = scene->GetEntity(wpUUID);
+				if (wpEntity.GetUUID() == Constants::InvalidUUID)
+					continue;
+				if (!wpEntity.ContainsComponent<TransformComponent>())
+					continue;
+				auto& wpTransform = wpEntity.GetComponent<TransformComponent>();
+				pathComp.Waypoints.push_back(wpTransform.GetWorldTransform()[3]);
+			}
+			return;
+		}
+
+		EB_CORE_ASSERT(false, "Unhandled AIAgent PathMode!");
 	}
 
 	std::vector<EntityID> AISystem::RenderPreviewEntityPaths(Scene* scene)
@@ -111,7 +149,7 @@ namespace Ember {
 			auto& wpTransform = selectedEntity.GetComponent<TransformComponent>();
 			auto& wpComponent = selectedEntity.GetComponent<WaypointComponent>();
 			// Assuming you have a DrawSphere or DrawBox in your DebugRenderer
-			DebugRenderer::DrawOctahedron(wpTransform.GetWorldTransform()[3], 0.5f, waypointColor);
+			DebugRenderer::DrawOctahedron(wpTransform.GetWorldTransform()[3], 0.5f, WaypointColor);
 
 			if (wpComponent.ShowPaths)
 			{
@@ -226,7 +264,7 @@ namespace Ember {
 				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
 				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
 
-				auto key = makeSegmentKey(currentWP, nextWP);
+				auto key = MakeSegmentKey(currentWP, nextWP);
 				if (highlightedSegmentKeys.insert(key).second)
 					highlightedSegments.push_back({ startPos, endPos });
 			}
@@ -267,7 +305,7 @@ namespace Ember {
 				if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
 					continue;
 
-				auto key = makeSegmentKey(currentWP, nextWP);
+				auto key = MakeSegmentKey(currentWP, nextWP);
 
 				// Skip if already drawn or if a highlighted path owns this segment
 				if (!drawnSegments.insert(key).second || highlightedSegmentKeys.count(key))
@@ -280,7 +318,7 @@ namespace Ember {
 
 				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
 				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-				DebugRenderer::DrawLine(startPos, endPos, unselectedColor);
+				DebugRenderer::DrawLine(startPos, endPos, UnselectedColor);
 			}
 		}
 	}
@@ -290,12 +328,12 @@ namespace Ember {
 		for (uint32_t i = 0; i < highlightedSegments.size(); i++)
 		{
 			auto& seg = highlightedSegments[i];
-			DebugRenderer::DrawLine(seg.start, seg.end, selectedColor);
-			DebugRenderer::DrawOctahedron(seg.start, 0.5f, selectedColor);
+			DebugRenderer::DrawLine(seg.start, seg.end, SelectedColor);
+			DebugRenderer::DrawOctahedron(seg.start, 0.5f, SelectedColor);
 
 			// Draw end node if last node
 			if (i == highlightedSegments.size() - 1)
-				DebugRenderer::DrawOctahedron(seg.end, 0.5f, selectedColor);
+				DebugRenderer::DrawOctahedron(seg.end, 0.5f, SelectedColor);
 		}
 	}
 
