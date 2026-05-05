@@ -613,7 +613,7 @@ namespace Ember {
 		{
 			auto& selected = m_Context.SelectedEntity;
 			bool hasPreview = selected != Constants::Entities::InvalidEntityID 
-				&& (selected.ContainsComponent<AIPathComponent>() || selected.ContainsComponent<WaypointComponent>());
+				&& (selected.ContainsComponent<AIAgentComponent>() || selected.ContainsComponent<WaypointComponent>() || selected.ContainsComponent<NavigationGridComponent>());
 
 			if (hasPreview)
 				aiSystem->SetPreviewEntity(selected.GetEntityHandle());

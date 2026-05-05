@@ -22,14 +22,7 @@ namespace Ember {
 					return {};
 				}
 
-				UUID wpID = c.Waypoints[c.CurrentWaypointIndex];
-				Entity wpEntity = scene->GetEntity(wpID);
-				if (wpEntity == Constants::Entities::InvalidEntityID)
-					return {};
-				if (!wpEntity.ContainsComponent<TransformComponent>())
-					return {};
-				auto& transform = wpEntity.GetComponent<TransformComponent>();
-				return transform.GetWorldTransform()[3]; // Return the translation part of the world transform as the waypoint position
+				return c.Waypoints[c.CurrentWaypointIndex];
 			}
 		);
 	}

@@ -693,13 +693,9 @@ namespace Ember {
 
 	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
-		if (!entity.ContainsComponent<RigidBodyComponent>())
-		{
-			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
-			return {};
-		}
-
-		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+		RigidBodyComponent* rb = nullptr;
+		if (entity != Constants::Entities::InvalidEntityID)
+			rb = &entity.GetComponent<RigidBodyComponent>();
 
 		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 halfExtents(scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f);
@@ -725,7 +721,8 @@ namespace Ember {
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
-		OverlapTestCallback callback(rb.Body, dummyBody);
+		reactphysics3d::RigidBody* rbBody = rb ? rb->Body : nullptr;
+		OverlapTestCallback callback(rbBody, dummyBody);
 		m_PhysicsWorld->testOverlap(dummyBody, callback);
 
 		// Clean up the memory instantly
@@ -738,13 +735,9 @@ namespace Ember {
 
 	OverlapTestData PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
-		if (!entity.ContainsComponent<RigidBodyComponent>())
-		{
-			EB_CORE_ASSERT(false, "TestCollision called on an entity without a RigidBodyComponent!");
-			return {};
-		}
-
-		RigidBodyComponent& rb = entity.GetComponent<RigidBodyComponent>();
+		RigidBodyComponent* rb = nullptr;
+		if (entity != Constants::Entities::InvalidEntityID)
+			rb = &entity.GetComponent<RigidBodyComponent>();
 
 		// Create a temporary invisible KINEMATIC RigidBody at the target position
 		rp3d::Vector3 pos(position.x, position.y, position.z);
@@ -765,7 +758,8 @@ namespace Ember {
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
-		OverlapTestCallback callback(rb.Body, dummyBody);
+		reactphysics3d::RigidBody* rbBody = rb ? rb->Body : nullptr;
+		OverlapTestCallback callback(rbBody, dummyBody);
 		m_PhysicsWorld->testOverlap(dummyBody, callback);
 
 		// Clean up the memory instantly

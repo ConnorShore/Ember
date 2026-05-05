@@ -469,17 +469,41 @@ namespace Ember {
 			ryml::NodeRef pathNode = entityNode["AIPathComponent"];
 			pathNode |= ryml::MAP;
 			
-			std::vector<UUID> waypointIDs = aiPath.Waypoints;
 			ryml::NodeRef waypointsNode = pathNode["Waypoints"];
 			waypointsNode |= ryml::SEQ;
-			for (const auto& id : waypointIDs)
+			for (const auto& wp : aiPath.Waypoints)
 			{
-				waypointsNode.append_child() << (uint64_t)id;
+				Util::SerializeVector3f(waypointsNode.append_child(), wp);
 			}
 
 			pathNode["Loop"] << aiPath.Loop;
 			pathNode["Speed"] << aiPath.Speed;
 			pathNode["ArrivalTolerance"] << aiPath.ArrivalTolerance;
+		}
+		if (entity.ContainsComponent<NavigationGridComponent>())
+		{
+			auto& navGrid = entity.GetComponent<NavigationGridComponent>();
+			ryml::NodeRef navGridNode = entityNode["NavigationGridComponent"];
+			navGridNode |= ryml::MAP;
+			navGridNode["NodeSpacing"] << navGrid.NodeSpacing;
+			navGridNode["Generated"] << navGrid.Generated;
+
+			ryml::NodeRef gridRef = navGridNode["Grid"];
+			gridRef |= ryml::SEQ; // 1. Change this to a Sequence (Array)
+
+			for (const auto& column : navGrid.Grid)
+			{
+				for (const auto& node : column)
+				{
+					ryml::NodeRef nodeRef = gridRef.append_child();
+					nodeRef |= ryml::MAP; // 2. Tell ryml that this array element is an Object
+
+					Util::SerializeVector3f(nodeRef["Position"], node.WorldPosition);
+					nodeRef["IsWalkable"] << node.IsWalkable;
+					nodeRef["GridX"] << node.GridX;
+					nodeRef["GridY"] << node.GridY;
+				}
+			}
 		}
 	}
 
@@ -1072,18 +1096,47 @@ namespace Ember {
 			auto& aiPath = deserializedEntity.AttachComponent<AIPathComponent>();
 			if (pathNode.has_child("Waypoints"))
 			{
-				for (ryml::NodeRef waypointNode : pathNode["Waypoints"].children())
+				for (ryml::NodeRef wpNode : pathNode["Waypoints"].children())
 				{
-					uint64_t waypointVal;
-					waypointNode >> waypointVal;
-					UUID waypointID = getRemappedUUID(waypointVal);
-					if (waypointID != Constants::InvalidUUID)
-						aiPath.Waypoints.push_back(waypointID);
+					Vector3f wp;
+					Util::DeserializeVector3f(wpNode, wp);
+					aiPath.Waypoints.push_back(wp);
 				}
 			}
 			pathNode["Loop"] >> aiPath.Loop;
 			pathNode["Speed"] >> aiPath.Speed;
 			pathNode["ArrivalTolerance"] >> aiPath.ArrivalTolerance;
+		}
+
+		if (entityNode.has_child("NavigationGridComponent"))
+		{
+			ryml::NodeRef navGridNode = entityNode["NavigationGridComponent"];
+			auto& navGrid = deserializedEntity.AttachComponent<NavigationGridComponent>();
+			navGridNode["NodeSpacing"] >> navGrid.NodeSpacing;
+			navGridNode["Generated"] >> navGrid.Generated;
+			if (navGridNode.has_child("Grid"))
+			{
+				std::vector<std::vector<NavNode>> grid;
+				for (ryml::NodeRef nodeRef : navGridNode["Grid"].children())
+				{
+					Vector3f pos;
+					Util::DeserializeVector3f(nodeRef["Position"], pos);
+					bool isWalkable;
+					nodeRef["IsWalkable"] >> isWalkable;
+					int gridX, gridY;
+					nodeRef["GridX"] >> gridX;
+					nodeRef["GridY"] >> gridY;
+
+					if (grid.size() <= gridX)
+						grid.resize(gridX + 1);
+					if (grid[gridX].size() <= gridY)
+						grid[gridX].resize(gridY + 1);
+
+					grid[gridX][gridY] = { pos, gridX, gridY, isWalkable };
+				}
+
+				navGrid.Grid = grid;
+			}
 		}
 	}
 

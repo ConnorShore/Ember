@@ -21,6 +21,38 @@ namespace Ember {
 		s_Vertices.push_back({ pointA, color });
 	}
 
+	void DebugRenderer::DrawCube(const Vector3f& center, const Vector3f& scale, const Vector4f& color)
+	{
+		Vector3f halfScale = scale * 0.5f;
+
+		// Define the 8 corners of the cube
+		Vector3f vertices[8] = {
+			center + Vector3f(-halfScale.x, -halfScale.y, -halfScale.z), // 0: left-bottom-back
+			center + Vector3f(halfScale.x, -halfScale.y, -halfScale.z), // 1: right-bottom-back
+			center + Vector3f(halfScale.x,  halfScale.y, -halfScale.z), // 2: right-top-back
+			center + Vector3f(-halfScale.x,  halfScale.y, -halfScale.z), // 3: left-top-back
+			center + Vector3f(-halfScale.x, -halfScale.y,  halfScale.z), // 4: left-bottom-front
+			center + Vector3f(halfScale.x, -halfScale.y,  halfScale.z), // 5: right-bottom-front
+			center + Vector3f(halfScale.x,  halfScale.y,  halfScale.z), // 6: right-top-front
+			center + Vector3f(-halfScale.x,  halfScale.y,  halfScale.z)  // 7: left-top-front
+		};
+
+		// Draw exactly 12 lines
+		for (int i = 0; i < 4; ++i)
+		{
+			int next = (i + 1) % 4;
+
+			// 4 Back face edges
+			DrawLine(vertices[i], vertices[next], color);
+
+			// 4 Front face edges
+			DrawLine(vertices[i + 4], vertices[next + 4], color);
+
+			// 4 Connecting depth edges
+			DrawLine(vertices[i], vertices[i + 4], color);
+		}
+	}
+
 	void DebugRenderer::DrawOctahedron(const Vector3f& center, float size, const Vector4f& color)
 	{
 		// 1. Define the 6 vertices based on the center point and size (radius)

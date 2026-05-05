@@ -30,6 +30,8 @@ namespace Ember {
 		AIDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 	private:
+		// TODO: Split AIDebugRender stuff to its own class eventually and reserve this system for ai logic only
+		//  Should do this with physics system as well at some point
 		struct HighlightedSegment 
 		{ 
 			Vector3f start, end; 
@@ -45,6 +47,8 @@ namespace Ember {
 
 	private:
 		std::vector<EntityID> RenderPreviewEntityPaths(Scene* scene);
+
+		void RenderNavigationGridsDebug(Scene* scene);
 		void RenderAllPathsDebug(Scene* scene, const std::vector<EntityID>& pathsToHighlight);
 		void CalculateHighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, std::vector<HighlightedSegment>& highlightedSegments, std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys);
 		void RenderUnhighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, const std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys);

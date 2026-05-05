@@ -27,6 +27,7 @@
 #include "ComponentUI/AudioListenerComponentUI.h"
 #include "ComponentUI/WaypointComponentUI.h"
 #include "ComponentUI/AIPathComponentUI.h"
+#include "ComponentUI/NavigationGridComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -91,6 +92,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
 
 		// --- AI ---
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIPathComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
 

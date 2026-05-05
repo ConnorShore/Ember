@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "AISystem.h"
 
+#include "Ember/AI/NavigationGrid.h"
 #include "Ember/Render/DebugRenderer.h"
 
 
@@ -47,7 +48,9 @@ namespace Ember {
 
 		// We will track which paths should be highlighted
 		std::vector<EntityID> pathsToHighlight = RenderPreviewEntityPaths(scene);
+
 		RenderAllPathsDebug(scene, pathsToHighlight);
+		RenderNavigationGridsDebug(scene);
 	}
 
 	std::vector<EntityID> AISystem::RenderPreviewEntityPaths(Scene* scene)
@@ -76,18 +79,54 @@ namespace Ember {
 
 			if (wpComponent.ShowPaths)
 			{
-				auto view = registry.ActiveQuery<AIPathComponent>();
+				auto view = registry.ActiveQuery<AIAgentComponent>();
 				for (EntityID e : view)
 				{
-					auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+					auto& agentComp = registry.GetComponent<AIAgentComponent>(e);
 					// If this path contains the selected waypoint, highlight the whole path
-					if (std::find(pathComp.Waypoints.begin(), pathComp.Waypoints.end(), selectedEntity.GetUUID()) != pathComp.Waypoints.end())
+					if (std::find(agentComp.ManualWaypoints.begin(), agentComp.ManualWaypoints.end(), selectedEntity.GetUUID()) != agentComp.ManualWaypoints.end())
 						pathsToHighlight.push_back(e);
 				}
 			}
 		}
 
 		return pathsToHighlight;
+	}
+
+	void AISystem::RenderNavigationGridsDebug(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		bool previewEntityIsSelected = false;
+		if (m_PreviewEntity != Constants::Entities::InvalidEntityID)
+		{
+			Entity previewEnt(m_PreviewEntity, scene);
+			if (previewEnt.ContainsComponent<NavigationGridComponent>())
+				previewEntityIsSelected = true;
+		}
+
+		if (m_DebugRenderSettings.Enabled)
+		{
+			auto view = registry.ActiveQuery<NavigationGridComponent, TransformComponent>();
+			for (EntityID e : view)
+			{
+				auto [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(e);
+
+				if (navGrid.Generated)
+					NavigationGrid::RenderGeneratedGrid(navGrid.Grid, previewEntityIsSelected);
+				else
+					NavigationGrid::RenderUngeneratedGrid(transform.WorldTransform[3], transform.Scale.x, transform.Scale.z, previewEntityIsSelected);
+			}
+		}
+		else if (previewEntityIsSelected)
+		{
+			auto [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(m_PreviewEntity);
+
+			if (navGrid.Generated)
+				NavigationGrid::RenderGeneratedGrid(navGrid.Grid, true);
+			else
+				NavigationGrid::RenderUngeneratedGrid(transform.WorldTransform[3], transform.Scale.x, transform.Scale.z, true);
+		}
 	}
 
 	void AISystem::RenderAllPathsDebug(Scene* scene, const std::vector<EntityID>& pathsToHighlight)
@@ -112,29 +151,33 @@ namespace Ember {
 		RenderHighlightedSegments(scene, highlightedSegments);
 	}
 
+	// TODO: See if can minimize code duplication below by merging with RenderUnhighlightedSegments
 	void AISystem::CalculateHighlightedSegments(Scene* scene, const std::vector<EntityID>& pathsToHighlight, std::vector<HighlightedSegment>& highlightedSegments, std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash>& highlightedSegmentKeys)
 	{
 		auto& registry = scene->GetRegistry();
 
-		auto view = registry.ActiveQuery<AIPathComponent>();
+		auto view = registry.ActiveQuery<AIAgentComponent>();
 		for (EntityID e : view)
 		{
-			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-			if (pathComp.Waypoints.size() < 2)
+			auto& agentComp = registry.GetComponent<AIAgentComponent>(e);
+			if (agentComp.Mode != AIAgentComponent::PathMode::Manual)
+				continue;
+
+			if (agentComp.ManualWaypoints.size() < 2)
 				continue;
 
 			if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) == pathsToHighlight.end())
 				continue;
 
-			for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
+			for (size_t i = 0; i < agentComp.ManualWaypoints.size(); i++)
 			{
-				UUID currentWP = pathComp.Waypoints[i];
+				UUID currentWP = agentComp.ManualWaypoints[i];
 				UUID nextWP = Constants::InvalidUUID;
 
-				if (i < pathComp.Waypoints.size() - 1)
-					nextWP = pathComp.Waypoints[i + 1];
-				else if (pathComp.Loop)
-					nextWP = pathComp.Waypoints[0];
+				if (i < agentComp.ManualWaypoints.size() - 1)
+					nextWP = agentComp.ManualWaypoints[i + 1];
+				else if (agentComp.Loop)
+					nextWP = agentComp.ManualWaypoints[0];
 
 				if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
 					continue;
@@ -162,25 +205,28 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 
 		std::unordered_set<std::pair<UUID, UUID>, PairUUIDHash> drawnSegments;
-		auto view = registry.ActiveQuery<AIPathComponent>();
+		auto view = registry.ActiveQuery<AIAgentComponent>();
 		for (EntityID e : view)
 		{
-			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
-			if (pathComp.Waypoints.size() < 2)
+			auto& agentComp = registry.GetComponent<AIAgentComponent>(e);
+			if (agentComp.Mode != AIAgentComponent::PathMode::Manual)
+				continue;
+
+			if (agentComp.ManualWaypoints.size() < 2)
 				continue;
 
 			if (std::find(pathsToHighlight.begin(), pathsToHighlight.end(), e) != pathsToHighlight.end())
 				continue;
 
-			for (size_t i = 0; i < pathComp.Waypoints.size(); i++)
+			for (size_t i = 0; i < agentComp.ManualWaypoints.size(); i++)
 			{
-				UUID currentWP = pathComp.Waypoints[i];
+				UUID currentWP = agentComp.ManualWaypoints[i];
 				UUID nextWP = Constants::InvalidUUID;
 
-				if (i < pathComp.Waypoints.size() - 1)
-					nextWP = pathComp.Waypoints[i + 1];
-				else if (pathComp.Loop)
-					nextWP = pathComp.Waypoints[0];
+				if (i < agentComp.ManualWaypoints.size() - 1)
+					nextWP = agentComp.ManualWaypoints[i + 1];
+				else if (agentComp.Loop)
+					nextWP = agentComp.ManualWaypoints[0];
 
 				if (currentWP == Constants::InvalidUUID || nextWP == Constants::InvalidUUID)
 					continue;

@@ -153,7 +153,8 @@ namespace Ember {
 					PostProcessVolumeComponent,
 					AudioListenerComponent,
 					WaypointComponent,
-					AIPathComponent
+					AIPathComponent,
+					NavigationGridComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -481,7 +482,8 @@ namespace Ember {
 			PostProcessVolumeComponent,
 			AudioListenerComponent,
 			WaypointComponent,
-			AIPathComponent
+			AIPathComponent,
+			NavigationGridComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

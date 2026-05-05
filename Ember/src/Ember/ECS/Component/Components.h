@@ -17,6 +17,7 @@
 #include "Ember/Asset/PhysicsMaterial.h"
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
+#include "Ember/AI/NavNode.h"
 
 #include <sol/sol.hpp>
 
@@ -715,17 +716,41 @@ namespace Ember {
 	{
 		uint32_t ListenerIndex = 0;
 		bool IsActive = true;
+
+		AudioListenerComponent() = default;
+		AudioListenerComponent(const AudioListenerComponent&) = default;
 	};
 
 	struct WaypointComponent
 	{
 		// Editor only prop to show all connected paths when waypoint entity is selected
 		bool ShowPaths = true;
+
+		WaypointComponent() = default;
+		WaypointComponent(const WaypointComponent&) = default;
+	};
+
+	struct AIAgentComponent
+	{
+		enum class PathMode { Manual, Dynamic };
+		PathMode Mode = PathMode::Manual;
+
+		// Manual properties
+		std::vector<UUID> ManualWaypoints;
+		bool Loop = true;
+
+		// Dynamic properties
+		UUID TargetEntity = Constants::InvalidUUID;
+		UUID GridEntity = Constants::InvalidUUID;
+		float RecalculateTimer = 0.0f;
+
+		AIAgentComponent() = default;
+		AIAgentComponent(const AIAgentComponent&) = default;
 	};
 
 	struct AIPathComponent
 	{
-		std::vector<UUID> Waypoints;	// Entity UUIDs of the waypoints to follow in order
+		std::vector<Vector3f> Waypoints;	// Positions to navigate to
 		float Speed = 1.0f;
 		bool Loop = true;
 		float ArrivalTolerance = 0.1f; // How close to a waypoint before we consider it "reached"
@@ -735,6 +760,18 @@ namespace Ember {
 
 		AIPathComponent() = default;
 		AIPathComponent(const AIPathComponent&) = default;
+	};
+
+	struct NavigationGridComponent
+	{  
+		float NodeSpacing = 1.0f;   // Size of each grid square
+		bool Generated = false;    // Has the grid been generated yet (used to trigger generation in the NavigationSystem)
+
+		// TODO: Maybe make nav nodes to shared ptrs or something to avoid copying them around so much
+		std::vector<std::vector<NavNode>> Grid;
+
+		NavigationGridComponent() = default;
+		NavigationGridComponent(const NavigationGridComponent&) = default;
 	};
 
 }
