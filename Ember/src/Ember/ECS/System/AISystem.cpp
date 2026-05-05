@@ -34,7 +34,43 @@ namespace Ember {
 
 	void AISystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		auto& registry = scene->GetRegistry();
+		auto view = registry.ActiveQuery<AIAgentComponent, AIPathComponent>();
+		for (EntityID e : view)
+		{
+			auto& agentComp = registry.GetComponent<AIAgentComponent>(e);
+			auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+			if (agentComp.Mode == AIAgentComponent::PathMode::Dynamic)
+			{
+				// Run A* when the interval timer elapses
+			}
+			else if (agentComp.Mode == AIAgentComponent::PathMode::Manual)
+			{
+				// TODO: Make it so this only happens when the path is dirty 
+				// (edited in editor or a waypoint moves) instead of every frame
+				std::vector<Vector3f> waypoints;
+				waypoints.reserve(agentComp.ManualWaypoints.size());
 
+				for (UUID wpUUID : agentComp.ManualWaypoints)
+				{
+					if (wpUUID == Constants::InvalidUUID)
+						continue;
+					Entity wpEntity = scene->GetEntity(wpUUID);
+					if (wpEntity.GetUUID() == Constants::InvalidUUID)
+						continue;
+					if (!wpEntity.ContainsComponent<TransformComponent>())
+						continue;
+					auto& wpTransform = wpEntity.GetComponent<TransformComponent>();
+					waypoints.push_back(wpTransform.GetWorldTransform()[3]);
+				}
+
+				pathComp.Waypoints = waypoints;
+			}
+			else
+			{
+				EB_CORE_ASSERT(false, "Unhandled AIAgent PathMode!");
+			}
+		}
 	}
 
 	void AISystem::OnDetach()
@@ -65,7 +101,7 @@ namespace Ember {
 		Entity selectedEntity(m_PreviewEntity, scene);
 
 		// If the AI itself is selected, flag its path to be highlighted
-		if (selectedEntity.ContainsComponent<AIPathComponent>())
+		if (selectedEntity.ContainsComponent<AIAgentComponent>())
 			pathsToHighlight.push_back(selectedEntity.GetEntityHandle());
 
 		// If a Waypoint is selected, find EVERY path that uses this waypoint and highlight them!

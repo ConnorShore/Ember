@@ -742,7 +742,7 @@ namespace Ember {
 		// Dynamic properties
 		UUID TargetEntity = Constants::InvalidUUID;
 		UUID GridEntity = Constants::InvalidUUID;
-		float RecalculateTimer = 0.0f;
+		float RecalculateInterval = 0.0f;
 
 		AIAgentComponent() = default;
 		AIAgentComponent(const AIAgentComponent&) = default;

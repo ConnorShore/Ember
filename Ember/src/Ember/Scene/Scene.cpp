@@ -154,7 +154,8 @@ namespace Ember {
 					AudioListenerComponent,
 					WaypointComponent,
 					AIPathComponent,
-					NavigationGridComponent
+					NavigationGridComponent,
+					AIAgentComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -483,7 +484,8 @@ namespace Ember {
 			AudioListenerComponent,
 			WaypointComponent,
 			AIPathComponent,
-			NavigationGridComponent
+			NavigationGridComponent,
+			AIAgentComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

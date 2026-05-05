@@ -505,6 +505,27 @@ namespace Ember {
 				}
 			}
 		}
+		if (entity.ContainsComponent<AIAgentComponent>())
+		{
+			auto& aiAgent = entity.GetComponent<AIAgentComponent>();
+			ryml::NodeRef agentNode = entityNode["AIAgentComponent"];
+			agentNode |= ryml::MAP;
+			agentNode["Mode"] << (int)aiAgent.Mode;
+
+			// Manual props
+			ryml::NodeRef waypointsNode = agentNode["ManualWaypoints"];
+			waypointsNode |= ryml::SEQ;
+			for (const auto& wp : aiAgent.ManualWaypoints)
+			{
+				waypointsNode.append_child() << (uint64_t)wp;
+			}
+			agentNode["Loop"] << aiAgent.Loop;
+
+			// Dynamic props
+			agentNode["TargetEntity"] << (uint64_t)aiAgent.TargetEntity;
+			agentNode["GridEntity"] << (uint64_t)aiAgent.GridEntity;
+			agentNode["RecalculateInterval"] << aiAgent.RecalculateInterval;
+		}
 	}
 
 	// =========================================================================
@@ -1137,6 +1158,39 @@ namespace Ember {
 
 				navGrid.Grid = grid;
 			}
+		}
+
+		if (entityNode.has_child("AIAgentComponent"))
+		{
+			ryml::NodeRef aiAgentNode = entityNode["AIAgentComponent"];
+			auto& aiAgent = deserializedEntity.AttachComponent<AIAgentComponent>();
+
+			int modeVal;
+			aiAgentNode["Mode"] >> modeVal;
+			aiAgent.Mode = (AIAgentComponent::PathMode)modeVal;
+
+			if (aiAgentNode.has_child("ManualWaypoints"))
+			{
+				for (ryml::NodeRef wpNode : aiAgentNode["ManualWaypoints"].children())
+				{
+					uint64_t wpEntityVal;
+					wpNode >> wpEntityVal;
+					UUID wpEntityID = (UUID)wpEntityVal;
+					if (wpEntityID != Constants::InvalidUUID)
+						aiAgent.ManualWaypoints.push_back(wpEntityID);
+				}
+			}
+
+			aiAgentNode["Loop"] >> aiAgent.Loop;
+
+			uint64_t targetEntityVal, gridEntityVal;
+			aiAgentNode["TargetEntity"] >> targetEntityVal;
+			aiAgent.TargetEntity = (UUID)targetEntityVal;
+
+			aiAgentNode["GridEntity"] >> gridEntityVal;
+			aiAgent.GridEntity = (UUID)gridEntityVal;
+
+			aiAgentNode["RecalculateInterval"] >> aiAgent.RecalculateInterval;
 		}
 	}
 

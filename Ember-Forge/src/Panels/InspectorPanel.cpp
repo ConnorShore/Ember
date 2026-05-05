@@ -28,6 +28,7 @@
 #include "ComponentUI/WaypointComponentUI.h"
 #include "ComponentUI/AIPathComponentUI.h"
 #include "ComponentUI/NavigationGridComponentUI.h"
+#include "ComponentUI/AIAgentComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -46,6 +47,7 @@ namespace Ember {
 		case InspectorPanel::Category::Physics: return "Physics";
 		case InspectorPanel::Category::Audio: return "Audio";
 		case InspectorPanel::Category::Animation: return "Animation";
+		case InspectorPanel::Category::AI: return "AI";
 		case InspectorPanel::Category::Scripting: return "Scripts";
 		default: return "Unknown";
 		}
@@ -92,6 +94,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
 
 		// --- AI ---
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIAgentComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIPathComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));

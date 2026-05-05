@@ -10,7 +10,6 @@ namespace Ember {
 			"Waypoints", &AIPathComponent::Waypoints,
 			"CurrentWaypointIndex", &AIPathComponent::CurrentWaypointIndex,
 			"Speed", &AIPathComponent::Speed,
-			"Loop", &AIPathComponent::Loop,
 			"ArrivalTolerance", &AIPathComponent::ArrivalTolerance,
 			"GetNextWaypointPosition", [scene](AIPathComponent& c) -> Vector3f
 			{
@@ -24,6 +23,20 @@ namespace Ember {
 
 				return c.Waypoints[c.CurrentWaypointIndex];
 			}
+		);
+
+		state.new_enum("PathMode",
+			"Manual", AIAgentComponent::PathMode::Manual,
+			"Dynamic", AIAgentComponent::PathMode::Dynamic
+		);
+
+		state.new_usertype<AIAgentComponent>("AIAgentComponent",
+			"Mode", &AIAgentComponent::Mode,
+			"Waypoints", &AIAgentComponent::ManualWaypoints,
+			"Loop", &AIAgentComponent::Loop,
+			"TargetEntity", &AIAgentComponent::TargetEntity,
+			"GridEntity", &AIAgentComponent::GridEntity,
+			"RecalculateInterval", &AIAgentComponent::RecalculateInterval
 		);
 	}
 
