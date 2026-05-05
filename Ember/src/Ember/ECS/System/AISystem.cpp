@@ -2,8 +2,8 @@
 #include "AISystem.h"
 
 #include "Ember/AI/NavigationGrid.h"
+#include "Ember/AI/AStar.h"
 #include "Ember/Render/DebugRenderer.h"
-
 
 namespace Ember {
 
@@ -44,7 +44,27 @@ namespace Ember {
 
 			if (agentComp.Mode == AIAgentComponent::PathMode::Dynamic)
 			{
+				agentComp.TimeSinceLastRecalculate -= delta;
+
 				// Run A* when the interval timer elapses
+				if (agentComp.TimeSinceLastRecalculate <= 0.0f)
+				{
+					auto& transform = registry.GetComponent<TransformComponent>(e);
+					auto& pathComp = registry.GetComponent<AIPathComponent>(e);
+
+					auto targetEntity = scene->GetEntity(agentComp.TargetEntity);
+					auto& targetTransform = targetEntity.GetComponent<TransformComponent>();
+
+					auto gridEntity = scene->GetEntity(agentComp.GridEntity);
+					auto& gridComp = gridEntity.GetComponent<NavigationGridComponent>();
+
+					// Calculate a new path using A* and update the path component
+					pathComp.Waypoints = AStar::AStarPath(transform.GetWorldTransform()[3], targetTransform.GetWorldTransform()[3], gridComp.Grid);
+					pathComp.CurrentWaypointIndex = 0;
+
+					// Reset the timer
+					agentComp.TimeSinceLastRecalculate = agentComp.RecalculateInterval;
+				}
 			}
 			else if (agentComp.Mode == AIAgentComponent::PathMode::Manual)
 			{

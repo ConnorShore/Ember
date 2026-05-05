@@ -742,8 +742,10 @@ namespace Ember {
 		// Dynamic properties
 		UUID TargetEntity = Constants::InvalidUUID;
 		UUID GridEntity = Constants::InvalidUUID;
-		float RecalculateInterval = 0.0f;
+		float RecalculateInterval = 1.0f;
 
+		// Runtime only (not serialized)
+		float TimeSinceLastRecalculate = 0.0f;
 		bool Dirty = false; // Set to true when the agent needs to update its mode
 
 		AIAgentComponent() = default;
