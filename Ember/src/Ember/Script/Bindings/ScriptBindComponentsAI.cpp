@@ -47,6 +47,13 @@ namespace Ember {
 			"GridEntity", &AIAgentComponent::GridEntity,
 			"RecalculateInterval", &AIAgentComponent::RecalculateInterval
 		);
+
+		state.new_usertype<LocalAvoidanceComponent>("LocalAvoidanceComponent",
+			"AvoidanceRadius", &LocalAvoidanceComponent::AvoidanceRadius,
+			"AvoidanceStrength", &LocalAvoidanceComponent::AvoidanceStrength,
+			"AvoidanceVector", &LocalAvoidanceComponent::AvoidanceVector,
+			"AvoidanceMask", &LocalAvoidanceComponent::AvoidanceMask
+		);
 	}
 
 }

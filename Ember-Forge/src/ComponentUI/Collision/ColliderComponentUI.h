@@ -133,16 +133,17 @@ namespace Ember {
 
 				ImGui::Separator();
 
-					if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
-						{ collisionFilter = 0x0000; changed = true; }
+				if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
+					{ collisionFilter = 0x0000; changed = true; }
 
-					if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
-						{ collisionFilter = 0xFFFF; changed = true; }
+				if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
+					{ collisionFilter = 0xFFFF; changed = true; }
 
-					UI::PropertyGrid::EndComboBox();
-					}
-					return changed;
-				}
+				UI::PropertyGrid::EndComboBox();
+			}
+
+			return changed;
+		}
 
 		void RenderPhysicsMaterialSection(T& component)
 		{

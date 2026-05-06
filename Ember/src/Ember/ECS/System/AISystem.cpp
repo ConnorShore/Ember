@@ -239,7 +239,7 @@ namespace Ember {
 				if (navGrid.Generated)
 					NavigationGrid::RenderGeneratedGrid(navGrid.Grid, previewEntityIsSelected);
 				else
-					NavigationGrid::RenderUngeneratedGrid(transform.WorldTransform[3], transform.Scale.x, transform.Scale.z, previewEntityIsSelected);
+					NavigationGrid::RenderUngeneratedGrid(transform.GetWorldPosition(), transform.Scale.x, transform.Scale.z, previewEntityIsSelected);
 			}
 		}
 		else if (previewEntityIsSelected)
@@ -249,7 +249,7 @@ namespace Ember {
 			if (navGrid.Generated)
 				NavigationGrid::RenderGeneratedGrid(navGrid.Grid, true);
 			else
-				NavigationGrid::RenderUngeneratedGrid(transform.WorldTransform[3], transform.Scale.x, transform.Scale.z, true);
+				NavigationGrid::RenderUngeneratedGrid(transform.GetWorldPosition(), transform.Scale.x, transform.Scale.z, true);
 		}
 	}
 
@@ -311,8 +311,8 @@ namespace Ember {
 				if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
 					continue;
 
-				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().GetWorldPosition();
+				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().GetWorldPosition();
 
 				auto key = MakeSegmentKey(currentWP, nextWP);
 				if (highlightedSegmentKeys.insert(key).second)
@@ -366,8 +366,8 @@ namespace Ember {
 				if (!currentWPEntity.ContainsComponent<TransformComponent>() || !nextWPEntity.ContainsComponent<TransformComponent>())
 					continue;
 
-				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
-				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().WorldTransform[3];
+				Vector3f startPos = currentWPEntity.GetComponent<TransformComponent>().GetWorldPosition();
+				Vector3f endPos = nextWPEntity.GetComponent<TransformComponent>().GetWorldPosition();
 				DebugRenderer::DrawLine(startPos, endPos, UnselectedColor);
 			}
 		}

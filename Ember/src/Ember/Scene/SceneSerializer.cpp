@@ -526,6 +526,15 @@ namespace Ember {
 			agentNode["GridEntity"] << (uint64_t)aiAgent.GridEntity;
 			agentNode["RecalculateInterval"] << aiAgent.RecalculateInterval;
 		}
+		if (entity.ContainsComponent<LocalAvoidanceComponent>())
+		{
+			auto& avoidance = entity.GetComponent<LocalAvoidanceComponent>();
+			ryml::NodeRef avoidanceNode = entityNode["LocalAvoidanceComponent"];
+			avoidanceNode |= ryml::MAP;
+			avoidanceNode["AvoidanceRadius"] << avoidance.AvoidanceRadius;
+			avoidanceNode["AvoidanceStrength"] << avoidance.AvoidanceStrength;
+			avoidanceNode["AvoidanceMask"] << avoidance.AvoidanceMask;
+		}
 	}
 
 	// =========================================================================
@@ -1191,6 +1200,15 @@ namespace Ember {
 			aiAgent.GridEntity = (UUID)gridEntityVal;
 
 			aiAgentNode["RecalculateInterval"] >> aiAgent.RecalculateInterval;
+		}
+
+		if (entityNode.has_child("LocalAvoidanceComponent"))
+		{
+			ryml::NodeRef avoidanceNode = entityNode["LocalAvoidanceComponent"];
+			auto& avoidance = deserializedEntity.AttachComponent<LocalAvoidanceComponent>();
+			avoidanceNode["AvoidanceRadius"] >> avoidance.AvoidanceRadius;
+			avoidanceNode["AvoidanceStrength"] >> avoidance.AvoidanceStrength;
+			avoidanceNode["AvoidanceMask"] >> avoidance.AvoidanceMask;
 		}
 	}
 

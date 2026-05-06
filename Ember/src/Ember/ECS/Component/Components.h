@@ -18,6 +18,7 @@
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
 #include "Ember/AI/NavNode.h"
+#include "Ember/Physics/CollisionFilter.h"
 
 #include <sol/sol.hpp>
 
@@ -98,6 +99,11 @@ namespace Ember {
 		const Matrix4f& GetWorldTransform() const
 		{
 			return WorldTransform;
+		}
+
+		const Vector3f& GetWorldPosition() const
+		{
+			return WorldTransform[3];
 		}
 
 		// Extract basis vectors from the world transform matrix columns
@@ -776,6 +782,19 @@ namespace Ember {
 
 		NavigationGridComponent() = default;
 		NavigationGridComponent(const NavigationGridComponent&) = default;
+	};
+
+	struct LocalAvoidanceComponent
+	{
+		float AvoidanceRadius = 0.5f; // How close other agents can get before we start avoiding them
+		float AvoidanceStrength = 1.0f; // How strongly we try to avoid other agents (0 = ignore, 1 = full avoidance)
+		CollisionFilter AvoidanceMask = CollisionFilterPreset::Default; // Which agents to avoid (use collision filters to specify)
+
+		// Runtime only (not serialized)
+		Vector3f AvoidanceVector = Vector3f(0.0f); // The current offset being applied to avoid other agents
+
+		LocalAvoidanceComponent() = default;
+		LocalAvoidanceComponent(const LocalAvoidanceComponent&) = default;
 	};
 
 }

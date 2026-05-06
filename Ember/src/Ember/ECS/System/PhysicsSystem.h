@@ -84,6 +84,9 @@ namespace Ember {
 		void CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene);
 		void CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene);
 		void CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene);
+		void UpdateRigidbodies(Scene* scene);
+		void UpdateAvoidanceCollisions(Scene* scene);
+		void UpdateScriptTriggers(Scene* scene);
 		void ShowDebugRendererIfApplicable();
 		void UpdateDebugRenderData();
 

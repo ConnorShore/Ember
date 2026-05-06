@@ -381,55 +381,14 @@ namespace Ember {
 			m_TimeAcumulator -= timeStep;
 		}
 
-		// Dynamic:   physics drives the entity  (rp3d → local transform)
-		// Kinematic: entity drives physics      (WorldTransform → rp3d)
-		// Static:    no movement, no sync needed
-		auto& registry = scene->GetRegistry();
-		auto view = registry.ActiveQuery<RigidBodyComponent, TransformComponent>();
-		for (EntityID entity : view)
-		{
-			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
-
-			if (rb.Body == nullptr)
-				continue;
-
-			if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
-			{
-				// Physics drives the entity — read world transform from rp3d and write to
-				// the entity's local transform fields (correct for root-level rigid bodies)
-				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
-				const rp3d::Vector3& pos = rp3dTransform.getPosition();
-				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
-
-				transform.Position = { pos.x, pos.y, pos.z };
-				Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
-				transform.Rotation = Math::ToEulerAngles(rotation);
-			}
-			else if (rb.Type == RigidBodyComponent::BodyType::Kinematic)
-			{
-				// Entity drives physics — push the entity's current world transform into
-				// the rp3d body so the physics body follows the entity, not the reverse.
-				Vector3f worldPos, worldRot, worldScale;
-				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
-
-				Quaternion q = Math::ToQuaternion(worldRot);
-				rb.Body->setTransform(rp3d::Transform(
-					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
-					rp3d::Quaternion(q.x, q.y, q.z, q.w)
-				));
-			}
-		}
+		// Update rigid body transforms from the physics simulation results
+		UpdateRigidbodies(scene);
 
 		// Update script triggers
-		auto& overlapTriggers = m_PhysicsEventListener.GetOverlapData();
-		for (const auto& triggerEvent : overlapTriggers)
-		{
-			// Fire trigger event for both entities
-			ScriptSystem::FireTriggerEvent(triggerEvent.EntityA, triggerEvent.EntityB, triggerEvent.EventType, scene);
-			ScriptSystem::FireTriggerEvent(triggerEvent.EntityB, triggerEvent.EntityA, triggerEvent.EventType, scene);
-		}
+		UpdateScriptTriggers(scene);
 
-		m_PhysicsEventListener.ClearOverlapQueue();
+		// Update Local Avoidance vectors
+		UpdateAvoidanceCollisions(scene);
 
 		// Update debug render data
 		UpdateDebugRenderData();
@@ -992,6 +951,113 @@ namespace Ember {
 		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
 		mesh.CachedWorldScale = ctx.ChildWorldScale;
+	}
+
+	void PhysicsSystem::UpdateRigidbodies(Scene* scene)
+	{
+		// Dynamic:   physics drives the entity  (rp3d → local transform)
+		// Kinematic: entity drives physics      (WorldTransform → rp3d)
+		// Static:    no movement, no sync needed
+
+		auto& registry = scene->GetRegistry();
+		auto view = registry.ActiveQuery<RigidBodyComponent, TransformComponent>();
+		for (EntityID entity : view)
+		{
+			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
+
+			if (rb.Body == nullptr)
+				continue;
+
+			if (rb.Type == RigidBodyComponent::BodyType::Dynamic)
+			{
+				// Physics drives the entity — read world transform from rp3d and write to
+				// the entity's local transform fields (correct for root-level rigid bodies)
+				const rp3d::Transform& rp3dTransform = rb.Body->getTransform();
+				const rp3d::Vector3& pos = rp3dTransform.getPosition();
+				const rp3d::Quaternion& rot = rp3dTransform.getOrientation();
+
+				transform.Position = { pos.x, pos.y, pos.z };
+				Quaternion rotation(rot.w, rot.x, rot.y, rot.z);
+				transform.Rotation = Math::ToEulerAngles(rotation);
+			}
+			else if (rb.Type == RigidBodyComponent::BodyType::Kinematic)
+			{
+				// Entity drives physics — push the entity's current world transform into
+				// the rp3d body so the physics body follows the entity, not the reverse.
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+
+				Quaternion q = Math::ToQuaternion(worldRot);
+				rb.Body->setTransform(rp3d::Transform(
+					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
+					rp3d::Quaternion(q.x, q.y, q.z, q.w)
+				));
+			}
+		}
+	}
+
+	void PhysicsSystem::UpdateAvoidanceCollisions(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+		auto view = registry.ActiveQuery<LocalAvoidanceComponent, TransformComponent>();
+		for (EntityID entityId : view)
+		{
+			Entity entity(entityId, scene);
+			auto [avoidance, transform] = registry.GetComponents<LocalAvoidanceComponent, TransformComponent>(entity);
+
+			Vector3f myPos = transform.GetWorldPosition();
+			Vector3f totalRepelVector = { 0, 0, 0 };
+			int neighborCount = 0;
+
+			// Use your Physics System to only check things within the radius
+			auto overlaps = TestOverlapSphere(myPos, avoidance.AvoidanceRadius, entity, avoidance.AvoidanceMask);
+			for (const auto& hit : overlaps.Hits)
+			{
+				if (hit.EntityID == entityId)
+					continue; // Don't run away from ourselves (shouldn't happen due to TestOverlapSphere entity param)
+
+				Entity hitEntity(hit.EntityID, scene);
+				Vector3f neighborPos = hitEntity.GetComponent<TransformComponent>().GetWorldPosition();
+
+				// Calculate vector pointing AWAY from the neighbor
+				Vector3f repelDir = myPos - neighborPos;
+				float distance = Math::Length(repelDir);
+
+				if (distance > 0.001f && distance < avoidance.AvoidanceRadius)
+				{
+					repelDir = Math::Normalize(repelDir);
+
+					// The closer they are, the harder we push away
+					float forceMultiplier = 1.0f - (distance / avoidance.AvoidanceRadius);
+					totalRepelVector += (repelDir * forceMultiplier);
+					neighborCount++;
+				}
+			}
+
+			if (neighborCount > 0)
+			{
+				// Average the vector and apply the component's force multiplier
+				totalRepelVector = totalRepelVector / (float)neighborCount;
+				avoidance.AvoidanceVector = totalRepelVector * avoidance.AvoidanceStrength;
+			}
+			else
+			{
+				avoidance.AvoidanceVector = { 0, 0, 0 };
+			}
+		}
+	}
+
+	void PhysicsSystem::UpdateScriptTriggers(Scene* scene)
+	{
+		auto& overlapTriggers = m_PhysicsEventListener.GetOverlapData();
+		for (const auto& triggerEvent : overlapTriggers)
+		{
+			// Fire trigger event for both entities
+			ScriptSystem::FireTriggerEvent(triggerEvent.EntityA, triggerEvent.EntityB, triggerEvent.EventType, scene);
+			ScriptSystem::FireTriggerEvent(triggerEvent.EntityB, triggerEvent.EntityA, triggerEvent.EventType, scene);
+		}
+
+		m_PhysicsEventListener.ClearOverlapQueue();
 	}
 
 	void PhysicsSystem::ShowDebugRendererIfApplicable()

@@ -60,6 +60,10 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<WaypointComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<WaypointComponent>()); });
 		if (componentTypeStr == "AIPathComponent")
 			return guardGet(entity.ContainsComponent<AIPathComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AIPathComponent>()); });
+		if (componentTypeStr == "AIAgentComponent")
+			return guardGet(entity.ContainsComponent<AIAgentComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AIAgentComponent>()); });
+		if (componentTypeStr == "LocalAvoidanceComponent")
+			return guardGet(entity.ContainsComponent<LocalAvoidanceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<LocalAvoidanceComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -115,6 +119,10 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<WaypointComponent>());
 		if (componentTypeStr == "AIPathComponent")
 			return sol::make_object(state, entity.ContainsComponent<AIPathComponent>());
+		if (componentTypeStr == "AIAgentComponent")
+			return sol::make_object(state, entity.ContainsComponent<AIAgentComponent>());
+		if (componentTypeStr == "LocalAvoidanceComponent")
+			return sol::make_object(state, entity.ContainsComponent<LocalAvoidanceComponent>());
 
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -178,6 +186,8 @@ namespace Ember {
 		if (componentTypeStr == "AudioSourceComponent") return addAndReturn(AudioSourceComponent{});
 		if (componentTypeStr == "WaypointComponent") return addAndReturn(WaypointComponent{});
 		if (componentTypeStr == "AIPathComponent") return addAndReturn(AIPathComponent{});
+		if (componentTypeStr == "AIAgentComponent") return addAndReturn(AIAgentComponent{});
+		if (componentTypeStr == "LocalAvoidanceComponent") return addAndReturn(LocalAvoidanceComponent{});
 		
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -224,6 +234,8 @@ namespace Ember {
 		if (componentTypeStr == "AudioSourceComponent") return entity.DetachComponent<AudioSourceComponent>();
 		if (componentTypeStr == "WaypointComponent") return entity.DetachComponent<WaypointComponent>();
 		if (componentTypeStr == "AIPathComponent") return entity.DetachComponent<AIPathComponent>();
+		if (componentTypeStr == "AIAgentComponent") return entity.DetachComponent<AIAgentComponent>();
+		if (componentTypeStr == "LocalAvoidanceComponent") return entity.DetachComponent<LocalAvoidanceComponent>();
 
 		EB_CORE_ASSERT(false, "Failed to detach component. Unknown component type: {}", componentTypeStr);
 	}

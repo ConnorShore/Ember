@@ -29,6 +29,7 @@
 #include "ComponentUI/AIPathComponentUI.h"
 #include "ComponentUI/NavigationGridComponentUI.h"
 #include "ComponentUI/AIAgentComponentUI.h"
+#include "ComponentUI/LocalAvoidanceComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -95,8 +96,9 @@ namespace Ember {
 
 		// --- AI ---
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIAgentComponentUI>::Create(m_Context));
-		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<AIPathComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<LocalAvoidanceComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
 
 		// --- NONE (These don't appear in the Add Component menu but are still rendered in the inspector if attached to an entity) ---

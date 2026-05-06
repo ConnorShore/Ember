@@ -2,6 +2,7 @@
 
 #include "ColliderUserData.h"
 #include "Ember/ECS/Types.h"
+#include "Ember/Math/Math.h"
 
 #include <reactphysics3d/collision/OverlapCallback.h>
 
@@ -15,12 +16,6 @@ namespace Ember {
 
 	struct OverlapTestData
 	{
-		
-		//bool HasHit = false;
-		//uint32_t NumCollisions = 0;
-
-		//std::vector<EntityID> CollidedEntities;
-		//std::vector<CollisionFilter> CollidedEntityFilters;
 		std::vector<Hit> Hits;
 
 		operator bool() const { return !Hits.empty(); }
@@ -60,13 +55,7 @@ namespace Ember {
 					continue;
 
 				m_OverlapData.Hits.push_back({ collisionData->EntityID, collisionData->Filter });
-
-				//numCollisions++;
-				//m_OverlapData.HasHit = true;
-				//m_OverlapData.CollidedEntities.push_back(collisionData->EntityID);
-				//m_OverlapData.CollidedEntityFilters.push_back(collisionData->Filter);
 			}
-			//m_OverlapData.NumCollisions = numCollisions;
 		}
 
 		const OverlapTestData& GetOverlapData() const { return m_OverlapData; }

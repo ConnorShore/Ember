@@ -46,7 +46,7 @@ namespace Ember {
 
 			auto overlapData = Collision::CheckOverlapSphereWithData(feetPos, checkRadius, entity, CollisionFilterPreset::Environment);
 			controller.IsGrounded = overlapData;
-			controller.GroundEntity = overlapData.Hits[0].EntityID;
+			controller.GroundEntity = overlapData ? overlapData.Hits[0].EntityID : Constants::Entities::InvalidEntityID;
 
 			// Apply Gravity
 			if (!controller.IsGrounded)

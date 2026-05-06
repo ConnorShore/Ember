@@ -160,6 +160,11 @@ namespace Ember {
 		math.set_function("Dot", &Math::Dot);
 		math.set_function("ProjectOnPlane", &Math::ProjectOnPlane);
 
+		math.set_function("Normalize", sol::overload(
+			[](const Vector3f& v) { return Math::Normalize(v); },
+			[](const Quaternion& q) { return Math::Normalize(q); }
+		));
+
 		// Interpolation
 		math.set_function("Lerp", sol::overload(
 			[](float a, float b, float t) { return Math::Lerp(a, b, t); },

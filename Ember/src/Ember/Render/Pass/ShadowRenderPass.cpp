@@ -241,7 +241,7 @@ namespace Ember {
 
 			// TODO: Move spotlight to use cascade shadow maps in the future as well, but for now we will just use a single perspective projection for the spotlight shadow map
 			Matrix4f lightProjection = Math::Perspective(Math::Degrees(light.OuterCutOffAngle) * 2.0f, 1.0f, 1.0f, 100.0f);
-			Vector3f worldPos = Vector3f(transform.WorldTransform[3]);
+			Vector3f worldPos = Vector3f(transform.GetWorldPosition());
 			Vector3f target = lightDirection + worldPos;	// Look in the direction of the spotlight
 			Vector3f eye = worldPos;
 			Vector3f up = Vector3f(0.0f, 1.0f, 0.0f);
