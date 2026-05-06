@@ -48,11 +48,17 @@ namespace Ember {
 			"HitEntity", &LuaRaycastHit::HitEntity
 		);
 
+		state.new_usertype<Hit>("Hit",
+			"Entity", &Hit::EntityID,
+			"Filter", &Hit::Filter
+		);
+
 		state.new_usertype<OverlapTestData>("OverlapData",
-			"HasHit", &OverlapTestData::HasHit,
-			"NumCollisions", &OverlapTestData::NumCollisions,
-			"CollidedEntities", &OverlapTestData::CollidedEntities,
-			"CollidedEntityFilters", &OverlapTestData::CollidedEntityFilters
+			"Hits", &OverlapTestData::Hits
+			//"HasHit", &OverlapTestData::HasHit,
+			//"NumCollisions", &OverlapTestData::NumCollisions,
+			//"CollidedEntities", &OverlapTestData::CollidedEntities,
+			//"CollidedEntityFilters", &OverlapTestData::CollidedEntityFilters
 		);
 
 		// Create the Physics static table

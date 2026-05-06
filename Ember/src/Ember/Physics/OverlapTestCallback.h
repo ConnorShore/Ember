@@ -7,17 +7,23 @@
 
 namespace Ember {
 
+	struct Hit
+	{
+		EntityID EntityID = Constants::Entities::InvalidEntityID;
+		CollisionFilter Filter = CollisionFilterPreset::Default;
+	};
+
 	struct OverlapTestData
 	{
-		bool HasHit = false;
-		uint32_t NumCollisions = 0;
+		
+		//bool HasHit = false;
+		//uint32_t NumCollisions = 0;
 
-		std::vector<EntityID> CollidedEntities;
-		std::vector<CollisionFilter> CollidedEntityFilters;
-		//EntityID CollidedEntity = Constants::Entities::InvalidEntityID;
-		//CollisionFilter CollidedEntityFilter = CollisionFilterPreset::Default;
+		//std::vector<EntityID> CollidedEntities;
+		//std::vector<CollisionFilter> CollidedEntityFilters;
+		std::vector<Hit> Hits;
 
-		operator bool() const { return HasHit; }
+		operator bool() const { return !Hits.empty(); }
 	};
 
 	class OverlapTestCallback : public reactphysics3d::OverlapCallback
@@ -28,7 +34,7 @@ namespace Ember {
 
 		virtual void onOverlap(reactphysics3d::OverlapCallback::CallbackData& callbackData) override
 		{
-			uint32_t numCollisions = 0;
+			//uint32_t numCollisions = 0;
 			for (uint32_t i = 0; i < callbackData.getNbOverlappingPairs(); i++)
 			{
 				auto pair = callbackData.getOverlappingPair(i);
@@ -53,16 +59,14 @@ namespace Ember {
 				if (collisionData == nullptr)
 					continue;
 
-				numCollisions++;
-				m_OverlapData.HasHit = true;
-				m_OverlapData.CollidedEntities.push_back(collisionData->EntityID);
-				m_OverlapData.CollidedEntityFilters.push_back(collisionData->Filter);
+				m_OverlapData.Hits.push_back({ collisionData->EntityID, collisionData->Filter });
+
+				//numCollisions++;
 				//m_OverlapData.HasHit = true;
-				//m_OverlapData.CollidedEntities = collisionData->EntityID;
-				//m_OverlapData.CollidedEntityFilter = collisionData->Filter;
-				//return;
+				//m_OverlapData.CollidedEntities.push_back(collisionData->EntityID);
+				//m_OverlapData.CollidedEntityFilters.push_back(collisionData->Filter);
 			}
-			m_OverlapData.NumCollisions = numCollisions;
+			//m_OverlapData.NumCollisions = numCollisions;
 		}
 
 		const OverlapTestData& GetOverlapData() const { return m_OverlapData; }

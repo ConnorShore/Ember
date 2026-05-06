@@ -48,7 +48,7 @@ namespace Ember {
 			{
 				float width = nodeSpacing * 0.45f;
 				auto overlapData = physicsSystem->TestOverlapBox(node.WorldPosition, Vector3f(0.0f), Vector3f(width, 0.1f, width), {}, CollisionFilterPreset::Environment);
-				node.IsWalkable = !overlapData.HasHit;
+				node.IsWalkable = overlapData;	// If overlap data exists
 			}
 		}
 
