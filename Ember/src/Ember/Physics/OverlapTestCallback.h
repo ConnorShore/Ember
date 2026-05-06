@@ -10,8 +10,12 @@ namespace Ember {
 	struct OverlapTestData
 	{
 		bool HasHit = false;
-		EntityID CollidedEntity = Constants::Entities::InvalidEntityID;
-		CollisionFilter CollidedEntityFilter = CollisionFilterPreset::Default;
+		uint32_t NumCollisions = 0;
+
+		std::vector<EntityID> CollidedEntities;
+		std::vector<CollisionFilter> CollidedEntityFilters;
+		//EntityID CollidedEntity = Constants::Entities::InvalidEntityID;
+		//CollisionFilter CollidedEntityFilter = CollisionFilterPreset::Default;
 
 		operator bool() const { return HasHit; }
 	};
@@ -24,6 +28,7 @@ namespace Ember {
 
 		virtual void onOverlap(reactphysics3d::OverlapCallback::CallbackData& callbackData) override
 		{
+			uint32_t numCollisions = 0;
 			for (uint32_t i = 0; i < callbackData.getNbOverlappingPairs(); i++)
 			{
 				auto pair = callbackData.getOverlappingPair(i);
@@ -48,11 +53,16 @@ namespace Ember {
 				if (collisionData == nullptr)
 					continue;
 
+				numCollisions++;
 				m_OverlapData.HasHit = true;
-				m_OverlapData.CollidedEntity = collisionData->EntityID;
-				m_OverlapData.CollidedEntityFilter = collisionData->Filter;
-				return;
+				m_OverlapData.CollidedEntities.push_back(collisionData->EntityID);
+				m_OverlapData.CollidedEntityFilters.push_back(collisionData->Filter);
+				//m_OverlapData.HasHit = true;
+				//m_OverlapData.CollidedEntities = collisionData->EntityID;
+				//m_OverlapData.CollidedEntityFilter = collisionData->Filter;
+				//return;
 			}
+			m_OverlapData.NumCollisions = numCollisions;
 		}
 
 		const OverlapTestData& GetOverlapData() const { return m_OverlapData; }

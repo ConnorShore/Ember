@@ -53,7 +53,7 @@ namespace Ember {
 
 			// Check if we can skip the current waypoint
 			auto raycastResult = physicsSystem->CastRay(prev, next);
-			if (!raycastResult.Hit)
+			if (raycastResult.Hit)
 				smoothedPath.push_back(current);
 		}
 		smoothedPath.push_back(path.back());

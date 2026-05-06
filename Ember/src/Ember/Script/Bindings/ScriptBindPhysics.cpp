@@ -50,8 +50,9 @@ namespace Ember {
 
 		state.new_usertype<OverlapTestData>("OverlapData",
 			"HasHit", &OverlapTestData::HasHit,
-			"CollidedEntity", &OverlapTestData::CollidedEntity,
-			"CollidedEntityFilter", &OverlapTestData::CollidedEntityFilter
+			"NumCollisions", &OverlapTestData::NumCollisions,
+			"CollidedEntities", &OverlapTestData::CollidedEntities,
+			"CollidedEntityFilters", &OverlapTestData::CollidedEntityFilters
 		);
 
 		// Create the Physics static table
