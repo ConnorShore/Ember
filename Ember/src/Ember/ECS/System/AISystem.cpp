@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "AISystem.h"
+#include "PhysicsSystem.h"
 
 #include "Ember/AI/NavigationGrid.h"
 #include "Ember/AI/AStar.h"
@@ -32,6 +33,34 @@ namespace Ember {
 
 	}
 
+	std::vector<Vector3f> SmoothPath(const std::vector<Vector3f>& path)
+	{
+		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
+		if (path.size() < 2)
+		{
+			return path;
+		}
+
+		std::vector<Vector3f> smoothedPath;
+		smoothedPath.reserve(path.size());
+		smoothedPath.push_back(path[0]);
+
+		for (size_t i = 1; i < path.size() - 1; i++)
+		{
+			const Vector3f& prev = smoothedPath.back();
+			const Vector3f& current = path[i];
+			const Vector3f& next = path[i + 1];
+
+			// Check if we can skip the current waypoint
+			auto raycastResult = physicsSystem->CastRay(prev, next);
+			if (!raycastResult.Hit)
+				smoothedPath.push_back(current);
+		}
+		smoothedPath.push_back(path.back());
+
+		return smoothedPath;
+	}
+
 	void AISystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
 		auto& registry = scene->GetRegistry();
@@ -59,8 +88,9 @@ namespace Ember {
 					auto& gridComp = gridEntity.GetComponent<NavigationGridComponent>();
 
 					// Calculate a new path using A* and update the path component
-					pathComp.Waypoints = AStar::AStarPath(transform.GetWorldTransform()[3], targetTransform.GetWorldTransform()[3], gridComp.Grid);
-					pathComp.CurrentWaypointIndex = 0;
+					auto path = AStar::AStarPath(transform.GetWorldTransform()[3], targetTransform.GetWorldTransform()[3], gridComp.Grid);
+					pathComp.Waypoints = SmoothPath(path);
+					pathComp.CurrentWaypointIndex = pathComp.Waypoints.size() > 1 ? 1 : 0;	// Point at next node to avoid stutter
 
 					// Reset the timer
 					agentComp.TimeSinceLastRecalculate = agentComp.RecalculateInterval;
@@ -204,7 +234,7 @@ namespace Ember {
 			auto view = registry.ActiveQuery<NavigationGridComponent, TransformComponent>();
 			for (EntityID e : view)
 			{
-				auto [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(e);
+				auto&& [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(e);
 
 				if (navGrid.Generated)
 					NavigationGrid::RenderGeneratedGrid(navGrid.Grid, previewEntityIsSelected);
@@ -214,7 +244,7 @@ namespace Ember {
 		}
 		else if (previewEntityIsSelected)
 		{
-			auto [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(m_PreviewEntity);
+			auto&& [navGrid, transform] = registry.GetComponents<NavigationGridComponent, TransformComponent>(m_PreviewEntity);
 
 			if (navGrid.Generated)
 				NavigationGrid::RenderGeneratedGrid(navGrid.Grid, true);

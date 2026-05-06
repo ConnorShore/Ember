@@ -74,8 +74,8 @@ namespace Ember {
 						bool walkX = grid[current->Node->GridX + dx][current->Node->GridY].IsWalkable;
 						bool walkY = grid[current->Node->GridX][current->Node->GridY + dy].IsWalkable;
 
-						// If BOTH adjacent straight nodes are walls, the diagonal is blocked!
-						if (!walkX && !walkY)
+						// If EITHER adjacent straight nodes are walls, the diagonal is blocked!
+						if (!walkX || !walkY)
 							continue;
 					}
 

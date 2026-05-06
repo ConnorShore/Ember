@@ -8,10 +8,10 @@ Assets:
     Name: AI_Controller_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\AI_Controller_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 11051376756273406599
-    Name: Ground_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 16972184240316712760
     Name: Target_StandardUnlit_Clone
     FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\Target_StandardUnlit_Clone.ebmat'
+  - Type: Material
+    UUID: 11051376756273406599
+    Name: Ground_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
