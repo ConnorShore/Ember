@@ -42,6 +42,19 @@ namespace Ember {
 
 		if (ImGui::BeginCombo("Current Animation", previewName.c_str()))
 		{
+			// Default none option
+			if (ImGui::Selectable("None", !m_CurrentAnimation))
+			{
+				SetCurrentAnimation(nullptr);
+				m_CurrentTime = 0.0f;
+
+				// Reset animation to bind pose
+				auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
+				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene.Ptr(), Constants::InvalidUUID, m_Context->SelectedEntity, m_CurrentTime);
+			}
+			ImGui::Separator();
+
+			// Loop over all events
 			for (const auto& anim : animations)
 			{
 				bool isSelected = (m_CurrentAnimation && m_CurrentAnimation->GetUUID() == anim->GetUUID());

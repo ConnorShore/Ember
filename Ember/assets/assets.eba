@@ -1,12 +1,12 @@
 Assets:
   - Type: Texture
-    UUID: 5751372179770291590
-    Name: Lantern_ORM_Mat0
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_ORM_Mat0.png'
-  - Type: Texture
     UUID: 10575124471300148294
     Name: case
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\case.jpg'
+  - Type: Texture
+    UUID: 5751372179770291590
+    Name: Lantern_ORM_Mat0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_ORM_Mat0.png'
   - Type: Texture
     UUID: 2177168009304926995
     Name: Lantern_Tex_3.png
@@ -24,13 +24,13 @@ Assets:
     Name: Lantern_Tex_1.png
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_1.png'
   - Type: Texture
-    UUID: 844457925654129773
-    Name: Fox_Tex_0.png
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
-  - Type: Texture
     UUID: 12756682284774851501
     Name: moonless_golf_4k
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\moonless_golf_4k.hdr'
+  - Type: Texture
+    UUID: 844457925654129773
+    Name: Fox_Tex_0.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
   - Type: Script
     UUID: 5364558041277287564
     Name: NewScript

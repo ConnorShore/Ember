@@ -28,6 +28,7 @@
 #include <Ember/Asset/AnimationSerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
+#include <Ember/ECS/System/AnimationSystem.h>
 #include <Ember/Physics/Raycast.h>
 
 #include <random>
@@ -618,8 +619,6 @@ namespace Ember {
 			}
 		}
 
-		m_PreviousSelectedEntity = m_Context.SelectedEntity;
-
 		// TODO: Move these system debug draw code blocks to own methods
 
 		// Automatically show debug draw lines for the selected entity if any of its colliders
@@ -654,6 +653,15 @@ namespace Ember {
 			else
 				aiSystem->ClearPreviewEntity();
 		}
+
+		// Remove reset animation pose changes on the selected entity
+		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<AnimatorComponent>())
+		{
+			auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
+			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene.Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
+		}
+
+		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 	}
 
 	void EditorLayer::RenderTransformGizmos()

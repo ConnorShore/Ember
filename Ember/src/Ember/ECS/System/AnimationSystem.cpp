@@ -250,45 +250,59 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 
 		// Safety checks
-		if (animator.SkeletonHandle == Constants::InvalidUUID || animationHandle == Constants::InvalidUUID)
+		if (animator.SkeletonHandle == Constants::InvalidUUID)
 			return;
 
 		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
-		auto animation = assetManager.GetAsset<Animation>(animationHandle);
-
-		if (!skeleton || !animation)
+		if (!skeleton)
 			return;
 
 		const auto& bones = skeleton->GetBones();
 		const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
 
-		// Force the component's time to match the scrubber (useful if the user hits "Play" from this point)
-		animator.CurrentTime = timestamp;
-
 		// Pre-allocate arrays
 		std::vector<Matrix4f> localTransforms(bones.size());
 		std::vector<Matrix4f> globalTransforms(bones.size());
 
-		// 1. Evaluate the exact pose at this timestamp
-		for (uint32_t i = 0; i < bones.size(); i++)
+		// --- 1. EVALUATE LOCAL TRANSFORMS ---
+		if (animationHandle == Constants::InvalidUUID)
 		{
-			// Default to bind pose
-			Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
-			Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+			// Invalid Handle: Reset time and fill with default Bind Pose
+			animator.CurrentTime = 0.0f;
 
-			if (const auto* track = GetTrack(animation, i))
+			for (size_t i = 0; i < bones.size(); i++)
 			{
-				if (track->PositionKeyframes.size() > 0)
-					currentPos = EvaluatePosition(*track, timestamp);
-				if (track->RotationKeyframes.size() > 0)
-					currentRot = EvaluateRotation(*track, timestamp);
+				localTransforms[i] = Math::Translate(bones[i].LocalBindPoseTransform.Translation) * Math::ToMatrix4f(bones[i].LocalBindPoseTransform.Rotation);
 			}
+		}
+		else
+		{
+			// Valid Handle: Evaluate the Animation Curve
+			auto animation = assetManager.GetAsset<Animation>(animationHandle);
+			if (!animation)
+				return;
 
-			// Combine into Local Matrix
-			localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+			animator.CurrentTime = timestamp;
+
+			for (uint32_t i = 0; i < bones.size(); i++)
+			{
+				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
+				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+
+				if (const auto* track = GetTrack(animation, i))
+				{
+					if (track->PositionKeyframes.size() > 0)
+						currentPos = EvaluatePosition(*track, timestamp);
+					if (track->RotationKeyframes.size() > 0)
+						currentRot = EvaluateRotation(*track, timestamp);
+				}
+
+				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+			}
 		}
 
-		// 2. Build global pose hierarchy
+		// --- 2. BUILD GLOBAL POSE HIERARCHY ---
+		// Because we isolated the local transforms above, this math works perfectly for both cases!
 		for (size_t i = 0; i < bones.size(); i++)
 		{
 			if (bones[i].ParentID == -1) {
@@ -300,13 +314,14 @@ namespace Ember {
 			}
 		}
 
-		// 3. Apply inverse bind pose
+		// --- 3. APPLY INVERSE BIND POSE ---
 		if (animator.BoneMatrices.size() < bones.size()) {
 			animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
 		}
 
 		for (size_t i = 0; i < bones.size(); i++)
 		{
+			// Final Matrix sent to the shader
 			animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
 		}
 	}
