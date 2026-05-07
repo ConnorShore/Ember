@@ -123,7 +123,7 @@ namespace Ember {
 		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
 
 		// ReactPhysics3D uses a 16-bit integer for masks, so we iterate exactly 16 times.
-		for (int i = 0; i < 16; i++)
+		for (uint32_t i = 0; i < 16; i++)
 		{
 			ImGui::PushID(i);
 
@@ -132,20 +132,10 @@ namespace Ember {
 			ImGui::Text("Layer %2d", i);
 			ImGui::SameLine(80.0f);
 
-			if (i == 0)
+			if (filterManager.isSlotLocked(i))
 			{
-				// Default can't be changed
-				ImGui::TextDisabled("Default");
-			}
-			else if (i == 1)
-			{
-				// Environment can't be changed
-				ImGui::TextDisabled("Environment");
-			}
-			else if (i == 2)
-			{
-				// Environment can't be changed
-				ImGui::TextDisabled("VFX");
+				// Locked slots can't be edited
+				ImGui::TextDisabled("%s", filterManager.GetFilterNameBySlot(i).c_str());
 			}
 			else
 			{

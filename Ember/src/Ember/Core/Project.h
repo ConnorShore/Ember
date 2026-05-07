@@ -2,8 +2,10 @@
 
 #include "ScopedPointer.h"
 #include "SharedPointer.h"
+#include "FilterManager.h"
 
-#include "Ember/Physics/CollisionFilterManager.h"
+#include "Ember/Render/RenderLayer.h"
+#include "Ember/Physics/CollisionFilter.h"
 
 #include <filesystem>
 #include <string>
@@ -27,7 +29,7 @@ namespace Ember {
 		Project(const std::string& projectPath) :
 			m_ProjectDirectory(std::filesystem::path(projectPath).parent_path()),
 			m_Config({ std::filesystem::path(projectPath).stem().string() }),
-			m_CollisionFilterManager(ScopedPtr<CollisionFilterManager>::Create())
+			m_CollisionFilterManager(ScopedPtr<FilterManager<CollisionFilter>>::Create())
 		{
 		}
 
@@ -39,14 +41,18 @@ namespace Ember {
 		inline std::filesystem::path GetAssetDirectory() const { return std::filesystem::path(m_ProjectDirectory) / m_Config.AssetDirectory; }
 		inline std::filesystem::path GetStartScenePath() const { return std::filesystem::path(m_ProjectDirectory) / m_Config.StartScene; }
 
-		inline CollisionFilterManager& GetCollisionFilterManager() { return *m_CollisionFilterManager.Ptr(); }
-		inline const CollisionFilterManager& GetCollisionFilterManager() const { return *m_CollisionFilterManager.Ptr(); }
+		inline FilterManager<CollisionFilter>& GetCollisionFilterManager() { return *m_CollisionFilterManager.Ptr(); }
+		inline const FilterManager<CollisionFilter>& GetCollisionFilterManager() const { return *m_CollisionFilterManager.Ptr(); }
+
+		inline FilterManager<RenderLayer>& GetRenderLayerManager() { return *m_RenderLayerManager.Ptr(); }
+		inline const FilterManager<RenderLayer>& GetRenderLayerManager() const { return *m_RenderLayerManager.Ptr(); }
 
 	private:
 		ProjectConfig m_Config;
 		std::filesystem::path m_ProjectDirectory;
 
-		ScopedPtr<CollisionFilterManager> m_CollisionFilterManager = nullptr;
+		ScopedPtr<FilterManager<CollisionFilter>> m_CollisionFilterManager = nullptr;
+		ScopedPtr<FilterManager<RenderLayer>> m_RenderLayerManager = nullptr;
 
 		friend class ProjectSerializer;
 	};

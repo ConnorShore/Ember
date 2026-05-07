@@ -8,6 +8,7 @@
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
+#include "Ember/Render/RenderLayer.h"
 #include "Ember/Render/VFX/VFXTypes.h"
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
@@ -369,6 +370,7 @@ namespace Ember {
 	struct StaticMeshComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+		RenderLayer Layer = RenderLayerPreset::Default;
 
 		StaticMeshComponent() = default;
 		StaticMeshComponent(UUID meshId) : MeshHandle(meshId) {}
@@ -379,6 +381,7 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		UUID AnimatorEntityHandle = Constants::InvalidUUID;
+		RenderLayer Layer = RenderLayerPreset::Default;
 
 		// Runtime only (not serialized) -> used for caching animator id to avoid expensive lookups
 		EntityID RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
@@ -474,6 +477,7 @@ namespace Ember {
 	{
 		Camera Camera;
 		bool IsActive = false;
+		RenderLayer RenderMask = RenderLayerPreset::All;
 
 		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}

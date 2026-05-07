@@ -44,11 +44,13 @@ namespace Ember {
 		auto& filterManager = m_Project->GetCollisionFilterManager();
 		auto filterNode = physicsNode["CollisionFilters"];
 		filterNode |= ryml::SEQ;
-		for (const auto& filter : filterManager.GetCustomFilters())
+		uint32_t i = 0;
+		for (const auto& filter : filterManager.GetFilters())
 		{
 			auto filterEntryNode = filterNode.append_child();
 			filterEntryNode |= ryml::MAP;
 			filterEntryNode["Name"] << filter;
+			filterEntryNode["Locked"] << filterManager.isSlotLocked(i);
 		}
 
 		std::ofstream fout(filePath);
@@ -100,16 +102,26 @@ namespace Ember {
 
 			// Physics Collider Filters
 			auto& filterManager = m_Project->GetCollisionFilterManager();
-			std::vector<std::string> customFilters;
+			std::vector<std::string> filters;
 
+			uint32_t i = 0;
 			for (auto filterNode : physicsNode["CollisionFilters"].children())
 			{
 				std::string filterName;
 				filterNode["Name"] >> filterName;
-				customFilters.push_back(filterName);
+				
+				if (filterNode.has_child("Locked"))
+				{
+					bool locked;
+					filterNode["Locked"] >> locked;
+					if (locked)
+						filterManager.setSlotLock(i, true);
+				}
+
+				filters.push_back(filterName);
 			}
 
-			filterManager.InitWithCustomFilters(customFilters);
+			filterManager.InitWithFilters(filters);
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();
