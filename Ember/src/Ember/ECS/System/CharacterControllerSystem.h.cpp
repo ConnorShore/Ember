@@ -1,6 +1,5 @@
 #include "ebpch.h"
 #include "CharacterControllerSystem.h"
-
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
 #include "Ember/Scene/Scene.h"
@@ -38,8 +37,8 @@ namespace Ember {
 				rp3d::Quaternion(currentRotation.x, currentRotation.y, currentRotation.z, currentRotation.w)
 			));
 
-			// Grounded check
-			const float groundCheckMargin = 0.05f;	// account for small gaps between the capsule and the ground due to rotation and physics resolution
+			// 1. Grounded check (Overlap is best for edges/ledges)
+			const float groundCheckMargin = 0.05f;
 			float checkRadius = collider.Radius;
 			float yOffset = (collider.Height * 0.5f) - checkRadius + groundCheckMargin;
 			Vector3f feetPos = transform.Position - Vector3f(0.0f, yOffset, 0.0f);
@@ -48,72 +47,110 @@ namespace Ember {
 			controller.IsGrounded = overlapData;
 			controller.GroundEntity = overlapData ? overlapData.Hits[0].EntityID : Constants::Entities::InvalidEntityID;
 
+			// 2. Normal Check (Raycast to get the actual slope angle)
+			Vector3f floorNormal = Vector3f(0.0f, 1.0f, 0.0f);
+			if (controller.IsGrounded)
+			{
+				Vector3 characterBottom = transform.Position - Vector3f(0.0f, collider.Height * 0.5f, 0.0f);
+
+				// Cast slightly further than step height to ensure we hit the ramp we are standing on
+				auto hit = physicsSystem->CastRay(characterBottom, Vector3f(0.0f, -1.0f, 0.0f), controller.MaxStepHeight + 0.1f);
+				if (hit.Hit)
+				{
+					// NOTE: Assuming your raycast hit struct has a 'Normal' property. 
+					// Change this if your struct names it differently (e.g., hit.SurfaceNormal)
+					floorNormal = hit.SurfaceNormal;
+				}
+			}
+
 			// Apply Gravity
 			if (!controller.IsGrounded)
 			{
-				// Player is falling! Pull their persistent velocity down.
-				// (Assuming physicsSystem->GetGravity() returns something like 9.8f)
 				controller.Velocity.y -= (physicsSystem->GetSettings().GravityStrength * controller.GravityMultiplier * (float)delta);
 			}
 			else if (controller.Velocity.y < 0.0f)
 			{
-				// Player is on the ground. We don't want gravity to keep building up to -9000,
-				// but we want a tiny bit of downward force so they stick to ramps as they walk down them.
-				// Zero out x,z to kill momentum from ramps, but keep a little y to keep them grounded.
-				controller.Velocity = { 0.0f, -2.0f, 0.0f };
+				controller.Velocity = { 0.0f, 0.0f, 0.0f };
 			}
 
 			// Combine Input (Requested) with Physics (Velocity)
 			Vector3f currentFrameDisplacement = controller.RequestedMovement + (controller.Velocity * (float)delta);
+			float intendedDistance = Math::Length(currentFrameDisplacement);
 
-			// The Move & Slide Loop
+			// --- TRUE SLOPE PROJECTION ---
+			// If we are moving and on the ground, bend the vector to match the ramp angle
+			if (controller.IsGrounded && intendedDistance > 0.0001f)
+			{
+				float floorAngle = Math::Degrees(acos(Math::Dot(floorNormal, Vector3f(0.0f, 1.0f, 0.0f))));
+				if (floorAngle <= controller.MaxSlopeAngle)
+				{
+					// Get a vector pointing exactly to the right of our movement direction
+					Vector3f right = Math::Cross(Vector3f(0.0f, 1.0f, 0.0f), currentFrameDisplacement);
+
+					// Cross that Right vector with the Floor Normal to get a vector parallel to the ramp
+					Vector3f slopeDir = Math::Cross(right, floorNormal);
+
+					if (Math::Length(slopeDir) > 0.0001f)
+					{
+						// Set our movement to exactly match the ramp, retaining our original speed!
+						currentFrameDisplacement = Math::Normalize(slopeDir) * intendedDistance;
+					}
+				}
+			}
+
+			// Apply movement EXACTLY ONCE before the depenetration loop
+			transform.Position += currentFrameDisplacement;
+
+			// The Move & Slide Depenetration Loop
 			int maxIterations = 3;
 			for (int i = 0; i < maxIterations; i++)
 			{
-				// Propose the movement for collision testing
-				transform.Position += currentFrameDisplacement;
 				rb.Body->setTransform(rp3d::Transform(
 					rp3d::Vector3(transform.Position.x, transform.Position.y, transform.Position.z),
 					rp3d::Quaternion(currentRotation.x, currentRotation.y, currentRotation.z, currentRotation.w)
 				));
 
-				// Test for collision
 				CollisionCallbackData collisionData = Collision::TestCollision(entity);
 				if (!collisionData.HasHit)
-					break; // No hit, move freely
-
-				//currentFrameDisplacement = Vector3f(0.0f);
+					break; // No hit, we are safely out of the geometry!
 
 				for (const auto& contact : collisionData.Contacts)
 				{
-					// Push the player instantly out of the wall
-					transform.Position += contact.Normal * contact.PenetrationDepth;
+					float angle = Math::Degrees(acos(Math::Dot(contact.Normal, Vector3f(0.0f, 1.0f, 0.0f))));
+					bool isWalkableSlope = angle <= controller.MaxSlopeAngle;
 
-					// Calculate the angle of the surface we just hit
-					float floorAngle = Math::Degrees(acos(Math::Dot(contact.Normal, Vector3f(0.0f, 1.0f, 0.0f))));
-					bool isWalkableSlope = floorAngle <= controller.MaxSlopeAngle;
-
-					// Slide the current frame's movement
-					float dispDot = Math::Dot(currentFrameDisplacement, contact.Normal);
-					if (dispDot < 0.0f)
-						currentFrameDisplacement -= contact.Normal * dispDot;
-
-					// Slide the persistent velocity (Gravity/Jumping)
-					float velDot = Math::Dot(controller.Velocity, contact.Normal);
-					if (velDot < 0.0f)
+					// Smart Depenetration
+					if (isWalkableSlope)
 					{
-						if (isWalkableSlope)
-						{
-							// If we are on a walkable ramp, DO NOT project gravity into horizontal sliding!
-							// Just kill the downward velocity going into the ramp.
-							controller.Velocity.y = 0.0f;
-						}
-						else
-						{
-							// It's a wall. Slide normally
+						// Floor: Only push straight UP
+						float pushUpAmount = contact.PenetrationDepth / contact.Normal.y;
+						transform.Position.y += pushUpAmount;
+					}
+					else
+					{
+						// Wall: Push out normally in 3D
+						transform.Position += contact.Normal * contact.PenetrationDepth;
+
+						// Kill persistent velocity against walls so you don't "stick"
+						float velDot = Math::Dot(controller.Velocity, contact.Normal);
+						if (velDot < 0.0f) {
 							controller.Velocity -= contact.Normal * velDot;
 						}
 					}
+				}
+			}
+
+			// Snap to ground if on slope
+			if (controller.IsGrounded && controller.Velocity.y <= 0.0f)
+			{
+				Vector3 characterBottom = transform.Position - Vector3f(0, collider.Height * 0.5f, 0);
+				auto hit = physicsSystem->CastRay(characterBottom, Vector3f(0, -1, 0), controller.MaxStepHeight);
+				if (hit.Hit)
+				{
+					// Snap the character's Y position to the floor, completely eliminating the bounce!
+					Vector3 newPos = transform.Position;
+					newPos.y = hit.CollisionPoint.y + (collider.Height * 0.5f);
+					transform.Position = newPos;
 				}
 			}
 

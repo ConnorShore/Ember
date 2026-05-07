@@ -650,6 +650,12 @@ namespace Ember {
 		return ret;
 	}
 
+	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& direction, float length)
+	{
+		Vector3f endPoint = startPoint + glm::normalize(direction) * length;
+		return CastRay(startPoint, endPoint);
+	}
+
 	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
 		RigidBodyComponent* rb = nullptr;
