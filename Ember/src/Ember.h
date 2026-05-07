@@ -82,6 +82,8 @@
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
 #include "Ember/Asset/AudioClip.h"
+#include "Ember/Asset/AnimationEvent.h"
+#include "Ember/Asset/Animation.h"
 
 #include "Ember/Utils/PlatformUtil.h"
 

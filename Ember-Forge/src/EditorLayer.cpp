@@ -8,6 +8,8 @@
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
 #include "Panels/NotificationPanel.h"
+#include "Panels/AnimationScrubberPanel.h"
+
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
@@ -54,6 +56,7 @@ namespace Ember {
 
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<AnimationScrubberPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));

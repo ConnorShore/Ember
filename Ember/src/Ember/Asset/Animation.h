@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Asset.h"
+#include "AnimationEvent.h"
 
 #include "Ember/Core/Time.h"
 #include "Ember/Math/Math.h"
@@ -44,10 +45,23 @@ namespace Ember {
 		inline float GetDuration() const { return m_Duration; }
 		inline const std::vector<BoneAnimationTrack>& GetTracks() const { return m_Tracks; }
 
+		inline void AddEvent(const std::string& eventName, float timestamp)
+		{
+			m_Events.push_back({ eventName, timestamp });
+		}
+		inline void RemoveEvent(uint32_t eventIndex)
+		{
+			EB_CORE_ASSERT(eventIndex < m_Events.size(), "Event index out of bounds!");
+			m_Events.erase(m_Events.begin() + eventIndex);
+		}
+		inline std::vector<AnimationEvent>& GetEvents() { return m_Events; }
+		inline const std::vector<AnimationEvent>& GetEvents() const { return m_Events; }
+
 		static AssetType GetStaticType() { return AssetType::Animation; }
 
 	private:
 		float m_Duration;
 		std::vector<BoneAnimationTrack> m_Tracks;
+		std::vector<AnimationEvent> m_Events;
 	};
 }
