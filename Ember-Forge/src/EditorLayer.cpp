@@ -24,6 +24,8 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/Asset/Animation.h>
+#include <Ember/Asset/AnimationSerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/Physics/Raycast.h>
@@ -1042,12 +1044,23 @@ namespace Ember {
 				}
 			}
 
+			// Serialize animations
+			auto animations = Application::Instance().GetAssetManager().GetAssetsOfType<Animation>();
+			for (auto& anim : animations)
+			{
+				if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
+				{
+					AnimationSerializer::Serialize(anim->GetFilePath(), anim);
+				}
+			}
+
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
 			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
 			assetSerializer.Serialize(assetFilePath.string());
 
-			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
+			if (saveAs)
+				m_Context.ActiveScene->SetFilePath(sceneName);
 
 			// Save project as well to update any project settings
 			ProjectManager::SaveActiveProject();

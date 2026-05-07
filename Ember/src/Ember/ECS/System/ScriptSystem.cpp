@@ -132,4 +132,10 @@ namespace Ember {
 			}
 		}
 	}
+
+	void ScriptSystem::FireAnimationEvent(EntityID entityID, const std::string& eventName, Scene* scene)
+	{
+
+	}
+
 }

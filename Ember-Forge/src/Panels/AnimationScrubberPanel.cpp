@@ -1,8 +1,12 @@
 #include "efpch.h"
 #include "AnimationScrubberPanel.h"
+
+#include <Ember/Core/Application.h>
 #include <Ember/Asset/AnimationEvent.h>
-#include <Ember/Core/Application.h> // Ensure you can access Application/AssetManager
+#include <Ember/ECS/System/AnimationSystem.h>
+
 #include <imgui/imgui.h>
+
 #include <format>
 
 namespace Ember {
@@ -124,14 +128,24 @@ namespace Ember {
 	void AnimationScrubberPanel::RenderScrubberPane()
 	{
 		float animDuration = m_CurrentAnimation->GetDuration();
+		Entity selectedEntity = m_Context->SelectedEntity;
 
 		ImGui::Text("Timeline");
 		ImGui::Separator();
 		ImGui::Spacing();
 
 		// --- THE SCRUBBER ---
-		ImGui::SetNextItemWidth(-1); // Fill available width
-		ImGui::SliderFloat("##Scrubber", &m_CurrentTime, 0.0f, animDuration, "%.3f s");
+		ImGui::SetNextItemWidth(-1);
+
+		if (ImGui::SliderFloat("##Scrubber", &m_CurrentTime, 0.0f, animDuration, "%.3f s"))
+		{
+			// If the slider is moved, and we have a valid entity selected, set the pose
+			if (selectedEntity != Constants::Entities::InvalidEntityID)
+			{
+				auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
+				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene.Ptr(), m_CurrentAnimation->GetUUID(), selectedEntity, m_CurrentTime);
+			}
+		}
 
 		// --- THE MARKERS ---
 		ImVec2 rectMin = ImGui::GetItemRectMin(); // Top-Left of the slider bar
@@ -176,7 +190,7 @@ namespace Ember {
 			// Sort the events so they appear chronologically in the right pane
 			std::sort(events.begin(), events.end(), [](const AnimationEvent& a, const AnimationEvent& b) {
 				return a.Timestamp < b.Timestamp;
-				});
+			});
 
 			// Clear the input box for the next event
 			memset(m_NewEventName, 0, sizeof(m_NewEventName));

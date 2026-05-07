@@ -21,6 +21,7 @@ namespace Ember {
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 
 		static void FireTriggerEvent(EntityID entityA, EntityID entityB, TriggerEventType eventType, Scene* scene);
+		static void FireAnimationEvent(EntityID entityID, const std::string& eventName, Scene* scene);
 
 	private:
 		sol::state m_LuaState;

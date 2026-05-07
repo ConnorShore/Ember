@@ -54,6 +54,7 @@ namespace Ember {
 			EB_CORE_ASSERT(eventIndex < m_Events.size(), "Event index out of bounds!");
 			m_Events.erase(m_Events.begin() + eventIndex);
 		}
+		inline void SetEvents(const std::vector<AnimationEvent>& events) { m_Events = events; }
 		inline std::vector<AnimationEvent>& GetEvents() { return m_Events; }
 		inline const std::vector<AnimationEvent>& GetEvents() const { return m_Events; }
 

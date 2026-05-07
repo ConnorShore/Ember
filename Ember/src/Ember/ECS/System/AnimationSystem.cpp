@@ -229,4 +229,75 @@ namespace Ember {
 			}
 		}
 	}
+
+	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp)
+	{
+		if (!entity.ContainsComponent<AnimatorComponent>())
+			return;
+
+		auto& animator = entity.GetComponent<AnimatorComponent>();
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Safety checks
+		if (animator.SkeletonHandle == Constants::InvalidUUID || animationHandle == Constants::InvalidUUID)
+			return;
+
+		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
+		auto animation = assetManager.GetAsset<Animation>(animationHandle);
+
+		if (!skeleton || !animation)
+			return;
+
+		const auto& bones = skeleton->GetBones();
+		const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
+
+		// Force the component's time to match the scrubber (useful if the user hits "Play" from this point)
+		animator.CurrentTime = timestamp;
+
+		// Pre-allocate arrays
+		std::vector<Matrix4f> localTransforms(bones.size());
+		std::vector<Matrix4f> globalTransforms(bones.size());
+
+		// 1. Evaluate the exact pose at this timestamp
+		for (uint32_t i = 0; i < bones.size(); i++)
+		{
+			// Default to bind pose
+			Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
+			Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+
+			if (const auto* track = GetTrack(animation, i))
+			{
+				if (track->PositionKeyframes.size() > 0)
+					currentPos = EvaluatePosition(*track, timestamp);
+				if (track->RotationKeyframes.size() > 0)
+					currentRot = EvaluateRotation(*track, timestamp);
+			}
+
+			// Combine into Local Matrix
+			localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+		}
+
+		// 2. Build global pose hierarchy
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			if (bones[i].ParentID == -1) {
+				globalTransforms[i] = localTransforms[i]; // Root bone
+			}
+			else {
+				// Parent Global * Child Local
+				globalTransforms[i] = globalTransforms[bones[i].ParentID] * localTransforms[i];
+			}
+		}
+
+		// 3. Apply inverse bind pose
+		if (animator.BoneMatrices.size() < bones.size()) {
+			animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
+		}
+
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
+		}
+	}
+
 }

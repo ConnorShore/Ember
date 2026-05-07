@@ -26,6 +26,11 @@ namespace Ember {
 		uint32_t trackCount = static_cast<uint32_t>(tracks.size());
 		file.write((const char*)&trackCount, sizeof(uint32_t));
 
+		// TODO: Test event serialization when scene is saved
+		const auto& events = animation->GetEvents();
+		uint32_t eventCount = static_cast<uint32_t>(events.size());
+		file.write((const char*)&eventCount, sizeof(uint32_t));
+
 		// Write Bone Tracks
 		for (const auto& track : tracks)
 		{
@@ -44,6 +49,15 @@ namespace Ember {
 				file.write((const char*)track.RotationKeyframes.data(), rotCount * sizeof(RotationKeyframe));
 
 			// TODO: Scale keys
+		}
+
+		// Write out animation events
+		for (const auto& event : animation->GetEvents())
+		{
+			uint32_t nameLength = static_cast<uint32_t>(event.Name.size());
+			file.write((const char*)&nameLength, sizeof(uint32_t));
+			file.write(event.Name.c_str(), nameLength);
+			file.write((const char*)&event.Timestamp, sizeof(float));
 		}
 
 		file.close();
@@ -77,6 +91,9 @@ namespace Ember {
 		uint32_t trackCount;
 		file.read((char*)&trackCount, sizeof(uint32_t));
 
+		uint32_t eventCount;
+		file.read((char*)&eventCount, sizeof(uint32_t));
+
 		// 3. Read Tracks
 		std::vector<BoneAnimationTrack> tracks(trackCount);
 		for (uint32_t i = 0; i < trackCount; i++)
@@ -100,11 +117,25 @@ namespace Ember {
 			// TODO: Scale
 		}
 
+		// Read animation events
+		std::vector<AnimationEvent> events(eventCount);
+		for (uint32_t i = 0; i < eventCount; i++)
+		{
+			uint32_t nameLength;
+			file.read((char*)&nameLength, sizeof(uint32_t));
+			std::string eventName(nameLength, '\0');
+			file.read(eventName.data(), nameLength);
+			float timestamp;
+			file.read((char*)&timestamp, sizeof(float));
+			events[i] = { eventName, timestamp };
+		}
+
 		file.close();
 
 		std::string name = filepath.stem().string();
 		auto anim = SharedPtr<Animation>::Create(uuid, name, duration, tracks);
 		anim->SetFilePath(filepath.string());
+		anim->SetEvents(events);
 
 		return anim;
 	}
