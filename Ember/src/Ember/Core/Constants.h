@@ -111,6 +111,11 @@ namespace Ember::Constants {
 		inline const uint64_t CubeMeshUUID = 51;
 		inline const uint64_t QuadMeshUUID = 52;
 		inline const uint64_t CapsuleMeshUUID = 53;
+
+		//inline const char* CharacterMovementScript = "CharacterMovementScript";
+		//inline const uint64_t CharacterMovementScriptUUID = 40000;
+		//inline const char* MouseLookScript = "MouseLookScript";
+		//inline const uint64_t MouseLookScriptUUID = 40001;
 	}
 
 	namespace Uniforms {

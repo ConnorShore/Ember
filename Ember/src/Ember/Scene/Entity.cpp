@@ -33,9 +33,46 @@ namespace Ember {
 		return static_cast<uint32_t>(GetComponent<RelationshipComponent>().Children.size());
 	}
 
+	Entity Entity::GetParent()
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+		if (relationship.ParentHandle == Constants::InvalidUUID)
+			return Entity(); // Return invalid entity if no parent
+
+		return m_SceneHandle->GetEntity(relationship.ParentHandle);
+	}
+
+	Entity Entity::GetRootParent()
+	{
+		auto current = GetParent();
+		while (current)
+		{
+			if (current.IsRootParent())
+				return current;
+
+			current = current.GetParent();
+		}
+
+		return current;
+	}
+
 	bool Entity::IsRootParent()
 	{
 		return GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID;
+	}
+
+	Entity Entity::AddChild(const std::string& name /*= ""*/)
+	{
+		Entity childEntity = m_SceneHandle->AddEntity(name);
+
+		// Set parent child relationship
+		auto& relationship = GetComponent<RelationshipComponent>();
+		relationship.Children.push_back(childEntity.GetUUID());
+
+		auto& childRelationship = childEntity.GetComponent<RelationshipComponent>();
+		childRelationship.ParentHandle = GetUUID();
+
+		return childEntity;
 	}
 
 	Entity Entity::GetChildByName(const std::string& name)

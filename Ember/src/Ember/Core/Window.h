@@ -5,6 +5,7 @@
 
 #include "Ember/Event/Event.h"
 #include "Ember/Core/Core.h"
+#include "Ember/Core/CursorMode.h"
 
 namespace Ember {
 
@@ -41,6 +42,11 @@ namespace Ember {
 		virtual void SetEventCallback(const std::function<void(Event&)>& callback) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
+
+		virtual void SetCursorPosition(float x, float y) = 0;
+
+		virtual void SetCursorMode(CursorMode mode) = 0;
+		virtual CursorMode GetCursorMode() const = 0;
 
 		static ScopedPtr<Window> Create(const WindowConfig& config = WindowConfig());
 	};

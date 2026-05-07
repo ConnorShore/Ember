@@ -8,7 +8,10 @@ namespace Ember {
 	class Presets
 	{
 	public:
-		static Entity CreateCharacterController(const SharedPtr<Scene>& scene);
+		static Entity CreateFirstPersonCharacterController(const SharedPtr<Scene>& scene);
+		static Entity CreateAICharacterController(const SharedPtr<Scene>& scene);
+		static Entity CreateWaypoint(const SharedPtr<Scene>& scene);
+		static Entity CreateNavigationGrid(const SharedPtr<Scene>& scene);
 
 		static Entity CreateCube(const SharedPtr<Scene>& scene);
 		static Entity CreateQuad(const SharedPtr<Scene>& scene);
@@ -22,6 +25,7 @@ namespace Ember {
 		static Entity Create3DCamera(const SharedPtr<Scene>& scene, const Vector3f& position = Vector3f(0.0f), const Quaternion& orientation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
 
 		static Entity CreatePostProcessVolume(const SharedPtr<Scene>& scene);
+
 	};
 
 }

@@ -456,6 +456,85 @@ namespace Ember {
 			listenerNode["IsActive"] << audioListener.IsActive;
 			listenerNode["ListenerIndex"] << audioListener.ListenerIndex;
 		}
+		if (entity.ContainsComponent<WaypointComponent>())
+		{
+			auto& waypoint = entity.GetComponent<WaypointComponent>();
+			ryml::NodeRef waypointNode = entityNode["WaypointComponent"];
+			waypointNode |= ryml::MAP;
+			waypointNode["ShowPaths"] << waypoint.ShowPaths;
+		}
+		if (entity.ContainsComponent<AIPathComponent>())
+		{
+			auto& aiPath = entity.GetComponent<AIPathComponent>();
+			ryml::NodeRef pathNode = entityNode["AIPathComponent"];
+			pathNode |= ryml::MAP;
+			
+			ryml::NodeRef waypointsNode = pathNode["Waypoints"];
+			waypointsNode |= ryml::SEQ;
+			for (const auto& wp : aiPath.Waypoints)
+			{
+				Util::SerializeVector3f(waypointsNode.append_child(), wp);
+			}
+
+			pathNode["Loop"] << aiPath.Loop;
+			pathNode["Speed"] << aiPath.Speed;
+			pathNode["ArrivalTolerance"] << aiPath.ArrivalTolerance;
+		}
+		if (entity.ContainsComponent<NavigationGridComponent>())
+		{
+			auto& navGrid = entity.GetComponent<NavigationGridComponent>();
+			ryml::NodeRef navGridNode = entityNode["NavigationGridComponent"];
+			navGridNode |= ryml::MAP;
+			navGridNode["NodeSpacing"] << navGrid.NodeSpacing;
+			navGridNode["Generated"] << navGrid.Generated;
+
+			ryml::NodeRef gridRef = navGridNode["Grid"];
+			gridRef |= ryml::SEQ; // 1. Change this to a Sequence (Array)
+
+			for (const auto& column : navGrid.Grid)
+			{
+				for (const auto& node : column)
+				{
+					ryml::NodeRef nodeRef = gridRef.append_child();
+					nodeRef |= ryml::MAP; // 2. Tell ryml that this array element is an Object
+
+					Util::SerializeVector3f(nodeRef["Position"], node.WorldPosition);
+					nodeRef["IsWalkable"] << node.IsWalkable;
+					nodeRef["GridX"] << node.GridX;
+					nodeRef["GridY"] << node.GridY;
+				}
+			}
+		}
+		if (entity.ContainsComponent<AIAgentComponent>())
+		{
+			auto& aiAgent = entity.GetComponent<AIAgentComponent>();
+			ryml::NodeRef agentNode = entityNode["AIAgentComponent"];
+			agentNode |= ryml::MAP;
+			agentNode["Mode"] << (int)aiAgent.Mode;
+
+			// Manual props
+			ryml::NodeRef waypointsNode = agentNode["ManualWaypoints"];
+			waypointsNode |= ryml::SEQ;
+			for (const auto& wp : aiAgent.ManualWaypoints)
+			{
+				waypointsNode.append_child() << (uint64_t)wp;
+			}
+			agentNode["Loop"] << aiAgent.Loop;
+
+			// Dynamic props
+			agentNode["TargetEntity"] << (uint64_t)aiAgent.TargetEntity;
+			agentNode["GridEntity"] << (uint64_t)aiAgent.GridEntity;
+			agentNode["RecalculateInterval"] << aiAgent.RecalculateInterval;
+		}
+		if (entity.ContainsComponent<LocalAvoidanceComponent>())
+		{
+			auto& avoidance = entity.GetComponent<LocalAvoidanceComponent>();
+			ryml::NodeRef avoidanceNode = entityNode["LocalAvoidanceComponent"];
+			avoidanceNode |= ryml::MAP;
+			avoidanceNode["AvoidanceRadius"] << avoidance.AvoidanceRadius;
+			avoidanceNode["AvoidanceStrength"] << avoidance.AvoidanceStrength;
+			avoidanceNode["AvoidanceMask"] << avoidance.AvoidanceMask;
+		}
 	}
 
 	// =========================================================================
@@ -1032,6 +1111,104 @@ namespace Ember {
 			auto& alc = deserializedEntity.AttachComponent<AudioListenerComponent>();
 			listenerNode["IsActive"] >> alc.IsActive;
 			listenerNode["ListenerIndex"] >> alc.ListenerIndex;
+		}
+
+		if (entityNode.has_child("WaypointComponent"))
+		{
+			ryml::NodeRef waypointNode = entityNode["WaypointComponent"];
+			auto& wpc = deserializedEntity.AttachComponent<WaypointComponent>();
+			waypointNode["ShowPaths"] >> wpc.ShowPaths;
+		}
+
+		if (entityNode.has_child("AIPathComponent"))
+		{
+			ryml::NodeRef pathNode = entityNode["AIPathComponent"];
+			auto& aiPath = deserializedEntity.AttachComponent<AIPathComponent>();
+			if (pathNode.has_child("Waypoints"))
+			{
+				for (ryml::NodeRef wpNode : pathNode["Waypoints"].children())
+				{
+					Vector3f wp;
+					Util::DeserializeVector3f(wpNode, wp);
+					aiPath.Waypoints.push_back(wp);
+				}
+			}
+			pathNode["Loop"] >> aiPath.Loop;
+			pathNode["Speed"] >> aiPath.Speed;
+			pathNode["ArrivalTolerance"] >> aiPath.ArrivalTolerance;
+		}
+
+		if (entityNode.has_child("NavigationGridComponent"))
+		{
+			ryml::NodeRef navGridNode = entityNode["NavigationGridComponent"];
+			auto& navGrid = deserializedEntity.AttachComponent<NavigationGridComponent>();
+			navGridNode["NodeSpacing"] >> navGrid.NodeSpacing;
+			navGridNode["Generated"] >> navGrid.Generated;
+			if (navGridNode.has_child("Grid"))
+			{
+				std::vector<std::vector<NavNode>> grid;
+				for (ryml::NodeRef nodeRef : navGridNode["Grid"].children())
+				{
+					Vector3f pos;
+					Util::DeserializeVector3f(nodeRef["Position"], pos);
+					bool isWalkable;
+					nodeRef["IsWalkable"] >> isWalkable;
+					int gridX, gridY;
+					nodeRef["GridX"] >> gridX;
+					nodeRef["GridY"] >> gridY;
+
+					if (grid.size() <= gridX)
+						grid.resize(gridX + 1);
+					if (grid[gridX].size() <= gridY)
+						grid[gridX].resize(gridY + 1);
+
+					grid[gridX][gridY] = { pos, gridX, gridY, isWalkable };
+				}
+
+				navGrid.Grid = grid;
+			}
+		}
+
+		if (entityNode.has_child("AIAgentComponent"))
+		{
+			ryml::NodeRef aiAgentNode = entityNode["AIAgentComponent"];
+			auto& aiAgent = deserializedEntity.AttachComponent<AIAgentComponent>();
+
+			int modeVal;
+			aiAgentNode["Mode"] >> modeVal;
+			aiAgent.Mode = (AIAgentComponent::PathMode)modeVal;
+
+			if (aiAgentNode.has_child("ManualWaypoints"))
+			{
+				for (ryml::NodeRef wpNode : aiAgentNode["ManualWaypoints"].children())
+				{
+					uint64_t wpEntityVal;
+					wpNode >> wpEntityVal;
+					UUID wpEntityID = (UUID)wpEntityVal;
+					if (wpEntityID != Constants::InvalidUUID)
+						aiAgent.ManualWaypoints.push_back(wpEntityID);
+				}
+			}
+
+			aiAgentNode["Loop"] >> aiAgent.Loop;
+
+			uint64_t targetEntityVal, gridEntityVal;
+			aiAgentNode["TargetEntity"] >> targetEntityVal;
+			aiAgent.TargetEntity = (UUID)targetEntityVal;
+
+			aiAgentNode["GridEntity"] >> gridEntityVal;
+			aiAgent.GridEntity = (UUID)gridEntityVal;
+
+			aiAgentNode["RecalculateInterval"] >> aiAgent.RecalculateInterval;
+		}
+
+		if (entityNode.has_child("LocalAvoidanceComponent"))
+		{
+			ryml::NodeRef avoidanceNode = entityNode["LocalAvoidanceComponent"];
+			auto& avoidance = deserializedEntity.AttachComponent<LocalAvoidanceComponent>();
+			avoidanceNode["AvoidanceRadius"] >> avoidance.AvoidanceRadius;
+			avoidanceNode["AvoidanceStrength"] >> avoidance.AvoidanceStrength;
+			avoidanceNode["AvoidanceMask"] >> avoidance.AvoidanceMask;
 		}
 	}
 

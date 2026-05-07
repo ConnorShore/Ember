@@ -15,6 +15,7 @@
 #include "Ember/ECS/System/LifecycleSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
+#include "Ember/ECS/System/AISystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -150,8 +151,12 @@ namespace Ember {
 					PoolConfigComponent,
 					ParticleEmitterComponent,
 					PostProcessVolumeComponent,
-					//AudioSourceComponent,
-					AudioListenerComponent
+					AudioListenerComponent,
+					WaypointComponent,
+					AIPathComponent,
+					NavigationGridComponent,
+					AIAgentComponent,
+					LocalAvoidanceComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -211,6 +216,7 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
+		systemManager.GetSystem<AISystem>()->OnSceneAttach(this);
 
 		// Initialize Pools
 		auto view = m_Registry->ActiveQuery<PoolConfigComponent>();
@@ -251,6 +257,7 @@ namespace Ember {
 
 		systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<AISystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
@@ -267,6 +274,7 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
+		systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, Math::Inverse(camera.GetViewMatrix()));
 
 		RemovePendingRemovals();
@@ -475,8 +483,12 @@ namespace Ember {
 			PoolConfigComponent,
 			ParticleEmitterComponent,
 			PostProcessVolumeComponent,
-			//AudioSourceComponent,
-			AudioListenerComponent
+			AudioListenerComponent,
+			WaypointComponent,
+			AIPathComponent,
+			NavigationGridComponent,
+			AIAgentComponent,
+			LocalAvoidanceComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

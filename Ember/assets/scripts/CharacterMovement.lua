@@ -1,0 +1,44 @@
+local CharacterMovement = {}
+
+function CharacterMovement:OnCreate(entity)
+end
+
+function CharacterMovement:OnUpdate(entity, delta)
+    local controller = entity:GetComponent("CharacterControllerComponent")
+    local transform = entity:GetComponent("TransformComponent")
+
+    local forward = transform:GetForward()
+    local right = transform:GetRight()
+    
+    -- Player Controller Movement
+    local moveDir = Vector3f.Zero()
+
+    -- Strafing
+    if IsKeyPressed(KeyCode.A) then 
+        moveDir = moveDir - right
+    elseif IsKeyPressed(KeyCode.D) then 
+        moveDir = moveDir + right
+    end
+
+    -- Forward / Backward
+    if IsKeyPressed(KeyCode.W) then 
+        moveDir = moveDir + forward
+    elseif IsKeyPressed(KeyCode.S) then 
+        moveDir = moveDir - forward
+    end
+    
+    -- Normalize so diagonal movement isn't 1.4x faster!
+    if moveDir:Length() > 0 then
+        moveDir = moveDir:Normalize()
+    end
+    
+    -- Move using the Character Controller
+    controller:Move(moveDir * controller.WalkSpeed * delta)
+    
+    -- Jumping
+    if IsKeyPressed(KeyCode.Space) and controller.IsGrounded then
+        controller:Jump()
+    end
+end
+
+return CharacterMovement

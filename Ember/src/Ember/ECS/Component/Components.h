@@ -17,6 +17,8 @@
 #include "Ember/Asset/PhysicsMaterial.h"
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
+#include "Ember/AI/NavNode.h"
+#include "Ember/Physics/CollisionFilter.h"
 
 #include <sol/sol.hpp>
 
@@ -97,6 +99,11 @@ namespace Ember {
 		const Matrix4f& GetWorldTransform() const
 		{
 			return WorldTransform;
+		}
+
+		const Vector3f& GetWorldPosition() const
+		{
+			return WorldTransform[3];
 		}
 
 		// Extract basis vectors from the world transform matrix columns
@@ -715,6 +722,79 @@ namespace Ember {
 	{
 		uint32_t ListenerIndex = 0;
 		bool IsActive = true;
+
+		AudioListenerComponent() = default;
+		AudioListenerComponent(const AudioListenerComponent&) = default;
+	};
+
+	struct WaypointComponent
+	{
+		// Editor only prop to show all connected paths when waypoint entity is selected
+		bool ShowPaths = true;
+
+		WaypointComponent() = default;
+		WaypointComponent(const WaypointComponent&) = default;
+	};
+
+	struct AIAgentComponent
+	{
+		enum class PathMode { Manual, Dynamic };
+		PathMode Mode = PathMode::Manual;
+
+		// Manual properties
+		std::vector<UUID> ManualWaypoints;
+		bool Loop = true;
+
+		// Dynamic properties
+		UUID TargetEntity = Constants::InvalidUUID;
+		UUID GridEntity = Constants::InvalidUUID;
+		float RecalculateInterval = 1.0f;
+
+		// Runtime only (not serialized)
+		float TimeSinceLastRecalculate = 0.0f;
+		bool Dirty = false; // Set to true when the agent needs to update its mode
+
+		AIAgentComponent() = default;
+		AIAgentComponent(const AIAgentComponent&) = default;
+	};
+
+	struct AIPathComponent
+	{
+		std::vector<Vector3f> Waypoints;	// Positions to navigate to
+		float Speed = 1.0f;
+		bool Loop = true;
+		float ArrivalTolerance = 0.1f; // How close to a waypoint before we consider it "reached"
+
+		// Runtime only (not serialized)
+		uint32_t CurrentWaypointIndex = 0;
+
+		AIPathComponent() = default;
+		AIPathComponent(const AIPathComponent&) = default;
+	};
+
+	struct NavigationGridComponent
+	{  
+		float NodeSpacing = 1.0f;   // Size of each grid square
+		bool Generated = false;    // Has the grid been generated yet (used to trigger generation in the NavigationSystem)
+
+		// TODO: Maybe make nav nodes to shared ptrs or something to avoid copying them around so much
+		std::vector<std::vector<NavNode>> Grid;
+
+		NavigationGridComponent() = default;
+		NavigationGridComponent(const NavigationGridComponent&) = default;
+	};
+
+	struct LocalAvoidanceComponent
+	{
+		float AvoidanceRadius = 0.5f; // How close other agents can get before we start avoiding them
+		float AvoidanceStrength = 1.0f; // How strongly we try to avoid other agents (0 = ignore, 1 = full avoidance)
+		CollisionFilter AvoidanceMask = CollisionFilterPreset::Default; // Which agents to avoid (use collision filters to specify)
+
+		// Runtime only (not serialized)
+		Vector3f AvoidanceVector = Vector3f(0.0f); // The current offset being applied to avoid other agents
+
+		LocalAvoidanceComponent() = default;
+		LocalAvoidanceComponent(const LocalAvoidanceComponent&) = default;
 	};
 
 }

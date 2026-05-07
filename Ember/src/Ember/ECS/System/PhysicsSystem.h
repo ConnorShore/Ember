@@ -30,7 +30,7 @@ namespace Ember {
 		uint32_t VelocitySolverIterations = 10;
 	};
 
-	struct DebugRenderSettings
+	struct PhysicsDebugRenderSettings
 	{
 		bool Enabled = false;
 
@@ -55,6 +55,7 @@ namespace Ember {
 		void RemoveRigidBody(RigidBodyComponent& rigidBody);
 		void InitializeEntity(EntityID entity, Scene* scene);
 
+		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& direction, float length);
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
 		OverlapTestData TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter = CollisionFilterPreset::All);
@@ -69,7 +70,7 @@ namespace Ember {
 
 		void RestartPhysicsWorld();
 
-		DebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
+		PhysicsDebugRenderSettings& GetDebugRenderSettings() { return m_DebugRenderSettings; }
 
 		// When the selected entity has a collider with PreviewCollider enabled, that collider
 		// is drawn in the viewport without needing the global physics debug draw toggle.
@@ -84,6 +85,9 @@ namespace Ember {
 		void CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene);
 		void CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene);
 		void CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene);
+		void UpdateRigidbodies(Scene* scene);
+		void UpdateAvoidanceCollisions(Scene* scene);
+		void UpdateScriptTriggers(Scene* scene);
 		void ShowDebugRendererIfApplicable();
 		void UpdateDebugRenderData();
 
@@ -97,7 +101,7 @@ namespace Ember {
 		PhysicsEventListener m_PhysicsEventListener;
 
 		PhysicsSettings m_Settings;
-		DebugRenderSettings m_DebugRenderSettings;
+		PhysicsDebugRenderSettings m_DebugRenderSettings;
 
 		EntityID m_PostProcessDebugEntity = Constants::Entities::InvalidEntityID;
 

@@ -2,18 +2,23 @@
 
 #include "ColliderUserData.h"
 #include "Ember/ECS/Types.h"
+#include "Ember/Math/Math.h"
 
 #include <reactphysics3d/collision/OverlapCallback.h>
 
 namespace Ember {
 
+	struct Hit
+	{
+		EntityID EntityID = Constants::Entities::InvalidEntityID;
+		CollisionFilter Filter = CollisionFilterPreset::Default;
+	};
+
 	struct OverlapTestData
 	{
-		bool HasHit = false;
-		EntityID CollidedEntity = Constants::Entities::InvalidEntityID;
-		CollisionFilter CollidedEntityFilter = CollisionFilterPreset::Default;
+		std::vector<Hit> Hits;
 
-		operator bool() const { return HasHit; }
+		operator bool() const { return !Hits.empty(); }
 	};
 
 	class OverlapTestCallback : public reactphysics3d::OverlapCallback
@@ -24,6 +29,7 @@ namespace Ember {
 
 		virtual void onOverlap(reactphysics3d::OverlapCallback::CallbackData& callbackData) override
 		{
+			//uint32_t numCollisions = 0;
 			for (uint32_t i = 0; i < callbackData.getNbOverlappingPairs(); i++)
 			{
 				auto pair = callbackData.getOverlappingPair(i);
@@ -48,10 +54,7 @@ namespace Ember {
 				if (collisionData == nullptr)
 					continue;
 
-				m_OverlapData.HasHit = true;
-				m_OverlapData.CollidedEntity = collisionData->EntityID;
-				m_OverlapData.CollidedEntityFilter = collisionData->Filter;
-				return;
+				m_OverlapData.Hits.push_back({ collisionData->EntityID, collisionData->Filter });
 			}
 		}
 

@@ -11,7 +11,8 @@ namespace Ember {
 			"Scale", &TransformComponent::Scale,
 			"WorldPosition", sol::property([](TransformComponent& c) { return Vector3f(c.GetWorldTransform()[3]); }),
 			"WorldRotation", sol::property([](TransformComponent& c) { return Math::ToEulerAngles(glm::quat_cast(c.GetWorldTransform())); }),
-			"GetForward", &TransformComponent::GetForward
+			"GetForward", &TransformComponent::GetForward,
+			"GetRight", &TransformComponent::GetRight
 		);
 	}
 }

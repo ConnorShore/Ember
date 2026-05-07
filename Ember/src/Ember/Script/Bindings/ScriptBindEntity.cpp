@@ -56,6 +56,14 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<TextComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<TextComponent>()); });
 		if (componentTypeStr == "AudioSourceComponent")
 			return guardGet(entity.ContainsComponent<AudioSourceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AudioSourceComponent>()); });
+		if (componentTypeStr == "WaypointComponent")
+			return guardGet(entity.ContainsComponent<WaypointComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<WaypointComponent>()); });
+		if (componentTypeStr == "AIPathComponent")
+			return guardGet(entity.ContainsComponent<AIPathComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AIPathComponent>()); });
+		if (componentTypeStr == "AIAgentComponent")
+			return guardGet(entity.ContainsComponent<AIAgentComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AIAgentComponent>()); });
+		if (componentTypeStr == "LocalAvoidanceComponent")
+			return guardGet(entity.ContainsComponent<LocalAvoidanceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<LocalAvoidanceComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -107,6 +115,14 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<TextComponent>());
 		if (componentTypeStr == "AudioSourceComponent")
 			return sol::make_object(state, entity.ContainsComponent<AudioSourceComponent>());
+		if (componentTypeStr == "WaypointComponent")
+			return sol::make_object(state, entity.ContainsComponent<WaypointComponent>());
+		if (componentTypeStr == "AIPathComponent")
+			return sol::make_object(state, entity.ContainsComponent<AIPathComponent>());
+		if (componentTypeStr == "AIAgentComponent")
+			return sol::make_object(state, entity.ContainsComponent<AIAgentComponent>());
+		if (componentTypeStr == "LocalAvoidanceComponent")
+			return sol::make_object(state, entity.ContainsComponent<LocalAvoidanceComponent>());
 
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -168,6 +184,10 @@ namespace Ember {
 		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
 		if (componentTypeStr == "ParticleEmitterComponent") return addAndReturn(ParticleEmitterComponent{});
 		if (componentTypeStr == "AudioSourceComponent") return addAndReturn(AudioSourceComponent{});
+		if (componentTypeStr == "WaypointComponent") return addAndReturn(WaypointComponent{});
+		if (componentTypeStr == "AIPathComponent") return addAndReturn(AIPathComponent{});
+		if (componentTypeStr == "AIAgentComponent") return addAndReturn(AIAgentComponent{});
+		if (componentTypeStr == "LocalAvoidanceComponent") return addAndReturn(LocalAvoidanceComponent{});
 		
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -212,6 +232,10 @@ namespace Ember {
 		if (componentTypeStr == "ScriptComponent") return entity.DetachComponent<ScriptComponent>();
 		if (componentTypeStr == "ParticleEmitterComponent") return entity.DetachComponent<ParticleEmitterComponent>();
 		if (componentTypeStr == "AudioSourceComponent") return entity.DetachComponent<AudioSourceComponent>();
+		if (componentTypeStr == "WaypointComponent") return entity.DetachComponent<WaypointComponent>();
+		if (componentTypeStr == "AIPathComponent") return entity.DetachComponent<AIPathComponent>();
+		if (componentTypeStr == "AIAgentComponent") return entity.DetachComponent<AIAgentComponent>();
+		if (componentTypeStr == "LocalAvoidanceComponent") return entity.DetachComponent<LocalAvoidanceComponent>();
 
 		EB_CORE_ASSERT(false, "Failed to detach component. Unknown component type: {}", componentTypeStr);
 	}
@@ -225,7 +249,13 @@ namespace Ember {
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
-			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
+			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); },
+			"GetParent", &Entity::GetParent,
+			"IsRootParent", &Entity::IsRootParent,
+			"GetRootParent", &Entity::GetRootParent,
+			"GetChildren", &Entity::GetAllChildren,
+			"GetChild", &Entity::GetChildByName,
+			"AddChild", & Entity::AddChild
 		);
 
 		entityType.set_function("GetScriptInstance", [](Entity& entity, sol::this_state s) -> sol::object {

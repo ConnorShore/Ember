@@ -101,6 +101,29 @@ namespace Ember {
 			return m_WindowData.VSync;
 		}
 
+		void Window::SetCursorPosition(float x, float y)
+		{
+			glfwSetCursorPos(m_Window, x, y);
+		}
+
+		void Window::SetCursorMode(CursorMode mode)
+		{
+			m_CursorMode = mode;
+
+			switch (mode)
+			{
+			case CursorMode::Normal:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				break;
+			case CursorMode::Hidden:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+				break;
+			case CursorMode::Locked:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				break;
+			}
+		}
+		
 		// Hook GLFW callbacks that translate native events into Ember events
 		void Window::RegisterCallbacks()
 		{

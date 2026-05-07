@@ -99,18 +99,68 @@ namespace Ember {
 		return result;
 	}
 
+	//std::string FileDialog::OpenDirectory()
+	//{
+	//	std::string result = "";
+
+	//	// Initialize COM library
+	//	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	//	if (FAILED(hr)) return result;
+
+	//	IFileOpenDialog* pFolderDialog;
+
+	//	// Create the FileOpenDialog object
+	//	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFolderDialog));
+
+	//	if (SUCCEEDED(hr))
+	//	{
+	//		// Get current options
+	//		DWORD dwOptions;
+	//		if (SUCCEEDED(pFolderDialog->GetOptions(&dwOptions)))
+	//		{
+	//			// CRITICAL STEP: Tell the OS to only pick folders!
+	//			pFolderDialog->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+	//		}
+
+	//		// Show the dialog
+	//		if (SUCCEEDED(pFolderDialog->Show(NULL)))
+	//		{
+	//			IShellItem* pItem;
+	//			if (SUCCEEDED(pFolderDialog->GetResult(&pItem)))
+	//			{
+	//				PWSTR pszFilePath;
+	//				if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath)))
+	//				{
+	//					// Convert Wide String to std::string
+	//					std::wstring ws(pszFilePath);
+	//					result = std::string(ws.begin(), ws.end());
+	//					CoTaskMemFree(pszFilePath);
+	//				}
+	//				pItem->Release();
+	//			}
+	//		}
+	//		pFolderDialog->Release();
+	//	}
+
+	//	CoUninitialize();
+	//	return result;
+	//}
+
 	std::string FileDialog::OpenDirectory()
 	{
 		std::string result = "";
 
-		// Initialize COM library
-		HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-		if (FAILED(hr)) return result;
+		// Attempt to initialize COM.
+		HRESULT hrInit = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+		// We only abort if it is a critical failure OTHER than the changed mode.
+		if (FAILED(hrInit) && hrInit != RPC_E_CHANGED_MODE)
+			return result;
 
 		IFileOpenDialog* pFolderDialog;
 
 		// Create the FileOpenDialog object
-		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFolderDialog));
+		HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFolderDialog));
 
 		if (SUCCEEDED(hr))
 		{
@@ -142,7 +192,13 @@ namespace Ember {
 			pFolderDialog->Release();
 		}
 
-		CoUninitialize();
+		// Only uninitialize if WE successfully initialized it (S_OK or S_FALSE).
+		// If it was RPC_E_CHANGED_MODE, we leave it alone for miniaudio!
+		if (SUCCEEDED(hrInit))
+		{
+			CoUninitialize();
+		}
+
 		return result;
 	}
 

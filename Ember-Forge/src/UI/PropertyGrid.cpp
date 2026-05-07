@@ -318,6 +318,54 @@ namespace Ember {
 			return assetDropped;
 		}
 
+		bool EntityReference(const std::string& label, const std::string& entityName, const std::string& payloadType, UUID& outDroppedEntityUUID, UICallbackFunc clearFunc /* = nullptr */)
+		{
+			bool entityDropped = false;
+			ImGui::PushID(label.c_str());
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+
+			float buttonSize = ImGui::GetFrameHeight();
+			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+			float fieldWidth = ImGui::GetContentRegionAvail().x - (clearFunc ? (buttonSize + spacing) : 0.0f);
+
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+			ImGui::Button(entityName.c_str(), ImVec2(fieldWidth, 0));
+			ImGui::PopStyleVar();
+
+			// The Drag and Drop Target
+			if (ImGui::BeginDragDropTarget())
+			{
+				// Replace "SCENE_HIERARCHY_ENTITY" with whatever payload string your Scene Hierarchy actually uses!
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					// Assuming your payload passes the EntityID directly
+					outDroppedEntityUUID = *(const UUID*)payload->Data;
+					entityDropped = true;
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			if (clearFunc)
+			{
+				ImGui::SameLine(0, spacing);
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+				if (ImGui::Button("X", ImVec2(buttonSize, buttonSize)))
+				{
+					clearFunc();
+				}
+				ImGui::PopStyleColor();
+			}
+
+			ImGui::PopID();
+			return entityDropped;
+		}
+
 		void ActionRow(const std::string& label, const std::string& btn1Label, UICallbackFunc btn1Func, const std::string& btn2Label /* = "" */, UICallbackFunc btn2Func /* = nullptr */)
 		{
 			ImGui::PushID(label.c_str());

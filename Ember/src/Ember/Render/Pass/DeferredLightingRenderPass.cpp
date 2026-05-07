@@ -127,7 +127,7 @@ namespace Ember {
 			auto [light, transform] = registry.GetComponents<PointLightComponent, TransformComponent>(entity);
 			int i = lightData.ActivePointLights;
 
-			lightData.PointLights[i].Position = Vector3f(transform.WorldTransform[3]);
+			lightData.PointLights[i].Position = Vector3f(transform.GetWorldPosition());
 			lightData.PointLights[i].Color = light.Color;
 			lightData.PointLights[i].Intensity = light.Intensity;
 			lightData.PointLights[i].Radius = light.Radius;
@@ -147,7 +147,7 @@ namespace Ember {
 			auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
 			int i = lightData.ActiveSpotLights;
 
-			lightData.SpotLights[i].Position = Vector3f(transform.WorldTransform[3]);
+			lightData.SpotLights[i].Position = Vector3f(transform.GetWorldPosition());
 			lightData.SpotLights[i].Direction = transform.GetForward();
 			lightData.SpotLights[i].Color = light.Color;
 			lightData.SpotLights[i].Intensity = light.Intensity;

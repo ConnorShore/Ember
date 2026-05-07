@@ -8,7 +8,7 @@ namespace Ember {
 
 	bool Collision::CheckOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
 	{
-		return CheckOverlapBoxWithData(position, rotation, scale, entity, filter).HasHit;
+		return CheckOverlapBoxWithData(position, rotation, scale, entity, filter);
 	}
 
 	OverlapTestData Collision::CheckOverlapBoxWithData(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
@@ -19,7 +19,7 @@ namespace Ember {
 
 	bool Collision::CheckOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
 	{
-		return CheckOverlapSphereWithData(position, radius, entity, filter).HasHit;
+		return CheckOverlapSphereWithData(position, radius, entity, filter);
 	}
 
 	OverlapTestData Collision::CheckOverlapSphere(Entity entity)

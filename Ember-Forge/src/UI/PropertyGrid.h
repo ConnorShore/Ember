@@ -40,6 +40,8 @@ namespace Ember {
 		// Pass nullptr to browseFunc or clearFunc to hide those respective buttons.
 		bool AssetReference(const std::string& label, const std::string& assetName, const std::string& payloadType, std::string& outDroppedPayload, UICallbackFunc browseFunc = nullptr, UICallbackFunc clearFunc = nullptr);
 
+		bool EntityReference(const std::string& label, const std::string& entityName, const std::string& payloadType, UUID& outDroppedEntityUUID, UICallbackFunc clearFunc = nullptr);
+
 		// A flexible row for action buttons. Leave btn2 empty to draw a single full-width button.
 		void ActionRow(const std::string& label, const std::string& btn1Label, UICallbackFunc btn1Func, const std::string& btn2Label = "", UICallbackFunc btn2Func = nullptr);
 

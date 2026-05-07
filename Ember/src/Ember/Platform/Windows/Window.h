@@ -27,6 +27,11 @@ namespace Ember {
 			inline virtual void SetEventCallback(const EventCallbackFunc& callback) override { m_WindowData.EventCallback = callback; }
 			inline virtual void* GetNativeWindow() const override { return m_Window; }
 
+			virtual void SetCursorPosition(float x, float y) override;
+
+			virtual void SetCursorMode(CursorMode mode) override;
+			inline virtual CursorMode GetCursorMode() const override { return m_CursorMode; }
+
 		private:
 			void RegisterCallbacks();
 
@@ -41,6 +46,8 @@ namespace Ember {
 				EventCallbackFunc EventCallback;
 				bool VSync;
 			} m_WindowData;
+
+			CursorMode m_CursorMode = CursorMode::Normal;
 		};
 
 	}

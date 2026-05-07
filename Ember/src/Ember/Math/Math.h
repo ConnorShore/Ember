@@ -242,6 +242,16 @@ namespace Ember {
 			return glm::mix(a, b, t);
 		}
 
+		static inline float Clamp(float value, float min, float max)
+		{
+			return glm::clamp(value, min, max);
+		}
+
+		static inline Vector3f Clamp(const Vector3f& value, const Vector3f& min, const Vector3f& max)
+		{
+			return glm::clamp(value, min, max);
+		}
+
 		static inline Vector3f Cross(const Vector3f& a, const Vector3f& b)
 		{
 			return glm::cross(a, b);
