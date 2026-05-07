@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "AnimationSystem.h"
+#include "ScriptSystem.h"
 
 #include "Ember/Asset/Animation.h"
 
@@ -134,6 +135,7 @@ namespace Ember {
 					}
 				}
 
+				float lastFrameTime = animator.CurrentTime;
 				animator.CurrentTime += (delta * animator.PlaybackSpeed);  //  TODO: Add playback speed multiplier here later
 
 				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
@@ -156,6 +158,15 @@ namespace Ember {
 					{
 						animator.CurrentTime = 0.0f;	// Clamp to start
 						animator.IsPlaying = false;
+					}
+				}
+
+				// See if any animation events need to be fired at this timestamp
+				for (const auto& event : animation->GetEvents())
+				{
+					if (lastFrameTime < event.Timestamp && animator.CurrentTime >= event.Timestamp)
+					{
+						ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
 					}
 				}
 			}
@@ -229,4 +240,90 @@ namespace Ember {
 			}
 		}
 	}
+
+	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp)
+	{
+		if (!entity.ContainsComponent<AnimatorComponent>())
+			return;
+
+		auto& animator = entity.GetComponent<AnimatorComponent>();
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Safety checks
+		if (animator.SkeletonHandle == Constants::InvalidUUID)
+			return;
+
+		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
+		if (!skeleton)
+			return;
+
+		const auto& bones = skeleton->GetBones();
+		const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
+
+		// Pre-allocate arrays
+		std::vector<Matrix4f> localTransforms(bones.size());
+		std::vector<Matrix4f> globalTransforms(bones.size());
+
+		// --- 1. EVALUATE LOCAL TRANSFORMS ---
+		if (animationHandle == Constants::InvalidUUID)
+		{
+			// Invalid Handle: Reset time and fill with default Bind Pose
+			animator.CurrentTime = 0.0f;
+
+			for (size_t i = 0; i < bones.size(); i++)
+			{
+				localTransforms[i] = Math::Translate(bones[i].LocalBindPoseTransform.Translation) * Math::ToMatrix4f(bones[i].LocalBindPoseTransform.Rotation);
+			}
+		}
+		else
+		{
+			// Valid Handle: Evaluate the Animation Curve
+			auto animation = assetManager.GetAsset<Animation>(animationHandle);
+			if (!animation)
+				return;
+
+			animator.CurrentTime = timestamp;
+
+			for (uint32_t i = 0; i < bones.size(); i++)
+			{
+				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
+				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+
+				if (const auto* track = GetTrack(animation, i))
+				{
+					if (track->PositionKeyframes.size() > 0)
+						currentPos = EvaluatePosition(*track, timestamp);
+					if (track->RotationKeyframes.size() > 0)
+						currentRot = EvaluateRotation(*track, timestamp);
+				}
+
+				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+			}
+		}
+
+		// --- 2. BUILD GLOBAL POSE HIERARCHY ---
+		// Because we isolated the local transforms above, this math works perfectly for both cases!
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			if (bones[i].ParentID == -1) {
+				globalTransforms[i] = localTransforms[i]; // Root bone
+			}
+			else {
+				// Parent Global * Child Local
+				globalTransforms[i] = globalTransforms[bones[i].ParentID] * localTransforms[i];
+			}
+		}
+
+		// --- 3. APPLY INVERSE BIND POSE ---
+		if (animator.BoneMatrices.size() < bones.size()) {
+			animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
+		}
+
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			// Final Matrix sent to the shader
+			animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
+		}
+	}
+
 }

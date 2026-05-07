@@ -4,6 +4,8 @@
 
 namespace Ember {
 
+	class Entity;
+
 	class AnimationSystem : public System
 	{
 	public:
@@ -13,6 +15,8 @@ namespace Ember {
 		void OnAttach() override;
 		void OnDetach() override;
 		void OnUpdate(TimeStep delta, Scene* scene) override;
+
+		void SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp);
 	};
 
 }

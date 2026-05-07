@@ -8,6 +8,8 @@
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
 #include "Panels/NotificationPanel.h"
+#include "Panels/AnimationScrubberPanel.h"
+
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 
@@ -22,8 +24,11 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/Asset/Animation.h>
+#include <Ember/Asset/AnimationSerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
+#include <Ember/ECS/System/AnimationSystem.h>
 #include <Ember/Physics/Raycast.h>
 
 #include <random>
@@ -54,6 +59,7 @@ namespace Ember {
 
 		// Add Panels
 		m_Panels.push_back(SharedPtr<SceneHierarchyPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<AnimationScrubberPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<AssetManagerPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
@@ -613,8 +619,6 @@ namespace Ember {
 			}
 		}
 
-		m_PreviousSelectedEntity = m_Context.SelectedEntity;
-
 		// TODO: Move these system debug draw code blocks to own methods
 
 		// Automatically show debug draw lines for the selected entity if any of its colliders
@@ -649,6 +653,15 @@ namespace Ember {
 			else
 				aiSystem->ClearPreviewEntity();
 		}
+
+		// Remove reset animation pose changes on the selected entity
+		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<AnimatorComponent>())
+		{
+			auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
+			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene.Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
+		}
+
+		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 	}
 
 	void EditorLayer::RenderTransformGizmos()
@@ -1039,12 +1052,23 @@ namespace Ember {
 				}
 			}
 
+			// Serialize animations
+			auto animations = Application::Instance().GetAssetManager().GetAssetsOfType<Animation>();
+			for (auto& anim : animations)
+			{
+				if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
+				{
+					AnimationSerializer::Serialize(anim->GetFilePath(), anim);
+				}
+			}
+
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
 			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
 			assetSerializer.Serialize(assetFilePath.string());
 
-			if (saveAs) m_Context.ActiveScene->SetFilePath(sceneName);
+			if (saveAs)
+				m_Context.ActiveScene->SetFilePath(sceneName);
 
 			// Save project as well to update any project settings
 			ProjectManager::SaveActiveProject();

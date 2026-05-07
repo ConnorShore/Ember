@@ -1,129 +1,109 @@
 Assets:
   - Type: Texture
-    UUID: 17395862681736986445
-    Name: BloodParticle
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\BloodParticle.png'
+    UUID: 10575124471300148294
+    Name: case
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\case.jpg'
   - Type: Texture
-    UUID: 10818316536060883226
+    UUID: 5751372179770291590
+    Name: Lantern_ORM_Mat0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_ORM_Mat0.png'
+  - Type: Texture
+    UUID: 2177168009304926995
+    Name: Lantern_Tex_3.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_3.png'
+  - Type: Texture
+    UUID: 15108973500196863060
+    Name: Lantern_Tex_0.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_0.png'
+  - Type: Texture
+    UUID: 18097785076798670421
+    Name: Lantern_Tex_2.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_2.png'
+  - Type: Texture
+    UUID: 3258090039725265832
+    Name: Lantern_Tex_1.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_Tex_1.png'
+  - Type: Texture
+    UUID: 12756682284774851501
     Name: moonless_golf_4k
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\moonless_golf_4k.hdr'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Textures\moonless_golf_4k.hdr'
   - Type: Texture
-    UUID: 15361559888818349168
-    Name: SmokeParticle
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\SmokeParticle.png'
-  - Type: Texture
-    UUID: 13007419146709191088
-    Name: NewColorGradeLUT
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Textures\NewColorGradeLUT.png'
+    UUID: 844457925654129773
+    Name: Fox_Tex_0.png
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Tex_0.png'
   - Type: Script
-    UUID: 5212750190338405195
-    Name: GameMusic
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\GameMusic.lua'
-  - Type: Script
-    UUID: 8422630553721103124
+    UUID: 5364558041277287564
     Name: NewScript
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\NewScript.lua'
-  - Type: Script
-    UUID: 7020172594093713301
-    Name: EnemyPatrol
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\EnemyPatrol.lua'
-  - Type: Script
-    UUID: 16587777693882004979
-    Name: NewScript(1)
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Bullet.lua'
-  - Type: Script
-    UUID: 9585085455667977396
-    Name: BulletSpawnScript
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\BulletSpawnScript.lua'
-  - Type: Script
-    UUID: 10670335993004288059
-    Name: CampFire
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\CampFire.lua'
-  - Type: Script
-    UUID: 16541504524255684090
-    Name: Powerup
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Scripts\Powerup.lua'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Scripts\NewScript.lua'
   - Type: Material
-    UUID: 220883245630972619
-    Name: Powerup2_Powerup_StandardUnlit_Clone_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup2_Powerup_StandardUnlit_Clone_Clone.ebmat'
+    UUID: 7854277777578053203
+    Name: Fox_fox_material
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox_material.ebmat'
   - Type: Material
-    UUID: 12147062781911719508
-    Name: Powerup_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 12262935542249108056
-    Name: Log_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Log_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 13862054512284898396
-    Name: Bullet_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Bullet_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 15812231264559602920
-    Name: Enemy_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Enemy_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 17497850881512429738
-    Name: Friendly_Enemy_StandardGeometry_Clone_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Friendly_Enemy_StandardGeometry_Clone_Clone.ebmat'
-  - Type: Material
-    UUID: 9538612635053895722
-    Name: Powerup_StandardUnlit_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Powerup_StandardUnlit_Clone.ebmat'
-  - Type: Material
-    UUID: 5345865544332564414
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 10658966581415315879
+    UUID: 14259139745694361247
     Name: Cube_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 16074913669969596126
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
+    UUID: 9936367634715839456
+    Name: Ground_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 18176665314075073363
-    Name: Dirt_Ground (Copy)_StandardGeometry_Clone_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Dirt_Ground (Copy)_StandardGeometry_Clone_Clone.ebmat'
+    UUID: 9235652788431923194
+    Name: Lantern_LanternPost_Mat
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPost_Mat.ebmat'
   - Type: Material
-    UUID: 11437394191263865454
-    Name: AI_Character_Controller_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\AI_Character_Controller_StandardGeometry_Clone.ebmat'
+    UUID: 1736256064260583025
+    Name: Sphere_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 4084057428377107041
-    Name: AI_Enemy_AI_Character_Controller_StandardGeometry_Clone_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\AI_Enemy_AI_Character_Controller_StandardGeometry_Clone_Clone.ebmat'
-  - Type: Material
-    UUID: 938408037885949169
-    Name: EnemyAI_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\EnemyAI_StandardGeometry_Clone.ebmat'
-  - Type: PhysicsMaterial
-    UUID: 18418573740781660937
-    Name: RoughFloor
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Physics Materials\RoughFloor.ebpmat'
+    UUID: 7260500247662306663
+    Name: Cube_StandardUnlit_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Cube_StandardUnlit_Clone.ebmat'
+  - Type: Mesh
+    UUID: 7192262471407756962
+    Name: Lantern_LanternPole_Chain_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Chain_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 15948662498445879843
+    Name: Lantern_LanternPole_Lantern_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Lantern_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 3343826297804333935
+    Name: Lantern_LanternPole_Body_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPole_Body_Prim0.ebmesh'
+  - Type: Mesh
+    UUID: 3033507380462941629
+    Name: Fox_fox1_Prim0
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_fox1_Prim0.ebmesh'
+  - Type: Skeleton
+    UUID: 14397647678188599878
+    Name: Fox
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebskeleton'
+  - Type: Animation
+    UUID: 11532369519631369985
+    Name: Fox_Survey
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Survey.ebanim'
+  - Type: Animation
+    UUID: 7448940337024467380
+    Name: Fox_Walk
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Walk.ebanim'
+  - Type: Animation
+    UUID: 9585729018807739622
+    Name: Fox_Run
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Run.ebanim'
+  - Type: Model
+    UUID: 9787688241411138515
+    Name: Lantern
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern.ebmodel'
+  - Type: Model
+    UUID: 6935754573396706420
+    Name: Fox
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebmodel'
   - Type: Prefab
-    UUID: 12388111664304859345
-    Name: Bullet
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Prefabs\Bullet.ebprefab'
-  - Type: Font
-    UUID: 14182495134475918428
-    Name: Roboto-Regular
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Fonts\Roboto-Regular.ttf'
+    UUID: 1813234409562538226
+    Name: Cube
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Prefabs\Cube.ebprefab'
   - Type: AudioClip
-    UUID: 2192860293842243164
-    Name: powerup
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\powerup.mp3'
-  - Type: AudioClip
-    UUID: 3650591276351466459
-    Name: campfire
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\campfire.mp3'
-  - Type: AudioClip
-    UUID: 7389408278585673534
-    Name: gunshot
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\gunshot.mp3'
-  - Type: AudioClip
-    UUID: 5480116838532938354
-    Name: game-music
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Audio\game-music.mp3'
+    UUID: 17545669110137326817
+    Name: footstep
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Audio\footstep.mp3'

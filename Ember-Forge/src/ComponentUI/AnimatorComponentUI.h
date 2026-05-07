@@ -29,7 +29,6 @@ namespace Ember {
 				UI::PropertyGrid::Checkbox("Loop", component.Loop);
 
 				UI::PropertyGrid::End();
-
 			}
 		}
 
