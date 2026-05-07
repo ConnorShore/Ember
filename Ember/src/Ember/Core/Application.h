@@ -66,6 +66,11 @@ namespace Ember {
 		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
 		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
 
+		inline void SetCursorPosition(float x, float y) { m_Window->SetCursorPosition(x, y); }
+
+		inline void SetCursorMode(CursorMode mode) { m_Window->SetCursorMode(mode); }
+		inline CursorMode GetCursorMode() const { return m_Window->GetCursorMode(); }
+
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);

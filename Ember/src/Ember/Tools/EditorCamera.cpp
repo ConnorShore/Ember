@@ -128,6 +128,9 @@ namespace Ember {
 
 	void EditorCamera::MouseZoom(float delta)
 	{
+		if (m_ScrollDisabled)
+			return;
+
 		m_Distance -= delta * ZoomSpeed();
 		if (m_Distance < 1.0f)
 		{

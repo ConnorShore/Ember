@@ -117,6 +117,13 @@ namespace Ember {
 	{
 		SyncEntitySelectionState();
 
+		// Disable scrolling of editor camera if the viewport isn't hovered to prevent conflicts with scrollable panels
+		if (!m_ViewportHovered)
+			m_Camera.SetScrollDisabled(true);
+		else
+			m_Camera.SetScrollDisabled(false);
+
+		// Update the panels
 		for (auto& panel : m_Panels)
 			panel->OnUpdate(delta);
 
@@ -140,6 +147,23 @@ namespace Ember {
 			case SceneState::Pause:
 			default:
 				EB_CORE_ASSERT(false, "Unhandled scene state!");
+		}
+
+		// Set cursor locking
+		if (m_Context.CurrentSceneState == SceneState::Play)
+		{
+			if (Input::IsKeyPressed(KeyCode::Escape))
+			{
+				// TODO: Pause the runtime as well
+				Input::SetCursorMode(CursorMode::Normal);
+				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
+			}
+
+			if (m_ViewportHovered && Input::IsMouseButtonPressed(MouseButton::Left))
+			{
+				Input::SetCursorMode(CursorMode::Locked);
+				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
+			}
 		}
 
 		m_OutputFramebuffer->Unbind();
@@ -197,10 +221,13 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		m_Context.ActiveScene = Scene::CopyScene(m_EditorScene); // Create a deep copy of the current scene for runtime
+		m_Context.ActiveScene = (Scene::CopyScene(m_EditorScene)); // Create a deep copy of the current scene for runtime
 		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.ActiveScene->OnRuntimeStart();
 		m_Context.CurrentSceneState = SceneState::Play;
+
+		Input::SetCursorMode(CursorMode::Locked);
+		Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
 	}
 
 	void EditorLayer::OnRuntimeStop()
@@ -218,6 +245,8 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(m_EditorScene.Ptr());
 
 		m_Context.CurrentSceneState = SceneState::Edit;
+
+		Input::SetCursorMode(CursorMode::Normal);
 	}
 
 	void EditorLayer::RenderMenuBar()

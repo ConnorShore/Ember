@@ -249,7 +249,13 @@ namespace Ember {
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },
-			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); }
+			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); },
+			"GetParent", &Entity::GetParent,
+			"IsRootParent", &Entity::IsRootParent,
+			"GetRootParent", &Entity::GetRootParent,
+			"GetChildren", &Entity::GetAllChildren,
+			"GetChild", &Entity::GetChildByName,
+			"AddChild", & Entity::AddChild
 		);
 
 		entityType.set_function("GetScriptInstance", [](Entity& entity, sol::this_state s) -> sol::object {

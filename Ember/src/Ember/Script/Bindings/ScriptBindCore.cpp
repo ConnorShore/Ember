@@ -24,15 +24,16 @@ namespace Ember {
 			}
 		);
 
-		state.set_function("Log", [](const std::string& message) {
+		auto log = state.create_table("Log");
+		log.set_function("Info", [](const std::string& message) {
 			EB_CORE_INFO("{}", message);
 		});
 
-		state.set_function("LogWarn", [](const std::string& message) {
+		log.set_function("Warn", [](const std::string& message) {
 			EB_CORE_WARN("{}", message);
 		});
 
-		state.set_function("LogError", [](const std::string& message) {
+		state.set_function("Error", [](const std::string& message) {
 			EB_CORE_ERROR("{}", message);
 		});
 	}

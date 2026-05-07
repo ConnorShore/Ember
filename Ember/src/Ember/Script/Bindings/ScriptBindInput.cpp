@@ -137,10 +137,6 @@ namespace Ember {
 			"Alt", KeyModifier::Alt,
 			"Super", KeyModifier::Super
 		);
-
-		state.set_function("IsKeyPressed", &Input::IsKeyPressed);
-		state.set_function("IsKeyHeld", &Input::IsKeyHeld);
-
 		// Mouse bindings
 		state.new_enum("MouseButton",
 			"Left", MouseButton::Left,
@@ -148,10 +144,17 @@ namespace Ember {
 			"Middle", MouseButton::Middle
 		);
 
+		// TODO: Move functions to "Input" table
+		state.set_function("IsKeyPressed", &Input::IsKeyPressed);
+		state.set_function("IsKeyHeld", &Input::IsKeyHeld);
+
 		state.set_function("IsMouseButtonPressed", &Input::IsMouseButtonPressed);
 		state.set_function("GetMousePosition", &Input::GetMousePosition);
 		state.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
+		state.set_function("GetMouseDelta", &Input::GetMouseDelta);
 
+		state.set_function("SetCursorMode", &Input::SetCursorMode);
+		state.set_function("GetCursorMode", &Input::GetCursorMode);
 	}
 
 }

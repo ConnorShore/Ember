@@ -8,7 +8,7 @@ namespace Ember {
 	class Presets
 	{
 	public:
-		static Entity CreateCharacterController(const SharedPtr<Scene>& scene);
+		static Entity CreateFirstPersonCharacterController(const SharedPtr<Scene>& scene);
 		static Entity CreateAICharacterController(const SharedPtr<Scene>& scene);
 		static Entity CreateWaypoint(const SharedPtr<Scene>& scene);
 

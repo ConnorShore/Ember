@@ -1,21 +1,13 @@
 Assets:
   - Type: Script
-    UUID: 8320898388349922591
-    Name: EnemyPatrol
-    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Scripts\EnemyPatrol.lua'
+    UUID: 17836245840209942696
+    Name: CharacterMovement
+    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Scripts\CharacterMovement.lua'
+  - Type: Script
+    UUID: 15829459082046337224
+    Name: MouseLook
+    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Scripts\MouseLook.lua'
   - Type: Material
-    UUID: 17835403320380369234
-    Name: AI_Controller_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\AI_Controller_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 11051376756273406599
+    UUID: 13364306252775091405
     Name: Ground_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 5345865544332564414
-    Name: Ground (Copy)_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\PlayerControllerTest\Assets\Materials\Ground (Copy)_StandardGeometry_Clone.ebmat'
-  - Type: Material
-    UUID: 16972184240316712760
-    Name: Target_StandardUnlit_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\AStarTest\Assets\Materials\Target_StandardUnlit_Clone.ebmat'
+    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'

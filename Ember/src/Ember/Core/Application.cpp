@@ -136,6 +136,7 @@ namespace Ember {
 
 			m_ImGuiLayer->EndFrame();
 
+			Input::ResetMouseDelta();
 			m_Window->OnUpdate();
 		}
 
@@ -193,7 +194,7 @@ namespace Ember {
 
 	bool Application::OnMouseMoved(MouseMovedEvent& e)
 	{
-		Input::SetMousePosition(e.GetMousePosition());
+		Input::UpdateMousePosition(e.GetMousePosition());
 		return false;
 	}
 

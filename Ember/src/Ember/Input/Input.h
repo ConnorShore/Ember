@@ -4,11 +4,15 @@
 
 #include "InputCode.h"
 #include "Ember/Math/Math.h"
+#include "Ember/Core/CursorMode.h"
 
 namespace Ember {
 
 	class Input
 	{
+	public:
+		inline static const float Deadzone = 1.5f;	// 1.5 pixels
+
 	public:
 		static bool IsKeyPressed(KeyCode key);
 		static bool IsKeyHeld(KeyCode key);
@@ -19,12 +23,22 @@ namespace Ember {
 		static void IncrementKeyRepeat(KeyCode key);
 		static void SetMouseButtonState(MouseButton button, bool pressed);
 		static void SetKeyModifierState(KeyModifier modifier, bool active);
+
 		static void SetMousePosition(const Vector2f& position);
+		inline static void SetMousePosition(float x, float y) { SetMousePosition({ x, y }); }
+
+		static void UpdateMousePosition(const Vector2f& position);
 		static void SetMouseScrollOffset(const Vector2f& offset);
+
+		static void SetCursorMode(CursorMode mode);
+		static CursorMode GetCursorMode();
 
 		static int GetKeyRepeatCount(KeyCode key);
 		static const Vector2f& GetMousePosition();
 		static const Vector2f& GetMouseScrollOffset();
+		static const Vector2f& GetMouseDelta();
+
+		static void ResetMouseDelta();
 
 	private:
 		static constexpr size_t KeyArraySize = static_cast<size_t>(KeyCode::Last);
@@ -36,6 +50,6 @@ namespace Ember {
 		static KeyModifierType s_ActiveModifiers;
 
 		// TODO: Vector2 for mouse position, scroll offset, etc.
-		static Vector2f s_MousePosition, s_ScrollOffset;
+		static Vector2f s_MousePosition, s_ScrollOffset, s_PreviousMousePosition;
 	};
 }

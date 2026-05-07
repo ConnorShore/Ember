@@ -2,14 +2,61 @@
 #include "Presets.h"
 #include "EditorConstants.h"
 
+#include <Ember/Core/ProjectManager.h>
+
 namespace Ember {
 
-	Entity Presets::CreateCharacterController(const SharedPtr<Scene>& scene)
+	Entity Presets::CreateFirstPersonCharacterController(const SharedPtr<Scene>& scene)
 	{
-		Entity newEntity = scene->AddEntity("Character_Controller");
+		auto& assetManager = Application::Instance().GetAssetManager();
 
-		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
-		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		// Load assets into project if they don't exist
+		UUID characterMovementUUID = Constants::InvalidUUID;
+		if (!assetManager.ContainsAssetWithName("CharacterMovement"))
+		{
+			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+
+			// Copy CharacterMovement.lua to existing scriptsDirectory
+			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/CharacterMovement.lua");
+			std::filesystem::path destPath = scriptsDirectory / "CharacterMovement.lua";
+
+			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
+			if (!std::filesystem::exists(destPath) && !std::filesystem::copy_file(sourcePath, destPath))
+			{
+				EB_CORE_ERROR("Failed to copy CharacterMovement.lua to project assets directory! Aborting controller creation!");
+				return {};
+			}
+
+			characterMovementUUID = assetManager.Load<Script>(destPath.string(), false)->GetUUID();
+		}
+		else
+			characterMovementUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("CharacterMovement")->GetFilePath(), false)->GetUUID();
+
+		UUID mouseLookUUID = Constants::InvalidUUID;
+		if (!assetManager.ContainsAssetWithName("MouseLook"))
+		{
+			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+
+			// Copy CharacterMovement.lua to existing scriptsDirectory
+			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/MouseLook.lua");
+			std::filesystem::path destPath = scriptsDirectory / "MouseLook.lua";
+
+			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
+			if (!std::filesystem::exists(destPath) && !std::filesystem::copy_file(sourcePath, destPath))
+			{
+				EB_CORE_ERROR("Failed to copy MouseLook.lua to project assets directory! Aborting controller creation!");
+				return {};
+			}
+
+			mouseLookUUID = assetManager.Load<Script>(destPath.string(), false)->GetUUID();
+		}
+		else
+			mouseLookUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("MouseLook")->GetFilePath(), false)->GetUUID();
+
+		// Build the entity with all the necessary components for a basic character controller
+		// No mesh/material by default until render masks are implemented
+		Entity newEntity = scene->AddEntity("FirstPersonCharacter");
+
 		newEntity.AttachComponent<CharacterControllerComponent>();
 
 		auto& rbc = newEntity.AttachComponent<RigidBodyComponent>();
@@ -18,7 +65,29 @@ namespace Ember {
 		auto& colC = newEntity.AttachComponent<CapsuleColliderComponent>();
 		colC.AttachedBody = rbc.Body;
 
-		// TODO: Add basic script for character movement (WASD + Jump)
+		auto& movementScript = newEntity.AttachComponent<ScriptComponent>();
+		movementScript.ScriptHandle = characterMovementUUID;
+
+		// Head pivot (empty) child entity for mouse look
+		Entity headPivot = newEntity.AddChild("HeadPivot");
+		auto& headTransform = headPivot.GetComponent<TransformComponent>();
+		headTransform.Position.y = 0.8f;
+		headTransform.Position.z = -0.2f;
+
+		// Add camera
+		Entity cameraEntity = headPivot.AddChild("Camera");
+		auto& cameraComponent = cameraEntity.AttachComponent<CameraComponent>();
+		cameraComponent.IsActive = true;
+		cameraComponent.Camera.SetPerspective(70.0f, 0.1f, 500.0f);
+
+		// Add camera script
+		auto& camScript = cameraEntity.AttachComponent<ScriptComponent>();
+		camScript.ScriptHandle = mouseLookUUID;
+
+		// Attach billboard to camera for easy identification in editor
+		auto cameraTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::CameraTexUUID);
+		auto& bc = cameraEntity.AttachComponent<BillboardComponent>();
+		bc.TextureHandle = cameraTexture->GetUUID();
 
 		return newEntity;
 	}

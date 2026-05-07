@@ -110,6 +110,10 @@ namespace Ember {
 		Register(Constants::Assets::CubeMeshUUID, cubeMesh);
 		Register(Constants::Assets::QuadMeshUUID, quadMesh);
 		Register(Constants::Assets::CapsuleMeshUUID, capsuleMesh);
+
+		// Scripts
+		//auto characterMovementScript = Load<Script>(Constants::Assets::CharacterMovementScriptUUID, Constants::Assets::CharacterMovementScript, "Ember/assets/scripts/CharacterMovement.lua");
+		//auto mouseLookScript = Load<Script>(Constants::Assets::MouseLookScriptUUID, Constants::Assets::MouseLookScript, "Ember/assets/scripts/MouseLook.lua");
 	}
 	
 	void AssetManager::ClearAssets()

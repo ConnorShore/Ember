@@ -46,6 +46,9 @@ namespace Ember {
 		inline float GetZoomSpeedFactor() const { return m_ZoomSpeedFactor; }
 		inline float GetPanSpeedFactor() const { return m_PanSpeedFactor; }
 
+		inline void SetScrollDisabled(bool disabled) { m_ScrollDisabled = disabled; }
+		inline bool IsScrollDisabled() const { return m_ScrollDisabled; }
+
 	private:
 		void UpdateView();
 
@@ -76,6 +79,8 @@ namespace Ember {
 		float m_RotationSpeedFactor = 1.0f;
 		float m_ZoomSpeedFactor = 1.0f;
 		float m_PanSpeedFactor = 1.0f;
+
+		bool m_ScrollDisabled = false;
 	};
 
 }

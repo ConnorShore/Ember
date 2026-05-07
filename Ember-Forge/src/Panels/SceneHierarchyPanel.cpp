@@ -66,11 +66,23 @@ namespace Ember {
 				CreateEmptyEntity();
 			}
 
-			if (ImGui::BeginMenu("Create Dynamic"))
+			if (ImGui::BeginMenu("Create Controller"))
 			{
-				if (ImGui::MenuItem("Character Controller"))
+				if (ImGui::MenuItem("1st Person Character"))
 				{
-					auto entity = Presets::CreateCharacterController(m_Context->ActiveScene);
+					auto entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene);
+					if (entity == Constants::Entities::InvalidEntityID)
+						return;
+
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("AI Character"))
+				{
+					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene);
+					if (entity == Constants::Entities::InvalidEntityID)
+						return;
+
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -149,12 +161,6 @@ namespace Ember {
 
 			if (ImGui::BeginMenu("AI"))
 			{
-				if (ImGui::MenuItem("AI Character Controller"))
-				{
-					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
-				}
 
 				if (ImGui::MenuItem("Waypoint"))
 				{

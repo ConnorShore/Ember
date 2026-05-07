@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "Input.h"
+
 #include "Ember/Core/Core.h"
+#include "Ember/Core/Application.h"
 
 #define IN_KEY_RANGE(key) key >= 0 && key < KeyArraySize
 #define IN_MOUSE_BUTTON_RANGE(button) button >= 0 && button < MouseButtonArraySize
@@ -12,6 +14,7 @@ namespace Ember {
 	KeyModifierType Input::s_ActiveModifiers = 0;
 	Vector2f Input::s_MousePosition = { 0.0f, 0.0f };
 	Vector2f Input::s_ScrollOffset = { 0.0f, 0.0f };
+	Vector2f Input::s_PreviousMousePosition = { 0.0f, 0.0f };
 
 	bool Input::IsKeyPressed(KeyCode key)
 	{
@@ -65,12 +68,30 @@ namespace Ember {
 
 	void Input::SetMousePosition(const Vector2f& position)
 	{
+		Application::Instance().SetCursorPosition(position.x, position.y);
+		UpdateMousePosition(position);
+		ResetMouseDelta();
+	}
+
+	void Input::UpdateMousePosition(const Vector2f& position)
+	{
+		s_PreviousMousePosition = s_MousePosition;
 		s_MousePosition = position;
 	}
 
 	void Input::SetMouseScrollOffset(const Vector2f& offset)
 	{
 		s_ScrollOffset = offset;
+	}
+
+	void Input::SetCursorMode(CursorMode mode)
+	{
+		Application::Instance().SetCursorMode(mode);
+	}
+
+	CursorMode Input::GetCursorMode()
+	{
+		return Application::Instance().GetCursorMode();
 	}
 
 	const Vector2f& Input::GetMousePosition()
@@ -81,6 +102,23 @@ namespace Ember {
 	const Vector2f& Input::GetMouseScrollOffset()
 	{
 		return s_ScrollOffset;
+	}
+
+	const Vector2f& Input::GetMouseDelta()
+	{
+		Vector2f ret = s_MousePosition - s_PreviousMousePosition;
+
+		if (std::abs(ret.x) < Input::Deadzone) 
+			ret.x = 0.0f;
+		if (std::abs(ret.y) < Input::Deadzone) 
+			ret.y = 0.0f;
+
+		return ret;
+	}
+
+	void Input::ResetMouseDelta()
+	{
+		s_PreviousMousePosition = s_MousePosition;
 	}
 
 	int Input::GetKeyRepeatCount(KeyCode key)

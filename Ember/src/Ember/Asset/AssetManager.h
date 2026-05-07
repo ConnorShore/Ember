@@ -97,16 +97,16 @@ namespace Ember {
 		}
 
 		template<IsCoreAsset T>
-		SharedPtr<T> Load(const std::string& filePath)
+		SharedPtr<T> Load(const std::string& filePath, bool engineAsset = true)
 		{
 			std::string fileName = std::filesystem::path(filePath).stem().string();
-			return Load<T>(fileName, filePath);
+			return Load<T>(fileName, filePath, engineAsset);
 		}
 
 		template<IsCoreAsset T>
-		SharedPtr<T> Load(const std::string& name, const std::string& filePath)
+		SharedPtr<T> Load(const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
-			return Load<T>(UUID(), name, filePath);
+			return Load<T>(UUID(), name, filePath, engineAsset);
 		}
 
 		template<IsCoreAsset T>

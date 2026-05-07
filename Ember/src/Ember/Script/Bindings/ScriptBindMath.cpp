@@ -165,6 +165,15 @@ namespace Ember {
 			[](const Quaternion& q) { return Math::Normalize(q); }
 		));
 
+		math.set_function("Length", sol::overload(
+			[](const Vector3f& v) { return Math::Length(v); }
+		));
+
+		math.set_function("Clamp", sol::overload(
+			[](float value, float min, float max) { return Math::Clamp(value, min, max); },
+			[](const Vector3f& value, const Vector3f& min, const Vector3f& max) { return Math::Clamp(value, min, max); }
+		));
+
 		// Interpolation
 		math.set_function("Lerp", sol::overload(
 			[](float a, float b, float t) { return Math::Lerp(a, b, t); },
