@@ -162,6 +162,12 @@ namespace Ember {
 			if (ImGui::BeginMenu("AI"))
 			{
 
+				if (ImGui::MenuItem("Navigation Grid"))
+				{
+					auto entity = Presets::CreateNavigationGrid(m_Context->ActiveScene);
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
 				if (ImGui::MenuItem("Waypoint"))
 				{
 					auto entity = Presets::CreateWaypoint(m_Context->ActiveScene);

@@ -239,7 +239,10 @@ namespace Ember {
 				if (navGrid.Generated)
 					NavigationGrid::RenderGeneratedGrid(navGrid.Grid, previewEntityIsSelected);
 				else
-					NavigationGrid::RenderUngeneratedGrid(transform.GetWorldPosition(), transform.Scale.x, transform.Scale.z, previewEntityIsSelected);
+				{
+					Vector3f worldPos = transform.GetWorldPosition();
+					NavigationGrid::RenderUngeneratedGrid(worldPos, transform.Scale.x, transform.Scale.z, previewEntityIsSelected);
+				}
 			}
 		}
 		else if (previewEntityIsSelected)

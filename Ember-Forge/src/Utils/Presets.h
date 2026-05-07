@@ -11,6 +11,7 @@ namespace Ember {
 		static Entity CreateFirstPersonCharacterController(const SharedPtr<Scene>& scene);
 		static Entity CreateAICharacterController(const SharedPtr<Scene>& scene);
 		static Entity CreateWaypoint(const SharedPtr<Scene>& scene);
+		static Entity CreateNavigationGrid(const SharedPtr<Scene>& scene);
 
 		static Entity CreateCube(const SharedPtr<Scene>& scene);
 		static Entity CreateQuad(const SharedPtr<Scene>& scene);

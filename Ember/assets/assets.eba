@@ -1,13 +1,1 @@
-Assets:
-  - Type: Script
-    UUID: 17836245840209942696
-    Name: CharacterMovement
-    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Scripts\CharacterMovement.lua'
-  - Type: Script
-    UUID: 15829459082046337224
-    Name: MouseLook
-    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Scripts\MouseLook.lua'
-  - Type: Material
-    UUID: 13364306252775091405
-    Name: Ground_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\ControllerTests\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
+Assets: []

@@ -94,12 +94,36 @@ namespace Ember {
 
 	Entity Presets::CreateAICharacterController(const SharedPtr<Scene>& scene)
 	{
-		Entity newEntity = scene->AddEntity("AI_Character_Controller");
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		UUID aiControllerUUID = Constants::InvalidUUID;
+		if (!assetManager.ContainsAssetWithName("AIController"))
+		{
+			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+
+			// Copy AIController.lua to existing scriptsDirectory
+			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/AIController.lua");
+			std::filesystem::path destPath = scriptsDirectory / "AIController.lua";
+
+			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
+			if (!std::filesystem::exists(destPath) && !std::filesystem::copy_file(sourcePath, destPath))
+			{
+				EB_CORE_ERROR("Failed to copy AIController.lua to project assets directory! Aborting controller creation!");
+				return {};
+			}
+
+			aiControllerUUID = assetManager.Load<Script>(destPath.string(), false)->GetUUID();
+		}
+		else
+			aiControllerUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("AIController")->GetFilePath(), false)->GetUUID();
+
+		Entity newEntity = scene->AddEntity("AICharacterController");
 
 		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
 		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
 		newEntity.AttachComponent<CharacterControllerComponent>();
 		newEntity.AttachComponent<AIPathComponent>();
+		newEntity.AttachComponent<AIAgentComponent>();
 
 		auto& rbc = newEntity.AttachComponent<RigidBodyComponent>();
 		rbc.Type = RigidBodyComponent::BodyType::Kinematic;
@@ -107,7 +131,8 @@ namespace Ember {
 		auto& colC = newEntity.AttachComponent<CapsuleColliderComponent>();
 		colC.AttachedBody = rbc.Body;
 
-		// TODO: Add basic script for AI pathfinding movement between waypoints
+		auto& aiControllerScript = newEntity.AttachComponent<ScriptComponent>();
+		aiControllerScript.ScriptHandle = aiControllerUUID;
 
 		return newEntity;
 	}
@@ -116,6 +141,14 @@ namespace Ember {
 	{
 		Entity newEntity = scene->AddEntity("Waypoint");
 		newEntity.AttachComponent<WaypointComponent>();
+
+		return newEntity;
+	}
+
+	Entity Presets::CreateNavigationGrid(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("NavigationGrid");
+		newEntity.AttachComponent<NavigationGridComponent>();
 
 		return newEntity;
 	}
@@ -163,7 +196,7 @@ namespace Ember {
 
 	Entity Presets::CreatePointLight(const SharedPtr<Scene>& scene)
 	{
-		Entity newEntity = scene->AddEntity("Point_Light");
+		Entity newEntity = scene->AddEntity("PointLight");
 		
 		newEntity.AttachComponent<PointLightComponent>();
 
@@ -177,7 +210,7 @@ namespace Ember {
 
 	Entity Presets::CreateDirectionalLight(const SharedPtr<Scene>& scene)
 	{
-		Entity newEntity = scene->AddEntity("Directional_Light");
+		Entity newEntity = scene->AddEntity("DirectionalLight");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-50.0f), Math::Radians(30.0f), 0.0f);	// Make it point diagonally downwards by default
 
 		newEntity.AttachComponent<DirectionalLightComponent>();
@@ -193,7 +226,7 @@ namespace Ember {
 
 	Ember::Entity Presets::CreateSpotLight(const SharedPtr<Scene>& scene)
 	{
-		Entity newEntity = scene->AddEntity("Spot_Light");
+		Entity newEntity = scene->AddEntity("SpotLight");
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it point strait downwards by default
 
 		newEntity.AttachComponent<SpotLightComponent>();
@@ -208,7 +241,7 @@ namespace Ember {
 
 	Entity Presets::Create3DCamera(const SharedPtr<Scene>& scene, const Vector3f& position /*= Vector3f(0.0f) */, const Quaternion& orientation /*= Quaternion(1.0f, 0.0f, 0.0f, 0.0f*/)
 	{
-		Entity newEntity = scene->AddEntity("Camera_3D");
+		Entity newEntity = scene->AddEntity("Camera3D");
 		auto& transform = newEntity.GetComponent<TransformComponent>();
 		transform.Position = position;
 		transform.Rotation = Math::ToEulerAngles(orientation);
