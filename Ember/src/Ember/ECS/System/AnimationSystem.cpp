@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "AnimationSystem.h"
+#include "ScriptSystem.h"
 
 #include "Ember/Asset/Animation.h"
 
@@ -134,6 +135,7 @@ namespace Ember {
 					}
 				}
 
+				float lastFrameTime = animator.CurrentTime;
 				animator.CurrentTime += (delta * animator.PlaybackSpeed);  //  TODO: Add playback speed multiplier here later
 
 				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
@@ -156,6 +158,15 @@ namespace Ember {
 					{
 						animator.CurrentTime = 0.0f;	// Clamp to start
 						animator.IsPlaying = false;
+					}
+				}
+
+				// See if any animation events need to be fired at this timestamp
+				for (const auto& event : animation->GetEvents())
+				{
+					if (lastFrameTime < event.Timestamp && animator.CurrentTime >= event.Timestamp)
+					{
+						ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
 					}
 				}
 			}

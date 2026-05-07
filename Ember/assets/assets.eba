@@ -48,13 +48,13 @@ Assets:
     Name: Ground_StandardGeometry_Clone
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Ground_StandardGeometry_Clone.ebmat'
   - Type: Material
-    UUID: 1736256064260583025
-    Name: Sphere_StandardGeometry_Clone
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
-  - Type: Material
     UUID: 9235652788431923194
     Name: Lantern_LanternPost_Mat
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern_LanternPost_Mat.ebmat'
+  - Type: Material
+    UUID: 1736256064260583025
+    Name: Sphere_StandardGeometry_Clone
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Materials\Sphere_StandardGeometry_Clone.ebmat'
   - Type: Material
     UUID: 7260500247662306663
     Name: Cube_StandardUnlit_Clone
@@ -92,14 +92,18 @@ Assets:
     Name: Fox_Run
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox_Run.ebanim'
   - Type: Model
-    UUID: 6935754573396706420
-    Name: Fox
-    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebmodel'
-  - Type: Model
     UUID: 9787688241411138515
     Name: Lantern
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Lantern.ebmodel'
+  - Type: Model
+    UUID: 6935754573396706420
+    Name: Fox
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Models\Fox.ebmodel'
   - Type: Prefab
     UUID: 1813234409562538226
     Name: Cube
     FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Prefabs\Cube.ebprefab'
+  - Type: AudioClip
+    UUID: 17545669110137326817
+    Name: footstep
+    FilePath: 'C:\Users\cjsho\Desktop\SimpleGame\Assets\Audio\footstep.mp3'

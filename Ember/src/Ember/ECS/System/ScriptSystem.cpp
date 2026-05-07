@@ -115,7 +115,7 @@ namespace Ember {
 		if (type == TriggerEventType::OverlapEnter)
 			functionName = "OnOverlapTriggerEnter";
 		if (type == TriggerEventType::OverlapStay)
-			functionName = "OnOverlapTriggerStay";
+			functionName = "OnOverlapTriggerStay";													
 		if (type == TriggerEventType::OverlapExit)
 			functionName = "OnOverlapTriggerExit";
 
@@ -135,7 +135,24 @@ namespace Ember {
 
 	void ScriptSystem::FireAnimationEvent(EntityID entityID, const std::string& eventName, Scene* scene)
 	{
+		Entity receiver = { entityID, scene };
+		if (!receiver.ContainsComponent<ScriptComponent>())
+			return;
 
+		auto& script = receiver.GetComponent<ScriptComponent>();
+		const char* functionName = "OnAnimationEvent";
+
+		// Execute the Lua function if it exists
+		sol::function eventFunc = script.Instance[functionName];
+		if (eventFunc.valid())
+		{
+			sol::protected_function_result result = eventFunc(script.Instance, eventName);
+			if (!result.valid())
+			{
+				sol::error err = result;
+				EB_CORE_ERROR("Lua {} Error: {}", functionName, err.what());
+			}
+		}
 	}
 
 }
