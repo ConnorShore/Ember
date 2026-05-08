@@ -16,6 +16,8 @@ namespace Ember {
 		void OnEvent(Event& event) override;
 
 	private:
+		bool OnWindowResize(WindowResizeEvent& e);
+
 		SharedPtr<Scene> m_ActiveScene;
 	};
 
