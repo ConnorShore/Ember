@@ -38,10 +38,10 @@ namespace Ember {
 		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
 		m_ImGuiLayer->OnAttach();
 
-		//m_AssetManager = ScopedPtr<AssetManager>::Create();
-		//m_AssetManager->SetEngineAssetDirectory(applicationSpes.EngineAssetDir);
-		//m_AssetManager->SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
-		//m_AssetManager->LoadDefaults();
+		m_AssetManager = ScopedPtr<AssetManager>::Create();
+		m_AssetManager->SetEngineAssetDirectory(applicationSpes.EngineAssetDir);
+		m_AssetManager->SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
+		m_AssetManager->LoadDefaults();
 
 		Random::Init();
 		ScriptEngine::Init();

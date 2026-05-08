@@ -301,6 +301,7 @@ namespace Ember {
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
+		EB_CORE_INFO("Viewport resized to {}x{} in scene '{}'", width, height, m_Name);
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
 		for (auto entity : view)

@@ -73,7 +73,15 @@ namespace Ember {
 		inline void SetCursorMode(CursorMode mode) { m_Window->SetCursorMode(mode); }
 		inline CursorMode GetCursorMode() const { return m_Window->GetCursorMode(); }
 
-		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
+		inline const int GetCommandLineArgsCount() const { return m_Specification.CommandLineArgsCount; }
+		inline const char* GetCommandLineArg(int index) const
+		{
+			if (index < 0 || index >= m_Specification.CommandLineArgsCount)
+				return nullptr;
+			return m_Specification.CommandLineArgs[index];
+		}
 
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
@@ -101,6 +109,6 @@ namespace Ember {
 		static Application* s_Instance;
 	};
 
-	ScopedPtr<Application> CreateApplication();
+	ScopedPtr<Application> CreateApplication(int argc, char** argv);
 }
 

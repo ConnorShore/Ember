@@ -2,6 +2,7 @@
 #include "ProjectManager.h"
 #include "ProjectSerializer.h"
 #include "Ember/Scene/SceneSerializer.h"
+#include "Ember/Asset/AssetRegistrySerializer.h"
 
 namespace Ember {
 
@@ -69,17 +70,32 @@ namespace Ember {
 		if (!s_ActiveProject)
 		{
 			s_ActiveProject = SharedPtr<Project>::Create(filepath);
+			EB_CORE_INFO("Created new active project instance for file: {}", filepath);
 		}
 
 		ProjectSerializer serializer(s_ActiveProject);
-		if (serializer.Deserialize(filepath))
+		if (!serializer.Deserialize(filepath))
 		{
-			// Need to reset asset managers state and load in the assets from this project
-			return s_ActiveProject;
+			EB_CORE_ASSERT(false, "Failed to load project: {}", filepath);
+			return nullptr;
 		}
 
-		EB_CORE_ASSERT(false, "Failed to load project: {}", filepath);
-		return nullptr;
+		// Need to reset asset managers state and load in the assets from this project
+		EB_CORE_INFO("Project deserialized successfully: {}", filepath);
+
+		// Load project assets into the asset manager
+		EB_CORE_INFO("Loading project assets for project: {}", filepath);
+		auto& assetManager = Application::Instance().GetAssetManager();
+		assetManager.ClearAssets();
+		assetManager.SetProjectAssetDirectory(s_ActiveProject->GetProjectDirectory());
+		//assetManager.LoadDefaults();
+
+		// Deserialize project assets
+		EB_CORE_INFO("Deserializing project assets from path: {}", s_ActiveProject->GetAssetsFilePath().string());
+		AssetRegistrySerializer assetSerializer(&assetManager);
+		assetSerializer.Deserialize(s_ActiveProject->GetAssetsFilePath().string());
+
+		return s_ActiveProject;
 	}
 
 	void ProjectManager::SaveActiveProject()

@@ -14,6 +14,9 @@ namespace Ember {
 
 		std::filesystem::path EngineAssetDir = "EmberCore";
 		std::filesystem::path ProjectAssetDir = "GameData";
+
+		int CommandLineArgsCount = 0;
+		char** CommandLineArgs = nullptr;
 	};
 
 }

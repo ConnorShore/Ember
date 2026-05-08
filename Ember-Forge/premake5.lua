@@ -37,6 +37,7 @@ project "Ember-Forge"
    links 
    {
       "Ember",
+      "Ember-Runtime",
       "Ember-Tools",
       "ImGuizmo"
    }

@@ -32,6 +32,7 @@
 #include <Ember/Physics/Raycast.h>
 
 #include <random>
+#include <thread>
 
 namespace Ember {
 
@@ -787,9 +788,40 @@ namespace Ember {
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+		// Runtime play button (launches game with the runtime)
+		if (ImGui::Button("Play Standalone"))
+		{
+			// 1. Save everything so the runtime sees the latest changes
+			SaveScene(false);
+			ProjectManager::SaveActiveProject();
+
+			// 2. Get the paths
+			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
+
+			// Assuming your working directory is the repo root, point to the compiled exe
+			auto runtimeExePath = std::filesystem::path("bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe");
+			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
+
+			auto engineAssetDir = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
+			auto engineAssetAbsolute = std::filesystem::absolute(engineAssetDir).string();
+
+			auto projectAssetDir = Application::Instance().GetAssetManager().GetProjectAssetDirectory().string();
+			auto projectAssetAbsolute = std::filesystem::absolute(projectAssetDir).string();
+
+			// 3. Construct the OS command:  EmberRuntime.exe "C:/Path/To/Project.ebproj"
+			std::string command = std::format("{} \"{}\" \"{}\" \"{}\"", absoluteRuntimePath, activeProjectPath, engineAssetAbsolute, projectAssetAbsolute);
+
+			// 4. Launch the process! (Using async so it doesn't freeze the editor)
+			// std::system will block, so spawning a detached thread is a quick and dirty way to do this
+			std::thread([command]() {
+				std::system(command.c_str());
+				}).detach();
+		}
+
+		ImGui::SameLine();
+
 		float windowWidth = ImGui::GetWindowContentRegionMax().x;
 		float iconSize = 24.0f;
-
 
 		// Center the button and make it transparent
 		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
@@ -797,8 +829,8 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
 		// (Optional) If you want to customize the hover color so it looks sleeker:
-		 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
-		 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
 		if (m_Context.CurrentSceneState == SceneState::Play)
 		{
@@ -963,16 +995,16 @@ namespace Ember {
 		if (assetPanel != nullptr)
 			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
 
-		// Clear and reload default engine assets before loading the scene so all
-		// asset UUIDs referenced by the scene (e.g. skybox texture) are resolvable.
-		auto& assetManager = Application::Instance().GetAssetManager();
-		assetManager.ClearAssets();
-		assetManager.LoadDefaults();
+		//// Clear and reload default engine assets before loading the scene so all
+		//// asset UUIDs referenced by the scene (e.g. skybox texture) are resolvable.
+		//auto& assetManager = Application::Instance().GetAssetManager();
+		//assetManager.ClearAssets();
+		//assetManager.LoadDefaults();
 
-		// Deserialize project assets
-		std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
-		AssetRegistrySerializer assetSerializer(&assetManager);
-		assetSerializer.Deserialize(assetFilePath);
+		//// Deserialize project assets
+		//std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
+		//AssetRegistrySerializer assetSerializer(&assetManager);
+		//assetSerializer.Deserialize(assetFilePath);
 
 		// Load the default scene for the project (assets must be ready first)
 		OpenScene(project->GetStartScenePath().string());

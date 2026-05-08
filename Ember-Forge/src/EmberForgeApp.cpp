@@ -17,7 +17,7 @@ namespace Ember {
 		}
 	};
 
-	ScopedPtr<Application> CreateApplication()
+	ScopedPtr<Application> CreateApplication(int argc, char** argv)
 	{
 		ApplicationSpecification spec;
 		spec.Name = "Ember Forge";

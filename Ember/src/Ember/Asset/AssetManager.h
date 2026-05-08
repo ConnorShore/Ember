@@ -112,6 +112,11 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
+			if (!engineAsset)
+			{
+				EB_CORE_INFO("Loading project asset {} ['{}'] from file: {}", (uint64_t)uuid, name, filePath);
+			}
+
 			// De-duplicate by absolute path so the same file isn't loaded twice
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))

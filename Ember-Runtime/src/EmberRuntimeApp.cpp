@@ -7,8 +7,8 @@ namespace Ember {
 	class EmberRuntimeApp : public Application
 	{
 	public:
-		EmberRuntimeApp()
-			: Application("My Ember Game", WindowConfig("My Ember Game", 1600, 900))
+		EmberRuntimeApp(const ApplicationSpecification& spec)
+			: Application(spec)
 		{
 			PushLayer(ScopedPtr<Layer>(new RuntimeLayer()));
 		}
@@ -16,8 +16,34 @@ namespace Ember {
 		{
 		}
 	};
-	ScopedPtr<Application> CreateApplication()
+	ScopedPtr<Application> CreateApplication(int argc, char** argv)
 	{
-		return ScopedPtr<EmberRuntimeApp>(new EmberRuntimeApp());
+		Logger::InitFileLogging("runtime_crash_log.txt");
+		EB_CORE_INFO("Standalone Runtime Starting...");
+
+		ApplicationSpecification spec;
+		spec.Name = "My Ember Game";
+		spec.WindowSpecification.Width = 1600;
+		spec.WindowSpecification.Height = 900;
+		spec.WindowSpecification.Title = "My Ember Game";
+
+		std::string engineAssetDir = "EmberCore";
+		if (argc >= 2) {
+			engineAssetDir = argv[2];
+		}
+
+		std::string projectAssetDir = "GameData";
+		if (argc >= 3) {
+			projectAssetDir = argv[3];
+		}
+
+		// The Editor explicitly points to the source code folders
+		spec.EngineAssetDir = engineAssetDir;
+		spec.ProjectAssetDir = projectAssetDir;
+
+		spec.CommandLineArgsCount = argc;
+		spec.CommandLineArgs = argv;
+
+		return ScopedPtr<EmberRuntimeApp>(new EmberRuntimeApp(spec));
 	}
 }

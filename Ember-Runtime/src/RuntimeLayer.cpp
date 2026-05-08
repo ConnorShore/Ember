@@ -9,16 +9,23 @@ namespace Ember {
 	{
 		// 1. Load the exported project configuration
 		// In a real build, this path will be relative to the executable
-		ProjectManager::LoadProject("C:\\Users\\cjsho\\Desktop\\NewProject\\NewProject.ebproj");
+		// If an argument was passed, use it!
+		auto& app = Application::Instance();
+		if (app.GetCommandLineArgsCount() <= 1)
+		{
+			EB_CORE_ERROR("No project file specified. Usage: <executable> <projectFilePath>");
+			return;
+		}
 
-		//auto& assetManager = Application::Instance().GetAssetManager();
-		//assetManager.SetEngineAssetDirectory("Ember-Forge/assets");
-		//assetManager.SetProjectAssetDirectory(ProjectManager::GetActive()->GetAssetDirectory());
-		//assetManager.LoadDefaults();
+		std::string projectPath = app.GetCommandLineArg(1);
+		EB_CORE_INFO("[RUNTIME] Loading project from path: {}", projectPath);
+		ProjectManager::LoadProject(projectPath);
 
 		// 2. Create and deserialize the startup scene
 		m_ActiveScene = SharedPtr<Scene>::Create("Runtime Scene");
 		SceneSerializer serializer(m_ActiveScene);
+
+		EB_CORE_INFO("[RUNTIME] Deserializing scene from path: {}", ProjectManager::GetActive()->GetStartScenePath().string());
 		serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());
 
 		// 3. Size the camera and render passes to the actual OS Window, not an ImGui panel!
@@ -27,9 +34,11 @@ namespace Ember {
 
 		// 4. Start the game!
 		m_ActiveScene->OnRuntimeStart();
+		EB_CORE_INFO("[Runtime] Runtime started!");
 
 		// 5. Lock the cursor immediately for a First-Person game
 		Input::SetCursorMode(CursorMode::Normal);
+		EB_CORE_INFO("[Runtime] Application OnAttach completed!");
 	}
 
 	void RuntimeLayer::OnDetach()
@@ -43,6 +52,7 @@ namespace Ember {
 		RenderAction::SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(RendererAPI::RenderBit::Color);
 
+
 		// 2. Step the game loop! 
 		// (This internally handles physics, scripts, AI, and calls your RenderSystem)
 		m_ActiveScene->OnUpdateRuntime(delta);
@@ -52,6 +62,7 @@ namespace Ember {
 		if (Input::IsKeyPressed(KeyCode::Escape))
 		{
 			// Assuming your Application has a Close() or Quit() method to break the while loop
+			EB_CORE_INFO("[RUNTIME] Escape key pressed - exiting runtime.");
 			Application::Instance().Close();
 		}
 	}

@@ -5,11 +5,11 @@
 
 #ifdef EB_PLATFORM_WINDOWS
 
-extern Ember::ScopedPtr<Ember::Application> Ember::CreateApplication();
+extern Ember::ScopedPtr<Ember::Application> Ember::CreateApplication(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
-	auto app = Ember::CreateApplication();
+	auto app = Ember::CreateApplication(argc, argv);
 	app->OnAttach();
 	app->Run();
 	app->OnDetach();
