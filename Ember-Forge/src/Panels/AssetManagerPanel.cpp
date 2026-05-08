@@ -27,8 +27,15 @@ namespace Ember {
 	void AssetManagerPanel::OnAttach()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto fileIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/File.png");
-		auto dirIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/Directory.png");
+
+		// Dynamically grab the engine root for the UI icons!
+		std::string fileIconPath = (assetManager.GetProjectAssetDirectory() / "icons/File.png").string();
+		std::string dirIconPath = (assetManager.GetProjectAssetDirectory() / "icons/Directory.png").string();
+
+		auto fileIcon = assetManager.Load<Texture2D>(fileIconPath);
+		auto dirIcon = assetManager.Load<Texture2D>(dirIconPath);
+		fileIcon->SetIsEngineAsset(true);
+		dirIcon->SetIsEngineAsset(true);
 
 		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
 		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();

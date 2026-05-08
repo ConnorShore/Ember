@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Ember/Core/ApplicationSpecification.h"
 #include "Ember/Core/Application.h"
 
 /*

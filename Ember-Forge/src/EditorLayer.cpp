@@ -217,12 +217,18 @@ namespace Ember {
 	void EditorLayer::LoadDefaultAssets()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
+		// Point to the source code directories
+		//assetManager.SetEngineAssetDirectory("Ember/assets");
+
+		//// Before a project is loaded, the editor might just point to its own assets
+		//assetManager.SetProjectAssetDirectory("Ember-Forge/assets");
+		//assetManager.LoadDefaults();
 
 		// Textures
-		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, "Ember-Forge/assets/icons/PointLight.png");
-		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, "Ember-Forge/assets/icons/DirectionalLight.png");
-		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, "Ember-Forge/assets/icons/SpotLight.png");
-		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, "Ember-Forge/assets/icons/Camera.png");
+		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, (assetManager.GetProjectAssetDirectory() / "icons/PointLight.png").string());
+		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, (assetManager.GetProjectAssetDirectory() / "icons/DirectionalLight.png").string());
+		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, (assetManager.GetProjectAssetDirectory() / "icons/SpotLight.png").string());
+		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, (assetManager.GetProjectAssetDirectory() / "icons/Camera.png").string());
 	}
 
 	void EditorLayer::OnRuntimeStart()

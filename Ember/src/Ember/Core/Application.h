@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ApplicationSpecification.h"
 #include "Window.h"
 #include "LayerStack.h"
 #include "ScopedPointer.h"
@@ -20,7 +21,7 @@ namespace Ember {
 	class Application
 	{
 	public:
-		Application(const std::string& name = "Ember App", const WindowConfig& config = {});
+		Application(const ApplicationSpecification& applicationSpecs);
 		virtual ~Application();
 
 		void PushLayer(ScopedPtr<Layer> layer);
@@ -55,6 +56,7 @@ namespace Ember {
 		void OnEvent(Event& event);
 
 		void Run();
+		void Close();
 		bool IsRunning() const { return m_Running; }
 
 		inline static Application& Instance() { return *s_Instance; }
@@ -71,6 +73,8 @@ namespace Ember {
 		inline void SetCursorMode(CursorMode mode) { m_Window->SetCursorMode(mode); }
 		inline CursorMode GetCursorMode() const { return m_Window->GetCursorMode(); }
 
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -83,8 +87,9 @@ namespace Ember {
 		bool OnMouseMoved(MouseMovedEvent& e);
 
 	private:
+		ApplicationSpecification m_Specification;
+
 		ScopedPtr<Window> m_Window;
-		std::string m_Name;
 		bool m_Running = true;
 
 		ScopedPtr<SystemManager> m_SystemManager;

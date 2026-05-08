@@ -265,10 +265,19 @@ namespace Ember {
 			}
 		}
 
+		inline void SetEngineAssetDirectory(const std::filesystem::path& path) { m_EngineAssetDirectory = path; }
+		inline const std::filesystem::path& GetEngineAssetDirectory() const { return m_EngineAssetDirectory; }
+
+		inline void SetProjectAssetDirectory(const std::filesystem::path& path) { m_ProjectAssetDirectory = path; }
+		inline const std::filesystem::path& GetProjectAssetDirectory() const { return m_ProjectAssetDirectory; }
+
 	private:
 		std::unordered_map<UUID, SharedPtr<Asset>> m_Assets;
 		std::unordered_map<std::string, UUID> m_AssetNames;
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
+
+		std::filesystem::path m_EngineAssetDirectory;
+		std::filesystem::path m_ProjectAssetDirectory;
 	};
 
 }
