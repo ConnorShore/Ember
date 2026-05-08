@@ -21,9 +21,6 @@ namespace Ember {
 			"Player",
 			"Enemy"
 		});
-		collisionFilterManager.setSlotLock(0, true); // TODO: Don't  need to lock any, they shoudl all be customizable
-		collisionFilterManager.setSlotLock(1, true);
-		collisionFilterManager.setSlotLock(2, true);
 
 		// Create render layer manager
 		auto& renderLayerManager = s_ActiveProject->GetRenderFilterManager();

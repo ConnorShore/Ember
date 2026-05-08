@@ -34,12 +34,6 @@ namespace Ember {
 
 	void FilterManager::SetFilterNameAtSlot(uint32_t index, const std::string& name)
 	{
-		if (isSlotLocked(index))
-		{
-			EB_CORE_ERROR("Filter slot is locked! Name can't be set.");
-			return;
-		}
-
 		if (index < 16)
 			m_Slots[index] = name;
 	}

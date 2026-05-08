@@ -50,7 +50,6 @@ namespace Ember {
 			auto filterEntryNode = filterNode.append_child();
 			filterEntryNode |= ryml::MAP;
 			filterEntryNode["Name"] << filter;
-			filterEntryNode["Locked"] << filterManager.isSlotLocked(i);
 		}
 
 		// Render settings
@@ -66,7 +65,6 @@ namespace Ember {
 			auto layerEntryNode = renderLayerNode.append_child();
 			layerEntryNode |= ryml::MAP;
 			layerEntryNode["Name"] << layer;
-			layerEntryNode["Locked"] << renderLayerManager.isSlotLocked(renderLayerIndex);
 		}
 
 		std::ofstream fout(filePath);
@@ -117,7 +115,7 @@ namespace Ember {
 			physicsNode["VelocitySolverIterations"] >> physicsSettings.VelocitySolverIterations;
 
 			// Physics Collider Filters
-			auto& filterManager = m_Project->GetCollisionFilterManager();
+			auto& collisionFilterManager = m_Project->GetCollisionFilterManager();
 			std::vector<std::string> filters;
 
 			uint32_t i = 0;
@@ -125,42 +123,31 @@ namespace Ember {
 			{
 				std::string filterName;
 				filterNode["Name"] >> filterName;
-				
-				if (filterNode.has_child("Locked"))
-				{
-					bool locked;
-					filterNode["Locked"] >> locked;
-					if (locked)
-						filterManager.setSlotLock(i, true);
-				}
 
 				filters.push_back(filterName);
 			}
 
-			filterManager.InitWithFilters(filters);
+			collisionFilterManager.InitWithFilters(filters);
 
 			// Render settings
+			auto& renderLayerManager = m_Project->GetRenderFilterManager();
+			std::vector<std::string> renderLayers;
+
 			if (settingsNode.has_child("Render"))
 			{
-				auto& renderLayerManager = m_Project->GetRenderFilterManager();
 				auto renderNode = settingsNode["Render"];
 
-				std::vector<std::string> renderLayers;
 				uint32_t renderLayerIndex = 0;
 				for (auto renderLayerNode : renderNode["RenderLayers"].children())
 				{
 					std::string layerName;
 					renderLayerNode["Name"] >> layerName;
-					if (renderLayerNode.has_child("Locked"))
-					{
-						bool locked;
-						renderLayerNode["Locked"] >> locked;
-						if (locked)
-							renderLayerManager.setSlotLock(renderLayerIndex, true);
-					}
+
 					renderLayers.push_back(layerName);
 				}
 			}
+
+			renderLayerManager.InitWithFilters(renderLayers);
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

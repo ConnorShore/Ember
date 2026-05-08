@@ -8,7 +8,8 @@ namespace Ember {
 	public:
 		enum class Category {
 			General,
-			Physics
+			Physics,
+			Rendering
 		};
 
 		ProjectSettingsDialog();
@@ -24,6 +25,7 @@ namespace Ember {
 
 		void RenderGeneralSettings();
 		void RenderPhysicsSettings();
+		void RenderRenderingSettings();
 
 		std::string m_PopupName = "Project Settings";
 		Category m_SelectedCategory = Category::Physics; // Default tab
