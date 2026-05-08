@@ -260,7 +260,8 @@ namespace Ember {
 
 		// Set render scene state for camera info
 		m_RenderSceneState.ActiveCamera = camera;
-		m_RenderSceneState.ActiveRenderMask = RenderLayerPreset::All;
+		m_RenderSceneState.ActiveRenderMask = FilterPreset::All;
+		m_RenderSceneState.ActiveVolumeMask = FilterPreset::All;
 		m_RenderSceneState.CameraTransform = cameraTransform;
 		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
@@ -383,6 +384,7 @@ namespace Ember {
 			{
 				m_RenderSceneState.ActiveCamera = camera.Camera;
 				m_RenderSceneState.ActiveRenderMask = camera.RenderMask;
+				m_RenderSceneState.ActiveVolumeMask = camera.VolumeMask;
 				m_RenderSceneState.CameraTransform = transform.WorldTransform;
 				m_RenderSceneState.IsCameraFound = true;
 
@@ -406,7 +408,11 @@ namespace Ember {
 		std::vector<std::pair<EntityID, AABB>> renderableEntities;
 		renderableEntities.reserve(m_ActiveRenderableEntities.size());
 
-		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle, RenderLayer renderLayer) {
+		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle, Filter renderLayer) {
+				// If no mesh assigned, return
+				if (meshHandle == Constants::InvalidUUID)
+					return;
+
 				// If the entity's render layer doesn't match the active camera's render mask, skip it
 				if ((renderLayer & m_RenderSceneState.ActiveRenderMask) == 0)
 					return;
@@ -451,7 +457,7 @@ namespace Ember {
 		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) 
 		{
 			Entity entity(entityId, scene);
-			auto meshComp = entity.GetComponent<StaticMeshComponent>();
+			auto& meshComp = entity.GetComponent<StaticMeshComponent>();
 			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
 		}
 
@@ -459,7 +465,7 @@ namespace Ember {
 		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) 
 		{
 			Entity entity(entityId, scene);
-			auto meshComp = entity.GetComponent<SkinnedMeshComponent>();
+			auto& meshComp = entity.GetComponent<SkinnedMeshComponent>();
 			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
 		}
 
@@ -496,7 +502,7 @@ namespace Ember {
 			return;
 
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
-		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3]);
+		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3], m_RenderSceneState.ActiveVolumeMask);
 
 		// Get components from volume data
 		std::vector<std::pair<PostProcessVolumeComponent, float>> componentDistMap;
@@ -504,6 +510,9 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 		for (const auto& overlapData : volumes)
 		{
+			if (!registry.ContainsComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity))
+				continue;
+
 			// Retrieve the actual component data
 			auto& volumeComponent = registry.GetComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity);
 			componentDistMap.emplace_back(volumeComponent, overlapData.SignedDistanceToEdge);

@@ -24,8 +24,8 @@ namespace Ember {
 	class VolumeOverlapCallback : public reactphysics3d::OverlapCallback
 	{
 	public:
-		VolumeOverlapCallback(const Vector3f& cameraPos, reactphysics3d::RigidBody* cameraBody) 
-			: m_CameraPosition(cameraPos), m_CameraBody(cameraBody) {}
+		VolumeOverlapCallback(const Vector3f& cameraPos, reactphysics3d::RigidBody* cameraBody, Filter targetMask) 
+			: m_CameraPosition(cameraPos), m_CameraBody(cameraBody), m_TargetMask(targetMask) {}
 
 		virtual void onOverlap(reactphysics3d::OverlapCallback::CallbackData& callbackData) override
 		{
@@ -44,7 +44,7 @@ namespace Ember {
 
 				reactphysics3d::Collider* collider = collidedBody->getCollider(0);
 
-				if ((collider->getCollisionCategoryBits() & CollisionFilterPreset::VFX) == 0)
+				if ((collider->getCollisionCategoryBits() & m_TargetMask) == 0)
 					continue; // If it's not a VFX volume, ignore it
 
 				ColliderUserData* collisionData = static_cast<ColliderUserData*>(collider->getUserData());
@@ -89,6 +89,7 @@ namespace Ember {
 
 	private:
 		Vector3f m_CameraPosition;
+		Filter m_TargetMask;
 		reactphysics3d::RigidBody* m_CameraBody;
 		std::vector<VolumeOverlapData> m_Overlaps;
 	};

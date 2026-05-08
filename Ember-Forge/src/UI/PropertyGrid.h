@@ -2,6 +2,7 @@
 
 #include <Ember/Math/Math.h>
 #include <Ember/Asset/UUID.h>
+#include <Ember/Core/FilterManager.h>
 
 #include "Types.h"
 
@@ -52,6 +53,8 @@ namespace Ember {
 		bool BeginComboBox(const std::string& label, const std::string& previewValue);
 		bool ComboBoxItem(const std::string& itemLabel, bool isSelected);
 		void EndComboBox();
+
+		bool FilterGrid(const std::string& label, Filter& filter, FilterManager& filterManager);
 	}
 
 }

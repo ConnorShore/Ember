@@ -13,6 +13,7 @@ namespace Ember {
 		auto project = SharedPtr<Project>::Create(filepath);
 		s_ActiveProject = project;
 
+		// Create collision filter manager
 		auto& collisionFilterManager = s_ActiveProject->GetCollisionFilterManager();
 		collisionFilterManager.InitWithFilters({
 			"Environment",
@@ -20,9 +21,15 @@ namespace Ember {
 			"Player",
 			"Enemy"
 		});
-		collisionFilterManager.setSlotLock(0, true);
+		collisionFilterManager.setSlotLock(0, true); // TODO: Don't  need to lock any, they shoudl all be customizable
 		collisionFilterManager.setSlotLock(1, true);
-		//collisionFilterManager.setSlotLock(2, true);
+		collisionFilterManager.setSlotLock(2, true);
+
+		// Create render layer manager
+		auto& renderLayerManager = s_ActiveProject->GetRenderFilterManager();
+		renderLayerManager.InitWithFilters({
+			"Default"
+		});
 
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(filepath);

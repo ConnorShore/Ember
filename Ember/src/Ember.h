@@ -17,9 +17,11 @@
 #include "Ember/Core/Logger.h"
 #include "Ember/Core/Time.h"
 #include "Ember/Core/Random.h"
-
 #include "Ember/Core/ScopedPointer.h"
 #include "Ember/Core/SharedPointer.h"
+#include "Ember/Core/FilterManager.h"
+#include "Ember/Core/Project.h"
+#include "Ember/Core/ProjectManager.h"
 
 #include "Ember/Input/Input.h"
 #include "Ember/Input/InputCode.h"
@@ -87,12 +89,7 @@
 
 #include "Ember/Utils/PlatformUtil.h"
 
-#include "Ember/Physics/CollisionFilter.h"
-#include "Ember/Physics/CollisionFilterManager.h"
 #include "Ember/Physics/Raycast.h"
-
-#include "Ember/Core/Project.h"
-#include "Ember/Core/ProjectManager.h"
 
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptProperty.h"

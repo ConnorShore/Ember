@@ -132,10 +132,10 @@ namespace Ember {
 		collider.Collider->setIsTrigger(collider.IsTrigger);
 
 		// Set collision filters
-		if (collider.Category != CollisionFilterPreset::Default)
+		if (collider.Category != FilterPreset::Default)
 			collider.Collider->setCollisionCategoryBits(collider.Category);
 
-		if (collider.CollisionMask != CollisionFilterPreset::Default)
+		if (collider.CollisionMask != FilterPreset::Default)
 			collider.Collider->setCollideWithMaskBits(collider.CollisionMask);
 
 		if (collider.PhysicsMaterialHandle != Constants::InvalidUUID)
@@ -656,7 +656,7 @@ namespace Ember {
 		return CastRay(startPoint, endPoint);
 	}
 
-	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter /* = CollisionFilterPreset::All */)
 	{
 		RigidBodyComponent* rb = nullptr;
 		if (entity != Constants::Entities::InvalidEntityID)
@@ -682,7 +682,7 @@ namespace Ember {
 		collider->setIsTrigger(true);
 
 		// Apply collision filters
-		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
+		collider->setCollisionCategoryBits(FilterPreset::All);
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
@@ -698,7 +698,7 @@ namespace Ember {
 		return callback.GetOverlapData();
 	}
 
-	OverlapTestData PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	OverlapTestData PhysicsSystem::TestOverlapSphere(const Vector3f& position, float radius, Entity entity, Filter filter /* = CollisionFilterPreset::All */)
 	{
 		RigidBodyComponent* rb = nullptr;
 		if (entity != Constants::Entities::InvalidEntityID)
@@ -719,7 +719,7 @@ namespace Ember {
 		collider->setIsTrigger(true);
 
 		// Apply collision filters
-		collider->setCollisionCategoryBits(CollisionFilterPreset::All);
+		collider->setCollisionCategoryBits(FilterPreset::All);
 		collider->setCollideWithMaskBits(filter);
 
 		// Run the test
@@ -760,7 +760,7 @@ namespace Ember {
 		return callback.GetCollisionData();
 	}
 
-	std::vector<VolumeOverlapData> PhysicsSystem::GetOverlappingVolumes(const Vector3f& cameraPosition)
+	std::vector<VolumeOverlapData> PhysicsSystem::GetOverlappingVolumes(const Vector3f& cameraPosition, Filter overlapFilter)
 	{
 		// 1. Teleport the persistent camera sensor to the active camera position
 		rp3d::Transform transform(
@@ -770,7 +770,7 @@ namespace Ember {
 		m_CameraSensorBody->setTransform(transform);
 
 		// 2. Initialize the callback with the position (for math) and the body (to ignore)
-		VolumeOverlapCallback callback(cameraPosition, m_CameraSensorBody);
+		VolumeOverlapCallback callback(cameraPosition, m_CameraSensorBody, overlapFilter);
 
 		// 3. Test the overlaps! Because of the collision mask we set during Init, 
 		// this will instantly skip the ground, the walls, and the player.
@@ -797,7 +797,7 @@ namespace Ember {
 		// 3. CRITICAL: Set filters so this ONLY checks against VFX Volumes.
 		// Category is left at rp3d's default (0x0001) so volumes whose mask is 0xFFFF will see it.
 		// The mask is set to VFX only so the sensor ignores everything else (floor, player, etc).
-		collider->setCollideWithMaskBits(CollisionFilterPreset::VFX);
+		collider->setCollideWithMaskBits(FilterPreset::All);
 	}
 	
 	void PhysicsSystem::CreateRigidBody(EntityID entity, TransformComponent& transform, RigidBodyComponent& rigidBody)

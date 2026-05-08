@@ -11,7 +11,7 @@ function CharacterMovement:OnUpdate(entity, delta)
     local right = transform:GetRight()
     
     -- Player Controller Movement
-    local moveDir = Vector3f.Zero()
+    local moveDir = Vector3f.new(0.0, 0.0, 0.0)
 
     -- Strafing
     if IsKeyPressed(KeyCode.A) then 
@@ -28,8 +28,8 @@ function CharacterMovement:OnUpdate(entity, delta)
     end
     
     -- Normalize so diagonal movement isn't 1.4x faster!
-    if moveDir:Length() > 0 then
-        moveDir = moveDir:Normalize()
+    if Math.Length(moveDir) > 0 then
+        moveDir = Math.Normalize(moveDir);
     end
     
     -- Move using the Character Controller

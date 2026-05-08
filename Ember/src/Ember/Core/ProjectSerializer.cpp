@@ -41,7 +41,7 @@ namespace Ember {
 		physicsNode["VelocitySolverIterations"] << physicsSettings.VelocitySolverIterations;
 
 		// Physics Collider Filters
-		auto& filterManager = m_Project->GetCollisionFilterManager();
+		auto filterManager = m_Project->GetCollisionFilterManager();
 		auto filterNode = physicsNode["CollisionFilters"];
 		filterNode |= ryml::SEQ;
 		uint32_t i = 0;
@@ -51,6 +51,22 @@ namespace Ember {
 			filterEntryNode |= ryml::MAP;
 			filterEntryNode["Name"] << filter;
 			filterEntryNode["Locked"] << filterManager.isSlotLocked(i);
+		}
+
+		// Render settings
+		auto renderLayerManager = m_Project->GetRenderFilterManager();
+		auto renderNode = settingsNode["Render"];
+		renderNode |= ryml::MAP;
+		
+		auto renderLayerNode = renderNode["RenderLayers"];
+		renderLayerNode |= ryml::SEQ;
+		uint32_t renderLayerIndex = 0;
+		for (const auto& layer : renderLayerManager.GetFilters())
+		{
+			auto layerEntryNode = renderLayerNode.append_child();
+			layerEntryNode |= ryml::MAP;
+			layerEntryNode["Name"] << layer;
+			layerEntryNode["Locked"] << renderLayerManager.isSlotLocked(renderLayerIndex);
 		}
 
 		std::ofstream fout(filePath);
@@ -122,6 +138,29 @@ namespace Ember {
 			}
 
 			filterManager.InitWithFilters(filters);
+
+			// Render settings
+			if (settingsNode.has_child("Render"))
+			{
+				auto& renderLayerManager = m_Project->GetRenderFilterManager();
+				auto renderNode = settingsNode["Render"];
+
+				std::vector<std::string> renderLayers;
+				uint32_t renderLayerIndex = 0;
+				for (auto renderLayerNode : renderNode["RenderLayers"].children())
+				{
+					std::string layerName;
+					renderLayerNode["Name"] >> layerName;
+					if (renderLayerNode.has_child("Locked"))
+					{
+						bool locked;
+						renderLayerNode["Locked"] >> locked;
+						if (locked)
+							renderLayerManager.setSlotLock(renderLayerIndex, true);
+					}
+					renderLayers.push_back(layerName);
+				}
+			}
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

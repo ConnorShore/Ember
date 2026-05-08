@@ -11,7 +11,7 @@ namespace Ember {
 	constexpr Vector3f WalkableNodeColor = Vector3f(0.0f, 0.5f, 1.0f);
 	constexpr Vector3f UnwalkableNodeColor = Vector3f(1.0f, 0.0f, 0.0f);
 
-	std::vector<std::vector<NavNode>> NavigationGrid::Generate(const Vector3f& center, float gridSizeX, float gridSizeY, float nodeSpacing)
+	std::vector<std::vector<NavNode>> NavigationGrid::Generate(const Vector3f& center, float gridSizeX, float gridSizeY, float nodeSpacing, Filter collisionMask /*= FilterPreset::Default*/)
 	{
 		std::vector<std::vector<NavNode>> grid;
 
@@ -47,7 +47,7 @@ namespace Ember {
 			for (auto& node : column)
 			{
 				float width = nodeSpacing * 0.45f;
-				auto overlapData = physicsSystem->TestOverlapBox(node.WorldPosition, Vector3f(0.0f), Vector3f(width, 0.1f, width), {}, CollisionFilterPreset::Environment);
+				auto overlapData = physicsSystem->TestOverlapBox(node.WorldPosition, Vector3f(0.0f), Vector3f(width, 0.1f, width), {}, collisionMask);
 				node.IsWalkable = overlapData;	// If overlap data exists
 			}
 		}

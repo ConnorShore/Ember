@@ -3,6 +3,9 @@
 #include "ComponentUI.h"
 #include "UI/UIWidgets.h"
 #include "UI/PropertyGrid.h"
+#include "UI/FilterWidget.h"
+
+#include <Ember/Core/ProjectManager.h>
 
 namespace Ember {
 
@@ -67,6 +70,18 @@ namespace Ember {
 				}
 
 				UI::PropertyGrid::End();
+			}
+
+			if (ImGui::TreeNode("Camera Masks"))
+			{
+				if (UI::PropertyGrid::Begin("CameraMaskProps"))
+				{
+					UI::PropertyGrid::FilterGrid("Render Mask", component.RenderMask, ProjectManager::GetActive()->GetRenderFilterManager());
+					UI::PropertyGrid::FilterGrid("Volume Mask", component.VolumeMask, ProjectManager::GetActive()->GetCollisionFilterManager());
+					UI::PropertyGrid::End();
+				}
+
+				ImGui::TreePop();
 			}
 		}
 

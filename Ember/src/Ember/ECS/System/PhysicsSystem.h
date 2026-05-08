@@ -58,12 +58,12 @@ namespace Ember {
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& direction, float length);
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
 
-		OverlapTestData TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter = CollisionFilterPreset::All);
-		OverlapTestData TestOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter = CollisionFilterPreset::All);
+		OverlapTestData TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter = FilterPreset::All);
+		OverlapTestData TestOverlapSphere(const Vector3f& position, float radius, Entity entity, Filter filter = FilterPreset::All);
 
 		CollisionCallbackData TestCollision(Entity entity);
 
-		std::vector<VolumeOverlapData> GetOverlappingVolumes(const Vector3f& cameraPosition);
+		std::vector<VolumeOverlapData> GetOverlappingVolumes(const Vector3f& cameraPosition, Filter overlapFilter);
 
 		PhysicsSettings& GetSettings() { return m_Settings; }
 		void RefreshPhysicsWorld();

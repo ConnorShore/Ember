@@ -18,9 +18,8 @@ namespace Ember {
 
 		virtual void CreateComponentForEntity(Entity entity) override
 		{
-			MaterialComponent comp{ Constants::Assets::StandardGeometryMatUUID };
-			auto ret = comp.GetInstanced(entity.GetName() + "_Material");
-			m_Context->ActiveScene->AttachComponent<MaterialComponent>(entity, comp);
+			auto& materialComponent = entity.AttachComponent<MaterialComponent>();
+			materialComponent.MaterialHandle = Constants::Assets::StandardGeometryMatUUID;
 		}
 
 	protected:
@@ -43,9 +42,7 @@ namespace Ember {
 					bool isSelected = material && (material->GetUUID() == mat->GetUUID());
 					if (UI::ComboBoxItem(mat->GetName().c_str(), isSelected))
 					{
-						//std::string name = mat->GetName() + "_" + m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
 						component.MaterialHandle = mat->GetUUID();
-						//component.GetInstanced(name);
 					}
 
 					// Set the initial focus when opening the combo

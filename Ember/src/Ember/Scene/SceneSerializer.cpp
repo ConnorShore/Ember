@@ -159,28 +159,33 @@ namespace Ember {
 		{
 			ryml::NodeRef meshNode = entityNode["StaticMeshComponent"];
 			meshNode |= ryml::MAP;
-			if (entity.GetComponent<StaticMeshComponent>().MeshHandle != Constants::InvalidUUID)
+			auto& staticMeshComp = entity.GetComponent<StaticMeshComponent>();
+			if (staticMeshComp.MeshHandle != Constants::InvalidUUID)
 			{
-				meshNode["MeshUUID"] << entity.GetComponent<StaticMeshComponent>().MeshHandle;
+				meshNode["MeshUUID"] << (uint64_t)staticMeshComp.MeshHandle;
+				meshNode["Layer"] << staticMeshComp.Layer;
 			}
 		}
 		if (entity.ContainsComponent<SkinnedMeshComponent>())
 		{
 			ryml::NodeRef meshNode = entityNode["SkinnedMeshComponent"];
 			meshNode |= ryml::MAP;
-			if (entity.GetComponent<SkinnedMeshComponent>().MeshHandle != Constants::InvalidUUID)
+			auto& skinnedMeshComp = entity.GetComponent<SkinnedMeshComponent>();
+			if (skinnedMeshComp.MeshHandle != Constants::InvalidUUID)
 			{
-				meshNode["MeshUUID"] << entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
-				meshNode["RootAnimator"] << (uint64_t)entity.GetComponent<SkinnedMeshComponent>().AnimatorEntityHandle;
+				meshNode["MeshUUID"] << skinnedMeshComp.MeshHandle;
+				meshNode["RootAnimator"] << (uint64_t)skinnedMeshComp.AnimatorEntityHandle;
+				meshNode["Layer"] << skinnedMeshComp.Layer;
 			}
 		}
 		if (entity.ContainsComponent<MaterialComponent>())
 		{
 			ryml::NodeRef materialNode = entityNode["MaterialComponent"];
 			materialNode |= ryml::MAP;
-			if (entity.GetComponent<MaterialComponent>().MaterialHandle != Constants::InvalidUUID)
+			auto materialHandle = entity.GetComponent<MaterialComponent>().MaterialHandle;
+			if (materialHandle != Constants::InvalidUUID)
 			{
-				materialNode["MaterialUUID"] << entity.GetComponent<MaterialComponent>().MaterialHandle;
+				materialNode["MaterialUUID"] << (uint64_t)materialHandle;
 			}
 		}
 		if (entity.ContainsComponent<CameraComponent>())
@@ -192,6 +197,8 @@ namespace Ember {
 			Util::SerializeMatrix4f(cameraNode["Projection"], camera.GetProjectionMatrix());
 			cameraNode["Type"] << (int)camera.GetProjectionType();
 			cameraNode["IsActive"] << cameraComp.IsActive;
+			cameraNode["RenderMask"] << cameraComp.RenderMask;
+			cameraNode["VolumeMask"] << cameraComp.VolumeMask;
 
 			ryml::NodeRef orthoPropsNode = cameraNode["OrthographicProperties"];
 			orthoPropsNode |= ryml::MAP;
@@ -734,6 +741,8 @@ namespace Ember {
 
 			auto& mc = deserializedEntity.AttachComponent<StaticMeshComponent>();
 			mc.MeshHandle = (UUID)meshId;
+
+			meshNode["Layer"] >> mc.Layer;
 		}
 
 		if (entityNode.has_child("SkinnedMeshComponent"))
@@ -747,7 +756,9 @@ namespace Ember {
 
 			auto& mc = deserializedEntity.AttachComponent<SkinnedMeshComponent>();
 			mc.MeshHandle = (UUID)meshId;
-			mc.AnimatorEntityHandle = getRemappedUUID(animatorId); // REMAPPED!
+			mc.AnimatorEntityHandle = getRemappedUUID(animatorId);
+
+			meshNode["Layer"] >> mc.Layer;
 		}
 
 		if (entityNode.has_child("MaterialComponent"))
@@ -784,6 +795,9 @@ namespace Ember {
 			bool isActive;
 			cameraNode["IsActive"] >> isActive;
 			cc.IsActive = isActive;
+
+			cameraNode["RenderMask"] >> cc.RenderMask;
+			cameraNode["VolumeMask"] >> cc.VolumeMask;
 
 			if (cameraNode.has_child("OrthographicProperties"))
 			{
