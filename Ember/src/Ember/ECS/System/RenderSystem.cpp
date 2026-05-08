@@ -280,6 +280,10 @@ namespace Ember {
 		bool isScissorEnabled = RenderAction::IsScissorTestEnabled();
 		RenderAction::UseScissorTest(false);
 
+		// Save the current viewport so we can restore it after baking
+		int savedViewport[4] = { 0 };
+		RenderAction::GetViewportDimensions(savedViewport);
+
 		m_ColorGradeLUTBuffer->Bind();
 
 		RenderAction::SetViewport(0, 0, 256, 16);
@@ -317,7 +321,8 @@ namespace Ember {
 
 		m_ColorGradeLUTBuffer->Unbind();
 
-		// Restore previous scissor state
+		// Restore previous viewport and scissor state
+		RenderAction::SetViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
 		if (isScissorEnabled)
 			RenderAction::UseScissorTest(true);
 
