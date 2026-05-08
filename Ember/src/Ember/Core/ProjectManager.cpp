@@ -13,7 +13,20 @@ namespace Ember {
 		auto project = SharedPtr<Project>::Create(filepath);
 		s_ActiveProject = project;
 
-		s_ActiveProject->GetCollisionFilterManager().InitDefaultFilters();
+		// Create collision filter manager
+		auto& collisionFilterManager = s_ActiveProject->GetCollisionFilterManager();
+		collisionFilterManager.InitWithFilters({
+			"Environment",
+			"VFX",
+			"Player",
+			"Enemy"
+		});
+
+		// Create render layer manager
+		auto& renderLayerManager = s_ActiveProject->GetRenderFilterManager();
+		renderLayerManager.InitWithFilters({
+			"Default"
+		});
 
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(filepath);

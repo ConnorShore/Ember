@@ -6,18 +6,18 @@
 
 namespace Ember {
 
-	bool Collision::CheckOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
+	bool Collision::CheckOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter /*= FilterPreset::All*/)
 	{
 		return CheckOverlapBoxWithData(position, rotation, scale, entity, filter);
 	}
 
-	OverlapTestData Collision::CheckOverlapBoxWithData(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
+	OverlapTestData Collision::CheckOverlapBoxWithData(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter /*= FilterPreset::All*/)
 	{
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
 		return physicsSystem->TestOverlapBox(position, rotation, scale, entity, filter);
 	}
 
-	bool Collision::CheckOverlapSphere(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /* = CollisionFilterPreset::All */)
+	bool Collision::CheckOverlapSphere(const Vector3f& position, float radius, Entity entity, Filter filter /* = FilterPreset::All */)
 	{
 		return CheckOverlapSphereWithData(position, radius, entity, filter);
 	}
@@ -32,7 +32,7 @@ namespace Ember {
 		return CheckOverlapSphereWithData(position, collider.Radius, entity, collider.CollisionMask);
 	}
 
-	OverlapTestData Collision::CheckOverlapSphereWithData(const Vector3f& position, float radius, Entity entity, CollisionFilter filter /*= CollisionFilterPreset::All*/)
+	OverlapTestData Collision::CheckOverlapSphereWithData(const Vector3f& position, float radius, Entity entity, Filter filter /*= FilterPreset::All*/)
 	{
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
 		return physicsSystem->TestOverlapSphere(position, radius, entity, filter);

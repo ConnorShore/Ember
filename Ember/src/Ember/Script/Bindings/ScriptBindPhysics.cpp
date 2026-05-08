@@ -3,7 +3,6 @@
 
 #include "Ember/Core/ProjectManager.h"
 #include "Ember/Math/Math.h"
-#include "Ember/Physics/CollisionFilterManager.h"
 #include "Ember/Physics/Raycast.h"
 #include "Ember/Physics/Collision.h"
 
@@ -19,18 +18,23 @@ namespace Ember {
 
 	void BindPhysics(sol::state& state, Scene* scene)
 	{
-		state.new_usertype<CollisionFilterManager>("CollisionFilterManager",
-			"SetFilterNameAtSlot", &CollisionFilterManager::SetFilterNameAtSlot,
-			"GetFilter", &CollisionFilterManager::GetFilter,
-			"GetFilterNameBySlot", &CollisionFilterManager::GetFilterNameBySlot
+		state.new_usertype<FilterManager>("CollisionFilterManager",
+			"SetFilterNameAtSlot", [](uint32_t slot, const std::string& name) {
+				return ProjectManager::GetActive()->GetCollisionFilterManager().SetFilterNameAtSlot(slot, name);
+			},
+			"GetFilter", [](const std::string& name) {
+				return ProjectManager::GetActive()->GetCollisionFilterManager().GetFilter(name);
+			},
+			"GetFilterNameBySlot", [](uint32_t slot) {
+				return ProjectManager::GetActive()->GetCollisionFilterManager().GetFilterNameBySlot(slot);
+			}
 		);
 
 		sol::table collisionFilterTable = state.create_table("CollisionFilter");
 
 		// Defaults
-		collisionFilterTable["Default"] = CollisionFilterPreset::Default;
-		collisionFilterTable["Environment"] = CollisionFilterPreset::Environment;
-		collisionFilterTable["All"] = CollisionFilterPreset::All;
+		collisionFilterTable["Default"] = FilterPreset::Default;
+		collisionFilterTable["All"] = FilterPreset::All;
 
 		// Custom filter bindings
 		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
@@ -55,10 +59,6 @@ namespace Ember {
 
 		state.new_usertype<OverlapTestData>("OverlapData",
 			"Hits", &OverlapTestData::Hits
-			//"HasHit", &OverlapTestData::HasHit,
-			//"NumCollisions", &OverlapTestData::NumCollisions,
-			//"CollidedEntities", &OverlapTestData::CollidedEntities,
-			//"CollidedEntityFilters", &OverlapTestData::CollidedEntityFilters
 		);
 
 		// Create the Physics static table
@@ -81,7 +81,7 @@ namespace Ember {
 			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
 				return Collision::CheckOverlapBox(position, rotation, scale, entity);
 			},
-			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter) {
 				return Collision::CheckOverlapBox(position, rotation, scale, entity, filter);
 			}
 		));
@@ -89,7 +89,7 @@ namespace Ember {
 			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
 				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity);
 			},
-			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, CollisionFilter filter) {
+			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter) {
 				return Collision::CheckOverlapBoxWithData(position, rotation, scale, entity, filter);
 			}
 		));
@@ -100,7 +100,7 @@ namespace Ember {
 			[](const Vector3f& position, float radius, Entity entity) {
 				return Collision::CheckOverlapSphere(position, radius, entity);
 			},
-			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+			[](const Vector3f& position, float radius, Entity entity, Filter filter) {
 				return Collision::CheckOverlapSphere(position, radius, entity, filter);
 			}
 		));
@@ -108,7 +108,7 @@ namespace Ember {
 			[](const Vector3f& position, float radius, Entity entity) {
 				return Collision::CheckOverlapSphereWithData(position, radius, entity);
 			},
-			[](const Vector3f& position, float radius, Entity entity, CollisionFilter filter) {
+			[](const Vector3f& position, float radius, Entity entity, Filter filter) {
 				return Collision::CheckOverlapSphereWithData(position, radius, entity, filter);
 			}
 		));

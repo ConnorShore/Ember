@@ -2,6 +2,7 @@
 #include "ComponentUI.h"
 #include "UI/PropertyGrid.h"
 #include "UI/DragDropTypes.h"
+#include "UI/FilterWidget.h"
 
 #include <Ember/Asset/AssetManager.h>
 #include <Ember/Utils/PlatformUtil.h>
@@ -93,6 +94,18 @@ namespace Ember {
 				ImGui::PopID();
 
 				UI::PropertyGrid::End();
+			}
+
+			if (ImGui::TreeNode("Render Layer"))
+			{
+				if (UI::PropertyGrid::Begin("RenderLayerProps"))
+				{
+					auto& filterManager = ProjectManager::GetActive()->GetRenderFilterManager();
+					UI::PropertyGrid::FilterGrid("Layer", component.Layer, filterManager);
+					UI::PropertyGrid::End();
+				}
+
+				ImGui::TreePop();
 			}
 		}
 

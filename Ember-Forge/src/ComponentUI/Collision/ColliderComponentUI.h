@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComponentUI/ComponentUI.h"
+#include "UI/FilterWidget.h"
 
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
@@ -74,14 +75,15 @@ namespace Ember {
 			if (ImGui::TreeNode("Collision Filters"))
 			{
 				if (UI::PropertyGrid::Begin("CollisionFilterProps"))
-					{
-						if (RenderFilterDropdown("Category", component.Category))
-							component.NeedsRebuild = true;
-						if (RenderFilterDropdown("Collision Mask", component.CollisionMask))
-							component.NeedsRebuild = true;
+				{
+					auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
+					if (UI::PropertyGrid::FilterGrid("Category", component.Category, filterManager))
+						component.NeedsRebuild = true;
+					if (UI::PropertyGrid::FilterGrid("Collision Mask", component.CollisionMask, filterManager))
+						component.NeedsRebuild = true;
 
-						UI::PropertyGrid::End();
-					}
+					UI::PropertyGrid::End();
+				}
 				ImGui::TreePop();
 			}
 
@@ -97,54 +99,6 @@ namespace Ember {
 		}
 
 	private:
-		bool RenderFilterDropdown(const std::string& label, CollisionFilter& collisionFilter)
-		{
-			bool changed = false;
-			auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
-
-			std::vector<std::string> activeFilterNames = filterManager.GetActiveFilters(collisionFilter);
-
-			std::string name = "None";
-			if (activeFilterNames.size() == 1)
-				name = activeFilterNames[0];
-			else if (activeFilterNames.size() > 1)
-				name = "Multiple Filters";
-
-			if (UI::PropertyGrid::BeginComboBox(label.c_str(), name))
-			{
-				std::vector<std::string> filterNames = filterManager.GetFilters();
-				for (const auto& filterName : filterNames)
-				{
-					if (filterName == "Default")
-						continue; // Skip the Default filter as it's always on by design
-
-					CollisionFilter filterValue = filterManager.GetFilter(filterName);
-
-					bool isSelected = (collisionFilter & filterValue) == filterValue;
-					if (ImGui::Checkbox(filterName.c_str(), &isSelected))
-					{
-						if (isSelected)
-							collisionFilter |= filterValue; // Set the bit
-						else
-							collisionFilter &= ~filterValue; // Unset the bit
-						changed = true;
-					}
-				}
-
-				ImGui::Separator();
-
-				if (ImGui::Selectable("Clear All", false, ImGuiSelectableFlags_DontClosePopups))
-					{ collisionFilter = 0x0000; changed = true; }
-
-				if (ImGui::Selectable("Select All", false, ImGuiSelectableFlags_DontClosePopups))
-					{ collisionFilter = 0xFFFF; changed = true; }
-
-				UI::PropertyGrid::EndComboBox();
-			}
-
-			return changed;
-		}
-
 		void RenderPhysicsMaterialSection(T& component)
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();

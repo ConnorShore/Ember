@@ -260,6 +260,8 @@ namespace Ember {
 
 		// Set render scene state for camera info
 		m_RenderSceneState.ActiveCamera = camera;
+		m_RenderSceneState.ActiveRenderMask = FilterPreset::All;
+		m_RenderSceneState.ActiveVolumeMask = FilterPreset::All;
 		m_RenderSceneState.CameraTransform = cameraTransform;
 		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
@@ -277,6 +279,10 @@ namespace Ember {
 		// Prevents issues with ImGui's scissor test interfering with the baking process
 		bool isScissorEnabled = RenderAction::IsScissorTestEnabled();
 		RenderAction::UseScissorTest(false);
+
+		// Save the current viewport so we can restore it after baking
+		int savedViewport[4] = { 0 };
+		RenderAction::GetViewportDimensions(savedViewport);
 
 		m_ColorGradeLUTBuffer->Bind();
 
@@ -315,7 +321,8 @@ namespace Ember {
 
 		m_ColorGradeLUTBuffer->Unbind();
 
-		// Restore previous scissor state
+		// Restore previous viewport and scissor state
+		RenderAction::SetViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
 		if (isScissorEnabled)
 			RenderAction::UseScissorTest(true);
 
@@ -381,6 +388,8 @@ namespace Ember {
 			if (camera.IsActive)
 			{
 				m_RenderSceneState.ActiveCamera = camera.Camera;
+				m_RenderSceneState.ActiveRenderMask = camera.RenderMask;
+				m_RenderSceneState.ActiveVolumeMask = camera.VolumeMask;
 				m_RenderSceneState.CameraTransform = transform.WorldTransform;
 				m_RenderSceneState.IsCameraFound = true;
 
@@ -404,58 +413,65 @@ namespace Ember {
 		std::vector<std::pair<EntityID, AABB>> renderableEntities;
 		renderableEntities.reserve(m_ActiveRenderableEntities.size());
 
-		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle)
-		{
-			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
+		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle, Filter renderLayer) {
+				// If no mesh assigned, return
+				if (meshHandle == Constants::InvalidUUID)
+					return;
 
-			auto transform = entity.GetComponent<TransformComponent>();
+				// If the entity's render layer doesn't match the active camera's render mask, skip it
+				if ((renderLayer & m_RenderSceneState.ActiveRenderMask) == 0)
+					return;
 
-			// Calculate AABB and check if in frustum
-			Vector3f localMin = mesh->GetMinBounds();
-			Vector3f localMax = mesh->GetMaxBounds();
-			Matrix4f worldMat = transform.GetWorldTransform();
+				auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
 
-			// Define the 8 corners of the local bounding box
-			Vector3f corners[8] = {
-				{localMin.x, localMin.y, localMin.z},
-				{localMax.x, localMin.y, localMin.z},
-				{localMin.x, localMax.y, localMin.z},
-				{localMax.x, localMax.y, localMin.z},
-				{localMin.x, localMin.y, localMax.z},
-				{localMax.x, localMin.y, localMax.z},
-				{localMin.x, localMax.y, localMax.z},
-				{localMax.x, localMax.y, localMax.z}
+				auto transform = entity.GetComponent<TransformComponent>();
+
+				// Calculate AABB and check if in frustum
+				Vector3f localMin = mesh->GetMinBounds();
+				Vector3f localMax = mesh->GetMaxBounds();
+				Matrix4f worldMat = transform.GetWorldTransform();
+
+				// Define the 8 corners of the local bounding box
+				Vector3f corners[8] = {
+					{localMin.x, localMin.y, localMin.z},
+					{localMax.x, localMin.y, localMin.z},
+					{localMin.x, localMax.y, localMin.z},
+					{localMax.x, localMax.y, localMin.z},
+					{localMin.x, localMin.y, localMax.z},
+					{localMax.x, localMin.y, localMax.z},
+					{localMin.x, localMax.y, localMax.z},
+					{localMax.x, localMax.y, localMax.z}
+				};
+
+				// Initialize world bounds to extreme values
+				Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
+				Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
+
+				// Transform all 8 corners to world space and find the new AABB limits
+				for (int i = 0; i < 8; i++) {
+					Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
+					worldMin = Math::Min(worldMin, worldCorner);
+					worldMax = Math::Max(worldMax, worldCorner);
+				}
+
+				AABB worldAABB{ worldMin, worldMax };
+				renderableEntities.push_back(std::make_pair(entity, worldAABB));
 			};
-
-			// Initialize world bounds to extreme values
-			Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
-			Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
-
-			// Transform all 8 corners to world space and find the new AABB limits
-			for (int i = 0; i < 8; i++) {
-				Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
-				worldMin = Math::Min(worldMin, worldCorner);
-				worldMax = Math::Max(worldMax, worldCorner);
-			}
-
-			AABB worldAABB{ worldMin, worldMax };
-			renderableEntities.push_back(std::make_pair(entity, worldAABB));
-		};
 
 		// Store Static Meshes
 		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) 
 		{
 			Entity entity(entityId, scene);
-			auto meshUUID = entity.GetComponent<StaticMeshComponent>().MeshHandle;
-			createAndStoreEntityPair(entity, meshUUID);
+			auto& meshComp = entity.GetComponent<StaticMeshComponent>();
+			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
 		}
 
 		// Store Skinned Meshes
 		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) 
 		{
 			Entity entity(entityId, scene);
-			auto meshUUID = entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
-			createAndStoreEntityPair(entity, meshUUID);
+			auto& meshComp = entity.GetComponent<SkinnedMeshComponent>();
+			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
 		}
 
 		m_ActiveRenderableEntities = std::move(renderableEntities);
@@ -491,7 +507,7 @@ namespace Ember {
 			return;
 
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
-		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3]);
+		auto volumes = physicsSystem->GetOverlappingVolumes(m_RenderSceneState.CameraTransform[3], m_RenderSceneState.ActiveVolumeMask);
 
 		// Get components from volume data
 		std::vector<std::pair<PostProcessVolumeComponent, float>> componentDistMap;
@@ -499,6 +515,9 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 		for (const auto& overlapData : volumes)
 		{
+			if (!registry.ContainsComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity))
+				continue;
+
 			// Retrieve the actual component data
 			auto& volumeComponent = registry.GetComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity);
 			componentDistMap.emplace_back(volumeComponent, overlapData.SignedDistanceToEdge);

@@ -11,7 +11,7 @@ namespace Ember {
 	struct Hit
 	{
 		EntityID EntityID = Constants::Entities::InvalidEntityID;
-		CollisionFilter Filter = CollisionFilterPreset::Default;
+		Filter Filter = FilterPreset::Default;
 	};
 
 	struct OverlapTestData

@@ -60,6 +60,9 @@ namespace Ember {
 
 		if (ImGui::Selectable("Physics", m_SelectedCategory == Category::Physics))
 			m_SelectedCategory = Category::Physics;
+
+		if (ImGui::Selectable("Rendering", m_SelectedCategory == Category::Rendering))
+			m_SelectedCategory = Category::Rendering;
 	}
 
 	void ProjectSettingsDialog::RenderRightPane()
@@ -68,6 +71,7 @@ namespace Ember {
 		{
 		case Category::General: RenderGeneralSettings(); break;
 		case Category::Physics: RenderPhysicsSettings(); break;
+		case Category::Rendering: RenderRenderingSettings(); break;
 		}
 	}
 
@@ -123,7 +127,7 @@ namespace Ember {
 		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
 
 		// ReactPhysics3D uses a 16-bit integer for masks, so we iterate exactly 16 times.
-		for (int i = 0; i < 16; i++)
+		for (uint32_t i = 0; i < 16; i++)
 		{
 			ImGui::PushID(i);
 
@@ -132,42 +136,25 @@ namespace Ember {
 			ImGui::Text("Layer %2d", i);
 			ImGui::SameLine(80.0f);
 
-			if (i == 0)
-			{
-				// Default can't be changed
-				ImGui::TextDisabled("Default");
-			}
-			else if (i == 1)
-			{
-				// Environment can't be changed
-				ImGui::TextDisabled("Environment");
-			}
-			else if (i == 2)
-			{
-				// Environment can't be changed
-				ImGui::TextDisabled("VFX");
-			}
-			else
-			{
-				std::string currentName = filterManager.GetFilterNameBySlot(i);
-				char buffer[64];
-				strncpy_s(buffer, sizeof(buffer), currentName.c_str(), _TRUNCATE);
+			// Render an input box for the filter name, pre-filled with the current name from the filter manager
+			std::string currentName = filterManager.GetFilterNameBySlot(i);
+			char buffer[64];
+			strncpy_s(buffer, sizeof(buffer), currentName.c_str(), _TRUNCATE);
 
-				// Dynamically size the input box to stretch, but leave 60px for the Clear button
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
+			// Dynamically size the input box to stretch, but leave 60px for the Clear button
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
 
-				// Update the slot name instantly as the user types
-				if (ImGui::InputText("##LayerName", buffer, sizeof(buffer)))
-				{
-					filterManager.SetFilterNameAtSlot(i, std::string(buffer));
-				}
+			// Update the slot name instantly as the user types
+			if (ImGui::InputText("##LayerName", buffer, sizeof(buffer)))
+			{
+				filterManager.SetFilterNameAtSlot(i, std::string(buffer));
+			}
 
-				// The Clear button quickly wipes the slot back to an empty string
-				ImGui::SameLine();
-				if (ImGui::Button("Clear"))
-				{
-					filterManager.SetFilterNameAtSlot(i, "");
-				}
+			// The Clear button quickly wipes the slot back to an empty string
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				filterManager.SetFilterNameAtSlot(i, "");
 			}
 
 			ImGui::PopID();
@@ -175,6 +162,57 @@ namespace Ember {
 
 		ImGui::EndChild();
 
+	}
+
+	void ProjectSettingsDialog::RenderRenderingSettings()
+	{
+		ImGui::Text("Rendering");
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		ImGui::TextDisabled("Render Layers");
+
+		// Use a child window with a border so it looks clean inside the right pane.
+		// ImVec2(0, 0) tells ImGui to fill the remaining width and height perfectly.
+		ImGui::BeginChild("RenderLayersSection", ImVec2(0, 0), true);
+
+		auto& filterManager = ProjectManager::GetActive()->GetRenderFilterManager();
+
+		// ReactPhysics3D uses a 16-bit integer for masks, so we iterate exactly 16 times.
+		for (uint32_t i = 0; i < 16; i++)
+		{
+			ImGui::PushID(i);
+
+			// Fixed width for the label so the input boxes align perfectly into a neat column
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Layer %2d", i);
+			ImGui::SameLine(80.0f);
+
+			// Render textbox for the layer name, with a Clear button next to it
+			std::string currentName = filterManager.GetFilterNameBySlot(i);
+			char buffer[64];
+			strncpy_s(buffer, sizeof(buffer), currentName.c_str(), _TRUNCATE);
+
+			// Dynamically size the input box to stretch, but leave 60px for the Clear button
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
+
+			// Update the slot name instantly as the user types
+			if (ImGui::InputText("##LayerName", buffer, sizeof(buffer)))
+			{
+				filterManager.SetFilterNameAtSlot(i, std::string(buffer));
+			}
+
+			// The Clear button quickly wipes the slot back to an empty string
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				filterManager.SetFilterNameAtSlot(i, "");
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndChild();
 	}
 
 }

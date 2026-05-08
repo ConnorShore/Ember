@@ -4,6 +4,7 @@
 #include "UIWidgets.h"
 #include "PropertyGrid.h"
 #include "DragDropTypes.h"
+#include "FilterWidget.h"
 
 #include <Ember/Core/Application.h>
 
@@ -494,6 +495,22 @@ namespace Ember {
 		void EndComboBox()
 		{
 			UI::EndComboBox();
+		}
+
+		bool FilterGrid(const std::string& label, Filter& filter, FilterManager& filterManager)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+			// Prop name
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+
+			// Now that we are safely inside the right column, draw the custom widget!
+			// We pass an empty string for the label because we already drew it on the left.
+			return UI::RenderFilterGrid(label, filter, filterManager);
 		}
 	}
 }

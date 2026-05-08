@@ -12,13 +12,12 @@
 #include "Ember/ECS/Types.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/Core/Application.h"
-#include "Ember/Physics/CollisionFilter.h"
+#include "Ember/Core/Filter.h"
 #include "Ember/Physics/ColliderUserData.h"
 #include "Ember/Asset/PhysicsMaterial.h"
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
 #include "Ember/AI/NavNode.h"
-#include "Ember/Physics/CollisionFilter.h"
 
 #include <sol/sol.hpp>
 
@@ -186,8 +185,8 @@ namespace Ember {
 		bool IsTrigger = false;
 		bool PreviewCollider = false;
 
-		CollisionFilter Category = CollisionFilterPreset::Default;
-		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+		Filter Category = FilterPreset::Default;
+		Filter CollisionMask = FilterPreset::Default;
 
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
@@ -213,8 +212,8 @@ namespace Ember {
 		bool IsTrigger = false;
 		bool PreviewCollider = false;
 
-		CollisionFilter Category = CollisionFilterPreset::Default;
-		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+		Filter Category = FilterPreset::Default;
+		Filter CollisionMask = FilterPreset::Default;
 
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
@@ -241,8 +240,8 @@ namespace Ember {
 		bool IsTrigger = false;
 		bool PreviewCollider = false;
 
-		CollisionFilter Category = CollisionFilterPreset::Default;
-		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+		Filter Category = FilterPreset::Default;
+		Filter CollisionMask = FilterPreset::Default;
 
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
@@ -269,8 +268,8 @@ namespace Ember {
 		bool IsTrigger = false;
 		bool PreviewCollider = false;
 
-		CollisionFilter Category = CollisionFilterPreset::Default;
-		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+		Filter Category = FilterPreset::Default;
+		Filter CollisionMask = FilterPreset::Default;
 
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
@@ -300,8 +299,8 @@ namespace Ember {
 		bool IsTrigger = false;
 		bool PreviewCollider = false;
 
-		CollisionFilter Category = CollisionFilterPreset::Default;
-		CollisionFilter CollisionMask = CollisionFilterPreset::Default;
+		Filter Category = FilterPreset::Default;
+		Filter CollisionMask = FilterPreset::Default;
 
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
@@ -369,6 +368,7 @@ namespace Ember {
 	struct StaticMeshComponent
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
+		Filter Layer = FilterPreset::Default;
 
 		StaticMeshComponent() = default;
 		StaticMeshComponent(UUID meshId) : MeshHandle(meshId) {}
@@ -379,6 +379,7 @@ namespace Ember {
 	{
 		UUID MeshHandle = Constants::InvalidUUID;
 		UUID AnimatorEntityHandle = Constants::InvalidUUID;
+		Filter Layer = FilterPreset::Default;
 
 		// Runtime only (not serialized) -> used for caching animator id to avoid expensive lookups
 		EntityID RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
@@ -474,6 +475,8 @@ namespace Ember {
 	{
 		Camera Camera;
 		bool IsActive = false;
+		Filter RenderMask = FilterPreset::All;
+		Filter VolumeMask = FilterPreset::All;
 
 		CameraComponent() = default;
 		CameraComponent(const Ember::Camera& camera, bool active = false) : Camera(camera), IsActive(active) {}
@@ -788,7 +791,7 @@ namespace Ember {
 	{
 		float AvoidanceRadius = 0.5f; // How close other agents can get before we start avoiding them
 		float AvoidanceStrength = 1.0f; // How strongly we try to avoid other agents (0 = ignore, 1 = full avoidance)
-		CollisionFilter AvoidanceMask = CollisionFilterPreset::Default; // Which agents to avoid (use collision filters to specify)
+		Filter AvoidanceMask = FilterPreset::Default; // Which agents to avoid (use collision filters to specify)
 
 		// Runtime only (not serialized)
 		Vector3f AvoidanceVector = Vector3f(0.0f); // The current offset being applied to avoid other agents

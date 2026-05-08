@@ -91,6 +91,8 @@ namespace Ember {
 		struct RenderSceneState
 		{
 			Camera ActiveCamera;
+			Filter ActiveRenderMask;
+			Filter ActiveVolumeMask;
 			Matrix4f CameraTransform;
 			Matrix4f CameraViewProjection;
 			bool IsCameraFound;

@@ -41,14 +41,30 @@ namespace Ember {
 		physicsNode["VelocitySolverIterations"] << physicsSettings.VelocitySolverIterations;
 
 		// Physics Collider Filters
-		auto& filterManager = m_Project->GetCollisionFilterManager();
+		auto filterManager = m_Project->GetCollisionFilterManager();
 		auto filterNode = physicsNode["CollisionFilters"];
 		filterNode |= ryml::SEQ;
-		for (const auto& filter : filterManager.GetCustomFilters())
+		uint32_t i = 0;
+		for (const auto& filter : filterManager.GetFilters())
 		{
 			auto filterEntryNode = filterNode.append_child();
 			filterEntryNode |= ryml::MAP;
 			filterEntryNode["Name"] << filter;
+		}
+
+		// Render settings
+		auto renderLayerManager = m_Project->GetRenderFilterManager();
+		auto renderNode = settingsNode["Render"];
+		renderNode |= ryml::MAP;
+		
+		auto renderLayerNode = renderNode["RenderLayers"];
+		renderLayerNode |= ryml::SEQ;
+		uint32_t renderLayerIndex = 0;
+		for (const auto& layer : renderLayerManager.GetFilters())
+		{
+			auto layerEntryNode = renderLayerNode.append_child();
+			layerEntryNode |= ryml::MAP;
+			layerEntryNode["Name"] << layer;
 		}
 
 		std::ofstream fout(filePath);
@@ -99,17 +115,39 @@ namespace Ember {
 			physicsNode["VelocitySolverIterations"] >> physicsSettings.VelocitySolverIterations;
 
 			// Physics Collider Filters
-			auto& filterManager = m_Project->GetCollisionFilterManager();
-			std::vector<std::string> customFilters;
+			auto& collisionFilterManager = m_Project->GetCollisionFilterManager();
+			std::vector<std::string> filters;
 
+			uint32_t i = 0;
 			for (auto filterNode : physicsNode["CollisionFilters"].children())
 			{
 				std::string filterName;
 				filterNode["Name"] >> filterName;
-				customFilters.push_back(filterName);
+
+				filters.push_back(filterName);
 			}
 
-			filterManager.InitWithCustomFilters(customFilters);
+			collisionFilterManager.InitWithFilters(filters);
+
+			// Render settings
+			auto& renderLayerManager = m_Project->GetRenderFilterManager();
+			std::vector<std::string> renderLayers;
+
+			if (settingsNode.has_child("Render"))
+			{
+				auto renderNode = settingsNode["Render"];
+
+				uint32_t renderLayerIndex = 0;
+				for (auto renderLayerNode : renderNode["RenderLayers"].children())
+				{
+					std::string layerName;
+					renderLayerNode["Name"] >> layerName;
+
+					renderLayers.push_back(layerName);
+				}
+			}
+
+			renderLayerManager.InitWithFilters(renderLayers);
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

@@ -43,7 +43,7 @@ namespace Ember {
 			float yOffset = (collider.Height * 0.5f) - checkRadius + groundCheckMargin;
 			Vector3f feetPos = transform.Position - Vector3f(0.0f, yOffset, 0.0f);
 
-			auto overlapData = Collision::CheckOverlapSphereWithData(feetPos, checkRadius, entity, CollisionFilterPreset::Environment);
+			auto overlapData = Collision::CheckOverlapSphereWithData(feetPos, checkRadius, entity, collider.CollisionMask);
 			controller.IsGrounded = overlapData;
 			controller.GroundEntity = overlapData ? overlapData.Hits[0].EntityID : Constants::Entities::InvalidEntityID;
 
