@@ -46,3 +46,6 @@
 *.vcxproj.user
 *.vcxproj.filters
 .vs/
+
+# Logs directory
+Logs/

@@ -106,6 +106,9 @@ namespace Ember {
 		{
 			if (m_Context.CurrentSceneState == SceneState::Edit)
 				m_EditorScene = newScene;
+
+			// De-select entity on scene change
+			m_Context.SelectedEntity = m_InvalidEntity;
 		});
 	}
 
@@ -445,6 +448,16 @@ namespace Ember {
 				{
 					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
 					CreateEntityFromPrefab(filePath);
+				}
+			}
+
+			// Scenes
+			{
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					OpenScene(filePath);
 				}
 			}
 

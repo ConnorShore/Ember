@@ -64,8 +64,15 @@ namespace Ember {
 		));
 
 		// Scene transitions - queues a deferred load so the current frame finishes safely
-		sceneTable.set_function("LoadScene", [](const std::string& filepath) {
-			Application::Instance().GetSceneManager().LoadScene(filepath);
+		sceneTable.set_function("LoadScene", [](const std::string& name) {
+			auto sceneAsset = Application::Instance().GetAssetManager().GetAsset<Scene>(name);
+			if (!sceneAsset)
+			{
+				EB_CORE_ERROR("Attempted to load scene with name \"{}\" but it doesn't exist!", name);
+				return;
+			}
+
+			Application::Instance().GetSceneManager().LoadScene(sceneAsset->GetFilePath());
 		});
 	}
 }

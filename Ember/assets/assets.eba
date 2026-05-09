@@ -1,4 +1,8 @@
 Assets:
+  - Type: Script
+    UUID: 13622538842210363673
+    Name: SceneSkip
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/SceneSkip.lua
   - Type: Scene
     UUID: 6482211050264583149
     Name: Default
