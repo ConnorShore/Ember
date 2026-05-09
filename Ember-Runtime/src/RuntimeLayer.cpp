@@ -7,23 +7,17 @@ namespace Ember {
 
 	void RuntimeLayer::OnAttach()
 	{
-		// 1. Load the exported project configuration
-		// In a real build, this path will be relative to the executable
-		// If an argument was passed, use it!
+		// Load the exported project configuration
+		std::string projectPath = "project.ebproj";	// Default to looking for the project file in the current working directory
 		auto& app = Application::Instance();
-		if (app.GetCommandLineArgsCount() <= 1)
-		{
-			EB_CORE_ERROR("No project file specified. Usage: <executable> <projectFilePath>");
-			return;
-		}
+		if (app.GetCommandLineArgsCount() > 1)
+			projectPath = app.GetCommandLineArg(1);
 
-		std::string projectPath = app.GetCommandLineArg(1);
 		ProjectManager::LoadProject(projectPath);
 
 		// 2. Create and deserialize the startup scene
 		m_ActiveScene = SharedPtr<Scene>::Create("Runtime Scene");
 		SceneSerializer serializer(m_ActiveScene);
-
 		serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());
 
 		// 3. Size the camera and render passes to the actual OS Window, not an ImGui panel!

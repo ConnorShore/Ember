@@ -268,6 +268,7 @@ namespace Ember {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
 		if (ImGui::BeginMenu("File"))
 		{
+			bool projectExists = ProjectManager::GetActive() != nullptr;
 			if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
 			{
 				NewProject();
@@ -276,9 +277,24 @@ namespace Ember {
 			{
 				OpenProject();
 			}
+			if (ImGui::MenuItem("Export Project", "Ctrol+Shift+E", nullptr, projectExists))
+			{
+				// Make sure everything is saved before exporting!
+				SaveScene(false);
+				ProjectManager::SaveActiveProject();
+
+				// Ask the user where they want to save the game
+				std::string exportDir = FileDialog::OpenDirectory();
+				if (!exportDir.empty())
+				{
+					ProjectManager::ExportActiveProject(std::filesystem::path(exportDir));
+
+					auto evt = UINotificationEvent("Project exported successfully!");
+					m_Context.EventCallback(evt);
+				}
+			}
 
 			ImGui::Separator();
-			bool projectExists = ProjectManager::GetActive() != nullptr;
 
 			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
 			{

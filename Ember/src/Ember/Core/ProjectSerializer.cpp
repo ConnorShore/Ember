@@ -21,8 +21,10 @@ namespace Ember {
 
 		root["Project"] << m_Project->GetConfig().ProjectName;
 		root["EngineVersion"] << m_Project->GetConfig().EngineVersion;
-		root["StartScene"] << m_Project->GetConfig().StartScene;
+		root["SceneDirectory"] << m_Project->GetConfig().SceneDirectory;
 		root["AssetDirectory"] << m_Project->GetConfig().AssetDirectory;
+		root["StartScene"] << m_Project->GetConfig().StartScene;
+		root["AssetFile"] << m_Project->GetConfig().AssetFile;
 
 		// Settings
 		auto settingsNode = root["Settings"];

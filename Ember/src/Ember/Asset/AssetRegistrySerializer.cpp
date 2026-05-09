@@ -24,6 +24,8 @@ namespace Ember {
 	// Engine-default assets are loaded at startup and don't need persisting.
 	bool AssetRegistrySerializer::Serialize(const std::string& filePath)
 	{
+		const std::filesystem::path ebaDir = std::filesystem::path(filePath).parent_path();
+
 		ryml::Tree tree;
 		ryml::NodeRef root = tree.rootref();
 		root |= ryml::MAP;
@@ -39,6 +41,12 @@ namespace Ember {
 
 				ryml::NodeRef assetNode = assetsNode.append_child();
 				Util::SerializeGeneralAsset(assetNode, asset);
+
+				// Override FilePath with a path relative to the .eba file so the
+				// registry is portable regardless of where the project is placed.
+				std::string relativePath = std::filesystem::relative(
+					asset->GetFilePath(), ebaDir).generic_string();
+				assetNode["FilePath"] << relativePath;
 			}
 		};
 
@@ -93,6 +101,8 @@ namespace Ember {
 
 		EB_CORE_INFO("Deserializing Asset Registry...");
 
+		const std::filesystem::path ebaDir = std::filesystem::path(filePath).parent_path();
+
 		ryml::NodeRef assetsNode = root["Assets"];
 		for (ryml::NodeRef assetNode : assetsNode.children())
 		{
@@ -108,6 +118,10 @@ namespace Ember {
 
 			if (path.empty())
 				continue;
+
+			// Resolve the stored relative path to an absolute path using the
+			// .eba file's directory so assets load correctly from any location.
+			path = std::filesystem::weakly_canonical(ebaDir / path).string();
 			if (type == "Texture")
 				m_AssetManagerHandle->Load<Texture2D>(uuid, name, path, false);
 			else if (type == "Shader")

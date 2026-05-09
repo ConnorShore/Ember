@@ -119,6 +119,8 @@ namespace Ember {
 
 			// De-duplicate by absolute path so the same file isn't loaded twice
 			auto absolutePath = std::filesystem::absolute(filePath).string();
+
+			// Set path to relative to Assets.eba
 			if (m_AssetPaths.contains(absolutePath))
 			{
 				return GetAsset<T>(m_AssetPaths[absolutePath]);
