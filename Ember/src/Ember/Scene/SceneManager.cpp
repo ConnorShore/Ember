@@ -13,7 +13,10 @@ namespace Ember {
 		auto sceneName = name.empty() ? "Untitled Scene" : name;
 		auto fullScenePath = ProjectManager::GetActive()->GetScenesDirectory() / (sceneName + ".ebs");
 
-		auto newScene = assetManager.Create<Scene>(sceneName, fullScenePath.string());
+		// Use Load so the path is registered in m_AssetPaths — this ensures ExecuteSceneSwap's
+		// Load call de-duplicates correctly and returns this same instance instead of a new one.
+		auto newScene = assetManager.Load<Scene>(sceneName, fullScenePath.string(), false);
+
 		SceneSerializer serializer(newScene);
 		if (!serializer.Serialize(fullScenePath.string()))
 		{
@@ -72,9 +75,11 @@ namespace Ember {
 
 		EB_CORE_INFO("Swapping to new scene: {}", m_NextScenePath);
 
-		// Create the new scene
-		SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene", m_NextScenePath);
-		newScene->SetFilePath(m_NextScenePath);
+		// Fetch the scene from the asset manager — this is the single source of truth.
+		// Load<Scene> de-duplicates by path, so if the scene was already registered via
+		// CreateScene it returns that same instance rather than creating a second one.
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto newScene = assetManager.Load<Scene>(m_NextScenePath, false);
 
 		// Deserialize it using your existing system
 		SceneSerializer serializer(newScene);

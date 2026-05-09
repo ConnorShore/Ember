@@ -104,11 +104,6 @@ namespace Ember {
 		inline Registry& GetRegistry() { return *m_Registry; }
 		inline PoolManager& GetPoolManager() { return *m_PoolManager; }
 
-		inline const std::string& GetName() const { return m_Name; }
-
-		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
-		inline const std::string& GetFilePath() const { return m_FilePath; }
-
 		inline bool IsRuntime() const { return m_IsRuntime; }
 
 		void ResetAllPhysicsState();

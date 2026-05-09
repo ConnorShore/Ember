@@ -33,6 +33,9 @@ namespace Ember {
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(filepath);
 
+		// Clear existing assets from the asset manager and point it to the new project's asset directory
+		Application::Instance().GetAssetManager().ClearAssets();
+
 		// Create Assets folder and sub-asset folders
 		std::filesystem::create_directories(project->GetAssetDirectory());
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Models");

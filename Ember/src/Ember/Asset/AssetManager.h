@@ -164,7 +164,9 @@ namespace Ember {
 			}
 			else if constexpr (std::same_as<T, Scene>)
 			{
-				// Do nothing here since Scenes are loaded through the SceneManager, but we still want to allow them to be registered in the AssetManager
+				// Do nothing here for loading since Scenes are loaded through the SceneManager,
+				// but we still want to allow them to be registered in the AssetManager
+				newAsset = SharedPtr<Scene>::Create(uuid, name, absolutePath);
 			}
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");

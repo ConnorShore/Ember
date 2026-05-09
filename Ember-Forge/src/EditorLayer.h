@@ -62,7 +62,7 @@ namespace Ember {
 		void OpenProject();
 		void NewScene();
 		void OpenScene(const std::string& scenePath = "");
-		void SaveScene(bool saveAs = false);
+		void SaveProject(bool saveAs = false);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
