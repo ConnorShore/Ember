@@ -1,0 +1,39 @@
+Scene: Default
+Entities: []
+Environment:
+  Skybox:
+    Enabled: 1
+    Intensity: 1
+    TextureUUID: 5
+  Bloom:
+    Enabled: 1
+    Threshold: 1.5
+    Knee: 0.15
+    Intensity: 0.8
+    BlurRadius: 0.7
+  Fog:
+    Enabled: 0
+    Color: [0.5,0.6,0.7]
+    Density: 0.02
+    StartDistance: 5
+    Falloff: 1
+  FXAA:
+    Enabled: 1
+    SubpixelQuality: 0.75
+    EdgeThresholdMin: 0.0312
+    EdgeThresholdMax: 0.125
+  Vignette:
+    Color: [0,0,0]
+    Intensity: 1
+    Smoothness: 0.5
+    Size: 0.5
+  ColorGrading:
+    Enabled: 1
+    Exposure: 1
+    Temperature: 0
+    Tint: 0
+    Contrast: 1
+    Saturation: 1
+    Lift: [0,0,0,0]
+    Gamma: [1,1,1,0]
+    Gain: [1,1,1,0]

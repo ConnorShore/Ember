@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ember/Core/Core.h"
+#include <functional>
 #include <string>
 
 namespace Ember {
@@ -13,6 +14,8 @@ namespace Ember {
 		SceneManager() = default;
 		~SceneManager() = default;
 
+		SharedPtr<Scene> CreateScene(const std::string& name = "");
+
 		// Returns the currently active scene
 		SharedPtr<Scene> GetActiveScene();
 
@@ -20,10 +23,14 @@ namespace Ember {
 		void SetActiveScene(SharedPtr<Scene> scene);
 
 		// Queues up a scene to be loaded from disk at the end of the frame
+		void LoadScene(UUID sceneUUID);
 		void LoadScene(const std::string& filepath);
 
 		// Called by Application::Run() at the very end of the frame
 		void ExecuteSceneSwap();
+
+		// Optional callback invoked whenever the active scene changes (e.g. after a deferred swap)
+		void SetOnSceneChangedCallback(std::function<void(SharedPtr<Scene>)> callback) { m_OnSceneChanged = std::move(callback); }
 
 	private:
 		SharedPtr<Scene> m_ActiveScene;
@@ -31,5 +38,7 @@ namespace Ember {
 		// Deferred loading variables
 		std::string m_NextScenePath = "";
 		bool m_LoadRequested = false;
+
+		std::function<void(SharedPtr<Scene>)> m_OnSceneChanged;
 	};
 }

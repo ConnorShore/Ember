@@ -45,7 +45,7 @@ namespace Ember {
 			.SelectedEntity = m_InvalidEntity
 		};
 
-		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
+		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene", "");
 		SetNewScene(defaultScene);
 	}
 
@@ -97,6 +97,13 @@ namespace Ember {
 		// Load play / pause textures
 		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Play.png")->GetID();
 		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
+
+		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
+		Application::Instance().GetSceneManager().SetOnSceneChangedCallback([this](SharedPtr<Scene> newScene)
+		{
+			if (m_Context.CurrentSceneState == SceneState::Edit)
+				m_EditorScene = newScene;
+		});
 	}
 
 	void EditorLayer::OnDetach()
@@ -208,6 +215,7 @@ namespace Ember {
 			panel->OnImGuiRender();
 
 		// Pop up for new project
+		RenderNewScenePopup();
 		RenderNewProjectPopup();
 
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
@@ -492,7 +500,10 @@ namespace Ember {
 				OpenScene(project->GetStartScenePath().string());
 
 				if (auto assetPanel = GetPanel<AssetManagerPanel>())
+				{
 					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
+					assetPanel->UpdateCurrentDirectory(project->GetProjectDirectory());
+				}
 
 				Application::Instance().GetAssetManager().ClearAssets();
 
@@ -506,6 +517,65 @@ namespace Ember {
 			if (ImGui::Button("Cancel", ImVec2(120, 0)))
 			{
 				m_NewProjectSettings.ProjectName = "";
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void EditorLayer::RenderNewScenePopup()
+	{
+		if (m_ShowNewScenePopup)
+		{
+			ImGui::OpenPopup("New Scene");
+			m_ShowNewScenePopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(600, 200), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("New Scene", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			if (UI::PropertyGrid::Begin("NewSceneTable"))
+			{
+				UI::PropertyGrid::InputText("Scene Name", m_NewSceneName);
+
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			// Actions
+			bool isValid = !m_NewSceneName.empty();
+			if (!isValid)
+				ImGui::BeginDisabled();
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				UINotificationEvent evt;
+				auto newScene = Application::Instance().GetSceneManager().CreateScene(m_NewSceneName);
+				if (!newScene)
+					evt = UINotificationEvent("New Scene created!");
+				else
+					evt = UINotificationEvent("Failed to create scene!", UINotificationEvent::Severity::Error);
+
+				m_Context.EventCallback(evt);
+				SetNewScene(newScene);
+
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (!isValid)
+				ImGui::EndDisabled();
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_NewSceneName = "";
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -1020,8 +1090,11 @@ namespace Ember {
 
 		// Load assets for project
 		auto assetPanel = GetPanel<AssetManagerPanel>();
-		if (assetPanel != nullptr)
+		if (assetPanel != nullptr) 
+		{
 			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
+			assetPanel->UpdateCurrentDirectory(project->GetProjectDirectory());
+		}
 
 		//// Clear and reload default engine assets before loading the scene so all
 		//// asset UUIDs referenced by the scene (e.g. skybox texture) are resolvable.
@@ -1040,11 +1113,8 @@ namespace Ember {
 
 	void EditorLayer::NewScene()
 	{
-		SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("New Scene");
-		SetNewScene(newScene);
-
-		auto evt = UINotificationEvent("New Scene created!");
-		m_Context.EventCallback(evt);
+		m_NewSceneName = "NewScene";
+		m_ShowNewScenePopup = true;
 	}
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
@@ -1058,7 +1128,7 @@ namespace Ember {
 
 		if (!sceneFile.empty())
 		{
-			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
+			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene", sceneFile);
 			newScene->SetFilePath(sceneFile);
 
 			SceneSerializer serializer(newScene);

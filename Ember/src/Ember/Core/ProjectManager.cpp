@@ -1,8 +1,9 @@
 #include "ebpch.h"
 #include "ProjectManager.h"
 #include "ProjectSerializer.h"
-#include "Ember/Scene/SceneSerializer.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Core/Application.h"
+#include "Ember/Scene/Scene.h"
 
 namespace Ember {
 
@@ -50,11 +51,9 @@ namespace Ember {
 
 		std::filesystem::create_directories(project->GetScenesDirectory());
 
-		// Create scenes directory and add default scene'
-		std::string sceneName = s_ActiveProject->GetStartScenePath().filename().string();
-		SceneSerializer sceneSerializer(SharedPtr<Scene>::Create(sceneName));
-
-		sceneSerializer.Serialize(s_ActiveProject->GetStartScenePath().string());
+		// Create the default scene and register it in the asset manager so it gets serialized into assets.eba
+		std::string defaultSceneName = project->GetStartScenePath().stem().string();
+		Application::Instance().GetSceneManager().CreateScene(defaultSceneName);
 
 		return s_ActiveProject;
 	}

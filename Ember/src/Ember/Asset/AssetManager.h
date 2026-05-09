@@ -32,6 +32,8 @@
 
 namespace Ember {
 
+	class Scene; // forward declaration to avoid circular dependency (AssetManager.h <-> Scene.h)
+
 	class AssetManager
 	{
 	public:
@@ -89,6 +91,10 @@ namespace Ember {
 				return SkeletonSerializer::Serialize(SharedPtr<Skeleton>(DynamicPointerCast<Skeleton>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				return PhysicsMaterialSerializer::Serialize(SharedPtr<PhysicsMaterial>(DynamicPointerCast<PhysicsMaterial>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, Scene>)
+			{
+				// Scenes are saved through the SceneManager, but we still want to allow them to be registered in the AssetManager
+			}
 			else
 			{
 				EB_CORE_ERROR("Attempted to save an asset type that doesn't support saving!");
@@ -155,6 +161,10 @@ namespace Ember {
 				newAsset = DynamicPointerCast<T>(baseMaterial);
 				if (!newAsset)
 					EB_CORE_ERROR("Failed to load Material! The requested type did not match the file's contents.");
+			}
+			else if constexpr (std::same_as<T, Scene>)
+			{
+				// Do nothing here since Scenes are loaded through the SceneManager, but we still want to allow them to be registered in the AssetManager
 			}
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");

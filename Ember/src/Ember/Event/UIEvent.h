@@ -17,6 +17,7 @@ namespace Ember {
 		};
 
 	public:
+		UINotificationEvent() = default;
 		UINotificationEvent(const std::string& message, Severity severity = Severity::Info)
 			: m_Message(message), m_Severity(severity) { }
 

@@ -11,6 +11,8 @@
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
 
+#include "Ember/Scene/Scene.h"
+
 #include "Ember/Utils/SerializationUtils.h"
 
 #include <ryml.hpp>
@@ -67,6 +69,7 @@ namespace Ember {
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Prefab>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Font>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<AudioClip>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<Scene>());
 
 		// Write out to disk
 		std::ofstream fout(filePath);
@@ -151,6 +154,8 @@ namespace Ember {
 				m_AssetManagerHandle->Load<Font>(uuid, name, path, false);
 			else if (type == "AudioClip")
 				m_AssetManagerHandle->Load<AudioClip>(uuid, name, path, false);
+			else if (type == "Scene")
+				m_AssetManagerHandle->Load<Scene>(uuid, name, path, false);
 			else
 				EB_CORE_WARN("Unknown asset type '{0}' in registry! Skipping.", type);
 		}

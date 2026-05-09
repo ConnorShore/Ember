@@ -16,6 +16,7 @@ namespace Ember {
 		void OnImGuiRender() override;
 
 		void UpdateAssetDirectory(const std::filesystem::path& newDirectory);
+		void UpdateCurrentDirectory(const std::filesystem::path& newDirectory) { m_CurrentDirectory = newDirectory; }
 
 	private:
 		void RenderPanelControls();
@@ -33,6 +34,6 @@ namespace Ember {
 
 		int m_IconSize = 100;
 
-		std::array<std::string, 1> m_HiddenFiles = { "Assets.eba" };
+		std::array<std::string, 2> m_HiddenFiles = { "Assets.eba", "*.ebproj"};
 	};
 }

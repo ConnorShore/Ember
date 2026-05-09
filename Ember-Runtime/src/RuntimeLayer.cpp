@@ -16,7 +16,7 @@ namespace Ember {
 		ProjectManager::LoadProject(projectPath);
 
 		// 2. Create and deserialize the startup scene
-		auto runtimeScene = SharedPtr<Scene>::Create("RuntimeScene");
+		auto runtimeScene = SharedPtr<Scene>::Create("RuntimeScene", "");
 		Application::Instance().GetSceneManager().SetActiveScene(runtimeScene);
 		SceneSerializer serializer(runtimeScene);
 		serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());

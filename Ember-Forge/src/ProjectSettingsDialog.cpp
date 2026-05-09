@@ -84,6 +84,9 @@ namespace Ember {
 		// TODO: Hook up project name to actual project data
 		static char projectName[128] = "Ember Forge Project";
 		ImGui::InputText("Project Name", projectName, IM_ARRAYSIZE(projectName));
+
+		// List order of scenes (like waypoints UI style) (so can call SceneManager.LoadNextScene() in lua)
+
 	}
 
 	void ProjectSettingsDialog::RenderPhysicsSettings()

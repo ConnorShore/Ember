@@ -6,10 +6,12 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Asset/Font.h>
+#include <Ember/Core/ProjectManager.h>
 
 #include <Ember-Tools/GLTFImporter.h>
 
 #include <format>
+#include <regex>
 
 namespace Ember {
 
@@ -79,7 +81,11 @@ namespace Ember {
 		ImGui::SameLine();
 
 		// Display the current path
-		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, "Ember-Forge").string();
+		std::string projPath = "Ember-Forge";
+		if (ProjectManager::GetActive() != nullptr)
+			projPath = ProjectManager::GetActive()->GetProjectDirectory().string();
+
+		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, projPath).string();
 		ImGui::TextDisabled("%s", relativePath.c_str());
 
 		// Size slider
@@ -128,8 +134,22 @@ namespace Ember {
 				std::filesystem::path fileName = entry.path().filename();
 				std::string fileNameStr = fileName.string();
 
+				// Filter hidden files
 				if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
 					continue;
+
+				// Filter hidden files that are a wildcard match (e.g. *.ebproj)
+				if (std::any_of(m_HiddenFiles.begin(), m_HiddenFiles.end(), [&](const std::string& hiddenPattern) {
+					if (hiddenPattern.find('*') != std::string::npos)
+					{
+						std::string pattern = std::regex_replace(hiddenPattern, std::regex("\\*"), ".*");
+						return std::regex_match(fileNameStr, std::regex(pattern));
+					}
+					return false;
+				}))
+				{
+					continue;
+				}
 
 				ImGui::TableNextColumn();
 
