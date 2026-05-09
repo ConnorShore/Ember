@@ -17,8 +17,6 @@ namespace Ember {
 
 	private:
 		bool OnWindowResize(WindowResizeEvent& e);
-
-		SharedPtr<Scene> m_ActiveScene;
 	};
 
 }

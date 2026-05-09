@@ -61,6 +61,8 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<AudioSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AISystem>::Create());
 
+		m_SceneManager = ScopedPtr<SceneManager>::Create();
+
 		EB_CORE_INFO("Application created!");
 	}
 
@@ -140,6 +142,8 @@ namespace Ember {
 
 			Input::ResetMouseDelta();
 			m_Window->OnUpdate();
+
+			m_SceneManager->ExecuteSceneSwap();
 		}
 
 		EB_CORE_INFO("Application stopped running!");

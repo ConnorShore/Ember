@@ -16,16 +16,17 @@ namespace Ember {
 		ProjectManager::LoadProject(projectPath);
 
 		// 2. Create and deserialize the startup scene
-		m_ActiveScene = SharedPtr<Scene>::Create("Runtime Scene");
-		SceneSerializer serializer(m_ActiveScene);
+		auto runtimeScene = SharedPtr<Scene>::Create("RuntimeScene");
+		Application::Instance().GetSceneManager().SetActiveScene(runtimeScene);
+		SceneSerializer serializer(runtimeScene);
 		serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());
 
 		// 3. Size the camera and render passes to the actual OS Window, not an ImGui panel!
 		auto& window = Application::Instance().GetWindow();
-		m_ActiveScene->OnViewportResize(window.GetWidth(), window.GetHeight());
+		runtimeScene->OnViewportResize(window.GetWidth(), window.GetHeight());
 
 		// 4. Start the game!
-		m_ActiveScene->OnRuntimeStart();
+		runtimeScene->OnRuntimeStart();
 
 		// 5. Lock the cursor immediately for a First-Person game
 		Input::SetCursorMode(CursorMode::Locked);
@@ -33,7 +34,7 @@ namespace Ember {
 
 	void RuntimeLayer::OnDetach()
 	{
-		m_ActiveScene->OnRuntimeStop();
+		Application::Instance().GetSceneManager().GetActiveScene()->OnRuntimeStop();
 	}
 
 	void RuntimeLayer::OnUpdate(TimeStep delta)
@@ -51,7 +52,7 @@ namespace Ember {
 
 		// 3. Step the game loop! 
 		// (This internally handles physics, scripts, AI, and calls your RenderSystem)
-		m_ActiveScene->OnUpdateRuntime(delta);
+		Application::Instance().GetSceneManager().GetActiveScene()->OnUpdateRuntime(delta);
 
 		// 3. Handle exiting the game
 		// In a real game you'd probably open a pause menu here, but for now we just quit.
@@ -64,7 +65,7 @@ namespace Ember {
 
 	bool RuntimeLayer::OnWindowResize(WindowResizeEvent& e)
 	{
-		m_ActiveScene->OnViewportResize(e.GetWidth(), e.GetHeight());
+		Application::Instance().GetSceneManager().GetActiveScene()->OnViewportResize(e.GetWidth(), e.GetHeight());
 		Application::Instance().GetSystemManager().GetSystem<RenderSystem>()->OnViewportResize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
@@ -74,6 +75,6 @@ namespace Ember {
 		EB_CREATE_DISPATCHER(event);
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
 
-		m_ActiveScene->OnEvent(event);
+		Application::Instance().GetSceneManager().GetActiveScene()->OnEvent(event);
 	}
 }

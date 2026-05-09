@@ -69,7 +69,7 @@ namespace Ember {
 					std::string entityName = "None";
 					if (wpID != Constants::InvalidUUID)
 					{
-						Entity entity = m_Context->ActiveScene->GetEntity(wpID);
+						Entity entity = m_Context->ActiveScene()->GetEntity(wpID);
 						if (entity.GetUUID() != Constants::InvalidUUID)
 							entityName = entity.GetName();
 						else
@@ -85,7 +85,7 @@ namespace Ember {
 					if (UI::PropertyGrid::EntityReference(label, entityName, payloadStr, droppedUUID, [&]() { elementToRemove = (int)i; }))
 					{
 						// 3. Convert the UUID back to an EntityID and assign it!
-						Entity droppedEnt = m_Context->ActiveScene->GetEntity(droppedUUID);
+						Entity droppedEnt = m_Context->ActiveScene()->GetEntity(droppedUUID);
 						if (droppedEnt.GetUUID() != Constants::InvalidUUID)
 						{
 							component.ManualWaypoints[i] = droppedEnt.GetUUID();
@@ -114,7 +114,7 @@ namespace Ember {
 				std::string targetName = "None";
 				if (component.TargetEntity != Constants::InvalidUUID)
 				{
-					Entity targetEnt = m_Context->ActiveScene->GetEntity(component.TargetEntity);
+					Entity targetEnt = m_Context->ActiveScene()->GetEntity(component.TargetEntity);
 					if (targetEnt.GetUUID() != Constants::InvalidUUID)
 						targetName = targetEnt.GetName();
 					else
@@ -124,7 +124,7 @@ namespace Ember {
 				UUID droppedTargetUUID = Constants::InvalidUUID;
 				if (UI::PropertyGrid::EntityReference("Target Entity", targetName, payloadStr, droppedTargetUUID))
 				{
-					Entity droppedEnt = m_Context->ActiveScene->GetEntity(droppedTargetUUID);
+					Entity droppedEnt = m_Context->ActiveScene()->GetEntity(droppedTargetUUID);
 					if (droppedEnt.GetUUID() != Constants::InvalidUUID)
 						component.TargetEntity = droppedEnt.GetUUID();
 				}
@@ -133,7 +133,7 @@ namespace Ember {
 				std::string gridName = "None";
 				if (component.GridEntity != Constants::InvalidUUID)
 				{
-					Entity gridEnt = m_Context->ActiveScene->GetEntity(component.GridEntity);
+					Entity gridEnt = m_Context->ActiveScene()->GetEntity(component.GridEntity);
 					if (gridEnt.GetUUID() != Constants::InvalidUUID)
 						gridName = gridEnt.GetName();
 					else
@@ -142,7 +142,7 @@ namespace Ember {
 				UUID droppedGridUUID = Constants::InvalidUUID;
 				if (UI::PropertyGrid::EntityReference("Navigation Grid Entity", gridName, payloadStr, droppedGridUUID))
 				{
-					Entity droppedEnt = m_Context->ActiveScene->GetEntity(droppedGridUUID);
+					Entity droppedEnt = m_Context->ActiveScene()->GetEntity(droppedGridUUID);
 					if (droppedEnt.GetUUID() != Constants::InvalidUUID)
 						component.GridEntity = droppedEnt.GetUUID();
 				}

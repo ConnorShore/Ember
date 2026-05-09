@@ -201,16 +201,16 @@ namespace Ember {
 			{
 				UUID entityUUID = *(const UUID*)payload->Data;
 
-				if (m_Context && m_Context->ActiveScene)
+				if (m_Context && m_Context->ActiveScene())
 				{
-					Entity entity = m_Context->ActiveScene->GetEntity(entityUUID);
+					Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
 					if (entity != Constants::Entities::InvalidEntityID)
 					{
 						// Construct the save path using the active directory
 						std::string filePath = (m_CurrentDirectory / (entity.GetName() + ".ebprefab")).string();
 
 						// Create the prefab asset and save it to disk
-						SharedPtr<Prefab> prefab = m_Context->ActiveScene->CreatePrefab(entity, filePath);
+						SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 						if (prefab == nullptr)
 						{
 							auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);

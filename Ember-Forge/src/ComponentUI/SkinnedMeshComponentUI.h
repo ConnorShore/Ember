@@ -104,7 +104,7 @@ namespace Ember {
 		void RenderAnimatorEntitySelector(SkinnedMeshComponent& component, AssetManager& assetManager)
 		{
 			// Add ability to pick animator entity
-			auto animatorEntity = m_Context->ActiveScene->GetEntity(component.AnimatorEntityHandle);
+			auto animatorEntity = m_Context->ActiveScene()->GetEntity(component.AnimatorEntityHandle);
 
 			std::string animatorName = "None (Animator)";
 			if (animatorEntity)
@@ -118,7 +118,7 @@ namespace Ember {
 
 				ImGui::Separator();
 
-				auto entities = m_Context->ActiveScene->GetAllEntitiesWithComponents<AnimatorComponent>();
+				auto entities = m_Context->ActiveScene()->GetAllEntitiesWithComponents<AnimatorComponent>();
 				for (auto& entity : entities)
 				{
 					bool isSelected = component.AnimatorEntityHandle == entity.GetUUID();

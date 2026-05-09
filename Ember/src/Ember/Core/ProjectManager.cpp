@@ -84,14 +84,9 @@ namespace Ember {
 		EB_CORE_INFO("Project deserialized successfully: {}", filepath);
 
 		// Load project assets into the asset manager
-		EB_CORE_INFO("Loading project assets for project: {}", filepath);
-		EB_CORE_INFO("Active Project project directory: {}", s_ActiveProject->GetProjectDirectory().string());
 		auto& assetManager = Application::Instance().GetAssetManager();
 		assetManager.ClearAssets();
 		assetManager.SetProjectAssetDirectory(s_ActiveProject->GetProjectDirectory());
-		EB_CORE_INFO("Set Asset Manager project asset directory to: {}", assetManager.GetProjectAssetDirectory().string());
-		EB_CORE_INFO("Asset files will be loaded from: {}", s_ActiveProject->GetAssetsFilePath().string());
-		//assetManager.LoadDefaults();
 
 		// Deserialize project assets
 		EB_CORE_INFO("Deserializing project assets from path: {}", s_ActiveProject->GetAssetsFilePath().string());
@@ -113,20 +108,19 @@ namespace Ember {
 		serializer.Serialize(filepath.string());
 	}
 
-	void ProjectManager::ExportActiveProject(const std::filesystem::path& exportPath)
+	bool ProjectManager::ExportActiveProject(const std::filesystem::path& exportPath)
 	{
 		if (!s_ActiveProject)
 		{
 			EB_CORE_ERROR("No active project to export!");
-			return;
+			return false;
 		}
 
 		EB_CORE_INFO("Exporting project to: {0}", exportPath.string());
 
-		// 1. Create the base directory
+		// Create the base directory
 		auto finalExportPath = exportPath / s_ActiveProject->GetConfig().ProjectName;
 		std::filesystem::create_directories(finalExportPath);
-
 
 		// Define our source paths (Assumes Editor working directory is the repo root)
 		// TODO: Account for the different build types (i.e. release vs debug) and platforms (windows vs linux)
@@ -136,7 +130,7 @@ namespace Ember {
 		std::filesystem::path projectFileSrc = s_ActiveProject->GetProjectFilePath();
 		std::filesystem::path scenesSrc = s_ActiveProject->GetScenesDirectory();
 
-		// 2. Define the destination paths
+		// Define the destination paths
 		// We rename the runtime exe to match the project name!
 		std::filesystem::path exeDest = finalExportPath / (s_ActiveProject->GetConfig().ProjectName + ".exe");
 		std::filesystem::path engineAssetDest = finalExportPath / "EmberCore";
@@ -159,19 +153,25 @@ namespace Ember {
 			std::filesystem::create_directories(scenesDest);
 			std::filesystem::copy(scenesSrc, scenesDest, copyOptions);
 
-			// 5. Copy the Asset Folders
+			// Copy the Asset Folders
 			std::filesystem::create_directories(engineAssetDest);
 			std::filesystem::copy(engineAssetSrc, engineAssetDest, copyOptions);
 
 			std::filesystem::create_directories(projectAssetDest);
 			std::filesystem::copy(projectAssetSrc, projectAssetDest, copyOptions);
 
+			// Create Logs folder
+			std::filesystem::create_directories(finalExportPath / "Logs");
+
 			EB_CORE_INFO("Export Complete!");
 		}
 		catch (const std::filesystem::filesystem_error& e)
 		{
 			EB_CORE_ERROR("Export failed: {0}", e.what());
+			return false;
 		}
+
+		return true;
 	}
 
 }

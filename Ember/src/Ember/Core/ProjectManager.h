@@ -11,7 +11,7 @@ namespace Ember {
 		static SharedPtr<Project> NewProject(const std::string& filepath);
 		static SharedPtr<Project> LoadProject(const std::string& filepath);
 		static void SaveActiveProject();
-		static void ExportActiveProject(const std::filesystem::path& exportPath);
+		static bool ExportActiveProject(const std::filesystem::path& exportPath);
 
 		static SharedPtr<Project> GetActive() { return s_ActiveProject; }
 

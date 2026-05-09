@@ -11,6 +11,8 @@
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/ImGui/ImGuiLayer.h"
 
+#include "Ember/Scene/SceneManager.h"
+
 #include "Ember/ECS/System/SystemManager.h"
 
 #include "Ember/Asset/AssetManager.h"
@@ -64,6 +66,7 @@ namespace Ember {
         inline const Window& GetWindow() const { return *m_Window; }
 		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
 		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
+		inline SceneManager& GetSceneManager() { return *m_SceneManager; }
 
 		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
 		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
@@ -102,6 +105,7 @@ namespace Ember {
 
 		ScopedPtr<SystemManager> m_SystemManager;
 		ScopedPtr<AssetManager> m_AssetManager;
+		ScopedPtr<SceneManager> m_SceneManager;
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;

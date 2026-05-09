@@ -18,8 +18,8 @@ namespace Ember {
 	};
 	ScopedPtr<Application> CreateApplication(int argc, char** argv)
 	{
-		Logger::InitFileLogging("runtime_crash_log.txt");
 		EB_CORE_INFO("Standalone Runtime Starting...");
+		Logger::InitFileLogging("Logs/runtime.txt");
 
 		ApplicationSpecification spec;
 		spec.Name = "My Ember Game";

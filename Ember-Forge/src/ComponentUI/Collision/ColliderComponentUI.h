@@ -22,7 +22,7 @@ namespace Ember {
 				return;
 			}
 
-			this->m_Context->ActiveScene->AttachComponent<T>(entity);
+			this->m_Context->ActiveScene()->AttachComponent<T>(entity);
 		}
 
 	protected:
@@ -195,7 +195,7 @@ namespace Ember {
 					if (!PhysicsMaterialSerializer::Serialize(filePath, newMat))
 							EB_CORE_ERROR("Failed to serialize new physics material!");
 
-					this->m_Context->ActiveScene->RegisterAsset(newMat);
+					this->m_Context->ActiveScene()->RegisterAsset(newMat);
 				
 					// Reset the buffer for the next time the user creates a material
 					strncpy_s(matNameBuffer, sizeof(matNameBuffer), "NewPhysicsMaterial", _TRUNCATE);

@@ -23,6 +23,7 @@
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
+#include <Ember/Scene/SceneManager.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/Asset/Animation.h>
 #include <Ember/Asset/AnimationSerializer.h>
@@ -39,14 +40,13 @@ namespace Ember {
 	EditorLayer::EditorLayer()
 		: Layer("Ember Forge")
 	{
-		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
-		SetNewScene(defaultScene);
-
 		m_Context = {
-			.ActiveScene = m_EditorScene,
 			.EditorCamera = &m_Camera,
 			.SelectedEntity = m_InvalidEntity
 		};
+
+		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
+		SetNewScene(defaultScene);
 	}
 
 	EditorLayer::~EditorLayer()
@@ -88,7 +88,7 @@ namespace Ember {
 
 		// Notify scene of the initial viewport size so render pass FBOs are sized correctly from the start
 		m_ViewportSize = { (float)specs.Width, (float)specs.Height };
-		m_Context.ActiveScene->OnViewportResize(specs.Width, specs.Height);
+		m_Context.ActiveScene()->OnViewportResize(specs.Width, specs.Height);
 		m_Camera.SetViewportSize(specs.Width, specs.Height);
 
 		for (auto& panel : m_Panels)
@@ -143,12 +143,12 @@ namespace Ember {
 			case SceneState::Edit:
 			{
 				m_Camera.OnUpdate(delta);
-				m_Context.ActiveScene->OnUpdateEdit(delta, m_Camera);
+				m_Context.ActiveScene()->OnUpdateEdit(delta, m_Camera);
 				break;
 			}
 			case SceneState::Play:
 			{
-				m_Context.ActiveScene->OnUpdateRuntime(delta);
+				m_Context.ActiveScene()->OnUpdateRuntime(delta);
 				break;
 			}
 			case SceneState::Pause:
@@ -234,9 +234,13 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		m_Context.ActiveScene = (Scene::CopyScene(m_EditorScene)); // Create a deep copy of the current scene for runtime
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		m_Context.ActiveScene->OnRuntimeStart();
+		auto& sceneManager = Application::Instance().GetSceneManager();
+
+		// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
+		auto runtimeScene = Scene::CopyScene(m_EditorScene);
+		runtimeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		sceneManager.SetActiveScene(runtimeScene); // OnAttach is called inside SetActiveScene
+		sceneManager.GetActiveScene()->OnRuntimeStart();
 		m_Context.CurrentSceneState = SceneState::Play;
 
 		Input::SetCursorMode(CursorMode::Locked);
@@ -245,10 +249,12 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		m_Context.ActiveScene->OnRuntimeStop();
+		auto& sceneManager = Application::Instance().GetSceneManager();
+		sceneManager.GetActiveScene()->OnRuntimeStop();
 
-		m_Context.ActiveScene = m_EditorScene;
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		// Restore the editor scene as the active scene
+		sceneManager.SetActiveScene(m_EditorScene); // OnDetach on runtime copy, OnAttach on editor scene
+		sceneManager.GetActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
 		// OnSceneAttach was called for the runtime scene copy during OnRuntimeStart, which
 		// called RestartPhysicsWorld and wiped the RP3D world that the editor scene's bodies
@@ -287,10 +293,16 @@ namespace Ember {
 				std::string exportDir = FileDialog::OpenDirectory();
 				if (!exportDir.empty())
 				{
-					ProjectManager::ExportActiveProject(std::filesystem::path(exportDir));
-
-					auto evt = UINotificationEvent("Project exported successfully!");
-					m_Context.EventCallback(evt);
+					if (ProjectManager::ExportActiveProject(std::filesystem::path(exportDir)))
+					{
+						auto evt = UINotificationEvent("Project exported successfully!");
+						m_Context.EventCallback(evt);
+					}
+					else
+					{
+						auto evt = UINotificationEvent("Project export failed!", UINotificationEvent::Severity::Error);
+						m_Context.EventCallback(evt);
+					}
 				}
 			}
 
@@ -391,7 +403,7 @@ namespace Ember {
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_Context.ActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		}
 
@@ -599,7 +611,7 @@ namespace Ember {
 			// Ensure we are inside the image
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
+				Entity selected = m_Context.ActiveScene()->GetEntityAtPixel(mouseX, mouseY);
 				m_Context.SelectedEntity = selected;
 			}
 		}
@@ -681,7 +693,7 @@ namespace Ember {
 		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<AnimatorComponent>())
 		{
 			auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
-			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene.Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
+			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene().Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
 		}
 
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
@@ -732,7 +744,7 @@ namespace Ember {
 				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
 				{
 					// Fetch the parent entity
-					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);
+					Entity parent = m_Context.ActiveScene()->GetEntity(relationshipComp.ParentHandle);
 					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 					{
 						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
@@ -888,7 +900,7 @@ namespace Ember {
 			ImGui::Text("Renderer Stats");
 			ImGui::Separator();
 			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
-			ImGui::Text("Entities: %d", m_Context.ActiveScene->GetAllEntities().size());
+			ImGui::Text("Entities: %d", m_Context.ActiveScene()->GetAllEntities().size());
 		}
 		ImGui::End();
 	}
@@ -916,7 +928,7 @@ namespace Ember {
 	
 	void EditorLayer::CreateEntity()
 	{
-		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
+		auto entity = m_Context.ActiveScene()->AddEntity("Empty_Entity");
 		m_Context.SelectedEntity = entity;
 	}
 
@@ -935,7 +947,7 @@ namespace Ember {
 
 		for (auto entity : m_Context.PendingEntityRemovals) {
 			std::string entityName = entity.GetName();
-			m_Context.ActiveScene->RemoveEntity(entity);
+			m_Context.ActiveScene()->RemoveEntity(entity);
 
 			auto evt = UINotificationEvent(std::format("Entity {} Removed", entityName));
 			m_Context.EventCallback(evt);
@@ -962,7 +974,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
-		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(modelFilePath);
+		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
 		m_Context.SelectedEntity = modelEntity;
 	}
 
@@ -975,7 +987,7 @@ namespace Ember {
 		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
 		// using raycasting
 		Vector3f origin = Vector3f(0.0f);
-		Entity prefEntity = m_Context.ActiveScene->InstantiatePrefab(prefabAsset, &origin);
+		Entity prefEntity = m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
 		m_Context.SelectedEntity = prefEntity;
 	}
 
@@ -1070,7 +1082,7 @@ namespace Ember {
 		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
-			: m_Context.ActiveScene->GetFilePath();
+			: m_Context.ActiveScene()->GetFilePath();
 
 		if (!sceneName.empty())
 		{
@@ -1079,7 +1091,7 @@ namespace Ember {
 				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
 			// Serialize scene
-			SceneSerializer sceneSerializer(m_Context.ActiveScene);
+			SceneSerializer sceneSerializer(m_Context.ActiveScene());
 			sceneSerializer.Serialize(sceneName);
 
 			// Re-apply outline component after saving so the user doesn't lose their selection highlight
@@ -1122,7 +1134,7 @@ namespace Ember {
 			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs)
-				m_Context.ActiveScene->SetFilePath(sceneName);
+				m_Context.ActiveScene()->SetFilePath(sceneName);
 
 			// Save project as well to update any project settings
 			ProjectManager::SaveActiveProject();
@@ -1134,15 +1146,12 @@ namespace Ember {
 
 	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
 	{
-		if (m_Context.ActiveScene != nullptr)
-			m_Context.ActiveScene->OnDetach();
-
 		m_EditorScene = newScene;
-		m_Context.ActiveScene = newScene;
 
-		m_Context.ActiveScene->OnAttach();
+		// SetActiveScene handles OnDetach on the old scene and OnAttach on the new one
+		Application::Instance().GetSceneManager().SetActiveScene(newScene);
 
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		m_Context.ActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 	}

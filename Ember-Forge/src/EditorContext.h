@@ -16,9 +16,11 @@ namespace Ember {
 	// Shared state passed to all editor panels and component UIs
 	struct EditorContext
 	{
-		SharedPtr<Scene> ActiveScene;
 		EditorCamera* EditorCamera;
 		Entity SelectedEntity;
+
+		// Returns the currently active scene from the SceneManager (single source of truth)
+		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
 

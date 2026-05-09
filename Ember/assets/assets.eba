@@ -1,9 +1,9 @@
 Assets:
   - Type: Script
-    UUID: 6983938195718149113
+    UUID: 17253307678903003969
     Name: CharacterMovement
-    FilePath: ../../../../../Users/cjsho/Desktop/TestProj/GameData/Assets/Scripts/CharacterMovement.lua
+    FilePath: ../../../../../Users/cjsho/Desktop/Tester/GameData/Assets/Scripts/CharacterMovement.lua
   - Type: Script
-    UUID: 10331516621196183740
+    UUID: 11853447100202184278
     Name: MouseLook
-    FilePath: ../../../../../Users/cjsho/Desktop/TestProj/GameData/Assets/Scripts/MouseLook.lua
+    FilePath: ../../../../../Users/cjsho/Desktop/Tester/GameData/Assets/Scripts/MouseLook.lua

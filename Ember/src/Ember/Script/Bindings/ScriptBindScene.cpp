@@ -2,6 +2,7 @@
 #include "ScriptBindScene.h"
 
 #include "Ember/Scene/Scene.h"
+#include "Ember/Scene/SceneManager.h"
 #include "Ember/Math/Math.h"
 
 #include "Ember/Core/Application.h"
@@ -61,5 +62,10 @@ namespace Ember {
 				return scene->GetPoolManager().RetrieveFromPool(scene, poolID, position);
 			}
 		));
+
+		// Scene transitions - queues a deferred load so the current frame finishes safely
+		sceneTable.set_function("LoadScene", [](const std::string& filepath) {
+			Application::Instance().GetSceneManager().LoadScene(filepath);
+		});
 	}
 }
