@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Core.h"
-
-#include "ScopedPointer.h"
-#include "SharedPointer.h"
+#include "Application.h"
 #include "FilterManager.h"
+
+#include "Ember/Scene/Scene.h"
 
 #include <filesystem>
 #include <string>
@@ -50,6 +50,38 @@ namespace Ember {
 		inline FilterManager& GetCollisionFilterManager() { return *m_CollisionFilterManager.Ptr(); }
 		inline FilterManager& GetRenderFilterManager() { return *m_RenderFilterManager.Ptr(); }
 
+		inline void SetStartScene(UUID sceneUUID)
+		{
+			auto scene = Application::Instance().GetAssetManager().GetAsset<Scene>(sceneUUID);
+			if (!scene)
+			{
+				EB_CORE_ERROR("Cannot set start scene, scene doesn't exist {}", (uint64_t)sceneUUID);
+				return;
+			}
+
+			m_Config.StartScene = std::filesystem::path(scene->GetFilePath()).filename().string();
+		}
+
+		inline std::vector<UUID>& GetScenesInBuild() { return m_ScenesInBuild; }
+		inline void SetScenesInBuild(const std::vector<UUID>& scenes) { m_ScenesInBuild = scenes; }
+		inline void AddSceneToBuild(const UUID& scene) { m_ScenesInBuild.push_back(scene); }
+		inline void RemoveSceneFromBuild(const UUID& scene)
+		{
+			m_ScenesInBuild.erase(std::remove(m_ScenesInBuild.begin(), m_ScenesInBuild.end(), scene), m_ScenesInBuild.end());
+		}
+		inline UUID GetNextScene()
+		{
+			m_ActiveSceneIndex++;
+			if (m_ActiveSceneIndex >= m_ScenesInBuild.size())
+			{
+				EB_CORE_ERROR("Tried to retrieve next scene which does not exist");
+				return Constants::InvalidUUID;
+			}
+
+			return m_ScenesInBuild[m_ActiveSceneIndex];
+		}
+		inline bool IsLastScene() const { return m_ActiveSceneIndex >= m_ScenesInBuild.size() - 1; }
+		inline void ResetSceneIndex() { m_ActiveSceneIndex = 0; }
 
 	private:
 		ProjectConfig m_Config;
@@ -57,6 +89,9 @@ namespace Ember {
 
 		ScopedPtr<FilterManager> m_CollisionFilterManager = nullptr;
 		ScopedPtr<FilterManager> m_RenderFilterManager = nullptr;
+
+		std::vector<UUID> m_ScenesInBuild;
+		uint32_t m_ActiveSceneIndex = 0;
 
 		friend class ProjectSerializer;
 	};

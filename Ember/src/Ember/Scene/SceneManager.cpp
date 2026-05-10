@@ -23,6 +23,9 @@ namespace Ember {
 			return nullptr;
 		}
 
+		// Register the new scene in the active project automatically so it gets included in builds (unless removed)
+		ProjectManager::GetActive()->AddSceneToBuild(newScene->GetUUID());
+
 		LoadScene(fullScenePath.string());
 		return newScene;
 	}
@@ -48,6 +51,17 @@ namespace Ember {
 
 	void SceneManager::LoadScene(const std::string& filepath)
 	{
+		if (filepath.empty())
+		{
+			EB_CORE_ERROR("Attempted to load scene with empty file path!");
+			return;
+		}
+		if (m_ActiveScene->GetFilePath() == filepath)
+		{
+			EB_CORE_INFO("Scene {} is already active, skipping load request.", filepath);
+			return;
+		}
+
 		// Don't load it now! Just remember we need to do it.
 		m_NextScenePath = filepath;
 		m_LoadRequested = true;

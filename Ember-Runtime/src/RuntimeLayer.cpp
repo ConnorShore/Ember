@@ -30,6 +30,9 @@ namespace Ember {
 
 		// 5. Lock the cursor immediately for a First-Person game
 		Input::SetCursorMode(CursorMode::Locked);
+
+		// Ensure active scene starts at 0
+		ProjectManager::GetActive()->ResetSceneIndex();
 	}
 
 	void RuntimeLayer::OnDetach()

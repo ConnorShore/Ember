@@ -15,7 +15,7 @@ namespace Ember {
 		void OnAttach() override;
 		void OnImGuiRender() override;
 
-		void UpdateAssetDirectory(const std::filesystem::path& newDirectory);
+		void UpdateRootDirectory(const std::filesystem::path& newDirectory);
 		void UpdateCurrentDirectory(const std::filesystem::path& newDirectory) { m_CurrentDirectory = newDirectory; }
 
 	private:
@@ -29,7 +29,7 @@ namespace Ember {
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
 	private:
-		std::filesystem::path m_AssetDirectory, m_CurrentDirectory;
+		std::filesystem::path m_RootDirectory, m_CurrentDirectory;
 		ImTextureID m_FileTexID, m_DirectoryTexID;
 
 		int m_IconSize = 100;

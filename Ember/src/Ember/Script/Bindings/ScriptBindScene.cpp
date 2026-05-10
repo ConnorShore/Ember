@@ -6,6 +6,7 @@
 #include "Ember/Math/Math.h"
 
 #include "Ember/Core/Application.h"
+#include "Ember/Core/ProjectManager.h"
 
 namespace Ember {
 
@@ -64,7 +65,8 @@ namespace Ember {
 		));
 
 		// Scene transitions - queues a deferred load so the current frame finishes safely
-		sceneTable.set_function("LoadScene", [](const std::string& name) {
+		auto sceneManagerTable = state.create_table("SceneManager");
+		sceneManagerTable.set_function("LoadScene", [](const std::string& name) {
 			auto sceneAsset = Application::Instance().GetAssetManager().GetAsset<Scene>(name);
 			if (!sceneAsset)
 			{
@@ -73,6 +75,19 @@ namespace Ember {
 			}
 
 			Application::Instance().GetSceneManager().LoadScene(sceneAsset->GetFilePath());
+		});
+		sceneManagerTable.set_function("LoadNextScene", []() {
+			UUID nextSceneUUID = ProjectManager::GetActive()->GetNextScene();
+			if (nextSceneUUID != Constants::InvalidUUID)
+				Application::Instance().GetSceneManager().LoadScene(nextSceneUUID);
+		});
+		sceneManagerTable.set_function("LoadDefaultScene", []() {
+			UUID defaultSceneUUID = ProjectManager::GetActive()->GetScenesInBuild()[0];
+			if (defaultSceneUUID != Constants::InvalidUUID)
+				Application::Instance().GetSceneManager().LoadScene(defaultSceneUUID);
+		});
+		sceneManagerTable.set_function("IsLastScene", []() {
+			return ProjectManager::GetActive()->IsLastScene();
 		});
 	}
 }

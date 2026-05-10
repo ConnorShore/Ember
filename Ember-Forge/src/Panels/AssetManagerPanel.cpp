@@ -17,7 +17,7 @@ namespace Ember {
 
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
 		: Panel("Asset Manager", context), 
-		m_AssetDirectory(std::filesystem::path("Ember-Forge/assets")), 
+		m_RootDirectory(std::filesystem::path("Ember-Forge/assets")),
 		m_CurrentDirectory(std::filesystem::path("Ember-Forge/assets"))
 	{
 	}
@@ -54,16 +54,16 @@ namespace Ember {
 		ImGui::End();
 	}
 
-	void AssetManagerPanel::UpdateAssetDirectory(const std::filesystem::path& newDirectory)
+	void AssetManagerPanel::UpdateRootDirectory(const std::filesystem::path& newDirectory)
 	{
-		m_AssetDirectory = newDirectory;
+		m_RootDirectory = newDirectory;
 		m_CurrentDirectory = newDirectory;
 	}
 
 	void AssetManagerPanel::RenderPanelControls()
 	{
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-		if (m_CurrentDirectory != m_AssetDirectory)
+		if (m_CurrentDirectory != m_RootDirectory)
 		{
 			if (ImGui::Button("<- Back"))
 			{

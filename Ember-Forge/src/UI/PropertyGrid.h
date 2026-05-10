@@ -7,10 +7,12 @@
 #include "Types.h"
 
 #include <string>
+#include <functional>
 
 namespace Ember {
 
 	namespace UI::PropertyGrid {
+		using UUIDNameResolver = std::function<std::string(UUID)>;
 
 		// Property Grid Layout
 		bool Begin(const std::string& id);
@@ -55,6 +57,10 @@ namespace Ember {
 		void EndComboBox();
 
 		bool FilterGrid(const std::string& label, Filter& filter, FilterManager& filterManager);
+
+		// Generic dynamically sizing array of UUIDs with Drag & Drop support
+		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver);
+		bool DynamicUUIDArrayComboBox(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::vector<UUID>& availableOptions, UUIDNameResolver nameResolver);
 	}
 
 }

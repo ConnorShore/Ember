@@ -107,6 +107,10 @@ namespace Ember {
 			if (m_Context.CurrentSceneState == SceneState::Edit)
 				m_EditorScene = newScene;
 
+			// Update viewport size for the new scene so render targets are correct from the start
+			m_ViewportSize = { (float)m_OutputFramebuffer->GetSpecification().Width, (float)m_OutputFramebuffer->GetSpecification().Height };
+			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+
 			// De-select entity on scene change
 			m_Context.SelectedEntity = m_InvalidEntity;
 		});
@@ -262,6 +266,8 @@ namespace Ember {
 
 		Input::SetCursorMode(CursorMode::Locked);
 		Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
+
+		ProjectManager::GetActive()->ResetSceneIndex();
 	}
 
 	void EditorLayer::OnRuntimeStop()
@@ -521,8 +527,7 @@ namespace Ember {
 
 				if (auto assetPanel = GetPanel<AssetManagerPanel>())
 				{
-					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-					assetPanel->UpdateCurrentDirectory(project->GetProjectDirectory());
+					assetPanel->UpdateRootDirectory(project->GetAssetDirectory().parent_path());
 				}
 
 				ImGui::CloseCurrentPopup();
@@ -1115,8 +1120,7 @@ namespace Ember {
 		auto assetPanel = GetPanel<AssetManagerPanel>();
 		if (assetPanel != nullptr) 
 		{
-			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-			assetPanel->UpdateCurrentDirectory(project->GetProjectDirectory());
+			assetPanel->UpdateRootDirectory(project->GetAssetDirectory().parent_path());
 		}
 
 		// Load the default scene for the project (assets must be ready first)
