@@ -16,8 +16,6 @@ namespace Ember {
 
 		void BeginFrame();
 		void EndFrame();
-	private:
-		// TODO: Setup Key/Mouse events
 
 	private:
 

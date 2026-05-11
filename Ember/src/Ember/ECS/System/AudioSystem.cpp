@@ -106,7 +106,6 @@ namespace Ember {
 			{
 				auto& transform = entity.GetComponent<TransformComponent>();
 				ma_sound_set_position(source.GetSound(), transform.Position.x, transform.Position.y, transform.Position.z);
-
 			}
 
 			// Start sound if queue'd and not yet playing

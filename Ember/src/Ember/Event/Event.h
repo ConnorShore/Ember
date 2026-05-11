@@ -28,9 +28,10 @@ namespace Ember {
 		MouseButtonPressed,
 		MouseButtonReleased,
 		MouseMoved,
+		MouseEnter,
+		MouseExit,
 		MouseScrolled,
 		UINotification
-		// TODO: Mouse enter/exist, focus, etc.
 	};
 
 	enum EventCategory

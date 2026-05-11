@@ -237,6 +237,7 @@ namespace Ember {
 					MouseScrolledEvent e(Vector2f((float)xoffset, (float)yoffset));
 					data.EventCallback(e);
 				});
+
 		}
 
 	}

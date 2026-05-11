@@ -63,7 +63,7 @@ namespace Ember {
 
 	void AudioSource::Restart()
 	{
-		// TODO: Need to set trigger restart flag
+		ma_sound_seek_to_pcm_frame(m_Sound, 0);
 	}
 
 	void AudioSource::OnSoundEnd(void* pUserData, ma_sound* pSound)

@@ -136,7 +136,7 @@ namespace Ember {
 				}
 
 				float lastFrameTime = animator.CurrentTime;
-				animator.CurrentTime += (delta * animator.PlaybackSpeed);  //  TODO: Add playback speed multiplier here later
+				animator.CurrentTime += (delta * animator.PlaybackSpeed);
 
 				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
 				{
