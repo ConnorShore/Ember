@@ -35,7 +35,7 @@ namespace Ember {
 			std::string currentMaterialName = material ? material->GetName() : "None";
 			if (UI::BeginComboBox("##MaterialCombo", currentMaterialName.c_str()))
 			{
-				auto materials = m_Context->ActiveScene->GetAssetsOfType<MaterialBase>();
+				auto materials = m_Context->ActiveScene()->GetAssetsOfType<MaterialBase>();
 				for (auto& mat : materials)
 				{
 					// Check if this is the currently active shader
@@ -69,7 +69,7 @@ namespace Ember {
 					if (!MaterialSerializer::Serialize(filePath, clonedMaterial))
 						EB_CORE_ERROR("Failed to serialize cloned material!");
 
-					m_Context->ActiveScene->RegisterAsset(clonedMaterial);
+					m_Context->ActiveScene()->RegisterAsset(clonedMaterial);
 				}
 			}
 

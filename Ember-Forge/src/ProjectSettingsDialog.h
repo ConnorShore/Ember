@@ -28,7 +28,7 @@ namespace Ember {
 		void RenderRenderingSettings();
 
 		std::string m_PopupName = "Project Settings";
-		Category m_SelectedCategory = Category::Physics; // Default tab
+		Category m_SelectedCategory = Category::General; // Default tab
 	};
 
 }

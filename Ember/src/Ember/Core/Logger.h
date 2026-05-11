@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
 
 namespace Ember {
 
@@ -20,18 +21,32 @@ namespace Ember {
 		Logger(const std::string& name) : m_Name(name) {}
 		~Logger() = default;
 
+		static void InitFileLogging(const std::string& filepath);
+
 		template <typename... Args>
 		void Log(LogLevel logLevel, std::format_string<Args...> fmt, Args&&... args)
 		{
 			std::string userMessage = std::format(fmt, std::forward<Args>(args)...);
-			std::string finalOutput = std::format("{}{}: [{}] {}{}\n",
-				GetLogLevelColor(logLevel),
+
+			// Clean output for the file (No color codes!)
+			std::string cleanOutput = std::format("{}: [{}] {}\n",
 				m_Name,
 				GetLogLevelString(logLevel),
-				userMessage,
+				userMessage);
+
+			// Colored output for the console
+			std::string consoleOutput = std::format("{}{}{}",
+				GetLogLevelColor(logLevel),
+				cleanOutput,
 				GetLogLevelResetColor());
 
-			std::cout << finalOutput;
+			std::cout << consoleOutput;
+
+			if (s_LogFile.is_open())
+			{
+				s_LogFile << cleanOutput;
+				s_LogFile.flush(); // CRITICAL: Flush immediately so if the game crashes on the next line, the log is saved!
+			}
 		}
 
 		static Logger* CoreLogger()
@@ -53,6 +68,7 @@ namespace Ember {
 
 	private:
 		std::string m_Name;
+		static std::ofstream s_LogFile;
 	};
 
 }

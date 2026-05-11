@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ApplicationSpecification.h"
 #include "Window.h"
 #include "LayerStack.h"
 #include "ScopedPointer.h"
@@ -9,6 +10,8 @@
 #include "Ember/Event/KeyEvent.h"
 #include "Ember/Event/MouseEvent.h"
 #include "Ember/ImGui/ImGuiLayer.h"
+
+#include "Ember/Scene/SceneManager.h"
 
 #include "Ember/ECS/System/SystemManager.h"
 
@@ -20,7 +23,7 @@ namespace Ember {
 	class Application
 	{
 	public:
-		Application(const std::string& name = "Ember App", const WindowConfig& config = {});
+		Application(const ApplicationSpecification& applicationSpecs);
 		virtual ~Application();
 
 		void PushLayer(ScopedPtr<Layer> layer);
@@ -55,6 +58,7 @@ namespace Ember {
 		void OnEvent(Event& event);
 
 		void Run();
+		void Close();
 		bool IsRunning() const { return m_Running; }
 
 		inline static Application& Instance() { return *s_Instance; }
@@ -62,6 +66,7 @@ namespace Ember {
         inline const Window& GetWindow() const { return *m_Window; }
 		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
 		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
+		inline SceneManager& GetSceneManager() { return *m_SceneManager; }
 
 		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
 		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
@@ -70,6 +75,16 @@ namespace Ember {
 
 		inline void SetCursorMode(CursorMode mode) { m_Window->SetCursorMode(mode); }
 		inline CursorMode GetCursorMode() const { return m_Window->GetCursorMode(); }
+
+		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
+		inline const int GetCommandLineArgsCount() const { return m_Specification.CommandLineArgsCount; }
+		inline const char* GetCommandLineArg(int index) const
+		{
+			if (index < 0 || index >= m_Specification.CommandLineArgsCount)
+				return nullptr;
+			return m_Specification.CommandLineArgs[index];
+		}
 
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
@@ -83,12 +98,14 @@ namespace Ember {
 		bool OnMouseMoved(MouseMovedEvent& e);
 
 	private:
+		ApplicationSpecification m_Specification;
+
 		ScopedPtr<Window> m_Window;
-		std::string m_Name;
 		bool m_Running = true;
 
 		ScopedPtr<SystemManager> m_SystemManager;
 		ScopedPtr<AssetManager> m_AssetManager;
+		ScopedPtr<SceneManager> m_SceneManager;
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
@@ -96,6 +113,6 @@ namespace Ember {
 		static Application* s_Instance;
 	};
 
-	ScopedPtr<Application> CreateApplication();
+	ScopedPtr<Application> CreateApplication(int argc, char** argv);
 }
 

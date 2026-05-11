@@ -512,5 +512,145 @@ namespace Ember {
 			// We pass an empty string for the label because we already drew it on the left.
 			return UI::RenderFilterGrid(label, filter, filterManager);
 		}
+
+		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver)
+		{
+			bool changed = false;
+			std::string caption = std::to_string(values.size()) + " items";
+
+			// 1. Draw the Header
+			if (HeaderWithActionButton(listName, "+", caption))
+			{
+				values.push_back(Constants::InvalidUUID);
+				changed = true;
+			}
+
+			int elementToRemove = -1;
+
+			// 2. Draw the Elements
+			for (size_t i = 0; i < values.size(); i++)
+			{
+				UUID currentUUID = values[i];
+				std::string label = std::format("{} {}", itemLabelPrefix, i);
+
+				std::string displayName = "None";
+				if (currentUUID != Constants::InvalidUUID)
+				{
+					// Use the injected callback to figure out what this UUID actually is!
+					displayName = nameResolver(currentUUID);
+				}
+
+				UUID droppedUUID = Constants::InvalidUUID;
+
+				// Note: We use EntityReference here because it already does exactly what we want: 
+				// A label, a button, an X to clear, and it outputs a dropped UUID.
+				if (EntityReference(label, displayName, payloadType, droppedUUID, [&]() { elementToRemove = (int)i; }))
+				{
+					values[i] = droppedUUID;
+					changed = true;
+				}
+			}
+
+			// 3. Handle Deletions
+			if (elementToRemove >= 0)
+			{
+				values.erase(values.begin() + elementToRemove);
+				changed = true;
+			}
+
+			return changed;
+		}
+
+		bool DynamicUUIDArrayComboBox(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::vector<UUID>& availableOptions, UUIDNameResolver nameResolver)
+		{
+			bool changed = false;
+			std::string caption = std::to_string(values.size()) + " items";
+
+			// 1. Draw the Header
+			if (HeaderWithActionButton(listName, "+", caption))
+			{
+				values.push_back(Constants::InvalidUUID);
+				changed = true;
+			}
+
+			int elementToRemove = -1;
+
+			// 2. Draw the Elements
+			for (size_t i = 0; i < values.size(); i++)
+			{
+				UUID currentUUID = values[i];
+				std::string label = std::format("{} {}", itemLabelPrefix, i);
+
+				std::string displayName = "None";
+				if (currentUUID != Constants::InvalidUUID)
+				{
+					displayName = nameResolver(currentUUID);
+				}
+
+				ImGui::PushID(label.c_str());
+
+				// Switch to the left column for the label
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("%s", label.c_str());
+
+				// Switch to the right column for the Combobox + X Button
+				ImGui::TableNextColumn();
+
+				float buttonSize = ImGui::GetFrameHeight();
+				float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+
+				// Calculate width so the combobox leaves exactly enough room for the X button
+				float comboWidth = ImGui::GetContentRegionAvail().x - buttonSize - spacing;
+
+				ImGui::SetNextItemWidth(comboWidth);
+
+				// Use your underlying UI wrapper so it styles correctly
+				if (UI::BeginComboBox(std::format("##combo_{}", i), displayName))
+				{
+					// Add a "None" option to clear the selection gracefully
+					if (UI::ComboBoxItem("None", currentUUID == Constants::InvalidUUID))
+					{
+						values[i] = Constants::InvalidUUID;
+						changed = true;
+					}
+
+					// Render the available options
+					for (UUID optionUUID : availableOptions)
+					{
+						std::string optionName = nameResolver(optionUUID);
+						bool isSelected = (currentUUID == optionUUID);
+
+						if (UI::ComboBoxItem(optionName, isSelected))
+						{
+							values[i] = optionUUID;
+							changed = true;
+						}
+					}
+					UI::EndComboBox();
+				}
+
+				// Draw the "X" remove button on the same line
+				ImGui::SameLine(0, spacing);
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+				if (ImGui::Button("X", ImVec2(buttonSize, buttonSize)))
+				{
+					elementToRemove = (int)i;
+				}
+				ImGui::PopStyleColor();
+
+				ImGui::PopID();
+			}
+
+			// 3. Handle Deletions
+			if (elementToRemove >= 0)
+			{
+				values.erase(values.begin() + elementToRemove);
+				changed = true;
+			}
+
+			return changed;
+		}
 	}
 }

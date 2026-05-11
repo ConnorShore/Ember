@@ -20,6 +20,25 @@
 
 namespace Ember {
 
+	std::ofstream Logger::s_LogFile;
+
+	void Logger::InitFileLogging(const std::string& filepath)
+	{
+		// Create the directory if it doesn't exist
+		if (auto parentDir = std::filesystem::path(filepath).parent_path(); !std::filesystem::exists(parentDir))
+		{
+			std::filesystem::create_directories(parentDir);
+		}
+
+		// Open the file and truncate (clear) any old logs from previous runs
+		s_LogFile.open(filepath, std::ios::out | std::ios::trunc);
+
+		if (!s_LogFile.is_open())
+		{
+			std::cerr << "Failed to open log file: " << filepath << std::endl;
+		}
+	}
+
 	const char* Logger::GetLogLevelString(LogLevel logLevel)
 	{
 		switch (logLevel)

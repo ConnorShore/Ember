@@ -13,12 +13,18 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <dwmapi.h>
+#include <stdexcept>
 
 // Link against the DWM library (for DwmSetWindowAttribute)
 #pragma comment(lib, "dwmapi.lib")
 
 namespace Ember {
 	namespace Windows {
+
+		static void GLFWErrorCallback(int errorCode, const char* description)
+		{
+			EB_CORE_ERROR("GLFW Error [{}]: {}", errorCode, description ? description : "No description provided");
+		}
 
 		static bool s_GLFWInitialized = false;
 
@@ -30,18 +36,38 @@ namespace Ember {
 			if (!s_GLFWInitialized)
 			{
 				EB_CORE_INFO("Initializing GLFW...");
-				EB_CORE_ASSERT(glfwInit(), "Failed to initalize GLFW!");
+				const int glfwInitResult = glfwInit();
+				EB_CORE_ASSERT(glfwInitResult, "Failed to initalize GLFW!");
+
+				if (!glfwInitResult)
+				{
+					const char* glfwErrorDescription = nullptr;
+					const int glfwErrorCode = glfwGetError(&glfwErrorDescription);
+					EB_CORE_ERROR("Failed to initialize GLFW. Error [{}]: {}", glfwErrorCode, glfwErrorDescription ? glfwErrorDescription : "No description provided");
+					throw std::runtime_error("Failed to initialize GLFW");
+				}
+
+				glfwSetErrorCallback(GLFWErrorCallback);
 				s_GLFWInitialized = true;
 			}
+
+			glfwDefaultWindowHints();
+			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			// Hide the window before creation to prevent the "teleport flicker"
 			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 			m_Window = glfwCreateWindow(config.Width, config.Height, config.Title.c_str(), NULL, NULL);
 			if (!m_Window)
 			{
+				const char* glfwErrorDescription = nullptr;
+				const int glfwErrorCode = glfwGetError(&glfwErrorDescription);
+				EB_CORE_ERROR("Failed to create GLFW window. Error [{}]: {}", glfwErrorCode, glfwErrorDescription ? glfwErrorDescription : "No description provided");
 				glfwTerminate();
+				s_GLFWInitialized = false;
 				EB_CORE_ERROR("Failed to create GLFW window!");
-				return;
+				throw std::runtime_error("Failed to create GLFW window");
 			}
 
 			// Center window on monitor

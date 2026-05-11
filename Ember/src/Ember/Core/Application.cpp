@@ -25,20 +25,22 @@ namespace Ember {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(const std::string& name /* = "Ember App"*/, const WindowConfig& config /* = {}*/)
-		: m_Name(name)
+	Application::Application(const ApplicationSpecification& applicationSpes)
+		: m_Specification(applicationSpes)
 	{
 		EB_CORE_ASSERT(s_Instance == nullptr, "Application instance is alredy created!");
 
 		s_Instance = this;
 
-		m_Window = Window::Create(config);
+		m_Window = Window::Create(applicationSpes.WindowSpecification);
 		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
 
 		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
 		m_ImGuiLayer->OnAttach();
 
 		m_AssetManager = ScopedPtr<AssetManager>::Create();
+		m_AssetManager->SetEngineAssetDirectory(applicationSpes.EngineAssetDir);
+		m_AssetManager->SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
 		m_AssetManager->LoadDefaults();
 
 		Random::Init();
@@ -58,6 +60,8 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<LifecycleSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AudioSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AISystem>::Create());
+
+		m_SceneManager = ScopedPtr<SceneManager>::Create();
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -138,14 +142,21 @@ namespace Ember {
 
 			Input::ResetMouseDelta();
 			m_Window->OnUpdate();
+
+			m_SceneManager->ExecuteSceneSwap();
 		}
 
 		EB_CORE_INFO("Application stopped running!");
 	}
 
-	bool Application::OnWindowClose(WindowCloseEvent& e)
+	void Application::Close()
 	{
 		m_Running = false;
+	}
+
+	bool Application::OnWindowClose(WindowCloseEvent& e)
+	{
+		Close();
 		return true;
 	}
 

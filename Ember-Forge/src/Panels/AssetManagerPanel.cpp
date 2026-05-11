@@ -6,16 +6,18 @@
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Asset/Font.h>
+#include <Ember/Core/ProjectManager.h>
 
 #include <Ember-Tools/GLTFImporter.h>
 
 #include <format>
+#include <regex>
 
 namespace Ember {
 
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
 		: Panel("Asset Manager", context), 
-		m_AssetDirectory(std::filesystem::path("Ember-Forge/assets")), 
+		m_RootDirectory(std::filesystem::path("Ember-Forge/assets")),
 		m_CurrentDirectory(std::filesystem::path("Ember-Forge/assets"))
 	{
 	}
@@ -27,8 +29,15 @@ namespace Ember {
 	void AssetManagerPanel::OnAttach()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto fileIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/File.png");
-		auto dirIcon = assetManager.Load<Texture2D>("Ember-Forge/assets/icons/Directory.png");
+
+		// Dynamically grab the engine root for the UI icons!
+		std::string fileIconPath = (assetManager.GetProjectAssetDirectory() / "icons/File.png").string();
+		std::string dirIconPath = (assetManager.GetProjectAssetDirectory() / "icons/Directory.png").string();
+
+		auto fileIcon = assetManager.Load<Texture2D>(fileIconPath);
+		auto dirIcon = assetManager.Load<Texture2D>(dirIconPath);
+		fileIcon->SetIsEngineAsset(true);
+		dirIcon->SetIsEngineAsset(true);
 
 		m_FileTexID = (ImTextureID)(intptr_t)fileIcon->GetID();
 		m_DirectoryTexID = (ImTextureID)(intptr_t)dirIcon->GetID();
@@ -45,16 +54,16 @@ namespace Ember {
 		ImGui::End();
 	}
 
-	void AssetManagerPanel::UpdateAssetDirectory(const std::filesystem::path& newDirectory)
+	void AssetManagerPanel::UpdateRootDirectory(const std::filesystem::path& newDirectory)
 	{
-		m_AssetDirectory = newDirectory;
+		m_RootDirectory = newDirectory;
 		m_CurrentDirectory = newDirectory;
 	}
 
 	void AssetManagerPanel::RenderPanelControls()
 	{
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-		if (m_CurrentDirectory != m_AssetDirectory)
+		if (m_CurrentDirectory != m_RootDirectory)
 		{
 			if (ImGui::Button("<- Back"))
 			{
@@ -72,7 +81,11 @@ namespace Ember {
 		ImGui::SameLine();
 
 		// Display the current path
-		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, "Ember-Forge").string();
+		std::string projPath = "Ember-Forge";
+		if (ProjectManager::GetActive() != nullptr)
+			projPath = ProjectManager::GetActive()->GetProjectDirectory().string();
+
+		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, projPath).string();
 		ImGui::TextDisabled("%s", relativePath.c_str());
 
 		// Size slider
@@ -121,8 +134,22 @@ namespace Ember {
 				std::filesystem::path fileName = entry.path().filename();
 				std::string fileNameStr = fileName.string();
 
+				// Filter hidden files
 				if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
 					continue;
+
+				// Filter hidden files that are a wildcard match (e.g. *.ebproj)
+				if (std::any_of(m_HiddenFiles.begin(), m_HiddenFiles.end(), [&](const std::string& hiddenPattern) {
+					if (hiddenPattern.find('*') != std::string::npos)
+					{
+						std::string pattern = std::regex_replace(hiddenPattern, std::regex("\\*"), ".*");
+						return std::regex_match(fileNameStr, std::regex(pattern));
+					}
+					return false;
+				}))
+				{
+					continue;
+				}
 
 				ImGui::TableNextColumn();
 
@@ -194,16 +221,16 @@ namespace Ember {
 			{
 				UUID entityUUID = *(const UUID*)payload->Data;
 
-				if (m_Context && m_Context->ActiveScene)
+				if (m_Context && m_Context->ActiveScene())
 				{
-					Entity entity = m_Context->ActiveScene->GetEntity(entityUUID);
+					Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
 					if (entity != Constants::Entities::InvalidEntityID)
 					{
 						// Construct the save path using the active directory
 						std::string filePath = (m_CurrentDirectory / (entity.GetName() + ".ebprefab")).string();
 
 						// Create the prefab asset and save it to disk
-						SharedPtr<Prefab> prefab = m_Context->ActiveScene->CreatePrefab(entity, filePath);
+						SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 						if (prefab == nullptr)
 						{
 							auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);

@@ -21,12 +21,28 @@ namespace Ember {
 
 		root["Project"] << m_Project->GetConfig().ProjectName;
 		root["EngineVersion"] << m_Project->GetConfig().EngineVersion;
-		root["StartScene"] << m_Project->GetConfig().StartScene;
+		root["SceneDirectory"] << m_Project->GetConfig().SceneDirectory;
 		root["AssetDirectory"] << m_Project->GetConfig().AssetDirectory;
+		root["StartScene"] << m_Project->GetConfig().StartScene;
+		root["AssetFile"] << m_Project->GetConfig().AssetFile;
 
 		// Settings
 		auto settingsNode = root["Settings"];
 		settingsNode |= ryml::MAP;
+
+		// General settings
+		auto generalNode = settingsNode["General"];
+		generalNode |= ryml::MAP;
+
+		auto scenesInBuildNode = generalNode["ScenesInBuild"];
+		scenesInBuildNode |= ryml::SEQ;
+		auto& scenesInBuild = m_Project->GetScenesInBuild();
+		for (const auto& scene : scenesInBuild)
+		{
+			auto sceneEntryNode = scenesInBuildNode.append_child();
+			sceneEntryNode |= ryml::MAP;
+			sceneEntryNode["UUID"] << scene;
+		}
 
 		// Physics Settings
 		auto& physicsSettings = Application::Instance().GetSystem<PhysicsSystem>()->GetSettings();
@@ -103,6 +119,20 @@ namespace Ember {
 		if (root.has_child("Settings"))
 		{
 			auto settingsNode = root["Settings"];
+
+			// General Settings
+			auto generalNode = settingsNode["General"];
+
+			// Scenes in build
+			auto scenesInBuildNode = generalNode["ScenesInBuild"];
+			std::vector<UUID> scenesInBuild;
+			for (auto sceneNode : scenesInBuildNode.children())
+			{
+				uint64_t sceneUUID;
+				sceneNode["UUID"] >> sceneUUID;
+				scenesInBuild.push_back((UUID)sceneUUID);
+			}
+			m_Project->SetScenesInBuild(scenesInBuild);
 
 			// Physics Settings
 			auto& physicsSettings = Application::Instance().GetSystem<PhysicsSystem>()->GetSettings();

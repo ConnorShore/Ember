@@ -16,5 +16,6 @@ include "Ember/vendor/reactphysics3d"
 include "Ember-Forge/vendor/ImGuizmo"
 
 include "Ember"
+include "Ember-Runtime"
 include "Ember-Tools"
 include "Ember-Forge"

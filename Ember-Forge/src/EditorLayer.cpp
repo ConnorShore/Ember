@@ -23,6 +23,7 @@
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
+#include <Ember/Scene/SceneManager.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/Asset/Animation.h>
 #include <Ember/Asset/AnimationSerializer.h>
@@ -32,20 +33,22 @@
 #include <Ember/Physics/Raycast.h>
 
 #include <random>
+#include <thread>
 
 namespace Ember {
 
 	EditorLayer::EditorLayer()
 		: Layer("Ember Forge")
 	{
-		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene");
-		SetNewScene(defaultScene);
-
 		m_Context = {
-			.ActiveScene = m_EditorScene,
 			.EditorCamera = &m_Camera,
 			.SelectedEntity = m_InvalidEntity
 		};
+
+		// Provide a blank scene so the editor has a valid active scene before any project is loaded.
+		// It will be replaced cleanly when a project is opened via the deferred scene swap.
+		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene", "");
+		SetNewScene(defaultScene);
 	}
 
 	EditorLayer::~EditorLayer()
@@ -87,7 +90,8 @@ namespace Ember {
 
 		// Notify scene of the initial viewport size so render pass FBOs are sized correctly from the start
 		m_ViewportSize = { (float)specs.Width, (float)specs.Height };
-		m_Context.ActiveScene->OnViewportResize(specs.Width, specs.Height);
+		if (auto activeScene = m_Context.ActiveScene())
+			activeScene->OnViewportResize(specs.Width, specs.Height);
 		m_Camera.SetViewportSize(specs.Width, specs.Height);
 
 		for (auto& panel : m_Panels)
@@ -96,6 +100,20 @@ namespace Ember {
 		// Load play / pause textures
 		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Play.png")->GetID();
 		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
+
+		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
+		Application::Instance().GetSceneManager().SetOnSceneChangedCallback([this](SharedPtr<Scene> newScene)
+		{
+			if (m_Context.CurrentSceneState == SceneState::Edit)
+				m_EditorScene = newScene;
+
+			// Update viewport size for the new scene so render targets are correct from the start
+			m_ViewportSize = { (float)m_OutputFramebuffer->GetSpecification().Width, (float)m_OutputFramebuffer->GetSpecification().Height };
+			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+
+			// De-select entity on scene change
+			m_Context.SelectedEntity = m_InvalidEntity;
+		});
 	}
 
 	void EditorLayer::OnDetach()
@@ -137,22 +155,25 @@ namespace Ember {
 
 		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
 
-		switch (m_Context.CurrentSceneState)
+		if (auto activeScene = m_Context.ActiveScene())
 		{
-			case SceneState::Edit:
+			switch (m_Context.CurrentSceneState)
 			{
-				m_Camera.OnUpdate(delta);
-				m_Context.ActiveScene->OnUpdateEdit(delta, m_Camera);
-				break;
+				case SceneState::Edit:
+				{
+					m_Camera.OnUpdate(delta);
+					activeScene->OnUpdateEdit(delta, m_Camera);
+					break;
+				}
+				case SceneState::Play:
+				{
+					activeScene->OnUpdateRuntime(delta);
+					break;
+				}
+				case SceneState::Pause:
+				default:
+					EB_CORE_ASSERT(false, "Unhandled scene state!");
 			}
-			case SceneState::Play:
-			{
-				m_Context.ActiveScene->OnUpdateRuntime(delta);
-				break;
-			}
-			case SceneState::Pause:
-			default:
-				EB_CORE_ASSERT(false, "Unhandled scene state!");
 		}
 
 		// Set cursor locking
@@ -207,6 +228,7 @@ namespace Ember {
 			panel->OnImGuiRender();
 
 		// Pop up for new project
+		RenderNewScenePopup();
 		RenderNewProjectPopup();
 
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
@@ -217,31 +239,45 @@ namespace Ember {
 	void EditorLayer::LoadDefaultAssets()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
+		// Point to the source code directories
+		//assetManager.SetEngineAssetDirectory("Ember/assets");
+
+		//// Before a project is loaded, the editor might just point to its own assets
+		//assetManager.SetProjectAssetDirectory("Ember-Forge/assets");
+		//assetManager.LoadDefaults();
 
 		// Textures
-		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, "Ember-Forge/assets/icons/PointLight.png");
-		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, "Ember-Forge/assets/icons/DirectionalLight.png");
-		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, "Ember-Forge/assets/icons/SpotLight.png");
-		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, "Ember-Forge/assets/icons/Camera.png");
+		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, (assetManager.GetProjectAssetDirectory() / "icons/PointLight.png").string());
+		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, (assetManager.GetProjectAssetDirectory() / "icons/DirectionalLight.png").string());
+		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, (assetManager.GetProjectAssetDirectory() / "icons/SpotLight.png").string());
+		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, (assetManager.GetProjectAssetDirectory() / "icons/Camera.png").string());
 	}
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		m_Context.ActiveScene = (Scene::CopyScene(m_EditorScene)); // Create a deep copy of the current scene for runtime
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		m_Context.ActiveScene->OnRuntimeStart();
+		auto& sceneManager = Application::Instance().GetSceneManager();
+
+		// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
+		auto runtimeScene = Scene::CopyScene(m_EditorScene);
+		runtimeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		sceneManager.SetActiveScene(runtimeScene); // OnAttach is called inside SetActiveScene
+		sceneManager.GetActiveScene()->OnRuntimeStart();
 		m_Context.CurrentSceneState = SceneState::Play;
 
 		Input::SetCursorMode(CursorMode::Locked);
 		Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
+
+		ProjectManager::GetActive()->ResetSceneIndex();
 	}
 
 	void EditorLayer::OnRuntimeStop()
 	{
-		m_Context.ActiveScene->OnRuntimeStop();
+		auto& sceneManager = Application::Instance().GetSceneManager();
+		sceneManager.GetActiveScene()->OnRuntimeStop();
 
-		m_Context.ActiveScene = m_EditorScene;
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		// Restore the editor scene as the active scene
+		sceneManager.SetActiveScene(m_EditorScene); // OnDetach on runtime copy, OnAttach on editor scene
+		sceneManager.GetActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
 		// OnSceneAttach was called for the runtime scene copy during OnRuntimeStart, which
 		// called RestartPhysicsWorld and wiped the RP3D world that the editor scene's bodies
@@ -261,6 +297,7 @@ namespace Ember {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
 		if (ImGui::BeginMenu("File"))
 		{
+			bool projectExists = ProjectManager::GetActive() != nullptr;
 			if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
 			{
 				NewProject();
@@ -269,9 +306,30 @@ namespace Ember {
 			{
 				OpenProject();
 			}
+			if (ImGui::MenuItem("Export Project", "Ctrol+Shift+E", nullptr, projectExists))
+			{
+				// Make sure everything is saved before exporting!
+				SaveProject(false);
+				ProjectManager::SaveActiveProject();
+
+				// Ask the user where they want to save the game
+				std::string exportDir = FileDialog::OpenDirectory();
+				if (!exportDir.empty())
+				{
+					if (ProjectManager::ExportActiveProject(std::filesystem::path(exportDir)))
+					{
+						auto evt = UINotificationEvent("Project exported successfully!");
+						m_Context.EventCallback(evt);
+					}
+					else
+					{
+						auto evt = UINotificationEvent("Project export failed!", UINotificationEvent::Severity::Error);
+						m_Context.EventCallback(evt);
+					}
+				}
+			}
 
 			ImGui::Separator();
-			bool projectExists = ProjectManager::GetActive() != nullptr;
 
 			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
 			{
@@ -285,12 +343,12 @@ namespace Ember {
 
 			if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
 			{
-				SaveScene(false);
+				SaveProject(false);
 			}
 
 			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
 			{
-				SaveScene(true);
+				SaveProject(true);
 			}
 
 			ImGui::EndMenu();
@@ -368,7 +426,8 @@ namespace Ember {
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			if (auto activeScene = m_Context.ActiveScene())
+				activeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		}
 
@@ -395,6 +454,16 @@ namespace Ember {
 				{
 					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
 					CreateEntityFromPrefab(filePath);
+				}
+			}
+
+			// Scenes
+			{
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					OpenScene(filePath);
 				}
 			}
 
@@ -457,20 +526,81 @@ namespace Ember {
 				OpenScene(project->GetStartScenePath().string());
 
 				if (auto assetPanel = GetPanel<AssetManagerPanel>())
-					assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-
-				Application::Instance().GetAssetManager().ClearAssets();
+				{
+					assetPanel->UpdateRootDirectory(project->GetAssetDirectory().parent_path());
+				}
 
 				ImGui::CloseCurrentPopup();
 			}
 
-			if (!isValid) ImGui::EndDisabled();
+			if (!isValid)
+				ImGui::EndDisabled();
 
 			ImGui::SameLine();
 
 			if (ImGui::Button("Cancel", ImVec2(120, 0)))
 			{
 				m_NewProjectSettings.ProjectName = "";
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void EditorLayer::RenderNewScenePopup()
+	{
+		if (m_ShowNewScenePopup)
+		{
+			ImGui::OpenPopup("New Scene");
+			m_ShowNewScenePopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(600, 200), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("New Scene", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			if (UI::PropertyGrid::Begin("NewSceneTable"))
+			{
+				UI::PropertyGrid::InputText("Scene Name", m_NewSceneName);
+
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			// Actions
+			bool isValid = !m_NewSceneName.empty();
+			if (!isValid)
+				ImGui::BeginDisabled();
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				UINotificationEvent evt;
+				auto newScene = Application::Instance().GetSceneManager().CreateScene(m_NewSceneName);
+				if (newScene)
+					evt = UINotificationEvent("New Scene created!");
+				else
+					evt = UINotificationEvent("Failed to create scene!", UINotificationEvent::Severity::Error);
+
+				m_Context.EventCallback(evt);
+				// Scene swap is deferred via CreateScene -> LoadScene; m_EditorScene is updated
+				// by the OnSceneChangedCallback when ExecuteSceneSwap fires next frame.
+
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (!isValid)
+				ImGui::EndDisabled();
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_NewSceneName = "";
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -523,9 +653,9 @@ namespace Ember {
 				break;
 			case KeyCode::S:
 				if (activeProject && control && shift)
-					SaveScene(true);
+					SaveProject(true);
 				else if (activeProject && control)
-					SaveScene(false);
+					SaveProject(false);
 				break;
 
 			// Entity Hot keys
@@ -576,8 +706,11 @@ namespace Ember {
 			// Ensure we are inside the image
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				Entity selected = m_Context.ActiveScene->GetEntityAtPixel(mouseX, mouseY);
-				m_Context.SelectedEntity = selected;
+				if (auto activeScene = m_Context.ActiveScene())
+				{
+					Entity selected = activeScene->GetEntityAtPixel(mouseX, mouseY);
+					m_Context.SelectedEntity = selected;
+				}
 			}
 		}
 
@@ -658,7 +791,7 @@ namespace Ember {
 		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<AnimatorComponent>())
 		{
 			auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
-			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene.Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
+			animSystem->SetAnimationToTimestamp(m_Context.ActiveScene().Ptr(), Constants::InvalidUUID, m_PreviousSelectedEntity, 0.0f);
 		}
 
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
@@ -709,7 +842,7 @@ namespace Ember {
 				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
 				{
 					// Fetch the parent entity
-					Entity parent = m_Context.ActiveScene->GetEntity(relationshipComp.ParentHandle);
+					Entity parent = m_Context.ActiveScene()->GetEntity(relationshipComp.ParentHandle);
 					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 					{
 						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
@@ -781,9 +914,40 @@ namespace Ember {
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+		// Runtime play button (launches game with the runtime)
+		if (ImGui::Button("Play Standalone"))
+		{
+			// 1. Save everything so the runtime sees the latest changes
+			SaveProject(false);
+			ProjectManager::SaveActiveProject();
+
+			// 2. Get the paths
+			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
+
+			// Assuming your working directory is the repo root, point to the compiled exe
+			auto runtimeExePath = std::filesystem::path("bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe");
+			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
+
+			auto engineAssetDir = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
+			auto engineAssetAbsolute = std::filesystem::absolute(engineAssetDir).string();
+
+			auto projectAssetDir = Application::Instance().GetAssetManager().GetProjectAssetDirectory().string();
+			auto projectAssetAbsolute = std::filesystem::absolute(projectAssetDir).string();
+
+			// 3. Construct the OS command:  EmberRuntime.exe "C:/Path/To/Project.ebproj"
+			std::string command = std::format("{} \"{}\" \"{}\" \"{}\"", absoluteRuntimePath, activeProjectPath, engineAssetAbsolute, projectAssetAbsolute);
+
+			// 4. Launch the process! (Using async so it doesn't freeze the editor)
+			// std::system will block, so spawning a detached thread is a quick and dirty way to do this
+			std::thread([command]() {
+				std::system(command.c_str());
+				}).detach();
+		}
+
+		ImGui::SameLine();
+
 		float windowWidth = ImGui::GetWindowContentRegionMax().x;
 		float iconSize = 24.0f;
-
 
 		// Center the button and make it transparent
 		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
@@ -791,8 +955,8 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
 		// (Optional) If you want to customize the hover color so it looks sleeker:
-		 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
-		 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
 		if (m_Context.CurrentSceneState == SceneState::Play)
 		{
@@ -834,7 +998,7 @@ namespace Ember {
 			ImGui::Text("Renderer Stats");
 			ImGui::Separator();
 			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
-			ImGui::Text("Entities: %d", m_Context.ActiveScene->GetAllEntities().size());
+			ImGui::Text("Entities: %d", m_Context.ActiveScene()->GetAllEntities().size());
 		}
 		ImGui::End();
 	}
@@ -862,7 +1026,7 @@ namespace Ember {
 	
 	void EditorLayer::CreateEntity()
 	{
-		auto entity = m_Context.ActiveScene->AddEntity("Empty_Entity");
+		auto entity = m_Context.ActiveScene()->AddEntity("Empty_Entity");
 		m_Context.SelectedEntity = entity;
 	}
 
@@ -881,7 +1045,7 @@ namespace Ember {
 
 		for (auto entity : m_Context.PendingEntityRemovals) {
 			std::string entityName = entity.GetName();
-			m_Context.ActiveScene->RemoveEntity(entity);
+			m_Context.ActiveScene()->RemoveEntity(entity);
 
 			auto evt = UINotificationEvent(std::format("Entity {} Removed", entityName));
 			m_Context.EventCallback(evt);
@@ -908,7 +1072,7 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
-		Entity modelEntity = m_Context.ActiveScene->InstantiateModel(modelFilePath);
+		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
 		m_Context.SelectedEntity = modelEntity;
 	}
 
@@ -921,7 +1085,7 @@ namespace Ember {
 		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
 		// using raycasting
 		Vector3f origin = Vector3f(0.0f);
-		Entity prefEntity = m_Context.ActiveScene->InstantiatePrefab(prefabAsset, &origin);
+		Entity prefEntity = m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
 		m_Context.SelectedEntity = prefEntity;
 	}
 
@@ -954,19 +1118,10 @@ namespace Ember {
 
 		// Load assets for project
 		auto assetPanel = GetPanel<AssetManagerPanel>();
-		if (assetPanel != nullptr)
-			assetPanel->UpdateAssetDirectory(project->GetAssetDirectory());
-
-		// Clear and reload default engine assets before loading the scene so all
-		// asset UUIDs referenced by the scene (e.g. skybox texture) are resolvable.
-		auto& assetManager = Application::Instance().GetAssetManager();
-		assetManager.ClearAssets();
-		assetManager.LoadDefaults();
-
-		// Deserialize project assets
-		std::string assetFilePath = (project->GetAssetDirectory() / "Assets.eba").string();
-		AssetRegistrySerializer assetSerializer(&assetManager);
-		assetSerializer.Deserialize(assetFilePath);
+		if (assetPanel != nullptr) 
+		{
+			assetPanel->UpdateRootDirectory(project->GetAssetDirectory().parent_path());
+		}
 
 		// Load the default scene for the project (assets must be ready first)
 		OpenScene(project->GetStartScenePath().string());
@@ -974,11 +1129,8 @@ namespace Ember {
 
 	void EditorLayer::NewScene()
 	{
-		SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("New Scene");
-		SetNewScene(newScene);
-
-		auto evt = UINotificationEvent("New Scene created!");
-		m_Context.EventCallback(evt);
+		m_NewSceneName = "NewScene";
+		m_ShowNewScenePopup = true;
 	}
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
@@ -986,54 +1138,49 @@ namespace Ember {
 		std::string sceneFile = scenePath;
 		if (sceneFile.empty())
 		{
-			const char* sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string().c_str();
+			const char* sceneDirectory = ProjectManager::GetActive()->GetScenesDirectory().string().c_str();
 			sceneFile = FileDialog::OpenFile(sceneDirectory, "Ember Scene (*.ebs)", "*.ebs");
 		}
 
 		if (!sceneFile.empty())
 		{
-			SharedPtr<Scene> newScene = SharedPtr<Scene>::Create("Loaded Scene");
-			newScene->SetFilePath(sceneFile);
-
-			SceneSerializer serializer(newScene);
-			if (serializer.Deserialize(sceneFile))
-			{
-				SetNewScene(newScene);
-
-				auto evt = UINotificationEvent(std::format("Scene opened: {}", std::filesystem::path(sceneFile).filename().string()));
-				m_Context.EventCallback(evt);
-			}
-			else
-			{
-				auto evt = UINotificationEvent("Failed to load scene!", UINotificationEvent::Severity::Error);
-				m_Context.EventCallback(evt);
-			}
+			auto& sceneManager = Application::Instance().GetSceneManager();
+			sceneManager.LoadScene(sceneFile);
 		}
 	}
 
-	void EditorLayer::SaveScene(bool saveAs /* = false */)
+	void EditorLayer::SaveProject(bool saveAs /* = false */)
 	{
 		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
-			: m_Context.ActiveScene->GetFilePath();
+			: m_Context.ActiveScene()->GetFilePath();
 
 		if (!sceneName.empty())
 		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+
 			// Strip editor-only outline components before serializing
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
-			// Serialize scene
-			SceneSerializer sceneSerializer(m_Context.ActiveScene);
-			sceneSerializer.Serialize(sceneName);
+			// Serialize scenes
+			auto scenes = assetManager.GetAssetsOfType<Scene>();
+			for (auto& scene : scenes)
+			{
+				if (!scene->IsEngineAsset() && !scene->GetFilePath().empty())
+				{
+					SceneSerializer ser(scene);
+					ser.Serialize(scene->GetFilePath());
+				}
+			}
 
 			// Re-apply outline component after saving so the user doesn't lose their selection highlight
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 				OutlineEntity(m_Context.SelectedEntity);
 
 			// Serialize materials (in case their values changed)
-			auto materials = Application::Instance().GetAssetManager().GetAssetsOfType<MaterialInstance>();
+			auto materials = assetManager.GetAssetsOfType<MaterialInstance>();
 			for (auto& material : materials)
 			{
 				if (!material->IsEngineAsset() && !material->GetFilePath().empty())
@@ -1043,7 +1190,7 @@ namespace Ember {
 			}
 
 			// Serialize physics materials as well
-			auto physicsMaterials = Application::Instance().GetAssetManager().GetAssetsOfType<PhysicsMaterial>();
+			auto physicsMaterials = assetManager.GetAssetsOfType<PhysicsMaterial>();
 			for (auto& physMat : physicsMaterials)
 			{
 				if (!physMat->IsEngineAsset() && !physMat->GetFilePath().empty())
@@ -1053,7 +1200,7 @@ namespace Ember {
 			}
 
 			// Serialize animations
-			auto animations = Application::Instance().GetAssetManager().GetAssetsOfType<Animation>();
+			auto animations = assetManager.GetAssetsOfType<Animation>();
 			for (auto& anim : animations)
 			{
 				if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
@@ -1064,11 +1211,11 @@ namespace Ember {
 
 			// Serialize assets
 			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
-			AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+			AssetRegistrySerializer assetSerializer(&assetManager);
 			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs)
-				m_Context.ActiveScene->SetFilePath(sceneName);
+				m_Context.ActiveScene()->SetFilePath(sceneName);
 
 			// Save project as well to update any project settings
 			ProjectManager::SaveActiveProject();
@@ -1080,15 +1227,12 @@ namespace Ember {
 
 	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
 	{
-		if (m_Context.ActiveScene != nullptr)
-			m_Context.ActiveScene->OnDetach();
-
 		m_EditorScene = newScene;
-		m_Context.ActiveScene = newScene;
 
-		m_Context.ActiveScene->OnAttach();
+		// SetActiveScene handles OnDetach on the old scene and OnAttach on the new one
+		Application::Instance().GetSceneManager().SetActiveScene(newScene);
 
-		m_Context.ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		m_Context.ActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_Context.SelectedEntity = {};
 		m_PreviousSelectedEntity = {};
 	}

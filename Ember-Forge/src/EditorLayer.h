@@ -36,6 +36,7 @@ namespace Ember {
 		void RenderMenuBar();
 		void RenderSceneViewport();
 		void RenderNewProjectPopup();
+		void RenderNewScenePopup();
 
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
@@ -61,7 +62,7 @@ namespace Ember {
 		void OpenProject();
 		void NewScene();
 		void OpenScene(const std::string& scenePath = "");
-		void SaveScene(bool saveAs = false);
+		void SaveProject(bool saveAs = false);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
@@ -144,6 +145,9 @@ namespace Ember {
 
 		Entity m_EntityToDelete;
 
+		bool m_ShowNewScenePopup = false;
+		std::string m_NewSceneName = "";
+		
 		bool m_ShowProjectSettingsPopup = false;
 		ProjectSettingsDialog m_ProjectSettingsDialog;
 

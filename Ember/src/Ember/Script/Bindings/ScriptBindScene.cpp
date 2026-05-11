@@ -2,9 +2,11 @@
 #include "ScriptBindScene.h"
 
 #include "Ember/Scene/Scene.h"
+#include "Ember/Scene/SceneManager.h"
 #include "Ember/Math/Math.h"
 
 #include "Ember/Core/Application.h"
+#include "Ember/Core/ProjectManager.h"
 
 namespace Ember {
 
@@ -61,5 +63,31 @@ namespace Ember {
 				return scene->GetPoolManager().RetrieveFromPool(scene, poolID, position);
 			}
 		));
+
+		// Scene transitions - queues a deferred load so the current frame finishes safely
+		auto sceneManagerTable = state.create_table("SceneManager");
+		sceneManagerTable.set_function("LoadScene", [](const std::string& name) {
+			auto sceneAsset = Application::Instance().GetAssetManager().GetAsset<Scene>(name);
+			if (!sceneAsset)
+			{
+				EB_CORE_ERROR("Attempted to load scene with name \"{}\" but it doesn't exist!", name);
+				return;
+			}
+
+			Application::Instance().GetSceneManager().LoadScene(sceneAsset->GetFilePath());
+		});
+		sceneManagerTable.set_function("LoadNextScene", []() {
+			UUID nextSceneUUID = ProjectManager::GetActive()->GetNextScene();
+			if (nextSceneUUID != Constants::InvalidUUID)
+				Application::Instance().GetSceneManager().LoadScene(nextSceneUUID);
+		});
+		sceneManagerTable.set_function("LoadDefaultScene", []() {
+			UUID defaultSceneUUID = ProjectManager::GetActive()->GetScenesInBuild()[0];
+			if (defaultSceneUUID != Constants::InvalidUUID)
+				Application::Instance().GetSceneManager().LoadScene(defaultSceneUUID);
+		});
+		sceneManagerTable.set_function("IsLastScene", []() {
+			return ProjectManager::GetActive()->IsLastScene();
+		});
 	}
 }

@@ -2,6 +2,7 @@
 #include "ProjectSettingsDialog.h"
 
 #include "UI/PropertyGrid.h"
+#include "UI/DragDropTypes.h"
 
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
@@ -84,6 +85,45 @@ namespace Ember {
 		// TODO: Hook up project name to actual project data
 		static char projectName[128] = "Ember Forge Project";
 		ImGui::InputText("Project Name", projectName, IM_ARRAYSIZE(projectName));
+
+		// List order of scenes (like waypoints UI style) (so can call SceneManager.LoadNextScene() in lua)
+		ImGui::Spacing();
+		ImGui::Text("Scenes In Build");
+		ImGui::Separator();
+
+		if (UI::PropertyGrid::Begin("BuildScenesGrid"))
+		{
+			// 1. Tell the widget how to get a name
+			auto nameResolver = [](UUID uuid) -> std::string {
+				auto asset = Application::Instance().GetAssetManager().GetAssetBase(uuid);
+				return asset ? asset->GetName() : "Invalid Scene";
+				};
+
+			// 2. Gather all available scenes so the dropdown has items to display!
+			// (Assuming you have a GetAssetsOfType method or similar)
+			auto scenes = Application::Instance().GetAssetManager().GetAssetsOfType<Scene>();
+			std::vector<UUID> availableScenes;
+			for (auto& scene : scenes)
+			{
+				availableScenes.push_back(scene->GetUUID());
+			}
+
+			// 3. Get the project config list to modify
+			auto project = ProjectManager::GetActive();
+			auto& buildScenes = project->GetScenesInBuild();
+
+			// 4. Draw the ComboBox array
+			UI::PropertyGrid::DynamicUUIDArrayComboBox("Scenes", "Index", buildScenes, availableScenes, nameResolver);
+
+			// Set first build scene as the default scene in the project (TODO)
+			if (!buildScenes.empty())
+			{
+				project->SetStartScene(buildScenes[0]);
+			}
+
+			UI::PropertyGrid::End();
+		}
+
 	}
 
 	void ProjectSettingsDialog::RenderPhysicsSettings()

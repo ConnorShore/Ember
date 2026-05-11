@@ -96,9 +96,15 @@ namespace Ember {
 		}
 	}
 
-	Scene::Scene(const std::string& name)
-		: m_Registry(ScopedPtr<Registry>::Create()), m_PoolManager(ScopedPtr<PoolManager>::Create()), m_Name(name)
+	Scene::Scene(const std::string& name, const std::string& filePath)
+		: Scene(UUID(), name, filePath)
 	{
+	}
+
+	Scene::Scene(UUID uuid, const std::string& name, const std::string& filePath)
+		: Asset(uuid, name, filePath, AssetType::Scene), m_Registry(ScopedPtr<Registry>::Create()), m_PoolManager(ScopedPtr<PoolManager>::Create())
+	{
+
 	}
 
 	Scene::~Scene()
@@ -108,7 +114,7 @@ namespace Ember {
 	// Deep-copies the scene, preserving all UUIDs so relationships remain valid
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{
-		auto newScene = SharedPtr<Scene>::Create(other->GetName());
+		auto newScene = SharedPtr<Scene>::Create(other->GetName(), other->GetFilePath());
 		auto view = other->GetRegistry().Query<IDComponent>();
 		for (auto entity : view)
 		{
@@ -301,6 +307,7 @@ namespace Ember {
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
+		EB_CORE_INFO("Viewport resized to {}x{} in scene '{}'", width, height, m_Name);
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
 		for (auto entity : view)

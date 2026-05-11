@@ -1,4 +1,5 @@
 #include "efpch.h"
+
 #include <Ember.h>
 #include <Ember/Core/EntryPoint.h>
 
@@ -9,19 +10,26 @@ namespace Ember {
 	class EmberForgeApp : public Application
 	{
 	public:
-		EmberForgeApp()
-			: Application("Ember Forge", WindowConfig("Ember Forge", 1600, 900))
+		EmberForgeApp(const ApplicationSpecification& spec)
+			: Application(spec)
 		{
 			PushLayer(ScopedPtr<Layer>(new EditorLayer()));
 		}
-		~EmberForgeApp()
-		{
-		}
 	};
 
-	ScopedPtr<Application> CreateApplication()
+	ScopedPtr<Application> CreateApplication(int argc, char** argv)
 	{
-		return ScopedPtr<EmberForgeApp>(new EmberForgeApp());
+		ApplicationSpecification spec;
+		spec.Name = "Ember Forge";
+		spec.WindowSpecification.Width = 1600;
+		spec.WindowSpecification.Height = 900;
+		spec.WindowSpecification.Title = "Ember Forge";
+
+		// The Editor explicitly points to the source code folders
+		spec.EngineAssetDir = "Ember/assets";
+		spec.ProjectAssetDir = "Ember-Forge/assets";
+
+		return ScopedPtr<EmberForgeApp>(new EmberForgeApp(spec));
 	}
 
 }

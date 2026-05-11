@@ -70,7 +70,7 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("1st Person Character"))
 				{
-					auto entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene);
+					auto entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene());
 					if (entity == Constants::Entities::InvalidEntityID)
 						return;
 
@@ -79,7 +79,7 @@ namespace Ember {
 				}
 				if (ImGui::MenuItem("AI Character"))
 				{
-					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene);
+					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene());
 					if (entity == Constants::Entities::InvalidEntityID)
 						return;
 
@@ -93,22 +93,22 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Cube"))
 				{
-					auto entity = Presets::CreateCube(m_Context->ActiveScene);
+					auto entity = Presets::CreateCube(m_Context->ActiveScene());
 					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Sphere"))
 				{
-					auto entity = Presets::CreateSphere(m_Context->ActiveScene);
+					auto entity = Presets::CreateSphere(m_Context->ActiveScene());
 					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Quad"))
 				{
-					auto entity = Presets::CreateQuad(m_Context->ActiveScene);
+					auto entity = Presets::CreateQuad(m_Context->ActiveScene());
 					CreateEntity(entity);
 				}
 				if (ImGui::MenuItem("Capsule"))
 				{
-					auto entity = Presets::CreateCapsule(m_Context->ActiveScene);
+					auto entity = Presets::CreateCapsule(m_Context->ActiveScene());
 					CreateEntity(entity);
 				}
 
@@ -119,19 +119,19 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Point Light"))
 				{
-					auto entity = Presets::CreatePointLight(m_Context->ActiveScene);
+					auto entity = Presets::CreatePointLight(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
 				if (ImGui::MenuItem("Directional Light"))
 				{
-					auto entity = Presets::CreateDirectionalLight(m_Context->ActiveScene);
+					auto entity = Presets::CreateDirectionalLight(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
 				if (ImGui::MenuItem("Spot Light"))
 				{
-					auto entity = Presets::CreateSpotLight(m_Context->ActiveScene);
+					auto entity = Presets::CreateSpotLight(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -143,7 +143,7 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("3D Camera"))
 				{
-					auto entity = Presets::Create3DCamera(m_Context->ActiveScene);
+					auto entity = Presets::Create3DCamera(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -151,7 +151,7 @@ namespace Ember {
 				{
 					Quaternion orientation = m_Context->EditorCamera->GetOrientation();
 					Vector3f position = m_Context->EditorCamera->GetPosition();
-					auto entity = Presets::Create3DCamera(m_Context->ActiveScene, position, orientation);
+					auto entity = Presets::Create3DCamera(m_Context->ActiveScene(), position, orientation);
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -164,13 +164,13 @@ namespace Ember {
 
 				if (ImGui::MenuItem("Navigation Grid"))
 				{
-					auto entity = Presets::CreateNavigationGrid(m_Context->ActiveScene);
+					auto entity = Presets::CreateNavigationGrid(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
 				if (ImGui::MenuItem("Waypoint"))
 				{
-					auto entity = Presets::CreateWaypoint(m_Context->ActiveScene);
+					auto entity = Presets::CreateWaypoint(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -182,7 +182,7 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Post Process Volume"))
 				{
-					auto entity = Presets::CreatePostProcessVolume(m_Context->ActiveScene);
+					auto entity = Presets::CreatePostProcessVolume(m_Context->ActiveScene());
 					SetSelectedEntity(entity);
 					RenameEntity(entity);
 				}
@@ -195,10 +195,10 @@ namespace Ember {
 
 	void SceneHierarchyPanel::RenderEntityTree()
 	{
-		if (!m_Context->ActiveScene)
+		if (!m_Context->ActiveScene())
 			return;
 
-		auto entities = m_Context->ActiveScene->GetAllEntities();
+		auto entities = m_Context->ActiveScene()->GetAllEntities();
 
 		if (m_Context->SelectedEntity != m_PreviouslySelectedEntity)
 		{
@@ -294,8 +294,8 @@ namespace Ember {
 				{
 					UUID payloadUUID = *(const UUID*)payload->Data;
 					bool isSameEntity = payloadUUID == entity.GetUUID();
-					bool isDescendant = IsAncestor(m_Context->ActiveScene->GetEntity(payloadUUID), entity);
-					bool isParent = entity.GetUUID() == m_Context->ActiveScene->GetEntity(payloadUUID).GetComponent<RelationshipComponent>().ParentHandle;
+					bool isDescendant = IsAncestor(m_Context->ActiveScene()->GetEntity(payloadUUID), entity);
+					bool isParent = entity.GetUUID() == m_Context->ActiveScene()->GetEntity(payloadUUID).GetComponent<RelationshipComponent>().ParentHandle;
 					// Can't drop onto self, onto a descendant, or onto the current parent
 					isValidPayload = !isSameEntity && !isDescendant && !isParent;
 				}
@@ -308,7 +308,7 @@ namespace Ember {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 					{
 						UUID payloadUUID = *(const UUID*)payload->Data;
-						m_Context->ActiveScene->SetEntityParent(payloadUUID, entity);
+						m_Context->ActiveScene()->SetEntityParent(payloadUUID, entity);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -404,7 +404,7 @@ namespace Ember {
 			if (ImGui::MenuItem("Remove Parent", nullptr, false, hasParent))
 			{
 				auto& relationship = entity.GetComponent<RelationshipComponent>();
-				auto parentEntity = m_Context->ActiveScene->GetEntity(relationship.ParentHandle);
+				auto parentEntity = m_Context->ActiveScene()->GetEntity(relationship.ParentHandle);
 				auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
 				parentRelationship.Children.erase(std::remove(parentRelationship.Children.begin(), parentRelationship.Children.end(), entity.GetUUID()), parentRelationship.Children.end());
 				relationship.ParentHandle = Constants::InvalidUUID;
@@ -420,7 +420,7 @@ namespace Ember {
 				auto& children = entity.GetComponent<RelationshipComponent>().Children;
 				for (UUID childID : children)
 				{
-					Entity child = m_Context->ActiveScene->GetEntity(childID);
+					Entity child = m_Context->ActiveScene()->GetEntity(childID);
 					if (child != Constants::Entities::InvalidEntityID)
 						DrawTreeNode(child);
 				}
@@ -442,8 +442,8 @@ namespace Ember {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 			{
 				UUID payloadUUID = *(const UUID*)payload->Data;
-				Entity payloadEntity = m_Context->ActiveScene->GetEntity(payloadUUID);
-				m_Context->ActiveScene->RemoveParent(payloadEntity);
+				Entity payloadEntity = m_Context->ActiveScene()->GetEntity(payloadUUID);
+				m_Context->ActiveScene()->RemoveParent(payloadEntity);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -465,7 +465,7 @@ namespace Ember {
 			if (parentID == ancestor.GetUUID())
 				return true;
 
-			current = m_Context->ActiveScene->GetEntity(parentID);
+			current = m_Context->ActiveScene()->GetEntity(parentID);
 		}
 
 		return false;
@@ -487,7 +487,7 @@ namespace Ember {
 			if (currentUUID == descendant.GetUUID())
 				return true;
 
-			auto currentEntity = m_Context->ActiveScene->GetEntity(currentUUID);
+			auto currentEntity = m_Context->ActiveScene()->GetEntity(currentUUID);
 			auto& children = currentEntity.GetComponent<RelationshipComponent>().Children;
 			for (auto& child : children)
 				queue.push_back(child);
@@ -507,13 +507,13 @@ namespace Ember {
 
 	void SceneHierarchyPanel::CreateEmptyEntity()
 	{
-		auto entity = m_Context->ActiveScene->AddEntity("Empty_Entity");
+		auto entity = m_Context->ActiveScene()->AddEntity("Empty_Entity");
 		CreateEntity(entity);
 	}
 
 	void SceneHierarchyPanel::CreateChildEntity(Entity parentEntity)
 	{
-		auto childEntity = m_Context->ActiveScene->AddEntity("Child_Entity");
+		auto childEntity = m_Context->ActiveScene()->AddEntity("Child_Entity");
 
 		// Set parent to new ChildEntity
 		RelationshipComponent& relationship = childEntity.GetComponent<RelationshipComponent>();
@@ -541,14 +541,14 @@ namespace Ember {
 		if (entity == Constants::Entities::InvalidEntityID)
 			return;
 
-		auto newEntity = m_Context->ActiveScene->DuplicateEntity(entity);
+		auto newEntity = m_Context->ActiveScene()->DuplicateEntity(entity);
 		SetSelectedEntity(newEntity);
 	}
 
 	void SceneHierarchyPanel::CreatePrefab(Entity entity)
 	{
 		std::string filePath = (ProjectManager::GetActive()->GetAssetDirectory() / "Prefabs" / (entity.GetName() + ".ebprefab")).string();
-		SharedPtr<Prefab> prefab = m_Context->ActiveScene->CreatePrefab(entity, filePath);
+		SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 		if (prefab == nullptr)
 		{
 			auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);

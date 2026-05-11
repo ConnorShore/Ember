@@ -8,7 +8,6 @@
 #include "Ember/Asset/Asset.h"
 #include "Ember/Asset/Model.h"
 #include "Ember/Tools/EditorCamera.h"
-#include "Ember/Core/Application.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Core/PoolManager.h"
 
@@ -25,10 +24,11 @@ namespace Ember {
 		Pause = 2
 	};
 
-	class Scene : public SharedResource
+	class Scene : public Asset
 	{
 	public:
-		Scene(const std::string& name = "");
+		Scene(const std::string& name, const std::string& filePath);
+		Scene(UUID uuid, const std::string& name, const std::string& filePath);
 		~Scene();
 
 		static SharedPtr<Scene> CopyScene(SharedPtr<Scene> other);
@@ -59,28 +59,16 @@ namespace Ember {
 		void RemoveParent(Entity child);
 
 		template<IsCoreAsset T>
-		void RegisterAsset(const SharedPtr<T>& asset)
-		{
-			Application::Instance().GetAssetManager().Register<T>(asset);
-		}
+		inline void RegisterAsset(const SharedPtr<T>& asset);
 
 		template<IsCoreAsset T>
-		SharedPtr<T> GetAsset(const std::string& assetName)
-		{
-			return Application::Instance().GetAssetManager().GetAsset<T>(assetName);
-		}
+		inline SharedPtr<T> GetAsset(const std::string& assetName);
 
 		template<IsCoreAsset T>
-		SharedPtr<T> GetAsset(UUID assetUUID)
-		{
-			return Application::Instance().GetAssetManager().GetAsset<T>(assetUUID);
-		}
+		inline SharedPtr<T> GetAsset(UUID assetUUID);
 
 		template<IsCoreAsset T>
-		std::vector<SharedPtr<T>> GetAssetsOfType()
-		{
-			return Application::Instance().GetAssetManager().GetAssetsOfType<T>();
-		}
+		inline std::vector<SharedPtr<T>> GetAssetsOfType();
 
 		std::vector<Entity> GetAllEntities() const;
 
@@ -116,14 +104,11 @@ namespace Ember {
 		inline Registry& GetRegistry() { return *m_Registry; }
 		inline PoolManager& GetPoolManager() { return *m_PoolManager; }
 
-		inline const std::string& GetName() const { return m_Name; }
-
-		inline void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
-		inline const std::string& GetFilePath() const { return m_FilePath; }
-
 		inline bool IsRuntime() const { return m_IsRuntime; }
 
 		void ResetAllPhysicsState();
+
+		inline static AssetType GetStaticType() { return AssetType::Scene; }
 
 	private:
 		bool OnWindowResize(const WindowResizeEvent& event);
@@ -142,15 +127,13 @@ namespace Ember {
 
 		std::vector<Entity> m_PendingRemovals;
 
-		std::string m_Name;
-		std::string m_FilePath;
-
 		bool m_IsRuntime = false;
 	};
 
 }
 
 #include "Entity.h"
+#include "Ember/Core/Application.h"
 
 namespace Ember {
 
@@ -173,6 +156,30 @@ namespace Ember {
 	{
 		EntityID entityHandle = entity.GetEntityHandle();
 		return m_Registry->GetComponent<T>(entityHandle);
+	}
+
+	template<IsCoreAsset T>
+	inline void Scene::RegisterAsset(const SharedPtr<T>& asset)
+	{
+		Application::Instance().GetAssetManager().Register<T>(asset);
+	}
+
+	template<IsCoreAsset T>
+	inline SharedPtr<T> Scene::GetAsset(const std::string& assetName)
+	{
+		return Application::Instance().GetAssetManager().GetAsset<T>(assetName);
+	}
+
+	template<IsCoreAsset T>
+	inline SharedPtr<T> Scene::GetAsset(UUID assetUUID)
+	{
+		return Application::Instance().GetAssetManager().GetAsset<T>(assetUUID);
+	}
+
+	template<IsCoreAsset T>
+	inline std::vector<SharedPtr<T>> Scene::GetAssetsOfType()
+	{
+		return Application::Instance().GetAssetManager().GetAssetsOfType<T>();
 	}
 
 }

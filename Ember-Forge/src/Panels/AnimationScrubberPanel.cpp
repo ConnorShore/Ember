@@ -50,7 +50,7 @@ namespace Ember {
 
 				// Reset animation to bind pose
 				auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
-				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene.Ptr(), Constants::InvalidUUID, m_Context->SelectedEntity, m_CurrentTime);
+				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene().Ptr(), Constants::InvalidUUID, m_Context->SelectedEntity, m_CurrentTime);
 			}
 			ImGui::Separator();
 
@@ -156,7 +156,7 @@ namespace Ember {
 			if (selectedEntity != Constants::Entities::InvalidEntityID)
 			{
 				auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
-				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene.Ptr(), m_CurrentAnimation->GetUUID(), selectedEntity, m_CurrentTime);
+				animSystem->SetAnimationToTimestamp(m_Context->ActiveScene().Ptr(), m_CurrentAnimation->GetUUID(), selectedEntity, m_CurrentTime);
 			}
 		}
 
