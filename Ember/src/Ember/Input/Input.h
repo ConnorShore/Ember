@@ -36,7 +36,7 @@ namespace Ember {
 		static int GetKeyRepeatCount(KeyCode key);
 		static const Vector2f& GetMousePosition();
 		static const Vector2f& GetMouseScrollOffset();
-		static const Vector2f& GetMouseDelta();
+		static Vector2f GetMouseDelta();
 
 		static void ResetMouseDelta();
 

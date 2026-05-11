@@ -22,7 +22,7 @@ namespace Ember {
 		}
 
 	public:
-		float EdgeThresholdMin = 0.0312;	// 0.0 - 0.0833
+		float EdgeThresholdMin = 0.0312f;	// 0.0 - 0.0833
 		float EdgeThresholdMax = 0.125f;	// 0.063 - 0.333
 		float SubpixelQuality = 0.75f;		// 0 - 1
 

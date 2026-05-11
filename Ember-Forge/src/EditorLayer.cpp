@@ -109,7 +109,7 @@ namespace Ember {
 
 			// Update viewport size for the new scene so render targets are correct from the start
 			m_ViewportSize = { (float)m_OutputFramebuffer->GetSpecification().Width, (float)m_OutputFramebuffer->GetSpecification().Height };
-			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
 			// De-select entity on scene change
 			m_Context.SelectedEntity = m_InvalidEntity;

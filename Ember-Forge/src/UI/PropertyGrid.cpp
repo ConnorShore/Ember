@@ -169,7 +169,7 @@ namespace Ember {
 			ImGui::Text(label.c_str());
 			ImGui::TableNextColumn();
 			ImGui::PushItemWidth(-FLT_MIN);
-			return ImGui::DragInt(std::format("##{}", label).c_str(), &value, step, min, max, "%d");
+			return ImGui::DragInt(std::format("##{}", label).c_str(), &value, static_cast<float>(step), min, max, "%d");
 		}
 
 		bool UInt(const std::string& label, uint32_t& value, uint32_t step /*= 1*/, uint32_t min /*= 0*/, uint32_t max /*= 0*/)
@@ -182,7 +182,7 @@ namespace Ember {
 			ImGui::PushItemWidth(-FLT_MIN);
 
 			int intValue = static_cast<int>(value);
-			if (ImGui::DragInt(std::format("##{}", label).c_str(), &intValue, step, min, max, "%d"))
+			if (ImGui::DragInt(std::format("##{}", label).c_str(), &intValue, static_cast<float>(step), min, max, "%d"))
 			{
 				value = static_cast<uint32_t>(intValue);
 				return true;

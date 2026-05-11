@@ -71,7 +71,7 @@ namespace Ember {
 			EB_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size() > 0,
 				"Vertex buffer must have a layout set before being used in a vertex array!");
 
-			uint32_t vboIndex = m_VertexBuffers.size();
+			uint32_t vboIndex = static_cast<uint32_t>(m_VertexBuffers.size());
 
 			glVertexArrayVertexBuffer(m_Id, vboIndex, vertexBuffer->GetID(), 0, vertexBuffer->GetLayout().GetStride());
 			SetVertexBufferAttribs(vertexBuffer, vboIndex);

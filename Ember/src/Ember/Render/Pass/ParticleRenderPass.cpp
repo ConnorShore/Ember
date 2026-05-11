@@ -192,7 +192,7 @@ namespace Ember {
 
 	void ParticleRenderPass::DrawParticles()
 	{
-		uint32_t indexCount = m_ParticleVAO->GetIndexBuffer()->GetCount();
+		uint32_t indexCount = static_cast<uint32_t>(m_ParticleVAO->GetIndexBuffer()->GetCount());
 		uint32_t instanceCount = (uint32_t)m_InstancedData.size();
 
 		RenderAction::DrawIndexedInstanced(m_ParticleVAO, indexCount, instanceCount);

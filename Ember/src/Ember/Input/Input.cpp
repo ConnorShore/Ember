@@ -104,7 +104,7 @@ namespace Ember {
 		return s_ScrollOffset;
 	}
 
-	const Vector2f& Input::GetMouseDelta()
+	Vector2f Input::GetMouseDelta()
 	{
 		Vector2f ret = s_MousePosition - s_PreviousMousePosition;
 

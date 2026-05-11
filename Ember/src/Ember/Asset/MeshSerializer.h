@@ -49,6 +49,7 @@ namespace Ember {
 
 			file.write((char*)indices.data(), header.IndexCount * sizeof(uint32_t));
 			file.close();
+			return true;
 		}
 
 		static SharedPtr<Mesh> Deserialize(UUID uuid, const std::filesystem::path& filepath)

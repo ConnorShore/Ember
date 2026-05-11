@@ -232,7 +232,7 @@ namespace Ember {
 					auto newLUTTex = Application::Instance().GetAssetManager().Load<Texture2D>(UUID(), lutName, newTexPath, false);
 
 					// Reset buffer and close
-					strcpy(lutName, "NewColorGradeLUT");
+					strcpy_s(lutName, "NewColorGradeLUT");
 					ImGui::CloseCurrentPopup();
 				}
 			}

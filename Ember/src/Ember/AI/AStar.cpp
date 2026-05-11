@@ -8,16 +8,16 @@ namespace Ember {
 
 	std::vector<Vector3f> AStar::AStarPath(const Vector3f& start, const Vector3f& goal, std::vector<std::vector<NavNode>>& grid)
 	{
-		uint32_t gridWidth = grid.size();
-		uint32_t gridHeight = grid[0].size();
+		uint32_t gridWidth = static_cast<uint32_t>(grid.size());
+		uint32_t gridHeight = static_cast<uint32_t>(grid[0].size());
 
 		// 3. The Scratch Map: A parallel 2D vector initialized to default values.
 		// This gives us instant O(1) lookups for G-costs and Parents without needing a map hash!
 		std::vector<std::vector<NavNodeScratch>> scratchGrid(gridWidth, std::vector<NavNodeScratch>(gridHeight));
 
 		// Wire up the pointers
-		for (int x = 0; x < gridWidth; ++x) {
-			for (int y = 0; y < gridHeight; ++y) {
+		for (uint32_t x = 0; x < gridWidth; ++x) {
+			for (uint32_t y = 0; y < gridHeight; ++y) {
 				scratchGrid[x][y].Node = &grid[x][y];
 			}
 		}
@@ -60,7 +60,7 @@ namespace Ember {
 					int neighborY = current->Node->GridY + dy;
 
 					// Check bounds
-					if (neighborX < 0 || neighborX >= gridWidth || neighborY < 0 || neighborY >= gridHeight)
+					if (neighborX < 0 || neighborX >= static_cast<int>(gridWidth) || neighborY < 0 || neighborY >= static_cast<int>(gridHeight))
 						continue;
 
 					NavNodeScratch& neighborScratch = scratchGrid[neighborX][neighborY];
@@ -125,8 +125,8 @@ namespace Ember {
 	NavNode* AStar::FindClosestNode(const Vector3f& position, std::vector<std::vector<NavNode>>& grid)
 	{
 		// Find closest walkable node in the grid to the given position
-		uint32_t gridWidth = grid.size();
-		uint32_t gridHeight = grid[0].size();
+		uint32_t gridWidth = static_cast<uint32_t>(grid.size());
+		uint32_t gridHeight = static_cast<uint32_t>(grid[0].size());
 		float gridMinX = grid[0][0].WorldPosition.x;
 		float gridMinY = grid[0][0].WorldPosition.z;
 		float gridMaxX = grid[gridWidth - 1][0].WorldPosition.x;

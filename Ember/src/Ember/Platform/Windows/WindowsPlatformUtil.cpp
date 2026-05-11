@@ -181,9 +181,8 @@ namespace Ember {
 					PWSTR pszFilePath;
 					if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath)))
 					{
-						// Convert Wide String to std::string
-						std::wstring ws(pszFilePath);
-						result = std::string(ws.begin(), ws.end());
+						// Convert Wide String to std::string via filesystem::path for proper encoding
+						result = std::filesystem::path(pszFilePath).string();
 						CoTaskMemFree(pszFilePath);
 					}
 					pItem->Release();

@@ -116,7 +116,7 @@ namespace Ember {
 						GenerateScriptTemplate(scriptName, newScriptPath, component);
 
 						// Reset buffer and close
-						strcpy(scriptName, "NewScript");
+						strcpy_s(scriptName, "NewScript");
 						ImGui::CloseCurrentPopup();
 					}
 				}
