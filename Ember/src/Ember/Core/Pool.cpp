@@ -171,7 +171,7 @@ namespace Ember {
 		m_Capacity = newSize;
 	}
 #else
-	void Pool::Resize(const SharedPtr<Prefab>& prefab, uint32_t newSize) {}
+	void Pool::Resize(uint32_t newSize) {}
 #endif
 
 }

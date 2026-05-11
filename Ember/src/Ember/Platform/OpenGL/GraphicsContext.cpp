@@ -21,7 +21,8 @@ namespace Ember {
 		{
 			glfwMakeContextCurrent(m_WindowHandle);
 
-			EB_CORE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load glad!");
+			bool gladLoaded = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+			EB_CORE_ASSERT(gladLoaded, "Failed to load glad!");
 			EB_CORE_TRACE("------------- OpenGL Info -------------");
 			EB_CORE_TRACE("Vendor:   {}", (const char*)glGetString(GL_VENDOR));
 			EB_CORE_TRACE("Renderer: {}", (const char*)glGetString(GL_RENDERER));

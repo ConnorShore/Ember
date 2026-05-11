@@ -1,13 +1,1 @@
-Assets:
-  - Type: Script
-    UUID: 11318307027058284549
-    Name: SceneTransition
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/SceneTransition.lua
-  - Type: Scene
-    UUID: 5510561267408977301
-    Name: Default
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Scenes/Default.ebs
-  - Type: Scene
-    UUID: 298091115670963054
-    Name: Scene2
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Scenes/Scene2.ebs
+Assets: []

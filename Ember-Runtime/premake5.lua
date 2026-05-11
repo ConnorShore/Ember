@@ -1,7 +1,7 @@
 project "Ember-Runtime"
-   kind "ConsoleApp"
    language "C++"
    cppdialect "C++23"
+   kind "ConsoleApp"
 
    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
    objdir ("%{wks.location}/bin/int/" .. outputdir .. "/%{prj.name}")
@@ -19,7 +19,6 @@ project "Ember-Runtime"
    includedirs 
    {
       "src",
-    --   "vendor/ImGuizmo",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
       "%{wks.location}/Ember/vendor/glm",
@@ -29,27 +28,26 @@ project "Ember-Runtime"
       "%{wks.location}/Ember/vendor/sol2/include",
       "%{wks.location}/Ember/vendor/rapidyaml/src",
       "%{wks.location}/Ember/vendor/reactphysics3d/include",
-	  "%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src",
-    --   "%{wks.location}/Ember-Tools/src",
-    --   "%{wks.location}/Ember-Tools/vendor/tinygltf",
+	  "%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src"
    }
 
    links 
    {
-      "Ember",
-    --   "Ember-Tools",
-    --   "ImGuizmo"
+      "Ember"
    }
 
    filter "system:windows"
       systemversion "latest"
 
-   filter "configurations:Debug"
+filter "configurations:Debug"
       defines { "EB_DEBUG" }
       symbols "On"
+      -- kind "ConsoleApp" 
 
    filter "configurations:Release"
       defines { "EB_RELEASE" }
       optimize "On"
+      -- kind "WindowedApp"
+      -- entrypoint "mainCRTStartup"
 
    filter {}

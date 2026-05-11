@@ -124,6 +124,14 @@ namespace Ember {
 		auto finalExportPath = exportPath / s_ActiveProject->GetConfig().ProjectName;
 		std::filesystem::create_directories(finalExportPath);
 
+		// Todo account for different architectures and systems
+		std::string configFolder;
+#ifdef EB_DEBUG
+		configFolder = "Debug-windows-x86_64";
+#else
+		configFolder = "Release-windows-x86_64";
+#endif
+
 		// Define our source paths (Assumes Editor working directory is the repo root)
 		// TODO: Account for the different build types (i.e. release vs debug) and platforms (windows vs linux)
 		std::filesystem::path runtimeExeSrc = "bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe";
