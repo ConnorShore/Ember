@@ -37,7 +37,7 @@ namespace Ember {
 
 		~Project() = default;
 
-		inline const ProjectConfig& GetConfig() const { return m_Config; }
+		inline ProjectConfig& GetConfig() { return m_Config; }
 
 		inline std::filesystem::path GetProjectDirectory() const { return m_ProjectDirectory; }
 		inline std::filesystem::path GetProjectFilePath() const { return std::filesystem::path(m_ProjectDirectory) / (m_Config.ProjectName + ".ebproj"); }

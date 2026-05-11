@@ -174,26 +174,58 @@ namespace Ember {
 			return glm::make_mat4(data);
 		}
 
-		// Extracts translation, rotation (Euler), and scale from a transform matrix.
-		// Uses GLM decompose which handles skew/perspective but we only use TRS.
+		// Extracts translation, rotation (Euler radians), and scale from a TRS matrix.
+		// Handles negative scaling correctly: when the upper 3x3 has a negative
+		// determinant (mirrored / negative scale), one axis is flipped so the
+		// remaining rotation is a proper rotation (det == +1) and the quaternion
+		// extraction does not produce NaNs.
 		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
 		{
-			glm::vec3 scale;
-			glm::quat rotation;
-			glm::vec3 translation;
-			glm::vec3 skew;
-			glm::vec4 perspective;
-
-			// TODO: May want to optimize, glm::decompress does a lot of work that we don't need
-			bool success = glm::decompose(transform, scale, rotation, translation, skew, perspective);
-			if (success)
+			// Reject matrices with a perspective row or zero w; we only support affine TRS.
+			constexpr float kEpsilon = 1e-6f;
+			if (std::abs(transform[0][3]) > kEpsilon ||
+				std::abs(transform[1][3]) > kEpsilon ||
+				std::abs(transform[2][3]) > kEpsilon ||
+				std::abs(transform[3][3] - 1.0f) > kEpsilon)
 			{
-				outTranslation = translation;
-				outScale = scale;
-				outRotation = glm::eulerAngles(rotation);
+				return false;
 			}
 
-			return success;
+			// Translation lives in column 3.
+			outTranslation = Vector3f(transform[3]);
+
+			// Upper-left 3x3 contains rotation * scale.
+			glm::vec3 col0(transform[0]);
+			glm::vec3 col1(transform[1]);
+			glm::vec3 col2(transform[2]);
+
+			glm::vec3 scale(glm::length(col0), glm::length(col1), glm::length(col2));
+
+			if (scale.x < kEpsilon || scale.y < kEpsilon || scale.z < kEpsilon)
+			{
+				// Degenerate basis — cannot recover a rotation reliably.
+				outScale = scale;
+				outRotation = Vector3f(0.0f);
+				return false;
+			}
+
+			// If the basis is left-handed (mirrored), flip one axis so the
+			// remaining 3x3 is a proper rotation matrix. We pick X by convention;
+			// the resulting (rotation, scale) pair still reconstructs the original
+			// matrix exactly.
+			float det = glm::determinant(glm::mat3(col0, col1, col2));
+			if (det < 0.0f)
+			{
+				scale.x = -scale.x;
+				col0 = -col0;
+			}
+
+			glm::mat3 rotMtx(col0 / scale.x, col1 / scale.y, col2 / scale.z);
+			glm::quat rotation = glm::quat_cast(rotMtx);
+
+			outScale = scale;
+			outRotation = glm::eulerAngles(rotation);
+			return true;
 		}
 
 		static inline Matrix4f ToMatrix4f(const Quaternion& quat)

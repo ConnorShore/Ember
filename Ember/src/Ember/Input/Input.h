@@ -49,7 +49,6 @@ namespace Ember {
 
 		static KeyModifierType s_ActiveModifiers;
 
-		// TODO: Vector2 for mouse position, scroll offset, etc.
 		static Vector2f s_MousePosition, s_ScrollOffset, s_PreviousMousePosition;
 	};
 }

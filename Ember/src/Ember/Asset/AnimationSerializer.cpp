@@ -26,7 +26,6 @@ namespace Ember {
 		uint32_t trackCount = static_cast<uint32_t>(tracks.size());
 		file.write((const char*)&trackCount, sizeof(uint32_t));
 
-		// TODO: Test event serialization when scene is saved
 		const auto& events = animation->GetEvents();
 		uint32_t eventCount = static_cast<uint32_t>(events.size());
 		file.write((const char*)&eventCount, sizeof(uint32_t));

@@ -82,9 +82,18 @@ namespace Ember {
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		// TODO: Hook up project name to actual project data
-		static char projectName[128] = "Ember Forge Project";
-		ImGui::InputText("Project Name", projectName, IM_ARRAYSIZE(projectName));
+		std::string projName = ProjectManager::GetActive()->GetConfig().ProjectName;
+		static char projectName[128] = "";
+
+		// Set projectName to projName's value
+		for (size_t i = 0; i < IM_ARRAYSIZE(projectName); i++)
+			projectName[i] = i < projName.size() ? projName[i] : '\0';
+
+		if (ImGui::InputText("Project Name", projectName, IM_ARRAYSIZE(projectName)))
+		{
+			// TODO: Handle project renaming (do we need to delete old project file and save a new one? Or just update the name in the config and save on next project save?)
+			ProjectManager::GetActive()->GetConfig().ProjectName = std::string(projectName);
+		}
 
 		// List order of scenes (like waypoints UI style) (so can call SceneManager.LoadNextScene() in lua)
 		ImGui::Spacing();

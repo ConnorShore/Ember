@@ -853,9 +853,6 @@ namespace Ember {
 
 			// Decompose the LOCAL transform back into our component variables
 			Vector3f translation, rotation, scale;
-			//ImGuizmo::DecomposeMatrixToComponents(&localTransform[0][0], &translation.x, &rotation.x, &scale.x);
-
-			// TODO: Fix my decompress transform as it breaks when there is negative scaling involved (it produces NaNs in the rotation output)
 			Math::DecomposeTransform(localTransform, translation, rotation, scale);
 
 			switch (m_GizmoType)

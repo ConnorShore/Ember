@@ -146,8 +146,8 @@ namespace Ember {
 
 					if (ImGui::MenuItem("Load from file..."))
 					{
-						// TODO: Update these default paths to project folders
-						std::string matFile = FileDialog::OpenFile("Ember-Forge/assets/models", "Physics Material (*.ebpmat)", "*.ebpmat;");
+						std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Physics Materials").string();
+						std::string matFile = FileDialog::OpenFile(defaultDir.c_str(), "Physics Material (*.ebpmat)", "*.ebpmat;");
 						if (!matFile.empty())
 						{
 							auto matAsset = assetManager.Load<PhysicsMaterial>(matFile);

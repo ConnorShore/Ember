@@ -69,13 +69,13 @@ namespace Ember {
 				if (changed)
 					component.NeedsRebuild = true;
 
-
 				ImGui::PushID("Mesh");
 				if (ImGui::BeginPopup("ChooseMeshPopup"))
 				{
 					if (ImGui::MenuItem("Load from file..."))
 					{
-						std::string meshFile = FileDialog::OpenFile("Ember-Forge/assets/models", "Ember Mesh (*.ebmesh)", "*.ebmesh;");
+						std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Models").string();
+						std::string meshFile = FileDialog::OpenFile(defaultDir.c_str(), "Ember Mesh (*.ebmesh)", "*.ebmesh;");
 						if (!meshFile.empty())
 						{
 							auto meshAsset = assetManager.Load<Mesh>(meshFile);

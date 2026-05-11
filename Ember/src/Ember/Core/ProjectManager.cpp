@@ -48,10 +48,6 @@ namespace Ember {
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Fonts");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Audio");
 
-
-		// TODO: Probably should copy default engine assets into this directory
-		//  - Then update AssetManagerPanel to the new project 's asset directory (In editor layer)
-
 		std::filesystem::create_directories(project->GetScenesDirectory());
 
 		// Create the default scene and register it in the asset manager so it gets serialized into assets.eba
@@ -124,7 +120,7 @@ namespace Ember {
 		auto finalExportPath = exportPath / s_ActiveProject->GetConfig().ProjectName;
 		std::filesystem::create_directories(finalExportPath);
 
-		// Todo account for different architectures and systems
+		// TODO: account for different architectures and systems
 		std::string configFolder;
 #ifdef EB_DEBUG
 		configFolder = "Debug-windows-x86_64";
@@ -133,8 +129,7 @@ namespace Ember {
 #endif
 
 		// Define our source paths (Assumes Editor working directory is the repo root)
-		// TODO: Account for the different build types (i.e. release vs debug) and platforms (windows vs linux)
-		std::filesystem::path runtimeExeSrc = "bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe";
+		std::filesystem::path runtimeExeSrc = "bin/" + configFolder + "/Ember-Runtime/Ember-Runtime.exe";
 		std::filesystem::path engineAssetSrc = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
 		std::filesystem::path projectAssetSrc = s_ActiveProject->GetAssetDirectory();
 		std::filesystem::path projectFileSrc = s_ActiveProject->GetProjectFilePath();

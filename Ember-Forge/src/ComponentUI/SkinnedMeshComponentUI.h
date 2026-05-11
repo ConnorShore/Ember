@@ -86,7 +86,8 @@ namespace Ember {
 
 				if (ImGui::MenuItem("Load from file..."))
 				{
-					std::string meshFile = FileDialog::OpenFile("Ember-Forge/assets/models", "3D Model (*.obj;*.fbx)", "*.obj;*.fbx");
+					std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Models").string();
+					std::string meshFile = FileDialog::OpenFile(defaultDir.c_str(), "3D Model (*.obj;*.fbx)", "*.obj;*.fbx");
 					if (!meshFile.empty())
 					{
 						auto meshAsset = assetManager.Load<Mesh>(meshFile);

@@ -144,17 +144,17 @@ namespace Ember {
 			"Middle", MouseButton::Middle
 		);
 
-		// TODO: Move functions to "Input" table
-		state.set_function("IsKeyPressed", &Input::IsKeyPressed);
-		state.set_function("IsKeyHeld", &Input::IsKeyHeld);
-
-		state.set_function("IsMouseButtonPressed", &Input::IsMouseButtonPressed);
-		state.set_function("GetMousePosition", &Input::GetMousePosition);
-		state.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
-		state.set_function("GetMouseDelta", &Input::GetMouseDelta);
-
-		state.set_function("SetCursorMode", &Input::SetCursorMode);
-		state.set_function("GetCursorMode", &Input::GetCursorMode);
+		auto inputTable = state.create_named_table("Input");
+		inputTable.set_function("IsKeyPressed", &Input::IsKeyPressed);
+		inputTable.set_function("IsKeyHeld", &Input::IsKeyHeld);
+		inputTable.set_function("IsMouseButtonPressed", &Input::IsMouseButtonPressed);
+		
+		inputTable.set_function("GetMousePosition", &Input::GetMousePosition);
+		inputTable.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
+		inputTable.set_function("GetMouseDelta", &Input::GetMouseDelta);
+		
+		inputTable.set_function("SetCursorMode", &Input::SetCursorMode);
+		inputTable.set_function("GetCursorMode", &Input::GetCursorMode);
 	}
 
 }

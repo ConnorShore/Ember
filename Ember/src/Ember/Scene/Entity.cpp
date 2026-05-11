@@ -5,9 +5,6 @@ namespace Ember {
 
 	std::vector<Entity> Entity::GetAllChildren()
 	{
-		// TODO: FIX THIS, may need to get actual entities from the scene registry
-		// instead of creating new ones with the same ID and scene handle
-
 		// Collect direct children first, then recursively gather all descendants
 		std::vector<Entity> ret;
 		auto& relationship = GetComponent<RelationshipComponent>();
