@@ -1,4 +1,4 @@
-project "Ember-Runtime"
+﻿project "Ember-Runtime"
    language "C++"
    cppdialect "C++23"
    kind "ConsoleApp"
@@ -9,6 +9,8 @@ project "Ember-Runtime"
 
 --    pchheader "efpch.h"
 --    pchsource "src/efpch.cpp"
+
+   multiprocessorcompile "On"
 
    files
    { 

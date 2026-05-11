@@ -13,6 +13,8 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
+#include <map>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <cstdint>
@@ -21,9 +23,15 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <optional>
+#include <variant>
+#include <chrono>
+#include <utility>
+#include <type_traits>
 #include <filesystem>
 
 #include "Ember/Core/Core.h"
+#include "Ember/Math/Math.h"
 
 #ifdef EB_PLATFORM_WINDOWS
 	#include <Windows.h>

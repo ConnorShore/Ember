@@ -1,4 +1,4 @@
-project "Ember-Forge"
+﻿project "Ember-Forge"
    kind "ConsoleApp"
    language "C++"
    cppdialect "C++23"
@@ -9,6 +9,8 @@ project "Ember-Forge"
 
    pchheader "efpch.h"
    pchsource "src/efpch.cpp"
+
+   multiprocessorcompile "On"
 
    files
    { 

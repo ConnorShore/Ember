@@ -1,4 +1,4 @@
-project "Ember"
+﻿project "Ember"
    kind "StaticLib"
    language "C++"
    cppdialect "C++23"
@@ -8,6 +8,8 @@ project "Ember"
 
    pchheader "ebpch.h"
    pchsource "src/ebpch.cpp"
+
+   multiprocessorcompile "On"
 
    includedirs 
    {
@@ -53,6 +55,9 @@ project "Ember"
       "GLFW_INCLUDE_NONE",
       "SOL_ALL_SAFETIES_ON=1"
    }
+
+   filter "files:vendor/stb/**.cpp or files:vendor/miniaudio/**.cpp"
+      enablepch "Off"
 
    filter "system:windows"
       systemversion "latest"
