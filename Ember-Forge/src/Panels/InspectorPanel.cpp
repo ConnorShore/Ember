@@ -131,7 +131,7 @@ namespace Ember {
 			// Entity Header
 			DrawEntityHeader(entity);
 
-			// Enable/Disable section (TODO: Figure out more elegant way to enable/disable an entity)
+			// Enable/Disable section
 			ImGui::Separator();
 			bool isActive = !entity.ContainsComponent<DisabledComponent>();
 			if (UI::PropertyGrid::Begin("EntityActive"))
@@ -152,25 +152,35 @@ namespace Ember {
 				UI::PropertyGrid::End();
 			}
 
-			// Entity Components
-			for (auto& [category, components] : m_ComponentUIs)
-			{
-				if (category == Category::None)
-					continue;	// We will render these at the end
+			ImGui::Separator();
 
-				for (auto& componentUI : components)
+			// --- SCROLLABLE REGION ---
+
+			// Create a child region that takes up the remaining width and height (ImVec2(0, 0))
+			// The false parameter means it won't draw a border around the child region
+			if (ImGui::BeginChild("ComponentRegion", ImVec2(0, 0), false, ImGuiWindowFlags_None))
+			{
+				// Entity Components
+				for (auto& [category, components] : m_ComponentUIs)
+				{
+					if (category == Category::None)
+						continue;	// We will render these at the end
+
+					for (auto& componentUI : components)
+					{
+						componentUI->Render(entity);
+					}
+				}
+
+				// Render components that don't fit into any category at the end
+				for (auto& componentUI : m_ComponentUIs[Category::None])
 				{
 					componentUI->Render(entity);
 				}
 			}
+			ImGui::EndChild(); // End the scrollable region
 
-			// Render components that don't fit into any category at the end
-			for (auto& componentUI : m_ComponentUIs[Category::None])
-			{
-				componentUI->Render(entity);
-			}
-
-			ImGui::End();
+			ImGui::End(); // End the main Inspector window
 		}
 	}
 

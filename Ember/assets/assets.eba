@@ -1,1 +1,13 @@
-Assets: []
+Assets:
+  - Type: Script
+    UUID: 8556765685601315589
+    Name: MouseLook
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/MouseLook.lua
+  - Type: Script
+    UUID: 7212311676814955695
+    Name: CharacterMovement
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/CharacterMovement.lua
+  - Type: Scene
+    UUID: 16975064710387768684
+    Name: Scene1
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Scenes/Scene1.ebs

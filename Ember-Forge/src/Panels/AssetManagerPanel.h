@@ -34,6 +34,9 @@ namespace Ember {
 		void RenderFontOptions(const std::string& filePath);
 		void RenderShaderOptions(const std::string& filePath);
 
+		void RenderRenameScenePopup();
+		void RenameScene();
+
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
 	private:
@@ -43,5 +46,10 @@ namespace Ember {
 		int m_IconSize = 100;
 
 		std::array<std::string, 2> m_HiddenFiles = { "Assets.eba", "*.ebproj"};
+
+		// Rename Scene dialog state
+		bool m_ShowRenameScenePopup = false;
+		std::string m_RenameSceneOldFilePath;
+		std::string m_RenameSceneNewName;
 	};
 }

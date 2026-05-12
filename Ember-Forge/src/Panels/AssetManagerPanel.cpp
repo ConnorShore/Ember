@@ -7,6 +7,9 @@
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Asset/Font.h>
 #include <Ember/Core/ProjectManager.h>
+#include <Ember/Core/ProjectSerializer.h>
+#include <Ember/Scene/Scene.h>
+#include <Ember/Scene/SceneManager.h>
 
 #include <Ember-Tools/GLTFImporter.h>
 
@@ -50,6 +53,8 @@ namespace Ember {
 		RenderPanelControls();
 		RenderDirectoryContents();
 		RenderAssetPanelContextMenu();
+
+		RenderRenameScenePopup();
 
 		ImGui::End();
 	}
@@ -484,8 +489,132 @@ namespace Ember {
 	{
 		if (ImGui::MenuItem("Rename"))
 		{
-
+			m_RenameSceneOldFilePath = filePath;
+			m_RenameSceneNewName = std::filesystem::path(filePath).stem().string();
+			m_ShowRenameScenePopup = true;
 		}
+	}
+
+	void AssetManagerPanel::RenderRenameScenePopup()
+	{
+		if (m_ShowRenameScenePopup)
+		{
+			ImGui::OpenPopup("Rename Scene");
+			m_ShowRenameScenePopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(325, 150), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("Rename Scene", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			if (UI::PropertyGrid::Begin("RenameSceneTable"))
+			{
+				UI::PropertyGrid::InputText("Scene Name", m_RenameSceneNewName);
+
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			std::string currentStem = std::filesystem::path(m_RenameSceneOldFilePath).stem().string();
+			bool isValid = !m_RenameSceneNewName.empty() && m_RenameSceneNewName != currentStem;
+			if (!isValid)
+				ImGui::BeginDisabled();
+
+			if (ImGui::Button("Rename", ImVec2(120, 0)))
+			{
+				RenameScene();
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (!isValid)
+				ImGui::EndDisabled();
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_RenameSceneNewName.clear();
+				m_RenameSceneOldFilePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenameScene()
+	{
+		std::filesystem::path oldPath = m_RenameSceneOldFilePath;
+		std::filesystem::path newPath = oldPath.parent_path() / (m_RenameSceneNewName + ".ebs");
+
+		auto sendNotification = [&](const std::string& msg, UINotificationEvent::Severity sev)
+		{
+			UINotificationEvent evt(msg, sev);
+			m_Context->EventCallback(evt);
+		};
+
+		if (!std::filesystem::exists(oldPath))
+		{
+			sendNotification("Scene file does not exist!", UINotificationEvent::Severity::Error);
+			return;
+		}
+
+		if (std::filesystem::exists(newPath))
+		{
+			sendNotification("A scene with that name already exists!", UINotificationEvent::Severity::Error);
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Look up the asset (if registered) before we touch the disk so we still have the old path key.
+		SharedPtr<Scene> sceneAsset;
+		if (assetManager.ContainsAssetWithPath(oldPath.string()))
+			sceneAsset = assetManager.GetAssetByPath<Scene>(oldPath.string());
+
+		std::error_code ec;
+		std::filesystem::rename(oldPath, newPath, ec);
+		if (ec)
+		{
+			sendNotification(std::format("Failed to rename scene file: {}", ec.message()), UINotificationEvent::Severity::Error);
+			return;
+		}
+
+		// Update the asset registry / asset state if the scene was tracked.
+		if (sceneAsset)
+		{
+			if (!assetManager.RenameAsset(sceneAsset->GetUUID(), m_RenameSceneNewName, newPath.string()))
+			{
+				sendNotification("Failed to update scene asset entry!", UINotificationEvent::Severity::Error);
+				// Best-effort: revert the file move to keep state consistent.
+				std::error_code revertEc;
+				std::filesystem::rename(newPath, oldPath, revertEc);
+				return;
+			}
+
+			// If this scene is the project's start scene, refresh the project config and persist it.
+			auto project = ProjectManager::GetActive();
+			if (project)
+			{
+				auto startPath = std::filesystem::absolute(project->GetStartScenePath()).string();
+				auto oldAbs = std::filesystem::absolute(oldPath).string();
+				auto newAbs = std::filesystem::absolute(newPath).string();
+				if (startPath == newAbs || startPath == oldAbs)
+				{
+					project->SetStartScene(sceneAsset->GetUUID());
+					ProjectSerializer serializer(project);
+					serializer.Serialize(project->GetProjectFilePath().string());
+				}
+			}
+		}
+
+		sendNotification(std::format("Scene renamed to '{}'", m_RenameSceneNewName), UINotificationEvent::Severity::Info);
+
+		m_RenameSceneNewName.clear();
+		m_RenameSceneOldFilePath.clear();
 	}
 
 	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)

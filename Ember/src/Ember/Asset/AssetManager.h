@@ -284,6 +284,46 @@ namespace Ember {
 			}
 		}
 
+		// Renames an asset both in-memory (Asset name + file path) and in the lookup tables.
+		// `newAbsolutePath` should be the destination path *after* the file has been moved on disk.
+		// Returns false if the asset does not exist or the new name/path collide with another asset.
+		bool RenameAsset(UUID uuid, const std::string& newName, const std::string& newAbsolutePath)
+		{
+			if (!m_Assets.contains(uuid))
+			{
+				EB_CORE_ERROR("Attempted to rename asset that doesn't exist!");
+				return false;
+			}
+
+			auto absoluteNew = std::filesystem::absolute(newAbsolutePath).string();
+			auto& asset = m_Assets[uuid];
+
+			// Reject if a different asset already owns the new name or path
+			auto nameIt = m_AssetNames.find(newName);
+			if (nameIt != m_AssetNames.end() && nameIt->second != uuid)
+			{
+				EB_CORE_ERROR("Cannot rename asset: another asset already uses the name '{}'.", newName);
+				return false;
+			}
+			auto pathIt = m_AssetPaths.find(absoluteNew);
+			if (pathIt != m_AssetPaths.end() && pathIt->second != uuid)
+			{
+				EB_CORE_ERROR("Cannot rename asset: another asset already uses the path '{}'.", absoluteNew);
+				return false;
+			}
+
+			// Erase old entries (use whatever key the asset currently reports)
+			m_AssetNames.erase(asset->GetName());
+			m_AssetPaths.erase(asset->GetFilePath());
+
+			// Update the asset itself, then reinsert under the new keys
+			asset->SetName(newName);
+			asset->SetFilePath(absoluteNew);
+			m_AssetNames[newName] = uuid;
+			m_AssetPaths[absoluteNew] = uuid;
+			return true;
+		}
+
 		inline void SetEngineAssetDirectory(const std::filesystem::path& path) { m_EngineAssetDirectory = path; }
 		inline const std::filesystem::path& GetEngineAssetDirectory() const { return m_EngineAssetDirectory; }
 
