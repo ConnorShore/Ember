@@ -293,6 +293,34 @@ namespace Ember {
 
 		if (ImGui::BeginPopupContextItem())
 		{
+			// Render asset-specific options based on the file extension
+			auto assetType = DragDropUtils::ExtensionToDragDropPayloadType(filePath.extension().string());
+			switch (assetType)
+			{
+			case DragDropPayloadType::AssetModel:
+				RenderModelOptions(filePath.string());
+				break;
+			case DragDropPayloadType::AssetTexture:
+				RenderTextureOptions(filePath.string());
+				break;
+			case DragDropPayloadType::AssetPrefab:
+				RenderPrefabOptions(filePath.string());
+				break;
+			case DragDropPayloadType::Scene:
+				RenderSceneOptions(filePath.string());
+				break;
+			case DragDropPayloadType::AssetAudioClip:
+				RenderAudioClipOptions(filePath.string());
+				break;
+			case DragDropPayloadType::AssetFont:
+				RenderFontOptions(filePath.string());
+				break;
+			case DragDropPayloadType::AssetShader:
+				RenderShaderOptions(filePath.string());
+				break;
+			}
+
+			// Common options for all asset types
 			if (ImGui::MenuItem("Delete"))
 			{
 				Application::Instance().GetAssetManager().RemoveAsset(filePath.string());
@@ -435,6 +463,44 @@ namespace Ember {
 
 			ImGui::EndPopup();
 		}
+	}
+
+	void AssetManagerPanel::RenderTextureOptions(const std::string& filePath)
+	{
+
+	}
+
+	void AssetManagerPanel::RenderModelOptions(const std::string& filePath)
+	{
+
+	}
+
+	void AssetManagerPanel::RenderPrefabOptions(const std::string& filePath)
+	{
+
+	}
+
+	void AssetManagerPanel::RenderSceneOptions(const std::string& filePath)
+	{
+		if (ImGui::MenuItem("Rename"))
+		{
+
+		}
+	}
+
+	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)
+	{
+
+	}
+
+	void AssetManagerPanel::RenderFontOptions(const std::string& filePath)
+	{
+
+	}
+
+	void AssetManagerPanel::RenderShaderOptions(const std::string& filePath)
+	{
+
 	}
 
 	std::string AssetManagerPanel::SelectAndLoadFile(const std::string& name, const std::string& type)

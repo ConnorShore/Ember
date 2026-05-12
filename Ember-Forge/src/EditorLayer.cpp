@@ -99,6 +99,7 @@ namespace Ember {
 
 		// Load play / pause textures
 		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Play.png")->GetID();
+		m_ToolbarProps.PauseButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Pause.png")->GetID();
 		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
 
 		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
@@ -171,6 +172,10 @@ namespace Ember {
 					break;
 				}
 				case SceneState::Pause:
+				{
+					activeScene->OnUpdateRuntime(0.0f);
+					break;
+				}
 				default:
 					EB_CORE_ASSERT(false, "Unhandled scene state!");
 			}
@@ -181,9 +186,9 @@ namespace Ember {
 		{
 			if (Input::IsKeyPressed(KeyCode::Escape))
 			{
-				// TODO: Pause the runtime as well
 				Input::SetCursorMode(CursorMode::Normal);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
+				m_Context.CurrentSceneState = SceneState::Pause;
 			}
 
 			if (m_ViewportHovered && Input::IsMouseButtonPressed(MouseButton::Left))
@@ -239,12 +244,6 @@ namespace Ember {
 	void EditorLayer::LoadDefaultAssets()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
-		// Point to the source code directories
-		//assetManager.SetEngineAssetDirectory("Ember/assets");
-
-		//// Before a project is loaded, the editor might just point to its own assets
-		//assetManager.SetProjectAssetDirectory("Ember-Forge/assets");
-		//assetManager.LoadDefaults();
 
 		// Textures
 		auto pointLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::PointLightTexUUID, EditorConstants::Assets::PointLightTex, (assetManager.GetProjectAssetDirectory() / "icons/PointLight.png").string());
@@ -558,7 +557,7 @@ namespace Ember {
 
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(600, 200), ImGuiCond_Appearing);
+		ImGui::SetNextWindowSize(ImVec2(325, 150), ImGuiCond_Appearing);
 
 		if (ImGui::BeginPopupModal("New Scene", NULL, ImGuiWindowFlags_NoSavedSettings))
 		{
@@ -569,7 +568,6 @@ namespace Ember {
 				UI::PropertyGrid::End();
 			}
 
-			ImGui::Separator();
 			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
 
 			// Actions
@@ -587,8 +585,6 @@ namespace Ember {
 					evt = UINotificationEvent("Failed to create scene!", UINotificationEvent::Severity::Error);
 
 				m_Context.EventCallback(evt);
-				// Scene swap is deferred via CreateScene -> LoadScene; m_EditorScene is updated
-				// by the OnSceneChangedCallback when ExecuteSceneSwap fires next frame.
 
 				ImGui::CloseCurrentPopup();
 			}
@@ -905,23 +901,46 @@ namespace Ember {
 		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
 		ImGui::SetNextWindowClass(&window_class);
 
-
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		// Runtime play button (launches game with the runtime)
-		if (ImGui::Button("Play Standalone"))
+		float windowWidth = ImGui::GetWindowContentRegionMax().x;
+		float iconSize = 24.0f;
+		float spacing = ImGui::GetStyle().ItemSpacing.x;
+		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
+
+		// Calculate the width of all 3 buttons + the 2 spaces between them
+		float totalGroupWidth = (buttonSizeWithPadding * 3.0f) + (spacing * 2.0f);
+		float cursorX = (windowWidth * 0.5f) - (totalGroupWidth * 0.5f);
+
+		// Safety check so it doesn't push off-screen if the window is tiny
+		if (cursorX > ImGui::GetCursorPosX())
 		{
-			// 1. Save everything so the runtime sees the latest changes
+			ImGui::SetCursorPosX(cursorX);
+		}
+
+		// Apply transparent/hover styling to the entire group
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
+
+		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit);
+
+		// --- PLAY STANDALONE (Orange Tint) ---
+		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
+
+		// We pass default UVs (0,0 to 1,1) and a transparent background (0,0,0,0) to reach the tint parameter
+		if (ImGui::ImageButton("PlayStandaloneBtn", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), orangeTint))
+		{
+			// Save everything so the runtime sees the latest changes
 			SaveProject(false);
 			ProjectManager::SaveActiveProject();
 
 			// 2. Get the paths
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
 
-			// Assuming your working directory is the repo root, point to the compiled exe
 			auto runtimeExePath = std::filesystem::path("bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe");
 			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
 
@@ -931,31 +950,21 @@ namespace Ember {
 			auto projectAssetDir = Application::Instance().GetAssetManager().GetProjectAssetDirectory().string();
 			auto projectAssetAbsolute = std::filesystem::absolute(projectAssetDir).string();
 
-			// 3. Construct the OS command:  EmberRuntime.exe "C:/Path/To/Project.ebproj"
+			// 3. Construct the OS command
 			std::string command = std::format("{} \"{}\" \"{}\" \"{}\"", absoluteRuntimePath, activeProjectPath, engineAssetAbsolute, projectAssetAbsolute);
 
-			// 4. Launch the process! (Using async so it doesn't freeze the editor)
-			// std::system will block, so spawning a detached thread is a quick and dirty way to do this
+			// 4. Launch the process! 
 			std::thread([command]() {
 				std::system(command.c_str());
 				}).detach();
 		}
 
+		ImGui::EndDisabled();
+
 		ImGui::SameLine();
 
-		float windowWidth = ImGui::GetWindowContentRegionMax().x;
-		float iconSize = 24.0f;
-
-		// Center the button and make it transparent
-		float buttonSizeWithPadding = iconSize + (ImGui::GetStyle().FramePadding.x * 2.0f);
-		ImGui::SetCursorPosX((windowWidth * 0.5f) - (buttonSizeWithPadding * 0.5f));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-
-		// (Optional) If you want to customize the hover color so it looks sleeker:
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
-
-		if (m_Context.CurrentSceneState == SceneState::Play)
+		// --- PLAY / STOP EDITOR SCENE (No Tint) ---
+		if (m_Context.CurrentSceneState == SceneState::Play || m_Context.CurrentSceneState == SceneState::Pause)
 		{
 			if (ImGui::ImageButton("StopButton", m_ToolbarProps.StopButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
@@ -971,10 +980,33 @@ namespace Ember {
 			}
 		}
 
-		// Pop the transparent button color!
+		ImGui::SameLine();
+
+		// --- 3. PAUSE / RESUME (Yellow Tint) ---
+		ImGui::BeginDisabled(m_Context.CurrentSceneState == SceneState::Edit);
+
+		bool isPaused = (m_Context.CurrentSceneState == SceneState::Pause);
+
+		// Flip the icon dynamically based on state
+		ImTextureID pauseIcon = isPaused ? m_ToolbarProps.PlayButtonTextureID : m_ToolbarProps.PauseButtonTextureID;
+		if (ImGui::ImageButton("PauseButton", pauseIcon, ImVec2(iconSize, iconSize)))
+		{
+			if (isPaused)
+			{
+				m_Context.CurrentSceneState = SceneState::Play;
+			}
+			else
+			{
+				m_Context.CurrentSceneState = SceneState::Pause;
+			}
+		}
+
+		ImGui::EndDisabled();
+
+		// Pop the transparent button colors
 		ImGui::PopStyleColor(3);
 
-		ImGui::End(); 
+		ImGui::End();
 		ImGui::PopStyleVar(2);
 	}
 

@@ -26,6 +26,14 @@ namespace Ember {
 		void RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry);
 		void RenderAssetPanelContextMenu();
 
+		void RenderTextureOptions(const std::string& filePath);
+		void RenderModelOptions(const std::string& filePath);
+		void RenderPrefabOptions(const std::string& filePath);
+		void RenderSceneOptions(const std::string& filePath);
+		void RenderAudioClipOptions(const std::string& filePath);
+		void RenderFontOptions(const std::string& filePath);
+		void RenderShaderOptions(const std::string& filePath);
+
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
 	private:
