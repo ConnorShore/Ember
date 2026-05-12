@@ -23,13 +23,18 @@ namespace Ember {
 		Quaternion Rotation;
 	};
 
-	// TODO: Scale keyframes
+	struct ScaleKeyframe
+	{
+		TimeStep TimeStamp;
+		Vector3f Scale;
+	};
 
 	struct BoneAnimationTrack
 	{
 		uint32_t BoneID;
 		std::vector<PositionKeyframe> PositionKeyframes;
 		std::vector<RotationKeyframe> RotationKeyframes;
+		std::vector<ScaleKeyframe> ScaleKeyframes;
 	};
 
 	class Animation : public Asset

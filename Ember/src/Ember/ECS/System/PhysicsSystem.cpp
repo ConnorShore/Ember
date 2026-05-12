@@ -363,8 +363,7 @@ namespace Ember {
 
 	void PhysicsSystem::OnSceneDetach(Scene* scene)
 	{
-		//m_PhysicsCommon->destroyPhysicsWorld(m_PhysicsWorld);
-		//m_PhysicsWorld = nullptr;
+
 	}
 
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)

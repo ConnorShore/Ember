@@ -323,7 +323,7 @@ namespace Ember {
 				if (ImGui::MenuItem("Model"))
 				{
 					std::string modelFileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetModel);
-					std::string sourceFile = FileDialog::OpenFile("", modelFileTypes.c_str());
+					std::string sourceFile = FileDialog::OpenFile("", std::format("Model Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 
 					// Need to convert to GLTFImporter and model cooking for static vs skeletal meshes
 					if (!sourceFile.empty())

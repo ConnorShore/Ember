@@ -6,6 +6,10 @@ namespace Ember {
 
 	// Magic number for validation: "ANIM"
 	const uint32_t ANIM_FILE_MAGIC = 0x414E494D;
+	// File format versions:
+	//   1 = Position + Rotation tracks only (legacy)
+	//   2 = Adds Scale tracks per bone
+	const uint32_t ANIM_FILE_VERSION = 2;
 
 	bool AnimationSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
 	{
@@ -14,7 +18,7 @@ namespace Ember {
 
 		// Write Header
 		uint32_t magic = ANIM_FILE_MAGIC;
-		uint32_t version = 1;
+		uint32_t version = ANIM_FILE_VERSION;
 		file.write((const char*)&magic, sizeof(uint32_t));
 		file.write((const char*)&version, sizeof(uint32_t));
 
@@ -47,7 +51,11 @@ namespace Ember {
 			if (rotCount > 0)
 				file.write((const char*)track.RotationKeyframes.data(), rotCount * sizeof(RotationKeyframe));
 
-			// TODO: Scale keys
+			// Scale Keys (added in version 2)
+			uint32_t scaleCount = static_cast<uint32_t>(track.ScaleKeyframes.size());
+			file.write((const char*)&scaleCount, sizeof(uint32_t));
+			if (scaleCount > 0)
+				file.write((const char*)track.ScaleKeyframes.data(), scaleCount * sizeof(ScaleKeyframe));
 		}
 
 		// Write out animation events
@@ -83,6 +91,12 @@ namespace Ember {
 			return nullptr;
 		}
 
+		if (version > ANIM_FILE_VERSION)
+		{
+			EB_CORE_ERROR("Animation file version {0} is newer than supported version {1}: {2}", version, ANIM_FILE_VERSION, filepath.string());
+			return nullptr;
+		}
+
 		// 2. Read Metadata
 		float duration;
 		file.read((char*)&duration, sizeof(float));
@@ -113,7 +127,15 @@ namespace Ember {
 			if (rotCount > 0)
 				file.read((char*)tracks[i].RotationKeyframes.data(), rotCount * sizeof(RotationKeyframe));
 
-			// TODO: Scale
+			// Scale (added in version 2; older files leave the vector empty)
+			if (version >= 2)
+			{
+				uint32_t scaleCount;
+				file.read((char*)&scaleCount, sizeof(uint32_t));
+				tracks[i].ScaleKeyframes.resize(scaleCount);
+				if (scaleCount > 0)
+					file.read((char*)tracks[i].ScaleKeyframes.data(), scaleCount * sizeof(ScaleKeyframe));
+			}
 		}
 
 		// Read animation events

@@ -59,6 +59,21 @@ namespace Ember {
 		return Math::Normalize(rot);
 	}
 
+	static Vector3f EvaluateScale(const BoneAnimationTrack& track, float time)
+	{
+		if (track.ScaleKeyframes.size() == 1)
+			return track.ScaleKeyframes[0].Scale;
+
+		size_t p0Index = GetKeyframeIndex(track.ScaleKeyframes, time);
+		size_t p1Index = (p0Index + 1) % track.ScaleKeyframes.size();
+
+		float factor = 0.0f;
+		if (p0Index != p1Index)
+			factor = GetScaleFactor(track.ScaleKeyframes[p0Index].TimeStamp, track.ScaleKeyframes[p1Index].TimeStamp, time);
+
+		return Math::Mix(track.ScaleKeyframes[p0Index].Scale, track.ScaleKeyframes[p1Index].Scale, factor);
+	}
+
 	// Helper to find a track for a specific bone ID
 	static const BoneAnimationTrack* GetTrack(const SharedPtr<Animation>& anim, uint32_t boneID)
 	{
@@ -181,6 +196,7 @@ namespace Ember {
 				// Default to bind pose
 				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
 				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+				Vector3f currentScale = Vector3f(1.0f);
 
 				// Evaluate Current Animation
 				if (animation) {
@@ -189,6 +205,8 @@ namespace Ember {
 							currentPos = EvaluatePosition(*track, animator.CurrentTime);
 						if (track->RotationKeyframes.size() > 0)
 							currentRot = EvaluateRotation(*track, animator.CurrentTime);
+						if (track->ScaleKeyframes.size() > 0)
+							currentScale = EvaluateScale(*track, animator.CurrentTime);
 					}
 				}
 
@@ -197,21 +215,25 @@ namespace Ember {
 				{
 					Vector3f prevPos = bones[i].LocalBindPoseTransform.Translation;
 					Quaternion prevRot = bones[i].LocalBindPoseTransform.Rotation;
+					Vector3f prevScale = Vector3f(1.0f);
 
 					if (const auto* prevTrack = GetTrack(prevAnimation, i)) {
 						if (prevTrack->PositionKeyframes.size() > 0)
 							prevPos = EvaluatePosition(*prevTrack, animator.PreviousTime);
 						if (prevTrack->RotationKeyframes.size() > 0)
 							prevRot = EvaluateRotation(*prevTrack, animator.PreviousTime);
+						if (prevTrack->ScaleKeyframes.size() > 0)
+							prevScale = EvaluateScale(*prevTrack, animator.PreviousTime);
 					}
 
 					// If blendWeight is 0.2, it takes 80% of prev and 20% of current.
 					currentPos = Math::Mix(prevPos, currentPos, blendWeight);
 					currentRot = glm::normalize(Math::Slerp(prevRot, currentRot, blendWeight));
+					currentScale = Math::Mix(prevScale, currentScale, blendWeight);
 				}
 
 				// Combine into the new Local Matrix
-				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot) * Math::Scale(currentScale);
 			}
 
 

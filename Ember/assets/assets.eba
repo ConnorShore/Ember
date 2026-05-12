@@ -1,1 +1,37 @@
-Assets: []
+Assets:
+  - Type: Texture
+    UUID: 8165622671681477878
+    Name: Fox_Tex_0.png
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_Tex_0.png
+  - Type: Material
+    UUID: 1454727292829930213
+    Name: Fox_fox_material
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_fox_material.ebmat
+  - Type: Mesh
+    UUID: 2308135091747913941
+    Name: Fox_fox1_Prim0
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_fox1_Prim0.ebmesh
+  - Type: Skeleton
+    UUID: 1091478174397089970
+    Name: Fox
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox.ebskeleton
+  - Type: Animation
+    UUID: 620909236809583312
+    Name: Fox_Run
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_Run.ebanim
+  - Type: Animation
+    UUID: 17009429579778858330
+    Name: Fox_Walk
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_Walk.ebanim
+  - Type: Animation
+    UUID: 16318542210366418536
+    Name: Fox_Survey
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox_Survey.ebanim
+  - Type: Model
+    UUID: 3447188637162832196
+    Name: Fox
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Assets/Models/Fox.ebmodel
+  - Type: Scene
+    UUID: 4532396287322550475
+    Name: Default
+    FilePath: ../../../../../Users/cjsho/Desktop/AnimationTest/GameData/Scenes/Default.ebs

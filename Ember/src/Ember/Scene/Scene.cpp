@@ -11,7 +11,7 @@
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
-#include "Ember/ECS/System/CharacterControllerSystem.h"
+#include "Ember/ECS/System/CharacterControllerSystem.h" 
 #include "Ember/ECS/System/LifecycleSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
@@ -196,19 +196,16 @@ namespace Ember {
 
 	void Scene::OnAttach()
 	{
-		// TODO: Investigate flow of onAttach vs OnRuntimestart and see where these systems should be
-		//  If they should be here do we need to call them on OnDetach?
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
-		systemManager.GetSystem<LifecycleSystem>()->OnSceneAttach(this);
 
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
 
 	void Scene::OnDetach()
 	{
-		//if (m_IsRuntime)
-		//	OnRuntimeStop();
+		auto& systemManager = Application::Instance().GetSystemManager();
+		systemManager.GetSystem<PhysicsSystem>()->OnSceneDetach(this);
 
 		EB_CORE_INFO("Scene '{}' detached!", m_Name);
 	}

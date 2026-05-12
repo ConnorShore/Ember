@@ -179,6 +179,8 @@ namespace Ember {
 						track.PositionKeyframes.push_back({ times[k], Vector3f(vals[k * 3], vals[k * 3 + 1], vals[k * 3 + 2]) });
 					else if (channel.target_path == "rotation")
 						track.RotationKeyframes.push_back({ times[k], Quaternion(vals[k * 4 + 3], vals[k * 4], vals[k * 4 + 1], vals[k * 4 + 2]) });
+					else if (channel.target_path == "scale")
+						track.ScaleKeyframes.push_back({ times[k], Vector3f(vals[k * 3], vals[k * 3 + 1], vals[k * 3 + 2]) });
 				}
 			}
 
