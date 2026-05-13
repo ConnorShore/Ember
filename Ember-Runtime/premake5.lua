@@ -55,6 +55,7 @@ filter "configurations:Debug"
    filter "configurations:Dist"
       defines { "EB_DIST" }
       runtime "Release"
+      staticruntime "On"
       optimize "On"
       symbols "Off"
       -- kind "WindowedApp"

@@ -58,6 +58,7 @@
    filter "configurations:Dist"
       defines { "EB_DIST" }
       runtime "Release"
+      staticruntime "On"
       optimize "On"
       symbols "Off"
 
