@@ -78,21 +78,25 @@ namespace Ember {
 		m_Camera.SetYaw(Math::Radians(45.0f));
 		m_Camera.SetDistance(6.0f);
 
-		// Output Framebuffer
-		FramebufferSpecification specs;
-		specs.Width = 800;
-		specs.Height = 600;
-		specs.AttachmentSpecs = {
-			FramebufferTextureFormat::RGBA8,
-			FramebufferTextureFormat::Depth24Stencil8
-		};
-		m_OutputFramebuffer = Framebuffer::Create(specs);
+		// Output Framebuffer (and preview FBO mirrors its size so the scene's internal
+		// render pass FBOs don't have to be reallocated when rendering the camera preview)
+		{
+			FramebufferSpecification specs;
+			specs.Width = 800;
+			specs.Height = 600;
+			specs.AttachmentSpecs = {
+				FramebufferTextureFormat::RGBA8,
+				FramebufferTextureFormat::Depth24Stencil8
+			};
+			m_OutputFramebuffer = Framebuffer::Create(specs);
+			m_CameraPreviewFramebuffer = Framebuffer::Create(specs);
 
-		// Notify scene of the initial viewport size so render pass FBOs are sized correctly from the start
-		m_ViewportSize = { (float)specs.Width, (float)specs.Height };
-		if (auto activeScene = m_Context.ActiveScene())
-			activeScene->OnViewportResize(specs.Width, specs.Height);
-		m_Camera.SetViewportSize(specs.Width, specs.Height);
+			// Notify scene of the initial viewport size so render pass FBOs are sized correctly from the start
+			m_ViewportSize = { (float)specs.Width, (float)specs.Height };
+			if (auto activeScene = m_Context.ActiveScene())
+				activeScene->OnViewportResize(specs.Width, specs.Height);
+			m_Camera.SetViewportSize(specs.Width, specs.Height);
+		}
 
 		for (auto& panel : m_Panels)
 			panel->OnAttach();
@@ -152,18 +156,19 @@ namespace Ember {
 		for (auto& panel : m_Panels)
 			panel->OnUpdate(delta);
 
-		m_OutputFramebuffer->Bind();
-
-		RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
-
 		if (auto activeScene = m_Context.ActiveScene())
 		{
+			m_OutputFramebuffer->Bind();
+
+			RenderAction::SetViewport(0, 0, m_OutputFramebuffer->GetSpecification().Width, m_OutputFramebuffer->GetSpecification().Height);
+
+			// Scene state render
 			switch (m_Context.CurrentSceneState)
 			{
 				case SceneState::Edit:
 				{
 					m_Camera.OnUpdate(delta);
-					activeScene->OnUpdateEdit(delta, m_Camera);
+					activeScene->OnUpdateEdit(delta, m_Camera, Math::Inverse(m_Camera.GetViewMatrix()));
 					break;
 				}
 				case SceneState::Play:
@@ -178,6 +183,27 @@ namespace Ember {
 				}
 				default:
 					EB_CORE_ASSERT(false, "Unhandled scene state!");
+			}
+
+			m_OutputFramebuffer->Unbind();
+
+			// Camera preview render pass (if applicable)
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
+			{
+				auto& cameraComp = m_Context.SelectedEntity.GetComponent<CameraComponent>();
+				auto& transform = m_Context.SelectedEntity.GetComponent<TransformComponent>();
+
+				// Render the preview at the main viewport's resolution so the scene's internal
+				// render pass FBOs (G-buffer, lighting, post-process, etc.) don't have to be
+				// reallocated each frame. ImGui scales the resulting texture down for display.
+				uint32_t mainW = m_OutputFramebuffer->GetSpecification().Width;
+				uint32_t mainH = m_OutputFramebuffer->GetSpecification().Height;
+				cameraComp.Camera.SetViewportSize(mainW, mainH);
+
+				m_CameraPreviewFramebuffer->Bind();
+				RenderAction::SetViewport(0, 0, mainW, mainH);
+				activeScene->OnUpdateEdit(delta, cameraComp.Camera, transform.WorldTransform);
+				m_CameraPreviewFramebuffer->Unbind();
 			}
 		}
 
@@ -197,8 +223,6 @@ namespace Ember {
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
 			}
 		}
-
-		m_OutputFramebuffer->Unbind();
 
 		RenderAction::SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(RendererAPI::RenderBit::Color);
@@ -425,6 +449,8 @@ namespace Ember {
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			// Keep the preview FBO sized to the main viewport so we can reuse the scene's render pass FBOs as-is
+			m_CameraPreviewFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			if (auto activeScene = m_Context.ActiveScene())
 				activeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
@@ -467,6 +493,51 @@ namespace Ember {
 			}
 
 			ImGui::EndDragDropTarget();
+		}
+
+		// Render camera preview if selected entity has a camera component
+		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
+		{
+			ImVec2 viewportMinRegion = ImGui::GetWindowContentRegionMin();
+			ImVec2 viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+			ImVec2 viewportOffset = ImGui::GetWindowPos();
+
+			float padding = 15.0f;
+			float previewWidth = 320.0f;
+			float previewHeight = 180.0f; // 16:9 ratio
+
+			// X is now the MinRegion + padding, instead of MaxRegion - width
+			ImVec2 previewPos = ImVec2(
+				viewportOffset.x + viewportMinRegion.x + padding,
+				viewportOffset.y + viewportMaxRegion.y - previewHeight - padding
+			);
+
+			// Calculate the max point (bottom right) of the preview box
+			ImVec2 previewMax = ImVec2(previewPos.x + previewWidth, previewPos.y + previewHeight);
+
+			m_CameraPreviewViewportSize = Vector2f(previewWidth, previewHeight);
+
+			// Get the window draw list so we can paint custom shapes!
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+			// The Drop Shadow
+			// We draw a semi-transparent black rectangle offset by a few pixels
+			float shadowOffset = 5.0f;
+			ImU32 shadowColor = IM_COL32(0, 0, 0, 85); // RGBA (150 alpha makes it semi-transparent)
+			drawList->AddRectFilled(
+				ImVec2(previewPos.x - shadowOffset, previewPos.y + shadowOffset),
+				ImVec2(previewMax.x - shadowOffset, previewMax.y + shadowOffset),
+				shadowColor
+			);
+
+			// Just set the cursor and draw the image. No BeginChild needed!
+			ImGui::SetCursorScreenPos(previewPos);
+			uint32_t textureID = m_CameraPreviewFramebuffer->GetColorAttachmentID(0);
+			ImGui::Image((ImTextureID)(intptr_t)textureID, ImVec2(previewWidth, previewHeight), ImVec2(0, 1), ImVec2(1, 0));
+
+			// Draw a crisp 1-pixel border perfectly outlining the image
+			ImU32 borderColor = IM_COL32(0, 0, 0, 255); // Light grey
+			drawList->AddRect(previewPos, previewMax, borderColor, 0.0f, 0, 1.0f);
 		}
 
 		// Draw Transform Gizmos for selected entity

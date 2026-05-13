@@ -40,7 +40,7 @@ namespace Ember {
 		void OnRuntimeStop();
 
 		void OnUpdateRuntime(TimeStep delta);
-		void OnUpdateEdit(TimeStep delta, EditorCamera& camera);
+		void OnUpdateEdit(TimeStep delta, const Camera& camera, const Matrix4f& transformMatrix);
 		void OnEvent(Event& event);
 
 		void SetActiveCamera(Entity cameraEntity);

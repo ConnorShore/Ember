@@ -126,9 +126,11 @@ namespace Ember {
 
 		EditorCamera m_Camera;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
+		SharedPtr<Framebuffer> m_CameraPreviewFramebuffer;
 
 		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
 		Vector2f m_ViewportSize;
+		Vector2f m_CameraPreviewViewportSize = { 320.0f, 180.0f };
 
 		std::vector<SharedPtr<Panel>> m_Panels;
 

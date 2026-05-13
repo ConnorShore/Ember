@@ -17,6 +17,7 @@ namespace Ember {
 	struct EditorContext
 	{
 		EditorCamera* EditorCamera;
+
 		Entity SelectedEntity;
 
 		// Returns the currently active scene from the SceneManager (single source of truth)
