@@ -7,6 +7,12 @@
 
 namespace Ember {
 
+	enum class EditorViewDirection
+	{
+		FreeFly,
+		Top, Bottom, Left, Right, Front, Back
+	};
+
 	class EditorCamera : public Camera
 	{
 	public:
@@ -15,6 +21,8 @@ namespace Ember {
 
 		void OnUpdate(TimeStep delta);
 		void OnEvent(Event& e);
+
+		void SnapToAxis(EditorViewDirection direction);
 
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; UpdateView(); }

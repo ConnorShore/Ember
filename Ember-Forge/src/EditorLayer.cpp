@@ -972,11 +972,46 @@ namespace Ember {
 		window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
 		ImGui::SetNextWindowClass(&window_class);
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 4));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 4)); // Added horizontal padding so it doesn't hug the absolute edge
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 
 		ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+		// --- LEFT ALIGNED: VIEW CONTROLS ---
+		// Add a little vertical padding so it aligns nicely with the image buttons
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
+
+		ImGui::Text("View");
+		ImGui::SameLine();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2)); // Give the combo box normal padding
+		ImGui::SetNextItemWidth(100.0f);
+
+		static int currentView = 0;
+		const char* views[] = { "FreeFly", "Top", "Bottom", "Left", "Right", "Front", "Back" };
+
+		if (ImGui::BeginCombo("##CameraView", views[currentView]))
+		{
+			for (int i = 0; i < IM_ARRAYSIZE(views); i++)
+			{
+				bool isSelected = (currentView == i);
+				if (ImGui::Selectable(views[i], isSelected))
+				{
+					currentView = i;
+					m_Camera.SnapToAxis(static_cast<EditorViewDirection>(i));
+				}
+
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::PopStyleVar(); // Pop the combo box padding
+
+		ImGui::SameLine();
+
+
+		// --- CENTER ALIGNED: PLAY CONTROLS ---
 		float windowWidth = ImGui::GetWindowContentRegionMax().x;
 		float iconSize = 24.0f;
 		float spacing = ImGui::GetStyle().ItemSpacing.x;
@@ -984,15 +1019,20 @@ namespace Ember {
 
 		// Calculate the width of all 3 buttons + the 2 spaces between them
 		float totalGroupWidth = (buttonSizeWithPadding * 3.0f) + (spacing * 2.0f);
-		float cursorX = (windowWidth * 0.5f) - (totalGroupWidth * 0.5f);
+		float centerCursorX = (windowWidth * 0.5f) - (totalGroupWidth * 0.5f);
 
-		// Safety check so it doesn't push off-screen if the window is tiny
-		if (cursorX > ImGui::GetCursorPosX())
+		// Safety check: Only push to the center if the combo box hasn't already pushed past it!
+		if (centerCursorX > ImGui::GetCursorPosX())
 		{
-			ImGui::SetCursorPosX(cursorX);
+			ImGui::SetCursorPosX(centerCursorX);
+		}
+		else
+		{
+			// Just add a tiny bit of space if the window is super cramped
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
 		}
 
-		// Apply transparent/hover styling to the entire group
+		// Apply transparent/hover styling to the entire button group
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
@@ -1001,30 +1041,20 @@ namespace Ember {
 
 		// --- PLAY STANDALONE (Orange Tint) ---
 		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
-
-		// We pass default UVs (0,0 to 1,1) and a transparent background (0,0,0,0) to reach the tint parameter
 		if (ImGui::ImageButton("PlayStandaloneBtn", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), orangeTint))
 		{
-			// Save everything so the runtime sees the latest changes
 			SaveProject(false);
 			ProjectManager::SaveActiveProject();
 
-			// 2. Get the paths
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
-
 			auto runtimeExePath = std::filesystem::path("bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe");
 			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
-
 			auto engineAssetDir = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
 			auto engineAssetAbsolute = std::filesystem::absolute(engineAssetDir).string();
-
 			auto projectAssetDir = Application::Instance().GetAssetManager().GetProjectAssetDirectory().string();
 			auto projectAssetAbsolute = std::filesystem::absolute(projectAssetDir).string();
 
-			// 3. Construct the OS command
 			std::string command = std::format("{} \"{}\" \"{}\" \"{}\"", absoluteRuntimePath, activeProjectPath, engineAssetAbsolute, projectAssetAbsolute);
-
-			// 4. Launch the process! 
 			std::thread([command]() {
 				std::system(command.c_str());
 				}).detach();
@@ -1053,23 +1083,17 @@ namespace Ember {
 
 		ImGui::SameLine();
 
-		// --- 3. PAUSE / RESUME (Yellow Tint) ---
+		// --- PAUSE / RESUME (Yellow Tint) ---
 		ImGui::BeginDisabled(m_Context.CurrentSceneState == SceneState::Edit);
 
 		bool isPaused = (m_Context.CurrentSceneState == SceneState::Pause);
-
-		// Flip the icon dynamically based on state
 		ImTextureID pauseIcon = isPaused ? m_ToolbarProps.PlayButtonTextureID : m_ToolbarProps.PauseButtonTextureID;
 		if (ImGui::ImageButton("PauseButton", pauseIcon, ImVec2(iconSize, iconSize)))
 		{
 			if (isPaused)
-			{
 				m_Context.CurrentSceneState = SceneState::Play;
-			}
 			else
-			{
 				m_Context.CurrentSceneState = SceneState::Pause;
-			}
 		}
 
 		ImGui::EndDisabled();

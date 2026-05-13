@@ -29,7 +29,6 @@ namespace Ember {
 	// Pan speed scales with viewport size via a quadratic curve so it feels consistent
 	std::pair<float, float> EditorCamera::PanSpeed() const
 	{
-		// FIX: Ask the base class for the viewport size instead of tracking it ourselves
 		float x = std::min(GetViewportSize().x / 1000.0f, 2.4f); // max = 2.4f
 		float xFactor = 0.0366f * (x * x) - 0.1778f * x + 0.3021f;
 
@@ -71,10 +70,14 @@ namespace Ember {
 
 			// Fly Camera: Move Focal Point with WASD
 			float moveSpeed = m_Distance * m_MoveSpeedFactor * delta.Seconds();
-			if (Input::IsKeyPressed(KeyCode::W)) m_FocalPoint += GetForwardDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::S)) m_FocalPoint -= GetForwardDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::A)) m_FocalPoint -= GetRightDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::D)) m_FocalPoint += GetRightDirection() * moveSpeed;
+			if (Input::IsKeyPressed(KeyCode::W))
+				m_FocalPoint += GetForwardDirection() * moveSpeed;
+			if (Input::IsKeyPressed(KeyCode::S))
+				m_FocalPoint -= GetForwardDirection() * moveSpeed;
+			if (Input::IsKeyPressed(KeyCode::A))
+				m_FocalPoint -= GetRightDirection() * moveSpeed;
+			if (Input::IsKeyPressed(KeyCode::D))
+				m_FocalPoint += GetRightDirection() * moveSpeed;
 		}
 
 		UpdateView();
@@ -84,6 +87,42 @@ namespace Ember {
 	{
 		EventDispatcher dispatcher(e);
 		EB_DISPATCH_EVENT(MouseScrolledEvent, OnMouseScroll);
+	}
+
+	void EditorCamera::SnapToAxis(EditorViewDirection direction)
+	{
+		switch (direction)
+		{
+		case EditorViewDirection::Top:
+			m_Pitch = Math::Radians(-89.9f); // Look straight down (almost)
+			m_Yaw = Math::Radians(-90.0f);   // Keep top pointed towards -Z
+			break;
+		case EditorViewDirection::Bottom:
+			m_Pitch = Math::Radians(89.9f);  // Look straight up
+			m_Yaw = Math::Radians(-90.0f);
+			break;
+		case EditorViewDirection::Right:  // Looking down -X
+			m_Pitch = 0.0f;
+			m_Yaw = Math::Radians(180.0f);
+			break;
+		case EditorViewDirection::Left:   // Looking down +X
+			m_Pitch = 0.0f;
+			m_Yaw = 0.0f;
+			break;
+		case EditorViewDirection::Front:  // Looking down -Z
+			m_Pitch = 0.0f;
+			m_Yaw = Math::Radians(-90.0f);
+			break;
+		case EditorViewDirection::Back:   // Looking down +Z
+			m_Pitch = 0.0f;
+			m_Yaw = Math::Radians(90.0f);
+			break;
+		case EditorViewDirection::FreeFly:
+			// Do nothing to rotation, just return to normal flight
+			break;
+		}
+
+		UpdateView();
 	}
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
