@@ -49,13 +49,30 @@ namespace Ember {
 	void Input::IncrementKeyRepeat(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key repeated!");
-		s_KeyStates[static_cast<KeyCodeType>(key)]++;
+
+		// Only count repeats for keys we've actually seen pressed. GLFW does not
+		// synthesize a PRESS event for keys that were already held down when the
+		// window gained focus (e.g. launching the editor with Ctrl+F5 from VS),
+		// but the OS will still deliver REPEAT events for them. Without this
+		// guard, those stray repeats would promote the key to a "pressed" state
+		// and make IsKeyPressed() return true until the user manually tapped
+		// the key to generate a RELEASE event.
+		auto& state = s_KeyStates[static_cast<KeyCodeType>(key)];
+		if (state > 0)
+			state++;
 	}
 
 	void Input::SetMouseButtonState(MouseButton button, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button toggled!");
 		s_MouseButtonStates[static_cast<MouseButtonType>(button)] = pressed;
+	}
+
+	void Input::ClearAllStates()
+	{
+		s_KeyStates.fill(0);
+		s_MouseButtonStates.fill(0);
+		s_ActiveModifiers = 0;
 	}
 
 	void Input::SetKeyModifierState(KeyModifier modifier, bool active)

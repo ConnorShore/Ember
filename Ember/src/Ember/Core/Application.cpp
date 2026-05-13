@@ -63,6 +63,8 @@ namespace Ember {
 
 		m_SceneManager = ScopedPtr<SceneManager>::Create();
 
+		m_SaveGameManager = ScopedPtr<SaveGameManager>::Create();
+
 		EB_CORE_INFO("Application created!");
 	}
 

@@ -1,13 +1,17 @@
 Assets:
   - Type: Script
-    UUID: 312016873052336438
-    Name: CharacterMovement
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/CharacterMovement.lua
-  - Type: Script
-    UUID: 18344610611892216185
+    UUID: 509166542057571586
     Name: MouseLook
     FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/MouseLook.lua
+  - Type: Script
+    UUID: 5633150901217057608
+    Name: CharacterMovement
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/CharacterMovement.lua
+  - Type: Font
+    UUID: 11850743119032216500
+    Name: Roboto-Regular
+    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: Scene
-    UUID: 2542807290684062196
+    UUID: 2179905694040224580
     Name: Default
     FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Scenes/Default.ebs

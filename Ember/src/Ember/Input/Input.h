@@ -24,6 +24,11 @@ namespace Ember {
 		static void SetMouseButtonState(MouseButton button, bool pressed);
 		static void SetKeyModifierState(KeyModifier modifier, bool active);
 
+		// Clear every cached key / mouse button / modifier state. Called when
+		// the window loses focus so that keys released while unfocused (e.g.
+		// while a native file dialog is up) can't appear stuck on return.
+		static void ClearAllStates();
+
 		static void SetMousePosition(const Vector2f& position);
 		inline static void SetMousePosition(float x, float y) { SetMousePosition({ x, y }); }
 

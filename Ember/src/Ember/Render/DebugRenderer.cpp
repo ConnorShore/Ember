@@ -3,10 +3,16 @@
 
 namespace Ember {
 
-	void DebugRenderer::DrawLine(const Vector3f& pointA, const Vector3f& pointB, const Vector4f& color)
+	void DebugRenderer::DrawLine(const Vector3f& pointA, const Vector3f& pointB, const Vector4f& color /*= Vector4f(1.0f)*/)
 	{
 		s_Vertices.push_back({ pointA, color });
 		s_Vertices.push_back({ pointB, color });
+	}
+
+	void DebugRenderer::DrawLine(const Vector3f& pointA, const Vector3f& direction, float length, const Vector4f& color /*= Vector4f(1.0f)*/)
+	{
+		Vector3f endPoint = pointA + (direction * length);
+		DrawLine(pointA, endPoint, color);
 	}
 
 	void DebugRenderer::DrawTriangle(const Vector3f& pointA, const Vector3f& pointB, const Vector3f& pointC, const Vector4f& color)

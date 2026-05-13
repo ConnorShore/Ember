@@ -4,6 +4,7 @@
 #include "Window.h"
 #include "LayerStack.h"
 #include "ScopedPointer.h"
+#include "SaveGameManager.h"
 
 #include "Ember/Event/Event.h"
 #include "Ember/Event/WindowEvent.h"
@@ -67,6 +68,7 @@ namespace Ember {
 		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
 		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
 		inline SceneManager& GetSceneManager() { return *m_SceneManager; }
+		inline const SaveGameManager& GetSaveGameManager() const { return *m_SaveGameManager; }
 
 		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
 		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
@@ -106,6 +108,7 @@ namespace Ember {
 		ScopedPtr<SystemManager> m_SystemManager;
 		ScopedPtr<AssetManager> m_AssetManager;
 		ScopedPtr<SceneManager> m_SceneManager;
+		ScopedPtr<SaveGameManager> m_SaveGameManager;
 
 		LayerStack m_LayerStack;
 		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
