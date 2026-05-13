@@ -3,6 +3,8 @@
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Render/RenderAction.h>
 
+#include <imgui/imgui.h>
+
 namespace Ember {
 
 	void RuntimeLayer::OnAttach()
@@ -73,10 +75,62 @@ namespace Ember {
 		return false;
 	}
 
+	bool RuntimeLayer::OnKeyPressed(KeyPressedEvent& e)
+	{
+		if (e.GetKeyCode() == KeyCode::F3)
+		{
+			m_ShowFPSOverlay = !m_ShowFPSOverlay;
+			return true;
+		}
+		return false;
+	}
+
+	void RuntimeLayer::OnImGuiRender(TimeStep delta)
+	{
+		if (!m_ShowFPSOverlay)
+			return;
+
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs;
+
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImVec2 windowPos = ImVec2(viewport->WorkPos.x + 10.0f, viewport->WorkPos.y + 10.0f);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+		ImGui::SetNextWindowBgAlpha(0.35f);
+
+		if (ImGui::Begin("##RuntimeFPSOverlay", nullptr, windowFlags))
+		{
+			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
+		}
+		ImGui::End();
+	}
+
+	float RuntimeLayer::CalculateFPS(TimeStep delta)
+	{
+		static float fpsTimer = 0.0f;
+		static float fps = 0.0f;
+		static int frameCount = 0;
+
+		fpsTimer += delta.Seconds();
+		frameCount++;
+
+		if (fpsTimer >= 1.0f)
+		{
+			fps = (float)frameCount / fpsTimer;
+			fpsTimer = 0.0f;
+			frameCount = 0;
+		}
+
+		return fps;
+	}
+
 	void RuntimeLayer::OnEvent(Event& event)
 	{
 		EB_CREATE_DISPATCHER(event);
 		EB_DISPATCH_EVENT(WindowResizeEvent, OnWindowResize);
+		EB_DISPATCH_EVENT(KeyPressedEvent, OnKeyPressed);
 
 		Application::Instance().GetSceneManager().GetActiveScene()->OnEvent(event);
 	}
