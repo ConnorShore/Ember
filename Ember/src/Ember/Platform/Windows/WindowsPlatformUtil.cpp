@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "Ember/Utils/PlatformUtil.h"
 
+#include "Ember/Input/Input.h"
+
 #include <windows.h>
 #include <shobjidl.h>
 
@@ -76,7 +78,13 @@ namespace Ember {
 			}
 
 			// Show the dialog
-			if (SUCCEEDED(fileDialog->Show(NULL)))
+			HRESULT showHr = fileDialog->Show(NULL);
+			// The modal dialog ran its own message loop and stole focus, so any
+			// key-up events for the hotkey that opened it (e.g. Ctrl+Shift+O)
+			// were never delivered to GLFW. Clear cached input state so those
+			// keys don't appear stuck when focus returns to the editor.
+			Input::ClearAllStates();
+			if (SUCCEEDED(showHr))
 			{
 				IShellItem* pItem;
 				if (SUCCEEDED(fileDialog->GetResult(&pItem)))
@@ -126,7 +134,10 @@ namespace Ember {
 			}
 
 			// Show the dialog
-			if (SUCCEEDED(pFolderDialog->Show(NULL)))
+			HRESULT showHr = pFolderDialog->Show(NULL);
+			// See note in OpenFile: clear stale key state after the modal closes.
+			Input::ClearAllStates();
+			if (SUCCEEDED(showHr))
 			{
 				IShellItem* pItem;
 				if (SUCCEEDED(pFolderDialog->GetResult(&pItem)))
@@ -205,7 +216,10 @@ namespace Ember {
 				fileDialog->SetOptions(dwOptions | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT);
 			}
 
-			if (SUCCEEDED(fileDialog->Show(NULL)))
+			HRESULT showHr = fileDialog->Show(NULL);
+			// See note in OpenFile: clear stale key state after the modal closes.
+			Input::ClearAllStates();
+			if (SUCCEEDED(showHr))
 			{
 				IShellItem* pItem;
 				if (SUCCEEDED(fileDialog->GetResult(&pItem)))
