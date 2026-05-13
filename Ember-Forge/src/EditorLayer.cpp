@@ -235,6 +235,14 @@ namespace Ember {
 		ImGuizmo::BeginFrame();
 		ImGui::DockSpaceOverViewport();
 
+		// Block all editor interaction until the user opens or creates a project
+		if (ProjectManager::GetActive() == nullptr)
+		{
+			RenderWelcomePopup();
+			RenderNewProjectPopup();
+			return;
+		}
+
 		//ImGui::ShowDemoWindow();
 
 		// Menu Bar
@@ -548,6 +556,92 @@ namespace Ember {
 		RenderTransformGizmos();
 
 		ImGui::End();
+	}
+
+	void EditorLayer::RenderWelcomePopup()
+	{
+		// If the New Project dialog is queued or already open, hand off to it
+		// instead of fighting it for focus as a competing modal.
+		if (m_NewProjectSettings.ShowProjectSettingsPopup || ImGui::IsPopupOpen("New Project"))
+			return;
+
+		// Open the welcome modal exactly once. While it's open the rest of the
+		// editor is short-circuited in OnImGuiRender, so the modal effectively
+		// blocks all interaction until a project is created or opened.
+		const char* popupName = "Welcome to Ember Forge";
+		if (!ImGui::IsPopupOpen(popupName))
+			ImGui::OpenPopup(popupName);
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(500, 260), ImGuiCond_Always);
+
+		ImGuiWindowFlags flags =
+			ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoTitleBar;
+
+		if (ImGui::BeginPopupModal(popupName, nullptr, flags))
+		{
+			const ImVec4 emberOrange = ImVec4(0.89f, 0.25f, 0.07f, 1.0f);
+			const ImVec4 forgeWhite  = ImVec4(0.92f, 0.92f, 0.92f, 1.0f);
+
+			const float titleScale = 2.4f;
+			ImGui::SetWindowFontScale(titleScale);
+
+			ImVec2 emberSize = ImGui::CalcTextSize("Ember ");
+			ImVec2 forgeSize = ImGui::CalcTextSize("Forge");
+			float totalTitleW = emberSize.x + forgeSize.x;
+
+			ImGui::Dummy(ImVec2(0.0f, 8.0f));
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalTitleW) * 0.5f);
+			ImGui::TextColored(emberOrange, "Ember");
+			ImGui::SameLine(0.0f, 0.0f);
+			ImGui::TextColored(forgeWhite, " Forge");
+
+			ImGui::SetWindowFontScale(1.0f);
+
+			ImGui::Spacing();
+
+			const char* subtitle = "Get started by creating a new project or opening an existing one.";
+			ImVec2 subSize = ImGui::CalcTextSize(subtitle);
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - subSize.x) * 0.5f);
+			ImGui::TextUnformatted(subtitle);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Center the buttons in the remaining vertical space
+			float buttonW = 180.0f;
+			float buttonH = 48.0f;
+			float spacing = ImGui::GetStyle().ItemSpacing.x;
+			float totalW = buttonW * 2.0f + spacing;
+
+			float availH = ImGui::GetContentRegionAvail().y;
+			if (availH > buttonH)
+				ImGui::Dummy(ImVec2(0.0f, (availH - buttonH) * 0.5f));
+
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalW) * 0.5f);
+
+			if (ImGui::Button("New Project", ImVec2(buttonW, buttonH)))
+			{
+				ImGui::CloseCurrentPopup();
+				NewProject();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Open Project", ImVec2(buttonW, buttonH)))
+			{
+				ImGui::CloseCurrentPopup();
+				OpenProject();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
 
 	void EditorLayer::RenderNewProjectPopup()

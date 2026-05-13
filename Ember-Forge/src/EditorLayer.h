@@ -37,6 +37,7 @@ namespace Ember {
 		void RenderSceneViewport();
 		void RenderNewProjectPopup();
 		void RenderNewScenePopup();
+		void RenderWelcomePopup();
 
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
