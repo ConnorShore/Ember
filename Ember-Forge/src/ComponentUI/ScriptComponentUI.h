@@ -77,7 +77,7 @@ namespace Ember {
 				{
 					UI::UICallbackFunc editFunc = [&]() {
 						std::string scriptPath = assetManager.GetAsset<Script>(component.ScriptHandle)->GetFilePath();
-						system(("code " + scriptPath).c_str());
+						ScriptEditor::OpenScript(scriptPath);
 						};
 					UI::PropertyGrid::ActionRow("Actions", "Edit Script", editFunc, "Create New", createFunc);
 				}
@@ -194,7 +194,7 @@ namespace Ember {
 			component.Initialized = false;
 
 			// Open in VS Code (or default editor)
-			system(("code " + filepath).c_str());
+			ScriptEditor::OpenScript(filepath);
 		}
 
 		void RenderExposedScriptProperties(ScriptComponent& component)

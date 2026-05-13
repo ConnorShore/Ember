@@ -323,6 +323,9 @@ namespace Ember {
 			case DragDropPayloadType::AssetShader:
 				RenderShaderOptions(filePath.string());
 				break;
+			case DragDropPayloadType::AssetScript:
+				RenderScriptOptions(filePath.string());
+				break;
 			}
 
 			// Common options for all asset types
@@ -630,6 +633,14 @@ namespace Ember {
 	void AssetManagerPanel::RenderShaderOptions(const std::string& filePath)
 	{
 
+	}
+
+	void AssetManagerPanel::RenderScriptOptions(const std::string& filePath)
+	{
+		if (ImGui::MenuItem("Edit Script"))
+		{
+			ScriptEditor::OpenScript(filePath);
+		}
 	}
 
 	std::string AssetManagerPanel::SelectAndLoadFile(const std::string& name, const std::string& type)

@@ -23,6 +23,10 @@ namespace Ember {
 
 	void ScriptSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		// Prevents scripts like mouse move from updating if game is paused
+		if (delta.Seconds() <= 0.0f)
+			return;
+
 		auto view = scene->GetRegistry().ActiveQuery<ScriptComponent>();
 
 		sol::state& luaState = ScriptEngine::GetState();

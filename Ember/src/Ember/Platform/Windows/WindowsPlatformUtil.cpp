@@ -99,53 +99,6 @@ namespace Ember {
 		return result;
 	}
 
-	//std::string FileDialog::OpenDirectory()
-	//{
-	//	std::string result = "";
-
-	//	// Initialize COM library
-	//	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	//	if (FAILED(hr)) return result;
-
-	//	IFileOpenDialog* pFolderDialog;
-
-	//	// Create the FileOpenDialog object
-	//	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFolderDialog));
-
-	//	if (SUCCEEDED(hr))
-	//	{
-	//		// Get current options
-	//		DWORD dwOptions;
-	//		if (SUCCEEDED(pFolderDialog->GetOptions(&dwOptions)))
-	//		{
-	//			// CRITICAL STEP: Tell the OS to only pick folders!
-	//			pFolderDialog->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-	//		}
-
-	//		// Show the dialog
-	//		if (SUCCEEDED(pFolderDialog->Show(NULL)))
-	//		{
-	//			IShellItem* pItem;
-	//			if (SUCCEEDED(pFolderDialog->GetResult(&pItem)))
-	//			{
-	//				PWSTR pszFilePath;
-	//				if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath)))
-	//				{
-	//					// Convert Wide String to std::string
-	//					std::wstring ws(pszFilePath);
-	//					result = std::string(ws.begin(), ws.end());
-	//					CoTaskMemFree(pszFilePath);
-	//				}
-	//				pItem->Release();
-	//			}
-	//		}
-	//		pFolderDialog->Release();
-	//	}
-
-	//	CoUninitialize();
-	//	return result;
-	//}
-
 	std::string FileDialog::OpenDirectory()
 	{
 		std::string result = "";
@@ -274,6 +227,11 @@ namespace Ember {
 
 		return result;
 	}
+
+	void ScriptEditor::OpenScript(const std::string& filePath)
+	{
+		system(("code " + filePath).c_str());
+	};
 }
 
 #endif

@@ -15,6 +15,19 @@ namespace Ember {
 		CameraComponentUI(EditorContext* context) : ComponentUI(context) {}
 		inline const char* GetName() const override { return "Camera Component"; }
 
+		virtual void CreateComponentForEntity(Entity entity) override
+		{
+			bool isFirstCamera = false;
+			if (auto scene = m_Context->ActiveScene())
+			{
+				if (scene->GetAllEntitiesWithComponents<CameraComponent>().size() == 0)
+					isFirstCamera = true;
+			}
+
+			auto& cameraComponent = entity.AttachComponent<CameraComponent>();
+			cameraComponent.IsActive = isFirstCamera;
+		}
+
 	protected:
 		inline void RenderComponentImpl(CameraComponent& component) override
 		{

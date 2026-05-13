@@ -33,6 +33,7 @@ namespace Ember {
 		void RenderAudioClipOptions(const std::string& filePath);
 		void RenderFontOptions(const std::string& filePath);
 		void RenderShaderOptions(const std::string& filePath);
+		void RenderScriptOptions(const std::string& filePath);
 
 		void RenderRenameScenePopup();
 		void RenameScene();

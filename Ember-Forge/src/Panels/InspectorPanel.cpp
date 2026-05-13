@@ -128,29 +128,25 @@ namespace Ember {
 		{
 			ImGui::Begin(m_Title.c_str());
 
+			bool isActive = !entity.ContainsComponent<DisabledComponent>();
+			if (ImGui::Checkbox("##Active", &isActive))
+			{
+				if (isActive)
+				{
+					if (entity.ContainsComponent<DisabledComponent>())
+						entity.DetachComponent<DisabledComponent>();
+				}
+				else
+				{
+					if (!entity.ContainsComponent<DisabledComponent>())
+						entity.AttachComponent<DisabledComponent>();
+				}
+			}
+
+			ImGui::SameLine();
+
 			// Entity Header
 			DrawEntityHeader(entity);
-
-			// Enable/Disable section
-			ImGui::Separator();
-			bool isActive = !entity.ContainsComponent<DisabledComponent>();
-			if (UI::PropertyGrid::Begin("EntityActive"))
-			{
-				if (UI::PropertyGrid::Checkbox("Active", isActive))
-				{
-					if (isActive)
-					{
-						if (entity.ContainsComponent<DisabledComponent>())
-							entity.DetachComponent<DisabledComponent>();
-					}
-					else
-					{
-						if (!entity.ContainsComponent<DisabledComponent>())
-							entity.AttachComponent<DisabledComponent>();
-					}
-				}
-				UI::PropertyGrid::End();
-			}
 
 			ImGui::Separator();
 

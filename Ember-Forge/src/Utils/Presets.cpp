@@ -159,6 +159,8 @@ namespace Ember {
 
 		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CubeMeshUUID);
 		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<RigidBodyComponent>();
+		newEntity.AttachComponent<BoxColliderComponent>();
 
 		return newEntity;
 	}
@@ -180,6 +182,8 @@ namespace Ember {
 
 		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::SphereMeshUUID);
 		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<RigidBodyComponent>();
+		newEntity.AttachComponent<SphereColliderComponent>();
 
 		return newEntity;
 	}
@@ -190,6 +194,8 @@ namespace Ember {
 
 		newEntity.AttachComponent<StaticMeshComponent>(Constants::Assets::CapsuleMeshUUID);
 		newEntity.AttachComponent<MaterialComponent>(Constants::Assets::StandardGeometryMatUUID);
+		newEntity.AttachComponent<RigidBodyComponent>();
+		newEntity.AttachComponent<CapsuleColliderComponent>();
 
 		return newEntity;
 	}

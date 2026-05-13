@@ -12,4 +12,10 @@ namespace Ember {
 		static std::string SaveFile(const char* initialDirectory = "", const char* initialFileName = "", const char* filterName = "All Files (*.*)", const char* filterExt = "*.*");
 	};
 
+	class ScriptEditor
+	{
+	public:
+		static void OpenScript(const std::string& filePath);
+	};
+
 }

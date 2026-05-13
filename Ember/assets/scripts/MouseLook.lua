@@ -7,7 +7,7 @@ function MouseLook:OnCreate(entity)
 end
 
 function MouseLook:OnUpdate(entity, delta)
-    local mouseDelta = GetMouseDelta()
+    local mouseDelta = Input.GetMouseDelta()
 
     -- YAW (Looking Left/Right)
     local parentEntity = entity:GetRootParent()
