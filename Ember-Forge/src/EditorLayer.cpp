@@ -1051,7 +1051,20 @@ namespace Ember {
 			ProjectManager::SaveActiveProject();
 
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
-			auto runtimeExePath = std::filesystem::path("bin/Debug-windows-x86_64/Ember-Runtime/Ember-Runtime.exe");
+
+			// TODO: account for different architectures and systems
+			std::string configFolder;
+#if defined(EB_DEBUG)
+			configFolder = "Debug-windows-x86_64";
+#elif defined(EB_RELEASE)
+			configFolder = "Release-windows-x86_64";
+#elif defined(EB_DIST)
+			configFolder = "Dist-windows-x86_64";
+#else
+			configFolder = "Debug-windows-x86_64";
+#endif
+
+			auto runtimeExePath = std::filesystem::path("bin") / configFolder / "Ember-Runtime/Ember-Runtime.exe";
 			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
 			auto engineAssetDir = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
 			auto engineAssetAbsolute = std::filesystem::absolute(engineAssetDir).string();

@@ -1,6 +1,6 @@
 workspace "Ember"
    architecture "x86_64"
-   configurations { "Debug", "Release" }
+   configurations { "Debug", "Release", "Dist" }
    cppdialect "C++23"
    startproject "Ember-Forge"
 

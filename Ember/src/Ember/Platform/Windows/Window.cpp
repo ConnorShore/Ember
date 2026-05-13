@@ -97,7 +97,7 @@ namespace Ember {
 			// Store our WindowData struct in GLFW's user pointer so lambdas can access it
 			glfwSetWindowUserPointer(m_Window, &m_WindowData);
 
-			//SetVSync(true);
+			SetVSync(false);
 
 			RegisterCallbacks();
 		}

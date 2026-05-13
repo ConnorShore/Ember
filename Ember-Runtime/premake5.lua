@@ -52,4 +52,12 @@ filter "configurations:Debug"
       -- kind "WindowedApp"
       -- entrypoint "mainCRTStartup"
 
+   filter "configurations:Dist"
+      defines { "EB_DIST" }
+      runtime "Release"
+      optimize "On"
+      symbols "Off"
+      -- kind "WindowedApp"
+      -- entrypoint "mainCRTStartup"
+
    filter {}

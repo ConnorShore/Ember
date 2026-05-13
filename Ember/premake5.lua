@@ -70,4 +70,10 @@
       defines { "EB_RELEASE" }
       optimize "On"
 
+   filter "configurations:Dist"
+      defines { "EB_DIST" }
+      runtime "Release"
+      optimize "On"
+      symbols "Off"
+
    filter {}

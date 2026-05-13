@@ -122,10 +122,14 @@ namespace Ember {
 
 		// TODO: account for different architectures and systems
 		std::string configFolder;
-#ifdef EB_DEBUG
+#if defined(EB_DEBUG)
 		configFolder = "Debug-windows-x86_64";
-#else
+#elif defined(EB_RELEASE)
 		configFolder = "Release-windows-x86_64";
+#elif defined(EB_DIST)
+		configFolder = "Dist-windows-x86_64";
+#else
+		configFolder = "Debug-windows-x86_64";
 #endif
 
 		// Define our source paths (Assumes Editor working directory is the repo root)
