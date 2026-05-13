@@ -188,7 +188,9 @@ namespace Ember {
 			m_OutputFramebuffer->Unbind();
 
 			// Camera preview render pass (if applicable)
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
+			if (m_Context.CurrentSceneState == SceneState::Edit
+				&& m_Context.SelectedEntity != Constants::Entities::InvalidEntityID 
+				&& m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
 			{
 				auto& cameraComp = m_Context.SelectedEntity.GetComponent<CameraComponent>();
 				auto& transform = m_Context.SelectedEntity.GetComponent<TransformComponent>();
@@ -496,7 +498,9 @@ namespace Ember {
 		}
 
 		// Render camera preview if selected entity has a camera component
-		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
+		if (m_Context.CurrentSceneState == SceneState::Edit
+			&& m_Context.SelectedEntity != Constants::Entities::InvalidEntityID 
+			&& m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
 		{
 			ImVec2 viewportMinRegion = ImGui::GetWindowContentRegionMin();
 			ImVec2 viewportMaxRegion = ImGui::GetWindowContentRegionMax();
