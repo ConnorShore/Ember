@@ -14,6 +14,7 @@
 #include "Ember/Render/RenderQueueBuckets.h"
 #include "Ember/Render/Pass/RenderPass.h"
 #include "Ember/Render/Frustum.h"
+#include "Ember/Render/RenderPassSettings.h"
 
 #include <vector>
 #include <map>
@@ -32,7 +33,7 @@ namespace Ember {
 		virtual void OnSceneAttach(Scene* scene) override;
 
 		virtual void OnUpdate(TimeStep delta, Scene* scene) override;
-		void OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform);
+		void OnUpdate(TimeStep delta, Scene* scene, const RenderPassSettings& settings);
 
 		void BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath = "");
 

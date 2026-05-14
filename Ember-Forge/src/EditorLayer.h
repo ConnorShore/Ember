@@ -8,6 +8,7 @@
 #include <Ember/Event/KeyEvent.h>
 #include <Ember/Event/MouseEvent.h>
 #include <Ember/Render/Framebuffer.h>
+#include <Ember/Render/RenderPassSettings.h>
 
 #include <ImGuizmo.h>
 #include <vector>
@@ -153,6 +154,8 @@ namespace Ember {
 		
 		bool m_ShowProjectSettingsPopup = false;
 		ProjectSettingsDialog m_ProjectSettingsDialog;
+
+		RenderPassSettings m_EditorRenderPassSettings;
 
 		struct NewProjectSettings
 		{

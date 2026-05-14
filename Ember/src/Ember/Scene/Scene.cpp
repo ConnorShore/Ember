@@ -272,14 +272,14 @@ namespace Ember {
 		RemovePendingRemovals();
 	}
 
-	void Scene::OnUpdateEdit(TimeStep delta, const Camera& camera, const Matrix4f& transformMatrix)
+	void Scene::OnUpdateEdit(TimeStep delta, const RenderPassSettings& settings)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
 
-		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, camera, transformMatrix);
+		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, settings);
 
 		RemovePendingRemovals();
 	}

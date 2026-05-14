@@ -1,49 +1,13 @@
 Assets:
-  - Type: Texture
-    UUID: 16986801335781569910
-    Name: Fox_Tex_0.png
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_Tex_0.png
   - Type: Script
-    UUID: 509166542057571586
-    Name: MouseLook
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/MouseLook.lua
-  - Type: Script
-    UUID: 5633150901217057608
+    UUID: 6068451618412420797
     Name: CharacterMovement
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Scripts/CharacterMovement.lua
-  - Type: Material
-    UUID: 9879700794318838549
-    Name: Fox_fox_material
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_fox_material.ebmat
-  - Type: Mesh
-    UUID: 17059071579962814245
-    Name: Fox_fox1_Prim0
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_fox1_Prim0.ebmesh
-  - Type: Skeleton
-    UUID: 17948733124722295538
-    Name: Fox
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox.ebskeleton
-  - Type: Animation
-    UUID: 12391742304839262867
-    Name: Fox_Run
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_Run.ebanim
-  - Type: Animation
-    UUID: 11361294736100139478
-    Name: Fox_Survey
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_Survey.ebanim
-  - Type: Animation
-    UUID: 6331533113183737439
-    Name: Fox_Walk
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox_Walk.ebanim
-  - Type: Model
-    UUID: 15627010598755230392
-    Name: Fox
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Models/Fox.ebmodel
-  - Type: Font
-    UUID: 11850743119032216500
-    Name: Roboto-Regular
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Assets/Fonts/Roboto-Regular.ttf
+    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/CharacterMovement.lua
+  - Type: Script
+    UUID: 5025897937436236093
+    Name: MouseLook
+    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/MouseLook.lua
   - Type: Scene
-    UUID: 2179905694040224580
+    UUID: 397660979313011815
     Name: Default
-    FilePath: ../../../../../Users/cjsho/Desktop/NewProject/GameData/Scenes/Default.ebs
+    FilePath: ../../../../Games/ZombieFPS/GameData/Scenes/Default.ebs

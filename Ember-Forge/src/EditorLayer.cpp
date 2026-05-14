@@ -45,6 +45,13 @@ namespace Ember {
 			.SelectedEntity = m_InvalidEntity
 		};
 
+		m_EditorRenderPassSettings = {
+			.ActiveCamera = &m_Camera,
+			.CameraTransform = Math::Inverse(m_Camera.GetViewMatrix()),
+			.RenderMask = FilterPreset::All,
+			.VolumeMask = FilterPreset::All
+		};
+
 		// Provide a blank scene so the editor has a valid active scene before any project is loaded.
 		// It will be replaced cleanly when a project is opened via the deferred scene swap.
 		auto defaultScene = SharedPtr<Scene>::Create("DefaultScene", "");
@@ -168,7 +175,8 @@ namespace Ember {
 				case SceneState::Edit:
 				{
 					m_Camera.OnUpdate(delta);
-					activeScene->OnUpdateEdit(delta, m_Camera, Math::Inverse(m_Camera.GetViewMatrix()));
+					m_EditorRenderPassSettings.CameraTransform = Math::Inverse(m_Camera.GetViewMatrix());
+					activeScene->OnUpdateEdit(delta, m_EditorRenderPassSettings);
 					break;
 				}
 				case SceneState::Play:
@@ -202,9 +210,16 @@ namespace Ember {
 				uint32_t mainH = m_OutputFramebuffer->GetSpecification().Height;
 				cameraComp.Camera.SetViewportSize(mainW, mainH);
 
+				RenderPassSettings previewSettings = {
+					.ActiveCamera = &cameraComp.Camera,
+					.CameraTransform = transform.WorldTransform,
+					.RenderMask = cameraComp.RenderMask,
+					.VolumeMask = cameraComp.VolumeMask
+				};
+
 				m_CameraPreviewFramebuffer->Bind();
 				RenderAction::SetViewport(0, 0, mainW, mainH);
-				activeScene->OnUpdateEdit(delta, cameraComp.Camera, transform.WorldTransform);
+				activeScene->OnUpdateEdit(delta, previewSettings);
 				m_CameraPreviewFramebuffer->Unbind();
 			}
 		}

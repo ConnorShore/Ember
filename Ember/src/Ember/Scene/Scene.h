@@ -10,6 +10,7 @@
 #include "Ember/Tools/EditorCamera.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Core/PoolManager.h"
+#include "Ember/Render/RenderPassSettings.h"
 
 #include <unordered_map>
 
@@ -40,7 +41,7 @@ namespace Ember {
 		void OnRuntimeStop();
 
 		void OnUpdateRuntime(TimeStep delta);
-		void OnUpdateEdit(TimeStep delta, const Camera& camera, const Matrix4f& transformMatrix);
+		void OnUpdateEdit(TimeStep delta, const RenderPassSettings& settings);
 		void OnEvent(Event& event);
 
 		void SetActiveCamera(Entity cameraEntity);

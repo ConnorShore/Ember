@@ -254,19 +254,21 @@ namespace Ember {
 			ExecuteRenderPipeline(scene, true);
 	}
 
-	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene, const Camera& camera, const Matrix4f& cameraTransform)
+	void RenderSystem::OnUpdate(TimeStep delta, Scene* scene, const RenderPassSettings& settings)
 	{
 		InitializeRenderState();
 
+		Camera& camera = *settings.ActiveCamera;
+
 		// Set render scene state for camera info
 		m_RenderSceneState.ActiveCamera = camera;
-		m_RenderSceneState.ActiveRenderMask = FilterPreset::All;
-		m_RenderSceneState.ActiveVolumeMask = FilterPreset::All;
-		m_RenderSceneState.CameraTransform = cameraTransform;
+		m_RenderSceneState.ActiveRenderMask = settings.RenderMask;
+		m_RenderSceneState.ActiveVolumeMask = settings.VolumeMask;
+		m_RenderSceneState.CameraTransform = settings.CameraTransform;
 		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
 
-		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(cameraTransform);
+		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(settings.CameraTransform);
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
 
 		// Update the system
