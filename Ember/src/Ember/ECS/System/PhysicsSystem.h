@@ -55,8 +55,8 @@ namespace Ember {
 		void RemoveRigidBody(RigidBodyComponent& rigidBody);
 		void InitializeEntity(EntityID entity, Scene* scene);
 
-		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& direction, float length);
-		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint);
+		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& direction, float length, Filter filter = FilterPreset::All);
+		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint, Filter filter = FilterPreset::All);
 
 		OverlapTestData TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter = FilterPreset::All);
 		OverlapTestData TestOverlapSphere(const Vector3f& position, float radius, Entity entity, Filter filter = FilterPreset::All);

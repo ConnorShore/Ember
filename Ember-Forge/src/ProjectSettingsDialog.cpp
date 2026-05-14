@@ -182,7 +182,7 @@ namespace Ember {
 
 			// Fixed width for the label so the input boxes align perfectly into a neat column
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Layer %2d", i);
+			ImGui::Text("Layer %2d", i+1);
 			ImGui::SameLine(80.0f);
 
 			// Render an input box for the filter name, pre-filled with the current name from the filter manager
@@ -234,7 +234,7 @@ namespace Ember {
 
 			// Fixed width for the label so the input boxes align perfectly into a neat column
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Layer %2d", i);
+			ImGui::Text("Layer %2d", i+1);
 			ImGui::SameLine(80.0f);
 
 			// Render textbox for the layer name, with a Clear button next to it

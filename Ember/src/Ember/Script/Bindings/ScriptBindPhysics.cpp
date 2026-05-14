@@ -63,9 +63,13 @@ namespace Ember {
 
 		// Create the Physics static table
 		auto physicsTable = state.create_table("Physics");
-		physicsTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end) {
+		physicsTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end, sol::optional<Filter> filterOpt) {
 
-			RaycastData rawData = Raycast::CastRay(start, end);
+			// If the user passed a filter from Lua, use it. Otherwise, fallback to All.
+			Filter filter = filterOpt.value_or(FilterPreset::All);
+
+			// Pass the resolved filter to your engine's backend
+			RaycastData rawData = Raycast::CastRay(start, end, filter);
 
 			LuaRaycastHit luaHit;
 			luaHit.Hit = rawData.Hit;
@@ -76,7 +80,7 @@ namespace Ember {
 				luaHit.HitEntity = Entity(rawData.RigidBodyEntity, scene);
 
 			return luaHit;
-			});
+		});
 		physicsTable.set_function("CheckOverlapBox", sol::overload(
 			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
 				return Collision::CheckOverlapBox(position, rotation, scale, entity);

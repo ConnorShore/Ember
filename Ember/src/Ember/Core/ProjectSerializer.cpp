@@ -60,12 +60,18 @@ namespace Ember {
 		auto filterManager = m_Project->GetCollisionFilterManager();
 		auto filterNode = physicsNode["CollisionFilters"];
 		filterNode |= ryml::SEQ;
-		uint32_t i = 0;
-		for (const auto& filter : filterManager.GetFilters())
 		{
-			auto filterEntryNode = filterNode.append_child();
-			filterEntryNode |= ryml::MAP;
-			filterEntryNode["Name"] << filter;
+			const auto& collisionSlots = filterManager.GetAllSlots();
+			for (uint32_t i = 0; i < FilterManager::MaxSlots; i++)
+			{
+				if (collisionSlots[i].empty())
+					continue;
+
+				auto filterEntryNode = filterNode.append_child();
+				filterEntryNode |= ryml::MAP;
+				filterEntryNode["Index"] << i;
+				filterEntryNode["Name"] << collisionSlots[i];
+			}
 		}
 
 		// Render settings
@@ -75,12 +81,18 @@ namespace Ember {
 		
 		auto renderLayerNode = renderNode["RenderLayers"];
 		renderLayerNode |= ryml::SEQ;
-		uint32_t renderLayerIndex = 0;
-		for (const auto& layer : renderLayerManager.GetFilters())
 		{
-			auto layerEntryNode = renderLayerNode.append_child();
-			layerEntryNode |= ryml::MAP;
-			layerEntryNode["Name"] << layer;
+			const auto& renderSlots = renderLayerManager.GetAllSlots();
+			for (uint32_t i = 0; i < FilterManager::MaxSlots; i++)
+			{
+				if (renderSlots[i].empty())
+					continue;
+
+				auto layerEntryNode = renderLayerNode.append_child();
+				layerEntryNode |= ryml::MAP;
+				layerEntryNode["Index"] << i;
+				layerEntryNode["Name"] << renderSlots[i];
+			}
 		}
 
 		std::ofstream fout(filePath);
@@ -146,34 +158,48 @@ namespace Ember {
 
 			// Physics Collider Filters
 			auto& collisionFilterManager = m_Project->GetCollisionFilterManager();
-			std::vector<std::string> filters;
+			std::array<std::string, FilterManager::MaxSlots> filters{};
 
-			uint32_t i = 0;
+			uint32_t fallbackIndex = 0;
 			for (auto filterNode : physicsNode["CollisionFilters"].children())
 			{
 				std::string filterName;
 				filterNode["Name"] >> filterName;
 
-				filters.push_back(filterName);
+				uint32_t slotIndex = fallbackIndex;
+				if (filterNode.has_child("Index"))
+					filterNode["Index"] >> slotIndex;
+
+				if (slotIndex < FilterManager::MaxSlots)
+					filters[slotIndex] = filterName;
+
+				fallbackIndex++;
 			}
 
 			collisionFilterManager.InitWithFilters(filters);
 
 			// Render settings
 			auto& renderLayerManager = m_Project->GetRenderFilterManager();
-			std::vector<std::string> renderLayers;
+			std::array<std::string, FilterManager::MaxSlots> renderLayers{};
 
 			if (settingsNode.has_child("Render"))
 			{
 				auto renderNode = settingsNode["Render"];
 
-				uint32_t renderLayerIndex = 0;
+				uint32_t fallbackIndex = 0;
 				for (auto renderLayerNode : renderNode["RenderLayers"].children())
 				{
 					std::string layerName;
 					renderLayerNode["Name"] >> layerName;
 
-					renderLayers.push_back(layerName);
+					uint32_t slotIndex = fallbackIndex;
+					if (renderLayerNode.has_child("Index"))
+						renderLayerNode["Index"] >> slotIndex;
+
+					if (slotIndex < FilterManager::MaxSlots)
+						renderLayers[slotIndex] = layerName;
+
+					fallbackIndex++;
 				}
 			}
 

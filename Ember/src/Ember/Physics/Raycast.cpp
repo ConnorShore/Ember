@@ -6,10 +6,10 @@
 
 namespace Ember {
 
-	RaycastData Raycast::CastRay(const Vector3f& startPoint, const Vector3f& endPoint)
+	RaycastData Raycast::CastRay(const Vector3f& startPoint, const Vector3f& endPoint, Filter filter /*= FilterPreset::All*/)
 	{
 		auto physicsSystem = Application::Instance().GetSystem<PhysicsSystem>();
-		return physicsSystem->CastRay(startPoint, endPoint);
+		return physicsSystem->CastRay(startPoint, endPoint, filter);
 	}
 
 }

@@ -633,14 +633,14 @@ namespace Ember {
 		InitCameraSensor();
 	}
 
-	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& endPoint)
+	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& endPoint, Filter filter /* = FilterPreset::All */)
 	{
 		rp3d::Vector3 start(startPoint.x, startPoint.y, startPoint.z);
 		rp3d::Vector3 end(endPoint.x, endPoint.y, endPoint.z);
 		rp3d::Ray ray(start, end);
 
 		RaycastCallback callback;
-		m_PhysicsWorld->raycast(ray, &callback);
+		m_PhysicsWorld->raycast(ray, &callback, filter);
 
 		RaycastData ret;
 		ret.Hit = callback.HasHit();
@@ -664,10 +664,10 @@ namespace Ember {
 		return ret;
 	}
 
-	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& direction, float length)
+	RaycastData PhysicsSystem::CastRay(const Vector3f& startPoint, const Vector3f& direction, float length, Filter filter /* = FilterPreset::All */)
 	{
 		Vector3f endPoint = startPoint + glm::normalize(direction) * length;
-		return CastRay(startPoint, endPoint);
+		return CastRay(startPoint, endPoint, filter);
 	}
 
 	OverlapTestData PhysicsSystem::TestOverlapBox(const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity, Filter filter /* = CollisionFilterPreset::All */)

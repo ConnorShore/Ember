@@ -579,7 +579,7 @@ namespace Ember {
 			for (size_t i = 0; i < values.size(); i++)
 			{
 				UUID currentUUID = values[i];
-				std::string label = std::format("{} {}", itemLabelPrefix, i);
+				std::string label = std::format("{} {}", itemLabelPrefix, (i+1));
 
 				std::string displayName = "None";
 				if (currentUUID != Constants::InvalidUUID)
