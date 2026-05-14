@@ -245,11 +245,17 @@ namespace Ember {
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
-			"SetActive", [&state](Entity& e, bool active) { 
-				if (active && e.ContainsComponent<DisabledComponent>()) 
-					e.DetachComponent<DisabledComponent>(); 
-				else if (!e.ContainsComponent<DisabledComponent>()) 
-					e.AttachComponent<DisabledComponent>();
+			"SetActive", [&state](Entity& e, bool active) {
+				if (active)
+				{
+					if (e.ContainsComponent<DisabledComponent>())
+						e.DetachComponent<DisabledComponent>();
+				}
+				else
+				{
+					if (!e.ContainsComponent<DisabledComponent>())
+						e.AttachComponent<DisabledComponent>();
+				}
 			},
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },

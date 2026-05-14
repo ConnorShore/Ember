@@ -1,16 +1,16 @@
 Assets:
   - Type: Script
-    UUID: 8562544563539838448
-    Name: PlayerInteraction
-    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/PlayerInteraction.lua
+    UUID: 6068451618412420797
+    Name: CharacterMovement
+    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/CharacterMovement.lua
   - Type: Script
     UUID: 5025897937436236093
     Name: MouseLook
     FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/MouseLook.lua
   - Type: Script
-    UUID: 6068451618412420797
-    Name: CharacterMovement
-    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/CharacterMovement.lua
+    UUID: 8562544563539838448
+    Name: PlayerInteraction
+    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/PlayerInteraction.lua
   - Type: Material
     UUID: 13734008897576602447
     Name: Ground_StandardGeometry_Clone

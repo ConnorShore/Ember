@@ -38,10 +38,10 @@ namespace Ember {
 		Renderer2D::BeginFrame();
 
 		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
-		RenderSprites(registry, context.DrawHUD, context.SelectedEntity);
+		RenderSprites(registry, context.DrawHUD, context.SelectedEntity, width, height);
 
 		// Draw Screen-Space Text (e.g. Ammo, Health)
-		RenderText(registry, context.DrawHUD, context.SelectedEntity);
+		RenderText(registry, context.DrawHUD, context.SelectedEntity, width, height);
 
 		Renderer2D::EndFrame();
 
@@ -62,7 +62,7 @@ namespace Ember {
 	{
 	}
 
-	void ScreenSpace2DRenderPass::RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity)
+	void ScreenSpace2DRenderPass::RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
 	{
 		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
@@ -70,19 +70,26 @@ namespace Ember {
 				continue;
 
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
+
+			// Treat transform translation X/Y as normalized [0, 1] viewport coords so
+			// UI stays in the same relative position when the window is resized.
+			Matrix4f screenTransform = transform.WorldTransform;
+			screenTransform[3][0] *= viewportWidth;
+			screenTransform[3][1] *= viewportHeight;
+
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{
-				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color);
+				Renderer2D::DrawQuad(screenTransform, sprite.Color);
 			}
 			else
 			{
 				auto textureAsset = Application::Instance().GetAssetManager().GetAsset<Texture2D>(sprite.TextureHandle);
-				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color, textureAsset);
+				Renderer2D::DrawQuad(screenTransform, sprite.Color, textureAsset);
 			}
 		}
 	}
 
-	void ScreenSpace2DRenderPass::RenderText(Registry& registry, bool drawAll, EntityID selectedEntity)
+	void ScreenSpace2DRenderPass::RenderText(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
 	{
 		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
@@ -94,7 +101,15 @@ namespace Ember {
 			{
 				auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
 				if (fontAsset)
-					Renderer2D::DrawString(textComp.Text, transform.WorldTransform, textComp.Color, fontAsset, entity, true);
+				{
+					// Treat transform translation X/Y as normalized [0, 1] viewport coords so
+					// UI stays in the same relative position when the window is resized.
+					Matrix4f screenTransform = transform.WorldTransform;
+					screenTransform[3][0] *= viewportWidth;
+					screenTransform[3][1] *= viewportHeight;
+
+					Renderer2D::DrawString(textComp.Text, screenTransform, textComp.Color, fontAsset, entity, true);
+				}
 			}
 		}
 	}

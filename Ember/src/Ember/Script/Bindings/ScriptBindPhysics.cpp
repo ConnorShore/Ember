@@ -49,7 +49,7 @@ namespace Ember {
 			"Hit", &LuaRaycastHit::Hit,
 			"CollisionPoint", &LuaRaycastHit::CollisionPoint,
 			"SurfaceNormal", &LuaRaycastHit::SurfaceNormal,
-			"HitEntity", &LuaRaycastHit::HitEntity
+			"Entity", &LuaRaycastHit::HitEntity
 		);
 
 		state.new_usertype<Hit>("Hit",

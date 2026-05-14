@@ -16,8 +16,8 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		void RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity);
-		void RenderText(Registry& registry, bool drawAll, EntityID selectedEntity);
+		void RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
+		void RenderText(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
 	};
 
 }

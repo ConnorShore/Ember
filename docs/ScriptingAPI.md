@@ -603,7 +603,7 @@ Physics.TestCollision(entity)
 | `Hit` | `bool` |
 | `CollisionPoint` | `Vector3f` |
 | `SurfaceNormal` | `Vector3f` |
-| `HitEntity` | `Entity` |
+| `Entity` | `Entity` |
 
 ### `Hit` (used inside `OverlapData`)
 
