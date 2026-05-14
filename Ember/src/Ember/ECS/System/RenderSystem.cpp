@@ -424,9 +424,10 @@ namespace Ember {
 				if (meshHandle == Constants::InvalidUUID)
 					return;
 
-				// If the entity's render layer doesn't match the active camera's render mask, skip it
-				if ((renderLayer & m_RenderSceneState.ActiveRenderMask) == 0)
-					return;
+				// NOTE: Render mask filtering is intentionally NOT applied here so that entities
+				// excluded by the camera's render mask still cast shadows in the shadow pass.
+				// The mask is applied later in SortEntitiesByRenderQueue when building the
+				// render queue buckets used by the visible (non-shadow) render passes.
 
 				auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
 
@@ -486,11 +487,23 @@ namespace Ember {
 	void RenderSystem::SortEntitiesByRenderQueue(Scene* scene)
 	{
 		Frustum frustum(m_RenderSceneState.CameraViewProjection);
+		auto& registry = scene->GetRegistry();
 		for (auto& [entityID, aabb] : m_ActiveRenderableEntities)
 		{
 			Entity entity(entityID, scene);
 			auto& material = entity.GetComponent<MaterialComponent>();
 			if (material.MaterialHandle == Constants::InvalidUUID)
+				continue;
+
+			// Apply the camera's render mask here (NOT during shadow entity gathering) so that
+			// entities outside of the mask still cast shadows but are excluded from the visible scene.
+			Filter entityLayer = 0;
+			if (registry.ContainsComponent<StaticMeshComponent>(entityID))
+				entityLayer = registry.GetComponent<StaticMeshComponent>(entityID).Layer;
+			else if (registry.ContainsComponent<SkinnedMeshComponent>(entityID))
+				entityLayer = registry.GetComponent<SkinnedMeshComponent>(entityID).Layer;
+
+			if ((entityLayer & m_RenderSceneState.ActiveRenderMask) == 0)
 				continue;
 
 			// Check if the entity is in the camera frustum before sorting into render queues (frustum culling)
