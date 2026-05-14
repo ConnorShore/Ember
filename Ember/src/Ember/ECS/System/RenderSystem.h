@@ -103,10 +103,15 @@ namespace Ember {
 
 			PostProcessVolumeSettings FinalPostProcessVolumeSettings;
 
+			bool DrawHUD = true;
+			EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
+
 			void Reset()
 			{
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
+				DrawHUD = true;
+				SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 			}
 
 		} m_RenderSceneState;

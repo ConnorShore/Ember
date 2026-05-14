@@ -141,6 +141,8 @@ namespace Ember {
 
 		bool m_ShowStatsWindow = false;
 
+		bool m_DrawAllHUD = false;
+
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 

@@ -276,7 +276,8 @@ namespace Ember {
 
 	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, EntityID entity, bool isScreenSpace /* = false */)
 	{
-		if (!font || !font->GetAtlasTexture()) return;
+		if (!font || !font->GetAtlasTexture())
+			return;
 
 		auto atlasTexture = font->GetAtlasTexture();
 		const stbtt_bakedchar* glyphData = font->GetGlyphData();

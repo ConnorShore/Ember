@@ -147,6 +147,8 @@ namespace Ember {
 		renderContext.ShadowUniformBuffer = m_ShadowUniformBuffer;
 		renderContext.ViewportDimensions = m_RenderSceneState.ViewportDimensions;
 		renderContext.IsRuntime = isRuntime;
+		renderContext.DrawHUD = m_RenderSceneState.DrawHUD;
+		renderContext.SelectedEntity = m_RenderSceneState.SelectedEntity;
 
 		// Blend and set final post processing settings based on volume overrides in the scene
 		if (isRuntime)
@@ -267,6 +269,8 @@ namespace Ember {
 		m_RenderSceneState.CameraTransform = settings.CameraTransform;
 		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
+		m_RenderSceneState.DrawHUD = settings.DrawHUD;
+		m_RenderSceneState.SelectedEntity = settings.SelectedEntity;
 
 		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(settings.CameraTransform);
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));

@@ -38,10 +38,10 @@ namespace Ember {
 		Renderer2D::BeginFrame();
 
 		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
-		RenderSprites(registry);
+		RenderSprites(registry, context.DrawHUD, context.SelectedEntity);
 
 		// Draw Screen-Space Text (e.g. Ammo, Health)
-		RenderText(registry);
+		RenderText(registry, context.DrawHUD, context.SelectedEntity);
 
 		Renderer2D::EndFrame();
 
@@ -62,10 +62,13 @@ namespace Ember {
 	{
 	}
 
-	void ScreenSpace2DRenderPass::RenderSprites(Registry& registry)
+	void ScreenSpace2DRenderPass::RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity)
 	{
 		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
+			if (!drawAll && entity != selectedEntity)
+				continue;
+
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{
@@ -79,10 +82,13 @@ namespace Ember {
 		}
 	}
 
-	void ScreenSpace2DRenderPass::RenderText(Registry& registry)
+	void ScreenSpace2DRenderPass::RenderText(Registry& registry, bool drawAll, EntityID selectedEntity)
 	{
 		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
+			if (!drawAll && entity != selectedEntity)
+				continue;
+
 			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
 			if (textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
 			{

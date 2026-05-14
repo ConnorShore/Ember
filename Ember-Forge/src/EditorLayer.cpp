@@ -176,6 +176,8 @@ namespace Ember {
 				{
 					m_Camera.OnUpdate(delta);
 					m_EditorRenderPassSettings.CameraTransform = Math::Inverse(m_Camera.GetViewMatrix());
+					m_EditorRenderPassSettings.DrawHUD = m_DrawAllHUD;
+					m_EditorRenderPassSettings.SelectedEntity = m_Context.SelectedEntity.GetEntityHandle();
 					activeScene->OnUpdateEdit(delta, m_EditorRenderPassSettings);
 					break;
 				}
@@ -1120,6 +1122,32 @@ namespace Ember {
 			ImGui::EndCombo();
 		}
 		ImGui::PopStyleVar(); // Pop the combo box padding
+
+		ImGui::SameLine();
+
+		// HUD visibility dropdown
+		ImGui::Text("HUD");
+		ImGui::SameLine();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2));
+		ImGui::SetNextItemWidth(100.0f);
+
+		const char* hudLabel = m_DrawAllHUD ? "All" : "Selected";
+		if (ImGui::BeginCombo("##HUDVisibility", hudLabel))
+		{
+			if (ImGui::Selectable("Draw All HUD", m_DrawAllHUD))
+				m_DrawAllHUD = true;
+			if (m_DrawAllHUD)
+				ImGui::SetItemDefaultFocus();
+
+			if (ImGui::Selectable("Selected Only", !m_DrawAllHUD))
+				m_DrawAllHUD = false;
+			if (!m_DrawAllHUD)
+				ImGui::SetItemDefaultFocus();
+
+			ImGui::EndCombo();
+		}
+		ImGui::PopStyleVar();
 
 		ImGui::SameLine();
 

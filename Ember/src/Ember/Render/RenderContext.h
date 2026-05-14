@@ -33,6 +33,8 @@ namespace Ember {
 		std::vector<std::pair<EntityID, AABB>>* ActiveEntities;
 
 		bool IsRuntime;
+		bool DrawHUD = true;
+		EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 	};
 
 }
