@@ -129,6 +129,7 @@ namespace Ember {
 
 			ScriptPropertyType type = ScriptPropertyType::Unknown;
 			ScriptPropertyValue val;
+			std::vector<std::pair<std::string, int>> enumOptions;
             switch (value.get_type())
             {
                 case sol::type::number:
@@ -158,12 +159,53 @@ namespace Ember {
 					type = ScriptPropertyType::Bool;
 					val = value.as<bool>();
                     break;
+				case sol::type::table:
+				{
+					// Treat string-keyed tables of integers as enums.
+					// e.g. PickupType = { Ammo = 1, Health = 2, Points = 3 }
+					sol::table enumTable = value.as<sol::table>();
+					bool isEnum = !enumTable.empty();
+					for (auto& [enumKey, enumValue] : enumTable)
+					{
+						if (enumKey.get_type() != sol::type::string ||
+							enumValue.get_type() != sol::type::number)
+						{
+							isEnum = false;
+							break;
+						}
+
+						enumValue.push();
+						bool isInteger = lua_isinteger(GetState(), -1);
+						lua_pop(GetState(), 1);
+						if (!isInteger)
+						{
+							isEnum = false;
+							break;
+						}
+
+						enumOptions.emplace_back(enumKey.as<std::string>(), enumValue.as<int>());
+					}
+
+					if (!isEnum || enumOptions.empty())
+					{
+						EB_CORE_WARN("Unsupported script property type for '{}'", name);
+						continue;
+					}
+
+					// Keep declaration order stable so the editor combo matches the script
+					std::sort(enumOptions.begin(), enumOptions.end(),
+						[](const auto& a, const auto& b) { return a.second < b.second; });
+
+					type = ScriptPropertyType::Enum;
+					val = enumOptions.front().second; // default to first option
+					break;
+				}
                 default:
                     EB_CORE_WARN("Unsupported script property type for '{}'", name);
                     continue; // Skip unsupported types
 			}
 
-			properties.emplace_back( name, val, type);
+			properties.emplace_back(name, val, type, std::move(enumOptions));
 		}
 
         return properties;

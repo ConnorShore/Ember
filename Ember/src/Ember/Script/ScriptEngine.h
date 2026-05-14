@@ -51,6 +51,14 @@ namespace Ember {
 			component.UserPropertyOverrides[propertyName] = { propertyName, value, type };
 		}
 
+		// Enum overrides preserve the option list so the editor combo can re-render after a value change.
+		static void SetScriptEnumPropertyOverride(ScriptComponent& component, const std::string& propertyName,
+			int value, std::vector<std::pair<std::string, int>> enumOptions)
+		{
+			component.UserPropertyOverrides[propertyName] =
+				{ propertyName, value, ScriptPropertyType::Enum, std::move(enumOptions) };
+		}
+
 		inline static std::array<std::string, 5> DefaultEmberFunctions = {
 			"OnCreate",
 			"OnUpdate",

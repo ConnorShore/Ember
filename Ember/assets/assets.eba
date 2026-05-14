@@ -1,5 +1,9 @@
 Assets:
   - Type: Script
+    UUID: 12117729415864912341
+    Name: PickupItem
+    FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/PickupItem.lua
+  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/GameData/Assets/Scripts/CharacterMovement.lua

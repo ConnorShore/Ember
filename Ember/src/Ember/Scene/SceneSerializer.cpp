@@ -264,6 +264,7 @@ namespace Ember {
 					propNode["Value"] << std::get<float>(prop.Value);
 					break;
 				case ScriptPropertyType::Int:
+				case ScriptPropertyType::Enum:
 					propNode["Value"] << std::get<int>(prop.Value);
 					break;
 				case ScriptPropertyType::Bool:
@@ -879,6 +880,7 @@ namespace Ember {
 						break;
 					}
 					case ScriptPropertyType::Int:
+					case ScriptPropertyType::Enum:
 					{
 						int val;
 						propNode["Value"] >> val;

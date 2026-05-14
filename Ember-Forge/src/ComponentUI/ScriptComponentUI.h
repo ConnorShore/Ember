@@ -197,6 +197,26 @@ namespace Ember {
 			ScriptEditor::OpenScript(filepath);
 		}
 
+		void RefreshScriptProperties(ScriptComponent& component, const SharedPtr<Script>& scriptAsset)
+		{
+			// Re-parse the .lua file so newly added / removed properties are picked up.
+			scriptAsset->SetExposedProperties(ScriptEngine::GetScriptProperties(scriptAsset));
+
+			// Drop overrides that no longer correspond to an exposed property of the same type.
+			const auto& props = scriptAsset->GetExposedProperties();
+			for (auto it = component.UserPropertyOverrides.begin(); it != component.UserPropertyOverrides.end(); )
+			{
+				auto match = std::find_if(props.begin(), props.end(),
+					[&](const ScriptProperty& p) { return p.Name == it->first && p.Type == it->second.Type; });
+				if (match == props.end())
+					it = component.UserPropertyOverrides.erase(it);
+				else
+					++it;
+			}
+
+			component.Initialized = false;
+		}
+
 		void RenderExposedScriptProperties(ScriptComponent& component)
 		{
 			if (component.ScriptHandle == Constants::InvalidUUID)
@@ -207,12 +227,22 @@ namespace Ember {
 			if (!scriptAsset)
 				return;
 
+			ImGui::Separator();
+
+			ImGui::TextDisabled("Script Properties");
+			ImGui::SameLine();
+			float buttonWidth = ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - buttonWidth);
+			if (ImGui::SmallButton("Refresh"))
+			{
+				RefreshScriptProperties(component, scriptAsset);
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Re-parse the script file to pick up added/removed exposed properties.");
+
 			auto& defaultProperties = scriptAsset->GetExposedProperties(); // The ones parsed from the .lua file
 			if (defaultProperties.empty())
 				return;
-
-			ImGui::Separator();
-			ImGui::TextDisabled("Script Properties");
 
 			ImGui::PushID(scriptAsset->GetName().c_str());
 			if (UI::PropertyGrid::Begin("Exposed Properties"))
@@ -250,6 +280,37 @@ namespace Ember {
 						std::string val = std::get<std::string>(activeProp.Value);
 						if (UI::PropertyGrid::InputText(activeProp.Name, val))
 							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, val);
+						break;
+					}
+					case ScriptPropertyType::Enum:
+					{
+						// Use the parsed default's options so we always have the full option list,
+						// even if the override only stores the selected int value.
+						const auto& options = defaultProp.EnumOptions;
+						int currentVal = std::get<int>(activeProp.Value);
+
+						const char* previewLabel = "";
+						for (const auto& [optName, optValue] : options)
+						{
+							if (optValue == currentVal)
+							{
+								previewLabel = optName.c_str();
+								break;
+							}
+						}
+
+						if (UI::PropertyGrid::BeginComboBox(activeProp.Name, previewLabel))
+						{
+							for (const auto& [optName, optValue] : options)
+							{
+								bool isSelected = (optValue == currentVal);
+								if (UI::PropertyGrid::ComboBoxItem(optName, isSelected))
+								{
+									ScriptEngine::SetScriptEnumPropertyOverride(component, activeProp.Name, optValue, options);
+								}
+							}
+							UI::PropertyGrid::EndComboBox();
+						}
 						break;
 					}
 					default:
