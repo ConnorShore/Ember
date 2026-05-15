@@ -64,6 +64,8 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<AIAgentComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<AIAgentComponent>()); });
 		if (componentTypeStr == "LocalAvoidanceComponent")
 			return guardGet(entity.ContainsComponent<LocalAvoidanceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<LocalAvoidanceComponent>()); });
+		if (componentTypeStr == "ParticleEmitterComponent")
+			return guardGet(entity.ContainsComponent<ParticleEmitterComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<ParticleEmitterComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -123,6 +125,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<AIAgentComponent>());
 		if (componentTypeStr == "LocalAvoidanceComponent")
 			return sol::make_object(state, entity.ContainsComponent<LocalAvoidanceComponent>());
+		if (componentTypeStr == "ParticleEmitterComponent")
+			return sol::make_object(state, entity.ContainsComponent<ParticleEmitterComponent>());
 
 		if (componentTypeStr == "DisabledComponent")
 		{

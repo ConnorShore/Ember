@@ -30,7 +30,7 @@ namespace Ember {
 
 			while (emitter.EmissionAccumulator > 1.0f)
 			{
-				m_ParticleManager->Emit(emitter, transform.Position);
+				m_ParticleManager->Emit(emitter, transform.GetWorldPosition());
 				emitter.EmissionAccumulator -= 1.0f;
 			}
 		}
