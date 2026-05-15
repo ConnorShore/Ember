@@ -286,8 +286,46 @@ namespace Ember {
 
 		// Cleanup hooks
 		registry.OnComponentDetached<RigidBodyComponent>().Connect(
-			[this](EntityID entity, RigidBodyComponent& rb) {
+			[this, scene](EntityID entity, RigidBodyComponent& rb) {
 				if (rb.Body) {
+					Entity e(entity, scene);
+					// detatch all rigid bodies from collider component types
+					for (uint32_t i = 0; i < rb.Body->getNbColliders(); i++)
+					{
+						// Helper function to remove body reference from a collider component if it matches the current body
+						auto removeColliderBodyFunction = [&](auto& colliderComponent) {
+							if (colliderComponent.AttachedBody == rb.Body)
+							{
+								colliderComponent.AttachedBody = nullptr;
+								colliderComponent.Collider = nullptr;
+							}
+						};
+
+						// Remove body from collider component based on the collision shape type
+						auto collisionShape = rb.Body->getCollider(i)->getCollisionShape();
+						switch (collisionShape->getName())
+						{
+						case reactphysics3d::CollisionShapeName::BOX:
+							removeColliderBodyFunction(e.GetComponent<BoxColliderComponent>());
+							break;
+						case reactphysics3d::CollisionShapeName::SPHERE:
+							removeColliderBodyFunction(e.GetComponent<SphereColliderComponent>());
+							break;
+						case reactphysics3d::CollisionShapeName::CAPSULE:
+							removeColliderBodyFunction(e.GetComponent<CapsuleColliderComponent>());
+							break;
+						case reactphysics3d::CollisionShapeName::CONVEX_MESH:
+							removeColliderBodyFunction(e.GetComponent<ConvexMeshColliderComponent>());
+							break;
+						case reactphysics3d::CollisionShapeName::TRIANGLE_MESH:
+							removeColliderBodyFunction(e.GetComponent<ConcaveMeshColliderComponent>());
+							break;
+						default:
+							EB_CORE_ASSERT(false, "Unknown collider type attached to rigid body! Cannot clean up properly.");
+							break;
+						}
+					}
+
 					m_PhysicsWorld->destroyRigidBody(rb.Body);
 					rb.Body = nullptr;
 				}

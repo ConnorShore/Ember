@@ -24,17 +24,21 @@ Assets:
     Name: PickupItem
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PickupItem.lua
   - Type: Script
-    UUID: 5025897937436236093
-    Name: MouseLook
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
-  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/CharacterMovement.lua
   - Type: Script
+    UUID: 5025897937436236093
+    Name: MouseLook
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
+  - Type: Script
     UUID: 8562544563539838448
     Name: PlayerInteraction
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PlayerInteraction.lua
+  - Type: Material
+    UUID: 18352460508626254789
+    Name: Cube_StandardGeometry_Clone
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Cube_StandardGeometry_Clone.ebmat
   - Type: Material
     UUID: 13734008897576602447
     Name: Ground_StandardGeometry_Clone
@@ -47,10 +51,6 @@ Assets:
     UUID: 3715140739257822472
     Name: AssaultRifle_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Weapon.ebmat
-  - Type: Material
-    UUID: 18352460508626254789
-    Name: Cube_StandardGeometry_Clone
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Cube_StandardGeometry_Clone.ebmat
   - Type: Mesh
     UUID: 15931558621658917516
     Name: AssaultRifle_Cube.001_Prim0
