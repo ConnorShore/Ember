@@ -233,6 +233,7 @@ namespace Ember {
 			{
 				Input::SetCursorMode(CursorMode::Normal);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
+				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
 				m_Context.CurrentSceneState = SceneState::Pause;
 			}
 
@@ -240,6 +241,7 @@ namespace Ember {
 			{
 				Input::SetCursorMode(CursorMode::Locked);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
+				ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
 			}
 		}
 
@@ -316,6 +318,7 @@ namespace Ember {
 
 		Input::SetCursorMode(CursorMode::Locked);
 		Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
 
 		ProjectManager::GetActive()->ResetSceneIndex();
 	}
@@ -339,6 +342,7 @@ namespace Ember {
 		m_Context.CurrentSceneState = SceneState::Edit;
 
 		Input::SetCursorMode(CursorMode::Normal);
+		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
 	}
 
 	void EditorLayer::RenderMenuBar()
