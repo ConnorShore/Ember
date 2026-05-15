@@ -16,6 +16,7 @@ namespace Ember {
 		{
 			if (UI::PropertyGrid::Begin("DirectionalLightProps"))
 			{
+				UI::PropertyGrid::Checkbox("Active", component.Active);
 				UI::PropertyGrid::Color3("Color", component.Color);
 				UI::PropertyGrid::Float("Intensity", component.Intensity, 0.1f, 0.0f, m_MaxValue);
 				UI::PropertyGrid::End();

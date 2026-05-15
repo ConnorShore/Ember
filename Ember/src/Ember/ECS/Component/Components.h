@@ -486,6 +486,7 @@ namespace Ember {
 
 	struct DirectionalLightComponent
 	{
+		bool Active = true;
 		Vector3f Color = Vector3f(1.0f);
 		float Intensity = 5.0f;
 
@@ -497,6 +498,7 @@ namespace Ember {
 
 	struct SpotLightComponent
 	{
+		bool Active = true;
 		Vector3f Color = Vector3f(1.0f);
 		float Intensity = 100.0f;
 
@@ -522,6 +524,7 @@ namespace Ember {
 
 	struct PointLightComponent
 	{
+		bool Active = true;
 		Vector3f Color = Vector3f(1.0f);
 		float Intensity = 25.0f;
 		float Radius = 0.0f;

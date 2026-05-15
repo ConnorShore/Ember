@@ -106,6 +106,9 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(entity);
+			if (!light.Active)
+				continue;
+
 			int i = lightData.ActiveDirectionalLights;
 
 			lightData.DirectionalLights[i].Direction = transform.GetForward();
@@ -125,6 +128,9 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry.GetComponents<PointLightComponent, TransformComponent>(entity);
+			if (!light.Active)
+				continue;
+
 			int i = lightData.ActivePointLights;
 
 			lightData.PointLights[i].Position = Vector3f(transform.GetWorldPosition());
@@ -145,6 +151,9 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
+			if (!light.Active)
+				continue;
+
 			int i = lightData.ActiveSpotLights;
 
 			lightData.SpotLights[i].Position = Vector3f(transform.GetWorldPosition());

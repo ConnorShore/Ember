@@ -173,6 +173,9 @@ namespace Ember {
 
 		EntityID lightEntity = lightView.Front();
 		auto [light, transform] = registry.GetComponents<DirectionalLightComponent, TransformComponent>(lightEntity);
+		if (!light.Active)
+			return;
+
 		Vector3f lightDirection = transform.GetForward();
 
 		m_DirectionalShadowMapBuffer->Bind();
@@ -237,6 +240,9 @@ namespace Ember {
 				break;
 
 			auto [light, transform] = registry.GetComponents<SpotLightComponent, TransformComponent>(entity);
+			if (!light.Active)
+				continue;
+
 			Vector3f lightDirection = transform.GetForward();
 
 			// TODO: Move spotlight to use cascade shadow maps in the future as well, but for now we will just use a single perspective projection for the spotlight shadow map

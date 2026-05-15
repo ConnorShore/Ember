@@ -218,6 +218,7 @@ namespace Ember {
 			auto& lightComp = entity.GetComponent<DirectionalLightComponent>();
 			ryml::NodeRef lightNode = entityNode["DirectionalLightComponent"];
 			lightNode |= ryml::MAP;
+			lightNode["Active"] << lightComp.Active;
 			Util::SerializeVector3f(lightNode["Color"], lightComp.Color);
 			lightNode["Intensity"] << lightComp.Intensity;
 		}
@@ -226,6 +227,7 @@ namespace Ember {
 			auto& lightComp = entity.GetComponent<SpotLightComponent>();
 			ryml::NodeRef lightNode = entityNode["SpotLightComponent"];
 			lightNode |= ryml::MAP;
+			lightNode["Active"] << lightComp.Active;
 			Util::SerializeVector3f(lightNode["Color"], lightComp.Color);
 			lightNode["Intensity"] << lightComp.Intensity;
 			lightNode["CutOffAngle"] << lightComp.CutOffAngle;
@@ -236,6 +238,7 @@ namespace Ember {
 			auto& lightComp = entity.GetComponent<PointLightComponent>();
 			ryml::NodeRef lightNode = entityNode["PointLightComponent"];
 			lightNode |= ryml::MAP;
+			lightNode["Active"] << lightComp.Active;
 			Util::SerializeVector3f(lightNode["Color"], lightComp.Color);
 			lightNode["Intensity"] << lightComp.Intensity;
 			lightNode["Radius"] << lightComp.Radius;
@@ -823,6 +826,8 @@ namespace Ember {
 		{
 			ryml::NodeRef lightNode = entityNode["DirectionalLightComponent"];
 			auto& dlc = deserializedEntity.AttachComponent<DirectionalLightComponent>();
+			if (lightNode.has_child("Active"))
+				lightNode["Active"] >> dlc.Active;
 			Util::DeserializeVector3f(lightNode["Color"], dlc.Color);
 			lightNode["Intensity"] >> dlc.Intensity;
 		}
@@ -832,6 +837,9 @@ namespace Ember {
 			ryml::NodeRef lightNode = entityNode["SpotLightComponent"];
 
 			auto& slc = deserializedEntity.AttachComponent<SpotLightComponent>();
+			if (lightNode.has_child("Active"))
+				lightNode["Active"] >> slc.Active;
+
 			Util::DeserializeVector3f(lightNode["Color"], slc.Color);
 			lightNode["Intensity"] >> slc.Intensity;
 
@@ -846,6 +854,8 @@ namespace Ember {
 		{
 			ryml::NodeRef lightNode = entityNode["PointLightComponent"];
 			auto& plc = deserializedEntity.AttachComponent<PointLightComponent>();
+			if (lightNode.has_child("Active"))
+				lightNode["Active"] >> plc.Active;
 			Util::DeserializeVector3f(lightNode["Color"], plc.Color);
 			lightNode["Intensity"] >> plc.Intensity;
 			lightNode["Radius"] >> plc.Radius;
