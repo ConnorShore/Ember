@@ -71,9 +71,14 @@ namespace Ember {
 
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 
-			// Treat transform translation X/Y as normalized [0, 1] viewport coords so
-			// UI stays in the same relative position when the window is resized.
+			if (!sprite.ScreenSpace)
+				continue;
+
+			// Treat transform translation X/Y and scale as normalized [0, 1] viewport coords so
+			// UI stays in the same relative position and size when the window is resized.
 			Matrix4f screenTransform = transform.WorldTransform;
+			screenTransform[0][0] *= viewportWidth;
+			screenTransform[1][1] *= viewportHeight;
 			screenTransform[3][0] *= viewportWidth;
 			screenTransform[3][1] *= viewportHeight;
 

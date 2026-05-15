@@ -30,6 +30,7 @@
 #include "ComponentUI/NavigationGridComponentUI.h"
 #include "ComponentUI/AIAgentComponentUI.h"
 #include "ComponentUI/LocalAvoidanceComponentUI.h"
+#include "ComponentUI/SpriteComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -69,6 +70,7 @@ namespace Ember {
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<SkinnedMeshComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<MaterialComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<TextComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<SpriteComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Rendering].emplace_back(ScopedPtr<ParticleEmitterComponentUI>::Create(m_Context));
 
 		// --- LIGHTING ---

@@ -65,6 +65,7 @@ namespace Ember {
 			{
 				spriteNode["TextureUUID"] << entity.GetComponent<SpriteComponent>().TextureHandle;
 			}
+			spriteNode["ScreenSpace"] << entity.GetComponent<SpriteComponent>().ScreenSpace;
 		}
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
@@ -606,6 +607,7 @@ namespace Ember {
 			spriteNode["TextureUUID"] >> texId;
 
 			sc.TextureHandle = (UUID)texId;
+			spriteNode["ScreenSpace"] >> sc.ScreenSpace;
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))

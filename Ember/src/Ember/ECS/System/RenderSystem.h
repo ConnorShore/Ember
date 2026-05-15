@@ -38,6 +38,7 @@ namespace Ember {
 		void BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath = "");
 
 		void OnViewportResize(uint32_t width, uint32_t height);
+		const Vector2f& GetViewportSize() const { return m_RenderSceneState.ActiveCamera.GetViewportSize(); }
 
 		EntityID GetEntityIDAtPixel(uint32_t x, uint32_t y);
 

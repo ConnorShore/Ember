@@ -51,6 +51,9 @@ namespace Ember {
 		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
+			if (sprite.ScreenSpace)
+				continue;
+
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{
 				Renderer2D::DrawQuad(transform.WorldTransform, sprite.Color);

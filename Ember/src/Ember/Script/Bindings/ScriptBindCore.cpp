@@ -1,5 +1,7 @@
 #include "ebpch.h"
 #include "ScriptBindCore.h"
+#include "Ember/Core/Application.h"
+#include "Ember/ECS/System/RenderSystem.h"
 
 namespace Ember {
 
@@ -35,6 +37,20 @@ namespace Ember {
 
 		state.set_function("Error", [](const std::string& message) {
 			EB_CORE_ERROR("{}", message);
+		});
+
+		auto window = state.create_table("Window");
+		window.set_function("GetWidth", []() {
+			return Application::Instance().GetWindow().GetWidth();
+		});
+		window.set_function("GetHeight", []() {
+			return Application::Instance().GetWindow().GetHeight();
+		});
+
+		auto renderer = state.create_table("Renderer");
+		renderer.set_function("GetViewportSize", []() {
+			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
+			return renderSystem->GetViewportSize();
 		});
 	}
 

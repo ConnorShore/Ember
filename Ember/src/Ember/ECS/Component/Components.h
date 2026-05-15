@@ -358,6 +358,7 @@ namespace Ember {
 	{
 		Vector4f Color = Vector4f(1.0f);
 		UUID TextureHandle = Constants::InvalidUUID;
+		bool ScreenSpace = true;
 
 		SpriteComponent() = default;
 		SpriteComponent(const Vector4f color) : Color(color) {}
