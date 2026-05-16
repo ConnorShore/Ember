@@ -9,7 +9,8 @@ namespace Ember {
 			"Mass", &RigidBodyComponent::Mass,
 			"GravityEnabled", &RigidBodyComponent::GravityEnabled,
 			"ApplyForce", &RigidBodyComponent::ApplyForce,
-			"ApplyImpulse", &RigidBodyComponent::ApplyImpulse
+			"ApplyImpulse", &RigidBodyComponent::ApplyImpulse,
+			"ApplyImpulseAtPoint", &RigidBodyComponent::ApplyImpulseAtPoint
 		);
 
 		state.new_usertype<ColliderOffset>("ColliderOffset",

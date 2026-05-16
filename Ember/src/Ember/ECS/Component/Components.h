@@ -168,6 +168,56 @@ namespace Ember {
 			}
 		}
 
+		void ApplyImpulseAtPoint(const Vector3f& impulse, const Vector3f& worldPoint)
+		{
+			if (Body)
+			{
+				Body->setIsSleeping(false);
+
+				float mass = Body->getMass();
+				if (mass > 0.0f)
+				{
+					reactphysics3d::Vector3 rp3dImpulse(impulse.x, impulse.y, impulse.z);
+					reactphysics3d::Vector3 rp3dPoint(worldPoint.x, worldPoint.y, worldPoint.z);
+
+					// Accurately calculate the true center of mass in world space
+					reactphysics3d::Vector3 worldCenterOfMass = Body->getTransform() * Body->getLocalCenterOfMass();
+
+					// 1. LINEAR VELOCITY (The Push)
+					reactphysics3d::Vector3 deltaLinearVel = rp3dImpulse / mass;
+					Body->setLinearVelocity(Body->getLinearVelocity() + deltaLinearVel);
+
+					// 2. ANGULAR VELOCITY (The Twist/Torque)
+					reactphysics3d::Vector3 r = rp3dPoint - worldCenterOfMass;
+					reactphysics3d::Vector3 angularImpulse = r.cross(rp3dImpulse);
+
+					// RP3D stores the inertia tensor as a Vector3. 
+					// We calculate the inverse by taking the reciprocal of each component safely.
+					reactphysics3d::Vector3 localInertia = Body->getLocalInertiaTensor();
+					reactphysics3d::Vector3 localInvI(
+						localInertia.x != 0.0f ? 1.0f / localInertia.x : 0.0f,
+						localInertia.y != 0.0f ? 1.0f / localInertia.y : 0.0f,
+						localInertia.z != 0.0f ? 1.0f / localInertia.z : 0.0f
+					);
+
+					// Construct the diagonal 3x3 inverse matrix
+					reactphysics3d::Matrix3x3 localInvInertia(
+						localInvI.x, 0, 0,
+						0, localInvI.y, 0,
+						0, 0, localInvI.z
+					);
+
+					// Convert local inertia to world space to figure out how the object should spin
+					reactphysics3d::Matrix3x3 rot = Body->getTransform().getOrientation().getMatrix();
+					reactphysics3d::Matrix3x3 worldInvInertia = rot * localInvInertia * rot.getTranspose();
+
+					// Apply the final rotation
+					reactphysics3d::Vector3 deltaAngularVel = worldInvInertia * angularImpulse;
+					Body->setAngularVelocity(Body->getAngularVelocity() + deltaAngularVel);
+				}
+			}
+		}
+
 		// Runtime only (not serialized) -> holds the actual physics body created in the PhysicsSystem
 		reactphysics3d::RigidBody* Body = nullptr;
 
