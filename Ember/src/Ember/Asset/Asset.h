@@ -5,6 +5,7 @@
 #include "UUID.h"
 
 #include <string>
+#include <filesystem>
 
 namespace Ember {
 
@@ -88,6 +89,19 @@ namespace Ember {
 
 		inline bool IsEngineAsset() const { return m_IsEngineAsset; }
 		inline void SetIsEngineAsset(bool isEngineAsset) { m_IsEngineAsset = isEngineAsset; }
+
+		inline void Rename(const std::string& name)
+		{
+			SetName(name);
+
+			if (!m_FilePath.empty())
+			{
+				std::filesystem::path path(m_FilePath);
+				std::filesystem::path newPath = path.parent_path() / (name + path.extension().string());
+				std::filesystem::rename(path, newPath);
+				m_FilePath = newPath.string();
+			}
+		}
 
 		bool operator==(const Asset& other) const { return GetUUID() == other.GetUUID(); }
 		bool operator!=(const Asset& other) const { return GetUUID() != other.GetUUID(); }

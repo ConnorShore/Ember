@@ -29,7 +29,7 @@ namespace Ember {
 				return;
 
 			auto material = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(component.MaterialHandle);
-			ImGui::Text("Material: %s", material->GetName().c_str());
+			ImGui::Text("Material: ", material->GetName().c_str());
 			ImGui::Separator();
 
 			std::string currentMaterialName = material ? material->GetName() : "None";
@@ -72,6 +72,13 @@ namespace Ember {
 					m_Context->ActiveScene()->RegisterAsset(clonedMaterial);
 				}
 			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Rename"))
+			{
+				m_OpenRenamePopup = true;
+			}
+			OpenRenamePopup(material);
 
 			ImGui::Text("Shader: %s", material->GetShader()->GetName().c_str());
 			ImGui::SameLine();
@@ -230,6 +237,44 @@ namespace Ember {
 				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
 			}
 		}
+
+		void OpenRenamePopup(SharedPtr<MaterialBase>& material)
+		{
+			if (m_OpenRenamePopup)
+			{
+				ImGui::OpenPopup("Rename Material");
+				m_OpenRenamePopup = false;
+			}
+
+			if (ImGui::BeginPopupModal("Rename Material", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+				{
+				static char materialName[128] = {};
+				if (ImGui::IsWindowAppearing())
+					strncpy(materialName, material->GetName().c_str(), sizeof(materialName) - 1);
+
+				ImGui::InputText("Material Name", materialName, sizeof(materialName));
+
+				ImGui::Spacing();
+
+				if (ImGui::Button("OK", ImVec2(120, 0)))
+				{
+					material->Rename(materialName);
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel", ImVec2(120, 0)))
+				{
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
+			}
+		}
+
+	private:
+		bool m_OpenRenamePopup = false;
 	};
 
 }

@@ -65,16 +65,16 @@ Assets:
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponHandler.lua
   - Type: Material
     UUID: 18352460508626254789
-    Name: Cube_StandardGeometry_Clone
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Cube_StandardGeometry_Clone.ebmat
+    Name: BoxMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
   - Type: Material
     UUID: 13734008897576602447
-    Name: Ground_StandardGeometry_Clone
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Ground_StandardGeometry_Clone.ebmat
+    Name: GroundMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
     UUID: 1868779223986162857
-    Name: Pickup_StandardGeometry_Clone
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Pickup_StandardGeometry_Clone.ebmat
+    Name: PickupMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/PickupMaterial.ebmat
   - Type: Material
     UUID: 3715140739257822472
     Name: AssaultRifle_Weapon
