@@ -231,13 +231,20 @@ namespace Ember {
 
 		void DrawMaterialProperties(SharedPtr<MaterialBase>& material)
 		{
-			ImGui::BeginDisabled(material->IsEngineAsset());
-
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 			ImGui::TextDisabled("MATERIAL PROPERTIES");
 			ImGui::Spacing();
+
+			if (material->IsEngineAsset())
+			{
+				ImGui::BeginDisabled(true);
+				ImGui::TextWrapped("This is an engine material. To edit its properties, create a clone by clicking the 'Clone' button above.");
+				ImGui::EndDisabled();
+				ImGui::Separator();
+				return;
+			}
 
 			// Seed defaults for any newly-introduced shader uniforms 
 			EnsureMaterialUniformsForShader(material);
@@ -315,8 +322,6 @@ namespace Ember {
 				}
 				UI::PropertyGrid::End();
 			}
-
-			ImGui::EndDisabled();
 		}
 
 		// ==============================================================================

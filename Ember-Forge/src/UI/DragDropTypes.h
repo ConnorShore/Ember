@@ -12,12 +12,14 @@ namespace Ember {
 		AssetModel,
 		AssetScript,
 		AssetShader,
+		AssetMaterial,
 		AssetPhysicsMaterial,
 		AssetPrefab,
 		AssetFont,
 		AssetAudioClip,
 		Scene,
 		SceneEntity,
+		Count
 	};
 
 	class DragDropUtils
@@ -33,6 +35,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetModel: return "ASSET_MODEL";
 			case DragDropPayloadType::AssetScript: return "ASSET_SCRIPT";
 			case DragDropPayloadType::AssetShader: return "ASSET_SHADER";
+			case DragDropPayloadType::AssetMaterial: return "ASSET_MATERIAL";
 			case DragDropPayloadType::AssetPhysicsMaterial: return "ASSET_PHYSICS_MATERIAL";
 			case DragDropPayloadType::AssetPrefab: return "ASSET_PREFAB";
 			case DragDropPayloadType::AssetFont: return "ASSET_FONT";
@@ -50,6 +53,7 @@ namespace Ember {
 			if (str == "ASSET_MODEL") return DragDropPayloadType::AssetModel;
 			if (str == "ASSET_SCRIPT") return DragDropPayloadType::AssetScript;
 			if (str == "ASSET_SHADER") return DragDropPayloadType::AssetShader;
+			if (str == "ASSET_MATERIAL") return DragDropPayloadType::AssetMaterial;
 			if (str == "ASSET_PHYSICS_MATERIAL") return DragDropPayloadType::AssetPhysicsMaterial;
 			if (str == "ASSET_PREFAB") return DragDropPayloadType::AssetPrefab;
 			if (str == "ASSET_FONT") return DragDropPayloadType::AssetFont;
@@ -70,6 +74,7 @@ namespace Ember {
 			//case DragDropPayloadType::AssetMesh: return "*.ebmesh;";
 			//case DragDropPayloadType::AssetModel: return "*.ebmodel;";
 			case DragDropPayloadType::AssetShader: return "*.glsl;";
+			case DragDropPayloadType::AssetMaterial: return "*.ebmat;";
 			case DragDropPayloadType::AssetPhysicsMaterial: return "*.ebpmat;";
 			case DragDropPayloadType::AssetScript: return "*.lua;";
 			case DragDropPayloadType::AssetPrefab: return "*.ebprefab";
@@ -91,6 +96,8 @@ namespace Ember {
 				return DragDropPayloadType::AssetModel;
 			if (extension == ".glsl")
 				return DragDropPayloadType::AssetShader;
+			if (extension == ".ebmat")
+				return DragDropPayloadType::AssetMaterial;
 			if (extension == ".ebpmat")
 				return DragDropPayloadType::AssetPhysicsMaterial;
 			if (extension == ".lua")

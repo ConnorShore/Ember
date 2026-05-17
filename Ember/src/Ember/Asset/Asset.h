@@ -103,6 +103,22 @@ namespace Ember {
 			}
 		}
 
+		inline void Move(const std::string& newFilePath)
+		{
+			if (!m_FilePath.empty())
+			{
+				std::filesystem::path path(m_FilePath);
+				std::filesystem::path newPath = std::filesystem::path(newFilePath);
+				std::filesystem::rename(path, newPath);
+				m_FilePath = newPath.string();
+
+				if (m_Name != newPath.stem().string())
+				{
+					SetName(newPath.stem().string());
+				}
+			}
+		}
+
 		bool operator==(const Asset& other) const { return GetUUID() == other.GetUUID(); }
 		bool operator!=(const Asset& other) const { return GetUUID() != other.GetUUID(); }
 

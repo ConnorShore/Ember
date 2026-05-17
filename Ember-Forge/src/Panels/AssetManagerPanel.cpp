@@ -18,6 +18,10 @@
 
 namespace Ember {
 
+	// Identifiers for drag and drop payloads
+	constexpr const char* DragDropFile = "File";
+	constexpr const char* DragDropDirectory = "Directory";
+
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
 		: Panel("Asset Manager", context), 
 		m_RootDirectory(std::filesystem::path("Ember-Forge/assets")),
@@ -291,7 +295,29 @@ namespace Ember {
 			m_CurrentDirectory /= fileName;
 		}
 
-		// TODO: Make this a drop target for moving files into the directory (and directories into directories)
+		// Accept all file-based drag drop payload types as drop targets for moving files into the directory
+		if (ImGui::BeginDragDropTarget())
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+
+			for (int i = 0; i < std::to_underlying(DragDropPayloadType::Count); i++)
+			{
+				auto payloadType = static_cast<DragDropPayloadType>(i);
+				std::string payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadStr.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					std::filesystem::path destPath = entry.path() / std::filesystem::path(filePath).filename();
+
+					// Update the assets filepath in the AssetManager if it's an asset that's being moved
+					auto asset = assetManager.GetAssetByPath<Asset>(filePath);
+					asset->Move(destPath.string());
+
+					break;
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 	}
 
 	void AssetManagerPanel::RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry)

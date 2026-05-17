@@ -215,6 +215,9 @@ namespace Ember {
 
 			m_Assets[uuid] = asset;
 			m_AssetNames[name] = uuid;
+
+			if (!asset->GetFilePath().empty())
+				m_AssetPaths[asset->GetFilePath()] = uuid;
 		}
 
 		template<IsCoreAsset T>
