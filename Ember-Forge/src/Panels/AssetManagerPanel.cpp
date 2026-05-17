@@ -18,6 +18,10 @@
 
 namespace Ember {
 
+	// Identifiers for drag and drop payloads
+	constexpr const char* DragDropFile = "File";
+	constexpr const char* DragDropDirectory = "Directory";
+
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
 		: Panel("Asset Manager", context), 
 		m_RootDirectory(std::filesystem::path("Ember-Forge/assets")),
@@ -55,6 +59,8 @@ namespace Ember {
 		RenderAssetPanelContextMenu();
 
 		RenderRenameScenePopup();
+		RenderCreateDirectoryPopup();
+		RenderDeleteConfirmPopup();
 
 		ImGui::End();
 	}
@@ -70,7 +76,7 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		if (m_CurrentDirectory != m_RootDirectory)
 		{
-			if (ImGui::Button("<- Back"))
+			if (ImGui::Button("<-"))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
@@ -78,7 +84,7 @@ namespace Ember {
 		else
 		{
 			ImGui::BeginDisabled();
-			ImGui::Button("<- Back");
+			ImGui::Button("<-");
 			ImGui::EndDisabled();
 		}
 		ImGui::PopStyleColor();
@@ -289,6 +295,136 @@ namespace Ember {
 		{
 			m_CurrentDirectory /= fileName;
 		}
+
+		// Context Mennu
+		RenderDirectoryEntryContextMenu(entry);
+
+		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+		{
+			auto filePathAbs = std::filesystem::absolute(entry);
+
+			ImGui::SetDragDropPayload(DragDropDirectory, filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
+			ImGui::Image(m_DirectoryTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::EndDragDropSource();
+		}
+
+		// Accept all file-based drag drop payload types as drop targets for moving files into the directory
+		if (ImGui::BeginDragDropTarget())
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+
+			// Check file types
+			for (int i = 0; i < std::to_underlying(DragDropPayloadType::Count); i++)
+			{
+				auto payloadType = static_cast<DragDropPayloadType>(i);
+				std::string payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadStr.c_str()))
+				{
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize - 1);
+					std::filesystem::path srcPath(filePath);
+					std::filesystem::path destPath = entry.path() / srcPath.filename();
+
+					// Update the asset's filepath in the AssetManager if it's a tracked asset
+					if (assetManager.ContainsAssetWithPath(filePath))
+					{
+						auto asset = assetManager.GetAssetByPath<Asset>(filePath);
+						std::error_code ec;
+						std::filesystem::rename(srcPath, destPath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move asset to '{0}': {1}", destPath.string(), ec.message());
+						}
+						else
+						{
+							assetManager.RenameAsset(asset->GetUUID(), destPath.stem().string(), destPath.string());
+						}
+					}
+					else
+					{
+						std::error_code ec;
+						std::filesystem::rename(srcPath, destPath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move file to '{0}': {1}", destPath.string(), ec.message());
+						}
+						else
+						{
+							EB_CORE_INFO("Successfully moved file to: {0}", destPath.string());
+						}
+					}
+
+					break;
+				}
+			}
+
+			// Check if it's a directory being moved
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(DragDropDirectory))
+			{
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize - 1);
+				std::filesystem::path destPath = entry.path() / std::filesystem::path(filePath).filename();
+
+				// Create the destination directory if it doesn't exist
+				if (!std::filesystem::exists(destPath))
+				{
+					std::error_code ec;
+					std::filesystem::create_directory(destPath, ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to create directory at '{0}': {1}", destPath.string(), ec.message());
+						return;
+					}
+				}
+
+				// Move directory and update all assets within that directory in the AssetManager
+				for (const auto& innerEntry : std::filesystem::recursive_directory_iterator(filePath))
+				{
+					auto filePathDiff = std::filesystem::relative(innerEntry.path(), filePath);
+					auto destFilePath = destPath / filePathDiff;
+
+					// Recreate subdirectory structure at the destination
+					if (innerEntry.is_directory())
+					{
+						std::error_code ec;
+						std::filesystem::create_directory(destFilePath, ec);
+						continue;
+					}
+
+					if (assetManager.ContainsAssetWithPath(innerEntry.path().string()))
+					{
+						auto asset = assetManager.GetAssetByPath<Asset>(innerEntry.path().string());
+						std::error_code ec;
+						std::filesystem::rename(innerEntry.path(), destFilePath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move asset to '{0}': {1}", destFilePath.string(), ec.message());
+						}
+						else
+						{
+							assetManager.RenameAsset(asset->GetUUID(), destFilePath.stem().string(), destFilePath.string());
+						}
+					}
+					else
+					{
+						std::error_code ec;
+						std::filesystem::rename(innerEntry.path(), destFilePath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move file to '{0}': {1}", destFilePath.string(), ec.message());
+						}
+						else
+						{
+							EB_CORE_INFO("Successfully moved file to: {0}", destFilePath.string());
+						}
+					}
+				}
+
+				// Remove start directory after moving all contents
+				std::error_code ec;
+				std::filesystem::remove_all(filePath, ec);
+			}
+
+			ImGui::EndDragDropTarget();
+		}
 	}
 
 	void AssetManagerPanel::RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry)
@@ -331,18 +467,28 @@ namespace Ember {
 			// Common options for all asset types
 			if (ImGui::MenuItem("Delete"))
 			{
-				Application::Instance().GetAssetManager().RemoveAsset(filePath.string());
-				std::error_code ec;
-				std::filesystem::remove(filePath, ec);
+				m_PendingDeletePath = filePath;
+				m_PendingDeleteIsDirectory = false;
+				m_ShowDeleteConfirmPopup = true;
+			}
 
-				if (ec)
-				{
-					EB_CORE_ERROR("Failed to delete asset '{0}': {1}", fileName.string(), ec.message());
-				}
-				else
-				{
-					EB_CORE_INFO("Successfully deleted asset: {0}", fileName.string());
-				}
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenderDirectoryEntryContextMenu(const std::filesystem::directory_entry& entry)
+	{
+		const std::filesystem::path filePath = entry.path();
+		const std::filesystem::path fileName = entry.path().filename();
+
+		if (ImGui::BeginPopupContextItem())
+		{
+			// Common options for all asset types
+			if (ImGui::MenuItem("Delete"))
+			{
+				m_PendingDeletePath = filePath;
+				m_PendingDeleteIsDirectory = true;
+				m_ShowDeleteConfirmPopup = true;
 			}
 
 			ImGui::EndPopup();
@@ -353,6 +499,11 @@ namespace Ember {
 	{
 		if (ImGui::BeginPopupContextWindow("AssetManagerPanelContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
+			if (ImGui::MenuItem("New Directory"))
+			{
+				m_ShowCreateDirectoryPopup = true;
+			}
+
 			if (ImGui::BeginMenu("Import Asset"))
 			{
 				SharedPtr<Asset> asset = nullptr;
@@ -618,6 +769,135 @@ namespace Ember {
 
 		m_RenameSceneNewName.clear();
 		m_RenameSceneOldFilePath.clear();
+	}
+
+	void AssetManagerPanel::RenderCreateDirectoryPopup()
+	{
+		if (m_ShowCreateDirectoryPopup)
+		{
+			ImGui::OpenPopup("Create Directory");
+			m_ShowCreateDirectoryPopup = false;
+		}
+
+		if (ImGui::BeginPopupModal("Create Directory", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			char directoryNameBuffer[128] = "NewFolder";
+			if (ImGui::InputText("Name", directoryNameBuffer, sizeof(directoryNameBuffer)))
+			{
+				m_NewDirectoryName = std::string(directoryNameBuffer);
+				// Remove any invalid characters from the directory name
+				std::string invalidChars = "\\/:?\"<>|";
+				for (char c : invalidChars)
+					m_NewDirectoryName.erase(std::remove(m_NewDirectoryName.begin(), m_NewDirectoryName.end(), c), m_NewDirectoryName.end());
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+			bool isValid = !m_NewDirectoryName.empty();
+			if (!isValid)
+				ImGui::BeginDisabled();
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				std::filesystem::path newDirPath = m_CurrentDirectory / m_NewDirectoryName;
+				std::error_code ec;
+				std::filesystem::create_directory(newDirPath, ec);
+				if (ec)
+				{
+					auto evt = UINotificationEvent(std::format("Failed to create directory '{}': {}", m_NewDirectoryName, ec.message()), UINotificationEvent::Error);
+					m_Context->EventCallback(evt);
+				}
+				else
+				{
+					auto evt = UINotificationEvent(std::format("Directory '{}' created!", m_NewDirectoryName));
+					m_Context->EventCallback(evt);
+				}
+				m_NewDirectoryName.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			if (!isValid)
+				ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_NewDirectoryName.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenderDeleteConfirmPopup()
+	{
+		if (m_ShowDeleteConfirmPopup)
+		{
+			ImGui::OpenPopup("Confirm Delete");
+			m_ShowDeleteConfirmPopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(380, 130), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("Confirm Delete", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+		{
+			std::string itemName = m_PendingDeletePath.filename().string();
+			if (m_PendingDeleteIsDirectory)
+				ImGui::TextWrapped("Delete directory \"%s\" and all of its contents? This cannot be undone.", itemName.c_str());
+			else
+				ImGui::TextWrapped("Delete \"%s\"? This cannot be undone.", itemName.c_str());
+
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			if (ImGui::Button("Delete", ImVec2(120, 0)))
+			{
+				auto& assetManager = Application::Instance().GetAssetManager();
+
+				if (m_PendingDeleteIsDirectory)
+				{
+					for (const auto& entry : std::filesystem::recursive_directory_iterator(m_PendingDeletePath))
+						assetManager.RemoveAsset(entry.path().string());
+
+					std::error_code ec;
+					std::filesystem::remove_all(m_PendingDeletePath, ec);
+					if (ec)
+					{
+						auto evt = UINotificationEvent(std::format("Failed to delete directory '{}': {}", itemName, ec.message()), UINotificationEvent::Error);
+						m_Context->EventCallback(evt);
+					}
+					else
+					{
+						auto evt = UINotificationEvent(std::format("Successfully deleted directory: {}", itemName));
+						m_Context->EventCallback(evt);
+					}
+				}
+				else
+				{
+					assetManager.RemoveAsset(m_PendingDeletePath.string());
+					std::error_code ec;
+					std::filesystem::remove(m_PendingDeletePath, ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to delete asset '{0}': {1}", itemName, ec.message());
+					}
+					else
+					{
+						EB_CORE_INFO("Successfully deleted asset: {0}", itemName);
+					}
+				}
+
+				m_PendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_PendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
 
 	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)

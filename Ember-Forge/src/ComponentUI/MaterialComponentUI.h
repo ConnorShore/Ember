@@ -197,12 +197,8 @@ namespace Ember {
 				}
 
 				// --- Shader Configurations (Render Queue & Edit) ---
-				if (material->GetShader() && !material->IsEngineAsset())
+				if (!material->IsEngineAsset() && material->GetShader() && !material->GetShader()->IsEngineAsset())
 				{
-					// Render Queue Combo
-					//ImGui::Text("Render Queue");
-					//ImGui::NextColumn();
-					//ImGui::PushItemWidth(-1);
 					if (UI::PropertyGrid::BeginComboBox("Render Queue", RenderQueueToString(material->GetRenderQueue()).c_str()))
 					{
 						auto renderQueues = { RenderQueue::Opaque, RenderQueue::Forward, RenderQueue::Transparent };
@@ -220,13 +216,16 @@ namespace Ember {
 				UI::PropertyGrid::End();
 			}
 
-			ImGui::Text("Source Code");
-			ImGui::NextColumn();
-			if (ImGui::Button("Open in VS Code", ImVec2(-1, 0)))
+			if (!material->IsEngineAsset() && material->GetShader() && !material->GetShader()->IsEngineAsset())
 			{
-				EB_CORE_TRACE("Opening shader file: {}", material->GetShader()->GetFilePath());
-				std::string command = "code " + material->GetShader()->GetFilePath();
-				system(command.c_str());
+				ImGui::Text("Source Code");
+				ImGui::NextColumn();
+				if (ImGui::Button("Open in VS Code", ImVec2(-1, 0)))
+				{
+					EB_CORE_TRACE("Opening shader file: {}", material->GetShader()->GetFilePath());
+					std::string command = "code " + material->GetShader()->GetFilePath();
+					system(command.c_str());
+				}
 			}
 		}
 
@@ -237,6 +236,15 @@ namespace Ember {
 			ImGui::Spacing();
 			ImGui::TextDisabled("MATERIAL PROPERTIES");
 			ImGui::Spacing();
+
+			if (material->IsEngineAsset())
+			{
+				ImGui::BeginDisabled(true);
+				ImGui::TextWrapped("This is an engine material. To edit its properties, create a clone by clicking the 'Clone' button above.");
+				ImGui::EndDisabled();
+				ImGui::Separator();
+				return;
+			}
 
 			// Seed defaults for any newly-introduced shader uniforms 
 			EnsureMaterialUniformsForShader(material);
