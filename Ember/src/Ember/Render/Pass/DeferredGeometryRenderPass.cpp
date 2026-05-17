@@ -69,6 +69,9 @@ namespace Ember {
 				continue;
 
 			auto materialAsset = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(material.MaterialHandle);
+			if (!materialAsset->GetShader())
+				continue;
+
 			materialAsset->GetShader()->Bind();
 			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
 

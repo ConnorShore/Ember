@@ -29,6 +29,9 @@ namespace Ember {
 		auto defaultNeutralLUT = Load<Texture2D>(Constants::Assets::DefaultNeutralColorLUTUUID, Constants::Assets::DefaultNeutralColorLUT, (m_EngineAssetDirectory / "textures/DefaultNeutralColorLUT.png").string());
 
 		// Shaders
+		// Fallback shader loaded first so any subsequent shader that fails to compile/link can
+		// substitute it via Shader::ActiveProgram() and render solid pink instead of nothing.
+		auto fallbackShader = Load<Shader>(Constants::Assets::FallbackShadUUID, Constants::Assets::FallbackShad, (m_EngineAssetDirectory / "shaders/Fallback.glsl").string());
 		auto geometryShader = Load<Shader>(Constants::Assets::StandardGeometryShadUUID, Constants::Assets::StandardGeometryShad, (m_EngineAssetDirectory / "shaders/StandardGeometry.glsl").string());
 		ShaderMacros skinGeoMacros;
 		skinGeoMacros["MAX_BONES"] = std::to_string(Constants::Renderer::MaxBones);

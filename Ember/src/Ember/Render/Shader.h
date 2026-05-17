@@ -20,14 +20,21 @@ namespace Ember {
 	{
 	public:
 		Shader(const std::string& name, const std::string& filePath, const ShaderMacros& macros)
-			: Asset(name, filePath, GetStaticType()) {}
+			: Asset(name, filePath, GetStaticType()), m_Macros(macros) {}
 		Shader(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
-			: Asset(uuid, name, filePath, GetStaticType()) {
+			: Asset(uuid, name, filePath, GetStaticType()), m_Macros(macros) {
 		}
 
 		virtual ~Shader() = default;
 
 		virtual void Bind() const = 0;
+
+		// Re-parses the shader source from disk and recompiles. Used by the hot-reload system.
+		virtual void Reload() = 0;
+
+		// Returns true if the most recent compile/link failed. When true, Bind() falls back to a
+		// "missing shader" program (pink) so the error is visually obvious in the viewport.
+		virtual bool HasCompileError() const = 0;
 
 		virtual void SetBool(const std::string& name, bool value) const = 0;
 		virtual void SetInt(const std::string& name, int value) const = 0;
@@ -42,12 +49,17 @@ namespace Ember {
 
 		virtual const std::vector<ShaderProperty>& GetProperties() const = 0;
 
+		const ShaderMacros& GetMacros() const { return m_Macros; }
+
 		static AssetType GetStaticType() { return AssetType::Shader; }
 
 		static SharedPtr<Shader> Create(const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {});
 		static SharedPtr<Shader> Create(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {});
+
+	protected:
+		ShaderMacros m_Macros;
 	};
 
 	//////////////////////////////////////////////////////////////////////////

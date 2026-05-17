@@ -12,10 +12,12 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 ## Table of Contents
 
 - [Script Structure & Lifecycle](#script-structure--lifecycle)
+  - [Enum Properties](#enum-properties)
 - [Core Types](#core-types)
   - [`UUID`](#uuid)
   - [`TimeStep`](#timestep)
   - [`Log` / `Error`](#log--error)
+  - [`Window` / `Renderer`](#window--renderer)
 - [Math](#math)
   - [Vectors & Matrices](#vectors--matrices)
   - [`Quaternion`](#quaternion)
@@ -46,8 +48,9 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 ## Script Structure & Lifecycle
 
 Every Ember script is a Lua module that returns a table. Fields on this table that match a
-supported primitive type (`int`, `float`, `string`, `bool`) are surfaced as **editable properties**
-in the Inspector. Any of the following methods, if present, are invoked by the engine:
+supported type (`int`, `float`, `string`, `bool`, or an enum table — see
+[Enum Properties](#enum-properties)) are surfaced as **editable properties** in the Inspector.
+Any of the following methods, if present, are invoked by the engine:
 
 | Method | When called | Signature |
 | --- | --- | --- |
@@ -56,7 +59,9 @@ in the Inspector. Any of the following methods, if present, are invoked by the e
 | `OnOverlapTriggerEnter(self, entity, other)` | A trigger collider on `entity` started overlapping `other`. | `entity, other: Entity` |
 | `OnOverlapTriggerStay(self, entity, other)` | Continuous overlap with `other`. | `entity, other: Entity` |
 | `OnOverlapTriggerExit(self, entity, other)` | The overlap with `other` ended. | `entity, other: Entity` |
-| `OnAnimationEvent(self, eventName)` | An animation event keyed in an `Animation` clip fired. | `eventName: string` |
+
+> The engine treats those five names as reserved lifecycle hooks. Any other field on the returned
+> table is considered a *property* and is candidate for editor exposure.
 
 ### Minimal script template
 
@@ -88,6 +93,34 @@ return MyScript
 ```lua
 local other = entity:GetScriptInstance() -- returns the script table on this entity, or nil
 ```
+
+### Enum Properties
+
+A top-level table whose keys are strings and values are integers is exposed as a **combo box**
+in the inspector. The script can use the table like a regular enum at runtime.
+
+```lua
+local Pickup = {}
+
+Pickup.Kind = {
+    Ammo   = 1,
+    Health = 2,
+    Points = 3,
+}
+
+function Pickup:OnUpdate(entity, delta)
+    if self.Kind == Pickup.Kind.Health then
+        -- ...
+    end
+end
+
+return Pickup
+```
+
+The option list is taken from the table at script-load time and the *first option* (lowest int)
+is the default. The editor stores the selected option's integer value on the component, so reading
+`self.Kind` from Lua returns a plain number — compare it against the named entries on the
+original table.
 
 ---
 
@@ -122,6 +155,17 @@ Logging utilities that route through Ember's core logger.
 Log.Info("Hello from Lua!")
 Log.Warn("Something looks off...")
 Error("Something went wrong!") -- Note: Error is a global function, not under Log
+```
+
+### `Window` / `Renderer`
+
+Query the game window and the runtime viewport.
+
+```lua
+local w = Window.GetWidth()           -- number (pixels)
+local h = Window.GetHeight()          -- number (pixels)
+
+local viewport = Renderer.GetViewportSize()  -- Vector2f { x = width, y = height }
 ```
 
 ---
@@ -373,6 +417,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 | Field | Type |
 | --- | --- |
+| `IsActive` | `bool` |
 | `Color` | `Vector4f` |
 | `Intensity` | `float` |
 
@@ -380,6 +425,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 | Field | Type |
 | --- | --- |
+| `IsActive` | `bool` |
 | `Color` | `Vector4f` |
 | `Intensity` | `float` |
 | `Radius` | `float` |
@@ -388,6 +434,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 | Field | Type |
 | --- | --- |
+| `IsActive` | `bool` |
 | `Color` | `Vector4f` |
 | `Intensity` | `float` |
 | `CutOffAngle` | `float` |
@@ -414,6 +461,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | `GravityEnabled` | `bool` |
 | `:ApplyForce(force)` | Apply a continuous force (`Vector3f`). |
 | `:ApplyImpulse(impulse)` | Apply an instantaneous impulse (`Vector3f`). |
+| `:ApplyImpulseAtPoint(impulse, worldPoint)` | Apply an instantaneous impulse at a world-space point so it generates torque. Both args `Vector3f`. |
 
 #### `ColliderOffset`
 
@@ -484,10 +532,12 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 #### `AudioListenerComponent`
 
+Marks an entity (usually the camera) as a 3D-audio listener for spatialized sounds.
+
 | Field | Type |
 | --- | --- |
 | `IsActive` | `bool` |
-| `ListenerIndex` | `int` |
+| `ListenerIndex` | `int` (miniaudio listener index, normally `0`) |
 
 ### AI Components
 
@@ -580,7 +630,8 @@ Input.GetCursorMode()
 ### `Physics`
 
 ```lua
-local hit = Physics.CastRay(startV3, endV3) -- RaycastHit
+local hit = Physics.CastRay(startV3, endV3)                     -- RaycastHit (filter = All)
+local hit = Physics.CastRay(startV3, endV3, CollisionFilter.Enemy) -- filtered cast
 
 Physics.CheckOverlapBox(position, rotation, scale, entity)
 Physics.CheckOverlapBox(position, rotation, scale, entity, filter)

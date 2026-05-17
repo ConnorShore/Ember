@@ -8,6 +8,8 @@
 
 #include <Ember/Core/Application.h>
 
+#include <format>
+
 namespace Ember {
 	namespace UI::PropertyGrid {
 
@@ -652,5 +654,52 @@ namespace Ember {
 
 			return changed;
 		}
+
+		bool ComboBoxWithActions(const std::string& label, const std::string& defaultValue, UICallbackFunc addFunc, UICallbackFunc removeFunc)
+		{
+			ImGui::PushID(label.c_str());
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			// Switch to the right column for the Combobox + X Button
+			ImGui::TableNextColumn();
+
+			float buttonSize = ImGui::GetFrameHeight();
+			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+
+			// Calculate width so the combobox leaves exactly enough room for the + and X buttons
+			float comboWidth = ImGui::GetContentRegionAvail().x - (2 * (buttonSize + spacing));
+
+			// Record where the combo should start so we can rewind after drawing the buttons.
+			// The buttons must be drawn first while we are still in the parent window — BeginCombo
+			// switches the current window to the popup when it returns true, which would cause any
+			// widgets (and PopID) that follow it to execute inside the popup, corrupting the ID stack.
+			ImVec2 comboPos = ImGui::GetCursorPos();
+
+			ImGui::SetCursorPosX(comboPos.x + comboWidth + spacing);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.9f, 0.2f, 1.0f));
+			if (ImGui::Button("+", ImVec2(buttonSize, buttonSize)))
+				addFunc();
+			ImGui::PopStyleColor();
+
+			ImGui::SameLine(0, spacing);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+			if (ImGui::Button("X", ImVec2(buttonSize, buttonSize)))
+				removeFunc();
+			ImGui::PopStyleColor();
+
+			// Rewind to draw the combo box in its correct position
+			ImGui::SetCursorPos(comboPos);
+			ImGui::SetNextItemWidth(comboWidth);
+
+			// PopID before BeginComboBox so it is always balanced in the parent window context
+			ImGui::PopID();
+
+			return UI::BeginComboBox("##combo", defaultValue);
+		}
+
 	}
 }
