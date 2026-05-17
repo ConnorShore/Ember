@@ -77,4 +77,29 @@ namespace Ember {
 		m_MaterialMap[name] = std::move(material);
 	}
 
+	std::string RenderQueueToString(RenderQueue queue)
+	{
+		switch (queue)
+		{
+		case RenderQueue::None: return "None";
+		case RenderQueue::Opaque: return "Opaque";
+		case RenderQueue::Forward: return "Forward";
+		case RenderQueue::Transparent: return "Transparent";
+		default:
+			EB_CORE_ASSERT(false, "Unknown RenderQueue value!");
+			return "Unknown";
+		}
+	}
+
+	Ember::RenderQueue StringToRenderQueue(const std::string& str)
+	{
+		if (str == "None") return RenderQueue::None;
+		if (str == "Opaque") return RenderQueue::Opaque;
+		if (str == "Forward") return RenderQueue::Forward;
+		if (str == "Transparent") return RenderQueue::Transparent;
+
+		EB_CORE_ASSERT(false, "Unknown RenderQueue string: {}", str);
+		return RenderQueue::None;
+	}
+
 }

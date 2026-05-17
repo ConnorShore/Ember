@@ -26,10 +26,10 @@ namespace Ember {
 			else
 				root["BaseMaterialUUID"] << (uint64_t)Constants::InvalidUUID;
 		}
-		else
-		{
+		else if (material->GetShader())
 			root["Shader"] << (uint64_t)material->GetShader()->GetUUID();
-		}
+		else 
+			root["Shader"] << (uint64_t)Constants::InvalidUUID;
 
 		ryml::NodeRef uniformsNode = root["Uniforms"];
 		uniformsNode |= ryml::MAP;

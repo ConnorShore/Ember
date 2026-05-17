@@ -23,6 +23,10 @@ Assets:
     UUID: 7804144985708769464
     Name: AssaultRifle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ORM_Mat0.png
+  - Type: Shader
+    UUID: 8050703726895507596
+    Name: RedShader
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/RedShader.glsl
   - Type: Script
     UUID: 16605421126880563658
     Name: MuzzleFlash
@@ -48,13 +52,13 @@ Assets:
     Name: PlayerInteraction
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PlayerInteraction.lua
   - Type: Script
-    UUID: 6068451618412420797
-    Name: CharacterMovement
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/CharacterMovement.lua
-  - Type: Script
     UUID: 5025897937436236093
     Name: MouseLook
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
+  - Type: Script
+    UUID: 6068451618412420797
+    Name: CharacterMovement
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/CharacterMovement.lua
   - Type: Script
     UUID: 15161599708472166578
     Name: ADS
@@ -67,6 +71,10 @@ Assets:
     UUID: 18352460508626254789
     Name: BoxMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
+  - Type: Material
+    UUID: 18336302437050600783
+    Name: Empty_Entity_Material
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Empty_Entity_Material.ebmat
   - Type: Material
     UUID: 13734008897576602447
     Name: GroundMaterial
