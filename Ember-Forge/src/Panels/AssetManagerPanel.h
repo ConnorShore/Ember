@@ -38,6 +38,8 @@ namespace Ember {
 		void RenderRenameScenePopup();
 		void RenameScene();
 
+		void RenderCreateDirectoryPopup();
+
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
 	private:
@@ -52,5 +54,9 @@ namespace Ember {
 		bool m_ShowRenameScenePopup = false;
 		std::string m_RenameSceneOldFilePath;
 		std::string m_RenameSceneNewName;
+
+		// Create directory popup
+		bool m_ShowCreateDirectoryPopup = false;
+		std::string m_NewDirectoryName;
 	};
 }

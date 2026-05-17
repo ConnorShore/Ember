@@ -55,6 +55,7 @@ namespace Ember {
 		RenderAssetPanelContextMenu();
 
 		RenderRenameScenePopup();
+		RenderCreateDirectoryPopup();
 
 		ImGui::End();
 	}
@@ -70,7 +71,7 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		if (m_CurrentDirectory != m_RootDirectory)
 		{
-			if (ImGui::Button("<- Back"))
+			if (ImGui::Button("<-"))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
@@ -78,7 +79,7 @@ namespace Ember {
 		else
 		{
 			ImGui::BeginDisabled();
-			ImGui::Button("<- Back");
+			ImGui::Button("<-");
 			ImGui::EndDisabled();
 		}
 		ImGui::PopStyleColor();
@@ -289,6 +290,8 @@ namespace Ember {
 		{
 			m_CurrentDirectory /= fileName;
 		}
+
+		// TODO: Make this a drop target for moving files into the directory (and directories into directories)
 	}
 
 	void AssetManagerPanel::RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry)
@@ -353,6 +356,11 @@ namespace Ember {
 	{
 		if (ImGui::BeginPopupContextWindow("AssetManagerPanelContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
+			if (ImGui::MenuItem("New Directory"))
+			{
+				m_ShowCreateDirectoryPopup = true;
+			}
+
 			if (ImGui::BeginMenu("Import Asset"))
 			{
 				SharedPtr<Asset> asset = nullptr;
@@ -618,6 +626,60 @@ namespace Ember {
 
 		m_RenameSceneNewName.clear();
 		m_RenameSceneOldFilePath.clear();
+	}
+
+	void AssetManagerPanel::RenderCreateDirectoryPopup()
+	{
+		if (m_ShowCreateDirectoryPopup)
+		{
+			ImGui::OpenPopup("Create Directory");
+			m_ShowCreateDirectoryPopup = false;
+		}
+
+		if (ImGui::BeginPopupModal("Create Directory", NULL, ImGuiWindowFlags_NoSavedSettings))
+		{
+			char directoryNameBuffer[128] = "NewFolder";
+			if (ImGui::InputText("Name", directoryNameBuffer, sizeof(directoryNameBuffer)))
+			{
+				m_NewDirectoryName = std::string(directoryNameBuffer);
+				// Remove any invalid characters from the directory name
+				std::string invalidChars = "\\/:?\"<>|";
+				for (char c : invalidChars)
+					m_NewDirectoryName.erase(std::remove(m_NewDirectoryName.begin(), m_NewDirectoryName.end(), c), m_NewDirectoryName.end());
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+			bool isValid = !m_NewDirectoryName.empty();
+			if (!isValid)
+				ImGui::BeginDisabled();
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				std::filesystem::path newDirPath = m_CurrentDirectory / m_NewDirectoryName;
+				std::error_code ec;
+				std::filesystem::create_directory(newDirPath, ec);
+				if (ec)
+				{
+					auto evt = UINotificationEvent(std::format("Failed to create directory '{}': {}", m_NewDirectoryName, ec.message()), UINotificationEvent::Error);
+					m_Context->EventCallback(evt);
+				}
+				else
+				{
+					auto evt = UINotificationEvent(std::format("Directory '{}' created!", m_NewDirectoryName));
+					m_Context->EventCallback(evt);
+				}
+				m_NewDirectoryName.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			if (!isValid)
+				ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_NewDirectoryName.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
 	}
 
 	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)
