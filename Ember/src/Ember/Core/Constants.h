@@ -43,6 +43,8 @@ namespace Ember::Constants {
 		inline const char* DefaultNeutralColorLUT = "DefaultNeutralColorLUT";
 		inline const uint64_t DefaultNeutralColorLUTUUID = 6;
 
+		inline const char* FallbackShad = "Fallback";
+		inline const uint64_t FallbackShadUUID = 8;
 		inline const char* StandardGeometryShad = "StandardGeometry";
 		inline const uint64_t StandardGeometryShadUUID = 9;
 		inline const char* StandardSkinnedGeometryShad = "StandardSkinnedGeometry";

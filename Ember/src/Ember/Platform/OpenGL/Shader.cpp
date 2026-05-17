@@ -1,6 +1,10 @@
 #include "ebpch.h"
 #include "Shader.h"
 
+#include "Ember/Core/Application.h"
+#include "Ember/Core/Constants.h"
+#include "Ember/Render/Shader.h"
+
 #include <glad/glad.h>
 
 namespace Utils {
@@ -13,6 +17,19 @@ namespace Utils {
 		case Ember::ShaderType::None:
 		default:							EB_CORE_ASSERT(false, "None Shader type is not supported for GL!"); return 0;
 		}
+	}
+
+	// Looks up the engine's fallback shader asset and returns its raw GL program id. The
+	// fallback is a normal Shader asset loaded by AssetManager::LoadDefaults so it follows the
+	// same compile/parse/hot-reload pipeline as every other shader; this helper only exists to
+	// avoid recursing through Shader::ActiveProgram() when substituting it for a broken shader.
+	static GLuint GetFallbackProgram()
+	{
+		auto fallback = Ember::Application::Instance().GetAssetManager()
+			.GetAsset<Ember::Shader>(Ember::Constants::Assets::FallbackShadUUID);
+		if (!fallback)
+			return 0;
+		return Ember::StaticPointerCast<Ember::OpenGL::Shader>(fallback)->GetRendererId();
 	}
 }
 
@@ -58,12 +75,36 @@ namespace Ember {
 
 		Shader::~Shader()
 		{
-			glDeleteProgram(m_Id);
+			if (m_Id != 0)
+				glDeleteProgram(m_Id);
+		}
+
+		uint32_t Shader::ActiveProgram() const
+		{
+			return m_Id != 0 ? m_Id : Utils::GetFallbackProgram();
 		}
 
 		void Shader::Bind() const
 		{
-			glUseProgram(m_Id);
+			glUseProgram(ActiveProgram());
+		}
+
+		void Shader::Reload()
+		{
+			EB_CORE_INFO("Reloading shader '{}' from {}", m_Name, m_FilePath);
+
+			// Tear down the old GL program so the new compile starts clean.
+			if (m_Id != 0)
+			{
+				glDeleteProgram(m_Id);
+				m_Id = 0;
+			}
+			m_UniformLocationCache.clear();
+			m_Properties.clear();
+
+			ShaderSourceOutput output = ShaderParser::Parse(m_FilePath, m_Macros);
+			CompileShader(output.Sources);
+			m_Properties = output.Properties;
 		}
 
 		void Shader::SetBool(const std::string& name, bool value) const
@@ -87,7 +128,7 @@ namespace Ember {
 			if (location == -1)
 				return 0;
 			int value = 0;
-			glGetUniformiv(m_Id, location, &value);
+			glGetUniformiv(ActiveProgram(), location, &value);
 			return value;
 		}
 
@@ -121,14 +162,17 @@ namespace Ember {
 			glUniformMatrix4fv(GetUniformLocation(name), count, GL_FALSE, &mats[0][0][0]);
 		}
 
-		// Compiles each shader stage, attaches to program, links, then cleans up stage objects
+		// Compiles each shader stage, attaches to program, links, then cleans up stage objects.
+		// On any compile or link failure the GL program is destroyed and m_Id is left at 0 so
+		// Bind() will substitute the fallback "missing shader" program.
 		void Shader::CompileShader(const ShaderSourceMap& sources)
 		{
 			EB_CORE_ASSERT(sources.size() <= NUM_SUPPORTED_SHADERS, "Only {} shader types are currently supported!", NUM_SUPPORTED_SHADERS);
 
 			GLuint programId = glCreateProgram();
-			std::array<GLuint, NUM_SUPPORTED_SHADERS> shaderIDs;
+			std::array<GLuint, NUM_SUPPORTED_SHADERS> shaderIDs{};
 			uint32_t shaderIndex = 0;
+			bool stageFailed = false;
 			for (auto kv : sources) {
 				ShaderType type = kv.first;
 				GLuint glType = Utils::GLShaderTypeFromShaderType(kv.first);
@@ -150,10 +194,11 @@ namespace Ember {
 					char* message = (char*)_alloca(length * sizeof(char));
 					glGetShaderInfoLog(shaderId, length, &length, message);
 
-					EB_CORE_ERROR("Failed to compile {} shader!", ShaderTypeToString(type));
+					EB_CORE_ERROR("Failed to compile {} shader '{}'!", ShaderTypeToString(type), m_Name);
 					EB_CORE_ERROR("\t{}", message);
 
 					glDeleteShader(shaderId);
+					stageFailed = true;
 					break;
 				}
 
@@ -161,34 +206,46 @@ namespace Ember {
 				shaderIDs[shaderIndex++] = shaderId;
 			}
 
-			// Only set id once shader compilation succeeds
-			EB_CORE_ASSERT(programId, "Failed to compile shaders!");
-			m_Id = programId;
+			if (stageFailed)
+			{
+				// Discard the half-built program and any successfully compiled stages so we
+				// don't leak GL objects, then leave m_Id at 0 to trigger the fallback program.
+				for (uint32_t i = 0; i < shaderIndex; i++)
+					glDeleteShader(shaderIDs[i]);
+				glDeleteProgram(programId);
+				m_Id = 0;
+				return;
+			}
 
-			glLinkProgram(m_Id);
+			glLinkProgram(programId);
 
 			int isLinked;
-			glGetProgramiv(m_Id, GL_LINK_STATUS, &isLinked);
+			glGetProgramiv(programId, GL_LINK_STATUS, &isLinked);
 			if (isLinked == GL_FALSE)
 			{
 				int length;
-				glGetProgramiv(m_Id, GL_INFO_LOG_LENGTH, &length);
+				glGetProgramiv(programId, GL_INFO_LOG_LENGTH, &length);
 
 				char* message = (char*)_alloca(length * sizeof(char));
-				glGetProgramInfoLog(m_Id, length, &length, message);
+				glGetProgramInfoLog(programId, length, &length, message);
 
 				EB_CORE_ERROR("Failed to link shader program: {}", m_Name);
 				EB_CORE_ERROR("\t{}", message);
 
-				glDeleteProgram(m_Id);
+				for (uint32_t i = 0; i < shaderIndex; i++)
+					glDeleteShader(shaderIDs[i]);
+				glDeleteProgram(programId);
+				m_Id = 0;
 				return;
 			}
 
-			glValidateProgram(m_Id);
+			glValidateProgram(programId);
 
 			// Shader objects are no longer needed after linking
 			for (uint32_t i = 0; i < shaderIndex; i++)
 				glDeleteShader(shaderIDs[i]);
+
+			m_Id = programId;
 		}
 
 		// Caches uniform locations to avoid repeated GL queries
@@ -197,7 +254,7 @@ namespace Ember {
 			if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
 				return m_UniformLocationCache[name];
 
-			int location = glGetUniformLocation(m_Id, name.c_str());
+			int location = glGetUniformLocation(ActiveProgram(), name.c_str());
 			if (location == -1)
 				EB_CORE_WARN("Warning: uniform '{}' doesn't exist!", name);
 

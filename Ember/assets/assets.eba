@@ -24,9 +24,13 @@ Assets:
     Name: AssaultRifle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ORM_Mat0.png
   - Type: Shader
-    UUID: 8050703726895507596
-    Name: RedShader
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/RedShader.glsl
+    UUID: 12325648309010901638
+    Name: NewShader
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/NewShader.glsl
+  - Type: Shader
+    UUID: 14943252508886507233
+    Name: Tester
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tester.glsl
   - Type: Script
     UUID: 16605421126880563658
     Name: MuzzleFlash
@@ -52,13 +56,13 @@ Assets:
     Name: PlayerInteraction
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PlayerInteraction.lua
   - Type: Script
-    UUID: 5025897937436236093
-    Name: MouseLook
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
-  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/CharacterMovement.lua
+  - Type: Script
+    UUID: 5025897937436236093
+    Name: MouseLook
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
   - Type: Script
     UUID: 15161599708472166578
     Name: ADS
@@ -72,10 +76,6 @@ Assets:
     Name: BoxMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
   - Type: Material
-    UUID: 18336302437050600783
-    Name: Empty_Entity_Material
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Empty_Entity_Material.ebmat
-  - Type: Material
     UUID: 13734008897576602447
     Name: GroundMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
@@ -87,6 +87,14 @@ Assets:
     UUID: 3715140739257822472
     Name: AssaultRifle_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Weapon.ebmat
+  - Type: Material
+    UUID: 14203374552321917264
+    Name: Empty_Entity_Material
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Empty_Entity_Material.ebmat
+  - Type: Material
+    UUID: 14366608392032606563
+    Name: Empty_Entity_Material
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Empty_Entity_Material.ebmat
   - Type: Mesh
     UUID: 15931558621658917516
     Name: AssaultRifle_Cube.001_Prim0

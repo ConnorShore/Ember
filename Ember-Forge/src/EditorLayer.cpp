@@ -153,6 +153,10 @@ namespace Ember {
 	{
 		SyncEntitySelectionState();
 
+		// Reload any user shaders whose source files have changed on disk so the user sees
+		// edits live without restarting the editor.
+		Application::Instance().GetAssetManager().PollShaderHotReload();
+
 		// Disable scrolling of editor camera if the viewport isn't hovered to prevent conflicts with scrollable panels
 		if (!m_ViewportHovered)
 			m_Camera.SetScrollDisabled(true);

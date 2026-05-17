@@ -111,6 +111,53 @@ namespace Ember {
 			}
 		}
 
+		// Seeds the material with sensible defaults for any shader property whose uniform
+		// isn't already set. Without this, a freshly-created (or hot-reloaded) shader's
+		// properties don't appear in the UI (the per-property widget early-outs when the
+		// uniform is missing), and the GPU reads uninitialized uniforms as zero -- which
+		// renders forward shaders black and makes opaque G-buffer pixels look transparent.
+		void EnsureMaterialUniformsForShader(const SharedPtr<MaterialBase>& material)
+		{
+			if (!material || !material->GetShader())
+				return;
+
+			for (const auto& prop : material->GetShader()->GetProperties())
+			{
+				if (material->ContainsUniform(prop.UniformName))
+					continue;
+
+				switch (prop.Type)
+				{
+				case ShaderPropertyType::Float:
+					material->SetUniform(prop.UniformName, 0.0f);
+					break;
+				case ShaderPropertyType::Slider:
+					// Midpoint of the slider range gives reasonable defaults like
+					// Roughness=0.5 / Opacity=0.5 instead of zero.
+					material->SetUniform(prop.UniformName, (prop.Min + prop.Max) * 0.5f);
+					break;
+				case ShaderPropertyType::Float2:
+					material->SetUniform(prop.UniformName, Vector2f(0.0f));
+					break;
+				case ShaderPropertyType::Float3:
+					material->SetUniform(prop.UniformName, Vector3f(0.0f));
+					break;
+				case ShaderPropertyType::Float4:
+					material->SetUniform(prop.UniformName, Vector4f(0.0f));
+					break;
+				case ShaderPropertyType::Color3:
+					material->SetUniform(prop.UniformName, Vector3f(1.0f));
+					break;
+				case ShaderPropertyType::Color4:
+					material->SetUniform(prop.UniformName, Vector4f(1.0f));
+					break;
+				case ShaderPropertyType::Texture:
+					material->SetUniform(prop.UniformName, GetDefaultTextureForUniform(prop.UniformName));
+					break;
+				}
+			}
+		}
+
 		// Helper to determine default texture to apply
 		SharedPtr<Texture2D> GetDefaultTextureForUniform(const std::string& uniformName)
 		{
@@ -268,6 +315,11 @@ namespace Ember {
 
 				ImGui::Separator();
 
+				// Seed defaults for any newly-introduced shader uniforms (e.g. immediately
+				// after the shader is assigned, or after a hot-reload that added a property)
+				// so the property widgets render and the GPU doesn't read zeros.
+				EnsureMaterialUniformsForShader(material);
+
 				if (UI::PropertyGrid::Begin("MaterialProps"))
 				{
 					auto& shaderProps = material->GetShader()->GetProperties();
@@ -405,7 +457,25 @@ namespace Ember {
 			if (ImGui::BeginPopupModal("Create New Shader", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 			{
 				static char shaderName[128] = "NewShader";
+				static RenderQueue selectedQueue = RenderQueue::Opaque;
+
 				ImGui::InputText("Shader Name", shaderName, sizeof(shaderName));
+
+				// Render queue selector — the preset script is tailored to the chosen queue
+				// (opaque writes to the G-buffer, forward/transparent output color directly with blending).
+				if (ImGui::BeginCombo("Render Queue", RenderQueueToString(selectedQueue).c_str()))
+				{
+					auto renderQueues = { RenderQueue::Opaque, RenderQueue::Forward, RenderQueue::Transparent };
+					for (const auto& rq : renderQueues)
+					{
+						bool isSelected = selectedQueue == rq;
+						if (ImGui::Selectable(RenderQueueToString(rq).c_str(), isSelected))
+							selectedQueue = rq;
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
 
 				ImGui::Spacing();
 
@@ -420,9 +490,10 @@ namespace Ember {
 					}
 					else
 					{
-						GenerateShaderPresetScript(shaderName, newShaderPath, material);
+						GenerateShaderPresetScript(shaderName, newShaderPath, material, selectedQueue);
 
 						strcpy_s(shaderName, "NewShader");
+						selectedQueue = RenderQueue::Opaque;
 						ImGui::CloseCurrentPopup();
 					}
 				}
@@ -449,43 +520,112 @@ namespace Ember {
 			}
 		}
 
-		void GenerateShaderPresetScript(const std::string& shaderName, const std::filesystem::path& filePath, SharedPtr<MaterialBase>& material)
+		// Writes the shared vertex stage (same for every queue) — a basic transformed mesh that
+		// forwards UVs/normals/world position so the fragment stage has what it needs.
+		void WriteSharedVertexStage(std::ofstream& out)
 		{
-			// Ensure the Shaders directory exists
-			std::filesystem::create_directories(filePath.parent_path());
-
-			// Write a minimal GLSL template matching the engine's shader style
-			std::ofstream out(filePath);
 			out << "#shader vertex\n";
 			out << "#version 450 core\n\n";
 			out << "layout(location = 0) in vec3 v_Position;\n";
+			out << "layout(location = 1) in vec3 v_Normal;\n";
 			out << "layout(location = 2) in vec2 v_TextureCoord;\n\n";
 			out << "layout(std140, binding = 0) uniform CameraData\n";
 			out << "{\n";
 			out << "    mat4 u_ViewProjection;\n";
 			out << "};\n\n";
 			out << "uniform mat4 u_Transform;\n\n";
-			out << "out vec2 TextureCoord;\n\n";
+			out << "out vec2 TextureCoord;\n";
+			out << "out vec3 WorldNormal;\n";
+			out << "out vec3 WorldPosition;\n\n";
 			out << "void main()\n";
 			out << "{\n";
 			out << "    TextureCoord = v_TextureCoord;\n";
-			out << "    gl_Position = u_ViewProjection * u_Transform * vec4(v_Position, 1.0);\n";
+			out << "    WorldNormal = mat3(u_Transform) * v_Normal;\n";
+			out << "    vec4 worldPos = u_Transform * vec4(v_Position, 1.0);\n";
+			out << "    WorldPosition = worldPos.xyz;\n";
+			out << "    gl_Position = u_ViewProjection * worldPos;\n";
 			out << "}\n\n";
+		}
+
+		void GenerateShaderPresetScript(const std::string& shaderName, const std::filesystem::path& filePath, SharedPtr<MaterialBase>& material, RenderQueue queue)
+		{
+			// Ensure the Shaders directory exists
+			std::filesystem::create_directories(filePath.parent_path());
+
+			std::ofstream out(filePath);
+			WriteSharedVertexStage(out);
+
 			out << "#shader fragment\n";
 			out << "#version 450 core\n\n";
-			out << "layout(location = 0) out vec4 OutColor;\n";
-			out << "layout(location = 1) out vec4 BrightColor;\n";
-			out << "layout(location = 2) out int EntityID;\n\n";
-			out << "in vec2 TextureCoord;\n\n";
-			out << "// @UIProperty(Name = \"Color\", Type = Color3)\n";
-			out << "uniform vec3 u_Color;\n\n";
-			out << "uniform int u_EntityID;\n\n";
-			out << "void main()\n";
-			out << "{\n";
-			out << "    OutColor = vec4(u_Color, 1.0);\n";
-			out << "    BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);\n";
-			out << "    EntityID = u_EntityID;\n";
-			out << "}\n";
+
+			switch (queue)
+			{
+			case RenderQueue::Opaque:
+			{
+				// Opaque queue feeds the deferred G-buffer (albedo/roughness, normal/metallic,
+				// position/AO, emission). Lighting is applied later by the engine's lighting pass.
+				out << "layout(location = 0) out vec4 AlbedoRoughness;\n";
+				out << "layout(location = 1) out vec4 NormalMetallic;\n";
+				out << "layout(location = 2) out vec4 PositionAO;\n";
+				out << "layout(location = 3) out vec4 EmissionOut;\n";
+				out << "layout(location = 4) out int EntityID;\n\n";
+				out << "in vec2 TextureCoord;\n";
+				out << "in vec3 WorldNormal;\n";
+				out << "in vec3 WorldPosition;\n\n";
+				out << "// @UIProperty(Name = \"Albedo\", Type = Color3)\n";
+				out << "uniform vec3 u_Albedo;\n";
+				out << "// @UIProperty(Name = \"Roughness\", Type = Slider, Min = 0.0, Max = 1.0)\n";
+				out << "uniform float u_Roughness;\n";
+				out << "// @UIProperty(Name = \"Metallic\", Type = Slider, Min = 0.0, Max = 1.0)\n";
+				out << "uniform float u_Metallic;\n\n";
+				out << "uniform int u_EntityID;\n\n";
+				out << "void main()\n";
+				out << "{\n";
+				out << "    AlbedoRoughness = vec4(u_Albedo, u_Roughness);\n";
+				out << "    NormalMetallic = vec4(normalize(WorldNormal), u_Metallic);\n";
+				out << "    PositionAO = vec4(WorldPosition, 1.0);\n";
+				out << "    EmissionOut = vec4(0.0);\n";
+				out << "    EntityID = u_EntityID;\n";
+				out << "}\n";
+				break;
+			}
+			case RenderQueue::Forward:
+			case RenderQueue::Transparent:
+			{
+				// Forward and transparent both shade directly to the lit color target.
+				// Transparent additionally writes alpha for blending.
+				const bool isTransparent = (queue == RenderQueue::Transparent);
+				out << "layout(location = 0) out vec4 OutColor;\n";
+				out << "layout(location = 1) out vec4 BrightColor;\n";
+				out << "layout(location = 2) out int EntityID;\n\n";
+				out << "in vec2 TextureCoord;\n";
+				out << "in vec3 WorldNormal;\n";
+				out << "in vec3 WorldPosition;\n\n";
+				out << "// @UIProperty(Name = \"Color\", Type = Color3)\n";
+				out << "uniform vec3 u_Color;\n";
+				if (isTransparent)
+				{
+					out << "// @UIProperty(Name = \"Opacity\", Type = Slider, Min = 0.0, Max = 1.0)\n";
+					out << "uniform float u_Opacity;\n";
+				}
+				out << "// @UIProperty(Name = \"Emission Intensity\", Type = Float, Min = 0.0, Max = 50.0, Step = 0.05)\n";
+				out << "uniform float u_Emission;\n\n";
+				out << "uniform int u_EntityID;\n\n";
+				out << "void main()\n";
+				out << "{\n";
+				out << "    vec3 finalColor = u_Color * u_Emission;\n";
+				if (isTransparent)
+					out << "    OutColor = vec4(finalColor, u_Opacity);\n";
+				else
+					out << "    OutColor = vec4(finalColor, 1.0);\n";
+				out << "    BrightColor = vec4(max(OutColor.rgb - vec3(1.0), vec3(0.0)), 1.0);\n";
+				out << "    EntityID = u_EntityID;\n";
+				out << "}\n";
+				break;
+			}
+			default:
+				break;
+			}
 			out.close();
 
 			// Load it through the asset manager and register with the active scene
@@ -496,6 +636,7 @@ namespace Ember {
 				shaderAsset->SetIsEngineAsset(false);
 				m_Context->ActiveScene()->RegisterAsset(shaderAsset);
 				material->SetShader(shaderAsset);
+				material->SetRenderQueue(queue);
 
 				// Open the new shader file in VS Code (matches existing "Edit" behavior)
 				std::string command = "code \"" + filePath.string() + "\"";

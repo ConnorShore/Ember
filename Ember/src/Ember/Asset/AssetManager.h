@@ -330,10 +330,52 @@ namespace Ember {
 		inline void SetProjectAssetDirectory(const std::filesystem::path& path) { m_ProjectAssetDirectory = path; }
 		inline const std::filesystem::path& GetProjectAssetDirectory() const { return m_ProjectAssetDirectory; }
 
+		// Walks all non-engine Shader assets, checks the on-disk modification timestamp, and
+		// reloads any shader whose source file has changed since the last poll. Engine shaders
+		// are skipped because they ship with the executable and should not be edited at runtime.
+		// Intended to be called once per frame from the editor's update loop.
+		void PollShaderHotReload()
+		{
+			for (auto& [id, asset] : m_Assets)
+			{
+				if (asset->GetType() != Shader::GetStaticType())
+					continue;
+				if (asset->IsEngineAsset())
+					continue;
+
+				const std::string& path = asset->GetFilePath();
+				if (path.empty())
+					continue;
+
+				std::error_code ec;
+				auto stamp = std::filesystem::last_write_time(path, ec);
+				if (ec)
+					continue;
+
+				auto it = m_ShaderTimestamps.find(id);
+				if (it == m_ShaderTimestamps.end())
+				{
+					// First time we've seen this shader; record the baseline timestamp without reloading.
+					m_ShaderTimestamps[id] = stamp;
+					continue;
+				}
+
+				if (stamp != it->second)
+				{
+					it->second = stamp;
+					auto shader = StaticPointerCast<Shader>(asset);
+					shader->Reload();
+				}
+			}
+		}
+
 	private:
 		std::unordered_map<UUID, SharedPtr<Asset>> m_Assets;
 		std::unordered_map<std::string, UUID> m_AssetNames;
 		std::unordered_map<std::string, UUID> m_AssetPaths;	// Only for Load() assets, not Create()
+
+		// Tracks last-seen file modification timestamps for hot-reloadable shader assets.
+		std::unordered_map<UUID, std::filesystem::file_time_type> m_ShaderTimestamps;
 
 		std::filesystem::path m_EngineAssetDirectory;
 		std::filesystem::path m_ProjectAssetDirectory;
