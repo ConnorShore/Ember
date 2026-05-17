@@ -655,7 +655,7 @@ namespace Ember {
 			return changed;
 		}
 
-		bool ComboBoxWithActions(const std::string& label, UICallbackFunc addFunc, UICallbackFunc removeFunc)
+		bool ComboBoxWithActions(const std::string& label, const std::string& defaultValue, UICallbackFunc addFunc, UICallbackFunc removeFunc)
 		{
 			ImGui::PushID(label.c_str());
 
@@ -698,7 +698,7 @@ namespace Ember {
 			// PopID before BeginComboBox so it is always balanced in the parent window context
 			ImGui::PopID();
 
-			return UI::BeginComboBox("##combo", label);
+			return UI::BeginComboBox("##combo", defaultValue);
 		}
 
 	}

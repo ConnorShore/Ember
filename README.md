@@ -94,7 +94,8 @@ Clean.bat
 
 For the complete scripting reference (lifecycle hooks, every component property, math utilities,
 input enums, physics queries, audio, save data, and debug drawing), see
-[docs/ScriptingAPI.md](docs/ScriptingAPI.md).
+[docs/ScriptingAPI.md](docs/ScriptingAPI.md). For authoring custom GLSL shaders with
+editor-exposed properties, see [docs/ShaderAPI.md](docs/ShaderAPI.md).
 
 ---
 

@@ -62,7 +62,7 @@ namespace Ember {
 		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver);
 		bool DynamicUUIDArrayComboBox(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::vector<UUID>& availableOptions, UUIDNameResolver nameResolver);
 
-		bool ComboBoxWithActions(const std::string& label, UICallbackFunc addFunc, UICallbackFunc removeFunc);
+		bool ComboBoxWithActions(const std::string& label, const std::string& defaultValue, UICallbackFunc addFunc, UICallbackFunc removeFunc);
 	}
 
 }
