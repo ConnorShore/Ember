@@ -1,24 +1,24 @@
 Assets:
   - Type: Texture
     UUID: 18246198109903864782
-    Name: AssaultRifle_ARNormal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ARNormal.png
+    Name: AssaultRifle_ARNormal
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/436r/AssaultRifle_ARNormal.png
   - Type: Texture
     UUID: 3343954652411117201
     Name: Crosshair
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.png
   - Type: Texture
     UUID: 1987619997240284892
-    Name: AssaultRifle_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ARColor.png
+    Name: AssaultRifle_ARColor
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/436r/asdf/AssaultRifle_ARColor.png
+  - Type: Texture
+    UUID: 7295789261182852957
+    Name: AssaultRifle_ARMetallic-ARRoughness
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/436r/asdf/AssaultRifle_ARMetallic-ARRoughness.png
   - Type: Texture
     UUID: 9513761758882303005
     Name: box
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/box.jpg
-  - Type: Texture
-    UUID: 7295789261182852957
-    Name: AssaultRifle_ARMetallic-ARRoughness.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ARMetallic-ARRoughness.png
   - Type: Texture
     UUID: 9049085516481466605
     Name: AssaultRifle_ORM_Mat0
@@ -44,6 +44,10 @@ Assets:
     Name: WeaponRecoil
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponRecoil.lua
   - Type: Script
+    UUID: 13625163170134590446
+    Name: WeaponHandler
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponHandler.lua
+  - Type: Script
     UUID: 8562544563539838448
     Name: PlayerInteraction
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PlayerInteraction.lua
@@ -59,10 +63,6 @@ Assets:
     UUID: 15161599708472166578
     Name: ADS
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ADS.lua
-  - Type: Script
-    UUID: 13625163170134590446
-    Name: WeaponHandler
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponHandler.lua
   - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
@@ -98,7 +98,11 @@ Assets:
   - Type: Model
     UUID: 16832771247265269212
     Name: AssaultRifle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle.ebmodel
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/436r/asdf/AssaultRifle.ebmodel
+  - Type: Font
+    UUID: 213406294560961755
+    Name: Roboto-Regular
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
     UUID: 10601745296411271244
     Name: M4_Shot

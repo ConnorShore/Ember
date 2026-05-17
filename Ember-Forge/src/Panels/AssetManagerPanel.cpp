@@ -299,27 +299,130 @@ namespace Ember {
 		// Context Mennu
 		RenderDirectoryEntryContextMenu(entry);
 
+		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+		{
+			auto filePathAbs = std::filesystem::absolute(entry);
+
+			ImGui::SetDragDropPayload(DragDropDirectory, filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
+			ImGui::Image(m_DirectoryTexID, ImVec2(64, 64), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::EndDragDropSource();
+		}
+
 		// Accept all file-based drag drop payload types as drop targets for moving files into the directory
 		if (ImGui::BeginDragDropTarget())
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
 
+			// Check file types
 			for (int i = 0; i < std::to_underlying(DragDropPayloadType::Count); i++)
 			{
 				auto payloadType = static_cast<DragDropPayloadType>(i);
 				std::string payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadStr.c_str()))
 				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
-					std::filesystem::path destPath = entry.path() / std::filesystem::path(filePath).filename();
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize - 1);
+					std::filesystem::path srcPath(filePath);
+					std::filesystem::path destPath = entry.path() / srcPath.filename();
 
-					// Update the assets filepath in the AssetManager if it's an asset that's being moved
-					auto asset = assetManager.GetAssetByPath<Asset>(filePath);
-					asset->Move(destPath.string());
+					// Update the asset's filepath in the AssetManager if it's a tracked asset
+					if (assetManager.ContainsAssetWithPath(filePath))
+					{
+						auto asset = assetManager.GetAssetByPath<Asset>(filePath);
+						std::error_code ec;
+						std::filesystem::rename(srcPath, destPath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move asset to '{0}': {1}", destPath.string(), ec.message());
+						}
+						else
+						{
+							assetManager.RenameAsset(asset->GetUUID(), destPath.stem().string(), destPath.string());
+						}
+					}
+					else
+					{
+						std::error_code ec;
+						std::filesystem::rename(srcPath, destPath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move file to '{0}': {1}", destPath.string(), ec.message());
+						}
+						else
+						{
+							EB_CORE_INFO("Successfully moved file to: {0}", destPath.string());
+						}
+					}
 
 					break;
 				}
 			}
+
+			// Check if it's a directory being moved
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(DragDropDirectory))
+			{
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize - 1);
+				std::filesystem::path destPath = entry.path() / std::filesystem::path(filePath).filename();
+
+				// Create the destination directory if it doesn't exist
+				if (!std::filesystem::exists(destPath))
+				{
+					std::error_code ec;
+					std::filesystem::create_directory(destPath, ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to create directory at '{0}': {1}", destPath.string(), ec.message());
+						return;
+					}
+				}
+
+				// Move directory and update all assets within that directory in the AssetManager
+				for (const auto& innerEntry : std::filesystem::recursive_directory_iterator(filePath))
+				{
+					auto filePathDiff = std::filesystem::relative(innerEntry.path(), filePath);
+					auto destFilePath = destPath / filePathDiff;
+
+					// Recreate subdirectory structure at the destination
+					if (innerEntry.is_directory())
+					{
+						std::error_code ec;
+						std::filesystem::create_directory(destFilePath, ec);
+						continue;
+					}
+
+					if (assetManager.ContainsAssetWithPath(innerEntry.path().string()))
+					{
+						auto asset = assetManager.GetAssetByPath<Asset>(innerEntry.path().string());
+						std::error_code ec;
+						std::filesystem::rename(innerEntry.path(), destFilePath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move asset to '{0}': {1}", destFilePath.string(), ec.message());
+						}
+						else
+						{
+							assetManager.RenameAsset(asset->GetUUID(), destFilePath.stem().string(), destFilePath.string());
+						}
+					}
+					else
+					{
+						std::error_code ec;
+						std::filesystem::rename(innerEntry.path(), destFilePath, ec);
+						if (ec)
+						{
+							EB_CORE_ERROR("Failed to move file to '{0}': {1}", destFilePath.string(), ec.message());
+						}
+						else
+						{
+							EB_CORE_INFO("Successfully moved file to: {0}", destFilePath.string());
+						}
+					}
+				}
+
+				// Remove start directory after moving all contents
+				std::error_code ec;
+				std::filesystem::remove_all(filePath, ec);
+			}
+
 			ImGui::EndDragDropTarget();
 		}
 	}
