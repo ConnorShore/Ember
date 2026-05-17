@@ -60,6 +60,7 @@ namespace Ember {
 
 		RenderRenameScenePopup();
 		RenderCreateDirectoryPopup();
+		RenderDeleteConfirmPopup();
 
 		ImGui::End();
 	}
@@ -295,6 +296,9 @@ namespace Ember {
 			m_CurrentDirectory /= fileName;
 		}
 
+		// Context Mennu
+		RenderDirectoryEntryContextMenu(entry);
+
 		// Accept all file-based drag drop payload types as drop targets for moving files into the directory
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -360,18 +364,28 @@ namespace Ember {
 			// Common options for all asset types
 			if (ImGui::MenuItem("Delete"))
 			{
-				Application::Instance().GetAssetManager().RemoveAsset(filePath.string());
-				std::error_code ec;
-				std::filesystem::remove(filePath, ec);
+				m_PendingDeletePath = filePath;
+				m_PendingDeleteIsDirectory = false;
+				m_ShowDeleteConfirmPopup = true;
+			}
 
-				if (ec)
-				{
-					EB_CORE_ERROR("Failed to delete asset '{0}': {1}", fileName.string(), ec.message());
-				}
-				else
-				{
-					EB_CORE_INFO("Successfully deleted asset: {0}", fileName.string());
-				}
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenderDirectoryEntryContextMenu(const std::filesystem::directory_entry& entry)
+	{
+		const std::filesystem::path filePath = entry.path();
+		const std::filesystem::path fileName = entry.path().filename();
+
+		if (ImGui::BeginPopupContextItem())
+		{
+			// Common options for all asset types
+			if (ImGui::MenuItem("Delete"))
+			{
+				m_PendingDeletePath = filePath;
+				m_PendingDeleteIsDirectory = true;
+				m_ShowDeleteConfirmPopup = true;
 			}
 
 			ImGui::EndPopup();
@@ -704,6 +718,81 @@ namespace Ember {
 				m_NewDirectoryName.clear();
 				ImGui::CloseCurrentPopup();
 			}
+			ImGui::EndPopup();
+		}
+	}
+
+	void AssetManagerPanel::RenderDeleteConfirmPopup()
+	{
+		if (m_ShowDeleteConfirmPopup)
+		{
+			ImGui::OpenPopup("Confirm Delete");
+			m_ShowDeleteConfirmPopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(380, 130), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("Confirm Delete", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+		{
+			std::string itemName = m_PendingDeletePath.filename().string();
+			if (m_PendingDeleteIsDirectory)
+				ImGui::TextWrapped("Delete directory \"%s\" and all of its contents? This cannot be undone.", itemName.c_str());
+			else
+				ImGui::TextWrapped("Delete \"%s\"? This cannot be undone.", itemName.c_str());
+
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+			if (ImGui::Button("Delete", ImVec2(120, 0)))
+			{
+				auto& assetManager = Application::Instance().GetAssetManager();
+
+				if (m_PendingDeleteIsDirectory)
+				{
+					for (const auto& entry : std::filesystem::recursive_directory_iterator(m_PendingDeletePath))
+						assetManager.RemoveAsset(entry.path().string());
+
+					std::error_code ec;
+					std::filesystem::remove_all(m_PendingDeletePath, ec);
+					if (ec)
+					{
+						auto evt = UINotificationEvent(std::format("Failed to delete directory '{}': {}", itemName, ec.message()), UINotificationEvent::Error);
+						m_Context->EventCallback(evt);
+					}
+					else
+					{
+						auto evt = UINotificationEvent(std::format("Successfully deleted directory: {}", itemName));
+						m_Context->EventCallback(evt);
+					}
+				}
+				else
+				{
+					assetManager.RemoveAsset(m_PendingDeletePath.string());
+					std::error_code ec;
+					std::filesystem::remove(m_PendingDeletePath, ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to delete asset '{0}': {1}", itemName, ec.message());
+					}
+					else
+					{
+						EB_CORE_INFO("Successfully deleted asset: {0}", itemName);
+					}
+				}
+
+				m_PendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				m_PendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
 			ImGui::EndPopup();
 		}
 	}

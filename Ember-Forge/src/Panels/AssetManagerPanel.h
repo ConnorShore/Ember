@@ -24,6 +24,7 @@ namespace Ember {
 		void RenderFileEntry(const std::filesystem::directory_entry& entry);
 		void RenderDirectoryEntry(const std::filesystem::directory_entry& entry);
 		void RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry);
+		void RenderDirectoryEntryContextMenu(const std::filesystem::directory_entry& entry);
 		void RenderAssetPanelContextMenu();
 
 		void RenderTextureOptions(const std::string& filePath);
@@ -39,6 +40,7 @@ namespace Ember {
 		void RenameScene();
 
 		void RenderCreateDirectoryPopup();
+		void RenderDeleteConfirmPopup();
 
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 
@@ -58,5 +60,10 @@ namespace Ember {
 		// Create directory popup
 		bool m_ShowCreateDirectoryPopup = false;
 		std::string m_NewDirectoryName;
+
+		// Delete confirmation dialog state
+		bool m_ShowDeleteConfirmPopup = false;
+		bool m_PendingDeleteIsDirectory = false;
+		std::filesystem::path m_PendingDeletePath;
 	};
 }
