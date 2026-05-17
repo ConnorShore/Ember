@@ -24,9 +24,9 @@ Assets:
     Name: AssaultRifle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_ORM_Mat0.png
   - Type: Shader
-    UUID: 11031990673149146913
-    Name: NewShaderj
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/NewShaderj.glsl
+    UUID: 56367747082111210
+    Name: NewShader
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/NewShader.glsl
   - Type: Script
     UUID: 16605421126880563658
     Name: MuzzleFlash
@@ -84,7 +84,7 @@ Assets:
     Name: AssaultRifle_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Weapon.ebmat
   - Type: Material
-    UUID: 10919083749837046712
+    UUID: 15422201462475599423
     Name: Empty_Entity_Material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Empty_Entity_Material.ebmat
   - Type: Mesh

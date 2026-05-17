@@ -199,6 +199,7 @@ namespace Ember {
 		forwardPass->Execute(renderContext);
 
 		auto transparentPass = StaticPointerCast<TransparentEntitiesRenderPass>(GetRenderPass("TransparentEntitiesRenderPass"));
+		transparentPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
 		transparentPass->Execute(renderContext);
 
 		// --- Editor-only grid ---
