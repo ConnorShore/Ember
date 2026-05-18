@@ -823,6 +823,7 @@ namespace Ember {
 		if (ImGui::GetIO().WantTextInput)
 			return false;
 
+		bool isEditMode = m_Context.CurrentSceneState == SceneState::Edit;
 		bool activeProject = ProjectManager::GetActive() != nullptr;
 		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
 		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
@@ -832,19 +833,19 @@ namespace Ember {
 		{
 			// Gizmos (Translate, Rotate, Scale) -> W, E, R (Q to disable) (T for all)
 			case KeyCode::Q:
-				m_GizmoType = -1;
+				if(isEditMode) m_GizmoType = -1;
 				break;
 			case KeyCode::W:
-				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 				break;
 			case KeyCode::E:
-				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::ROTATE;
 				break;
 			case KeyCode::R:
-				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::SCALE;
 				break;
 			case KeyCode::T:
-				m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
+				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
 				break;
 
 			// Scene Hot keys

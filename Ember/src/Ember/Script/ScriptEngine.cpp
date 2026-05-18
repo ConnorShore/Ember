@@ -18,6 +18,8 @@
 #include "Ember/Scene/Scene.h"
 
 #include <algorithm>
+#include <fstream>
+#include <unordered_map>
 
 namespace Ember {
 
@@ -205,9 +207,52 @@ namespace Ember {
                     continue; // Skip unsupported types
 			}
 
-			properties.emplace_back(name, val, type, std::move(enumOptions));
-		}
+				properties.emplace_back(name, val, type, std::move(enumOptions));
+				}
 
-        return properties;
-	}
+				// Sort properties by their declaration order in the script file so the
+				// editor always displays them in the same order they appear in the source.
+				{
+					std::ifstream scriptFile(filePath);
+					if (scriptFile.is_open())
+					{
+						std::unordered_map<std::string, int> lineNumbers;
+						std::string line;
+						int lineNum = 0;
+						while (std::getline(scriptFile, line))
+						{
+							++lineNum;
+							for (auto& prop : properties)
+							{
+								if (lineNumbers.count(prop.Name))
+									continue;
+								// Match "PropName" followed by optional whitespace then "="
+								// but not "==" so we don't match comparisons
+								auto pos = line.find(prop.Name);
+								if (pos != std::string::npos)
+								{
+									auto after = pos + prop.Name.size();
+									// skip whitespace
+									while (after < line.size() && line[after] == ' ') ++after;
+									if (after < line.size() && line[after] == '=' &&
+										(after + 1 >= line.size() || line[after + 1] != '='))
+									{
+										lineNumbers[prop.Name] = lineNum;
+									}
+								}
+							}
+						}
+
+						std::sort(properties.begin(), properties.end(),
+							[&lineNumbers](const ScriptProperty& a, const ScriptProperty& b)
+							{
+								int la = lineNumbers.count(a.Name) ? lineNumbers[a.Name] : INT_MAX;
+								int lb = lineNumbers.count(b.Name) ? lineNumbers[b.Name] : INT_MAX;
+								return la < lb;
+							});
+					}
+				}
+
+				return properties;
+			}
 }

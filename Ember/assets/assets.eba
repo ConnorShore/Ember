@@ -20,13 +20,13 @@ Assets:
     Name: AssaultRifle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ORM_Mat0.png
   - Type: Texture
-    UUID: 15863835653609318779
-    Name: HolographicReticle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
-  - Type: Texture
     UUID: 9008232455192275898
     Name: AssaultRifle_ARColor.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
+  - Type: Texture
+    UUID: 15863835653609318779
+    Name: HolographicReticle
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -34,51 +34,59 @@ Assets:
   - Type: Script
     UUID: 16605421126880563658
     Name: MuzzleFlash
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MuzzleFlash.lua
-  - Type: Script
-    UUID: 2649306146174457867
-    Name: ScopeMountBehavior
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ScopeMountBehavior.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MuzzleFlash.lua
   - Type: Script
     UUID: 16404415058251315788
     Name: WeaponFire
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponFire.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponFire.lua
   - Type: Script
     UUID: 12117729415864912341
     Name: PickupItem
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PickUpItem.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
   - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PowerUpDrop.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/CharacterMovement.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
   - Type: Script
     UUID: 4494000890898150304
     Name: Crosshair
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Crosshair.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
   - Type: Script
     UUID: 3366872985723856610
     Name: WeaponRecoil
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponRecoil.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponRecoil.lua
   - Type: Script
     UUID: 8562544563539838448
     Name: PlayerInteraction
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PlayerInteraction.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
   - Type: Script
     UUID: 5025897937436236093
     Name: MouseLook
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/MouseLook.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
   - Type: Script
-    UUID: 15161599708472166578
-    Name: ADS
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ADS.lua
+    UUID: 13629381204485307944
+    Name: MountBehavior
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MountBehavior.lua
   - Type: Script
-    UUID: 13625163170134590446
-    Name: WeaponHandler
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponHandler.lua
+    UUID: 8102167312162542918
+    Name: WeaponController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponController.lua
+  - Type: Script
+    UUID: 936314447457138483
+    Name: PlayerController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
+  - Type: Script
+    UUID: 15631423950997928565
+    Name: WeaponAiming
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponAiming.lua
+  - Type: Script
+    UUID: 10843162672597406671
+    Name: WeaponMovement
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
   - Type: Material
     UUID: 13734008897576602447
     Name: GroundMaterial

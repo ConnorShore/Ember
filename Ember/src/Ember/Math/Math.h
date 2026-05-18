@@ -52,6 +52,21 @@ namespace Ember {
 	{
 	public:
 
+		static inline float RandomFloat(float min, float max)
+		{
+			return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+		}
+
+		static inline int RandomInt(int min, int max)
+		{
+			return min + rand() % (max - min + 1);
+		}
+
+		static inline float Random()
+		{
+			return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		}
+
 		static inline int Max(int a, int b)
 		{
 			return (a > b) ? a : b;

@@ -153,6 +153,10 @@ namespace Ember {
 			[](const Vector3f& a, const Vector3f& b) { return Math::Min(a, b); }
 		));
 
+		math.set_function("Random", &Math::Random);
+		math.set_function("RandomFloat", &Math::RandomFloat);
+		math.set_function("RandomInt", &Math::RandomInt);
+
 		math.set_function("Radians", &Math::Radians);
 		math.set_function("Degrees", &Math::Degrees);
 		math.set_function("Length", &Math::Length);
