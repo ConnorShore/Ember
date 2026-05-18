@@ -332,6 +332,15 @@ namespace Ember {
 		auto& sceneManager = Application::Instance().GetSceneManager();
 		sceneManager.GetActiveScene()->OnRuntimeStop();
 
+		// Capture the selected entity's UUID before clearing the selection so we can
+		// re-select the corresponding entity in the editor scene after the runtime
+		// scene (and its registry) is destroyed. Without this, m_Context.SelectedEntity
+		// holds a dangling m_SceneHandle pointer into the now-dead runtime scene.
+		UUID selectedUUID = Constants::InvalidUUID;
+		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			selectedUUID = m_Context.SelectedEntity.GetUUID();
+		m_Context.SelectedEntity = Entity();
+
 		// Restore the editor scene as the active scene
 		sceneManager.SetActiveScene(m_EditorScene); // OnDetach on runtime copy, OnAttach on editor scene
 		sceneManager.GetActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
@@ -344,6 +353,15 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(m_EditorScene.Ptr());
 
 		m_Context.CurrentSceneState = SceneState::Edit;
+
+		// Re-select the previously selected entity using its UUID now that the editor
+		// scene's registry is live again.
+		if (selectedUUID != Constants::InvalidUUID)
+		{
+			Entity editorEntity = m_EditorScene->GetEntity(selectedUUID);
+			if (editorEntity != Constants::Entities::InvalidEntityID)
+				m_Context.SelectedEntity = editorEntity;
+		}
 
 		Input::SetCursorMode(CursorMode::Normal);
 		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
@@ -531,6 +549,7 @@ namespace Ember {
 		}
 
 		// Render camera preview if selected entity has a camera component
+		// TODO: Bug, the scene registry will be null sometimes after coming out of play mode
 		if (m_Context.CurrentSceneState == SceneState::Edit
 			&& m_Context.SelectedEntity != Constants::Entities::InvalidEntityID 
 			&& m_Context.SelectedEntity.ContainsComponent<CameraComponent>())

@@ -38,10 +38,21 @@ namespace Ember {
 		});
 
 		// Prefab
-		sceneTable.set_function("InstantiatePrefab", [scene](const std::string& assetName, const Vector3f& position) {
-			auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
-			return scene->InstantiatePrefab(prefabAsset, &position);
-		});
+		sceneTable.set_function("InstantiatePrefab", sol::overload(
+			[scene](const std::string& assetName, const Vector3f& position) {
+				auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
+				return scene->InstantiatePrefab(prefabAsset, &position);
+			},
+			[scene](const std::string& assetName, Entity parent) {
+				auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
+				Vector3f pos(0.0f);
+				return scene->InstantiatePrefab(prefabAsset, parent, &pos);
+			},
+			[scene](const std::string& assetName, Entity parent, const Vector3f& position) {
+				auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
+				return scene->InstantiatePrefab(prefabAsset, parent, &position);
+			}
+		));
 
 		// Camera
 		sceneTable.set_function("SetActiveCamera", [scene](const std::string& entityName) {

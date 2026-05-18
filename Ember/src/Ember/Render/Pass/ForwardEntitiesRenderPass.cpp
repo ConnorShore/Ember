@@ -35,6 +35,7 @@ namespace Ember {
 
 			materialAsset->GetShader()->Bind();
 			materialAsset->GetShader()->SetInt(Constants::Uniforms::EntityID, entity);
+			materialAsset->GetShader()->SetFloat3(Constants::Uniforms::CameraPosition, context.CameraTransform[3]);
 
 			if (registry.ContainsComponent<StaticMeshComponent>(entity))
 			{

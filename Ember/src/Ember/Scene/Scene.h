@@ -90,6 +90,7 @@ namespace Ember {
 
 		Entity InstantiateModel(const std::string& modelFile);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position);
+		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position);
 
 		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
 

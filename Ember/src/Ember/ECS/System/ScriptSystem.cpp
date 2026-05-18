@@ -67,7 +67,9 @@ namespace Ember {
 						sol::protected_function onCreate = scriptClass["OnCreate"];
 						if (onCreate.valid())
 						{
-							sol::protected_function_result createResult = onCreate(script.Instance, entity);
+								// Pass Entity as a temporary rvalue so sol2 creates an owned userdata copy
+								// rather than a reference to the loop-local stack variable.
+								sol::protected_function_result createResult = onCreate(script.Instance, Entity{entity});
 							if (!createResult.valid())
 							{
 								sol::error err = createResult;
@@ -95,7 +97,7 @@ namespace Ember {
 				sol::protected_function onUpdate = script.Instance["OnUpdate"];
 				if (onUpdate.valid())
 				{
-					sol::protected_function_result updateResult = onUpdate(script.Instance, entity, delta.Seconds());
+					sol::protected_function_result updateResult = onUpdate(script.Instance, Entity{entity}, delta.Seconds());
 
 					if (!updateResult.valid())
 					{
@@ -128,7 +130,7 @@ namespace Ember {
 		if (triggerFunc.valid())
 		{
 			Entity otherEntity = { otherID, scene };
-			sol::protected_function_result result = triggerFunc(script.Instance, receiver, otherEntity);
+		sol::protected_function_result result = triggerFunc(script.Instance, Entity{receiver}, Entity{otherEntity});
 			if (!result.valid())
 			{
 				sol::error err = result;

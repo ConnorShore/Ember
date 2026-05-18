@@ -104,6 +104,12 @@ namespace Ember {
 		
 		void RenderAnimatorEntitySelector(SkinnedMeshComponent& component, AssetManager& assetManager)
 		{
+			if (component.AnimatorEntityHandle == Constants::InvalidUUID) 
+			{
+				ImGui::Text("Animator Entity: None");
+				return;
+			}
+
 			// Add ability to pick animator entity
 			auto animatorEntity = m_Context->ActiveScene()->GetEntity(component.AnimatorEntityHandle);
 

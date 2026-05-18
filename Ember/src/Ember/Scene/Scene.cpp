@@ -765,6 +765,44 @@ namespace Ember {
 		return root;
 	}
 
+	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position)
+	{
+
+		// Deserialize the prefab into a new entity hierarchy.
+		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
+		// using the prefab's stored transform — we must re-sync them below if a spawn
+		// position override is provided.
+		SceneSerializer serializer(this);
+		Entity root = serializer.DeserializePrefab(prefabAsset);
+		parent.AddChild(root);
+		
+		auto& childRelationshipComp = root.GetComponent<RelationshipComponent>();
+		childRelationshipComp.ParentHandle = parent.GetUUID();
+
+		// Set position if specified
+		if (position != nullptr)
+		{
+			auto& transform = root.GetComponent<TransformComponent>();
+			transform.Position = *position;
+		}
+
+		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
+		// are created at the correct world positions below.
+		auto& systemManager = Application::Instance().GetSystemManager();
+		auto transformSystem = systemManager.GetSystem<TransformSystem>();
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
+
+		// Initialize physics for any entities that don't have bodies yet, then
+		// re-sync ALL existing physics bodies to the (potentially overridden) world
+		// transforms. This is needed because ConnectAndRetroact hooks may have already
+		// created bodies at the prefab's default position during DeserializePrefab.
+		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
+		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
+		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
+
+		return root;
+	}
+
 	bool Scene::OnWindowResize(const WindowResizeEvent& event)
 	{
 		OnViewportResize(event.GetWidth(), event.GetHeight());

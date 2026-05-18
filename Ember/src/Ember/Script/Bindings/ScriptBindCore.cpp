@@ -35,7 +35,7 @@ namespace Ember {
 			EB_CORE_WARN("{}", message);
 		});
 
-		state.set_function("Error", [](const std::string& message) {
+		log.set_function("Error", [](const std::string& message) {
 			EB_CORE_ERROR("{}", message);
 		});
 

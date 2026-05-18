@@ -72,6 +72,17 @@ namespace Ember {
 		return childEntity;
 	}
 
+	Entity Entity::AddChild(Entity entity)
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+		relationship.Children.push_back(entity.GetUUID());
+
+		auto& childRelationship = entity.GetComponent<RelationshipComponent>();
+		childRelationship.ParentHandle = GetUUID();
+
+		return entity;
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

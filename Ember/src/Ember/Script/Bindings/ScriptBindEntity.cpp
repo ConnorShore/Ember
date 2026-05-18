@@ -267,13 +267,17 @@ namespace Ember {
 			"ContainsComponent", [&state](Entity& e, const std::string& componentTypeStr) { return ContainsComponentFromString(componentTypeStr, e, state); },
 			"GetParent", &Entity::GetParent,
 			"IsRootParent", &Entity::IsRootParent,
-			"GetRootParent", &Entity::GetRootParent,
-			"GetChildren", &Entity::GetAllChildren,
-			"GetChild", &Entity::GetChildByName,
-			"AddChild", & Entity::AddChild
+			"GetRootParent", &Entity::GetRootParent
 		);
 
-		entityType.set_function("GetScriptInstance", [](Entity& entity, sol::this_state s) -> sol::object {
+		entityType["GetChildren"] = &Entity::GetAllChildren;
+		entityType["GetChild"] = &Entity::GetChildByName;
+		entityType["AddChild"] = sol::overload(
+			static_cast<Entity(Entity::*)(Entity)>(&Entity::AddChild),
+			static_cast<Entity(Entity::*)(const std::string&)>(&Entity::AddChild)
+		);
+
+		entityType["GetScriptInstance"] = [](Entity& entity, sol::this_state s) -> sol::object {
 			if (entity.ContainsComponent<ScriptComponent>())
 			{
 				auto& scriptComp = entity.GetComponent<ScriptComponent>();
@@ -283,7 +287,7 @@ namespace Ember {
 				}
 			}
 			return sol::make_object(s, sol::lua_nil);
-		});
+		};
 	}
 
 }
