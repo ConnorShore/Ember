@@ -28,9 +28,14 @@ namespace Ember {
 			// Calculate how many particles to spawn this frame based on DeltaTime
 			emitter.EmissionAccumulator += emitter.EmissionRate * delta;
 
+			// Decompose world rotation so particles are emitted in the emitter's local space
+			Vector3f worldPos, worldRot, worldScale;
+			Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+			Quaternion worldRotation = Math::ToQuaternion(worldRot);
+
 			while (emitter.EmissionAccumulator > 1.0f)
 			{
-				m_ParticleManager->Emit(emitter, transform.GetWorldPosition());
+				m_ParticleManager->Emit(emitter, transform.GetWorldPosition(), worldRotation);
 				emitter.EmissionAccumulator -= 1.0f;
 			}
 		}

@@ -13,7 +13,8 @@ namespace Ember {
 		ParticleManager(uint32_t maxParticles = 10000);
 		virtual ~ParticleManager() = default;
 
-		void Emit(const ParticleEmitterComponent& component, const Vector3f& position);
+		void Emit(const ParticleEmitterComponent& component, const Vector3f& position, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+		void EmitBurst(const ParticleEmitterComponent& component, const Vector3f& position, uint32_t count, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
 		void OnUpdate(TimeStep delta);
 
 		void Reset();

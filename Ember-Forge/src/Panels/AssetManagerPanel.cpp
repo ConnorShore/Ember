@@ -583,7 +583,7 @@ namespace Ember {
 					std::string file = SelectAndLoadFile(std::format("Prefab Files ({})", modelFileTypes).c_str(), modelFileTypes.c_str());
 					if (!file.empty())
 					{
-						asset = Application::Instance().GetAssetManager().Load<Script>(file);
+						asset = Application::Instance().GetAssetManager().Load<Prefab>(file);
 						asset->SetIsEngineAsset(false);
 					}
 					ImGui::CloseCurrentPopup();

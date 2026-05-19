@@ -2,6 +2,9 @@
 #include "ScriptBindComponents.h"
 #include "Ember/ECS/Component/Components.h"
 
+#include "Ember/Core/Application.h"
+#include "Ember/ECS/System/ParticleSystem.h"
+
 namespace Ember {
 	void BindRenderingComponents(sol::state& state)
 	{
@@ -58,6 +61,23 @@ namespace Ember {
 			"GravityMultiplier", &ParticleEmitterComponent::GravityMultiplier,
 			"IsActive", &ParticleEmitterComponent::IsActive
 		);
+
+		// Global Particles API for one-shot emission (impacts, explosions, etc.)
+		// Burst(emitter, position, count)               -- emit in world-space (no rotation)
+		// Burst(emitter, position, count, worldRotation) -- emit rotated into world-space
+		sol::table particles = state.create_named_table("Particles");
+		particles.set_function("Burst", sol::overload(
+			[](ParticleEmitterComponent& emitter, const Vector3f& position, uint32_t count) {
+				auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
+				if (particleSystem)
+					particleSystem->GetParticleManager().EmitBurst(emitter, position, count);
+			},
+			[](ParticleEmitterComponent& emitter, const Vector3f& position, uint32_t count, const Quaternion& worldRotation) {
+				auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
+				if (particleSystem)
+					particleSystem->GetParticleManager().EmitBurst(emitter, position, count, worldRotation);
+			}
+		));
 
 		state.new_usertype<CameraComponent>("CameraComponent",
 			"IsActive", &CameraComponent::IsActive,

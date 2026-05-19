@@ -15,7 +15,7 @@ namespace Ember {
 		m_ParticleIndex = maxParticles - 1; // Start at the end of the pool so the first particle will be at index 0
 	}
 
-	void ParticleManager::Emit(const ParticleEmitterComponent& component, const Vector3f& position)
+	void ParticleManager::Emit(const ParticleEmitterComponent& component, const Vector3f& position, const Quaternion& worldRotation)
 	{
 		Particle& particle = m_ParticlePool[m_ParticleIndex];
 
@@ -28,12 +28,13 @@ namespace Ember {
 		particle.Drag = component.Drag;
 		particle.AngularVelocity = component.AngularVelocity + component.AngularVelocityVariation * (Random::Float() - 0.5f);
 
-		// Apply props with variation when necessary
-		particle.Velocity = component.Velocity + component.VelocityVariation * Vector3f(
+		// Apply props with variation when necessary, then rotate into world space
+		Vector3f localVelocity = component.Velocity + component.VelocityVariation * Vector3f(
 			Random::Float() - 0.5f,
 			Random::Float() - 0.5f,
 			Random::Float() - 0.5f
 		);
+		particle.Velocity = worldRotation * localVelocity;
 
 		particle.ColorBegin = component.ColorBegin;
 		particle.ColorEnd = component.ColorEnd;
@@ -51,6 +52,12 @@ namespace Ember {
 
 		// Move the index backwards. If it hits 0, wrap back around to the top
 		m_ParticleIndex = (m_ParticleIndex == 0) ? m_MaxParticles - 1 : m_ParticleIndex - 1;
+	}
+
+	void ParticleManager::EmitBurst(const ParticleEmitterComponent& component, const Vector3f& position, uint32_t count, const Quaternion& worldRotation)
+	{
+		for (uint32_t i = 0; i < count; i++)
+			Emit(component, position, worldRotation);
 	}
 
 	void ParticleManager::OnUpdate(TimeStep delta)
