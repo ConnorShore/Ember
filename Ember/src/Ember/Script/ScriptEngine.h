@@ -41,6 +41,8 @@ namespace Ember {
 				type = ScriptPropertyType::Float;
 			else if constexpr (std::same_as<T, std::string>)
 				type = ScriptPropertyType::String;
+			else if constexpr (std::same_as<T, Vector3f>)
+				type = ScriptPropertyType::Vector3f;
 			else
 			{
 				EB_CORE_ASSERT(false, "Unsupported type passed in for prop override!");

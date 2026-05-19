@@ -140,6 +140,16 @@ namespace Ember {
 		float Mass = 1.0f;
 		bool GravityEnabled = true;
 
+		Vector3f GetCurrentVelocity() const
+		{
+			if (Body)
+			{
+				reactphysics3d::Vector3 velocity = Body->getLinearVelocity();
+				return Vector3f(velocity.x, velocity.y, velocity.z);
+			}
+			return Vector3f(0.0f);
+		}
+
 		void ApplyForce(const Vector3f& force)
 		{
 			if (Body)
@@ -388,6 +398,8 @@ namespace Ember {
 		EntityID GroundEntity = Constants::Entities::InvalidEntityID;
 		Vector3f Velocity = Vector3f(0.0f);
 		Vector3f RequestedMovement = Vector3f(0.0f);
+		// Combined movement velocity (input + physics) in world units/second, updated each frame
+		Vector3f MovementVelocity = Vector3f(0.0f);
 
 		void Move(const Vector3f& requestedMovement)
 		{

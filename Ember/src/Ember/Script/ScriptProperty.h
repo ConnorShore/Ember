@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Ember/Math/Math.h"
 #include <string>
 #include <sol/sol.hpp>
 #include <variant>
@@ -13,10 +14,11 @@ enum class ScriptPropertyType
 	Int,
 	Float,
 	String,
-	Enum
+	Enum,
+	Vector3f
 };
 
-using ScriptPropertyValue = std::variant<float, int, bool, std::string>;
+using ScriptPropertyValue = std::variant<float, int, bool, std::string, Ember::Vector3f>;
 
 struct ScriptProperty
 {

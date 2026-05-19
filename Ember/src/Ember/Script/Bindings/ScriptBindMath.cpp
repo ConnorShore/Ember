@@ -51,9 +51,14 @@ namespace Ember {
 				return a - b;
 			},
 
-			sol::meta_function::multiplication, [](const Vector3f& a, float scalar) {
-				return a * scalar;
-			},
+			sol::meta_function::multiplication, sol::overload(
+				[](const Vector3f& a, float scalar) {
+					return a * scalar;
+				},
+				[](const Vector3f& a, const Vector3f& b) {
+					return a * b;
+				}
+			),
 
 			// Division by Scalar (Vector / float)
 			sol::meta_function::division, [](const Vector3f& a, float scalar) {
@@ -157,12 +162,27 @@ namespace Ember {
 		math.set_function("RandomFloat", &Math::RandomFloat);
 		math.set_function("RandomInt", &Math::RandomInt);
 
+		math.set_function("Sin", &Math::Sin);
+		math.set_function("Cos", &Math::Cos);
+		math.set_function("Tan", &Math::Tan);
+		math.set_function("Asin", &Math::Asin);
+		math.set_function("Acos", &Math::Acos);
+		math.set_function("Atan2", &Math::Atan2);
+
 		math.set_function("Radians", &Math::Radians);
 		math.set_function("Degrees", &Math::Degrees);
 		math.set_function("Length", &Math::Length);
 		math.set_function("Cross", &Math::Cross);
 		math.set_function("Dot", &Math::Dot);
 		math.set_function("ProjectOnPlane", &Math::ProjectOnPlane);
+		math.set_function("Distance", &Math::Distance);
+		math.set_function("Distance2", &Math::Distance2);
+		math.set_function("Magnitude", &Math::Magnitude);
+		math.set_function("Magnitude2", &Math::Magnitude2);
+		math.set_function("LookAt", sol::overload(
+			[](const Vector3f& eye, const Vector3f& target, const Vector3f& up) { return Math::LookAt(eye, target, up); },
+			[](const Vector3f& start, const Vector3f& end) { return Math::LookAt(start, end); }
+		));
 
 		math.set_function("Normalize", sol::overload(
 			[](const Vector3f& v) { return Math::Normalize(v); },
@@ -187,7 +207,6 @@ namespace Ember {
 
 		// Matrix / Transform Math
 		math.set_function("Inverse", &Math::Inverse);
-		math.set_function("LookAt", &Math::LookAt);
 		math.set_function("GetRotationMatrix", &Math::GetRotationMatrix);
 
 		math.set_function("Translate", sol::overload(
@@ -217,7 +236,9 @@ namespace Ember {
 			Vector3f translation, rotation, scale;
 			bool success = Math::DecomposeTransform(transform, translation, rotation, scale);
 			return std::make_tuple(success, translation, rotation, scale);
-			});
+		});
+
+
 	}
 
 }

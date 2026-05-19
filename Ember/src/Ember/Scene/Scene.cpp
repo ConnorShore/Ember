@@ -762,6 +762,13 @@ namespace Ember {
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
 		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
 
+		// Initialize scripts for the new prefab instance
+		if (root.ContainsComponent<ScriptComponent>())
+		{
+			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
+			scriptSystem->InitializeScriptForEntity(root);
+		}
+
 		return root;
 	}
 
@@ -799,6 +806,13 @@ namespace Ember {
 		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
 		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
+
+		// Initialize scripts for the new prefab instance
+		if (root.ContainsComponent<ScriptComponent>())
+		{
+			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
+			scriptSystem->InitializeScriptForEntity(root);
+		}
 
 		return root;
 	}

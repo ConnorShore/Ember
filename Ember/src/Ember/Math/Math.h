@@ -179,6 +179,18 @@ namespace Ember {
 			return glm::lookAt(eye, center, up);
 		}
 
+		static inline Vector3f LookAt(const Vector3f& start, const Vector3f& end)
+		{
+			Vector3f direction = Math::Normalize(end - start);
+			// Use a fallback up vector when the direction is nearly parallel to world-up
+			// to avoid a degenerate cross product (e.g. shooting straight up or down).
+			Vector3f up = (glm::abs(glm::dot(direction, Vector3f(0.0f, 1.0f, 0.0f))) > 0.99f)
+				? Vector3f(0.0f, 0.0f, 1.0f)
+				: Vector3f(0.0f, 1.0f, 0.0f);
+			Quaternion quat = glm::quatLookAt(direction, up);
+			return Math::ToEulerAngles(quat);
+		}
+
 		static inline float Length(const Vector3f& vector)
 		{
 			return glm::length(vector);
@@ -319,6 +331,16 @@ namespace Ember {
 			return vector - Dot(vector, planeNormal) * planeNormal;
 		}
 
+		static inline float Magnitude(const Vector3f& vector)
+		{
+			return glm::length(vector);
+		}
+
+		static inline float Magnitude2(const Vector3f& vector)
+		{
+			return glm::length2(vector);
+		}
+
 		static inline float Distance(const Vector3f& a, const Vector3f& b)
 		{
 			return glm::distance(a, b);
@@ -327,6 +349,35 @@ namespace Ember {
 		static inline float Distance2(const Vector3f& a, const Vector3f& b)
 		{
 			return glm::distance2(a, b);
+		}
+
+		static inline float Sin(float radians)
+		{
+			return glm::sin(radians);
+		}
+
+		static inline float Cos(float radians)
+		{
+			return glm::cos(radians);
+		}
+
+		static inline float Tan(float radians)
+		{
+			return glm::tan(radians);
+		}
+		static inline float Atan2(float y, float x)
+		{
+			return glm::atan(y, x); // GLM's atan(y, x) is actually atan2
+		}
+
+		static inline float Acos(float x)
+		{
+			return glm::acos(x);
+		}
+
+		static inline float Asin(float x)
+		{
+			return glm::asin(x);
 		}
 
 	};

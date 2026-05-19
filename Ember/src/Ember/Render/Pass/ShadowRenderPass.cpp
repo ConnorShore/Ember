@@ -290,6 +290,19 @@ namespace Ember {
 		for (int i = 0; i < size; i++)
 		{
 			EntityID entity = entities[i];
+
+			// Filter out entities that have a transparent material, since they won't cast shadows
+			if (registry.ContainsComponent<MaterialComponent>(entity))
+			{
+				auto& material = registry.GetComponent<MaterialComponent>(entity);
+				if (material.MaterialHandle != Constants::InvalidUUID)
+				{
+					auto materialAsset = assetManager.GetAsset<Material>(material.MaterialHandle);
+					if (materialAsset && materialAsset->GetRenderQueue() == RenderQueue::Transparent)
+						continue;
+				}
+			}
+
 			if (registry.ContainsComponent<SkinnedMeshComponent>(entity))
 				splitEntities[size - 1 - skinnedCount++] = entity; // Add to end of list
 			else if (registry.ContainsComponent<StaticMeshComponent>(entity))

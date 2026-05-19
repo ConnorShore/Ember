@@ -26,6 +26,11 @@ namespace Ember {
 			}
 		);
 
+		auto application = state.create_table("Time");
+		application.set_function("Now", []() {
+			return Timer::Now();
+		});
+
 		auto log = state.create_table("Log");
 		log.set_function("Info", [](const std::string& message) {
 			EB_CORE_INFO("{}", message);

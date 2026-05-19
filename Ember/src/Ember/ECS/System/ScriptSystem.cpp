@@ -42,54 +42,7 @@ namespace Ember {
 			// First frame: load the Lua file, create an instance table, and call OnCreate
 			if (!script.Initialized)
 			{
-				auto scriptAsset = Application::Instance().GetAssetManager().GetAsset<Script>(script.ScriptHandle);
-				if (scriptAsset)
-				{
-					std::string filepath = scriptAsset->GetFilePath();
-					sol::protected_function_result result = luaState.script_file(filepath);
-					if (result.valid())
-					{
-						sol::table scriptClass = result;
-
-						// Create a per-entity Lua table that inherits from the script class via __index
-						script.Instance = luaState.create_table();
-						script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
-
-						// Inject user property overrides from the component
-						for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
-						{
-							// Shove the C++ override directly into the Lua table
-							sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
-							script.Instance[name] = objValue;
-						}
-
-						// Call OnCreate
-						sol::protected_function onCreate = scriptClass["OnCreate"];
-						if (onCreate.valid())
-						{
-								// Pass Entity as a temporary rvalue so sol2 creates an owned userdata copy
-								// rather than a reference to the loop-local stack variable.
-								sol::protected_function_result createResult = onCreate(script.Instance, Entity{entity});
-							if (!createResult.valid())
-							{
-								sol::error err = createResult;
-								EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
-							}
-						}
-					}
-					else
-					{
-						sol::error err = result;
-						EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
-					}
-				}
-				else
-				{
-					EB_CORE_ERROR("ScriptSystem: Invalid ScriptHandle ID");
-				}
-
-				// Mark as initialized unconditionally to prevent error spam on every frame
-				script.Initialized = true;
+				InitializeScriptForEntity(entity);
 			}
 
 			if (script.Initialized && script.Instance.valid())
@@ -159,6 +112,66 @@ namespace Ember {
 				EB_CORE_ERROR("Lua {} Error: {}", functionName, err.what());
 			}
 		}
+	}
+
+	void ScriptSystem::InitializeScriptForEntity(Entity entity)
+	{
+		if (!entity.ContainsComponent<ScriptComponent>())
+		{
+			EB_CORE_ERROR("Attempted to initialize script for entity '{}' but it doesn't have a ScriptComponent!", entity.GetName());
+			return;
+		}
+
+		sol::state& luaState = ScriptEngine::GetState();
+		auto& script = entity.GetComponent<ScriptComponent>();
+		auto scriptAsset = Application::Instance().GetAssetManager().GetAsset<Script>(script.ScriptHandle);
+		if (scriptAsset)
+		{
+			std::string filepath = scriptAsset->GetFilePath();
+			sol::protected_function_result result = luaState.script_file(filepath);
+			if (result.valid())
+			{
+				sol::table scriptClass = result;
+
+				// Create a per-entity Lua table that inherits from the script class via __index
+				script.Instance = luaState.create_table();
+				script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
+
+				// Inject user property overrides from the component
+				for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
+				{
+					// Shove the C++ override directly into the Lua table
+					sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
+					script.Instance[name] = objValue;
+				}
+
+				// Call OnCreate
+				sol::protected_function onCreate = scriptClass["OnCreate"];
+				if (onCreate.valid())
+				{
+					// Pass Entity as a temporary rvalue so sol2 creates an owned userdata copy
+					// rather than a reference to the loop-local stack variable.
+					sol::protected_function_result createResult = onCreate(script.Instance, Entity{ entity });
+					if (!createResult.valid())
+					{
+						sol::error err = createResult;
+						EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
+					}
+				}
+			}
+			else
+			{
+				sol::error err = result;
+				EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
+			}
+		}
+		else
+		{
+			EB_CORE_ERROR("ScriptSystem: Invalid ScriptHandle ID");
+		}
+
+		// Mark as initialized unconditionally to prevent error spam on every frame
+		script.Initialized = true;
 	}
 
 }

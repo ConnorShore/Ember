@@ -5,6 +5,7 @@
 #include "Bindings/ScriptBindEntity.h"
 #include "Bindings/ScriptBindInput.h"
 #include "Bindings/ScriptBindMath.h"
+#include "Ember/Math/Math.h"
 #include "Bindings/ScriptBindPhysics.h"
 #include "Bindings/ScriptBindComponents.h"
 #include "Bindings/ScriptBindAssets.h"
@@ -34,6 +35,9 @@ namespace Ember {
 		// Create the state immediately so the Editor can parse scripts!
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+
+		// Bind math types so scripts using Vector3f.new(...) as default values can be parsed
+		BindMath(*s_LuaState);
 
 		EB_CORE_INFO("ScriptEngine Initialized (Editor State)");
     }
@@ -96,6 +100,9 @@ namespace Ember {
 		delete s_LuaState;
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+
+		// Bind math types so scripts using Vector3f.new(...) as default values can be parsed
+		BindMath(*s_LuaState);
 	}
 
     sol::state& ScriptEngine::GetState()
@@ -161,6 +168,22 @@ namespace Ember {
 					type = ScriptPropertyType::Bool;
 					val = value.as<bool>();
                     break;
+				case sol::type::userdata:
+				{
+					// Detect Vector3f userdata values exposed as script properties
+					// e.g. MyScript.MyVec = Vector3f.new(1.0, 2.0, 3.0)
+					if (value.is<Vector3f>())
+					{
+						type = ScriptPropertyType::Vector3f;
+						val = value.as<Vector3f>();
+					}
+					else
+					{
+						EB_CORE_WARN("Unsupported userdata script property type for '{}'", name);
+						continue;
+					}
+					break;
+				}
 				case sol::type::table:
 				{
 					// Treat string-keyed tables of integers as enums.

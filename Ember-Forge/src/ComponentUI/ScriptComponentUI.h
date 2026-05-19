@@ -281,8 +281,13 @@ namespace Ember {
 						if (UI::PropertyGrid::InputText(activeProp.Name, val))
 							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, val);
 						break;
-					}
-					case ScriptPropertyType::Enum:
+					}				case ScriptPropertyType::Vector3f:
+					{
+						Vector3f val = std::get<Vector3f>(activeProp.Value);
+						if (UI::PropertyGrid::Float3(activeProp.Name, val))
+							ScriptEngine::SetScriptPropertyOverride<Vector3f>(component, activeProp.Name, val);
+						break;
+					}					case ScriptPropertyType::Enum:
 					{
 						// Use the parsed default's options so we always have the full option list,
 						// even if the override only stores the selected int value.

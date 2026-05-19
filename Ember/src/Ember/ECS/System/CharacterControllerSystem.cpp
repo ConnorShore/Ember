@@ -73,30 +73,37 @@ namespace Ember {
 				controller.Velocity = { 0.0f, 0.0f, 0.0f };
 			}
 
-			// Combine Input (Requested) with Physics (Velocity)
-			Vector3f currentFrameDisplacement = controller.RequestedMovement + (controller.Velocity * (float)delta);
-			float intendedDistance = Math::Length(currentFrameDisplacement);
-
 			// --- TRUE SLOPE PROJECTION ---
-			// If we are moving and on the ground, bend the vector to match the ramp angle
-			if (controller.IsGrounded && intendedDistance > 0.0001f)
+			// Project only the horizontal input onto the slope, so jumps aren't flattened.
+			// If we combined input + physics first and projected together, a cross product
+			// with a non-zero XZ component would strip the jump's Y when on flat ground.
+			Vector3f horizontalInput = controller.RequestedMovement;
+			float inputDistance = Math::Length(horizontalInput);
+
+			if (controller.IsGrounded && inputDistance > 0.0001f)
 			{
 				float floorAngle = Math::Degrees(acos(Math::Dot(floorNormal, Vector3f(0.0f, 1.0f, 0.0f))));
 				if (floorAngle <= controller.MaxSlopeAngle)
 				{
 					// Get a vector pointing exactly to the right of our movement direction
-					Vector3f right = Math::Cross(Vector3f(0.0f, 1.0f, 0.0f), currentFrameDisplacement);
+					Vector3f right = Math::Cross(Vector3f(0.0f, 1.0f, 0.0f), horizontalInput);
 
 					// Cross that Right vector with the Floor Normal to get a vector parallel to the ramp
 					Vector3f slopeDir = Math::Cross(right, floorNormal);
 
 					if (Math::Length(slopeDir) > 0.0001f)
 					{
-						// Set our movement to exactly match the ramp, retaining our original speed!
-						currentFrameDisplacement = Math::Normalize(slopeDir) * intendedDistance;
+						// Bend the input to follow the slope, retaining the original input speed
+						horizontalInput = Math::Normalize(slopeDir) * inputDistance;
 					}
 				}
 			}
+
+			// Combine slope-projected input with physics velocity (gravity/jump preserved)
+			Vector3f currentFrameDisplacement = horizontalInput + (controller.Velocity * (float)delta);
+
+			// Store the effective velocity (units/second) so other scripts can read it reliably
+			controller.MovementVelocity = (float)delta > 0.0f ? currentFrameDisplacement / (float)delta : Vector3f(0.0f);
 
 			// Apply movement EXACTLY ONCE before the depenetration loop
 			transform.Position += currentFrameDisplacement;

@@ -31,6 +31,10 @@ Assets:
     UUID: 3290979914783484062
     Name: HolographicSight
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/HolographicSight.glsl
+  - Type: Shader
+    UUID: 13675443955098295717
+    Name: Tracer
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
     UUID: 16605421126880563658
     Name: MuzzleFlash
@@ -87,6 +91,10 @@ Assets:
     UUID: 10843162672597406671
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
+  - Type: Script
+    UUID: 7847366610859754620
+    Name: Tracer
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Tracer.lua
   - Type: Material
     UUID: 13734008897576602447
     Name: GroundMaterial
@@ -107,6 +115,10 @@ Assets:
     UUID: 3531595371019758275
     Name: AssaultRifle_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
+  - Type: Material
+    UUID: 7112033288364404519
+    Name: Tracer_Material
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Tracer_Material.ebmat
   - Type: Mesh
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
@@ -124,7 +136,11 @@ Assets:
     Name: AssaultRifle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle.ebmodel
   - Type: Prefab
-    UUID: 9723225066709211091
+    UUID: 8391391617245334689
+    Name: Tracer
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Tracer.ebprefab
+  - Type: Prefab
+    UUID: 16836608058861364347
     Name: HolographicSight
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/HolographicSight.ebprefab
   - Type: Font

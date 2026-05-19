@@ -8,6 +8,7 @@ namespace Ember {
 		state.new_usertype<RigidBodyComponent>("RigidBodyComponent",
 			"Mass", &RigidBodyComponent::Mass,
 			"GravityEnabled", &RigidBodyComponent::GravityEnabled,
+			"CurrentVelocity", &RigidBodyComponent::GetCurrentVelocity,
 			"ApplyForce", &RigidBodyComponent::ApplyForce,
 			"ApplyImpulse", &RigidBodyComponent::ApplyImpulse,
 			"ApplyImpulseAtPoint", &RigidBodyComponent::ApplyImpulseAtPoint
@@ -57,11 +58,14 @@ namespace Ember {
 		state.new_usertype<CharacterControllerComponent>("CharacterControllerComponent",
 			"WalkSpeed", &CharacterControllerComponent::WalkSpeed,
 			"JumpForce", &CharacterControllerComponent::JumpForce,
+			"Velocity", &CharacterControllerComponent::Velocity,
+			"RequestedMovement", &CharacterControllerComponent::RequestedMovement,
 			"GravityMultiplier", &CharacterControllerComponent::GravityMultiplier,
 			"MaxSlopeAngle", &CharacterControllerComponent::MaxSlopeAngle,
 			"MaxStepHeight", &CharacterControllerComponent::MaxStepHeight,
 			"IsGrounded", &CharacterControllerComponent::IsGrounded,
 			"GroundEntity", &CharacterControllerComponent::GroundEntity,
+			"MovementVelocity", &CharacterControllerComponent::MovementVelocity,
 			"Move", &CharacterControllerComponent::Move,
 			"Jump", &CharacterControllerComponent::Jump
 		);

@@ -277,6 +277,9 @@ namespace Ember {
 				case ScriptPropertyType::String:
 					propNode["Value"] << std::get<std::string>(prop.Value);
 					break;
+				case ScriptPropertyType::Vector3f:
+					Util::SerializeVector3f(propNode["Value"], std::get<Ember::Vector3f>(prop.Value));
+					break;
 				default:
 					break;
 				}
@@ -910,6 +913,13 @@ namespace Ember {
 					{
 						std::string val;
 						propNode["Value"] >> val;
+						propValue = val;
+						break;
+					}
+					case ScriptPropertyType::Vector3f:
+					{
+						Vector3f val;
+						Util::DeserializeVector3f(propNode["Value"], val);
 						propValue = val;
 						break;
 					}
