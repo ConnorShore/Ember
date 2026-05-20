@@ -47,6 +47,7 @@ namespace Ember {
 		bool IsRootParent();
 
 		Entity AddChild(Entity entity);
+		Entity AddChild(Entity entity, bool isAttachment);
 		Entity AddChild(const std::string& name = "");
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);

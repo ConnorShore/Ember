@@ -83,6 +83,54 @@ namespace Ember {
 		return entity;
 	}
 
+	Entity Entity::AddChild(Entity entity, bool isAttachment)
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+		relationship.Children.push_back(entity.GetUUID());
+
+		auto& childRelationship = entity.GetComponent<RelationshipComponent>();
+		childRelationship.ParentHandle = GetUUID();
+		childRelationship.IsAttachment = isAttachment;
+
+		// Convert child's world transform to local coordinates relative to parent
+		auto& parentTransform = GetComponent<TransformComponent>();
+		auto& childTransform = entity.GetComponent<TransformComponent>();
+
+		// Decompose parent's world transform
+		Vector3f parentTranslation, parentRotation, parentScale;
+		Math::DecomposeTransform(parentTransform.WorldTransform, parentTranslation, parentRotation, parentScale);
+
+		// Build parent transform matrix (excluding scale if attachment)
+		Matrix4f parentMatrix;
+		if (isAttachment)
+		{
+			// For attachments, use parent's translation and rotation only (no scale)
+			parentMatrix = Math::Translate(parentTranslation) * Math::GetRotationMatrix(parentRotation);
+
+			// Get child's current world transform (from Position, Rotation, Scale)
+			Matrix4f childWorldMatrix = childTransform.GetLocalTransform();
+
+			// Convert to local space: localTransform = inverse(parentMatrix) * childWorldMatrix
+			Matrix4f localTransform = Math::Inverse(parentMatrix) * childWorldMatrix;
+
+			// Decompose the local transform to get Position, Rotation, Scale
+			Vector3f localTranslation, localRotation, localScale;
+			Math::DecomposeTransform(localTransform, localTranslation, localRotation, localScale);
+
+			// Update child's transform component with local coordinates
+			childTransform.Position = localTranslation;
+			childTransform.Rotation = localRotation;
+			childTransform.Scale = localScale;
+		}
+		else
+		{
+			// For regular children, use full parent transform including scale
+			parentMatrix = parentTransform.WorldTransform;
+		}
+
+		return entity;
+	}
+
 	Entity Entity::GetChildByName(const std::string& name)
 	{
 		auto& relationship = GetComponent<RelationshipComponent>();

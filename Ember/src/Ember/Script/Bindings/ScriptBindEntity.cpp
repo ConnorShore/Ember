@@ -274,6 +274,7 @@ namespace Ember {
 		entityType["GetChild"] = &Entity::GetChildByName;
 		entityType["AddChild"] = sol::overload(
 			static_cast<Entity(Entity::*)(Entity)>(&Entity::AddChild),
+			static_cast<Entity(Entity::*)(Entity, bool)>(&Entity::AddChild),
 			static_cast<Entity(Entity::*)(const std::string&)>(&Entity::AddChild)
 		);
 

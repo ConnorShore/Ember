@@ -37,15 +37,17 @@ namespace Ember {
 		}
 		if (entity.ContainsComponent<RelationshipComponent>())
 		{
+			auto& relationship = entity.GetComponent<RelationshipComponent>();
 			ryml::NodeRef relationshipNode = entityNode["RelationshipComponent"];
 			relationshipNode |= ryml::MAP;
-			relationshipNode["Parent"] << (uint64_t)entity.GetComponent<RelationshipComponent>().ParentHandle;
+			relationshipNode["Parent"] << (uint64_t)relationship.ParentHandle;
 			ryml::NodeRef childrenNode = relationshipNode["Children"];
 			childrenNode |= ryml::SEQ;
-			for (const auto& child : entity.GetComponent<RelationshipComponent>().Children)
+			for (const auto& child : relationship.Children)
 			{
 				childrenNode.append_child() << (uint64_t)child;
 			}
+			relationshipNode["IsAttachment"] << relationship.IsAttachment;
 		}
 		if (entity.ContainsComponent<TransformComponent>())
 		{
@@ -586,6 +588,9 @@ namespace Ember {
 						rc.Children.push_back(newChildID);
 				}
 			}
+
+			if (rcNode.has_child("IsAttachment"))
+				rcNode["IsAttachment"] >> rc.IsAttachment;
 		}
 
 		if (entityNode.has_child("TransformComponent"))

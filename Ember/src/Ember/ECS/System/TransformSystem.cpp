@@ -39,8 +39,21 @@ namespace Ember {
 		auto& transform = registry.GetComponent<TransformComponent>(entity);
 		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);
 
-		transform.WorldTransform = parentWorldTransform * transform.GetLocalTransform();
+		if (!relationship.IsAttachment)
+		{
+			transform.WorldTransform = parentWorldTransform * transform.GetLocalTransform();
+		}
+		else
+		{
+			// Decompose parent transform to exclude scale
+			Vector3f parentTranslation, parentRotation, parentScale;
+			Math::DecomposeTransform(parentWorldTransform, parentTranslation, parentRotation, parentScale);
 
+			// Rebuild parent transform without scale (translation + rotation only)
+			Matrix4f parentTransformNoScale = Math::Translate(parentTranslation) * Math::GetRotationMatrix(parentRotation);
+
+			transform.WorldTransform = parentTransformNoScale * transform.GetLocalTransform();
+		}
 		for (UUID child : relationship.Children)
 		{
 			UpdateTransformTree(scene->GetEntity(child).GetEntityHandle(), transform.WorldTransform, scene);

@@ -71,6 +71,8 @@ namespace Ember {
 		UUID ParentHandle = Constants::InvalidUUID;
 		std::vector<UUID> Children;
 
+		bool IsAttachment = false; // If true, this entity will ignore the parent's scale
+
 		RelationshipComponent() = default;
 		RelationshipComponent(const RelationshipComponent&) = default;
 	};
@@ -193,11 +195,11 @@ namespace Ember {
 					// Accurately calculate the true center of mass in world space
 					reactphysics3d::Vector3 worldCenterOfMass = Body->getTransform() * Body->getLocalCenterOfMass();
 
-					// 1. LINEAR VELOCITY (The Push)
+					// LINEAR VELOCITY (The Push)
 					reactphysics3d::Vector3 deltaLinearVel = rp3dImpulse / mass;
 					Body->setLinearVelocity(Body->getLinearVelocity() + deltaLinearVel);
 
-					// 2. ANGULAR VELOCITY (The Twist/Torque)
+					// ANGULAR VELOCITY (The Twist/Torque)
 					reactphysics3d::Vector3 r = rp3dPoint - worldCenterOfMass;
 					reactphysics3d::Vector3 angularImpulse = r.cross(rp3dImpulse);
 
@@ -278,8 +280,8 @@ namespace Ember {
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
-		reactphysics3d::SphereShape* Shape = nullptr;   // The raw geometry
-		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
+		reactphysics3d::SphereShape* Shape = nullptr; // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr; // The attachment to the body
 		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
@@ -306,9 +308,9 @@ namespace Ember {
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
-		reactphysics3d::CapsuleShape* Shape = nullptr;   // The raw geometry
+		reactphysics3d::CapsuleShape* Shape = nullptr; // The raw geometry
 		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
-		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		reactphysics3d::Body* AttachedBody = nullptr;  // The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
@@ -335,8 +337,8 @@ namespace Ember {
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
 		reactphysics3d::ConvexMeshShape* Shape = nullptr;   // The raw geometry
-		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
-		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		reactphysics3d::Collider* Collider = nullptr;		// The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr;		// The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
@@ -365,9 +367,9 @@ namespace Ember {
 		UUID PhysicsMaterialHandle = Constants::InvalidUUID;
 
 		// Runtime only (not serialized) -> holds the actual collider created in the PhysicsSystem
-		reactphysics3d::ConcaveMeshShape* Shape = nullptr;   // The raw geometry
-		reactphysics3d::Collider* Collider = nullptr;  // The attachment to the body
-		reactphysics3d::Body* AttachedBody = nullptr; // The body this collider is attached to (cached for easy access)
+		reactphysics3d::ConcaveMeshShape* Shape = nullptr;  // The raw geometry
+		reactphysics3d::Collider* Collider = nullptr;		// The attachment to the body
+		reactphysics3d::Body* AttachedBody = nullptr;		// The body this collider is attached to (cached for easy access)
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
