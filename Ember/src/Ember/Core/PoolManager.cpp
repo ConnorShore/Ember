@@ -5,14 +5,14 @@
 
 namespace Ember {
 
-	void PoolManager::CreatePool(Scene* scene, const std::string& poolID, UUID prefabUUID, uint32_t initialSize)
+	void PoolManager::CreatePool(Scene* scene, const std::string& poolID, UUID prefabUUID, uint32_t initialSize, bool loopEntities /* = true */)
 	{
-		m_Pools[poolID] = ScopedPtr<Pool>::Create(scene, poolID, prefabUUID, initialSize);
+		m_Pools[poolID] = ScopedPtr<Pool>::Create(scene, poolID, prefabUUID, initialSize, loopEntities);
 	}
 
-	void PoolManager::CreatePool(Scene* scene, const std::string& poolID, const SharedPtr<Prefab>& prefab, uint32_t initialSize)
+	void PoolManager::CreatePool(Scene* scene, const std::string& poolID, const SharedPtr<Prefab>& prefab, uint32_t initialSize, bool loopEntities /* = true*/)
 	{
-		m_Pools[poolID] = ScopedPtr<Pool>::Create(scene, poolID, prefab, initialSize);
+		m_Pools[poolID] = ScopedPtr<Pool>::Create(scene, poolID, prefab, initialSize, loopEntities);
 	}
 
 	void PoolManager::DestroyPools()

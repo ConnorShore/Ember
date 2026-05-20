@@ -16,7 +16,8 @@ namespace Ember {
 		{
 			if (UI::PropertyGrid::Begin("LifetimeProps"))
 			{
-				UI::PropertyGrid::Float("Lifetime", component.Lifetime);
+				if (UI::PropertyGrid::Float("Lifetime", component.Lifetime))
+					component.InitialLifetime = component.Lifetime;
 
 				UI::PropertyGrid::End();
 			}

@@ -226,7 +226,7 @@ namespace Ember {
 		for (auto entity : view)
 		{
 			auto& config = m_Registry->GetComponent<PoolConfigComponent>(entity);
-			m_PoolManager->CreatePool(this, config.PoolID, config.PrefabHandle, config.Capacity);
+			m_PoolManager->CreatePool(this, config.PoolID, config.PrefabHandle, config.Capacity, config.LoopEntities);
 		}
 
 		ScriptEngine::OnRuntimeStart(this);

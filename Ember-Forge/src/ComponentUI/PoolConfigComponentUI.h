@@ -21,10 +21,16 @@ namespace Ember {
 			{
 				UI::PropertyGrid::InputText("Pool ID", component.PoolID);
 				UI::PropertyGrid::UInt("Capacity", component.Capacity, 1, 0, 50000);
+				UI::PropertyGrid::Checkbox("Loop Entities", component.LoopEntities);
 				
 				// Drag drop and picker for prefab
 				auto& assetManager = Application::Instance().GetAssetManager();
 				bool prefabExists = component.PrefabHandle != Constants::InvalidUUID;
+				if (!assetManager.ContainsAsset(component.PrefabHandle))
+				{
+					component.PrefabHandle = Constants::InvalidUUID;
+					prefabExists = false;
+				}
 
 				std::string prefabName = "None";
 				if (prefabExists)

@@ -58,6 +58,27 @@ namespace Ember {
 		return GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID;
 	}
 
+	void Entity::RemoveFromParent()
+	{
+		auto& relationship = GetComponent<RelationshipComponent>();
+		if (relationship.ParentHandle == Constants::InvalidUUID)
+			return;
+
+		Entity parent = m_SceneHandle->GetEntity(relationship.ParentHandle);
+		if (parent)
+		{
+			auto& parentRelationship = parent.GetComponent<RelationshipComponent>();
+			UUID myUUID = GetUUID();
+			parentRelationship.Children.erase(
+				std::remove(parentRelationship.Children.begin(), parentRelationship.Children.end(), myUUID),
+				parentRelationship.Children.end()
+			);
+		}
+
+		relationship.ParentHandle = Constants::InvalidUUID;
+		relationship.IsAttachment = false;
+	}
+
 	Entity Entity::AddChild(const std::string& name /*= ""*/)
 	{
 		Entity childEntity = m_SceneHandle->AddEntity(name);

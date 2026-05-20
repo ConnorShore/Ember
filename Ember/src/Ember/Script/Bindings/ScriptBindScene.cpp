@@ -61,10 +61,16 @@ namespace Ember {
 		});
 
 		// Pools
-		sceneTable.set_function("CreatePool", [scene](const std::string& poolID, const std::string& prefabName, uint32_t initialSize) {
-			auto prefab = Application::Instance().GetAssetManager().GetAsset<Prefab>(prefabName);
-			scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize);
-		});
+		sceneTable.set_function("CreatePool", sol::overload(
+			[scene](const std::string& poolID, const std::string& prefabName, uint32_t initialSize) {
+				auto prefab = Application::Instance().GetAssetManager().GetAsset<Prefab>(prefabName);
+				scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize);
+			},
+			[scene](const std::string& poolID, const std::string& prefabName, uint32_t initialSize, bool loopEntities) {
+				auto prefab = Application::Instance().GetAssetManager().GetAsset<Prefab>(prefabName);
+				scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize, loopEntities);
+			}
+		));
 
 		sceneTable.set_function("RetrieveFromPool", sol::overload(
 			[scene](const std::string& poolID) {

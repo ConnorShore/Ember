@@ -21,6 +21,9 @@ namespace Ember {
 			{
 				if (registry.ContainsComponent<PoolComponent>(entity))
 				{
+					// Reset lifetime before returning to pool so it's ready for next spawn
+					comp.Lifetime = comp.InitialLifetime;
+
 					auto poolID = registry.GetComponent<PoolComponent>(entity).PoolID;
 					scene->GetPoolManager().ReturnToPool(entity, poolID);
 				}

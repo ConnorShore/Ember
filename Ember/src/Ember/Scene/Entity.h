@@ -49,6 +49,7 @@ namespace Ember {
 		Entity AddChild(Entity entity);
 		Entity AddChild(Entity entity, bool isAttachment);
 		Entity AddChild(const std::string& name = "");
+		void RemoveFromParent();
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);
 

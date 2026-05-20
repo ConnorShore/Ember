@@ -18,8 +18,8 @@ namespace Ember
 	class Pool
 	{
 	public:
-		Pool(Scene* scene, const std::string& poolID, UUID prefabUUID, uint32_t initialSize);
-		Pool(Scene* scene, const std::string& poolID, const SharedPtr<Prefab>& prefab, uint32_t initialSize);
+		Pool(Scene* scene, const std::string& poolID, UUID prefabUUID, uint32_t initialSize, bool overwriteOnExhaust = false);
+		Pool(Scene* scene, const std::string& poolID, const SharedPtr<Prefab>& prefab, uint32_t initialSize, bool overwriteOnExhaust = false);
 		~Pool() = default;
 
 		Entity Retrieve();
@@ -37,8 +37,10 @@ namespace Ember
 		std::string m_Id;
 		Scene* m_SceneHandle;
 		std::queue<EntityID> m_AvailableEntities;
+		std::queue<EntityID> m_ActiveEntities;
 		uint32_t m_Capacity;
 		UUID m_PrefabUUID;
+		bool m_OverwriteOnExhaust;
 	};
 
 }

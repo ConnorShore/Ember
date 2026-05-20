@@ -339,6 +339,7 @@ namespace Ember {
 			ryml::NodeRef prefabNode = entityNode["LifetimeComponent"];
 			prefabNode |= ryml::MAP;
 			prefabNode["Lifetime"] << lifetime.Lifetime;
+			prefabNode["InitialLifetime"] << lifetime.InitialLifetime;
 		}
 		if (entity.ContainsComponent<TextComponent>())
 		{
@@ -371,6 +372,7 @@ namespace Ember {
 			poolConfigNode["PoolID"] << poolConfig.PoolID;
 			poolConfigNode["Capacity"] << poolConfig.Capacity;
 			poolConfigNode["PrefabHandle"] << (uint64_t)poolConfig.PrefabHandle;
+			poolConfigNode["LoopEntities"] << poolConfig.LoopEntities;
 		}
 		if (entity.ContainsComponent<ParticleEmitterComponent>())
 		{
@@ -1008,6 +1010,12 @@ namespace Ember {
 			ryml::NodeRef lifetimeNode = entityNode["LifetimeComponent"];
 			auto& ltc = deserializedEntity.AttachComponent<LifetimeComponent>();
 			lifetimeNode["Lifetime"] >> ltc.Lifetime;
+
+			// Backward-compatible: older assets only store Lifetime.
+			if (lifetimeNode.has_child("InitialLifetime"))
+				lifetimeNode["InitialLifetime"] >> ltc.InitialLifetime;
+			else
+				ltc.InitialLifetime = ltc.Lifetime;
 		}
 		
 		if (entityNode.has_child("TextComponent"))
@@ -1047,6 +1055,7 @@ namespace Ember {
 			uint64_t prefabId;
 			poolNode["PrefabHandle"] >> prefabId;
 			pcc.PrefabHandle = (UUID)prefabId;
+			poolNode["LoopEntities"] >> pcc.LoopEntities;
 		}
 
 		if (entityNode.has_child("PostProcessVolumeComponent"))

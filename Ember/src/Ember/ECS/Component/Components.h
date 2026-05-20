@@ -675,10 +675,11 @@ namespace Ember {
 
 	struct LifetimeComponent
 	{
-		float Lifetime = 0.0f; // Total lifetime in seconds
+		float Lifetime = 0.0f;        // Remaining lifetime in seconds
+		float InitialLifetime = 0.0f; // Original lifetime; used to reset when returned to a pool
 
 		LifetimeComponent() = default;
-		LifetimeComponent(float lifetime) : Lifetime(lifetime) {}
+		LifetimeComponent(float lifetime) : Lifetime(lifetime), InitialLifetime(lifetime) {}
 		LifetimeComponent(const LifetimeComponent&) = default;
 	};
 
@@ -708,6 +709,7 @@ namespace Ember {
 	{
 		std::string PoolID;
 		uint32_t Capacity = 0;
+		bool LoopEntities = true;
 		UUID PrefabHandle = Constants::InvalidUUID;
 
 		PoolConfigComponent() = default;

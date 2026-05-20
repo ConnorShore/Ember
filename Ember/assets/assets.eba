@@ -24,13 +24,13 @@ Assets:
     Name: AssaultRifle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ORM_Mat0.png
   - Type: Texture
-    UUID: 9008232455192275898
-    Name: AssaultRifle_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
-  - Type: Texture
     UUID: 15863835653609318779
     Name: HolographicReticle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
+  - Type: Texture
+    UUID: 9008232455192275898
+    Name: AssaultRifle_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -100,13 +100,13 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Tracer.lua
   - Type: Material
-    UUID: 13734008897576602447
-    Name: GroundMaterial
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
-  - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
+  - Type: Material
+    UUID: 13734008897576602447
+    Name: GroundMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
     UUID: 1868779223986162857
     Name: PickupMaterial
