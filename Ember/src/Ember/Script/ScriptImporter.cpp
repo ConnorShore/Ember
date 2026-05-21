@@ -6,10 +6,12 @@ namespace Ember {
 
 	SharedPtr<Script> ScriptImporter::LoadScript(UUID uuid, const std::string& name, const std::string& filePath)
 	{
+		auto scriptAsset = SharedPtr<Script>::Create(uuid, name, filePath);
+
 		if (!std::filesystem::exists(filePath))
 		{
 			EB_CORE_ERROR("ScriptImporter: File does not exist at path '{0}'", filePath);
-			return nullptr;
+			return scriptAsset;
 		}
 
 		sol::state tempState;
@@ -20,7 +22,6 @@ namespace Ember {
 			EB_CORE_TRACE("ScriptImporter: Successfully verified syntax for '{0}'", filePath);
 
 			// Load default exposed script properties
-			auto scriptAsset = SharedPtr<Script>::Create(uuid, name, filePath);
 			scriptAsset->SetExposedProperties(ScriptEngine::GetScriptProperties(scriptAsset));
 
 			return scriptAsset;
@@ -29,7 +30,7 @@ namespace Ember {
 		{
 			sol::error err = result;
 			EB_CORE_ERROR("ScriptImporter: Syntax Error in '{0}'\n{1}", filePath, err.what());
-			return nullptr;
+			return scriptAsset;
 		}
 	}
 
