@@ -10,6 +10,8 @@
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptEngine.h"
 
+#include <stdexcept>
+
 namespace Ember {
 
 	void ScriptSystem::OnAttach()
@@ -58,6 +60,7 @@ namespace Ember {
 					{
 						sol::error err = updateResult;
 						EB_CORE_ERROR("Lua OnUpdate Error: {0}", err.what());
+						throw std::runtime_error(err.what());
 					}
 				}
 			}
@@ -90,6 +93,7 @@ namespace Ember {
 			{
 				sol::error err = result;
 				EB_CORE_ERROR("Lua {} Error: {}", functionName, err.what());
+				throw std::runtime_error(err.what());
 			}
 		}
 	}
@@ -112,6 +116,7 @@ namespace Ember {
 			{
 				sol::error err = result;
 				EB_CORE_ERROR("Lua {} Error: {}", functionName, err.what());
+				throw std::runtime_error(err.what());
 			}
 		}
 	}
@@ -158,6 +163,7 @@ namespace Ember {
 					{
 						sol::error err = createResult;
 						EB_CORE_ERROR("Lua OnCreate Error in '{}': {}", filepath, err.what());
+						throw std::runtime_error(err.what());
 					}
 				}
 			}
@@ -165,11 +171,13 @@ namespace Ember {
 			{
 				sol::error err = result;
 				EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
+				throw std::runtime_error(err.what());
 			}
 		}
 		else
 		{
 			EB_CORE_ERROR("ScriptSystem: Invalid ScriptHandle ID");
+			throw std::runtime_error("ScriptSystem: Invalid ScriptHandle ID");
 		}
 
 		// Mark as initialized unconditionally to prevent error spam on every frame

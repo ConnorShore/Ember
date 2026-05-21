@@ -33,6 +33,8 @@ namespace Ember {
 
 		void OnRuntimeStart();
 		void OnRuntimeStop();
+		void StopRuntimeAfterError(const std::string& message);
+		void StopRuntimeAfterError(const char* message);
 
 		void RenderMenuBar();
 		void RenderSceneViewport();
