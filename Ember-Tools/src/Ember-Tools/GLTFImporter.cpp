@@ -48,6 +48,59 @@ namespace Ember {
 		return Math::Translate(t) * Math::ToMatrix4f(r) * Math::Scale(s);
 	}
 
+	// Builds per-mesh rigid skin bindings by walking node ancestry from the scene root.
+	// Meshes under a bone but without JOINTS_0 can be rigid-skinned to that ancestor bone.
+	// Values in meshRigidBoneMap:
+	//  -1 = no rigid binding
+	//  -2 = conflicting usage (different bones, or mixed bone/non-bone ancestry)
+	static void CollectRigidMeshBoneMap(
+		int nodeIndex,
+		const tinygltf::Model& model,
+		const std::unordered_map<int, int>& nodeToBoneMap,
+		int inheritedBoneID,
+		std::vector<int>& meshRigidBoneMap,
+		std::vector<bool>& meshSeenWithoutBone)
+	{
+		if (nodeIndex < 0 || nodeIndex >= (int)model.nodes.size())
+			return;
+
+		int activeBoneID = inheritedBoneID;
+		auto boneIt = nodeToBoneMap.find(nodeIndex);
+		if (boneIt != nodeToBoneMap.end())
+			activeBoneID = boneIt->second;
+
+		const auto& gNode = model.nodes[nodeIndex];
+		if (gNode.mesh > -1 && gNode.mesh < (int)meshRigidBoneMap.size())
+		{
+			int meshIndex = gNode.mesh;
+
+			if (activeBoneID >= 0)
+			{
+				if (meshSeenWithoutBone[meshIndex])
+				{
+					meshRigidBoneMap[meshIndex] = -2;
+				}
+				else if (meshRigidBoneMap[meshIndex] == -1)
+				{
+					meshRigidBoneMap[meshIndex] = activeBoneID;
+				}
+				else if (meshRigidBoneMap[meshIndex] >= 0 && meshRigidBoneMap[meshIndex] != activeBoneID)
+				{
+					meshRigidBoneMap[meshIndex] = -2;
+				}
+			}
+			else
+			{
+				meshSeenWithoutBone[meshIndex] = true;
+				if (meshRigidBoneMap[meshIndex] >= 0)
+					meshRigidBoneMap[meshIndex] = -2;
+			}
+		}
+
+		for (int childNodeIdx : gNode.children)
+			CollectRigidMeshBoneMap(childNodeIdx, model, nodeToBoneMap, activeBoneID, meshRigidBoneMap, meshSeenWithoutBone);
+	}
+
 	std::optional<ModelCookReport> GLTFImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory) {
 		tinygltf::Model model;
 		tinygltf::TinyGLTF loader;
@@ -61,6 +114,45 @@ namespace Ember {
 		std::string modelName = SanitizeFileName(std::filesystem::path(inputFile).stem().string());
 		ModelCookReport report;
 		auto& am = Application::Instance().GetAssetManager();
+		bool modelIsSkinned = !model.skins.empty();
+
+		int sceneIndex = model.defaultScene;
+		if (sceneIndex < 0 || sceneIndex >= (int)model.scenes.size())
+			sceneIndex = model.scenes.empty() ? -1 : 0;
+
+		if (sceneIndex < 0) {
+			EB_CORE_ERROR("GLTF Error: Model '{}' contains no scene.", inputFile);
+			return std::nullopt;
+		}
+
+		// Build node->bone map early so we can classify rigid meshes under bone ancestry.
+		std::unordered_map<int, int> nodeToBoneMap;
+		if (modelIsSkinned) {
+			const tinygltf::Skin& skin = model.skins[0];
+			nodeToBoneMap.reserve(skin.joints.size());
+			for (size_t i = 0; i < skin.joints.size(); i++) {
+				nodeToBoneMap[skin.joints[i]] = (int)i;
+			}
+		}
+
+		std::vector<int> meshRigidBoneMap(model.meshes.size(), -1);
+		if (modelIsSkinned)
+		{
+			std::vector<bool> meshSeenWithoutBone(model.meshes.size(), false);
+			const auto& gScene = model.scenes[sceneIndex];
+			for (int nodeIdx : gScene.nodes)
+				CollectRigidMeshBoneMap(nodeIdx, model, nodeToBoneMap, -1, meshRigidBoneMap, meshSeenWithoutBone);
+
+			for (size_t i = 0; i < meshRigidBoneMap.size(); i++)
+			{
+				if (meshRigidBoneMap[i] == -2)
+				{
+					std::string meshName = model.meshes[i].name.empty() ? "Mesh_" + std::to_string(i) : model.meshes[i].name;
+					EB_CORE_WARN("GLTF Import: Mesh '{}' is used with incompatible bone ancestry. Rigid skin fallback disabled for this mesh.", meshName);
+					meshRigidBoneMap[i] = -1;
+				}
+			}
+		}
 
 		// 1. COOK TEXTURES
 		std::vector<CookedAssetInfo> cookedImages(model.images.size());
@@ -87,17 +179,49 @@ namespace Ember {
 		}
 
 		// 2. COOK MATERIALS
-		// We now check if the model actually has skins before assigning the skinned shader
-		bool modelIsSkinned = !model.skins.empty();
+		// Choose shader per material based on the primitives that reference it.
+		// A model can contain a skeleton but still have static primitives (e.g. objects parented to bones).
+		std::vector<bool> materialUsesSkin(model.materials.size(), false);
+		bool hasSkinnedPrimitives = false;
+		size_t rigidFallbackPrimitiveCount = 0;
+		for (size_t meshIndex = 0; meshIndex < model.meshes.size(); meshIndex++) {
+			const auto& gMesh = model.meshes[meshIndex];
+			bool rigidBoundMesh = meshIndex < meshRigidBoneMap.size() && meshRigidBoneMap[meshIndex] >= 0;
+			for (const auto& primitive : gMesh.primitives) {
+				if (primitive.material < 0 || primitive.material >= (int)materialUsesSkin.size())
+					continue;
+
+				bool hasJointWeights = primitive.attributes.find("JOINTS_0") != primitive.attributes.end();
+				bool primitiveIsSkinned = hasJointWeights || (!hasJointWeights && rigidBoundMesh);
+
+				if (primitiveIsSkinned) {
+					materialUsesSkin[(size_t)primitive.material] = true;
+					hasSkinnedPrimitives = true;
+					if (!hasJointWeights && rigidBoundMesh)
+						rigidFallbackPrimitiveCount++;
+				}
+			}
+		}
+
+		if (rigidFallbackPrimitiveCount > 0) {
+			EB_CORE_INFO("GLTF Import: Auto-rigid-skinned {} primitive(s) in model '{}'.", rigidFallbackPrimitiveCount, modelName);
+		}
+
+		if (modelIsSkinned && !hasSkinnedPrimitives) {
+			EB_CORE_WARN("GLTF Import: Model '{}' has a skin but no skinned or bone-bound primitives. Meshes will be imported as static.", modelName);
+		}
+
 		for (size_t i = 0; i < model.materials.size(); i++) {
-			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages, modelIsSkinned));
+			bool materialIsSkinned = i < materialUsesSkin.size() ? materialUsesSkin[i] : false;
+			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages, materialIsSkinned));
 			am.Load<MaterialBase>(report.Materials.back().id, report.Materials.back().name, report.Materials.back().path, false);
 		}
 
 		// 3. COOK MESHES
 		std::vector<std::vector<CookedAssetInfo>> meshToPrims(model.meshes.size());
 		for (size_t i = 0; i < model.meshes.size(); i++) {
-			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, outputDirectory);
+			int rigidBoneID = (i < meshRigidBoneMap.size() && meshRigidBoneMap[i] >= 0) ? meshRigidBoneMap[i] : -1;
+			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, outputDirectory, rigidBoneID);
 			for (auto& p : meshToPrims[i]) {
 				report.Meshes.push_back(p);
 				am.Load<Mesh>(p.id, p.name, p.path, false);
@@ -106,7 +230,6 @@ namespace Ember {
 
 		// 4. COOK SKELETON
 		UUID skeletonID = Constants::InvalidUUID;
-		std::unordered_map<int, int> nodeToBoneMap;
 
 		if (modelIsSkinned) 
 		{
@@ -198,7 +321,7 @@ namespace Ember {
 
 		CookedModelNode intermediateRoot;
 		intermediateRoot.Name = modelName + "_Root";
-		const auto& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
+		const auto& scene = model.scenes[sceneIndex];
 		for (int nodeIdx : scene.nodes) {
 			intermediateRoot.ChildNodes.push_back(ProcessNode(nodeIdx, model, outputDirectory, meshToPrims));
 		}
@@ -337,7 +460,7 @@ namespace Ember {
 		return { id, name, path };
 	}
 
-	std::vector<CookedAssetInfo> GLTFImporter::ProcessMesh(const std::string& modelName, int meshIndex, const tinygltf::Model& model, const std::string& outputDirectory) {
+	std::vector<CookedAssetInfo> GLTFImporter::ProcessMesh(const std::string& modelName, int meshIndex, const tinygltf::Model& model, const std::string& outputDirectory, int rigidBoneID) {
 		std::vector<CookedAssetInfo> cookedPrims;
 		const tinygltf::Mesh& gltfMesh = model.meshes[meshIndex];
 		std::string safeMeshName = SanitizeFileName(gltfMesh.name.empty() ? "Mesh_" + std::to_string(meshIndex) : gltfMesh.name);
@@ -349,7 +472,9 @@ namespace Ember {
 
 			const auto& posAccessor = model.accessors[posIt->second];
 			uint32_t vertexCount = (uint32_t)posAccessor.count;
-			bool isSkinned = primitive.attributes.count("JOINTS_0");
+			bool hasJointWeights = primitive.attributes.find("JOINTS_0") != primitive.attributes.end();
+			bool forceRigidSkinning = !hasJointWeights && rigidBoneID >= 0;
+			bool isSkinned = hasJointWeights || forceRigidSkinning;
 			std::vector<SkinnedMeshVertex> vertices(vertexCount);
 
 			auto extract = [&](const std::string& attr, auto func) {
@@ -379,6 +504,22 @@ namespace Ember {
 				if (t == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) { const uint16_t* s = (uint16_t*)d; v.BoneIDs[0] = s[0]; v.BoneIDs[1] = s[1]; v.BoneIDs[2] = s[2]; v.BoneIDs[3] = s[3]; }
 				else { v.BoneIDs[0] = d[0]; v.BoneIDs[1] = d[1]; v.BoneIDs[2] = d[2]; v.BoneIDs[3] = d[3]; }
 				});
+
+			if (forceRigidSkinning)
+			{
+				for (auto& v : vertices)
+				{
+					v.BoneIDs[0] = (uint32_t)rigidBoneID;
+					v.BoneIDs[1] = 0;
+					v.BoneIDs[2] = 0;
+					v.BoneIDs[3] = 0;
+
+					v.BoneWeights[0] = 1.0f;
+					v.BoneWeights[1] = 0.0f;
+					v.BoneWeights[2] = 0.0f;
+					v.BoneWeights[3] = 0.0f;
+				}
+			}
 
 			std::vector<uint32_t> indices;
 			if (primitive.indices >= 0) {

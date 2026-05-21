@@ -70,7 +70,7 @@ namespace Ember {
 
 		// Assets
 		static std::vector<CookedAssetInfo> ProcessMesh(const std::string& modelName, int meshIndex, const tinygltf::Model& model,
-			const std::string& outputDirectory);
+			const std::string& outputDirectory, int rigidBoneID = -1);
 		static CookedAssetInfo ProcessMaterial(const std::string& modelName, int matIndex, const tinygltf::Model& model, 
 			const std::string& outputDirectory, std::vector<CookedAssetInfo>& cookedImages, bool isSkinned);
 	};

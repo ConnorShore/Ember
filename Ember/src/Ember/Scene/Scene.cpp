@@ -199,6 +199,19 @@ namespace Ember {
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 
+		// Editor mode doesn't tick AnimationSystem every frame, so initialize all
+		// animator bone matrices once on attach to avoid stale identity skinning.
+		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
+		if (animationSystem)
+		{
+			View animatorView = m_Registry->ActiveQuery<AnimatorComponent>();
+			for (EntityID entityID : animatorView)
+			{
+				Entity animatorEntity{ entityID, this };
+				animationSystem->SetAnimationToTimestamp(this, Constants::InvalidUUID, animatorEntity, 0.0f);
+			}
+		}
+
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
 

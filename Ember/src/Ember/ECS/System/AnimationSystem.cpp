@@ -153,6 +153,8 @@ namespace Ember {
 				float lastFrameTime = animator.CurrentTime;
 				animator.CurrentTime += (delta * animator.PlaybackSpeed);
 
+				// Animation finished
+				bool triggerReset = false;
 				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
 				{
 					if (animator.Loop)
@@ -160,7 +162,7 @@ namespace Ember {
 					else 
 					{
 						animator.CurrentTime = duration;	// Clamp to end
-						animator.IsPlaying = false;
+						triggerReset = true;
 					}
 				}
 				else if (animator.PlaybackSpeed < 0.0f && animator.CurrentTime <= 0.0f)
@@ -183,6 +185,17 @@ namespace Ember {
 					{
 						ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
 					}
+				}
+
+				// If animation finishes and isn't looped, set animation to invalid uuid and reset animator stats
+				if (triggerReset)
+				{
+					animator.PreviousAnimationHandle = animator.CurrentAnimationHandle;
+					animator.CurrentAnimationHandle = Constants::InvalidUUID;
+					animator.CurrentTime = 0.0f;
+					animator.PreviousTime = 0.0f;
+					animator.PlaybackSpeed = 1.0f;
+					animator.IsPlaying = false;
 				}
 			}
 
@@ -294,7 +307,9 @@ namespace Ember {
 
 			for (size_t i = 0; i < bones.size(); i++)
 			{
-				localTransforms[i] = Math::Translate(bones[i].LocalBindPoseTransform.Translation) * Math::ToMatrix4f(bones[i].LocalBindPoseTransform.Rotation);
+				localTransforms[i] = Math::Translate(bones[i].LocalBindPoseTransform.Translation)
+					* Math::ToMatrix4f(bones[i].LocalBindPoseTransform.Rotation)
+					* Math::Scale(Vector3f(1.0f));
 			}
 		}
 		else
@@ -310,6 +325,7 @@ namespace Ember {
 			{
 				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
 				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+				Vector3f currentScale = Vector3f(1.0f);
 
 				if (const auto* track = GetTrack(animation, i))
 				{
@@ -317,9 +333,11 @@ namespace Ember {
 						currentPos = EvaluatePosition(*track, timestamp);
 					if (track->RotationKeyframes.size() > 0)
 						currentRot = EvaluateRotation(*track, timestamp);
+					if (track->ScaleKeyframes.size() > 0)
+						currentScale = EvaluateScale(*track, timestamp);
 				}
 
-				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot);
+				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot) * Math::Scale(currentScale);
 			}
 		}
 

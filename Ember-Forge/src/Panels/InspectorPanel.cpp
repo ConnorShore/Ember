@@ -137,11 +137,23 @@ namespace Ember {
 				{
 					if (entity.ContainsComponent<DisabledComponent>())
 						entity.DetachComponent<DisabledComponent>();
+
+					for (auto& child : entity.GetAllChildren())
+					{
+						if (child && child.ContainsComponent<DisabledComponent>())
+							child.DetachComponent<DisabledComponent>();
+					}
 				}
 				else
 				{
 					if (!entity.ContainsComponent<DisabledComponent>())
 						entity.AttachComponent<DisabledComponent>();
+
+					for (auto& child : entity.GetAllChildren())
+					{
+						if (child && !child.ContainsComponent<DisabledComponent>())
+							child.AttachComponent<DisabledComponent>();
+					}
 				}
 			}
 

@@ -34,6 +34,7 @@
 
 #include <random>
 #include <thread>
+#include <exception>
 
 namespace Ember {
 
@@ -187,7 +188,18 @@ namespace Ember {
 				}
 				case SceneState::Play:
 				{
-					activeScene->OnUpdateRuntime(delta);
+					try
+					{
+						activeScene->OnUpdateRuntime(delta);
+					}
+					catch (const std::exception& e)
+					{
+						StopRuntimeAfterError(e.what());
+					}
+					catch (...)
+					{
+						StopRuntimeAfterError("Unknown runtime error");
+					}
 					break;
 				}
 				case SceneState::Pause:
@@ -311,26 +323,38 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
-		auto& sceneManager = Application::Instance().GetSceneManager();
+		try
+		{
+			auto& sceneManager = Application::Instance().GetSceneManager();
 
-		// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
-		auto runtimeScene = Scene::CopyScene(m_EditorScene);
-		runtimeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		sceneManager.SetActiveScene(runtimeScene); // OnAttach is called inside SetActiveScene
-		sceneManager.GetActiveScene()->OnRuntimeStart();
-		m_Context.CurrentSceneState = SceneState::Play;
+			// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
+			auto runtimeScene = Scene::CopyScene(m_EditorScene);
+			runtimeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			sceneManager.SetActiveScene(runtimeScene); // OnAttach is called inside SetActiveScene
+			m_Context.CurrentSceneState = SceneState::Play;
+			sceneManager.GetActiveScene()->OnRuntimeStart();
 
-		Input::SetCursorMode(CursorMode::Locked);
-		Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
-		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+			Input::SetCursorMode(CursorMode::Locked);
+			Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
+			ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
 
-		ProjectManager::GetActive()->ResetSceneIndex();
+			ProjectManager::GetActive()->ResetSceneIndex();
+		}
+		catch (const std::exception& e)
+		{
+			StopRuntimeAfterError(e.what());
+		}
+		catch (...)
+		{
+			StopRuntimeAfterError("Unknown runtime startup error");
+		}
 	}
 
 	void EditorLayer::OnRuntimeStop()
 	{
 		auto& sceneManager = Application::Instance().GetSceneManager();
-		sceneManager.GetActiveScene()->OnRuntimeStop();
+		if (auto activeScene = sceneManager.GetActiveScene())
+			activeScene->OnRuntimeStop();
 
 		// Capture the selected entity's UUID before clearing the selection so we can
 		// re-select the corresponding entity in the editor scene after the runtime
@@ -367,6 +391,50 @@ namespace Ember {
 		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
 	}
 
+	void EditorLayer::StopRuntimeAfterError(const std::string& message)
+	{
+		StopRuntimeAfterError(message.c_str());
+	}
+
+	void EditorLayer::StopRuntimeAfterError(const char* message)
+	{
+		EB_CORE_ERROR("Runtime error while in Play mode: {}", message ? message : "Unknown runtime error");
+		EB_CORE_ERROR("Stopping Play mode and returning to Edit mode to keep the editor running.");
+
+		auto evt = UINotificationEvent("An error occurred during runtime. Check the console or logs for more details.", UINotificationEvent::Severity::Error);
+		m_Context.EventCallback(evt);
+
+		if (m_Context.CurrentSceneState == SceneState::Play || m_Context.CurrentSceneState == SceneState::Pause)
+		{
+			try
+			{
+				OnRuntimeStop();
+			}
+			catch (const std::exception& e)
+			{
+				EB_CORE_ERROR("Error while stopping runtime after failure: {}", e.what());
+				m_Context.CurrentSceneState = SceneState::Edit;
+				Application::Instance().GetSceneManager().SetActiveScene(m_EditorScene);
+				Input::SetCursorMode(CursorMode::Normal);
+				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+			}
+			catch (...)
+			{
+				EB_CORE_ERROR("Unknown error while stopping runtime after failure.");
+				m_Context.CurrentSceneState = SceneState::Edit;
+				Application::Instance().GetSceneManager().SetActiveScene(m_EditorScene);
+				Input::SetCursorMode(CursorMode::Normal);
+				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+			}
+		}
+		else
+		{
+			m_Context.CurrentSceneState = SceneState::Edit;
+			Input::SetCursorMode(CursorMode::Normal);
+			ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+		}
+	}
+
 	void EditorLayer::RenderMenuBar()
 	{
 		ImGui::BeginMainMenuBar();
@@ -382,7 +450,7 @@ namespace Ember {
 			{
 				OpenProject();
 			}
-			if (ImGui::MenuItem("Export Project", "Ctrol+Shift+E", nullptr, projectExists))
+			if (ImGui::MenuItem("Export Project", "Ctrl+Shift+E", nullptr, projectExists))
 			{
 				// Make sure everything is saved before exporting!
 				SaveProject(false);

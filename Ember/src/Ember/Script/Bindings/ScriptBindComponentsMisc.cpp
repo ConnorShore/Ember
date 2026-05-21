@@ -14,25 +14,25 @@ namespace Ember {
 			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
 			"IsPlaying", &AnimatorComponent::IsPlaying,
 			"Loop", &AnimatorComponent::Loop,
-			"Crossfade", [](AnimatorComponent& c, UUID targetAnim, float duration) {
-				if (c.CurrentAnimationHandle == targetAnim || targetAnim == Constants::InvalidUUID)
-					return;
-				if (c.CurrentAnimationHandle == Constants::InvalidUUID)
-				{
-					c.CurrentAnimationHandle = targetAnim;
-					c.CurrentTime = 0.0f;
-					c.IsPlaying = true;
-					return;
+			"Crossfade", sol::overload(
+				[](AnimatorComponent& c, const std::string& name, float blendDuration) { c.CrossfadeToAnimation(name, blendDuration); },
+				[](AnimatorComponent& c, const std::string& name) { c.CrossfadeToAnimation(name, 0.0f); },
+				[](AnimatorComponent& c, UUID targetAnim, float blendDuration) { 
+					auto& assetManager = Application::Instance().GetAssetManager();
+					auto animationAsset = assetManager.GetAsset<Animation>(targetAnim);
+					c.CrossfadeToAnimation(animationAsset ? animationAsset->GetName() : "", blendDuration);
 				}
-
-				c.PreviousAnimationHandle = c.CurrentAnimationHandle;
-				c.PreviousTime = c.CurrentTime;
-				c.CurrentAnimationHandle = targetAnim;
-				c.CurrentTime = 0.0f;
-				c.BlendDuration = duration;
-				c.CurrentBlendTime = 0.0f;
-				c.IsPlaying = true;
-			}
+			),
+			"Play", sol::overload(
+				[](AnimatorComponent& c, const std::string& name) { c.PlayAnimation(name);  },
+				[](AnimatorComponent& c, const std::string& name, float playbackSpeed) { c.PlayAnimation(name, playbackSpeed); },
+				[](AnimatorComponent& c, const std::string& name, float playbackSpeed, float blendDuration) { c.PlayAnimation(name, playbackSpeed, blendDuration); }
+			),
+			"PlayLoop", sol::overload(
+				[](AnimatorComponent& c, const std::string& name) { c.PlayLoopAnimation(name);  },
+				[](AnimatorComponent& c, const std::string& name, float playbackSpeed) { c.PlayLoopAnimation(name, playbackSpeed); },
+				[](AnimatorComponent& c, const std::string& name, float playbackSpeed, float blendDuration) { c.PlayLoopAnimation(name, playbackSpeed, blendDuration); }
+			)
 		);
 
 		state.new_usertype<LifetimeComponent>("LifetimeComponent",

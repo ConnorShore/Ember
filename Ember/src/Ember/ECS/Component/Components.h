@@ -658,6 +658,46 @@ namespace Ember {
 		// Caches
 		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 
+		void PlayAnimation(const std::string& name, float playbackSpeed = 1.0f, float blendDuration = 0.0f)
+		{
+			PlaybackSpeed = playbackSpeed;
+			Loop = false;
+			CrossfadeToAnimation(name, blendDuration);
+		}
+
+		void PlayLoopAnimation(const std::string& name, float playbackSpeed = 1.0f, float blendDuration = 0.0f)
+		{
+			PlaybackSpeed = playbackSpeed;
+			Loop = true;
+			CrossfadeToAnimation(name, blendDuration);
+		}
+
+		void CrossfadeToAnimation(const std::string& name, float blendDuration)
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto animationAsset = assetManager.GetAsset<Animation>(name);
+			UUID targetAnim = animationAsset ? animationAsset->GetUUID() : (UUID)Constants::InvalidUUID;
+			if (CurrentAnimationHandle == targetAnim || targetAnim == Constants::InvalidUUID)
+				return;
+
+			CurrentAnimationHandle = targetAnim;
+			if (CurrentAnimationHandle == Constants::InvalidUUID)
+			{
+				CurrentAnimationHandle = targetAnim;
+				CurrentTime = 0.0f;
+				IsPlaying = true;
+				return;
+			}
+
+			PreviousAnimationHandle = CurrentAnimationHandle;
+			PreviousTime = CurrentTime;
+			CurrentAnimationHandle = targetAnim;
+			CurrentTime = 0.0f;
+			BlendDuration = blendDuration;
+			CurrentBlendTime = 0.0f;
+			IsPlaying = true;
+		}
+
 		AnimatorComponent() = default;
 		AnimatorComponent(UUID skeletonUUID, UUID animationUUID)
 			: SkeletonHandle(skeletonUUID), CurrentAnimationHandle(animationUUID) {}
