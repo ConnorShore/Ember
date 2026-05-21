@@ -98,11 +98,15 @@ Assets:
   - Type: Script
     UUID: 7847366610859754620
     Name: Tracer
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Tracer.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/Tracer.lua
   - Type: Script
     UUID: 10753367411955256691
     Name: WeaponHolder
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/WeaponHolder.lua
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+  - Type: Script
+    UUID: 17429251933582378423
+    Name: AmmoUI
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
   - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial

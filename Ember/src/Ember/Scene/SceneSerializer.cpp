@@ -616,10 +616,13 @@ namespace Ember {
 
 			auto& sc = deserializedEntity.AttachComponent<SpriteComponent>(color);
 
-			uint64_t texId;
-			spriteNode["TextureUUID"] >> texId;
+			if (spriteNode.has_child("TextureUUID"))
+			{
+				uint64_t texId;
+				spriteNode["TextureUUID"] >> texId;
+				sc.TextureHandle = (UUID)texId;
+			}
 
-			sc.TextureHandle = (UUID)texId;
 			spriteNode["ScreenSpace"] >> sc.ScreenSpace;
 		}
 
