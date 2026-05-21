@@ -2,6 +2,7 @@
 #include "ScriptBindCore.h"
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
+#include "Ember/Script/ScriptEngine.h"
 
 namespace Ember {
 
@@ -29,6 +30,11 @@ namespace Ember {
 		auto application = state.create_table("Time");
 		application.set_function("Now", []() {
 			return Timer::Now();
+		});
+
+		auto timer = state.create_table("Timer");
+		timer.set_function("SetTimeout", [](sol::protected_function callback, float delaySeconds) {
+			ScriptEngine::SetTimeout(std::move(callback), delaySeconds);
 		});
 
 		auto log = state.create_table("Log");

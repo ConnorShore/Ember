@@ -27,6 +27,8 @@ namespace Ember {
 		if (delta.Seconds() <= 0.0f)
 			return;
 
+		ScriptEngine::UpdateTimeouts(delta);
+
 		auto view = scene->GetRegistry().ActiveQuery<ScriptComponent>();
 
 		sol::state& luaState = ScriptEngine::GetState();

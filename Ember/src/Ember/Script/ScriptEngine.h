@@ -28,6 +28,11 @@ namespace Ember {
 		static sol::state& GetState();
 		static std::vector<ScriptProperty> GetScriptProperties(const SharedPtr<Script>& scriptAsset);
 
+		// Schedules a Lua callback to run after delaySeconds have elapsed.
+		static void SetTimeout(sol::protected_function callback, float delaySeconds);
+		static void UpdateTimeouts(TimeStep delta);
+		static void ClearTimeouts();
+
 		template<typename T>
 		static void SetScriptPropertyOverride(ScriptComponent& component, const std::string& propertyName, T value)
 		{

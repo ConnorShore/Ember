@@ -30,11 +30,20 @@ namespace Ember {
 
     static sol::state* s_LuaState = nullptr;
 
+	struct TimeoutRequest
+	{
+		float RemainingSeconds = 0.0f;
+		sol::protected_function Callback;
+	};
+
+	static std::vector<TimeoutRequest> s_Timeouts;
+
     void ScriptEngine::Init()
     {
 		// Create the state immediately so the Editor can parse scripts!
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+		ClearTimeouts();
 
 		// Bind math types so scripts using Vector3f.new(...) as default values can be parsed
 		BindMath(*s_LuaState);
@@ -44,6 +53,7 @@ namespace Ember {
 
     void ScriptEngine::Shutdown()
 	{
+		ClearTimeouts();
 		delete s_LuaState;
 		s_LuaState = nullptr;
 
@@ -69,6 +79,7 @@ namespace Ember {
 	void ScriptEngine::OnRuntimeStart(Scene* scene)
 	{
 		// wipe editor state and create fresh one for runtime
+		ClearTimeouts();
 		delete s_LuaState;
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
@@ -97,6 +108,7 @@ namespace Ember {
 		}
 
 		// Wipe runtime state and create fresh one for the editor
+		ClearTimeouts();
 		delete s_LuaState;
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
@@ -278,4 +290,56 @@ namespace Ember {
 
 				return properties;
 			}
+
+	void ScriptEngine::SetTimeout(sol::protected_function callback, float delaySeconds)
+	{
+		if (!callback.valid())
+		{
+			EB_CORE_WARN("Timer.SetTimeout ignored an invalid callback.");
+			return;
+		}
+
+		TimeoutRequest request;
+		request.RemainingSeconds = std::max(0.0f, delaySeconds);
+		request.Callback = std::move(callback);
+		s_Timeouts.push_back(std::move(request));
+	}
+
+	void ScriptEngine::UpdateTimeouts(TimeStep delta)
+	{
+		if (s_Timeouts.empty() || delta.Seconds() <= 0.0f)
+			return;
+
+		std::vector<sol::protected_function> dueCallbacks;
+		dueCallbacks.reserve(s_Timeouts.size());
+
+		for (auto it = s_Timeouts.begin(); it != s_Timeouts.end();)
+		{
+			it->RemainingSeconds -= delta.Seconds();
+			if (it->RemainingSeconds <= 0.0f)
+			{
+				dueCallbacks.emplace_back(std::move(it->Callback));
+				it = s_Timeouts.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+
+		for (auto& callback : dueCallbacks)
+		{
+			sol::protected_function_result result = callback();
+			if (!result.valid())
+			{
+				sol::error err = result;
+				EB_CORE_ERROR("Lua Timer.SetTimeout Error: {}", err.what());
+			}
+		}
+	}
+
+	void ScriptEngine::ClearTimeouts()
+	{
+		s_Timeouts.clear();
+	}
 }
