@@ -345,6 +345,11 @@ namespace Ember {
 			modelMaterials.push_back(am.GetAsset<MaterialBase>(matInfo.id));
 		}
 
+		// Ensure the model has at least one material to avoid issues with empty material arrays in the renderer
+		if (modelMaterials.empty()) {
+			modelMaterials.push_back(am.GetAsset<MaterialBase>(Constants::Assets::DefaultMatUUID));
+		}
+
 		auto modelAsset = SharedPtr<Model>::Create(modelUUID, modelName, manifestPath, rootModelNode, modelMaterials, skeletonID);
 		ModelSerializer::Serialize(manifestPath, modelAsset);
 
