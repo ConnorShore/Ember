@@ -179,6 +179,8 @@ namespace Ember {
 			// The false parameter means it won't draw a border around the child region
 			if (ImGui::BeginChild("ComponentRegion", ImVec2(0, 0), false, ImGuiWindowFlags_None))
 			{
+				ComponentType transformComponentType = entity.GetComponentType<TransformComponent>();
+
 				// Entity Components
 				for (auto& [category, components] : m_ComponentUIs)
 				{
@@ -187,8 +189,7 @@ namespace Ember {
 
 					for (auto& componentUI : components)
 					{
-						// Hide TransformComponent if RectTransformComponent is present on entity
-						if constexpr ((std::is_same_v<decltype(componentUI), TransformComponentUI>) && entity.ContainsComponent<RectTransformComponent>())
+						if (entity.ContainsComponent<RectTransformComponent>() && componentUI->GetComponentType(entity) == transformComponentType)
 							continue;
 
 						componentUI->Render(entity);

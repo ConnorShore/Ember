@@ -35,6 +35,7 @@
 #include <random>
 #include <thread>
 #include <exception>
+#include <cmath>
 
 namespace Ember {
 
@@ -966,7 +967,7 @@ namespace Ember {
 
 			// If a gizmo is drawn and the mouse is over it, we should not change the selected entity
 			bool isGizmoDrawn = m_Context.SelectedEntity != m_InvalidEntity && m_GizmoType != -1;
-			if (isGizmoDrawn && ImGuizmo::IsOver())
+			if (isGizmoDrawn && (ImGuizmo::IsOver() || m_RectTransformGizmoHovered))
 				return false;
 
 			auto [mx, my] = ImGui::GetMousePos();
@@ -1077,11 +1078,19 @@ namespace Ember {
 
 	void EditorLayer::RenderTransformGizmos()
 	{
+		m_RectTransformGizmoHovered = false;
+
 		if (m_GizmoType == -1 || m_Context.CurrentSceneState != SceneState::Edit)
 			return;
 
 		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
 			return;
+
+		if (m_Context.SelectedEntity.ContainsComponent<RectTransformComponent>())
+		{
+			RenderRectTransformGizmos();
+			return;
+		}
 
 		ImGuizmo::SetOrthographic(false);	// TODO: Support orthographic mode for 2D scenes
 		ImGuizmo::SetDrawlist();
@@ -1174,6 +1183,305 @@ namespace Ember {
 			}
 			}
 		}
+	}
+
+	void EditorLayer::RenderRectTransformGizmos()
+	{
+		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<RectTransformComponent>() || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
+			return;
+
+		auto& rectTransform = m_Context.SelectedEntity.GetComponent<RectTransformComponent>();
+		auto& transform = m_Context.SelectedEntity.GetComponent<TransformComponent>();
+
+		Vector2f center = Vector2f(transform.WorldTransform[3][0], transform.WorldTransform[3][1]);
+		Vector2f rightAxis = Vector2f(transform.WorldTransform[0][0], transform.WorldTransform[0][1]);
+		Vector2f upAxis = Vector2f(transform.WorldTransform[1][0], transform.WorldTransform[1][1]);
+
+		float width = glm::length(rightAxis);
+		float height = glm::length(upAxis);
+		if (width <= 0.001f || height <= 0.001f)
+			return;
+
+		Vector2f rightDirection = rightAxis / width;
+		Vector2f upDirection = upAxis / height;
+		Vector2f halfRight = rightAxis * 0.5f;
+		Vector2f halfUp = upAxis * 0.5f;
+
+		Vector2f bottomLeft = center - halfRight - halfUp;
+		Vector2f bottomRight = center + halfRight - halfUp;
+		Vector2f topRight = center + halfRight + halfUp;
+		Vector2f topLeft = center - halfRight + halfUp;
+
+		auto toScreen = [this](const Vector2f& point)
+		{
+			return ImVec2(m_ViewportBounds[0].x + point.x, m_ViewportBounds[1].y - point.y);
+		};
+
+		auto toUI = [this](const ImVec2& point)
+		{
+			return Vector2f(point.x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - point.y);
+		};
+
+		ImVec2 screenCenter = toScreen(center);
+		ImVec2 screenBottomLeft = toScreen(bottomLeft);
+		ImVec2 screenBottomRight = toScreen(bottomRight);
+		ImVec2 screenTopRight = toScreen(topRight);
+		ImVec2 screenTopLeft = toScreen(topLeft);
+		ImVec2 screenLeft = ImVec2((screenBottomLeft.x + screenTopLeft.x) * 0.5f, (screenBottomLeft.y + screenTopLeft.y) * 0.5f);
+		ImVec2 screenRight = ImVec2((screenBottomRight.x + screenTopRight.x) * 0.5f, (screenBottomRight.y + screenTopRight.y) * 0.5f);
+		ImVec2 screenTop = ImVec2((screenTopLeft.x + screenTopRight.x) * 0.5f, (screenTopLeft.y + screenTopRight.y) * 0.5f);
+		ImVec2 screenBottom = ImVec2((screenBottomLeft.x + screenBottomRight.x) * 0.5f, (screenBottomLeft.y + screenBottomRight.y) * 0.5f);
+
+		Vector2f rotationHandleDirection = Vector2f(screenTop.x - screenCenter.x, screenTop.y - screenCenter.y);
+		float rotationHandleLength = glm::length(rotationHandleDirection);
+		if (rotationHandleLength > 0.001f)
+			rotationHandleDirection /= rotationHandleLength;
+		else
+			rotationHandleDirection = Vector2f(0.0f, -1.0f);
+		ImVec2 screenRotation = ImVec2(screenTop.x + rotationHandleDirection.x * 32.0f, screenTop.y + rotationHandleDirection.y * 32.0f);
+
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		const ImU32 outlineColor = IM_COL32(255, 210, 55, 255);
+		const ImU32 handleColor = IM_COL32(255, 210, 55, 255);
+		const ImU32 handleHoverColor = IM_COL32(255, 245, 180, 255);
+		const ImU32 moveColor = IM_COL32(80, 185, 255, 255);
+		const ImU32 rotationColor = IM_COL32(120, 220, 130, 255);
+
+		drawList->AddLine(screenBottomLeft, screenBottomRight, outlineColor, 2.0f);
+		drawList->AddLine(screenBottomRight, screenTopRight, outlineColor, 2.0f);
+		drawList->AddLine(screenTopRight, screenTopLeft, outlineColor, 2.0f);
+		drawList->AddLine(screenTopLeft, screenBottomLeft, outlineColor, 2.0f);
+
+		bool canMove = m_GizmoType == ImGuizmo::OPERATION::TRANSLATE || m_GizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+		bool canResize = m_GizmoType == ImGuizmo::OPERATION::SCALE || m_GizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+		bool canRotate = m_GizmoType == ImGuizmo::OPERATION::ROTATE || m_GizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+
+		ImVec2 mousePosition = ImGui::GetMousePos();
+		Vector2f mouseUIPosition = toUI(mousePosition);
+		bool mouseInViewport = mousePosition.x >= m_ViewportBounds[0].x && mousePosition.y >= m_ViewportBounds[0].y
+			&& mousePosition.x <= m_ViewportBounds[1].x && mousePosition.y <= m_ViewportBounds[1].y;
+
+		auto distanceSquared = [](const ImVec2& a, const ImVec2& b)
+		{
+			float dx = a.x - b.x;
+			float dy = a.y - b.y;
+			return dx * dx + dy * dy;
+		};
+
+		auto isNear = [&](const ImVec2& point, float radius)
+		{
+			return distanceSquared(mousePosition, point) <= radius * radius;
+		};
+
+		auto isInsideRect = [&]()
+		{
+			Vector2f local = mouseUIPosition - center;
+			float localX = glm::dot(local, rightDirection);
+			float localY = glm::dot(local, upDirection);
+			return std::abs(localX) <= width * 0.5f && std::abs(localY) <= height * 0.5f;
+		};
+
+		RectTransformGizmoHandle hoveredHandle = RectTransformGizmoHandle::None;
+		if (mouseInViewport)
+		{
+			if (canRotate && isNear(screenRotation, 10.0f))
+				hoveredHandle = RectTransformGizmoHandle::Rotate;
+			else if (canResize && isNear(screenTopLeft, 8.0f))
+				hoveredHandle = RectTransformGizmoHandle::TopLeft;
+			else if (canResize && isNear(screenTopRight, 8.0f))
+				hoveredHandle = RectTransformGizmoHandle::TopRight;
+			else if (canResize && isNear(screenBottomLeft, 8.0f))
+				hoveredHandle = RectTransformGizmoHandle::BottomLeft;
+			else if (canResize && isNear(screenBottomRight, 8.0f))
+				hoveredHandle = RectTransformGizmoHandle::BottomRight;
+			else if (canResize && isNear(screenLeft, 7.0f))
+				hoveredHandle = RectTransformGizmoHandle::Left;
+			else if (canResize && isNear(screenRight, 7.0f))
+				hoveredHandle = RectTransformGizmoHandle::Right;
+			else if (canResize && isNear(screenTop, 7.0f))
+				hoveredHandle = RectTransformGizmoHandle::Top;
+			else if (canResize && isNear(screenBottom, 7.0f))
+				hoveredHandle = RectTransformGizmoHandle::Bottom;
+			else if (canMove && isInsideRect())
+				hoveredHandle = RectTransformGizmoHandle::Move;
+		}
+
+		m_RectTransformGizmoHovered = hoveredHandle != RectTransformGizmoHandle::None || m_RectTransformGizmoActiveHandle != RectTransformGizmoHandle::None;
+
+		auto drawHandle = [&](const ImVec2& point, RectTransformGizmoHandle handle)
+		{
+			ImU32 color = hoveredHandle == handle || m_RectTransformGizmoActiveHandle == handle ? handleHoverColor : handleColor;
+			drawList->AddRectFilled(ImVec2(point.x - 4.0f, point.y - 4.0f), ImVec2(point.x + 4.0f, point.y + 4.0f), color);
+			drawList->AddRect(ImVec2(point.x - 4.0f, point.y - 4.0f), ImVec2(point.x + 4.0f, point.y + 4.0f), IM_COL32(30, 30, 30, 255));
+		};
+
+		if (canResize)
+		{
+			drawHandle(screenTopLeft, RectTransformGizmoHandle::TopLeft);
+			drawHandle(screenTopRight, RectTransformGizmoHandle::TopRight);
+			drawHandle(screenBottomLeft, RectTransformGizmoHandle::BottomLeft);
+			drawHandle(screenBottomRight, RectTransformGizmoHandle::BottomRight);
+			drawHandle(screenLeft, RectTransformGizmoHandle::Left);
+			drawHandle(screenRight, RectTransformGizmoHandle::Right);
+			drawHandle(screenTop, RectTransformGizmoHandle::Top);
+			drawHandle(screenBottom, RectTransformGizmoHandle::Bottom);
+		}
+
+		if (canMove)
+		{
+			drawList->AddCircleFilled(screenCenter, 4.0f, hoveredHandle == RectTransformGizmoHandle::Move ? handleHoverColor : moveColor);
+			drawList->AddLine(ImVec2(screenCenter.x - 8.0f, screenCenter.y), ImVec2(screenCenter.x + 8.0f, screenCenter.y), moveColor, 1.5f);
+			drawList->AddLine(ImVec2(screenCenter.x, screenCenter.y - 8.0f), ImVec2(screenCenter.x, screenCenter.y + 8.0f), moveColor, 1.5f);
+		}
+
+		if (canRotate)
+		{
+			drawList->AddLine(screenTop, screenRotation, rotationColor, 1.5f);
+			drawList->AddCircle(screenRotation, 7.0f, hoveredHandle == RectTransformGizmoHandle::Rotate ? handleHoverColor : rotationColor, 16, 2.0f);
+		}
+
+		EntityID selectedEntity = m_Context.SelectedEntity.GetEntityHandle();
+		if (m_RectTransformGizmoEntity != selectedEntity && m_RectTransformGizmoActiveHandle != RectTransformGizmoHandle::None)
+		{
+			m_RectTransformGizmoActiveHandle = RectTransformGizmoHandle::None;
+			m_RectTransformGizmoEntity = Constants::Entities::InvalidEntityID;
+		}
+
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hoveredHandle != RectTransformGizmoHandle::None)
+		{
+			m_RectTransformGizmoActiveHandle = hoveredHandle;
+			m_RectTransformGizmoEntity = selectedEntity;
+			m_RectTransformGizmoLastMousePosition = mouseUIPosition;
+		}
+
+		if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		{
+			m_RectTransformGizmoActiveHandle = RectTransformGizmoHandle::None;
+			m_RectTransformGizmoEntity = Constants::Entities::InvalidEntityID;
+		}
+
+		if (m_RectTransformGizmoActiveHandle == RectTransformGizmoHandle::None || m_RectTransformGizmoEntity != selectedEntity || !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+			return;
+
+		Vector2f mouseDelta = mouseUIPosition - m_RectTransformGizmoLastMousePosition;
+		m_RectTransformGizmoLastMousePosition = mouseUIPosition;
+		if (glm::length(mouseDelta) <= 0.001f)
+			return;
+
+		if (m_RectTransformGizmoActiveHandle == RectTransformGizmoHandle::Move)
+		{
+			rectTransform.AnchoredPosition += mouseDelta;
+			return;
+		}
+
+		if (m_RectTransformGizmoActiveHandle == RectTransformGizmoHandle::Rotate)
+		{
+			Vector2f previousMouse = mouseUIPosition - mouseDelta;
+			Vector2f previousDirection = previousMouse - center;
+			Vector2f currentDirection = mouseUIPosition - center;
+			if (glm::length(previousDirection) > 0.001f && glm::length(currentDirection) > 0.001f)
+			{
+				float previousAngle = std::atan2(previousDirection.y, previousDirection.x);
+				float currentAngle = std::atan2(currentDirection.y, currentDirection.x);
+				rectTransform.Rotation += currentAngle - previousAngle;
+			}
+			return;
+		}
+
+		const float minSize = 4.0f;
+		Vector2f anchoredPositionDelta = Vector2f(0.0f);
+		Vector2f sizeDelta = Vector2f(0.0f);
+		float localDeltaX = glm::dot(mouseDelta, rightDirection);
+		float localDeltaY = glm::dot(mouseDelta, upDirection);
+
+		auto applyLeft = [&]()
+		{
+			float sizeChange = -localDeltaX;
+			float dragAmount = localDeltaX;
+			if (width + sizeChange < minSize)
+			{
+				sizeChange = minSize - width;
+				dragAmount = -sizeChange;
+			}
+			sizeDelta.x += sizeChange;
+			anchoredPositionDelta += rightDirection * ((1.0f - rectTransform.Pivot.x) * dragAmount);
+		};
+
+		auto applyRight = [&]()
+		{
+			float sizeChange = localDeltaX;
+			float dragAmount = localDeltaX;
+			if (width + sizeChange < minSize)
+			{
+				sizeChange = minSize - width;
+				dragAmount = sizeChange;
+			}
+			sizeDelta.x += sizeChange;
+			anchoredPositionDelta += rightDirection * (rectTransform.Pivot.x * dragAmount);
+		};
+
+		auto applyBottom = [&]()
+		{
+			float sizeChange = -localDeltaY;
+			float dragAmount = localDeltaY;
+			if (height + sizeChange < minSize)
+			{
+				sizeChange = minSize - height;
+				dragAmount = -sizeChange;
+			}
+			sizeDelta.y += sizeChange;
+			anchoredPositionDelta += upDirection * ((1.0f - rectTransform.Pivot.y) * dragAmount);
+		};
+
+		auto applyTop = [&]()
+		{
+			float sizeChange = localDeltaY;
+			float dragAmount = localDeltaY;
+			if (height + sizeChange < minSize)
+			{
+				sizeChange = minSize - height;
+				dragAmount = sizeChange;
+			}
+			sizeDelta.y += sizeChange;
+			anchoredPositionDelta += upDirection * (rectTransform.Pivot.y * dragAmount);
+		};
+
+		switch (m_RectTransformGizmoActiveHandle)
+		{
+		case RectTransformGizmoHandle::Left:
+			applyLeft();
+			break;
+		case RectTransformGizmoHandle::Right:
+			applyRight();
+			break;
+		case RectTransformGizmoHandle::Top:
+			applyTop();
+			break;
+		case RectTransformGizmoHandle::Bottom:
+			applyBottom();
+			break;
+		case RectTransformGizmoHandle::TopLeft:
+			applyLeft();
+			applyTop();
+			break;
+		case RectTransformGizmoHandle::TopRight:
+			applyRight();
+			applyTop();
+			break;
+		case RectTransformGizmoHandle::BottomLeft:
+			applyLeft();
+			applyBottom();
+			break;
+		case RectTransformGizmoHandle::BottomRight:
+			applyRight();
+			applyBottom();
+			break;
+		default:
+			break;
+		}
+
+		rectTransform.SizeDelta += sizeDelta;
+		rectTransform.AnchoredPosition += anchoredPositionDelta;
 	}
 
 	void EditorLayer::DrawToolbar()
