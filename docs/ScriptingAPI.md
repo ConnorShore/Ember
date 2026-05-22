@@ -16,7 +16,8 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 - [Core Types](#core-types)
   - [`UUID`](#uuid)
   - [`TimeStep`](#timestep)
-  - [`Log` / `Error`](#log--error)
+  - [`Time` / `Timer`](#time--timer)
+    - [`Log`](#log)
   - [`Window` / `Renderer`](#window--renderer)
 - [Math](#math)
   - [Vectors & Matrices](#vectors--matrices)
@@ -39,6 +40,7 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 - [Physics](#physics)
 - [Audio](#audio)
 - [Assets](#assets)
+- [Particles](#particles)
 - [Save Game](#save-game)
 - [Debug Drawing](#debug-drawing)
 - [Standard Lua Libraries](#standard-lua-libraries)
@@ -94,6 +96,10 @@ return MyScript
 local other = entity:GetScriptInstance() -- returns the script table on this entity, or nil
 ```
 
+Script instances are created lazily while scripts update. If one script needs another entity's
+script instance during startup, resolve it in `OnUpdate` or retry until `GetScriptInstance()`
+returns a table instead of assuming it is ready inside `OnCreate`.
+
 ### Enum Properties
 
 A top-level table whose keys are strings and values are integers is exposed as a **combo box**
@@ -147,14 +153,26 @@ A wrapper around an elapsed-time value used by the engine.
 | `:Milliseconds()` | Returns the value in milliseconds. |
 | `a + b`, `a == b`, `tostring(ts)` | Arithmetic / comparison / formatting. |
 
-### `Log` / `Error`
+### `Log`
 
 Logging utilities that route through Ember's core logger.
 
 ```lua
 Log.Info("Hello from Lua!")
 Log.Warn("Something looks off...")
-Error("Something went wrong!") -- Note: Error is a global function, not under Log
+Log.Error("Something went wrong!")
+```
+
+### `Time` / `Timer`
+
+Runtime time helpers.
+
+```lua
+local now = Time.Now() -- engine timer value in seconds
+
+Timer.SetTimeout(function()
+    Log.Info("Called after half a second")
+end, 0.5)
 ```
 
 ### `Window` / `Renderer`
@@ -185,6 +203,7 @@ All math primitives are bound directly from `Ember::Math`.
 | `Matrix4f` | `Matrix4f.new()`, `Matrix4f.new(diagonal)` | — |
 
 All vectors support `+`, `-`, `*` (scalar), `/` (scalar), and unary `-`.
+`Vector3f` also supports component-wise `a * b`.
 Matrices support `+`, `-`, and `*` (against another matrix, a vector, or a scalar).
 
 ```lua
@@ -204,7 +223,7 @@ local d = c * 2.0               -- (2, 2, 0)
 | `x`, `y`, `z`, `w` | Components. |
 | `q1 * q2` | Quaternion multiplication. |
 | `q * v3` | Rotates a `Vector3f` by the quaternion. |
-| `:Inverse()` | Returns the inverse rotation. |
+| `:Inverse()` | Returns the inverse rotation matrix (`Matrix4f`). |
 | `:Normalize()` | Returns a normalized copy. |
 
 ### `Math` table
@@ -218,9 +237,24 @@ Math.Clamp(v, lo, hi)   -- floats or Vector3f
 Math.Lerp(a, b, t)      -- floats or Vector3f
 Math.Slerp(qA, qB, t)
 
+Math.Random()
+Math.RandomFloat(min, max)
+Math.RandomInt(min, max)
+
+Math.Sin(rad)
+Math.Cos(rad)
+Math.Tan(rad)
+Math.Asin(v)
+Math.Acos(v)
+Math.Atan2(y, x)
+
 Math.Radians(deg)
 Math.Degrees(rad)
 Math.Length(v3)
+Math.Magnitude(v3)
+Math.Magnitude2(v3)
+Math.Distance(a, b)
+Math.Distance2(a, b)
 Math.Cross(a, b)
 Math.Dot(a, b)
 Math.Normalize(v)       -- Vector3f or Quaternion
@@ -228,6 +262,7 @@ Math.ProjectOnPlane(vec, planeNormal)
 
 Math.Inverse(matrix4)
 Math.LookAt(eye, target, up)
+Math.LookAt(start, end)
 Math.GetRotationMatrix(quat)
 
 Math.Translate(v3)                  -- returns Matrix4f
@@ -280,7 +315,7 @@ TransformComponent       RigidBodyComponent        SpriteComponent
 StaticMeshComponent      SkinnedMeshComponent      MaterialComponent
 CameraComponent          DirectionalLightComponent SpotLightComponent
 PointLightComponent      OutlineComponent          BillboardComponent
-AnimatorComponent        CharacterControllerComponent
+AnimatorComponent        BoneSocketComponent       CharacterControllerComponent
 TextComponent            AudioSourceComponent
 WaypointComponent        AIPathComponent           AIAgentComponent
 LocalAvoidanceComponent
@@ -303,11 +338,14 @@ Scene.DuplicateEntity(name)               -- duplicates the entity with the give
 Scene.GetEntityByName(name)               -- lookup by name
 
 Scene.InstantiatePrefab(prefabAssetName, position) -- spawns a prefab at the given Vector3f
+Scene.InstantiatePrefab(prefabAssetName, parentEntity)
+Scene.InstantiatePrefab(prefabAssetName, parentEntity, position)
 
 Scene.SetActiveCamera(entityName)         -- sets which entity drives the runtime camera
 
 -- Object pools (efficient prefab spawning)
 Scene.CreatePool(poolID, prefabAssetName, initialSize)
+Scene.CreatePool(poolID, prefabAssetName, initialSize, loopEntities)
 Scene.RetrieveFromPool(poolID)            -- returns an inactive Entity from the pool
 Scene.RetrieveFromPool(poolID, position)  -- returns one positioned at `position`
 ```
@@ -340,6 +378,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | `WorldRotation` | `Vector3f` (read-only) | Euler rotation derived from the world matrix. |
 | `:GetForward()` | `Vector3f` | Forward direction in world space. |
 | `:GetRight()` | `Vector3f` | Right direction in world space. |
+| `:GetUp()` | `Vector3f` | Up direction in world space. |
 
 ### Rendering Components
 
@@ -462,6 +501,7 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | `:ApplyForce(force)` | Apply a continuous force (`Vector3f`). |
 | `:ApplyImpulse(impulse)` | Apply an instantaneous impulse (`Vector3f`). |
 | `:ApplyImpulseAtPoint(impulse, worldPoint)` | Apply an instantaneous impulse at a world-space point so it generates torque. Both args `Vector3f`. |
+| `:CurrentVelocity()` | Returns the current rigid body velocity (`Vector3f`). |
 
 #### `ColliderOffset`
 
@@ -510,11 +550,14 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | --- | --- |
 | `WalkSpeed` | `float` |
 | `JumpForce` | `float` |
+| `Velocity` | `Vector3f` |
+| `RequestedMovement` | `Vector3f` |
 | `GravityMultiplier` | `float` |
 | `MaxSlopeAngle` | `float` |
 | `MaxStepHeight` | `float` |
 | `IsGrounded` | `bool` (read-only state) |
 | `GroundEntity` | `Entity` the controller is standing on. |
+| `MovementVelocity` | Current movement velocity (`Vector3f`). |
 | `:Move(displacement)` | Move by `Vector3f` (call from `OnUpdate`). |
 | `:Jump()` | Triggers a jump using `JumpForce`. |
 
@@ -584,7 +627,27 @@ Marks an entity (usually the camera) as a 3D-audio listener for spatialized soun
 | `PlaybackSpeed` | `float` |
 | `IsPlaying` | `bool` |
 | `Loop` | `bool` |
-| `:Crossfade(targetAnimUUID, duration)` | Smoothly blends to another animation. |
+| `:Crossfade(name, duration)` | Smoothly blends to another animation by name. |
+| `:Crossfade(name)` | Switches to another animation by name without blend time. |
+| `:Crossfade(targetAnimUUID, duration)` | Smoothly blends to another animation by asset UUID. |
+| `:Play(name)` | Plays an animation once by name. |
+| `:Play(name, playbackSpeed)` | Plays once with a custom speed. |
+| `:Play(name, playbackSpeed, blendDuration)` | Plays once with speed and blend duration. |
+| `:PlayLoop(name)` | Plays an animation in a loop by name. |
+| `:PlayLoop(name, playbackSpeed)` | Loops with a custom speed. |
+| `:PlayLoop(name, playbackSpeed, blendDuration)` | Loops with speed and blend duration. |
+
+#### `BoneSocketComponent`
+
+Attaches one entity to a named bone on another animated entity.
+
+| Field | Type |
+| --- | --- |
+| `TargetEntityHandle` | `UUID` |
+| `BoneName` | `string` |
+| `Position` | `Vector3f` local socket offset. |
+| `Rotation` | `Vector3f` local Euler rotation. |
+| `Scale` | `Vector3f` local scale. |
 
 #### `LifetimeComponent`
 
@@ -622,6 +685,8 @@ Input.GetCursorMode()
 - **`KeyAction`** — `Release`, `Press`, `Repeat`.
 - **`KeyModifier`** — `None`, `Shift`, `Control`, `Alt`, `Super`.
 - **`MouseButton`** — `Left`, `Right`, `Middle`.
+
+`Input.SetCursorMode(mode)` accepts Ember's cursor mode value: `0` normal, `1` hidden, `2` locked.
 
 ---
 
@@ -740,6 +805,21 @@ Returned asset types expose at minimum:
 > `entity:GetComponent("SpriteRendererComponent").TextureHandle = tex:GetUUID()`.
 
 > Script assets cannot be retrieved through this API.
+
+---
+
+## Particles
+
+The global `Particles` table emits one-shot bursts from a `ParticleEmitterComponent`. This is useful
+for impacts, pickups, muzzle flashes, and explosions where you do not want to keep an emitter entity
+running continuously.
+
+```lua
+local emitter = entity:GetComponent("ParticleEmitterComponent")
+
+Particles.Burst(emitter, entity:GetComponent("TransformComponent").WorldPosition, 24)
+Particles.Burst(emitter, entity:GetComponent("TransformComponent").WorldPosition, 24, Quaternion.new())
+```
 
 ---
 

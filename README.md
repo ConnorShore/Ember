@@ -22,6 +22,8 @@ scripting layer so games can be built without recompiling the engine.
 - **AI** — waypoint paths, pathfinding agents, and local avoidance.
 - **Lua scripting** via [sol2](https://github.com/ThePhD/sol2) — hot-reloadable per-entity behaviours
   with editor-exposed properties. See [docs/ScriptingAPI.md](docs/ScriptingAPI.md).
+- **Beginner editor documentation** for Ember-Forge projects, scenes, assets, components, scripting,
+  playtesting, and exporting. See [docs/Editor/README.md](docs/Editor/README.md).
 - **Asset pipeline** with UUID-based references, a custom `.eba` asset bundle, and a
   drag-and-drop project browser in the editor.
 - **Save game system** for persistent key/value storage.
@@ -37,7 +39,7 @@ scripting layer so games can be built without recompiling the engine.
 | [Ember-Forge/](Ember-Forge) | The editor application. Scene editing, asset management, inspectors, ImGuizmo gizmos. |
 | [Ember-Runtime/](Ember-Runtime) | A minimal player application that loads and runs a packaged project. |
 | [Ember-Tools/](Ember-Tools) | Offline tooling (asset bundling, etc.). |
-| [docs/](docs) | Documentation, including the scripting API reference. |
+| [docs/](docs) | Documentation, including the scripting API reference and editor guide. |
 | [scripts/](scripts) | Helper batch / shell scripts for project generation. |
 
 ---
@@ -92,10 +94,10 @@ Clean.bat
    appear in the inspector automatically.
 6. **Press Play**. Iterate. Press Stop. Repeat.
 
-For the complete scripting reference (lifecycle hooks, every component property, math utilities,
-input enums, physics queries, audio, save data, and debug drawing), see
-[docs/ScriptingAPI.md](docs/ScriptingAPI.md). For authoring custom GLSL shaders with
-editor-exposed properties, see [docs/ShaderAPI.md](docs/ShaderAPI.md).
+For step-by-step editor basics, see [docs/Editor/README.md](docs/Editor/README.md). For the complete
+scripting reference (lifecycle hooks, every component property, math utilities, input enums, physics
+queries, audio, save data, and debug drawing), see [docs/ScriptingAPI.md](docs/ScriptingAPI.md). For
+authoring custom GLSL shaders with editor-exposed properties, see [docs/ShaderAPI.md](docs/ShaderAPI.md).
 
 ---
 

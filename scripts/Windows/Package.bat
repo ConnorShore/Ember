@@ -8,7 +8,7 @@ pushd "%~dp0..\.."
 :: Configuration
 :: Edit VERSION before each release.
 :: ---------------------------------------------------------------
-set VERSION=v0.1.0-alpha
+set VERSION=v0.1.1-alpha
 set CONFIG=Dist-windows-x86_64
 set OUT=EmberForge-%VERSION%
 
