@@ -60,9 +60,9 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
-    UUID: 10753367411955256691
-    Name: WeaponHolder
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+    UUID: 6068451618412420797
+    Name: CharacterMovement
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
   - Type: Script
     UUID: 12117729415864912341
     Name: PickupItem
@@ -79,10 +79,6 @@ Assets:
     UUID: 16404415058251315788
     Name: WeaponFire
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponFire.lua
-  - Type: Script
-    UUID: 6068451618412420797
-    Name: CharacterMovement
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
   - Type: Script
     UUID: 4494000890898150304
     Name: Crosshair
@@ -120,9 +116,17 @@ Assets:
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
   - Type: Script
+    UUID: 10753367411955256691
+    Name: WeaponHolder
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+  - Type: Script
     UUID: 17429251933582378423
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
+  - Type: Material
+    UUID: 3531595371019758275
+    Name: AssaultRifle_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
   - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
@@ -139,10 +143,6 @@ Assets:
     UUID: 8747674591623748722
     Name: HolographicReticleMat
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/HolographicReticleMat.ebmat
-  - Type: Material
-    UUID: 3531595371019758275
-    Name: AssaultRifle_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
   - Type: Material
     UUID: 7112033288364404519
     Name: Tracer_Material

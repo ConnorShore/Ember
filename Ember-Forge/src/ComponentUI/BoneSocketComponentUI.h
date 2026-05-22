@@ -4,6 +4,7 @@
 #include "UI/PropertyGrid.h"
 
 #include <Ember/Asset/Skeleton.h>
+#include <Ember/ECS/System/BoneSocketSystem.h>
 
 namespace Ember {
 
@@ -107,7 +108,10 @@ namespace Ember {
 			if (!skeleton)
 			{
 				if (UI::PropertyGrid::InputText("Bone Name", component.BoneName))
+				{
 					ResetBoneCache(component);
+					PreserveCurrentWorldTransform(component);
+				}
 				return;
 			}
 
@@ -118,6 +122,7 @@ namespace Ember {
 				{
 					component.BoneName.clear();
 					ResetBoneCache(component);
+					PreserveCurrentWorldTransform(component);
 				}
 
 				ImGui::Separator();
@@ -130,6 +135,7 @@ namespace Ember {
 					{
 						component.BoneName = bone.Name;
 						ResetBoneCache(component);
+						PreserveCurrentWorldTransform(component);
 					}
 
 					if (isSelected)
@@ -167,12 +173,22 @@ namespace Ember {
 		{
 			component.TargetEntityHandle = entityHandle;
 			ResetBoneCache(component);
+			PreserveCurrentWorldTransform(component);
 		}
 
 		void ResetBoneCache(BoneSocketComponent& component)
 		{
 			component.RuntimeBoneIndex = -1;
 			component.RuntimeBoneName.clear();
+		}
+
+		void PreserveCurrentWorldTransform(BoneSocketComponent& component)
+		{
+			Entity entity = m_Context->SelectedEntity;
+			if (!entity || !entity.ContainsComponent<TransformComponent>())
+				return;
+
+			BoneSocketSystem::SetOffsetFromWorldTransform(component, entity.GetComponent<TransformComponent>().WorldTransform, m_Context->ActiveScene().Ptr());
 		}
 	};
 
