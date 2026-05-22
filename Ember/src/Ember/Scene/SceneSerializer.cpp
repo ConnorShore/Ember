@@ -303,6 +303,17 @@ namespace Ember {
 			animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
 			animatorNode["CurrentAnimationHandle"] << (uint64_t)animator.CurrentAnimationHandle;
 		}
+		if (entity.ContainsComponent<BoneSocketComponent>())
+		{
+			auto& socket = entity.GetComponent<BoneSocketComponent>();
+			ryml::NodeRef socketNode = entityNode["BoneSocketComponent"];
+			socketNode |= ryml::MAP;
+			socketNode["TargetEntity"] << (uint64_t)socket.TargetEntityHandle;
+			socketNode["BoneName"] << socket.BoneName;
+			Util::SerializeVector3f(socketNode["Position"], socket.Position);
+			Util::SerializeVector3f(socketNode["Rotation"], socket.Rotation);
+			Util::SerializeVector3f(socketNode["Scale"], socket.Scale);
+		}
 		if (entity.ContainsComponent<BillboardComponent>())
 		{
 			auto& billboard = entity.GetComponent<BillboardComponent>();
@@ -969,6 +980,26 @@ namespace Ember {
 
 			ac.SkeletonHandle = (UUID)skelHandle;
 			ac.CurrentAnimationHandle = (UUID)animHandle;
+		}
+
+		if (entityNode.has_child("BoneSocketComponent"))
+		{
+			ryml::NodeRef socketNode = entityNode["BoneSocketComponent"];
+			auto& socket = deserializedEntity.AttachComponent<BoneSocketComponent>();
+
+			uint64_t targetEntity = Constants::InvalidUUID;
+			if (socketNode.has_child("TargetEntity"))
+				socketNode["TargetEntity"] >> targetEntity;
+
+			socket.TargetEntityHandle = getRemappedUUID(targetEntity);
+			if (socketNode.has_child("BoneName"))
+				socketNode["BoneName"] >> socket.BoneName;
+			if (socketNode.has_child("Position"))
+				Util::DeserializeVector3f(socketNode["Position"], socket.Position);
+			if (socketNode.has_child("Rotation"))
+				Util::DeserializeVector3f(socketNode["Rotation"], socket.Rotation);
+			if (socketNode.has_child("Scale"))
+				Util::DeserializeVector3f(socketNode["Scale"], socket.Scale);
 		}
 
 		if (entityNode.has_child("BillboardComponent"))

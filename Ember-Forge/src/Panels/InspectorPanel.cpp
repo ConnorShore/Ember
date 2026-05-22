@@ -12,6 +12,7 @@
 #include "ComponentUI/SkinnedMeshComponentUI.h"
 #include "ComponentUI/MaterialComponentUI.h"
 #include "ComponentUI/AnimatorComponentUI.h"
+#include "ComponentUI/BoneSocketComponentUI.h"
 #include "ComponentUI/Collision/BoxColliderComponentUI.h"
 #include "ComponentUI/Collision/SphereColliderComponentUI.h"
 #include "ComponentUI/Collision/CapsuleColliderComponent.h"
@@ -92,6 +93,7 @@ namespace Ember {
 
 		// --- ANIMATION ---
 		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<AnimatorComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Animation].emplace_back(ScopedPtr<BoneSocketComponentUI>::Create(m_Context));
 
 		// --- SCRIPTING ---
 		m_ComponentUIs[Category::Scripting].emplace_back(ScopedPtr<ScriptComponentUI>::Create(m_Context));
