@@ -236,6 +236,9 @@ namespace Ember {
 		finalBlitPass->Execute(renderContext);
 
 		// Debug lines
+		if (!isRuntime)
+			DrawEditorCameraGizmos(scene);
+
 		auto debugPass = StaticPointerCast<DebugRenderPass>(GetRenderPass("DebugRenderPass"));
 		debugPass->Execute(renderContext);
 
@@ -406,6 +409,16 @@ namespace Ember {
 
 				break;
 			}
+		}
+	}
+
+	void RenderSystem::DrawEditorCameraGizmos(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+		for (EntityID cameraEntity : registry.ActiveQuery<CameraComponent, TransformComponent>())
+		{
+			auto [cameraComponent, transform] = registry.GetComponents<CameraComponent, TransformComponent>(cameraEntity);
+			cameraComponent.Camera.DrawFrustum(transform.WorldTransform, cameraEntity == m_RenderSceneState.SelectedEntity);
 		}
 	}
 

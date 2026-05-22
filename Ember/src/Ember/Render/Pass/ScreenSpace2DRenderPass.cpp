@@ -7,6 +7,38 @@
 
 namespace Ember {
 
+	static bool ShouldRenderScreenSpaceEntity(Scene* scene, EntityID entity, bool drawAll, EntityID selectedEntity)
+	{
+		if (drawAll)
+			return true;
+
+		if (selectedEntity == Constants::Entities::InvalidEntityID)
+			return false;
+
+		if (entity == selectedEntity)
+			return true;
+
+		Entity selected(selectedEntity, scene);
+		if (!selected || !selected.ContainsComponent<IDComponent>())
+			return false;
+
+		UUID selectedUUID = selected.GetUUID();
+		Entity current(entity, scene);
+		while (current && current.ContainsComponent<RelationshipComponent>())
+		{
+			auto& relationship = current.GetComponent<RelationshipComponent>();
+			if (relationship.ParentHandle == Constants::InvalidUUID)
+				break;
+
+			if (relationship.ParentHandle == selectedUUID)
+				return true;
+
+			current = scene->GetEntity(relationship.ParentHandle);
+		}
+
+		return false;
+	}
+
 
 	void ScreenSpace2DRenderPass::Init()
 	{
@@ -67,7 +99,7 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
-			if (!drawAll && entity != selectedEntity)
+			if (!ShouldRenderScreenSpaceEntity(scene, entity, drawAll, selectedEntity))
 				continue;
 
 
@@ -105,7 +137,7 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
-			if (!drawAll && entity != selectedEntity)
+			if (!ShouldRenderScreenSpaceEntity(scene, entity, drawAll, selectedEntity))
 				continue;
 
 			Entity currentEntity(entity, scene);

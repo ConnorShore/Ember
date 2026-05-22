@@ -33,6 +33,7 @@ namespace Ember {
 		void SetPerspective(float fov, float nearClip, float farClip);
 		void SetOrthographic(float size, float nearClip, float farClip);
 		void SetViewportSize(uint32_t width, uint32_t height);
+		void DrawFrustum(const Matrix4f& cameraTransform, bool isSelected) const;
 
 		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
 
