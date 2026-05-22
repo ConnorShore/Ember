@@ -103,12 +103,25 @@ namespace Ember {
 				}
 
 				// Use cached runtime animator id
+				bool hasAnimator = false;
 				if (mesh.RuntimeAnimatorID != Constants::Entities::InvalidEntityID)
 				{
-					EB_CORE_ASSERT(registry.ContainsComponent<AnimatorComponent>(mesh.RuntimeAnimatorID), "Animator component should be present");
+					if (registry.ContainsComponent<AnimatorComponent>(mesh.RuntimeAnimatorID))
+					{
+						auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
+						materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+						hasAnimator = true;
+					}
+					else
+					{
+						mesh.RuntimeAnimatorID = Constants::Entities::InvalidEntityID;
+					}
+				}
 
-					auto& animator = registry.GetComponent<AnimatorComponent>(mesh.RuntimeAnimatorID);
-					materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+				if (!hasAnimator)
+				{
+					static const std::vector<Matrix4f> identityBoneMatrices(Constants::Renderer::MaxBones, Matrix4f(1.0f));
+					materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, identityBoneMatrices.data(), static_cast<uint32_t>(identityBoneMatrices.size()));
 				}
 
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);

@@ -72,6 +72,7 @@ namespace Ember {
 				auto& mesh = registry.GetComponent<SkinnedMeshComponent>(entity);
 				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(mesh.MeshHandle);
 
+				bool hasAnimator = false;
 				if (mesh.AnimatorEntityHandle != Constants::InvalidUUID && context.ActiveScene)
 				{
 					Entity animatorEntity = context.ActiveScene->GetEntity(mesh.AnimatorEntityHandle);
@@ -79,7 +80,13 @@ namespace Ember {
 					{
 						auto& animator = registry.GetComponent<AnimatorComponent>(animatorEntity.GetEntityHandle());
 						materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, animator.BoneMatrices.data(), static_cast<uint32_t>(animator.BoneMatrices.size()));
+						hasAnimator = true;
 					}
+				}
+				if (!hasAnimator)
+				{
+					static const std::vector<Matrix4f> identityBoneMatrices(Constants::Renderer::MaxBones, Matrix4f(1.0f));
+					materialAsset->GetShader()->SetMatrix4Array(Constants::Uniforms::BoneMatrices, identityBoneMatrices.data(), static_cast<uint32_t>(identityBoneMatrices.size()));
 				}
 				Renderer3D::Submit(meshAsset->GetVertexArray(), materialAsset, transform.WorldTransform);
 			}

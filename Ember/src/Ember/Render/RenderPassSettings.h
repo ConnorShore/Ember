@@ -10,10 +10,10 @@ namespace Ember {
 
 	struct RenderPassSettings
 	{
-		Camera* ActiveCamera;
-		Matrix4f CameraTransform;
-		Filter RenderMask;
-		Filter VolumeMask;
+		Camera* ActiveCamera = nullptr;
+		Matrix4f CameraTransform = Matrix4f(1.0f);
+		Filter RenderMask = FilterPreset::All;
+		Filter VolumeMask = FilterPreset::All;
 		bool DrawHUD = true;
 		EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 	};

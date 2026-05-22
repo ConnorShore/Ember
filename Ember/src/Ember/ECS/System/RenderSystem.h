@@ -93,14 +93,14 @@ namespace Ember {
 		struct RenderSceneState
 		{
 			Camera ActiveCamera;
-			Filter ActiveRenderMask;
-			Filter ActiveVolumeMask;
-			Matrix4f CameraTransform;
-			Matrix4f CameraViewProjection;
-			bool IsCameraFound;
+			Filter ActiveRenderMask = FilterPreset::All;
+			Filter ActiveVolumeMask = FilterPreset::All;
+			Matrix4f CameraTransform = Matrix4f(1.0f);
+			Matrix4f CameraViewProjection = Matrix4f(1.0f);
+			bool IsCameraFound = false;
 
-			Vector4<int> ViewportDimensions;
-			int OutputFramebufferId;
+			Vector4<int> ViewportDimensions = Vector4<int>(0);
+			int OutputFramebufferId = -1;
 
 			PostProcessVolumeSettings FinalPostProcessVolumeSettings;
 
@@ -109,6 +109,11 @@ namespace Ember {
 
 			void Reset()
 			{
+				ActiveRenderMask = FilterPreset::All;
+				ActiveVolumeMask = FilterPreset::All;
+				CameraTransform = Matrix4f(1.0f);
+				CameraViewProjection = Matrix4f(1.0f);
+				IsCameraFound = false;
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
 				DrawHUD = true;

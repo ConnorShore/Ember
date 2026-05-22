@@ -104,7 +104,11 @@ namespace Ember {
 
 		Vector3f GetWorldPosition() const
 		{
-			return Vector3f(WorldTransform[3]);
+			return Vector3f(
+				WorldTransform[3][0],
+				WorldTransform[3][1],
+				WorldTransform[3][2]
+			);
 		}
 
 		// Extract basis vectors from the world transform matrix columns
