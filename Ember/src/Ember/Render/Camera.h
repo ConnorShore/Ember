@@ -69,8 +69,8 @@ namespace Ember {
 	private:
 		ProjectionType m_ProjectionType = ProjectionType::Perspective;
 		Matrix4f m_ProjectionMatrix = Matrix4f(1.0f);
-		Vector2f m_ViewportSize;
-		float m_AspectRatio;	// (height / width)
+		Vector2f m_ViewportSize = { 1.0f, 1.0f };
+		float m_AspectRatio = 1.0f;	// (width / height)
 
 		OrthographicProps m_OrthographicProps;
 		PerspectiveProps m_PerspectiveProps;

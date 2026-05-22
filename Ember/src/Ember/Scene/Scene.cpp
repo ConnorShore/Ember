@@ -95,6 +95,21 @@ namespace Ember {
 				c.TriangleMesh = nullptr;
 			}
 		}
+
+		static void InitializeAnimationPoseCaches(Scene* scene)
+		{
+			auto animationSystem = Application::Instance().GetSystemManager().GetSystem<AnimationSystem>();
+			if (!animationSystem)
+				return;
+
+			View animatorView = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
+			for (EntityID entityID : animatorView)
+			{
+				Entity animatorEntity{ entityID, scene };
+				auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
+				animationSystem->SetAnimationToTimestamp(scene, animator.CurrentAnimationHandle, animatorEntity, animator.CurrentTime.Seconds());
+			}
+		}
 	}
 
 	Scene::Scene(const std::string& name, const std::string& filePath)
@@ -203,16 +218,7 @@ namespace Ember {
 
 		// Editor mode doesn't tick AnimationSystem every frame, so initialize all
 		// animator bone matrices once on attach to avoid stale identity skinning.
-		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
-		if (animationSystem)
-		{
-			View animatorView = m_Registry->ActiveQuery<AnimatorComponent>();
-			for (EntityID entityID : animatorView)
-			{
-				Entity animatorEntity{ entityID, this };
-				animationSystem->SetAnimationToTimestamp(this, Constants::InvalidUUID, animatorEntity, 0.0f);
-			}
-		}
+		Utils::InitializeAnimationPoseCaches(this);
 
 		EB_CORE_INFO("Scene '{}' attached!", m_Name);
 	}
@@ -231,6 +237,7 @@ namespace Ember {
 
 		// Initialize systems (TODO: Loop over them and make system use scene->IsRuntime() to decide what to do in their OnSceneAttach
 		auto& systemManager = Application::Instance().GetSystemManager();
+		Utils::InitializeAnimationPoseCaches(this);
 		systemManager.GetSystem<PhysicsSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<RenderSystem>()->OnSceneAttach(this);
 		systemManager.GetSystem<AudioSystem>()->OnSceneAttach(this);
@@ -322,6 +329,9 @@ namespace Ember {
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
+		if (width == 0 || height == 0)
+			return;
+
 		EB_CORE_INFO("Viewport resized to {}x{} in scene '{}'", width, height, m_Name);
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto view = m_Registry->Query<CameraComponent>();
