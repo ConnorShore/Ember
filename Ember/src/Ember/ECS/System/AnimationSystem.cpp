@@ -264,6 +264,10 @@ namespace Ember {
 			}
 
 			// Apply inverse bind pose to get final bone matrices for skinning
+			if (animator.BonePoseMatrices.size() < bones.size()) {
+				animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
+			}
+
 			if (animator.BoneMatrices.size() < bones.size()) {
 				animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
 			}
@@ -271,6 +275,7 @@ namespace Ember {
 			for (size_t i = 0; i < bones.size(); i++)
 			{
 				// FinalMatrix = GlobalPose * InverseBindPose
+				animator.BonePoseMatrices[i] = globalTransforms[i];
 				animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
 			}
 		}
@@ -355,6 +360,10 @@ namespace Ember {
 		}
 
 		// --- 3. APPLY INVERSE BIND POSE ---
+		if (animator.BonePoseMatrices.size() < bones.size()) {
+			animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
+		}
+
 		if (animator.BoneMatrices.size() < bones.size()) {
 			animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
 		}
@@ -362,6 +371,7 @@ namespace Ember {
 		for (size_t i = 0; i < bones.size(); i++)
 		{
 			// Final Matrix sent to the shader
+			animator.BonePoseMatrices[i] = globalTransforms[i];
 			animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
 		}
 	}

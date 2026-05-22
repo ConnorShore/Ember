@@ -11,6 +11,7 @@
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
+#include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h" 
 #include "Ember/ECS/System/LifecycleSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
@@ -147,6 +148,7 @@ namespace Ember {
 					PointLightComponent,
 					RelationshipComponent,
 					AnimatorComponent,
+					BoneSocketComponent,
 					BillboardComponent,
 					PrefabComponent,
 					CharacterControllerComponent,
@@ -279,6 +281,7 @@ namespace Ember {
 		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AudioSystem>()->OnUpdate(delta, this);
 
@@ -289,6 +292,7 @@ namespace Ember {
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
 
@@ -492,6 +496,7 @@ namespace Ember {
 			SpotLightComponent,
 			PointLightComponent,
 			AnimatorComponent,
+				BoneSocketComponent,
 			BillboardComponent,
 			CharacterControllerComponent,
 			LifetimeComponent,

@@ -656,6 +656,7 @@ namespace Ember {
 		float CurrentBlendTime = 0.0f;
 
 		// Caches
+		std::vector<Matrix4f> BonePoseMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 
 		void PlayAnimation(const std::string& name, float playbackSpeed = 1.0f, float blendDuration = 0.0f)
@@ -702,6 +703,29 @@ namespace Ember {
 		AnimatorComponent(UUID skeletonUUID, UUID animationUUID)
 			: SkeletonHandle(skeletonUUID), CurrentAnimationHandle(animationUUID) {}
 		AnimatorComponent(const AnimatorComponent&) = default;
+	};
+
+	struct BoneSocketComponent
+	{
+		UUID TargetEntityHandle = Constants::InvalidUUID;
+		std::string BoneName;
+
+		Vector3f Position = Vector3f(0.0f);
+		Vector3f Rotation = Vector3f(0.0f);
+		Vector3f Scale = Vector3f(1.0f);
+
+		int32_t RuntimeBoneIndex = -1;
+		std::string RuntimeBoneName;
+
+		BoneSocketComponent() = default;
+		BoneSocketComponent(UUID targetEntityHandle, const std::string& boneName)
+			: TargetEntityHandle(targetEntityHandle), BoneName(boneName) {}
+		BoneSocketComponent(const BoneSocketComponent&) = default;
+
+		Matrix4f GetLocalTransform() const
+		{
+			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Scale);
+		}
 	};
 
 	struct PrefabComponent 

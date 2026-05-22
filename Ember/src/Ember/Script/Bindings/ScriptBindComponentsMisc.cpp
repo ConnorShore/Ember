@@ -35,6 +35,14 @@ namespace Ember {
 			)
 		);
 
+		state.new_usertype<BoneSocketComponent>("BoneSocketComponent",
+			"TargetEntityHandle", &BoneSocketComponent::TargetEntityHandle,
+			"BoneName", &BoneSocketComponent::BoneName,
+			"Position", &BoneSocketComponent::Position,
+			"Rotation", &BoneSocketComponent::Rotation,
+			"Scale", &BoneSocketComponent::Scale
+		);
+
 		state.new_usertype<LifetimeComponent>("LifetimeComponent",
 			"Lifetime", &LifetimeComponent::Lifetime
 		);

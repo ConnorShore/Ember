@@ -66,6 +66,7 @@
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
+#include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
 
 #include "Ember/Scene/Entity.h"

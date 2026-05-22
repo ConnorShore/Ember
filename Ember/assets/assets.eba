@@ -60,6 +60,10 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 10753367411955256691
+    Name: WeaponHolder
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+  - Type: Script
     UUID: 12117729415864912341
     Name: PickupItem
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
@@ -115,10 +119,6 @@ Assets:
     UUID: 10843162672597406671
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
-  - Type: Script
-    UUID: 10753367411955256691
-    Name: WeaponHolder
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
   - Type: Script
     UUID: 17429251933582378423
     Name: AmmoUI

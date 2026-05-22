@@ -50,6 +50,8 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<BillboardComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<BillboardComponent>()); });
 		if (componentTypeStr == "AnimatorComponent")
 			return guardGet(entity.ContainsComponent<AnimatorComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<AnimatorComponent>()); });
+		if (componentTypeStr == "BoneSocketComponent")
+			return guardGet(entity.ContainsComponent<BoneSocketComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<BoneSocketComponent>()); });
 		if (componentTypeStr == "CharacterControllerComponent")
 			return guardGet(entity.ContainsComponent<CharacterControllerComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<CharacterControllerComponent>()); });
 		if (componentTypeStr == "TextComponent")
@@ -111,6 +113,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<BillboardComponent>());
 		if (componentTypeStr == "AnimatorComponent")
 			return sol::make_object(state, entity.ContainsComponent<AnimatorComponent>());
+		if (componentTypeStr == "BoneSocketComponent")
+			return sol::make_object(state, entity.ContainsComponent<BoneSocketComponent>());
 		if (componentTypeStr == "CharacterControllerComponent")
 			return sol::make_object(state, entity.ContainsComponent<CharacterControllerComponent>());
 		if (componentTypeStr == "TextComponent")
@@ -174,6 +178,7 @@ namespace Ember {
 		if (componentTypeStr == "OutlineComponent") return addAndReturn(OutlineComponent{});
 		if (componentTypeStr == "BillboardComponent") return addAndReturn(BillboardComponent{});
 		if (componentTypeStr == "AnimatorComponent") return addAndReturn(AnimatorComponent{});
+		if (componentTypeStr == "BoneSocketComponent") return addAndReturn(BoneSocketComponent{});
 		if (componentTypeStr == "CharacterControllerComponent") return addAndReturn(CharacterControllerComponent{});
 		if (componentTypeStr == "StaticMeshComponent") return addAndReturn(StaticMeshComponent{});
 		if (componentTypeStr == "SkinnedMeshComponent") return addAndReturn(SkinnedMeshComponent{});
@@ -221,6 +226,7 @@ namespace Ember {
 		if (componentTypeStr == "OutlineComponent") return entity.DetachComponent<OutlineComponent>();
 		if (componentTypeStr == "BillboardComponent") return entity.DetachComponent<BillboardComponent>();
 		if (componentTypeStr == "AnimatorComponent") return entity.DetachComponent<AnimatorComponent>();
+		if (componentTypeStr == "BoneSocketComponent") return entity.DetachComponent<BoneSocketComponent>();
 		if (componentTypeStr == "CharacterControllerComponent") return entity.DetachComponent<CharacterControllerComponent>();
 		if (componentTypeStr == "StaticMeshComponent") return entity.DetachComponent<StaticMeshComponent>();
 		if (componentTypeStr == "SkinnedMeshComponent") return entity.DetachComponent<SkinnedMeshComponent>();
