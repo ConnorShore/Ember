@@ -22,7 +22,6 @@ namespace Ember {
 		{
 			if (UI::PropertyGrid::Begin("SpriteProps"))
 			{
-				UI::PropertyGrid::Checkbox("Screen Space", component.ScreenSpace);
 				UI::PropertyGrid::Color4("Color", component.Color);
 
 				// Texture asset selector

@@ -32,6 +32,8 @@
 #include "ComponentUI/AIAgentComponentUI.h"
 #include "ComponentUI/LocalAvoidanceComponentUI.h"
 #include "ComponentUI/SpriteComponentUI.h"
+#include "ComponentUI/CanvasComponentUI.h"
+#include "ComponentUI/RectTransformComponentUI.h"
 
 #include <imgui/imgui.h>
 
@@ -49,9 +51,10 @@ namespace Ember {
 		case InspectorPanel::Category::Lighting: return "Lighting";
 		case InspectorPanel::Category::Physics: return "Physics";
 		case InspectorPanel::Category::Audio: return "Audio";
+		case InspectorPanel::Category::Scripting: return "Scripts";
 		case InspectorPanel::Category::Animation: return "Animation";
 		case InspectorPanel::Category::AI: return "AI";
-		case InspectorPanel::Category::Scripting: return "Scripts";
+		case InspectorPanel::Category::UI: return "UI";
 		default: return "Unknown";
 		}
 	}
@@ -104,6 +107,10 @@ namespace Ember {
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<LocalAvoidanceComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
+
+		// --- UI ---
+		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<RectTransformComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<CanvasComponentUI>::Create(m_Context));
 
 		// --- NONE (These don't appear in the Add Component menu but are still rendered in the inspector if attached to an entity) ---
 		m_ComponentUIs[Category::None].emplace_back(ScopedPtr<PostProcessVolumeComponentUI>::Create(m_Context));
@@ -180,6 +187,10 @@ namespace Ember {
 
 					for (auto& componentUI : components)
 					{
+						// Hide TransformComponent if RectTransformComponent is present on entity
+						if constexpr ((std::is_same_v<decltype(componentUI), TransformComponentUI>) && entity.ContainsComponent<RectTransformComponent>())
+							continue;
+
 						componentUI->Render(entity);
 					}
 				}
@@ -209,6 +220,9 @@ namespace Ember {
 			{
 				for (auto& [category, comps] : m_ComponentUIs)
 				{
+					if (category == Category::None)
+						continue;	// Render None as "Misc" at the end of the menu
+
 					if (ImGui::BeginMenu(GetCategoryName(category).c_str()))
 					{
 						for (auto& comp : comps)
@@ -219,6 +233,17 @@ namespace Ember {
 						ImGui::EndMenu();
 					}
 				}
+
+				if (ImGui::BeginMenu("Misc"))
+				{
+					for (auto& comp : m_ComponentUIs[Category::None])
+					{
+						if (ImGui::MenuItem(comp->GetName()))
+							comp->CreateComponentForEntity(entity);
+					}
+					ImGui::EndMenu();
+				}
+
 				ImGui::EndPopup();
 			}
 

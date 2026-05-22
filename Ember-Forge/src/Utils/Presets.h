@@ -26,6 +26,10 @@ namespace Ember {
 
 		static Entity CreatePostProcessVolume(const SharedPtr<Scene>& scene);
 
+		static Entity CreateCanvas(const SharedPtr<Scene>& scene);
+		static Entity CreateUISprite(const SharedPtr<Scene>& scene);
+		static Entity CreateUIText(const SharedPtr<Scene>& scene);
+
 	};
 
 }

@@ -17,6 +17,7 @@
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
 #include "Ember/ECS/System/AISystem.h"
+#include "Ember/ECS/System/UILayoutSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -140,6 +141,8 @@ namespace Ember {
 			// 2. Create a new entity in THIS scene using the EXACT SAME UUID and Name
 			UUID id = srcEntity.GetComponent<IDComponent>().ID;
 			std::string name = srcEntity.GetName();
+
+			// Add UI or Normal entity based on the RectTransformComponent presence
 			Entity destEntity = newScene->AddEntity(id, name);
 
 			// 3. Use your amazing fold expression to copy all the data!
@@ -179,7 +182,9 @@ namespace Ember {
 					AIPathComponent,
 					NavigationGridComponent,
 					AIAgentComponent,
-					LocalAvoidanceComponent
+					LocalAvoidanceComponent,
+					CanvasComponent,
+					RectTransformComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -289,6 +294,7 @@ namespace Ember {
 		systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
+		systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<AudioSystem>()->OnUpdate(delta, this);
 
@@ -302,6 +308,9 @@ namespace Ember {
 		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
 		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
 		systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
+
+		// May need specific OnEditorUpdate method, we will need to see
+		systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
 
 		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, settings);
 
@@ -347,6 +356,18 @@ namespace Ember {
 		{
 			renderSystem->OnViewportResize(width, height);
 		}
+
+		auto uiLayoutSystem = systemManager.GetSystem<UILayoutSystem>();
+		if (uiLayoutSystem)
+		{
+			uiLayoutSystem->OnViewportResize(this, width, height);
+		}
+	}
+
+	Vector2f Scene::GetViewportSize() const
+	{
+		auto renderSystem = Application::Instance().GetSystemManager().GetSystem<RenderSystem>();
+		return renderSystem ? renderSystem->GetViewportSize() : Vector2f(0.0f, 0.0f);
 	}
 
 	Entity Scene::AddEntity(const std::string& name)
@@ -446,7 +467,7 @@ namespace Ember {
 		// Set new parent handle
 		childRelationship.ParentHandle = newParent.GetUUID();
 
-		// Recompute the child's local transform relative to the new parent
+		// Recompute the child's local transform relative to the new parent (if not in screen space)
 		// NewLocal = Inverse(ParentWorld) * CurrentChildWorld
 		auto& parentTransform = newParent.GetComponent<TransformComponent>();
 		auto& childTransform = childEntity.GetComponent<TransformComponent>();
@@ -506,7 +527,7 @@ namespace Ember {
 			SpotLightComponent,
 			PointLightComponent,
 			AnimatorComponent,
-				BoneSocketComponent,
+			BoneSocketComponent,
 			BillboardComponent,
 			CharacterControllerComponent,
 			LifetimeComponent,
@@ -521,7 +542,9 @@ namespace Ember {
 			AIPathComponent,
 			NavigationGridComponent,
 			AIAgentComponent,
-			LocalAvoidanceComponent
+			LocalAvoidanceComponent,
+			CanvasComponent,
+			RectTransformComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

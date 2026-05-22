@@ -3,6 +3,9 @@
 #include "RenderPass.h"
 
 namespace Ember {
+	
+	class Scene;
+	class Entity;
 
 	class ScreenSpace2DRenderPass : public RenderPass
 	{
@@ -16,8 +19,10 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		void RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
-		void RenderText(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
+		void RenderSprites(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
+		void RenderText(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
+
+		Entity FindNearestCanvasAncestor(Scene* scene, Entity entity);
 	};
 
 }

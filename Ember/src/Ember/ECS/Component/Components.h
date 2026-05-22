@@ -426,7 +426,6 @@ namespace Ember {
 	{
 		Vector4f Color = Vector4f(1.0f);
 		UUID TextureHandle = Constants::InvalidUUID;
-		bool ScreenSpace = true;
 
 		SpriteComponent() = default;
 		SpriteComponent(const Vector4f color) : Color(color) {}
@@ -756,11 +755,10 @@ namespace Ember {
 		std::string Text;
 		Vector4f Color = Vector4f(1.0f);
 		UUID FontHandle = Constants::InvalidUUID;
-		bool ScreenSpace = true;
 
 		TextComponent() = default;
-		TextComponent(const std::string& text, const Vector4f& color, UUID fontHandle, bool screenSpace)
-			: Text(text), Color(color), FontHandle(fontHandle), ScreenSpace(screenSpace) {}
+		TextComponent(const std::string& text, const Vector4f& color, UUID fontHandle)
+			: Text(text), Color(color), FontHandle(fontHandle) {}
 		TextComponent(const TextComponent&) = default;
 	};
 
@@ -936,6 +934,49 @@ namespace Ember {
 
 		LocalAvoidanceComponent() = default;
 		LocalAvoidanceComponent(const LocalAvoidanceComponent&) = default;
+	};
+
+	enum CanvasRenderMode
+	{
+		ScreenSpace = 0,
+		WorldSpace
+	};
+
+	struct CanvasComponent
+	{
+		CanvasRenderMode RenderMode = CanvasRenderMode::ScreenSpace;
+		Vector2f ReferenceResolution = { 1600.0f, 900.0f };
+		float MatchWidthOrHeight = 0.5f;
+		float PlaneDistance = 1.0f;
+		uint32_t SortOrder = 0;
+
+		// Runtime only (not serialized)
+		bool IsDirty = false; // Set to true when the canvas or any of its children have changed and it needs to re-render
+
+		CanvasComponent() = default;
+		CanvasComponent(const CanvasComponent&) = default;
+	};
+
+	struct RectTransformComponent
+	{
+		// Anchors define the relative point on the PARENT (0.0 to 1.0)
+		// (0,0) is Bottom-Left, (1,1) is Top-Right
+		Vector2f AnchorMin = { 0.5f, 0.5f };
+		Vector2f AnchorMax = { 0.5f, 0.5f };
+
+		// Pivot defines the relative origin point on this element (0.0 to 1.0)
+		Vector2f Pivot = { 0.5f, 0.5f };
+
+		// The pixel offset from the Anchors
+		// If AnchorMin == AnchorMax, this acts as Width/Height
+		// If AnchorMin != AnchorMax, this acts as padding (Left, Bottom, Right, Top)
+		Vector2f SizeDelta = { 100.0f, 100.0f };
+		Vector2f AnchoredPosition = { 0.0f, 0.0f };
+
+		float Rotation = 0.0f;
+
+		RectTransformComponent() = default;
+		RectTransformComponent(const RectTransformComponent&) = default;
 	};
 
 }

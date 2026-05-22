@@ -38,10 +38,10 @@ namespace Ember {
 		Renderer2D::BeginFrame();
 
 		// Draw Screen-Space Sprites (e.g. Crosshairs, Minimaps)
-		RenderSprites(registry, context.DrawHUD, context.SelectedEntity, width, height);
+		RenderSprites(context.ActiveScene, context.DrawHUD, context.SelectedEntity, width, height);
 
 		// Draw Screen-Space Text (e.g. Ammo, Health)
-		RenderText(registry, context.DrawHUD, context.SelectedEntity, width, height);
+		RenderText(context.ActiveScene, context.DrawHUD, context.SelectedEntity, width, height);
 
 		Renderer2D::EndFrame();
 
@@ -62,26 +62,32 @@ namespace Ember {
 	{
 	}
 
-	void ScreenSpace2DRenderPass::RenderSprites(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
+	void ScreenSpace2DRenderPass::RenderSprites(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
 	{
+		auto& registry = scene->GetRegistry();
 		for (EntityID entity : registry.ActiveQuery<SpriteComponent, TransformComponent>())
 		{
 			if (!drawAll && entity != selectedEntity)
 				continue;
 
+
+			Entity currentEntity(entity, scene);
 			auto [sprite, transform] = registry.GetComponents<SpriteComponent, TransformComponent>(entity);
 
-			if (!sprite.ScreenSpace)
+			// Verify this text entity is a descendant of a Screen Space canvas
+			Entity canvas = FindNearestCanvasAncestor(scene, currentEntity);
+			if (canvas == Constants::Entities::InvalidEntityID || canvas.GetComponent<CanvasComponent>().RenderMode != CanvasRenderMode::ScreenSpace)
 				continue;
 
 			// Treat transform translation X/Y and scale as normalized [0, 1] viewport coords so
 			// UI stays in the same relative position and size when the window is resized.
-			Matrix4f screenTransform = transform.WorldTransform;
-			screenTransform[0][0] *= viewportWidth;
-			screenTransform[1][1] *= viewportHeight;
-			screenTransform[3][0] *= viewportWidth;
-			screenTransform[3][1] *= viewportHeight;
+			//Matrix4f screenTransform = transform.WorldTransform;
+			//screenTransform[0][0] *= viewportWidth;
+			//screenTransform[1][1] *= viewportHeight;
+			//screenTransform[3][0] *= viewportWidth;
+			//screenTransform[3][1] *= viewportHeight;
 
+			Matrix4f screenTransform = transform.WorldTransform;
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{
 				Renderer2D::DrawQuad(screenTransform, sprite.Color);
@@ -94,29 +100,56 @@ namespace Ember {
 		}
 	}
 
-	void ScreenSpace2DRenderPass::RenderText(Registry& registry, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
+	void ScreenSpace2DRenderPass::RenderText(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight)
 	{
+		auto& registry = scene->GetRegistry();
 		for (EntityID entity : registry.ActiveQuery<TextComponent, TransformComponent>())
 		{
 			if (!drawAll && entity != selectedEntity)
 				continue;
 
+			Entity currentEntity(entity, scene);
 			auto [textComp, transform] = registry.GetComponents<TextComponent, TransformComponent>(entity);
-			if (textComp.ScreenSpace && textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
+
+			// Verify this text entity is a descendant of a Screen Space canvas
+			Entity canvas = FindNearestCanvasAncestor(scene, currentEntity);
+			if (canvas == Constants::Entities::InvalidEntityID || canvas.GetComponent<CanvasComponent>().RenderMode != CanvasRenderMode::ScreenSpace)
+				continue;
+
+			if (textComp.FontHandle != Constants::InvalidUUID && !textComp.Text.empty())
 			{
 				auto fontAsset = Application::Instance().GetAssetManager().GetAsset<Font>(textComp.FontHandle);
 				if (fontAsset)
 				{
 					// Treat transform translation X/Y as normalized [0, 1] viewport coords so
 					// UI stays in the same relative position when the window is resized.
-					Matrix4f screenTransform = transform.WorldTransform;
-					screenTransform[3][0] *= viewportWidth;
-					screenTransform[3][1] *= viewportHeight;
+					//Matrix4f screenTransform = transform.WorldTransform;
+					//screenTransform[3][0] *= viewportWidth;
+					//screenTransform[3][1] *= viewportHeight;
 
+					Matrix4f screenTransform = transform.WorldTransform;
 					Renderer2D::DrawString(textComp.Text, screenTransform, textComp.Color, fontAsset, entity, true);
 				}
 			}
 		}
+	}
+
+	Entity ScreenSpace2DRenderPass::FindNearestCanvasAncestor(Scene* scene, Entity entity)
+	{
+		Entity current = entity;
+		while (current)
+		{
+			if (current.ContainsComponent<CanvasComponent>())
+				return current;
+
+			auto& relationship = current.GetComponent<RelationshipComponent>();
+			if (relationship.ParentHandle == Constants::InvalidUUID)
+				break;
+
+			current = scene->GetEntity(relationship.ParentHandle);
+		}
+
+		return Entity();
 	}
 
 }
