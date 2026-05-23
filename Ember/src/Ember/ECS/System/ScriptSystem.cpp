@@ -144,6 +144,26 @@ namespace Ember {
 				script.Instance = luaState.create_table();
 				script.Instance[sol::metatable_key] = luaState.create_table_with("__index", scriptClass);
 
+				// Seed instance fields with script defaults so enum/table-backed properties
+				// resolve to concrete values even when no user override has been authored.
+				const auto& cachedProperties = scriptAsset->GetExposedProperties();
+				if (!cachedProperties.empty())
+				{
+					for (const auto& property : cachedProperties)
+					{
+						script.Instance[property.Name] = sol::make_object(luaState, property.Value);
+					}
+				}
+				else
+				{
+					auto parsedProperties = ScriptEngine::GetScriptProperties(scriptAsset);
+					for (const auto& property : parsedProperties)
+					{
+						script.Instance[property.Name] = sol::make_object(luaState, property.Value);
+					}
+					scriptAsset->SetExposedProperties(parsedProperties);
+				}
+
 				// Inject user property overrides from the component
 				for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
 				{

@@ -327,11 +327,43 @@ namespace Ember {
 		{
 			auto& sceneManager = Application::Instance().GetSceneManager();
 
+			UUID selectedUUID = Constants::InvalidUUID;
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			{
+				selectedUUID = m_Context.SelectedEntity.GetUUID();
+
+				auto queueOutlineRemoval = [this](Entity entity)
+				{
+					if (entity != Constants::Entities::InvalidEntityID && entity.ContainsComponent<OutlineComponent>())
+						RemoveComponentFromEntity<OutlineComponent>(entity);
+				};
+
+				queueOutlineRemoval(m_Context.SelectedEntity);
+				if (m_Context.SelectedEntity.IsRootParent())
+				{
+					for (auto& child : m_Context.SelectedEntity.GetAllChildren())
+						queueOutlineRemoval(child);
+				}
+			}
+
+			RemovePendingComponents();
+			m_Context.SelectedEntity = Entity();
+			m_PreviousSelectedEntity = Entity();
+
 			// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
 			auto runtimeScene = Scene::CopyScene(m_EditorScene);
 			runtimeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			sceneManager.SetActiveScene(runtimeScene); // OnAttach is called inside SetActiveScene
 			m_Context.CurrentSceneState = SceneState::Play;
+
+			if (selectedUUID != Constants::InvalidUUID)
+			{
+				Entity runtimeEntity = runtimeScene->GetEntity(selectedUUID);
+				if (runtimeEntity != Constants::Entities::InvalidEntityID)
+					m_Context.SelectedEntity = runtimeEntity;
+			}
+			m_PreviousSelectedEntity = m_Context.SelectedEntity;
+
 			sceneManager.GetActiveScene()->OnRuntimeStart();
 
 			Input::SetCursorMode(CursorMode::Locked);
@@ -356,6 +388,8 @@ namespace Ember {
 		if (auto activeScene = sceneManager.GetActiveScene())
 			activeScene->OnRuntimeStop();
 
+		RemovePendingComponents();
+
 		// Capture the selected entity's UUID before clearing the selection so we can
 		// re-select the corresponding entity in the editor scene after the runtime
 		// scene (and its registry) is destroyed. Without this, m_Context.SelectedEntity
@@ -364,6 +398,7 @@ namespace Ember {
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 			selectedUUID = m_Context.SelectedEntity.GetUUID();
 		m_Context.SelectedEntity = Entity();
+		m_PreviousSelectedEntity = Entity();
 
 		// Restore the editor scene as the active scene
 		sceneManager.SetActiveScene(m_EditorScene); // OnDetach on runtime copy, OnAttach on editor scene
@@ -997,6 +1032,12 @@ namespace Ember {
 
 	void EditorLayer::SyncEntitySelectionState()
 	{
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+		{
+			m_PreviousSelectedEntity = m_Context.SelectedEntity;
+			return;
+		}
+
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
 
@@ -1434,7 +1475,7 @@ namespace Ember {
 			auto& assetManager = Application::Instance().GetAssetManager();
 
 			// Strip editor-only outline components before serializing
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<OutlineComponent>())
 				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
 			// Serialize scenes
