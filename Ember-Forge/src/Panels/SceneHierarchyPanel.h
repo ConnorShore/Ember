@@ -13,7 +13,7 @@ namespace Ember {
 		void OnEvent(Event& event) override;
 		void OnImGuiRender() override;
 
-		inline void SetSelectedEntity(Entity entity) { m_Context->SelectedEntity = entity; m_PreviouslySelectedEntity = entity; }
+		void SetSelectedEntity(Entity entity);
 		inline Entity GetSelectedEntity() const { return m_Context->SelectedEntity; }
 
 	private:

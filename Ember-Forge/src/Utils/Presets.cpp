@@ -3,6 +3,7 @@
 #include "EditorConstants.h"
 
 #include <Ember/Core/ProjectManager.h>
+#include <Ember/Scene/Scene.h>
 
 namespace Ember {
 
@@ -276,6 +277,34 @@ namespace Ember {
 
 		newEntity.AttachComponent<PostProcessVolumeComponent>();
 
+		return newEntity;
+	}
+
+	Entity Presets::CreateCanvas(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("Canvas");
+		
+		newEntity.AttachComponent<RectTransformComponent>();
+
+		auto& canvasComp = newEntity.AttachComponent<CanvasComponent>();
+		canvasComp.ReferenceResolution = scene->GetViewportSize();
+
+		return newEntity;
+	}
+
+	Entity Presets::CreateUISprite(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("UISprite");
+		newEntity.AttachComponent<RectTransformComponent>();
+		newEntity.AttachComponent<SpriteComponent>();
+		return newEntity;
+	}
+
+	Entity Presets::CreateUIText(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("UIText");
+		newEntity.AttachComponent<RectTransformComponent>();
+		newEntity.AttachComponent<TextComponent>();
 		return newEntity;
 	}
 

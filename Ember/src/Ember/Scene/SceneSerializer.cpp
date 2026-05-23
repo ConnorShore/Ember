@@ -67,7 +67,6 @@ namespace Ember {
 			{
 				spriteNode["TextureUUID"] << entity.GetComponent<SpriteComponent>().TextureHandle;
 			}
-			spriteNode["ScreenSpace"] << entity.GetComponent<SpriteComponent>().ScreenSpace;
 		}
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
@@ -360,7 +359,6 @@ namespace Ember {
 			textNode["Text"] << text.Text;
 			textNode["FontHandle"] << (uint64_t)text.FontHandle;
 			Util::SerializeVector4f(textNode["Color"], text.Color);
-			textNode["ScreenSpace"] << text.ScreenSpace;
 		}
 		if (entity.ContainsComponent<DisabledComponent>())
 		{
@@ -565,6 +563,29 @@ namespace Ember {
 			avoidanceNode["AvoidanceStrength"] << avoidance.AvoidanceStrength;
 			avoidanceNode["AvoidanceMask"] << avoidance.AvoidanceMask;
 		}
+		if (entity.ContainsComponent<CanvasComponent>())
+		{
+			auto& canvas = entity.GetComponent<CanvasComponent>();
+			ryml::NodeRef canvasNode = entityNode["CanvasComponent"];
+			canvasNode |= ryml::MAP;
+			canvasNode["RenderMode"] << (int)canvas.RenderMode;
+			canvasNode["SortOrder"] << canvas.SortOrder;
+			canvasNode["MatchWidthOrHeight"] << canvas.MatchWidthOrHeight;
+			canvasNode["PlaneDistance"] << canvas.PlaneDistance;
+			Util::SerializeVector2f(canvasNode["ReferenceResolution"], canvas.ReferenceResolution);
+		}
+		if (entity.ContainsComponent<RectTransformComponent>())
+		{
+			auto& rectTransform = entity.GetComponent<RectTransformComponent>();
+			ryml::NodeRef rectNode = entityNode["RectTransformComponent"];
+			rectNode |= ryml::MAP;
+			Util::SerializeVector2f(rectNode["AnchoredPosition"], rectTransform.AnchoredPosition);
+			Util::SerializeVector2f(rectNode["SizeDelta"], rectTransform.SizeDelta);
+			Util::SerializeVector2f(rectNode["AnchorMin"], rectTransform.AnchorMin);
+			Util::SerializeVector2f(rectNode["AnchorMax"], rectTransform.AnchorMax);
+			Util::SerializeVector2f(rectNode["Pivot"], rectTransform.Pivot);
+			rectNode["Rotation"] << rectTransform.Rotation;
+		}
 	}
 
 	// =========================================================================
@@ -633,8 +654,6 @@ namespace Ember {
 				spriteNode["TextureUUID"] >> texId;
 				sc.TextureHandle = (UUID)texId;
 			}
-
-			spriteNode["ScreenSpace"] >> sc.ScreenSpace;
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))
@@ -1061,7 +1080,6 @@ namespace Ember {
 			textNode["FontHandle"] >> fontId;
 			tc.FontHandle = (UUID)fontId;
 			Util::DeserializeVector4f(textNode["Color"], tc.Color);
-			textNode["ScreenSpace"] >> tc.ScreenSpace;
 		}
 
 		if (entityNode.has_child("DisabledComponent"))
@@ -1296,6 +1314,31 @@ namespace Ember {
 			avoidanceNode["AvoidanceStrength"] >> avoidance.AvoidanceStrength;
 			avoidanceNode["AvoidanceMask"] >> avoidance.AvoidanceMask;
 		}
+
+		if (entityNode.has_child("CanvasComponent"))
+		{
+			ryml::NodeRef canvasNode = entityNode["CanvasComponent"];
+			auto& canvas = deserializedEntity.AttachComponent<CanvasComponent>();
+			int renderModeInt = 0;
+			canvasNode["RenderMode"] >> renderModeInt;
+			canvas.RenderMode = static_cast<CanvasRenderMode>(renderModeInt);
+			canvasNode["SortOrder"] >> canvas.SortOrder;
+			canvasNode["PlaneDistance"] >> canvas.PlaneDistance;
+			canvasNode["MatchWidthOrHeight"] >> canvas.MatchWidthOrHeight;
+			Util::DeserializeVector2f(canvasNode["ReferenceResolution"], canvas.ReferenceResolution);
+		}
+
+		if (entityNode.has_child("RectTransformComponent"))
+		{
+			ryml::NodeRef rectNode = entityNode["RectTransformComponent"];
+			auto& rect = deserializedEntity.AttachComponent<RectTransformComponent>();
+			Util::DeserializeVector2f(rectNode["AnchorMin"], rect.AnchorMin);
+			Util::DeserializeVector2f(rectNode["AnchorMax"], rect.AnchorMax);
+			Util::DeserializeVector2f(rectNode["Pivot"], rect.Pivot);
+			Util::DeserializeVector2f(rectNode["SizeDelta"], rect.SizeDelta);
+			Util::DeserializeVector2f(rectNode["AnchoredPosition"], rect.AnchoredPosition);
+			rectNode["Rotation"] >> rect.Rotation;
+		}
 	}
 
 
@@ -1431,6 +1474,7 @@ namespace Ember {
 				if (entityNode.has_child("TagComponent"))
 					entityNode["TagComponent"]["Tag"] >> name;
 
+				bool isUIEntity = entityNode.has_child("RectTransformComponent");
 				Entity deserializedEntity = m_Scene->AddEntity(uuid, name);
 				DeserializeEntityNode(entityNode, deserializedEntity, emptyRemap);
 			}

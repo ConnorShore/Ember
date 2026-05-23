@@ -47,6 +47,7 @@ namespace Ember {
 		void SetActiveCamera(Entity cameraEntity);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
+		Vector2f GetViewportSize() const;
 
         Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);

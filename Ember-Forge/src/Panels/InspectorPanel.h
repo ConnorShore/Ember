@@ -23,7 +23,8 @@ namespace Ember {
 			Audio,
 			Animation,
 			Scripting,
-			AI
+			AI,
+			UI
 		};
 
 	public:

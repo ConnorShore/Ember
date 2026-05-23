@@ -47,6 +47,16 @@ namespace Ember {
 		ImGui::End();
 	}
 
+	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
+	{
+		m_Context->SelectedEntity = entity;
+		m_PreviouslySelectedEntity = entity;
+
+		// Expand hierarchy to selected entity
+		if (entity)
+			m_ExpandToSelectedEntity = true;
+	}
+
 	void SceneHierarchyPanel::RenderContextMenu()
 	{
 		// Only available in edit mode
@@ -175,6 +185,29 @@ namespace Ember {
 					RenameEntity(entity);
 				}
 
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("UI"))
+			{
+				if (ImGui::MenuItem("Canvas"))
+				{
+					auto entity = Presets::CreateCanvas(m_Context->ActiveScene());
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Sprite"))
+				{
+					auto entity = Presets::CreateUISprite(m_Context->ActiveScene());
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
+				if (ImGui::MenuItem("Text"))
+				{
+					auto entity = Presets::CreateUIText(m_Context->ActiveScene());
+					SetSelectedEntity(entity);
+					RenameEntity(entity);
+				}
 				ImGui::EndMenu();
 			}
 

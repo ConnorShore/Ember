@@ -16,8 +16,8 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		void DrawSprites(AssetManager& assetManager, Registry& registry);
-		void DrawText(AssetManager& assetManager, Registry& registry);
+		void DrawSprites(AssetManager& assetManager, Scene* scene);
+		void DrawText(AssetManager& assetManager, Scene* scene);
 	};
 
 }

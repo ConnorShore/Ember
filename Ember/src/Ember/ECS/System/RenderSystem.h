@@ -67,6 +67,7 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 		void SetFinalPostProcessSettings(Scene* scene);
 		void ApplyPostProcessSettings();
+		void DrawEditorCameraGizmos(Scene* scene);
 
 	private:
 		// TODO: Make this a render graph

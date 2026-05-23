@@ -4,6 +4,7 @@
 #include "Panels/Panel.h"
 #include "EditorContext.h"
 #include "ProjectSettingsDialog.h"
+#include "Utils/ViewportGizmoController.h"
 
 #include <Ember/Event/KeyEvent.h>
 #include <Ember/Event/MouseEvent.h>
@@ -45,7 +46,6 @@ namespace Ember {
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
-		void RenderTransformGizmos();
 
 		void DrawToolbar();
 
@@ -150,6 +150,7 @@ namespace Ember {
 
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 		int m_GizmoMode = ImGuizmo::WORLD;
+		ViewportGizmoController m_ViewportGizmos;
 
 		Entity m_EntityToDelete;
 

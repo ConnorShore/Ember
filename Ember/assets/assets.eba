@@ -40,13 +40,13 @@ Assets:
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
   - Type: Texture
-    UUID: 15863835653609318779
-    Name: HolographicReticle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
-  - Type: Texture
     UUID: 9008232455192275898
     Name: AssaultRifle_ARColor.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
+  - Type: Texture
+    UUID: 15863835653609318779
+    Name: HolographicReticle
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -124,6 +124,10 @@ Assets:
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
   - Type: Material
+    UUID: 13734008897576602447
+    Name: GroundMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
+  - Type: Material
     UUID: 8747674591623748722
     Name: HolographicReticleMat
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/HolographicReticleMat.ebmat
@@ -135,10 +139,6 @@ Assets:
     UUID: 18352460508626254789
     Name: BoxMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
-  - Type: Material
-    UUID: 13734008897576602447
-    Name: GroundMaterial
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
     UUID: 1868779223986162857
     Name: PowerUpMaterial
@@ -220,13 +220,13 @@ Assets:
     Name: Roboto-Regular
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
-    UUID: 2869832050986379881
-    Name: EmptyGun
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/EmptyGun.mp3
-  - Type: AudioClip
     UUID: 10601745296411271244
     Name: M4_Shot
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/M4_Shot.mp3
+  - Type: AudioClip
+    UUID: 2869832050986379881
+    Name: EmptyGun
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/EmptyGun.mp3
   - Type: AudioClip
     UUID: 15776698392225788213
     Name: ReloadStart

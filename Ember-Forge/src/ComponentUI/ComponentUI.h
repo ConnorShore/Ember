@@ -17,6 +17,7 @@ namespace Ember {
 		virtual ~ComponentUIBase() = default;
 		virtual void Render(Entity entity) = 0;
 		virtual const char* GetName() const = 0;
+		virtual ComponentType GetComponentType(Entity entity) const = 0;
 		virtual void CreateComponentForEntity(Entity entity) = 0;
 	};
 
@@ -38,6 +39,7 @@ namespace Ember {
 		}
 
 		virtual const char* GetName() const = 0;
+		virtual ComponentType GetComponentType(Entity entity) const override { return entity.GetComponentType<T>(); }
 		virtual void CreateComponentForEntity(Entity entity) override
 		{
 			if (entity.ContainsComponent<T>())

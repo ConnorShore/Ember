@@ -171,9 +171,15 @@ namespace Ember {
 
 		math.set_function("Radians", &Math::Radians);
 		math.set_function("Degrees", &Math::Degrees);
-		math.set_function("Length", &Math::Length);
+		math.set_function("Length", sol::overload(
+			[](const Vector2f& vec) { return Math::Length(vec); },
+			[](const Vector3f& vec) { return Math::Length(vec); }
+		));
 		math.set_function("Cross", &Math::Cross);
-		math.set_function("Dot", &Math::Dot);
+		math.set_function("Dot", sol::overload(
+			[](const Vector2f& a, const Vector2f& b) { return Math::Dot(a, b); },
+			[](const Vector3f& a, const Vector3f& b) { return Math::Dot(a, b); }
+		));
 		math.set_function("ProjectOnPlane", &Math::ProjectOnPlane);
 		math.set_function("Distance", &Math::Distance);
 		math.set_function("Distance2", &Math::Distance2);

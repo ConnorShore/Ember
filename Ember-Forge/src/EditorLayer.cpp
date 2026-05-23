@@ -665,7 +665,7 @@ namespace Ember {
 		}
 
 		// Draw Transform Gizmos for selected entity
-		RenderTransformGizmos();
+		m_ViewportGizmos.Render(&m_Context, m_Camera, m_ViewportBounds, m_GizmoType);
 
 		ImGui::End();
 	}
@@ -966,7 +966,7 @@ namespace Ember {
 
 			// If a gizmo is drawn and the mouse is over it, we should not change the selected entity
 			bool isGizmoDrawn = m_Context.SelectedEntity != m_InvalidEntity && m_GizmoType != -1;
-			if (isGizmoDrawn && ImGuizmo::IsOver())
+			if (isGizmoDrawn && (ImGuizmo::IsOver() || m_ViewportGizmos.IsHovered()))
 				return false;
 
 			auto [mx, my] = ImGui::GetMousePos();
@@ -1073,107 +1073,6 @@ namespace Ember {
 		}
 
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
-	}
-
-	void EditorLayer::RenderTransformGizmos()
-	{
-		if (m_GizmoType == -1 || m_Context.CurrentSceneState != SceneState::Edit)
-			return;
-
-		if (m_Context.SelectedEntity == m_InvalidEntity || !m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
-			return;
-
-		ImGuizmo::SetOrthographic(false);	// TODO: Support orthographic mode for 2D scenes
-		ImGuizmo::SetDrawlist();
-		ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
-
-		Matrix4f cameraProjection = m_Camera.GetProjectionMatrix();
-		Matrix4f cameraView = m_Camera.GetViewMatrix();
-
-		auto& transformComp = m_Context.SelectedEntity.GetComponent<TransformComponent>();
-
-		// Feed ImGuizmo the WORLD transform so it draws in the correct physical location!
-		Matrix4f transform = transformComp.WorldTransform;
-
-		// Snapping Logic (Hold CTRL)
-		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
-		float snapValue = (m_GizmoType == ImGuizmo::OPERATION::ROTATE) ? 45.0f : 0.5f;
-		float snapValues[3] = { snapValue, snapValue, snapValue };
-
-		// Local vs World mode (Hold Shift for local)
-		bool isLocal = Input::IsKeyPressed(KeyCode::LeftShift);
-		ImGuizmo::MODE currentMode = isLocal ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-
-		ImGuizmo::Manipulate(&cameraView[0][0], &cameraProjection[0][0],
-			(ImGuizmo::OPERATION)m_GizmoType, (ImGuizmo::MODE)currentMode, &transform[0][0],
-			nullptr, snap ? snapValues : nullptr);
-
-		if (ImGuizmo::IsUsing())
-		{
-			// ImGuizmo returns a new world-space matrix; convert back to local space
-			// by multiplying with the inverse of the parent's world transform
-			Matrix4f localTransform = transform;
-
-			if (m_Context.SelectedEntity.ContainsComponent<RelationshipComponent>())
-			{
-				auto& relationshipComp = m_Context.SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
-				{
-					// Fetch the parent entity
-					Entity parent = m_Context.ActiveScene()->GetEntity(relationshipComp.ParentHandle);
-					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
-					{
-						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
-						localTransform = Math::Inverse(parentWorld) * transform;
-					}
-				}
-			}
-
-			// Decompose the LOCAL transform back into our component variables
-			Vector3f translation, rotation, scale;
-			Math::DecomposeTransform(localTransform, translation, rotation, scale);
-
-			switch (m_GizmoType)
-			{
-			case ImGuizmo::OPERATION::TRANSLATE:
-			{
-				transformComp.Position = translation;
-				break;
-			}
-			case ImGuizmo::OPERATION::ROTATE:
-			{
-				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
-					transformComp.Rotation = rotation;
-				break;
-			}
-			case ImGuizmo::OPERATION::SCALE:
-			{
-				float epsilon = 0.001f;
-				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
-				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
-				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
-
-				transformComp.Scale = scale;
-				break;
-			}
-			case ImGuizmo::OPERATION::UNIVERSAL:
-			{
-				// Universal handles all three, so apply them all with protections
-				transformComp.Position = translation;
-
-				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
-					transformComp.Rotation = rotation;
-
-				float epsilon = 0.001f;
-				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
-				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
-				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
-
-				transformComp.Scale = scale;
-				break;
-			}
-			}
-		}
 	}
 
 	void EditorLayer::DrawToolbar()

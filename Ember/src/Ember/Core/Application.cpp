@@ -17,6 +17,7 @@
 #include "Ember/ECS/System/ParticleSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
 #include "Ember/ECS/System/AISystem.h"
+#include "Ember/ECS/System/UILayoutSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -62,6 +63,7 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<LifecycleSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AudioSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AISystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<UILayoutSystem>::Create());
 
 		m_SceneManager = ScopedPtr<SceneManager>::Create();
 
