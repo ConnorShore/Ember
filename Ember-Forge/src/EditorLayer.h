@@ -4,6 +4,7 @@
 #include "Panels/Panel.h"
 #include "EditorContext.h"
 #include "ProjectSettingsDialog.h"
+#include "Utils/ViewportGizmoController.h"
 
 #include <Ember/Event/KeyEvent.h>
 #include <Ember/Event/MouseEvent.h>
@@ -45,8 +46,6 @@ namespace Ember {
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
-		void RenderTransformGizmos();
-		void RenderRectTransformGizmos();
 
 		void DrawToolbar();
 
@@ -149,27 +148,9 @@ namespace Ember {
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
-		enum class RectTransformGizmoHandle
-		{
-			None,
-			Move,
-			Left,
-			Right,
-			Top,
-			Bottom,
-			TopLeft,
-			TopRight,
-			BottomLeft,
-			BottomRight,
-			Rotate
-		};
-
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 		int m_GizmoMode = ImGuizmo::WORLD;
-		bool m_RectTransformGizmoHovered = false;
-		EntityID m_RectTransformGizmoEntity = Constants::Entities::InvalidEntityID;
-		RectTransformGizmoHandle m_RectTransformGizmoActiveHandle = RectTransformGizmoHandle::None;
-		Vector2f m_RectTransformGizmoLastMousePosition = Vector2f(0.0f);
+		ViewportGizmoController m_ViewportGizmos;
 
 		Entity m_EntityToDelete;
 

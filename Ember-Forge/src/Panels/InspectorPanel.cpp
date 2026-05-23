@@ -64,6 +64,7 @@ namespace Ember {
 	{
 		// --- CORE ---
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<RectTransformComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<CharacterControllerComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<LifetimeComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::Core].emplace_back(ScopedPtr<PoolConfigComponentUI>::Create(m_Context));
@@ -109,7 +110,6 @@ namespace Ember {
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
 
 		// --- UI ---
-		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<RectTransformComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<CanvasComponentUI>::Create(m_Context));
 
 		// --- NONE (These don't appear in the Add Component menu but are still rendered in the inspector if attached to an entity) ---

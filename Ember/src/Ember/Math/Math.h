@@ -196,6 +196,11 @@ namespace Ember {
 			return glm::length(vector);
 		}
 
+		static inline float Length(const Vector2f& vector)
+		{
+			return glm::length(vector);
+		}
+
 		static inline Matrix4f MakeMatrix4f(const float* data)
 		{
 			return glm::make_mat4(data);
@@ -317,6 +322,11 @@ namespace Ember {
 		}
 
 		static inline float Dot(const Vector3f& a, const Vector3f& b)
+		{
+			return glm::dot(a, b);
+		}
+
+		static inline float Dot(const Vector2f& a, const Vector2f& b)
 		{
 			return glm::dot(a, b);
 		}
