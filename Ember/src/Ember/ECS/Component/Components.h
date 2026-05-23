@@ -426,6 +426,8 @@ namespace Ember {
 	{
 		Vector4f Color = Vector4f(1.0f);
 		UUID TextureHandle = Constants::InvalidUUID;
+		bool IsBillboard = false;
+		bool LockYAxis = false;
 
 		SpriteComponent() = default;
 		SpriteComponent(const Vector4f color) : Color(color) {}
@@ -628,17 +630,16 @@ namespace Ember {
 		OutlineComponent(const OutlineComponent&) = default;
 	};
 
-	struct BillboardComponent
+	struct EditorIconComponent
 	{
 		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
 		Vector4f Tint = Vector4f(1.0f);
 		bool Spherical = true;
 		bool StaticSize = true;
-		bool RenderRuntime = false;
 		float Size = 1.0f;
 
-		BillboardComponent() = default;
-		BillboardComponent(const BillboardComponent&) = default;
+		EditorIconComponent() = default;
+		EditorIconComponent(const EditorIconComponent&) = default;
 	};
 
 	struct AnimatorComponent

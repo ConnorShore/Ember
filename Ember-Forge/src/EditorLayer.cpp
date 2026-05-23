@@ -37,6 +37,13 @@
 #include <exception>
 
 namespace Ember {
+	static bool IsEntityStillValid(Entity entity)
+	{
+		return entity
+			&& entity.ContainsComponent<IDComponent>()
+			&& entity.ContainsComponent<TagComponent>();
+	}
+
 
 	EditorLayer::EditorLayer()
 		: Layer("Ember Forge")
@@ -179,6 +186,8 @@ namespace Ember {
 			{
 				case SceneState::Edit:
 				{
+					SyncEditorIconComponents(activeScene.Ptr());
+
 					m_Camera.OnUpdate(delta);
 					m_EditorRenderPassSettings.CameraTransform = Math::Inverse(m_Camera.GetViewMatrix());
 					m_EditorRenderPassSettings.DrawHUD = m_DrawAllHUD;
@@ -209,6 +218,12 @@ namespace Ember {
 				}
 				default:
 					EB_CORE_ASSERT(false, "Unhandled scene state!");
+			}
+
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && !IsEntityStillValid(m_Context.SelectedEntity))
+			{
+				m_Context.SelectedEntity = Entity();
+				m_PreviousSelectedEntity = Entity();
 			}
 
 			m_OutputFramebuffer->Unbind();
@@ -265,6 +280,67 @@ namespace Ember {
 		RenderAction::Clear(RendererAPI::RenderBit::Color);
 	}
 
+	void EditorLayer::SyncEditorIconComponents(Scene* scene)
+	{
+		if (!scene)
+			return;
+
+		auto& registry = scene->GetRegistry();
+		std::vector<EntityID> entityIds;
+		entityIds.reserve(256);
+
+		for (EntityID entityID : registry.Query<IDComponent>())
+			entityIds.push_back(entityID);
+
+		for (EntityID entityID : entityIds)
+		{
+			UUID iconTexture = Constants::InvalidUUID;
+			float iconSize = 1.0f;
+
+			if (registry.ContainsComponent<CameraComponent>(entityID))
+			{
+				iconTexture = EditorConstants::Assets::CameraTexUUID;
+			}
+			else if (registry.ContainsComponent<DirectionalLightComponent>(entityID))
+			{
+				iconTexture = EditorConstants::Assets::DirectionalLightTexUUID;
+				iconSize = 1.5f;
+			}
+			else if (registry.ContainsComponent<SpotLightComponent>(entityID))
+			{
+				iconTexture = EditorConstants::Assets::SpotLightTexUUID;
+			}
+			else if (registry.ContainsComponent<PointLightComponent>(entityID))
+			{
+				iconTexture = EditorConstants::Assets::PointLightTexUUID;
+			}
+			else if (registry.ContainsComponent<AudioSourceComponent>(entityID))
+			{
+				iconTexture = Application::Instance().GetAssetManager().ContainsAssetWithName(EditorConstants::Assets::AudioSourceTex)
+					? EditorConstants::Assets::AudioSourceTexUUID
+					: EditorConstants::Assets::PointLightTexUUID;
+			}
+
+			Entity entity(entityID, scene);
+			if (iconTexture != Constants::InvalidUUID)
+			{
+				auto& icon = entity.ContainsComponent<EditorIconComponent>()
+					? entity.GetComponent<EditorIconComponent>()
+					: entity.AttachComponent<EditorIconComponent>();
+
+				icon.TextureHandle = iconTexture;
+				icon.Tint = Vector4f(1.0f);
+				icon.Spherical = true;
+				icon.StaticSize = true;
+				icon.Size = iconSize;
+			}
+			else if (entity.ContainsComponent<EditorIconComponent>())
+			{
+				entity.DetachComponent<EditorIconComponent>();
+			}
+		}
+	}
+
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
 		ImGuizmo::BeginFrame();
@@ -319,6 +395,12 @@ namespace Ember {
 		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, (assetManager.GetProjectAssetDirectory() / "icons/DirectionalLight.png").string());
 		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, (assetManager.GetProjectAssetDirectory() / "icons/SpotLight.png").string());
 		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, (assetManager.GetProjectAssetDirectory() / "icons/Camera.png").string());
+
+		auto audioSourceIconPath = assetManager.GetProjectAssetDirectory() / "icons/AudioSource.png";
+		if (std::filesystem::exists(audioSourceIconPath))
+		{
+			auto audioSourceTex = assetManager.Load<Texture2D>(EditorConstants::Assets::AudioSourceTexUUID, EditorConstants::Assets::AudioSourceTex, audioSourceIconPath.string());
+		}
 	}
 
 	void EditorLayer::OnRuntimeStart()

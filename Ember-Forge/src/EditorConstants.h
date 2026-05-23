@@ -16,6 +16,9 @@ namespace Ember::EditorConstants {
 		inline const char* CameraTex = "Camera";
 		inline const uint64_t CameraTexUUID = 100003;
 
+		inline const char* AudioSourceTex = "AudioSource";
+		inline const uint64_t AudioSourceTexUUID = 100004;
+
 	}
 
 }

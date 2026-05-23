@@ -85,11 +85,6 @@ namespace Ember {
 		auto& camScript = cameraEntity.AttachComponent<ScriptComponent>();
 		camScript.ScriptHandle = mouseLookUUID;
 
-		// Attach billboard to camera for easy identification in editor
-		auto cameraTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::CameraTexUUID);
-		auto& bc = cameraEntity.AttachComponent<BillboardComponent>();
-		bc.TextureHandle = cameraTexture->GetUUID();
-
 		return newEntity;
 	}
 
@@ -207,11 +202,6 @@ namespace Ember {
 		
 		newEntity.AttachComponent<PointLightComponent>();
 
-		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::PointLightTexUUID);
-
-		auto& bc = newEntity.AttachComponent<BillboardComponent>();
-		bc.TextureHandle = lightTexture->GetUUID();
-
 		return newEntity;
 	}
 
@@ -222,12 +212,6 @@ namespace Ember {
 
 		newEntity.AttachComponent<DirectionalLightComponent>();
 
-		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID);
-
-		auto& bc = newEntity.AttachComponent<BillboardComponent>();
-		bc.TextureHandle = lightTexture->GetUUID();
-		bc.Size = 1.5f;
-
 		return newEntity;
 	}
 
@@ -237,11 +221,6 @@ namespace Ember {
 		newEntity.GetComponent<TransformComponent>().Rotation = Vector3f(Math::Radians(-90.0f), 0.0f, 0.0f);	// Make it point strait downwards by default
 
 		newEntity.AttachComponent<SpotLightComponent>();
-
-		auto lightTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::SpotLightTexUUID);
-
-		auto& bc = newEntity.AttachComponent<BillboardComponent>();
-		bc.TextureHandle = lightTexture->GetUUID();
 
 		return newEntity;
 	}
@@ -254,11 +233,6 @@ namespace Ember {
 		transform.Rotation = Math::ToEulerAngles(orientation);
 
 		newEntity.AttachComponent<CameraComponent>();
-
-		auto cameraTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(EditorConstants::Assets::CameraTexUUID);
-
-		auto& bc = newEntity.AttachComponent<BillboardComponent>();
-		bc.TextureHandle = cameraTexture->GetUUID();
 
 		return newEntity;
 	}

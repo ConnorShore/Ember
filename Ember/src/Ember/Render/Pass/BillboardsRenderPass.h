@@ -7,7 +7,7 @@
 namespace Ember {
 
 	struct TransformComponent;
-	struct BillboardComponent;
+	struct EditorIconComponent;
 
 	class BillboardsRenderPass : public RenderPass
 	{
@@ -21,7 +21,7 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		Matrix4f CalculateBillboardTransform(const RenderContext& context, const TransformComponent& transform, const BillboardComponent& billboard);
+		Matrix4f CalculateBillboardTransform(const RenderContext& context, const TransformComponent& transform, const EditorIconComponent& billboard);
 
 	private:
 		SharedPtr<Shader> m_BillboardShader;

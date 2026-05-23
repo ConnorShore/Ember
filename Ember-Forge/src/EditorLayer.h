@@ -59,6 +59,7 @@ namespace Ember {
 
 		void CreateEntityFromModel(const std::string& modelFilePath);
 		void CreateEntityFromPrefab(const std::string& prefabFilePath);
+		void SyncEditorIconComponents(Scene* scene);
 
 		void OutlineEntity(Entity entity);
 

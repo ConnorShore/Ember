@@ -21,6 +21,10 @@ namespace Ember {
 		float TextureIndex;
 
 		EntityID EntityID; // For editor picking
+		float IsBillboard;
+		float LockYAxis;
+		Vector3f BillboardCenter;
+		Vector2f BillboardOffset;
 	};
 
 	// Per-frame batch state: CPU-side vertex buffer is filled by DrawQuad calls
@@ -53,6 +57,10 @@ namespace Ember {
 
 		std::array<SharedPtr<Texture2D>, MaxTextureSlots> TextureSlots;
 		uint32_t TextureSlotIndex = 1;	// 0 is default
+
+		Vector3f CameraPosition = Vector3f(0.0f);
+		Vector3f CameraRight = Vector3f(1.0f, 0.0f, 0.0f);
+		Vector3f CameraUp = Vector3f(0.0f, 1.0f, 0.0f);
 	};
 
 	static ScopedPtr<RendererData2D> s_RendererData;
@@ -71,7 +79,11 @@ namespace Ember {
 			{ ShaderDataType::Float4, "v_Color" },
 			{ ShaderDataType::Float2, "v_TextureCoords"},
 			{ ShaderDataType::Float, "v_TextureIndex"},
-			{ ShaderDataType::Int, "v_EntityID" }
+			{ ShaderDataType::Int, "v_EntityID" },
+			{ ShaderDataType::Float, "v_IsBillboard" },
+			{ ShaderDataType::Float, "v_LockYAxis" },
+			{ ShaderDataType::Float3, "v_BillboardCenter" },
+			{ ShaderDataType::Float2, "v_BillboardOffset" }
 			});
 
 		// Pre-generate index data: every 4 vertices form a quad drawn as 2 triangles (6 indices)
@@ -124,6 +136,13 @@ namespace Ember {
 		FlushBatch();
 	}
 
+	void Renderer2D::SetBillboardCameraData(const Vector3f& cameraPosition, const Vector3f& cameraRight, const Vector3f& cameraUp)
+	{
+		s_RendererData->CameraPosition = cameraPosition;
+		s_RendererData->CameraRight = cameraRight;
+		s_RendererData->CameraUp = cameraUp;
+	}
+
 	void Renderer2D::StartBatch()
 	{
 		s_RendererData->QuadIndicesInBatch = 0;
@@ -144,6 +163,9 @@ namespace Ember {
 			s_RendererData->QuadVertexBuffer->SetData(s_RendererData->QuadBufferStart, size);
 
 			s_RendererData->QuadShader->Bind();
+			s_RendererData->QuadShader->SetFloat3("u_CameraPosition", s_RendererData->CameraPosition);
+			s_RendererData->QuadShader->SetFloat3("u_CameraRight", s_RendererData->CameraRight);
+			s_RendererData->QuadShader->SetFloat3("u_CameraUp", s_RendererData->CameraUp);
 			RenderAction::DrawIndexed(s_RendererData->QuadVertexArray, s_RendererData->QuadIndicesInBatch);
 		}
 	}
@@ -185,6 +207,11 @@ namespace Ember {
 			s_RendererData->QuadBufferCurrent->Color = color;
 			s_RendererData->QuadBufferCurrent->TextureCoords = texCoords[i];
 			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
+			s_RendererData->QuadBufferCurrent->EntityID = Constants::Entities::InvalidEntityID;
+			s_RendererData->QuadBufferCurrent->IsBillboard = 0.0f;
+			s_RendererData->QuadBufferCurrent->LockYAxis = 0.0f;
+			s_RendererData->QuadBufferCurrent->BillboardCenter = Vector3f(0.0f);
+			s_RendererData->QuadBufferCurrent->BillboardOffset = Vector2f(0.0f);
 			s_RendererData->QuadBufferCurrent++;
 		}
 
@@ -229,6 +256,11 @@ namespace Ember {
 			s_RendererData->QuadBufferCurrent->Color = color;
 			s_RendererData->QuadBufferCurrent->TextureCoords = texCoords[i];
 			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
+			s_RendererData->QuadBufferCurrent->EntityID = Constants::Entities::InvalidEntityID;
+			s_RendererData->QuadBufferCurrent->IsBillboard = 0.0f;
+			s_RendererData->QuadBufferCurrent->LockYAxis = 0.0f;
+			s_RendererData->QuadBufferCurrent->BillboardCenter = Vector3f(0.0f);
+			s_RendererData->QuadBufferCurrent->BillboardOffset = Vector2f(0.0f);
 			s_RendererData->QuadBufferCurrent++;
 		}
 
@@ -268,6 +300,64 @@ namespace Ember {
 			s_RendererData->QuadBufferCurrent->TextureCoords = customTexCoords[i];
 			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
 			s_RendererData->QuadBufferCurrent->EntityID = (int)entity;
+			s_RendererData->QuadBufferCurrent->IsBillboard = 0.0f;
+			s_RendererData->QuadBufferCurrent->LockYAxis = 0.0f;
+			s_RendererData->QuadBufferCurrent->BillboardCenter = Vector3f(0.0f);
+			s_RendererData->QuadBufferCurrent->BillboardOffset = Vector2f(0.0f);
+			s_RendererData->QuadBufferCurrent++;
+		}
+
+		s_RendererData->QuadIndicesInBatch += 6;
+	}
+
+	void Renderer2D::DrawBillboardQuad(const Vector3f& center, const Vector2f& size, const Vector4f& color, bool lockYAxis /*= false*/)
+	{
+		DrawBillboardQuad(center, size, color, s_RendererData->DefaultTexture, lockYAxis);
+	}
+
+	void Renderer2D::DrawBillboardQuad(const Vector3f& center, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture2D>& texture, bool lockYAxis /*= false*/)
+	{
+		constexpr Vector2f texCoords[] = { {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f} };
+		float texIndex = 0.0f;
+
+		for (uint32_t i = 1; i < s_RendererData->TextureSlotIndex; i++)
+		{
+			if (s_RendererData->TextureSlots[i] == nullptr)
+				break;
+
+			if (*texture == s_RendererData->TextureSlots[i])
+			{
+				texIndex = (float)i;
+				break;
+			}
+		}
+
+		if (texIndex == 0.0f)
+		{
+			if (s_RendererData->TextureSlotIndex >= s_RendererData->MaxTextureSlots)
+				NextBatch();
+
+			texIndex = (float)s_RendererData->TextureSlotIndex;
+			s_RendererData->TextureSlots[s_RendererData->TextureSlotIndex++] = texture;
+		}
+
+		if (s_RendererData->QuadIndicesInBatch >= s_RendererData->MaxIndices)
+			NextBatch();
+
+		for (uint32_t i = 0; i < 4; i++)
+		{
+			s_RendererData->QuadBufferCurrent->Position = center;
+			s_RendererData->QuadBufferCurrent->Color = color;
+			s_RendererData->QuadBufferCurrent->TextureCoords = texCoords[i];
+			s_RendererData->QuadBufferCurrent->TextureIndex = texIndex;
+			s_RendererData->QuadBufferCurrent->EntityID = Constants::Entities::InvalidEntityID;
+			s_RendererData->QuadBufferCurrent->IsBillboard = 1.0f;
+			s_RendererData->QuadBufferCurrent->LockYAxis = lockYAxis ? 1.0f : 0.0f;
+			s_RendererData->QuadBufferCurrent->BillboardCenter = center;
+			s_RendererData->QuadBufferCurrent->BillboardOffset = {
+				s_RendererData->QuadVertexPositions[i].x * size.x,
+				s_RendererData->QuadVertexPositions[i].y * size.y
+			};
 			s_RendererData->QuadBufferCurrent++;
 		}
 

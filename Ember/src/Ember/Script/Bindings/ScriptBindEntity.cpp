@@ -46,8 +46,6 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<PointLightComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<PointLightComponent>()); });
 		if (componentTypeStr == "OutlineComponent")
 			return guardGet(entity.ContainsComponent<OutlineComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<OutlineComponent>()); });
-		if (componentTypeStr == "BillboardComponent")
-			return guardGet(entity.ContainsComponent<BillboardComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<BillboardComponent>()); });
 		if (componentTypeStr == "AnimatorComponent")
 			return guardGet(entity.ContainsComponent<AnimatorComponent>(), [&]{ return sol::make_object(state, &entity.GetComponent<AnimatorComponent>()); });
 		if (componentTypeStr == "BoneSocketComponent")
@@ -109,8 +107,6 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<PointLightComponent>());
 		if (componentTypeStr == "OutlineComponent")
 			return sol::make_object(state, entity.ContainsComponent<OutlineComponent>());
-		if (componentTypeStr == "BillboardComponent")
-			return sol::make_object(state, entity.ContainsComponent<BillboardComponent>());
 		if (componentTypeStr == "AnimatorComponent")
 			return sol::make_object(state, entity.ContainsComponent<AnimatorComponent>());
 		if (componentTypeStr == "BoneSocketComponent")
@@ -176,7 +172,6 @@ namespace Ember {
 		if (componentTypeStr == "DirectionalLightComponent") return addAndReturn(DirectionalLightComponent{});
 		if (componentTypeStr == "SpotLightComponent") return addAndReturn(SpotLightComponent{});
 		if (componentTypeStr == "OutlineComponent") return addAndReturn(OutlineComponent{});
-		if (componentTypeStr == "BillboardComponent") return addAndReturn(BillboardComponent{});
 		if (componentTypeStr == "AnimatorComponent") return addAndReturn(AnimatorComponent{});
 		if (componentTypeStr == "BoneSocketComponent") return addAndReturn(BoneSocketComponent{});
 		if (componentTypeStr == "CharacterControllerComponent") return addAndReturn(CharacterControllerComponent{});
@@ -224,7 +219,6 @@ namespace Ember {
 		if (componentTypeStr == "DirectionalLightComponent") return entity.DetachComponent<DirectionalLightComponent>();
 		if (componentTypeStr == "SpotLightComponent") return entity.DetachComponent<SpotLightComponent>();
 		if (componentTypeStr == "OutlineComponent") return entity.DetachComponent<OutlineComponent>();
-		if (componentTypeStr == "BillboardComponent") return entity.DetachComponent<BillboardComponent>();
 		if (componentTypeStr == "AnimatorComponent") return entity.DetachComponent<AnimatorComponent>();
 		if (componentTypeStr == "BoneSocketComponent") return entity.DetachComponent<BoneSocketComponent>();
 		if (componentTypeStr == "CharacterControllerComponent") return entity.DetachComponent<CharacterControllerComponent>();

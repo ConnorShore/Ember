@@ -60,13 +60,16 @@ namespace Ember {
 		}
 		if (entity.ContainsComponent<SpriteComponent>())
 		{
+			auto& sprite = entity.GetComponent<SpriteComponent>();
 			ryml::NodeRef spriteNode = entityNode["SpriteComponent"];
 			spriteNode |= ryml::MAP;
-			Util::SerializeVector4f(spriteNode["Color"], entity.GetComponent<SpriteComponent>().Color);
-			if (entity.GetComponent<SpriteComponent>().TextureHandle != Constants::InvalidUUID)
+			Util::SerializeVector4f(spriteNode["Color"], sprite.Color);
+			if (sprite.TextureHandle != Constants::InvalidUUID)
 			{
-				spriteNode["TextureUUID"] << entity.GetComponent<SpriteComponent>().TextureHandle;
+				spriteNode["TextureUUID"] << sprite.TextureHandle;
 			}
+			spriteNode["IsBillboard"] << sprite.IsBillboard;
+			spriteNode["LockYAxis"] << sprite.LockYAxis;
 		}
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
@@ -312,18 +315,6 @@ namespace Ember {
 			Util::SerializeVector3f(socketNode["Position"], socket.Position);
 			Util::SerializeVector3f(socketNode["Rotation"], socket.Rotation);
 			Util::SerializeVector3f(socketNode["Scale"], socket.Scale);
-		}
-		if (entity.ContainsComponent<BillboardComponent>())
-		{
-			auto& billboard = entity.GetComponent<BillboardComponent>();
-			ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
-			billboardNode |= ryml::MAP;
-			billboardNode["TextureHandle"] << (uint64_t)billboard.TextureHandle;
-			Util::SerializeVector4f(billboardNode["Tint"], billboard.Tint);
-			billboardNode["Spherical"] << billboard.Spherical;
-			billboardNode["StaticSize"] << billboard.StaticSize;
-			billboardNode["Size"] << billboard.Size;
-			billboardNode["RenderRuntime"] << billboard.RenderRuntime;
 		}
 		if (entity.ContainsComponent<PrefabComponent>())
 		{
@@ -654,6 +645,12 @@ namespace Ember {
 				spriteNode["TextureUUID"] >> texId;
 				sc.TextureHandle = (UUID)texId;
 			}
+
+			if (spriteNode.has_child("IsBillboard"))
+				spriteNode["IsBillboard"] >> sc.IsBillboard;
+
+			if (spriteNode.has_child("LockYAxis"))
+				spriteNode["LockYAxis"] >> sc.LockYAxis;
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))
@@ -1019,23 +1016,6 @@ namespace Ember {
 				Util::DeserializeVector3f(socketNode["Rotation"], socket.Rotation);
 			if (socketNode.has_child("Scale"))
 				Util::DeserializeVector3f(socketNode["Scale"], socket.Scale);
-		}
-
-		if (entityNode.has_child("BillboardComponent"))
-		{
-			ryml::NodeRef billboardNode = entityNode["BillboardComponent"];
-			auto& bc = deserializedEntity.AttachComponent<BillboardComponent>();
-
-			uint64_t texHandle;
-			billboardNode["TextureHandle"] >> texHandle;
-			bc.TextureHandle = (UUID)texHandle;
-
-			Util::DeserializeVector4f(billboardNode["Tint"], bc.Tint);
-
-			billboardNode["Spherical"] >> bc.Spherical;
-			billboardNode["StaticSize"] >> bc.StaticSize;
-			billboardNode["Size"] >> bc.Size;
-			billboardNode["RenderRuntime"] >> bc.RenderRuntime;
 		}
 
 		if (entityNode.has_child("PrefabComponent"))

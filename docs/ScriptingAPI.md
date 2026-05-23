@@ -314,7 +314,7 @@ IDComponent              TagComponent              RelationshipComponent
 TransformComponent       RigidBodyComponent        SpriteComponent
 StaticMeshComponent      SkinnedMeshComponent      MaterialComponent
 CameraComponent          DirectionalLightComponent SpotLightComponent
-PointLightComponent      OutlineComponent          BillboardComponent
+PointLightComponent      OutlineComponent
 AnimatorComponent        BoneSocketComponent       CharacterControllerComponent
 TextComponent            AudioSourceComponent
 WaypointComponent        AIPathComponent           AIAgentComponent
@@ -388,6 +388,8 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | --- | --- |
 | `Color` | `Vector4f` |
 | `TextureHandle` | `UUID` |
+| `IsBillboard` | `bool` |
+| `LockYAxis` | `bool` |
 
 #### `StaticMeshComponent`
 
@@ -416,16 +418,6 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 | --- | --- |
 | `Color` | `Vector4f` |
 | `Thickness` | `float` |
-
-#### `BillboardComponent`
-
-| Field | Type |
-| --- | --- |
-| `Tint` | `Vector4f` |
-| `TextureHandle` | `UUID` |
-| `Size` | `float` |
-| `IsSpherical` | `bool` |
-| `IsStaticSize` | `bool` |
 
 #### `TextComponent`
 

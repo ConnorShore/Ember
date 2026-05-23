@@ -11,20 +11,25 @@
 
 namespace Ember {
 
-	class SpriteComponentUI : public ComponentUI<SpriteComponent>
+	class EditorIconComponentUI : public ComponentUI<EditorIconComponent>
 	{
 	public:
-		SpriteComponentUI(EditorContext* context) : ComponentUI(context) { m_CanRemove = false; }
-		inline const char* GetName() const override { return "Sprite Component"; }
+		EditorIconComponentUI(EditorContext* context) : ComponentUI(context) { m_CanRemove = false; }
+		inline const char* GetName() const override { return "Editor Icon Component"; }
+
+		virtual void CreateComponentForEntity(Entity entity) override
+		{
+			entity.AttachComponent<EditorIconComponent>();
+		}
 
 	protected:
-		inline void RenderComponentImpl(SpriteComponent& component) override
+		inline void RenderComponentImpl(EditorIconComponent& component) override
 		{
-			if (UI::PropertyGrid::Begin("SpriteProps"))
+			if (UI::PropertyGrid::Begin("BillboardProps"))
 			{
-				UI::PropertyGrid::Color4("Color", component.Color);
-				UI::PropertyGrid::Checkbox("Is Billboard", component.IsBillboard);
-				UI::PropertyGrid::Checkbox("Lock Y Axis", component.LockYAxis);
+				UI::PropertyGrid::Color4("Color", component.Tint);
+				UI::PropertyGrid::Checkbox("Spherical", component.Spherical);
+				UI::PropertyGrid::Checkbox("Static Size", component.StaticSize);
 
 				// Texture asset selector
 				SharedPtr<Texture2D> currentTexture = nullptr;
@@ -40,7 +45,7 @@ namespace Ember {
 				std::string droppedFilePath;
 				if (UI::PropertyGrid::DragDropTexture("Image", texUUID, droppedFilePath, [&]() {
 					component.TextureHandle = Constants::InvalidUUID;
-				}))
+					}))
 				{
 					auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
 					component.TextureHandle = newTexture->GetUUID();

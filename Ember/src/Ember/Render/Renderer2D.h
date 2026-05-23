@@ -15,6 +15,7 @@ namespace Ember {
 
 		static void BeginFrame();
 		static void EndFrame();
+		static void SetBillboardCameraData(const Vector3f& cameraPosition, const Vector3f& cameraRight, const Vector3f& cameraUp);
 
 		static void StartBatch();
 		static void FlushBatch();
@@ -25,6 +26,8 @@ namespace Ember {
 		static void DrawQuad(const Vector2f& position, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture2D>& texture);
 		static void DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture);
 		static void DrawQuad(const Matrix4f& transform, const Vector4f& color, const SharedPtr<Texture2D>& texture, const Vector2f* customTexCoords, EntityID entity);
+		static void DrawBillboardQuad(const Vector3f& center, const Vector2f& size, const Vector4f& color, bool lockYAxis = false);
+		static void DrawBillboardQuad(const Vector3f& center, const Vector2f& size, const Vector4f& color, const SharedPtr<Texture2D>& texture, bool lockYAxis = false);
 
 		static void DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, EntityID entity, bool isScreenSpace = false);
 	};

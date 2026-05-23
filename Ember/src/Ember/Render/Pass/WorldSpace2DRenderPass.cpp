@@ -2,6 +2,7 @@
 #include "WorldSpace2DRenderPass.h"
 
 #include "Ember/Scene/Scene.h"
+#include "Ember/Math/Math.h"
 #include "Ember/Render/Framebuffer.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer2D.h"
@@ -40,6 +41,12 @@ namespace Ember {
 		RenderAction::UseDepthMask(false);
 		RenderAction::UseBlending(true);
 
+		Renderer2D::SetBillboardCameraData(
+			Vector3f(context.CameraTransform[3]),
+			Vector3f(context.CameraTransform[0]),
+			Vector3f(context.CameraTransform[1])
+		);
+
 		Renderer2D::BeginFrame();
 
 		// Draw World-Space Sprites and Text
@@ -75,6 +82,30 @@ namespace Ember {
 			bool isScreenSpace = (canvas != Constants::Entities::InvalidEntityID) && canvas.GetComponent<CanvasComponent>().RenderMode == CanvasRenderMode::ScreenSpace;
 			if (isScreenSpace)
 				continue;
+
+			if (sprite.IsBillboard)
+			{
+				Vector3f worldPos, worldRot, worldScale;
+				Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+				(void)worldRot;
+
+				Vector2f quadSize = {
+					std::abs(worldScale.x),
+					std::abs(worldScale.y)
+				};
+
+				if (sprite.TextureHandle == Constants::InvalidUUID)
+				{
+					Renderer2D::DrawBillboardQuad(worldPos, quadSize, sprite.Color, sprite.LockYAxis);
+				}
+				else
+				{
+					auto textureAsset = assetManager.GetAsset<Texture2D>(sprite.TextureHandle);
+					Renderer2D::DrawBillboardQuad(worldPos, quadSize, sprite.Color, textureAsset, sprite.LockYAxis);
+				}
+
+				continue;
+			}
 
 			if (sprite.TextureHandle == Constants::InvalidUUID)
 			{

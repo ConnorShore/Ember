@@ -126,8 +126,12 @@ namespace Ember {
 
 	void InspectorPanel::OnImGuiRender()
 	{
-		if (m_Context->SelectedEntity == Constants::Entities::InvalidEntityID)
+		if (m_Context->SelectedEntity == Constants::Entities::InvalidEntityID
+			|| !m_Context->SelectedEntity.ContainsComponent<IDComponent>()
+			|| !m_Context->SelectedEntity.ContainsComponent<TagComponent>())
 		{
+			m_Context->SelectedEntity = Entity();
+
 			// Blank panel if no entity selected
 			ImGui::Begin(m_Title.c_str());
 			ImGui::Text("Select an Entity to inspect properties");

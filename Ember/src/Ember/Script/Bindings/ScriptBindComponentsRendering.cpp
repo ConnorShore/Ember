@@ -10,7 +10,9 @@ namespace Ember {
 	{
 		state.new_usertype<SpriteComponent>("SpriteRendererComponent",
 			"Color", &SpriteComponent::Color,
-			"TextureHandle", &SpriteComponent::TextureHandle
+			"TextureHandle", &SpriteComponent::TextureHandle,
+			"IsBillboard", &SpriteComponent::IsBillboard,
+			"LockYAxis", &SpriteComponent::LockYAxis
 		);
 
 		state.new_usertype<StaticMeshComponent>("StaticMeshComponent",
@@ -31,14 +33,6 @@ namespace Ember {
 		state.new_usertype<OutlineComponent>("OutlineComponent",
 			"Color", &OutlineComponent::Color,
 			"Thickness", &OutlineComponent::Thickness
-		);
-
-		state.new_usertype<BillboardComponent>("BillboardComponent",
-			"Tint", &BillboardComponent::Tint,
-			"TextureHandle", &BillboardComponent::TextureHandle,
-			"Size", &BillboardComponent::Size,
-			"IsSpherical", &BillboardComponent::Spherical,
-			"IsStaticSize", &BillboardComponent::StaticSize
 		);
 
 		state.new_usertype<TextComponent>("TextComponent",

@@ -16,6 +16,9 @@ namespace Ember {
 
 	void BillboardsRenderPass::Execute(RenderContext& context)
 	{
+		if (context.IsRuntime)
+			return;
+
 		auto& registry = context.ActiveScene->GetRegistry();
 
 		RenderAction::UseBlending(true);
@@ -27,12 +30,10 @@ namespace Ember {
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 
-		View view = registry.ActiveQuery<BillboardComponent, TransformComponent>();
+		View view = registry.ActiveQuery<EditorIconComponent, TransformComponent>();
 		for (EntityID entity : view)
 		{
-			auto [billboard, transform] = registry.GetComponents<BillboardComponent, TransformComponent>(entity);
-			if (context.ActiveScene->IsRuntime() && !billboard.RenderRuntime)
-				continue;
+			auto [billboard, transform] = registry.GetComponents<EditorIconComponent, TransformComponent>(entity);
 
 			Matrix4f billboardTransform = CalculateBillboardTransform(context, transform, billboard);
 			Matrix4f viewProj = context.ActiveCamera->GetProjectionMatrix() * Math::Inverse(context.CameraTransform);
@@ -67,10 +68,11 @@ namespace Ember {
 	{
 	}
 
-	Matrix4f BillboardsRenderPass::CalculateBillboardTransform(const RenderContext& context, const TransformComponent& transform, const BillboardComponent& billboard)
+	Matrix4f BillboardsRenderPass::CalculateBillboardTransform(const RenderContext& context, const TransformComponent& transform, const EditorIconComponent& billboard)
 	{
 		Vector3f worldPos, worldRot, worldScale;
 		Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+		worldScale = Vector3f(billboard.Size);
 
 		// Find the billboards transform //
 		Matrix4f cameraRotation = context.CameraTransform;

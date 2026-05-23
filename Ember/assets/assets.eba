@@ -1,5 +1,9 @@
 Assets:
   - Type: Texture
+    UUID: 3453372035684411145
+    Name: RadialGlow
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
+  - Type: Texture
     UUID: 17608889885004568014
     Name: AssaultRifle_ARMetallic-ARRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.png
@@ -60,6 +64,10 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 17429251933582378423
+    Name: AmmoUI
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
+  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
@@ -119,10 +127,10 @@ Assets:
     UUID: 10753367411955256691
     Name: WeaponHolder
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
-  - Type: Script
-    UUID: 17429251933582378423
-    Name: AmmoUI
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
+  - Type: Material
+    UUID: 4587007159136363848
+    Name: M4_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
   - Type: Material
     UUID: 8747674591623748722
     Name: HolographicReticleMat
@@ -147,10 +155,6 @@ Assets:
     UUID: 7112033288364404519
     Name: Tracer_Material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Tracer_Material.ebmat
-  - Type: Material
-    UUID: 4587007159136363848
-    Name: M4_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
   - Type: Mesh
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
