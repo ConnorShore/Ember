@@ -278,17 +278,35 @@ namespace Ember {
 			static_cast<Entity(Entity::*)(const std::string&)>(&Entity::AddChild)
 		);
 
-		entityType["GetScriptInstance"] = [](Entity& entity, sol::this_state s) -> sol::object {
-			if (entity.ContainsComponent<ScriptComponent>())
-			{
-				auto& scriptComp = entity.GetComponent<ScriptComponent>();
-				if (scriptComp.Instance.valid())
+		entityType["GetScriptInstance"] = sol::overload(
+			[](Entity& entity, sol::this_state s) -> sol::object {
+				if (entity.ContainsComponent<ScriptComponent>())
 				{
-					return scriptComp.Instance;
+					auto& scriptComp = entity.GetComponent<ScriptComponent>();
+					if (scriptComp.Instance.valid())
+					{
+						return scriptComp.Instance;
+					}
 				}
+				return sol::make_object(s, sol::lua_nil);
+			},
+			[](Entity& entity, sol::this_state s, const std::string& scriptName) -> sol::object {
+				if (entity.ContainsComponent<ScriptComponent>())
+				{
+					auto& scriptComp = entity.GetComponent<ScriptComponent>();
+					if (scriptComp.Instance.valid())
+					{
+						sol::table instanceTable = scriptComp.Instance;
+						sol::optional<std::string> actualName = instanceTable["__name"];
+						if (actualName && actualName.value() == scriptName)
+						{
+							return scriptComp.Instance;
+						}
+					}
+				}
+				return sol::make_object(s, sol::lua_nil);
 			}
-			return sol::make_object(s, sol::lua_nil);
-		};
+		);
 	}
 
 }

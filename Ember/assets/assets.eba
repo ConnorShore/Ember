@@ -64,10 +64,6 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
-    UUID: 17429251933582378423
-    Name: AmmoUI
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
-  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
@@ -127,6 +123,14 @@ Assets:
     UUID: 10753367411955256691
     Name: WeaponHolder
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+  - Type: Script
+    UUID: 17429251933582378423
+    Name: AmmoUI
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
+  - Type: Script
+    UUID: 1928101263865073231
+    Name: PickupWeapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
   - Type: Material
     UUID: 4587007159136363848
     Name: M4_Weapon
@@ -200,6 +204,10 @@ Assets:
     Name: AmmoPowerup
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/PowerUps/Ammo/AmmoPowerup.ebmodel
   - Type: Prefab
+    UUID: 7525331889912364400
+    Name: M4_Pickup
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/M4_Pickup.ebprefab
+  - Type: Prefab
     UUID: 13559857553863366497
     Name: ImpactConcrete
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/ImpactConcrete.ebprefab
@@ -219,6 +227,10 @@ Assets:
     UUID: 17919492092461288605
     Name: HolographicSightPickup
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/HolographicSightPickup.ebprefab
+  - Type: Prefab
+    UUID: 10097993641357000526
+    Name: M4
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/M4.ebprefab
   - Type: Font
     UUID: 213406294560961755
     Name: Roboto-Regular

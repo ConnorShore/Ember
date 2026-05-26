@@ -139,6 +139,7 @@ namespace Ember {
 			if (result.valid())
 			{
 				sol::table scriptClass = result;
+				scriptClass["__name"] = scriptAsset->GetName();
 
 				// Create a per-entity Lua table that inherits from the script class via __index
 				script.Instance = luaState.create_table();

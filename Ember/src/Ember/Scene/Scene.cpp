@@ -740,6 +740,7 @@ namespace Ember {
 
 	static void InitializePrefabPhysics(EntityID entity, PhysicsSystem* physicsSystem, Scene* scene)
 	{
+		std::string name = Entity(entity, scene).GetName();
 		physicsSystem->InitializeEntity(entity, scene);
 
 		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
@@ -782,6 +783,29 @@ namespace Ember {
 		}
 	}
 
+	static void InitializePrefabAnimationPoseCaches(EntityID entity, AnimationSystem* animationSystem, Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		if (animationSystem && registry.ContainsComponent<AnimatorComponent>(entity))
+		{
+			Entity animatorEntity{ entity, scene };
+			auto& animator = registry.GetComponent<AnimatorComponent>(entity);
+
+			// Initialize bone matrices immediately so newly instantiated skinned prefabs
+			// render at correct size/pose even before the next AnimationSystem tick.
+			animationSystem->SetAnimationToTimestamp(scene, animator.CurrentAnimationHandle, animatorEntity, animator.CurrentTime.Seconds());
+		}
+
+		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				InitializePrefabAnimationPoseCaches(child.GetEntityHandle(), animationSystem, scene);
+		}
+	}
+
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
 		// Deserialize the prefab into a new entity hierarchy.
@@ -801,6 +825,8 @@ namespace Ember {
 		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
 		// are created at the correct world positions below.
 		auto& systemManager = Application::Instance().GetSystemManager();
+		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
+		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), this);
 		auto transformSystem = systemManager.GetSystem<TransformSystem>();
 		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
 
@@ -812,8 +838,9 @@ namespace Ember {
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
 		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
 
-		// Initialize scripts for the new prefab instance
-		if (root.ContainsComponent<ScriptComponent>())
+		// Only run script OnCreate for prefab instances during runtime.
+		// In edit mode, not all gameplay APIs (e.g., Scene table) are bound.
+		if (IsRuntime() && root.ContainsComponent<ScriptComponent>())
 		{
 			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
 			scriptSystem->InitializeScriptForEntity(root);
@@ -846,8 +873,13 @@ namespace Ember {
 		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
 		// are created at the correct world positions below.
 		auto& systemManager = Application::Instance().GetSystemManager();
+		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
+		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), this);
 		auto transformSystem = systemManager.GetSystem<TransformSystem>();
-		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
+		Matrix4f parentWorldTransform = Matrix4f(1.0f);
+		if (parent.ContainsComponent<TransformComponent>())
+			parentWorldTransform = parent.GetComponent<TransformComponent>().WorldTransform;
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), parentWorldTransform, this);
 
 		// Initialize physics for any entities that don't have bodies yet, then
 		// re-sync ALL existing physics bodies to the (potentially overridden) world
@@ -857,8 +889,9 @@ namespace Ember {
 		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
 		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
 
-		// Initialize scripts for the new prefab instance
-		if (root.ContainsComponent<ScriptComponent>())
+		// Only run script OnCreate for prefab instances during runtime.
+		// In edit mode, not all gameplay APIs (e.g., Scene table) are bound.
+		if (IsRuntime() && root.ContainsComponent<ScriptComponent>())
 		{
 			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
 			scriptSystem->InitializeScriptForEntity(root);
