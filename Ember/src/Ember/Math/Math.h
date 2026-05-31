@@ -1,49 +1,159 @@
 #pragma once
 
-// Thin wrapper around GLM providing engine-standard type aliases and common math operations
+// Engine-facing math facade. GLM remains the backing implementation, while this
+// header owns Ember's public math types and stable helper API.
+
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <type_traits>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/norm.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace Ember {
 
-	template<typename T>
-	using Vector2 = glm::vec<2, T>;
+	template<glm::length_t Size, typename T = float, glm::qualifier Qualifier = glm::defaultp>
+	using Vector = glm::vec<Size, T, Qualifier>;
 
-	template<typename T>
-	using Vector3 = glm::vec<3, T>;
+	template<glm::length_t Columns, glm::length_t Rows, typename T = float, glm::qualifier Qualifier = glm::defaultp>
+	using Matrix = glm::mat<Columns, Rows, T, Qualifier>;
 
-	template<typename T>
-	using Vector4 = glm::vec<4, T>;
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Vector2 = Vector<2, T, Qualifier>;
 
-	template<typename T>
-	using Matrix2 = glm::mat<2, 2, T>;
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Vector3 = Vector<3, T, Qualifier>;
 
-	template<typename T>
-	using Matrix3 = glm::mat<3, 3, T>;
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Vector4 = Vector<4, T, Qualifier>;
 
-	template<typename T>
-	using Matrix4 = glm::mat<4, 4, T>;
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Matrix2 = Matrix<2, 2, T, Qualifier>;
 
-	using Quaternion = glm::quat;
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Matrix3 = Matrix<3, 3, T, Qualifier>;
+
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using Matrix4 = Matrix<4, 4, T, Qualifier>;
+
+	template<typename T, glm::qualifier Qualifier = glm::defaultp>
+	using QuaternionT = glm::qua<T, Qualifier>;
+
+	using Quaternion = QuaternionT<float>;
 
 	using Vector2f = Vector2<float>;
 	using Vector3f = Vector3<float>;
 	using Vector4f = Vector4<float>;
 
+	using Vector2i = Vector2<int>;
+	using Vector3i = Vector3<int>;
+	using Vector4i = Vector4<int>;
+
 	using Matrix2f = Matrix2<float>;
 	using Matrix3f = Matrix3<float>;
 	using Matrix4f = Matrix4<float>;
 
+	struct TransformComponents
+	{
+		Vector3f Translation = Vector3f(0.0f);
+		Vector3f Rotation = Vector3f(0.0f);
+		Vector3f Scale = Vector3f(1.0f);
+	};
+
+	namespace MathConstants {
+		inline constexpr float Epsilon = 1.0e-6f;
+		inline constexpr float ParallelDotThreshold = 0.99f;
+	}
+
+	namespace MathDetail {
+
+		template<typename T>
+		concept Arithmetic = std::is_arithmetic_v<T>;
+
+		template<typename T>
+		[[nodiscard]] constexpr T Min(T a, T b)
+		{
+			return std::min(a, b);
+		}
+
+		template<typename T>
+		[[nodiscard]] constexpr T Max(T a, T b)
+		{
+			return std::max(a, b);
+		}
+
+		template<typename T>
+		[[nodiscard]] constexpr T Lerp(const T& a, const T& b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		[[nodiscard]] inline bool IsAffineTransform(const Matrix4f& transform, float epsilon = MathConstants::Epsilon)
+		{
+			return std::abs(transform[0][3]) <= epsilon
+				&& std::abs(transform[1][3]) <= epsilon
+				&& std::abs(transform[2][3]) <= epsilon
+				&& std::abs(transform[3][3] - 1.0f) <= epsilon;
+		}
+
+		[[nodiscard]] inline Vector3f SelectLookAtUp(const Vector3f& direction)
+		{
+			const Vector3f worldUp(0.0f, 1.0f, 0.0f);
+			const float alignment = std::abs(glm::dot(direction, worldUp));
+			return alignment > MathConstants::ParallelDotThreshold
+				? Vector3f(0.0f, 0.0f, 1.0f)
+				: worldUp;
+		}
+
+		[[nodiscard]] inline bool DecomposeTransform(const Matrix4f& transform, TransformComponents& outComponents)
+		{
+			if (!IsAffineTransform(transform))
+				return false;
+
+			outComponents.Translation = Vector3f(transform[3]);
+
+			Vector3f basisX(transform[0]);
+			Vector3f basisY(transform[1]);
+			Vector3f basisZ(transform[2]);
+
+			Vector3f scale(glm::length(basisX), glm::length(basisY), glm::length(basisZ));
+			if (scale.x < MathConstants::Epsilon || scale.y < MathConstants::Epsilon || scale.z < MathConstants::Epsilon)
+			{
+				outComponents.Rotation = Vector3f(0.0f);
+				outComponents.Scale = scale;
+				return false;
+			}
+
+			const float determinant = glm::determinant(Matrix3f(basisX, basisY, basisZ));
+			if (determinant < 0.0f)
+			{
+				scale.x = -scale.x;
+				basisX = -basisX;
+			}
+
+			const Matrix3f rotationMatrix(basisX / scale.x, basisY / scale.y, basisZ / scale.z);
+			const Quaternion rotation = glm::quat_cast(rotationMatrix);
+
+			outComponents.Rotation = glm::eulerAngles(rotation);
+			outComponents.Scale = scale;
+			return true;
+		}
+
+	}
+
 	// Convenience: multiply a 4x4 matrix by a 3D vector (treats as w=1, returns xyz)
-	inline Vector3f operator*(const Matrix4f& matrix, const Vector3f& vector)
+	[[nodiscard]] inline Vector3f operator*(const Matrix4f& matrix, const Vector3f& vector)
 	{
 		return Vector3f(matrix * Vector4f(vector, 1.0f));
 	}
@@ -51,50 +161,44 @@ namespace Ember {
 	class Math
 	{
 	public:
+		static inline constexpr float Epsilon = MathConstants::Epsilon;
+		static inline constexpr float ParallelDotThreshold = MathConstants::ParallelDotThreshold;
 
 		static inline float RandomFloat(float min, float max)
 		{
-			return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+			return min + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (max - min)));
 		}
 
 		static inline int RandomInt(int min, int max)
 		{
-			return min + rand() % (max - min + 1);
+			return min + std::rand() % (max - min + 1);
 		}
 
 		static inline float Random()
 		{
-			return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			return static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
 		}
 
-		static inline int Max(int a, int b)
+		template<MathDetail::Arithmetic T>
+		static inline constexpr T Max(T a, T b)
 		{
-			return (a > b) ? a : b;
+			return MathDetail::Max(a, b);
 		}
 
-		static inline int Min(int a, int b)
+		template<MathDetail::Arithmetic T>
+		static inline constexpr T Min(T a, T b)
 		{
-			return (a < b) ? a : b;
-		}
-
-		static inline float Max(float a, float b)
-		{
-			return (a > b) ? a : b;
-		}
-
-		static inline float Min(float a, float b)
-		{
-			return (a < b) ? a : b;
+			return MathDetail::Min(a, b);
 		}
 
 		static inline Vector3f Min(const Vector3f& a, const Vector3f& b)
 		{
-			return Vector3f(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z));
+			return glm::min(a, b);
 		}
 
 		static inline Vector3f Max(const Vector3f& a, const Vector3f& b)
 		{
-			return Vector3f(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z));
+			return glm::max(a, b);
 		}
 
 		static inline Matrix4f Translate(const Vector3f& translation) 
@@ -106,9 +210,9 @@ namespace Ember {
 			return glm::translate(matrix, translation);
 		}
 
-		static inline Vector3f Rotate(const Quaternion& rotation, const Vector3f angle)
+		static inline Vector3f Rotate(const Quaternion& rotation, const Vector3f& vector)
 		{
-			return glm::rotate(rotation, angle);
+			return glm::rotate(rotation, vector);
 		}
 
 		static inline Matrix4f Rotate(float angle, const Vector3f& axis) 
@@ -169,7 +273,7 @@ namespace Ember {
 			return glm::eulerAngles(quat);
 		}
 
-		static inline Matrix4f GetRotationMatrix(const Vector3f eulerAngles)
+		static inline Matrix4f GetRotationMatrix(const Vector3f& eulerAngles)
 		{
 			return glm::toMat4(Quaternion(eulerAngles));
 		}
@@ -181,14 +285,9 @@ namespace Ember {
 
 		static inline Vector3f LookAt(const Vector3f& start, const Vector3f& end)
 		{
-			Vector3f direction = Math::Normalize(end - start);
-			// Use a fallback up vector when the direction is nearly parallel to world-up
-			// to avoid a degenerate cross product (e.g. shooting straight up or down).
-			Vector3f up = (glm::abs(glm::dot(direction, Vector3f(0.0f, 1.0f, 0.0f))) > 0.99f)
-				? Vector3f(0.0f, 0.0f, 1.0f)
-				: Vector3f(0.0f, 1.0f, 0.0f);
-			Quaternion quat = glm::quatLookAt(direction, up);
-			return Math::ToEulerAngles(quat);
+			const Vector3f direction = Normalize(end - start);
+			const Quaternion quat = glm::quatLookAt(direction, MathDetail::SelectLookAtUp(direction));
+			return ToEulerAngles(quat);
 		}
 
 		static inline float Length(const Vector3f& vector)
@@ -206,58 +305,23 @@ namespace Ember {
 			return glm::make_mat4(data);
 		}
 
+		static inline bool DecomposeTransform(const Matrix4f& transform, TransformComponents& outComponents)
+		{
+			return MathDetail::DecomposeTransform(transform, outComponents);
+		}
+
 		// Extracts translation, rotation (Euler radians), and scale from a TRS matrix.
-		// Handles negative scaling correctly: when the upper 3x3 has a negative
-		// determinant (mirrored / negative scale), one axis is flipped so the
-		// remaining rotation is a proper rotation (det == +1) and the quaternion
-		// extraction does not produce NaNs.
+		// Handles negative scaling by flipping one basis axis when needed so the
+		// extracted rotation remains a proper rotation.
 		static inline bool DecomposeTransform(const Matrix4f& transform, Vector3f& outTranslation, Vector3f& outRotation, Vector3f& outScale)
 		{
-			// Reject matrices with a perspective row or zero w; we only support affine TRS.
-			constexpr float kEpsilon = 1e-6f;
-			if (std::abs(transform[0][3]) > kEpsilon ||
-				std::abs(transform[1][3]) > kEpsilon ||
-				std::abs(transform[2][3]) > kEpsilon ||
-				std::abs(transform[3][3] - 1.0f) > kEpsilon)
-			{
-				return false;
-			}
+			TransformComponents components;
+			const bool success = DecomposeTransform(transform, components);
 
-			// Translation lives in column 3.
-			outTranslation = Vector3f(transform[3]);
-
-			// Upper-left 3x3 contains rotation * scale.
-			glm::vec3 col0(transform[0]);
-			glm::vec3 col1(transform[1]);
-			glm::vec3 col2(transform[2]);
-
-			glm::vec3 scale(glm::length(col0), glm::length(col1), glm::length(col2));
-
-			if (scale.x < kEpsilon || scale.y < kEpsilon || scale.z < kEpsilon)
-			{
-				// Degenerate basis — cannot recover a rotation reliably.
-				outScale = scale;
-				outRotation = Vector3f(0.0f);
-				return false;
-			}
-
-			// If the basis is left-handed (mirrored), flip one axis so the
-			// remaining 3x3 is a proper rotation matrix. We pick X by convention;
-			// the resulting (rotation, scale) pair still reconstructs the original
-			// matrix exactly.
-			float det = glm::determinant(glm::mat3(col0, col1, col2));
-			if (det < 0.0f)
-			{
-				scale.x = -scale.x;
-				col0 = -col0;
-			}
-
-			glm::mat3 rotMtx(col0 / scale.x, col1 / scale.y, col2 / scale.z);
-			glm::quat rotation = glm::quat_cast(rotMtx);
-
-			outScale = scale;
-			outRotation = glm::eulerAngles(rotation);
-			return true;
+			outTranslation = components.Translation;
+			outRotation = components.Rotation;
+			outScale = components.Scale;
+			return success;
 		}
 
 		static inline Matrix4f ToMatrix4f(const Quaternion& quat)
@@ -281,19 +345,10 @@ namespace Ember {
 			return (value - min) / (max - min);
 		}
 
-		static inline float Lerp(float a, float b, float t)
+		template<typename T>
+		static inline T Lerp(const T& a, const T& b, float t)
 		{
-			return a + t * (b - a);
-		}
-
-		static inline Vector3f Lerp(const Vector3f& a, const Vector3f& b, float t)
-		{
-			return a + t * (b - a);
-		}
-
-		static inline Vector4f Lerp(const Vector4f& a, const Vector4f& b, float t)
-		{
-			return a + t * (b - a);
+			return MathDetail::Lerp(a, b, t);
 		}
 
 		static inline Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t)
@@ -306,12 +361,8 @@ namespace Ember {
 			return glm::mix(a, b, t);
 		}
 
-		static inline float Clamp(float value, float min, float max)
-		{
-			return glm::clamp(value, min, max);
-		}
-
-		static inline Vector3f Clamp(const Vector3f& value, const Vector3f& min, const Vector3f& max)
+		template<typename T>
+		static inline T Clamp(const T& value, const T& min, const T& max)
 		{
 			return glm::clamp(value, min, max);
 		}
@@ -331,9 +382,9 @@ namespace Ember {
 			return glm::dot(a, b);
 		}
 		
-		static inline Quaternion AngleAxis(float radians, const Vector3f vec)
+		static inline Quaternion AngleAxis(float radians, const Vector3f& axis)
 		{
-			return glm::angleAxis(radians, vec);
+			return glm::angleAxis(radians, axis);
 		}
 
 		static inline Vector3f ProjectOnPlane(const Vector3f& vector, const Vector3f& planeNormal)
