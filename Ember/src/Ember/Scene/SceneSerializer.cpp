@@ -396,6 +396,11 @@ namespace Ember {
 				case ScriptPropertyType::Vector3f:
 					Util::SerializeVector3f(propNode["Value"], std::get<Ember::Vector3f>(prop.Value));
 					break;
+				case ScriptPropertyType::EntityRef:
+				case ScriptPropertyType::AssetRef:
+					propNode["Value"] << (uint64_t)std::get<Ember::UUID>(prop.Value);
+					propNode["ReferenceKind"] << ScriptReferenceKindToString(prop.ReferenceKind);
+					break;
 				default:
 					break;
 				}
@@ -702,6 +707,13 @@ namespace Ember {
 			if (uuidRemap.empty()) return UUID(oldID);
 			if (uuidRemap.find(oldID) != uuidRemap.end()) return uuidRemap.at(oldID);
 			return Constants::InvalidUUID; // ID was external to the prefab hierarchy
+			};
+
+		auto getRemappedScriptEntityRef = [&](uint64_t oldID) -> UUID {
+			if (oldID == (uint64_t)Constants::InvalidUUID) return Constants::InvalidUUID;
+			if (uuidRemap.empty()) return UUID(oldID);
+			if (uuidRemap.find(oldID) != uuidRemap.end()) return uuidRemap.at(oldID);
+			return UUID(oldID);
 			};
 
 		// Core components are attached automatically by AddEntity, this just updates them
@@ -1072,11 +1084,27 @@ namespace Ember {
 						propValue = val;
 						break;
 					}
+					case ScriptPropertyType::EntityRef:
+					case ScriptPropertyType::AssetRef:
+					{
+						uint64_t val = Constants::InvalidUUID;
+						propNode["Value"] >> val;
+						propValue = propType == ScriptPropertyType::EntityRef ? getRemappedScriptEntityRef(val) : UUID(val);
+						break;
+					}
 					default:
 						break;
 					}
 
-					scriptUserOverrides[propName] = { propName, propValue, propType };
+					ScriptReferenceKind referenceKind = ScriptReferenceKind::None;
+					if (propNode.has_child("ReferenceKind"))
+					{
+						std::string referenceKindName;
+						propNode["ReferenceKind"] >> referenceKindName;
+						referenceKind = ScriptReferenceKindFromString(referenceKindName);
+					}
+
+					scriptUserOverrides[propName] = { propName, propValue, propType, referenceKind };
 				}
 			}
 

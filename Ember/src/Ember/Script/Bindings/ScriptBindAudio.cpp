@@ -33,6 +33,40 @@ namespace Ember {
 
 				auto audioSystem = Application::Instance().GetSystem<AudioSystem>();
 				audioSystem->PlaySound(scene, soundAssetName, props, position);
+			},
+			[scene](UUID soundAssetUUID) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (soundAssetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(soundAssetUUID))
+					return;
+				auto clip = assetManager.GetAsset<AudioClip>(soundAssetUUID);
+				if (!clip)
+					return;
+
+				auto audioSystem = Application::Instance().GetSystem<AudioSystem>();
+				AudioSoundProperties props;
+				audioSystem->PlaySound(scene, clip->GetName(), props);
+			},
+			[scene](UUID soundAssetUUID, AudioSoundProperties& props) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (soundAssetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(soundAssetUUID))
+					return;
+				auto clip = assetManager.GetAsset<AudioClip>(soundAssetUUID);
+				if (!clip)
+					return;
+
+				auto audioSystem = Application::Instance().GetSystem<AudioSystem>();
+				audioSystem->PlaySound(scene, clip->GetName(), props);
+			},
+			[scene](UUID soundAssetUUID, AudioSoundProperties& props, const Vector3f& position) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (soundAssetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(soundAssetUUID))
+					return;
+				auto clip = assetManager.GetAsset<AudioClip>(soundAssetUUID);
+				if (!clip)
+					return;
+
+				auto audioSystem = Application::Instance().GetSystem<AudioSystem>();
+				audioSystem->PlaySound(scene, clip->GetName(), props, position);
 			}
 		));
 	}

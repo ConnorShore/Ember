@@ -247,6 +247,7 @@ namespace Ember {
 	void BindEntity(sol::state& state)
 	{
 		auto entityType = state.new_usertype<Entity>("Entity",
+			"IsValid", [](const Entity& e) { return static_cast<bool>(e); },
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"SetActive", [&state](Entity& e, bool active) {

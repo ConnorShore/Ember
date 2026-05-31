@@ -27,6 +27,7 @@ namespace Ember {
 
 		static sol::state& GetState();
 		static std::vector<ScriptProperty> GetScriptProperties(const SharedPtr<Script>& scriptAsset);
+		static sol::object ScriptPropertyValueToLua(sol::state& luaState, const ScriptPropertyValue& value);
 
 		// Schedules a Lua callback to run after delaySeconds have elapsed.
 		static void SetTimeout(sol::protected_function callback, float delaySeconds);
@@ -64,6 +65,12 @@ namespace Ember {
 		{
 			component.UserPropertyOverrides[propertyName] =
 				{ propertyName, value, ScriptPropertyType::Enum, std::move(enumOptions) };
+		}
+
+		static void SetScriptReferencePropertyOverride(ScriptComponent& component, const std::string& propertyName,
+			UUID value, ScriptPropertyType type, ScriptReferenceKind referenceKind)
+		{
+			component.UserPropertyOverrides[propertyName] = { propertyName, value, type, referenceKind };
 		}
 
 		inline static std::array<std::string, 5> DefaultEmberFunctions = {

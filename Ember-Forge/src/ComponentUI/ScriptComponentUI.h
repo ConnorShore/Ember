@@ -204,7 +204,15 @@ namespace Ember {
 			for (auto it = component.UserPropertyOverrides.begin(); it != component.UserPropertyOverrides.end(); )
 			{
 				auto match = std::find_if(props.begin(), props.end(),
-					[&](const ScriptProperty& p) { return p.Name == it->first && p.Type == it->second.Type; });
+					[&](const ScriptProperty& p) {
+						if (p.Name != it->first || p.Type != it->second.Type)
+							return false;
+
+						if (p.Type == ScriptPropertyType::EntityRef || p.Type == ScriptPropertyType::AssetRef)
+							return it->second.ReferenceKind == ScriptReferenceKind::None || p.ReferenceKind == it->second.ReferenceKind;
+
+						return true;
+					});
 				if (match == props.end())
 					it = component.UserPropertyOverrides.erase(it);
 				else
@@ -212,6 +220,64 @@ namespace Ember {
 			}
 
 			component.Initialized = false;
+		}
+
+		std::string ResolveEntityReferenceName(UUID entityUUID) const
+		{
+			if (entityUUID == Constants::InvalidUUID)
+				return "None (Entity)";
+
+			Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
+			return entity.GetUUID() != Constants::InvalidUUID ? entity.GetName() : "Missing Entity";
+		}
+
+		std::string ResolveAssetReferenceName(UUID assetUUID, ScriptReferenceKind kind) const
+		{
+			if (assetUUID == Constants::InvalidUUID)
+				return std::format("None ({})", ScriptReferenceKindToString(kind));
+
+			if (!m_AssetManager.ContainsAsset(assetUUID))
+				return "Missing Asset";
+
+			return m_AssetManager.GetAssetBase(assetUUID)->GetName();
+		}
+
+		std::string ReferencePayloadType(ScriptReferenceKind kind) const
+		{
+			switch (kind)
+			{
+			case ScriptReferenceKind::Texture: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
+			case ScriptReferenceKind::Mesh: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetMesh);
+			case ScriptReferenceKind::Model: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
+			case ScriptReferenceKind::Script: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetScript);
+			case ScriptReferenceKind::Shader: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetShader);
+			case ScriptReferenceKind::Material: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetMaterial);
+			case ScriptReferenceKind::PhysicsMaterial: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPhysicsMaterial);
+			case ScriptReferenceKind::Prefab: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
+			case ScriptReferenceKind::Font: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetFont);
+			case ScriptReferenceKind::AudioClip: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetAudioClip);
+			case ScriptReferenceKind::Scene: return DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
+			default: return "";
+			}
+		}
+
+		UUID LoadDroppedReferenceAsset(ScriptReferenceKind kind, const std::string& droppedPath)
+		{
+			switch (kind)
+			{
+			case ScriptReferenceKind::Texture: return m_AssetManager.Load<Texture2D>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Mesh: return m_AssetManager.Load<Mesh>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Model: return m_AssetManager.Load<Model>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Script: return m_AssetManager.Load<Script>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Shader: return m_AssetManager.Load<Shader>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Material: return m_AssetManager.Load<MaterialBase>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::PhysicsMaterial: return m_AssetManager.Load<PhysicsMaterial>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Prefab: return m_AssetManager.Load<Prefab>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Font: return m_AssetManager.Load<Font>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::AudioClip: return m_AssetManager.Load<AudioClip>(droppedPath, false)->GetUUID();
+			case ScriptReferenceKind::Scene: return m_AssetManager.Load<Scene>(droppedPath, false)->GetUUID();
+			default: return Constants::InvalidUUID;
+			}
 		}
 
 		void RenderExposedScriptProperties(ScriptComponent& component)
@@ -277,13 +343,51 @@ namespace Ember {
 						if (UI::PropertyGrid::InputText(activeProp.Name, val))
 							ScriptEngine::SetScriptPropertyOverride<std::string>(component, activeProp.Name, val);
 						break;
-					}				case ScriptPropertyType::Vector3f:
+					}
+					case ScriptPropertyType::Vector3f:
 					{
 						Vector3f val = std::get<Vector3f>(activeProp.Value);
 						if (UI::PropertyGrid::Float3(activeProp.Name, val))
 							ScriptEngine::SetScriptPropertyOverride<Vector3f>(component, activeProp.Name, val);
 						break;
-					}					case ScriptPropertyType::Enum:
+					}
+					case ScriptPropertyType::EntityRef:
+					{
+						UUID currentUUID = std::get<UUID>(activeProp.Value);
+						UUID droppedUUID = Constants::InvalidUUID;
+						std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+						UI::UICallbackFunc clearFunc = currentUUID != Constants::InvalidUUID ? UI::UICallbackFunc([&]() {
+							ScriptEngine::SetScriptReferencePropertyOverride(component, activeProp.Name, Constants::InvalidUUID, ScriptPropertyType::EntityRef, ScriptReferenceKind::Entity);
+							component.Initialized = false;
+						}) : nullptr;
+
+						if (UI::PropertyGrid::EntityReference(activeProp.Name, ResolveEntityReferenceName(currentUUID), payloadType, droppedUUID, clearFunc))
+						{
+							ScriptEngine::SetScriptReferencePropertyOverride(component, activeProp.Name, droppedUUID, ScriptPropertyType::EntityRef, ScriptReferenceKind::Entity);
+							component.Initialized = false;
+						}
+						break;
+					}
+					case ScriptPropertyType::AssetRef:
+					{
+						ScriptReferenceKind referenceKind = defaultProp.ReferenceKind != ScriptReferenceKind::None ? defaultProp.ReferenceKind : activeProp.ReferenceKind;
+						UUID currentUUID = std::get<UUID>(activeProp.Value);
+						std::string droppedPath;
+						std::string payloadType = ReferencePayloadType(referenceKind);
+						UI::UICallbackFunc clearFunc = currentUUID != Constants::InvalidUUID ? UI::UICallbackFunc([&]() {
+							ScriptEngine::SetScriptReferencePropertyOverride(component, activeProp.Name, Constants::InvalidUUID, ScriptPropertyType::AssetRef, referenceKind);
+							component.Initialized = false;
+						}) : nullptr;
+
+						if (!payloadType.empty() && UI::PropertyGrid::AssetReference(activeProp.Name, ResolveAssetReferenceName(currentUUID, referenceKind), payloadType, droppedPath, nullptr, clearFunc))
+						{
+							UUID assetUUID = LoadDroppedReferenceAsset(referenceKind, droppedPath);
+							ScriptEngine::SetScriptReferencePropertyOverride(component, activeProp.Name, assetUUID, ScriptPropertyType::AssetRef, referenceKind);
+							component.Initialized = false;
+						}
+						break;
+					}
+					case ScriptPropertyType::Enum:
 					{
 						// Use the parsed default's options so we always have the full option list,
 						// even if the override only stores the selected int value.

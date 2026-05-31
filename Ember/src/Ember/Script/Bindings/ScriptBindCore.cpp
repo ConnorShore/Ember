@@ -3,8 +3,24 @@
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/Script/ScriptEngine.h"
+#include "Ember/Script/ScriptProperty.h"
 
 namespace Ember {
+
+	static sol::table CreateScriptReferenceDefinition(sol::this_state state, ScriptReferenceKind kind, uint64_t value)
+	{
+		sol::state_view lua(state);
+		sol::table ref = lua.create_table();
+		ref["__ember_property_type"] = "Reference";
+		ref["Kind"] = ScriptReferenceKindToString(kind);
+		ref["Value"] = value;
+		return ref;
+	}
+
+	static uint64_t ToRawUUID(const UUID& uuid)
+	{
+		return (uint64_t)uuid;
+	}
 
 	void BindCore(sol::state& state)
 	{
@@ -63,6 +79,30 @@ namespace Ember {
 			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 			return renderSystem->GetViewportSize();
 		});
+
+		state.set_function("EntityRef", sol::overload(
+			[](sol::this_state state) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Entity, (uint64_t)Constants::InvalidUUID); },
+			[](sol::this_state state, uint64_t uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Entity, uuid); },
+			[](sol::this_state state, const UUID& uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Entity, ToRawUUID(uuid)); }
+		));
+
+		state.set_function("AssetRef", sol::overload(
+			[](sol::this_state state, const std::string& kind) { return CreateScriptReferenceDefinition(state, ScriptReferenceKindFromString(kind), (uint64_t)Constants::InvalidUUID); },
+			[](sol::this_state state, const std::string& kind, uint64_t uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKindFromString(kind), uuid); },
+			[](sol::this_state state, const std::string& kind, const UUID& uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKindFromString(kind), ToRawUUID(uuid)); }
+		));
+
+		state.set_function("PrefabRef", sol::overload(
+			[](sol::this_state state) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Prefab, (uint64_t)Constants::InvalidUUID); },
+			[](sol::this_state state, uint64_t uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Prefab, uuid); },
+			[](sol::this_state state, const UUID& uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Prefab, ToRawUUID(uuid)); }
+		));
+
+		state.set_function("AudioClipRef", sol::overload(
+			[](sol::this_state state) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::AudioClip, (uint64_t)Constants::InvalidUUID); },
+			[](sol::this_state state, uint64_t uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::AudioClip, uuid); },
+			[](sol::this_state state, const UUID& uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::AudioClip, ToRawUUID(uuid)); }
+		));
 	}
 
 }
