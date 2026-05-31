@@ -1741,7 +1741,7 @@ namespace Ember {
 		return true;
 	}
 
-	Entity SceneSerializer::DeserializePrefab(SharedPtr<Prefab> prefab)
+	Entity SceneSerializer::DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs)
 	{
 		if (!prefab || prefab->YAMLData.empty())
 			return Entity();
@@ -1767,8 +1767,7 @@ namespace Ember {
 			if (entityNode.has_child("TagComponent"))
 				entityNode["TagComponent"]["Tag"] >> name;
 
-			// Generate a brand new UUID for this scene!
-			UUID newUUID = UUID();
+			UUID newUUID = preserveUUIDs ? UUID(oldUUIDVal) : UUID();
 			oldToNewUUIDs[oldUUIDVal] = newUUID;
 
 			Entity newEntity = m_Scene->AddEntity(newUUID, name);

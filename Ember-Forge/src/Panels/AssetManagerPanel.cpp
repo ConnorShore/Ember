@@ -458,6 +458,12 @@ namespace Ember {
 			// TODO: Select the item
 		}
 
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)
+			&& AssetPayloadTypeForPath(filePath) == DragDropPayloadType::AssetPrefab)
+		{
+			m_Context->RequestedPrefabOpenPath = filePath.string();
+		}
+
 		if (Application::Instance().GetAssetManager().ContainsAssetWithPath(filePath.string()))
 		{
 			ImVec2 imageMin = ImGui::GetItemRectMin();
@@ -945,6 +951,11 @@ namespace Ember {
 
 	void AssetManagerPanel::RenderPrefabOptions(const std::string& filePath)
 	{
+		if (ImGui::MenuItem("Open Prefab"))
+		{
+			m_Context->RequestedPrefabOpenPath = filePath;
+			ImGui::CloseCurrentPopup();
+		}
 
 	}
 

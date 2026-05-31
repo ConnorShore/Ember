@@ -94,7 +94,7 @@ namespace Ember {
 		m_PreviouslySelectedEntity = entity;
 
 		// Expand hierarchy to selected entity
-		if (entity)
+		if (entity != Constants::Entities::InvalidEntityID)
 			m_ExpandToSelectedEntity = true;
 	}
 
@@ -413,6 +413,8 @@ namespace Ember {
 		std::string popupId = entity.GetName() + "##" + std::to_string((uint32_t)entity.GetEntityHandle());
 		if (ImGui::BeginPopupContextItem(popupId.c_str(), ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
+			bool isPrefabRoot = m_Context->IsEditingPrefab && entity == m_Context->PrefabRootEntity;
+
 			if (ImGui::MenuItem("Rename Entity", "F2"))
 			{
 				RenameEntity(entity);
@@ -421,22 +423,22 @@ namespace Ember {
 			{
 				CreateChildEntity(entity);
 			}
-			if (ImGui::MenuItem("Duplicate Entity", "CTRL+D"))
+			if (ImGui::MenuItem("Duplicate Entity", "CTRL+D", false, !isPrefabRoot))
 			{
 				DuplicateEntity(entity);
 			}
-			if (ImGui::MenuItem("Create Prefab From Entity"))
+			if (ImGui::MenuItem("Create Prefab From Entity", nullptr, false, !m_Context->IsEditingPrefab))
 			{
 				CreatePrefab(entity);
 			}
-			if (ImGui::MenuItem("Delete Entity", "DEL"))
+			if (ImGui::MenuItem("Delete Entity", "DEL", false, !isPrefabRoot))
 			{
 				m_Context->PendingEntityRemovals.insert(entity);
 			}
 			ImGui::Separator();
 
 			bool hasParent = entity.GetComponent<RelationshipComponent>().ParentHandle != Constants::InvalidUUID;
-			if (ImGui::MenuItem("Remove Parent", nullptr, false, hasParent))
+			if (ImGui::MenuItem("Remove Parent", nullptr, false, hasParent && !isPrefabRoot && !m_Context->IsEditingPrefab))
 			{
 				m_Context->ActiveScene()->MoveEntityToRootEnd(entity.GetUUID());
 			}
@@ -518,7 +520,10 @@ namespace Ember {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 			{
 				UUID payloadUUID = *(const UUID*)payload->Data;
-				m_Context->ActiveScene()->MoveEntityToRootEnd(payloadUUID);
+				if (m_Context->IsEditingPrefab && m_Context->PrefabRootEntity != Constants::Entities::InvalidEntityID && payloadUUID != m_Context->PrefabRootEntity.GetUUID())
+					m_Context->ActiveScene()->SetEntityParent(payloadUUID, m_Context->PrefabRootEntity);
+				else if (!m_Context->IsEditingPrefab)
+					m_Context->ActiveScene()->MoveEntityToRootEnd(payloadUUID);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -615,6 +620,8 @@ namespace Ember {
 	void SceneHierarchyPanel::CreateEmptyEntity()
 	{
 		auto entity = m_Context->ActiveScene()->AddEntity("Empty_Entity");
+		if (m_Context->IsEditingPrefab && m_Context->PrefabRootEntity != Constants::Entities::InvalidEntityID)
+			m_Context->ActiveScene()->SetEntityParent(entity.GetUUID(), m_Context->PrefabRootEntity);
 		CreateEntity(entity);
 	}
 
@@ -647,8 +654,12 @@ namespace Ember {
 	{
 		if (entity == Constants::Entities::InvalidEntityID)
 			return;
+		if (m_Context->IsEditingPrefab && entity == m_Context->PrefabRootEntity)
+			return;
 
 		auto newEntity = m_Context->ActiveScene()->DuplicateEntity(entity);
+		if (m_Context->IsEditingPrefab && newEntity != Constants::Entities::InvalidEntityID && newEntity.GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID)
+			m_Context->ActiveScene()->SetEntityParent(newEntity.GetUUID(), m_Context->PrefabRootEntity);
 		SetSelectedEntity(newEntity);
 	}
 
@@ -693,7 +704,8 @@ namespace Ember {
 			RenameEntity(m_Context->SelectedEntity);
 			break;
 		case KeyCode::Delete:
-			if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID)
+			if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID
+				&& (!m_Context->IsEditingPrefab || m_Context->SelectedEntity != m_Context->PrefabRootEntity))
 				m_Context->PendingEntityRemovals.insert(m_Context->SelectedEntity);
 			break;
 		}

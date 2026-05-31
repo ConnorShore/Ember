@@ -42,6 +42,7 @@ namespace Ember {
 		void RenderNewProjectPopup();
 		void RenderNewScenePopup();
 		void RenderWelcomePopup();
+		void RenderPrefabEditBanner();
 
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
@@ -51,6 +52,7 @@ namespace Ember {
 
 		void RenderStatsOverlay(TimeStep delta);
 		float CalculateFPS(TimeStep delta);
+		void ClearEntitySelectionState();
 
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
@@ -68,6 +70,10 @@ namespace Ember {
 		void NewScene();
 		void OpenScene(const std::string& scenePath = "");
 		void SaveProject(bool saveAs = false);
+		void OpenPrefab(const std::string& prefabPath);
+		bool SaveOpenPrefab();
+		void CloseOpenPrefab(bool saveBeforeClose);
+		void HandlePrefabOpenRequest();
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
@@ -128,6 +134,10 @@ namespace Ember {
 	private:
 		EditorContext m_Context;
 		SharedPtr<Scene> m_EditorScene;
+		SharedPtr<Scene> m_SceneBeforePrefabEdit;
+		SharedPtr<Scene> m_PrefabEditScene;
+		SharedPtr<Prefab> m_EditingPrefab;
+		std::string m_EditingPrefabPath;
 
 		EditorCamera m_Camera;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
@@ -143,6 +153,7 @@ namespace Ember {
 		bool m_ViewportFocused = false;
 
 		bool m_ShowStatsWindow = false;
+		bool m_SkipSceneUiThisFrame = false;
 
 		bool m_DrawAllHUD = false;
 

@@ -134,9 +134,9 @@ namespace Ember {
 
 	void InspectorPanel::OnImGuiRender()
 	{
-		if (m_Context->SelectedEntity == Constants::Entities::InvalidEntityID
-			|| !m_Context->SelectedEntity.ContainsComponent<IDComponent>()
-			|| !m_Context->SelectedEntity.ContainsComponent<TagComponent>())
+		auto activeScene = m_Context->ActiveScene();
+		Entity entity = activeScene ? activeScene->GetEntityByHandle(m_Context->SelectedEntity.GetEntityHandle()) : Entity();
+		if (entity == Constants::Entities::InvalidEntityID)
 		{
 			m_Context->SelectedEntity = Entity();
 
@@ -147,7 +147,8 @@ namespace Ember {
 			return;
 		}
 
-		Entity entity = m_Context->SelectedEntity;
+		m_Context->SelectedEntity = entity;
+
 		{
 			ImGui::Begin(m_Title.c_str());
 
@@ -161,7 +162,7 @@ namespace Ember {
 
 					for (auto& child : entity.GetAllChildren())
 					{
-						if (child && child.ContainsComponent<DisabledComponent>())
+						if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<DisabledComponent>())
 							child.DetachComponent<DisabledComponent>();
 					}
 				}
@@ -172,7 +173,7 @@ namespace Ember {
 
 					for (auto& child : entity.GetAllChildren())
 					{
-						if (child && !child.ContainsComponent<DisabledComponent>())
+						if (child != Constants::Entities::InvalidEntityID && !child.ContainsComponent<DisabledComponent>())
 							child.AttachComponent<DisabledComponent>();
 					}
 				}

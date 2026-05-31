@@ -112,7 +112,7 @@ namespace Ember {
 			auto animatorEntity = m_Context->ActiveScene()->GetEntity(component.AnimatorEntityHandle);
 
 			std::string animatorName = "None (Animator)";
-			if (animatorEntity)
+			if (animatorEntity != Constants::Entities::InvalidEntityID)
 				animatorName = animatorEntity.GetName();
 
 			if (UI::PropertyGrid::BeginComboBox("Animator Entity", animatorName.c_str()))
@@ -141,7 +141,7 @@ namespace Ember {
 			ImGui::SameLine();
 			if (ImGui::Button("->"))
 			{
-				if (animatorEntity)
+				if (animatorEntity != Constants::Entities::InvalidEntityID)
 					m_Context->SelectedEntity = animatorEntity;
 			}
 		}

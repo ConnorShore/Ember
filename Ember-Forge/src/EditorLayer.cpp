@@ -35,14 +35,16 @@
 #include <random>
 #include <thread>
 #include <exception>
+#include <fstream>
 
 namespace Ember {
 	
-	static bool IsEntityStillValid(Entity entity)
+	static Entity ResolveEntityInScene(SharedPtr<Scene> scene, Entity entity)
 	{
-		return entity
-			&& entity.ContainsComponent<IDComponent>()
-			&& entity.ContainsComponent<TagComponent>();
+		if (!scene)
+			return Entity();
+
+		return scene->GetEntityByHandle(entity.GetEntityHandle());
 	}
 
 	EditorLayer::EditorLayer()
@@ -125,15 +127,15 @@ namespace Ember {
 		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
 		Application::Instance().GetSceneManager().SetOnSceneChangedCallback([this](SharedPtr<Scene> newScene)
 		{
-			if (m_Context.CurrentSceneState == SceneState::Edit)
+			if (m_Context.CurrentSceneState == SceneState::Edit && !m_Context.IsEditingPrefab)
 				m_EditorScene = newScene;
 
 			// Update viewport size for the new scene so render targets are correct from the start
 			m_ViewportSize = { (float)m_OutputFramebuffer->GetSpecification().Width, (float)m_OutputFramebuffer->GetSpecification().Height };
 			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
-			// De-select entity on scene change
-			m_Context.SelectedEntity = m_InvalidEntity;
+			// De-select entity on scene change so no panel keeps an Entity wrapper from the old scene.
+			ClearEntitySelectionState();
 		});
 	}
 
@@ -160,6 +162,24 @@ namespace Ember {
 
 	void EditorLayer::OnUpdate(TimeStep delta)
 	{
+		if (auto activeScene = m_Context.ActiveScene())
+		{
+			Entity selectedEntity = ResolveEntityInScene(activeScene, m_Context.SelectedEntity);
+			if (selectedEntity != Constants::Entities::InvalidEntityID)
+				m_Context.SelectedEntity = selectedEntity;
+			else if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			{
+				m_Context.SelectedEntity = Entity();
+				m_PreviousSelectedEntity = Entity();
+			}
+
+			Entity previousEntity = ResolveEntityInScene(activeScene, m_PreviousSelectedEntity);
+			if (previousEntity != Constants::Entities::InvalidEntityID)
+				m_PreviousSelectedEntity = previousEntity;
+			else if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID)
+				m_PreviousSelectedEntity = Entity();
+		}
+
 		SyncEntitySelectionState();
 
 		// Reload any user shaders whose source files have changed on disk so the user sees
@@ -221,7 +241,7 @@ namespace Ember {
 					EB_CORE_ASSERT(false, "Unhandled scene state!");
 			}
 
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && !IsEntityStillValid(m_Context.SelectedEntity))
+			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && ResolveEntityInScene(activeScene, m_Context.SelectedEntity) == Constants::Entities::InvalidEntityID)
 			{
 				m_Context.SelectedEntity = Entity();
 				m_PreviousSelectedEntity = Entity();
@@ -359,8 +379,17 @@ namespace Ember {
 
 		// Menu Bar
 		RenderMenuBar();
+		if (m_SkipSceneUiThisFrame)
+		{
+			m_SkipSceneUiThisFrame = false;
+			RenderNewScenePopup();
+			RenderNewProjectPopup();
+			return;
+		}
+
 		DrawToolbar();
 		RenderSceneViewport();
+		RenderPrefabEditBanner();
 
 		// Project Settings Pop up
 		if (m_ShowProjectSettingsPopup)
@@ -377,6 +406,8 @@ namespace Ember {
 		// Render Panels
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
+
+		HandlePrefabOpenRequest();
 
 		// Pop up for new project
 		RenderNewScenePopup();
@@ -406,6 +437,13 @@ namespace Ember {
 
 	void EditorLayer::OnRuntimeStart()
 	{
+		if (m_Context.IsEditingPrefab)
+		{
+			auto evt = UINotificationEvent("Close prefab edit mode before entering Play mode.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
 		try
 		{
 			auto& sceneManager = Application::Instance().GetSceneManager();
@@ -560,6 +598,7 @@ namespace Ember {
 		if (ImGui::BeginMenu("File"))
 		{
 			bool projectExists = ProjectManager::GetActive() != nullptr;
+			bool editingPrefab = m_Context.IsEditingPrefab;
 			if (ImGui::MenuItem("New Project", "Ctrl+Shift+N"))
 			{
 				NewProject();
@@ -593,24 +632,40 @@ namespace Ember {
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists))
+			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists && !editingPrefab))
 			{
 				NewScene();
 			}
 
-			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists))
+			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists && !editingPrefab))
 			{
 				OpenScene();
 			}
 
-			if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, projectExists))
+			if (ImGui::MenuItem(editingPrefab ? "Save Prefab" : "Save Scene", "Ctrl+S", false, projectExists))
 			{
-				SaveProject(false);
+				if (editingPrefab)
+					SaveOpenPrefab();
+				else
+					SaveProject(false);
 			}
 
-			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists))
+			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists && !editingPrefab))
 			{
 				SaveProject(true);
+			}
+
+			if (editingPrefab)
+			{
+				ImGui::Separator();
+				if (ImGui::MenuItem("Save and Close Prefab"))
+				{
+					CloseOpenPrefab(true);
+				}
+				if (ImGui::MenuItem("Close Prefab Without Saving"))
+				{
+					CloseOpenPrefab(false);
+				}
 			}
 
 			ImGui::EndMenu();
@@ -722,6 +777,7 @@ namespace Ember {
 			}
 
 			// Scenes
+			if (!m_Context.IsEditingPrefab)
 			{
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
@@ -785,6 +841,39 @@ namespace Ember {
 		// Draw Transform Gizmos for selected entity
 		m_ViewportGizmos.Render(&m_Context, m_Camera, m_ViewportBounds, m_GizmoType);
 
+		ImGui::End();
+	}
+
+	void EditorLayer::RenderPrefabEditBanner()
+	{
+		if (!m_Context.IsEditingPrefab)
+			return;
+
+		ImVec2 windowPos(m_ViewportBounds[0].x + 12.0f, m_ViewportBounds[0].y + 12.0f);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+		ImGui::SetNextWindowBgAlpha(0.88f);
+
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoMove;
+
+		if (ImGui::Begin("Prefab Edit Banner", nullptr, flags))
+		{
+			std::string prefabName = std::filesystem::path(m_Context.ActivePrefabPath).filename().string();
+			ImGui::Text("Prefab: %s", prefabName.c_str());
+			ImGui::Separator();
+
+			if (ImGui::Button("Save"))
+				SaveOpenPrefab();
+
+			ImGui::SameLine();
+			if (ImGui::Button("Save & Close"))
+				CloseOpenPrefab(true);
+
+			ImGui::SameLine();
+			if (ImGui::Button("Close Without Saving"))
+				CloseOpenPrefab(false);
+		}
 		ImGui::End();
 	}
 
@@ -1049,9 +1138,22 @@ namespace Ember {
 				break;
 			case KeyCode::S:
 				if (activeProject && control && shift)
-					SaveProject(true);
+				{
+					if (!m_Context.IsEditingPrefab)
+						SaveProject(true);
+				}
 				else if (activeProject && control)
-					SaveProject(false);
+				{
+					if (m_Context.IsEditingPrefab)
+						SaveOpenPrefab();
+					else
+						SaveProject(false);
+				}
+				break;
+
+			case KeyCode::Escape:
+				if (m_Context.IsEditingPrefab)
+					CloseOpenPrefab(true);
 				break;
 
 			// Entity Hot keys
@@ -1132,7 +1234,7 @@ namespace Ember {
 			{
 				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
 				{
-					if (child && child.ContainsComponent<OutlineComponent>())
+					if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<OutlineComponent>())
 						RemoveComponentFromEntity<OutlineComponent>(child);
 				}
 			}
@@ -1297,7 +1399,7 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
-		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit);
+		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit || m_Context.IsEditingPrefab);
 
 		// --- PLAY STANDALONE (Orange Tint) ---
 		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
@@ -1348,10 +1450,12 @@ namespace Ember {
 		}
 		else
 		{
+			ImGui::BeginDisabled(m_Context.IsEditingPrefab);
 			if (ImGui::ImageButton("PlayButton", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize)))
 			{
 				OnRuntimeStart();
 			}
+			ImGui::EndDisabled();
 		}
 
 		ImGui::SameLine();
@@ -1420,6 +1524,15 @@ namespace Ember {
 
 		return fps;
 	}
+
+	void EditorLayer::ClearEntitySelectionState()
+	{
+		m_Context.SelectedEntity = Entity();
+		m_PreviousSelectedEntity = Entity();
+		m_Context.PendingEntityRemovals.clear();
+		m_Context.PendingComponentRemovals.clear();
+		m_EditorRenderPassSettings.SelectedEntity = Constants::Entities::InvalidEntityID;
+	}
 	
 	void EditorLayer::CreateEntity()
 	{
@@ -1437,6 +1550,13 @@ namespace Ember {
 
 	void EditorLayer::RemovePendingEntities()
 	{
+		if (m_Context.IsEditingPrefab && m_Context.PendingEntityRemovals.contains(m_Context.PrefabRootEntity))
+		{
+			m_Context.PendingEntityRemovals.erase(m_Context.PrefabRootEntity);
+			auto evt = UINotificationEvent("The prefab root cannot be deleted while editing the prefab.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+		}
+
 		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
 			m_Context.SelectedEntity = m_InvalidEntity;
 
@@ -1470,6 +1590,8 @@ namespace Ember {
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
 		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
+		if (m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID && modelEntity != m_Context.PrefabRootEntity)
+			m_Context.ActiveScene()->SetEntityParent(modelEntity.GetUUID(), m_Context.PrefabRootEntity);
 		m_Context.SelectedEntity = modelEntity;
 	}
 
@@ -1482,7 +1604,9 @@ namespace Ember {
 		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
 		// using raycasting
 		Vector3f origin = Vector3f(0.0f);
-		Entity prefEntity = m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
+		Entity prefEntity = m_Context.IsEditingPrefab
+			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &origin)
+			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
 		m_Context.SelectedEntity = prefEntity;
 	}
 
@@ -1511,7 +1635,21 @@ namespace Ember {
 		if (projectFile.empty())
 			return;
 
+		if (m_Context.IsEditingPrefab)
+		{
+			if (!SaveOpenPrefab())
+				return;
+
+			CloseOpenPrefab(false);
+		}
+
+		ClearEntitySelectionState();
+
 		auto project = ProjectManager::LoadProject(projectFile);
+		if (!project)
+			return;
+
+		m_SkipSceneUiThisFrame = true;
 
 		// Load assets for project
 		auto assetPanel = GetPanel<AssetManagerPanel>();
@@ -1532,6 +1670,13 @@ namespace Ember {
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
 	{
+		if (m_Context.IsEditingPrefab)
+		{
+			auto evt = UINotificationEvent("Close prefab edit mode before opening a scene.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
 		std::string sceneFile = scenePath;
 		if (sceneFile.empty())
 		{
@@ -1548,6 +1693,12 @@ namespace Ember {
 
 	void EditorLayer::SaveProject(bool saveAs /* = false */)
 	{
+		if (m_Context.IsEditingPrefab)
+		{
+			SaveOpenPrefab();
+			return;
+		}
+
 		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
@@ -1622,16 +1773,187 @@ namespace Ember {
 		}
 	}
 
+	void EditorLayer::OpenPrefab(const std::string& prefabPath)
+	{
+		if (prefabPath.empty() || m_Context.CurrentSceneState != SceneState::Edit)
+			return;
+
+		if (m_Context.IsEditingPrefab)
+		{
+			if (std::filesystem::equivalent(std::filesystem::path(prefabPath), std::filesystem::path(m_EditingPrefabPath)))
+				return;
+
+			if (!SaveOpenPrefab())
+				return;
+
+			CloseOpenPrefab(false);
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefab = assetManager.Load<Prefab>(prefabPath, false);
+		if (!prefab)
+		{
+			auto evt = UINotificationEvent(std::format("Failed to open prefab: {}", std::filesystem::path(prefabPath).filename().string()), UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		RemovePendingComponents();
+		RemovePendingEntities();
+
+		m_SceneBeforePrefabEdit = m_EditorScene;
+		m_PrefabEditScene = SharedPtr<Scene>::Create(std::format("Prefab: {}", prefab->GetName()), prefab->GetFilePath());
+
+		SceneSerializer serializer(m_PrefabEditScene);
+		Entity prefabRoot = serializer.DeserializePrefab(prefab, true);
+		if (prefabRoot == Constants::Entities::InvalidEntityID)
+		{
+			auto evt = UINotificationEvent(std::format("Failed to deserialize prefab: {}", prefab->GetName()), UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			m_PrefabEditScene = nullptr;
+			m_SceneBeforePrefabEdit = nullptr;
+			return;
+		}
+
+		auto& prefabComponent = prefabRoot.ContainsComponent<PrefabComponent>()
+			? prefabRoot.GetComponent<PrefabComponent>()
+			: prefabRoot.AttachComponent<PrefabComponent>();
+		prefabComponent.PrefabHandle = prefab->GetUUID();
+
+		for (Entity entity : m_PrefabEditScene->GetAllEntities())
+		{
+			if (entity == prefabRoot)
+				continue;
+
+			auto& relationship = entity.GetComponent<RelationshipComponent>();
+			if (relationship.ParentHandle == Constants::InvalidUUID)
+				m_PrefabEditScene->SetEntityParent(entity.GetUUID(), prefabRoot);
+		}
+
+		m_EditingPrefab = prefab;
+		m_EditingPrefabPath = prefab->GetFilePath();
+		m_Context.IsEditingPrefab = true;
+		m_Context.ActivePrefabPath = m_EditingPrefabPath;
+		m_Context.PrefabRootEntity = prefabRoot;
+		m_Context.SelectedEntity = prefabRoot;
+		m_PreviousSelectedEntity = Entity();
+
+		auto& sceneManager = Application::Instance().GetSceneManager();
+		sceneManager.SetActiveScene(m_PrefabEditScene);
+		m_PrefabEditScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+
+		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));
+		m_Context.EventCallback(evt);
+	}
+
+	bool EditorLayer::SaveOpenPrefab()
+	{
+		if (!m_Context.IsEditingPrefab || !m_PrefabEditScene || !m_EditingPrefab)
+			return false;
+
+		if (m_Context.PrefabRootEntity == Constants::Entities::InvalidEntityID)
+		{
+			auto evt = UINotificationEvent("Cannot save prefab because the root entity is missing.", UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return false;
+		}
+
+		auto& prefabComponent = m_Context.PrefabRootEntity.ContainsComponent<PrefabComponent>()
+			? m_Context.PrefabRootEntity.GetComponent<PrefabComponent>()
+			: m_Context.PrefabRootEntity.AttachComponent<PrefabComponent>();
+		prefabComponent.PrefabHandle = m_EditingPrefab->GetUUID();
+
+		std::vector<Entity> outlinedEntities;
+		for (Entity entity : m_PrefabEditScene->GetAllEntities())
+		{
+			if (entity.ContainsComponent<OutlineComponent>())
+			{
+				outlinedEntities.push_back(entity);
+				entity.DetachComponent<OutlineComponent>();
+			}
+		}
+
+		SceneSerializer serializer(m_PrefabEditScene);
+		bool saved = serializer.SerializePrefab(m_Context.PrefabRootEntity, m_EditingPrefabPath);
+
+		for (Entity entity : outlinedEntities)
+		{
+			if (entity != Constants::Entities::InvalidEntityID && entity.ContainsComponent<IDComponent>())
+				OutlineEntity(entity);
+		}
+
+		if (!saved)
+		{
+			auto evt = UINotificationEvent("Failed to save prefab.", UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return false;
+		}
+
+		std::ifstream stream(m_EditingPrefabPath);
+		m_EditingPrefab->YAMLData = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+
+		std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
+		AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+		assetSerializer.Serialize(assetFilePath.string());
+
+		auto evt = UINotificationEvent(std::format("Prefab saved: {}", std::filesystem::path(m_EditingPrefabPath).filename().string()));
+		m_Context.EventCallback(evt);
+		return true;
+	}
+
+	void EditorLayer::CloseOpenPrefab(bool saveBeforeClose)
+	{
+		if (!m_Context.IsEditingPrefab)
+			return;
+
+		if (saveBeforeClose && !SaveOpenPrefab())
+			return;
+
+		m_Context.IsEditingPrefab = false;
+		m_Context.ActivePrefabPath.clear();
+		m_Context.PrefabRootEntity = Entity();
+		m_Context.SelectedEntity = Entity();
+		m_PreviousSelectedEntity = Entity();
+
+		auto sceneToRestore = m_SceneBeforePrefabEdit ? m_SceneBeforePrefabEdit : m_EditorScene;
+		if (sceneToRestore)
+		{
+			Application::Instance().GetSceneManager().SetActiveScene(sceneToRestore);
+			sceneToRestore->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			m_EditorScene = sceneToRestore;
+		}
+
+		m_PrefabEditScene = nullptr;
+		m_SceneBeforePrefabEdit = nullptr;
+		m_EditingPrefab = nullptr;
+		m_EditingPrefabPath.clear();
+
+		auto evt = UINotificationEvent("Closed prefab edit mode.");
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::HandlePrefabOpenRequest()
+	{
+		if (m_Context.RequestedPrefabOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestedPrefabOpenPath;
+		m_Context.RequestedPrefabOpenPath.clear();
+		OpenPrefab(path);
+	}
+
 	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
 	{
+		if (m_Context.IsEditingPrefab)
+			CloseOpenPrefab(false);
+
 		m_EditorScene = newScene;
 
 		// SetActiveScene handles OnDetach on the old scene and OnAttach on the new one
 		Application::Instance().GetSceneManager().SetActiveScene(newScene);
 
 		m_Context.ActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		m_Context.SelectedEntity = {};
-		m_PreviousSelectedEntity = {};
+		ClearEntitySelectionState();
 	}
 
 	void EditorLayer::SetupImGuiTheme()

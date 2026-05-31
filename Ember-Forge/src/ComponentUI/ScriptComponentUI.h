@@ -227,8 +227,12 @@ namespace Ember {
 			if (entityUUID == Constants::InvalidUUID)
 				return "None (Entity)";
 
-			Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
-			return entity.GetUUID() != Constants::InvalidUUID ? entity.GetName() : "Missing Entity";
+			if (!m_Context || !m_Context->ActiveScene())
+				return "Missing Entity";
+
+			auto scene = m_Context->ActiveScene();
+			std::string entityName;
+			return scene->TryGetEntityName(entityUUID, entityName) ? entityName : "Missing Entity";
 		}
 
 		std::string ResolveAssetReferenceName(UUID assetUUID, ScriptReferenceKind kind) const

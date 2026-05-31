@@ -169,7 +169,7 @@ namespace Ember {
 	Entity ScreenSpace2DRenderPass::FindNearestCanvasAncestor(Scene* scene, Entity entity)
 	{
 		Entity current = entity;
-		while (current)
+		while (current != Constants::Entities::InvalidEntityID)
 		{
 			if (current.ContainsComponent<CanvasComponent>())
 				return current;

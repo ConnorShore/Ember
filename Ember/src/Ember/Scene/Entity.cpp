@@ -42,7 +42,7 @@ namespace Ember {
 	Entity Entity::GetRootParent()
 	{
 		auto current = GetParent();
-		while (current)
+		while (current != Constants::Entities::InvalidEntityID)
 		{
 			if (current.IsRootParent())
 				return current;
@@ -65,7 +65,7 @@ namespace Ember {
 			return;
 
 		Entity parent = m_SceneHandle->GetEntity(relationship.ParentHandle);
-		if (parent)
+		if (parent != Constants::Entities::InvalidEntityID)
 		{
 			auto& parentRelationship = parent.GetComponent<RelationshipComponent>();
 			UUID myUUID = GetUUID();

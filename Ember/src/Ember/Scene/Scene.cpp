@@ -431,6 +431,22 @@ namespace Ember {
 		return Entity();
 	}
 
+	Entity Scene::GetEntityByHandle(EntityID entityID)
+	{
+		if (entityID == Constants::Entities::InvalidEntityID || entityID >= Constants::Entities::MaxEntities || !m_Registry)
+			return Entity();
+
+		if (!m_Registry->ContainsComponent<IDComponent>(entityID) || !m_Registry->ContainsComponent<TagComponent>(entityID))
+			return Entity();
+
+		UUID uuid = m_Registry->GetComponent<IDComponent>(entityID).ID;
+		auto it = m_EntityUUIDMap.find(uuid);
+		if (it == m_EntityUUIDMap.end() || it->second != entityID)
+			return Entity();
+
+		return { entityID, this };
+	}
+
 	Entity Scene::GetEntity(const std::string& name)
 	{
 		auto view = m_Registry->Query<TagComponent>();
@@ -441,6 +457,21 @@ namespace Ember {
 				return { entity, this };
 		}
 		return Entity();
+	}
+
+	bool Scene::TryGetEntityName(UUID uuid, std::string& outName)
+	{
+		auto it = m_EntityUUIDMap.find(uuid);
+		if (it == m_EntityUUIDMap.end())
+			return false;
+
+		EntityID entityID = it->second;
+		Entity entity = GetEntityByHandle(entityID);
+		if (entity == Constants::Entities::InvalidEntityID)
+			return false;
+
+		outName = m_Registry->GetComponent<TagComponent>(entityID).Tag;
+		return true;
 	}
 
 	Entity Scene::DuplicateEntity(Entity entity)
@@ -703,7 +734,7 @@ namespace Ember {
 			if (newParentId != Constants::InvalidUUID)
 			{
 				Entity newParent = GetEntity(newParentId);
-				if (newParent)
+				if (newParent != Constants::Entities::InvalidEntityID)
 					newParent.GetComponent<RelationshipComponent>().Children.push_back(newEntity.GetUUID());
 			}
 		}

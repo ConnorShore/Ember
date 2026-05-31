@@ -22,7 +22,7 @@ namespace Ember {
 
 		// Prefab Operations
 		bool SerializePrefab(Entity prefabRoot, const std::string& filepath);
-		Entity DeserializePrefab(SharedPtr<Prefab> prefab);
+		Entity DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs = false);
 
 	private:
 		void SerializeEntityNode(ryml::NodeRef& entityNode, Entity entity);

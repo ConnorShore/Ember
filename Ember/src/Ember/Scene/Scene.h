@@ -53,7 +53,9 @@ namespace Ember {
         Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
+		Entity GetEntityByHandle(EntityID entityID);
 		Entity GetEntity(const std::string& name);
+		bool TryGetEntityName(UUID uuid, std::string& outName);
 		Entity DuplicateEntity(Entity entity);
 
 		SharedPtr<Prefab> CreatePrefab(Entity entity, const std::string& filepath);
