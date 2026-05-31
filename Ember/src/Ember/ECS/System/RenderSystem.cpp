@@ -236,8 +236,8 @@ namespace Ember {
 		finalBlitPass->Execute(renderContext);
 
 		// Debug lines
-		if (!isRuntime)
-			DrawEditorCameraGizmos(scene);
+		if (!isRuntime && m_RenderSceneState.PreDebugDrawCallback)
+			m_RenderSceneState.PreDebugDrawCallback(scene, m_RenderSceneState.SelectedEntity);
 
 		auto debugPass = StaticPointerCast<DebugRenderPass>(GetRenderPass("DebugRenderPass"));
 		debugPass->Execute(renderContext);
@@ -275,6 +275,7 @@ namespace Ember {
 		m_RenderSceneState.IsCameraFound = true;
 		m_RenderSceneState.DrawHUD = settings.DrawHUD;
 		m_RenderSceneState.SelectedEntity = settings.SelectedEntity;
+		m_RenderSceneState.PreDebugDrawCallback = settings.PreDebugDrawCallback;
 
 		Matrix4f viewProjectionMat = camera.GetProjectionMatrix() * Math::Inverse(settings.CameraTransform);
 		m_CameraUniformBuffer->SetData(&viewProjectionMat, sizeof(Matrix4f));
@@ -409,16 +410,6 @@ namespace Ember {
 
 				break;
 			}
-		}
-	}
-
-	void RenderSystem::DrawEditorCameraGizmos(Scene* scene)
-	{
-		auto& registry = scene->GetRegistry();
-		for (EntityID cameraEntity : registry.ActiveQuery<CameraComponent, TransformComponent>())
-		{
-			auto [cameraComponent, transform] = registry.GetComponents<CameraComponent, TransformComponent>(cameraEntity);
-			cameraComponent.Camera.DrawFrustum(transform.WorldTransform, cameraEntity == m_RenderSceneState.SelectedEntity);
 		}
 	}
 

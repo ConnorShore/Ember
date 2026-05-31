@@ -37,13 +37,13 @@
 #include <exception>
 
 namespace Ember {
+	
 	static bool IsEntityStillValid(Entity entity)
 	{
 		return entity
 			&& entity.ContainsComponent<IDComponent>()
 			&& entity.ContainsComponent<TagComponent>();
 	}
-
 
 	EditorLayer::EditorLayer()
 		: Layer("Ember Forge")
@@ -59,6 +59,7 @@ namespace Ember {
 			.RenderMask = FilterPreset::All,
 			.VolumeMask = FilterPreset::All
 		};
+		m_EditorRenderPassSettings.PreDebugDrawCallback = ViewportGizmoController::DrawSceneDebugGizmos;
 
 		// Provide a blank scene so the editor has a valid active scene before any project is loaded.
 		// It will be replaced cleanly when a project is opened via the deferred scene swap.

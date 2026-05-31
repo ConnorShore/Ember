@@ -8,6 +8,7 @@
 #include <Ember/Core/Application.h>
 #include <Ember/Input/Input.h>
 #include <Ember/Input/InputCode.h>
+#include <Ember/Render/DebugRenderer.h>
 #include <Ember/Scene/Entity.h>
 #include <Ember/Scene/Scene.h>
 #include <Ember/Tools/EditorCamera.h>
@@ -21,6 +22,181 @@
 #include <limits>
 
 namespace Ember {
+	constexpr float kTwoPi = 6.28318530718f;
+	constexpr float kLightGizmoMinContribution = 0.05f;
+
+	static float EstimateInverseSquareRange(float intensity, float minContribution = kLightGizmoMinContribution)
+	{
+		if (intensity <= 0.0f || minContribution <= 0.0f)
+			return 0.0f;
+
+		return std::sqrt(intensity / minContribution);
+	}
+
+	static Vector3f SafeNormalize(const Vector3f& vector, const Vector3f& fallback)
+	{
+		if (Math::Magnitude2(vector) <= 1e-6f)
+			return fallback;
+
+		return Math::Normalize(vector);
+	}
+
+	static void BuildBasisFromDirection(const Vector3f& direction, Vector3f& outRight, Vector3f& outUp)
+	{
+		Vector3f safeDirection = SafeNormalize(direction, Vector3f(0.0f, 0.0f, -1.0f));
+		Vector3f referenceUp = (std::abs(Math::Dot(safeDirection, Vector3f(0.0f, 1.0f, 0.0f))) > 0.99f)
+			? Vector3f(1.0f, 0.0f, 0.0f)
+			: Vector3f(0.0f, 1.0f, 0.0f);
+
+		outRight = SafeNormalize(Math::Cross(safeDirection, referenceUp), Vector3f(1.0f, 0.0f, 0.0f));
+		outUp = SafeNormalize(Math::Cross(outRight, safeDirection), Vector3f(0.0f, 1.0f, 0.0f));
+	}
+
+	static void DrawWireCircle(const Vector3f& center, const Vector3f& normal, float radius, const Vector4f& color, int segments = 32)
+	{
+		if (radius <= 0.0f || segments < 3)
+			return;
+
+		Vector3f right, up;
+		BuildBasisFromDirection(normal, right, up);
+
+		for (int segmentIndex = 0; segmentIndex < segments; ++segmentIndex)
+		{
+			float startAngle = (static_cast<float>(segmentIndex) / static_cast<float>(segments)) * kTwoPi;
+			float endAngle = (static_cast<float>(segmentIndex + 1) / static_cast<float>(segments)) * kTwoPi;
+
+			Vector3f startPoint = center + (right * Math::Cos(startAngle) + up * Math::Sin(startAngle)) * radius;
+			Vector3f endPoint = center + (right * Math::Cos(endAngle) + up * Math::Sin(endAngle)) * radius;
+			DebugRenderer::DrawLine(startPoint, endPoint, color);
+		}
+	}
+
+	static void DrawWireSphere(const Vector3f& center, float radius, const Vector4f& color, int segments = 32)
+	{
+		DrawWireCircle(center, Vector3f(1.0f, 0.0f, 0.0f), radius, color, segments);
+		DrawWireCircle(center, Vector3f(0.0f, 1.0f, 0.0f), radius, color, segments);
+		DrawWireCircle(center, Vector3f(0.0f, 0.0f, 1.0f), radius, color, segments);
+	}
+
+	static void DrawArrow(const Vector3f& start, const Vector3f& direction, float length, const Vector4f& color)
+	{
+		if (length <= 0.0f)
+			return;
+
+		Vector3f normalizedDirection = SafeNormalize(direction, Vector3f(0.0f, 0.0f, -1.0f));
+		Vector3f end = start + normalizedDirection * length;
+		DebugRenderer::DrawLine(start, end, color);
+
+		Vector3f right, up;
+		BuildBasisFromDirection(normalizedDirection, right, up);
+
+		float headLength = length * 0.2f;
+		float headWidth = length * 0.08f;
+		Vector3f headBase = end - normalizedDirection * headLength;
+
+		DebugRenderer::DrawLine(end, headBase + right * headWidth, color);
+		DebugRenderer::DrawLine(end, headBase - right * headWidth, color);
+		DebugRenderer::DrawLine(end, headBase + up * headWidth, color);
+		DebugRenderer::DrawLine(end, headBase - up * headWidth, color);
+	}
+
+	static void DrawWireCone(const Vector3f& apex, const Vector3f& direction, float length, float halfAngleRadians, const Vector4f& color, int circleSegments = 32, int spokeCount = 8)
+	{
+		if (length <= 0.0f || halfAngleRadians <= 0.0f)
+			return;
+
+		Vector3f normalizedDirection = SafeNormalize(direction, Vector3f(0.0f, 0.0f, -1.0f));
+		Vector3f right, up;
+		BuildBasisFromDirection(normalizedDirection, right, up);
+
+		float coneRadius = Math::Tan(halfAngleRadians) * length;
+		if (coneRadius <= 0.0f)
+			return;
+
+		Vector3f baseCenter = apex + normalizedDirection * length;
+		DrawWireCircle(baseCenter, normalizedDirection, coneRadius, color, circleSegments);
+
+		if (spokeCount < 4)
+			spokeCount = 4;
+
+		for (int spokeIndex = 0; spokeIndex < spokeCount; ++spokeIndex)
+		{
+			float angle = (static_cast<float>(spokeIndex) / static_cast<float>(spokeCount)) * kTwoPi;
+			Vector3f rimPoint = baseCenter + (right * Math::Cos(angle) + up * Math::Sin(angle)) * coneRadius;
+			DebugRenderer::DrawLine(apex, rimPoint, color);
+		}
+	}
+
+	static void DrawSelectedLightGizmo(Scene* scene, EntityID selectedEntity)
+	{
+		if (selectedEntity == (EntityID)Constants::Entities::InvalidEntityID)
+			return;
+
+		auto& registry = scene->GetRegistry();
+		if (!registry.ContainsComponent<TransformComponent>(selectedEntity))
+			return;
+
+		auto& transform = registry.GetComponent<TransformComponent>(selectedEntity);
+		const Vector3f origin = transform.GetWorldPosition();
+		const Vector3f forward = SafeNormalize(transform.GetForward(), Vector3f(0.0f, 0.0f, -1.0f));
+
+		if (registry.ContainsComponent<PointLightComponent>(selectedEntity))
+		{
+			auto& pointLight = registry.GetComponent<PointLightComponent>(selectedEntity);
+
+			float radius = pointLight.Radius > 0.0f ? pointLight.Radius : EstimateInverseSquareRange(pointLight.Intensity);
+			if (radius <= 0.0f)
+				radius = 1.0f;
+			radius = Math::Clamp(radius, 0.1f, 250.0f);
+
+			Vector3f baseColor = Math::Lerp(pointLight.Color, Vector3f(1.0f, 0.85f, 0.2f), 0.35f);
+			Vector4f color(baseColor, pointLight.Active ? 1.0f : 0.45f);
+
+			DrawWireSphere(origin, radius, color, 36);
+			DebugRenderer::DrawLine(origin - Vector3f(radius, 0.0f, 0.0f), origin + Vector3f(radius, 0.0f, 0.0f), color);
+			DebugRenderer::DrawLine(origin - Vector3f(0.0f, radius, 0.0f), origin + Vector3f(0.0f, radius, 0.0f), color);
+			DebugRenderer::DrawLine(origin - Vector3f(0.0f, 0.0f, radius), origin + Vector3f(0.0f, 0.0f, radius), color);
+		}
+
+		if (registry.ContainsComponent<DirectionalLightComponent>(selectedEntity))
+		{
+			auto& directionalLight = registry.GetComponent<DirectionalLightComponent>(selectedEntity);
+
+			float arrowLength = Math::Clamp(2.5f + directionalLight.Intensity * 0.25f, 2.5f, 10.0f);
+			Vector3f baseColor = Math::Lerp(directionalLight.Color, Vector3f(1.0f, 0.8f, 0.2f), 0.5f);
+			Vector4f color(baseColor, directionalLight.Active ? 1.0f : 0.45f);
+
+			DrawArrow(origin, forward, arrowLength, color);
+
+			Vector3f right, up;
+			BuildBasisFromDirection(forward, right, up);
+			float offset = arrowLength * 0.2f;
+			float rayLength = arrowLength * 0.6f;
+
+			DebugRenderer::DrawLine(origin + right * offset, origin + right * offset + forward * rayLength, color);
+			DebugRenderer::DrawLine(origin - right * offset, origin - right * offset + forward * rayLength, color);
+			DebugRenderer::DrawLine(origin + up * offset, origin + up * offset + forward * rayLength, color);
+		}
+
+		if (registry.ContainsComponent<SpotLightComponent>(selectedEntity))
+		{
+			auto& spotLight = registry.GetComponent<SpotLightComponent>(selectedEntity);
+
+			float coneLength = Math::Clamp(EstimateInverseSquareRange(spotLight.Intensity), 1.0f, 120.0f);
+			float outerAngle = Math::Clamp(spotLight.OuterCutOffAngle, 0.001f, Math::Radians(89.0f));
+			float innerAngle = Math::Clamp(spotLight.CutOffAngle, 0.001f, outerAngle);
+
+			Vector3f outerTint = Math::Lerp(spotLight.Color, Vector3f(1.0f, 0.78f, 0.18f), 0.45f);
+			Vector3f innerTint = Math::Lerp(spotLight.Color, Vector3f(1.0f, 0.55f, 0.1f), 0.25f);
+
+			Vector4f outerColor(outerTint, spotLight.Active ? 1.0f : 0.45f);
+			Vector4f innerColor(innerTint, spotLight.Active ? 1.0f : 0.45f);
+
+			DrawWireCone(origin, forward, coneLength, outerAngle, outerColor, 36, 10);
+			DrawWireCone(origin, forward, coneLength, innerAngle, innerColor, 24, 6);
+			DrawArrow(origin, forward, coneLength * 0.55f, outerColor);
+		}
+	}
 
 	static bool CalculateTextLocalBounds(const TextComponent& textComponent, Vector2f& outMin, Vector2f& outMax)
 	{
@@ -64,6 +240,21 @@ namespace Ember {
 		}
 
 		return hasGlyph && outMax.x > outMin.x && outMax.y > outMin.y;
+	}
+
+	void ViewportGizmoController::DrawSceneDebugGizmos(Scene* scene, EntityID selectedEntity)
+	{
+		if (!scene)
+			return;
+
+		auto& registry = scene->GetRegistry();
+		for (EntityID cameraEntity : registry.ActiveQuery<CameraComponent, TransformComponent>())
+		{
+			auto [cameraComponent, transform] = registry.GetComponents<CameraComponent, TransformComponent>(cameraEntity);
+			cameraComponent.Camera.DrawFrustum(transform.WorldTransform, cameraEntity == selectedEntity);
+		}
+
+		DrawSelectedLightGizmo(scene, selectedEntity);
 	}
 
 	void ViewportGizmoController::Render(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType)
