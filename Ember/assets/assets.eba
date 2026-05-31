@@ -60,13 +60,13 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
-    UUID: 15191514471842255900
-    Name: PowerUpDrop
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
-  - Type: Script
     UUID: 10843162672597406671
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
+  - Type: Script
+    UUID: 15191514471842255900
+    Name: PowerUpDrop
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement

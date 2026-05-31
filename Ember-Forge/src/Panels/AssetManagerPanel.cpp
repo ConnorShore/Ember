@@ -5,6 +5,7 @@
 
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Event/UIEvent.h>
+#include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/Asset/Font.h>
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Core/ProjectSerializer.h>
@@ -13,8 +14,33 @@
 
 #include <Ember-Tools/GLTFImporter.h>
 
+#include <cctype>
 #include <format>
 #include <regex>
+
+namespace {
+
+	std::string ToLowerCopy(std::string value)
+	{
+		std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		return value;
+	}
+
+	bool PathsEqual(const std::filesystem::path& lhs, const std::filesystem::path& rhs)
+	{
+		std::error_code ec;
+		if (std::filesystem::equivalent(lhs, rhs, ec))
+			return true;
+
+		return std::filesystem::absolute(lhs).lexically_normal() == std::filesystem::absolute(rhs).lexically_normal();
+	}
+
+	Ember::DragDropPayloadType AssetPayloadTypeForPath(const std::filesystem::path& filePath)
+	{
+		return Ember::DragDropUtils::ExtensionToDragDropPayloadType(ToLowerCopy(filePath.extension().string()));
+	}
+
+}
 
 namespace Ember {
 
@@ -55,8 +81,27 @@ namespace Ember {
 		ImGui::Begin(m_Title.c_str());
 
 		RenderPanelControls();
+
+		float availableWidth = ImGui::GetContentRegionAvail().x;
+		float maxFolderPaneWidth = std::max(160.0f, availableWidth - 180.0f);
+		m_FolderPaneWidth = std::clamp(m_FolderPaneWidth, 160.0f, maxFolderPaneWidth);
+
+		ImGui::BeginChild("AssetManagerFolderPane", ImVec2(m_FolderPaneWidth, 0.0f), true);
+		RenderFolderHierarchy();
+		ImGui::EndChild();
+
+		ImGui::SameLine(0.0f, 0.0f);
+		ImGui::InvisibleButton("##AssetManagerSplitter", ImVec2(4.0f, ImGui::GetContentRegionAvail().y));
+		if (ImGui::IsItemActive())
+			m_FolderPaneWidth += ImGui::GetIO().MouseDelta.x;
+		if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+			ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+		ImGui::SameLine(0.0f, 0.0f);
+		ImGui::BeginChild("AssetManagerContentPane", ImVec2(0.0f, 0.0f), true);
 		RenderDirectoryContents();
 		RenderAssetPanelContextMenu();
+		ImGui::EndChild();
 
 		RenderRenameScenePopup();
 		RenderCreateDirectoryPopup();
@@ -73,10 +118,12 @@ namespace Ember {
 
 	void AssetManagerPanel::RenderPanelControls()
 	{
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		if (m_CurrentDirectory != m_RootDirectory)
 		{
-			if (ImGui::Button("<-"))
+			if (ImGui::Button("<", ImVec2(28.0f, 0.0f)))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
@@ -84,32 +131,64 @@ namespace Ember {
 		else
 		{
 			ImGui::BeginDisabled();
-			ImGui::Button("<-");
+			ImGui::Button("<", ImVec2(28.0f, 0.0f));
 			ImGui::EndDisabled();
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		// Display the current path
-		std::string projPath = "Ember-Forge";
-		if (ProjectManager::GetActive() != nullptr)
-			projPath = ProjectManager::GetActive()->GetProjectDirectory().string();
+		std::string rootLabel = m_RootDirectory.filename().string();
+		if (rootLabel.empty())
+			rootLabel = "Assets";
 
-		std::string relativePath = std::filesystem::relative(m_CurrentDirectory, projPath).string();
-		ImGui::TextDisabled("%s", relativePath.c_str());
+		if (ImGui::SmallButton(rootLabel.c_str()))
+			m_CurrentDirectory = m_RootDirectory;
 
-		// Size slider
+		std::error_code relativeError;
+		std::filesystem::path relativePath = std::filesystem::relative(m_CurrentDirectory, m_RootDirectory, relativeError);
+		std::filesystem::path breadcrumbPath = m_RootDirectory;
+		if (!relativeError)
+		{
+			for (const auto& part : relativePath)
+			{
+				if (part == ".")
+					continue;
+
+				breadcrumbPath /= part;
+				ImGui::SameLine();
+				ImGui::TextDisabled("/");
+				ImGui::SameLine();
+
+				std::string label = part.string();
+				ImGui::PushID(breadcrumbPath.string().c_str());
+				if (ImGui::SmallButton(label.c_str()))
+					m_CurrentDirectory = breadcrumbPath;
+				ImGui::PopID();
+			}
+		}
+
+		ImGui::Spacing();
+
+		if (ImGui::Button("+ Folder"))
+		{
+			m_NewDirectoryName = "NewFolder";
+			m_ShowCreateDirectoryPopup = true;
+		}
+
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(240.0f);
+		ImGui::InputTextWithHint("##AssetSearch", "Search assets", m_SearchBuffer.data(), m_SearchBuffer.size());
+
+		ImGuiStyle& style = ImGui::GetStyle();
 		float sliderWidth = 150.0f;
-		float labelWidth = ImGui::CalcTextSize("Icon Size").x;
-		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+		float labelWidth = ImGui::CalcTextSize("Tile Size").x;
+		float spacing = style.ItemInnerSpacing.x;
 		float totalRightWidth = sliderWidth + labelWidth + spacing;
 
-		// Calculate where the right-aligned item should start
 		float currentCursorX = ImGui::GetCursorPosX();
 		float rightAlignedX = ImGui::GetWindowContentRegionMax().x - totalRightWidth;
-
-		if (rightAlignedX > currentCursorX)
+		if (rightAlignedX > currentCursorX + style.ItemSpacing.x)
 		{
 			ImGui::SameLine(rightAlignedX);
 		}
@@ -118,100 +197,211 @@ namespace Ember {
 			ImGui::SameLine();
 		}
 
-		ImGui::Text("Icon Size");
+		ImGui::Text("Tile Size");
 		ImGui::SameLine(0, spacing);
 		ImGui::SetNextItemWidth(sliderWidth);
+		ImGui::SliderInt("##TileSize", &m_IconSize, 48, 192);
 
-		ImGui::SliderInt("##IconSize", &m_IconSize, 20, 400);
+		ImGui::PopStyleVar();
 
 		ImGui::Separator();
 	}
 
+	void AssetManagerPanel::RenderFolderHierarchy()
+	{
+		ImGui::TextDisabled("Folders");
+		ImGui::Separator();
+
+		if (!std::filesystem::exists(m_RootDirectory))
+		{
+			ImGui::TextDisabled("Missing asset root");
+			return;
+		}
+
+		RenderDirectoryTreeNode(m_RootDirectory, true);
+	}
+
+	void AssetManagerPanel::RenderDirectoryTreeNode(const std::filesystem::path& directory, bool rootNode)
+	{
+		std::vector<std::filesystem::directory_entry> childDirectories;
+		for (const auto& entry : GetVisibleEntries(directory, false))
+		{
+			if (entry.is_directory())
+				childDirectories.push_back(entry);
+		}
+
+		std::string label = rootNode ? m_RootDirectory.filename().string() : directory.filename().string();
+		if (label.empty())
+			label = "Assets";
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+		if (PathsEqual(directory, m_CurrentDirectory))
+			flags |= ImGuiTreeNodeFlags_Selected;
+		if (rootNode)
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+		if (childDirectories.empty())
+			flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+		ImGui::PushID(directory.string().c_str());
+		bool open = ImGui::TreeNodeEx("##Folder", flags, "%s", label.c_str());
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+			m_CurrentDirectory = directory;
+
+		if (open && !childDirectories.empty())
+		{
+			for (const auto& childDirectory : childDirectories)
+				RenderDirectoryTreeNode(childDirectory.path());
+
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+	}
+
+	bool AssetManagerPanel::ShouldHideEntry(const std::filesystem::directory_entry& entry) const
+	{
+		std::string fileNameStr = entry.path().filename().string();
+
+		if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
+			return true;
+
+		return std::any_of(m_HiddenFiles.begin(), m_HiddenFiles.end(), [&](const std::string& hiddenPattern) {
+			if (hiddenPattern.find('*') != std::string::npos)
+			{
+				std::string pattern = std::regex_replace(hiddenPattern, std::regex("\\*"), ".*");
+				return std::regex_match(fileNameStr, std::regex(pattern));
+			}
+			return false;
+		});
+	}
+
+	bool AssetManagerPanel::EntryMatchesSearch(const std::filesystem::directory_entry& entry) const
+	{
+		if (m_SearchBuffer[0] == '\0')
+			return true;
+
+		std::string fileName = ToLowerCopy(entry.path().filename().string());
+		std::string search = ToLowerCopy(m_SearchBuffer.data());
+		return fileName.find(search) != std::string::npos;
+	}
+
+	std::vector<std::filesystem::directory_entry> AssetManagerPanel::GetVisibleEntries(const std::filesystem::path& directory, bool applySearch) const
+	{
+		std::vector<std::filesystem::directory_entry> entries;
+		std::error_code ec;
+		std::filesystem::directory_iterator it(directory, ec);
+		if (ec)
+			return entries;
+
+		for (std::filesystem::directory_iterator end; it != end; it.increment(ec))
+		{
+			if (ec)
+				break;
+
+			const auto& entry = *it;
+			if (ShouldHideEntry(entry))
+				continue;
+			if (applySearch && !EntryMatchesSearch(entry))
+				continue;
+
+			entries.push_back(entry);
+		}
+
+		std::sort(entries.begin(), entries.end(), [](const auto& lhs, const auto& rhs) {
+			bool lhsDirectory = lhs.is_directory();
+			bool rhsDirectory = rhs.is_directory();
+			if (lhsDirectory != rhsDirectory)
+				return lhsDirectory > rhsDirectory;
+
+			return ToLowerCopy(lhs.path().filename().string()) < ToLowerCopy(rhs.path().filename().string());
+		});
+
+		return entries;
+	}
+
 	void AssetManagerPanel::RenderDirectoryContents()
 	{
-		// Calculate how many columns we can fit
-		float padding = 16.0f;
-		float cellSize = m_IconSize + padding;
-		float panelWidth = ImGui::GetContentRegionAvail().x;
-		int numColumns = Math::Max((int)(panelWidth / cellSize), 1);
-
-		if (ImGui::BeginTable("AssetBrowserTable", numColumns, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedFit))
+		if (!std::filesystem::exists(m_CurrentDirectory))
 		{
-			std::filesystem::directory_iterator it(m_CurrentDirectory);
+			ImGui::TextDisabled("Current folder no longer exists.");
+			m_CurrentDirectory = m_RootDirectory;
+			return;
+		}
 
-			for (const auto& entry : it)
+		ImRect dropRect(ImGui::GetCurrentWindow()->InnerRect.Min, ImGui::GetCurrentWindow()->InnerRect.Max);
+		if (ImGui::GetDragDropPayload())
+			ImGui::GetWindowDrawList()->AddRect(dropRect.Min, dropRect.Max, ImGui::GetColorU32(ImGuiCol_DragDropTarget), 4.0f, 0, 2.0f);
+
+		auto entries = GetVisibleEntries(m_CurrentDirectory, true);
+		if (entries.empty())
+		{
+			ImGui::TextDisabled(m_SearchBuffer[0] == '\0' ? "This folder is empty." : "No assets match the search.");
+			HandleCurrentDirectoryDropTarget(dropRect);
+			return;
+		}
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		float iconSize = static_cast<float>(m_IconSize);
+		float tileWidth = std::max(iconSize + 24.0f, 96.0f);
+		float tileHeight = iconSize + ImGui::GetTextLineHeight() + style.ItemSpacing.y + 10.0f;
+		float panelWidth = ImGui::GetContentRegionAvail().x;
+		int numColumns = std::max(static_cast<int>(panelWidth / (tileWidth + style.ItemSpacing.x)), 1);
+
+		if (ImGui::BeginTable("AssetBrowserTable", numColumns, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoPadInnerX))
+		{
+			for (int column = 0; column < numColumns; column++)
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, tileWidth);
+
+			for (const auto& entry : entries)
 			{
 				std::string filePath = entry.path().string();
-				std::filesystem::path fileName = entry.path().filename();
-				std::string fileNameStr = fileName.string();
-
-				// Filter hidden files
-				if (std::find(m_HiddenFiles.begin(), m_HiddenFiles.end(), fileNameStr) != m_HiddenFiles.end())
-					continue;
-
-				// Filter hidden files that are a wildcard match (e.g. *.ebproj)
-				if (std::any_of(m_HiddenFiles.begin(), m_HiddenFiles.end(), [&](const std::string& hiddenPattern) {
-					if (hiddenPattern.find('*') != std::string::npos)
-					{
-						std::string pattern = std::regex_replace(hiddenPattern, std::regex("\\*"), ".*");
-						return std::regex_match(fileNameStr, std::regex(pattern));
-					}
-					return false;
-				}))
-				{
-					continue;
-				}
+				std::string fileNameStr = entry.path().filename().string();
 
 				ImGui::TableNextColumn();
-
-				// Push the unique file path as an ID to prevent ImGui button conflicts
 				ImGui::PushID(filePath.c_str());
+
+				float cellStartX = ImGui::GetCursorPosX();
+				float cellStartY = ImGui::GetCursorPosY();
+				float iconOffsetX = (tileWidth - iconSize) * 0.5f;
+				ImGui::SetCursorPosX(cellStartX + iconOffsetX);
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 
 				if (entry.is_directory())
-				{
 					RenderDirectoryEntry(entry);
-				}
 				else
-				{
 					RenderFileEntry(entry);
-				}
 
 				ImGui::PopStyleColor(3);
 
-				float textWidth = ImGui::CalcTextSize(fileNameStr.c_str()).x;
+				ImGui::SetCursorPosX(cellStartX);
+				RenderEntryLabel(fileNameStr, tileWidth);
 
-				// Only shift right if the text is smaller than the icon
-				if (textWidth < m_IconSize)
-				{
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (m_IconSize - textWidth) * 0.5f);
-				}
-
-				ImGui::TextWrapped("%s", fileNameStr.c_str());
+				float usedHeight = ImGui::GetCursorPosY() - cellStartY;
+				if (usedHeight < tileHeight)
+					ImGui::Dummy(ImVec2(1.0f, tileHeight - usedHeight));
 
 				ImGui::PopID();
 			}
 
-			// This completely separates the files from the drop target.
 			ImGui::EndTable();
 		}
 
-		// Create the dropzone
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		ImGui::Dummy(ImGui::GetContentRegionAvail());
-		ImGui::PopStyleVar();
+		HandleCurrentDirectoryDropTarget(dropRect);
+	}
 
-		// 3. HANDLE THE DROP TARGETS
-		if (ImGui::BeginDragDropTarget())
+	void AssetManagerPanel::HandleCurrentDirectoryDropTarget(const ImRect& dropRect)
+	{
+		if (dropRect.GetWidth() <= 0.0f || dropRect.GetHeight() <= 0.0f)
+			return;
+
+		if (ImGui::BeginDragDropTargetCustom(dropRect, ImGui::GetID("##CurrentDirectoryDropTarget")))
 		{
-			// Target A: Moving an existing Asset Prefab around the filesystem
 			std::string prefabPayload = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(prefabPayload.c_str()))
 			{
-				std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+				std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
 				std::filesystem::path destPath = m_CurrentDirectory / std::filesystem::path(filePath).filename();
 				std::error_code ec;
 				std::filesystem::copy(filePath, destPath, std::filesystem::copy_options::overwrite_existing, ec);
@@ -222,11 +412,10 @@ namespace Ember {
 				else
 				{
 					EB_CORE_INFO("Successfully copied asset to: {0}", destPath.string());
-					Application::Instance().GetAssetManager().Load<Prefab>(destPath.string());
+					Application::Instance().GetAssetManager().Load<Prefab>(destPath.string(), false);
 				}
 			}
 
-			// Target B: Dropping a Scene Entity to create a BRAND NEW Prefab!
 			std::string entityPayload = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(entityPayload.c_str()))
 			{
@@ -237,19 +426,17 @@ namespace Ember {
 					Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
 					if (entity != Constants::Entities::InvalidEntityID)
 					{
-						// Construct the save path using the active directory
 						std::string filePath = (m_CurrentDirectory / (entity.GetName() + ".ebprefab")).string();
 
-						// Create the prefab asset and save it to disk
 						SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 						if (prefab == nullptr)
 						{
 							auto evt = UINotificationEvent(std::format("Failed to create prefab from entity {}!", entity.GetName()), UINotificationEvent::Error);
 							m_Context->EventCallback(evt);
+							ImGui::EndDragDropTarget();
 							return;
 						}
 
-						// Success notification
 						auto evt = UINotificationEvent(std::format("Prefab {} created!", prefab->GetName()));
 						m_Context->EventCallback(evt);
 					}
@@ -270,13 +457,31 @@ namespace Ember {
 		{
 			// TODO: Select the item
 		}
+
+		if (Application::Instance().GetAssetManager().ContainsAssetWithPath(filePath.string()))
+		{
+			ImVec2 imageMin = ImGui::GetItemRectMin();
+			ImVec2 imageMax = ImGui::GetItemRectMax();
+			float badgeSize = std::clamp(static_cast<float>(m_IconSize) * 0.22f, 16.0f, 22.0f);
+			ImVec2 badgeMin(imageMax.x - badgeSize - 4.0f, imageMin.y + 4.0f);
+			ImVec2 badgeMax(imageMax.x - 4.0f, imageMin.y + 4.0f + badgeSize);
+
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			drawList->AddRectFilled(badgeMin, badgeMax, ImGui::GetColorU32(ImVec4(0.15f, 0.55f, 0.95f, 0.95f)), 4.0f);
+			drawList->AddRect(badgeMin, badgeMax, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.35f)), 4.0f);
+
+			const char* badgeText = "A";
+			ImVec2 textSize = ImGui::CalcTextSize(badgeText);
+			ImVec2 textPos(badgeMin.x + (badgeSize - textSize.x) * 0.5f, badgeMin.y + (badgeSize - textSize.y) * 0.5f);
+			drawList->AddText(textPos, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)), badgeText);
+		}
 		
 		RenderFileEntryContextMenu(entry);
 
 		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 		{
 			auto filePathAbs = std::filesystem::absolute(filePath);
-			auto payloadType = DragDropUtils::ExtensionToDragDropPayloadType(filePathAbs.extension().string());
+			auto payloadType = AssetPayloadTypeForPath(filePathAbs);
 			auto payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
 
 			ImGui::SetDragDropPayload(payloadStr.c_str(), filePathAbs.string().c_str(), filePathAbs.string().size() + 1);
@@ -317,6 +522,9 @@ namespace Ember {
 			for (int i = 0; i < std::to_underlying(DragDropPayloadType::Count); i++)
 			{
 				auto payloadType = static_cast<DragDropPayloadType>(i);
+				if (payloadType == DragDropPayloadType::None || payloadType == DragDropPayloadType::SceneEntity)
+					continue;
+
 				std::string payloadStr = DragDropUtils::DragDropPayloadTypeToString(payloadType);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadStr.c_str()))
 				{
@@ -427,6 +635,22 @@ namespace Ember {
 		}
 	}
 
+	void AssetManagerPanel::RenderEntryLabel(const std::string& label, float tileWidth)
+	{
+		ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
+		ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
+		float visibleTextWidth = std::min(textSize.x, tileWidth);
+		float textX = cursorScreenPos.x + std::max((tileWidth - visibleTextWidth) * 0.5f, 0.0f);
+		ImVec2 textMin(textX, cursorScreenPos.y);
+		ImVec2 textMax(cursorScreenPos.x + tileWidth, cursorScreenPos.y + ImGui::GetTextLineHeight());
+
+		ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), textMin, textMax, textMax.x, label.c_str(), nullptr, &textSize);
+		ImGui::Dummy(ImVec2(tileWidth, ImGui::GetTextLineHeight()));
+
+		if (ImGui::IsItemHovered() && textSize.x > tileWidth)
+			ImGui::SetTooltip("%s", label.c_str());
+	}
+
 	void AssetManagerPanel::RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry)
 	{
 		const std::filesystem::path filePath = entry.path();
@@ -434,8 +658,30 @@ namespace Ember {
 
 		if (ImGui::BeginPopupContextItem())
 		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+			bool canAddAsAsset = !assetManager.ContainsAssetWithPath(filePath.string()) && IsValidAssetFile(filePath);
+			if (canAddAsAsset)
+			{
+				if (ImGui::MenuItem("Add as Asset"))
+				{
+					SharedPtr<Asset> asset = AddFileAsAsset(filePath);
+					if (asset)
+					{
+						auto evt = UINotificationEvent(std::format("Added asset: {}", asset->GetName()));
+						m_Context->EventCallback(evt);
+					}
+					else
+					{
+						auto evt = UINotificationEvent(std::format("Failed to add asset: {}", fileName.string()), UINotificationEvent::Error);
+						m_Context->EventCallback(evt);
+					}
+				}
+
+				ImGui::Separator();
+			}
+
 			// Render asset-specific options based on the file extension
-			auto assetType = DragDropUtils::ExtensionToDragDropPayloadType(filePath.extension().string());
+			auto assetType = AssetPayloadTypeForPath(filePath);
 			switch (assetType)
 			{
 			case DragDropPayloadType::AssetModel:
@@ -622,6 +868,69 @@ namespace Ember {
 
 			ImGui::EndPopup();
 		}
+	}
+
+	bool AssetManagerPanel::IsValidAssetFile(const std::filesystem::path& filePath) const
+	{
+		return AssetPayloadTypeForPath(filePath) != DragDropPayloadType::None;
+	}
+
+	SharedPtr<Asset> AssetManagerPanel::AddFileAsAsset(const std::filesystem::path& filePath)
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		std::string path = filePath.string();
+		SharedPtr<Asset> asset = nullptr;
+
+		switch (AssetPayloadTypeForPath(filePath))
+		{
+		case DragDropPayloadType::AssetTexture:
+			asset = assetManager.Load<Texture2D>(path, false);
+			break;
+		case DragDropPayloadType::AssetMesh:
+			asset = assetManager.Load<Mesh>(path, false);
+			break;
+		case DragDropPayloadType::AssetModel:
+			asset = assetManager.Load<Model>(path, false);
+			break;
+		case DragDropPayloadType::AssetScript:
+			asset = assetManager.Load<Script>(path, false);
+			break;
+		case DragDropPayloadType::AssetShader:
+			asset = assetManager.Load<Shader>(path, false);
+			break;
+		case DragDropPayloadType::AssetMaterial:
+			asset = assetManager.Load<MaterialBase>(path, false);
+			break;
+		case DragDropPayloadType::AssetPhysicsMaterial:
+			asset = assetManager.Load<PhysicsMaterial>(path, false);
+			break;
+		case DragDropPayloadType::AssetPrefab:
+			asset = assetManager.Load<Prefab>(path, false);
+			break;
+		case DragDropPayloadType::AssetFont:
+			asset = assetManager.Load<Font>(path, false);
+			break;
+		case DragDropPayloadType::AssetAudioClip:
+			asset = assetManager.Load<AudioClip>(path, false);
+			break;
+		case DragDropPayloadType::Scene:
+			asset = assetManager.Load<Scene>(path, false);
+			break;
+		default:
+			return nullptr;
+		}
+
+		if (asset)
+		{
+			asset->SetIsEngineAsset(false);
+			if (auto project = ProjectManager::GetActive())
+			{
+				AssetRegistrySerializer serializer(&assetManager);
+				serializer.Serialize(project->GetAssetsFilePath().string());
+			}
+		}
+
+		return asset;
 	}
 
 	void AssetManagerPanel::RenderTextureOptions(const std::string& filePath)
