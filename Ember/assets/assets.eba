@@ -51,6 +51,26 @@ Assets:
     UUID: 15863835653609318779
     Name: HolographicReticle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
+  - Type: Texture
+    UUID: 739169936010815459
+    Name: test
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/test.png
+  - Type: Texture
+    UUID: 999464380830444839
+    Name: AssaultRifle_ARNormal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_ARNormal.png
+  - Type: Texture
+    UUID: 12161434787912617356
+    Name: AssaultRifle_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_ARColor.png
+  - Type: Texture
+    UUID: 7830322144268688457
+    Name: AssaultRifle_ARMetallic-ARRoughness.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_ARMetallic-ARRoughness.png
+  - Type: Texture
+    UUID: 11404010814314261783
+    Name: AssaultRifle_ORM_Mat0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_ORM_Mat0.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -60,13 +80,13 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
-    UUID: 10843162672597406671
-    Name: WeaponMovement
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
-  - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
+  - Type: Script
+    UUID: 10843162672597406671
+    Name: WeaponMovement
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
   - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
@@ -159,6 +179,10 @@ Assets:
     UUID: 7112033288364404519
     Name: Tracer_Material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Tracer_Material.ebmat
+  - Type: Material
+    UUID: 3244409358148610762
+    Name: AssaultRifle_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_Weapon.ebmat
   - Type: Mesh
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
@@ -183,6 +207,18 @@ Assets:
     UUID: 12443871631894294282
     Name: AmmoPowerup_Cylinder.001_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/PowerUps/Ammo/AmmoPowerup_Cylinder.001_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 10113711570961725823
+    Name: AssaultRifle_Cube.001_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_Cube.001_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 634775080781074912
+    Name: AssaultRifle_Cube.003_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_Cube.003_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 7347729066398548849
+    Name: AssaultRifle_Cube.004_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle_Resources/AssaultRifle_Cube.004_Prim0.ebmesh
   - Type: Skeleton
     UUID: 9200567303542518273
     Name: M4
@@ -203,6 +239,10 @@ Assets:
     UUID: 7109210442730424575
     Name: AmmoPowerup
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/PowerUps/Ammo/AmmoPowerup.ebmodel
+  - Type: Model
+    UUID: 4862365534485668642
+    Name: AssaultRifle
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/AssaultRifle.ebmodel
   - Type: Prefab
     UUID: 7525331889912364400
     Name: M4_Pickup

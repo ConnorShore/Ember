@@ -112,6 +112,15 @@ namespace Ember {
 		}
 
 		std::string modelName = SanitizeFileName(std::filesystem::path(inputFile).stem().string());
+		std::filesystem::path modelOutputDirectory = std::filesystem::path(outputDirectory);
+		std::filesystem::path resourceOutputDirectory = modelOutputDirectory / (modelName + "_Resources");
+		std::error_code resourceDirectoryError;
+		std::filesystem::create_directories(resourceOutputDirectory, resourceDirectoryError);
+		if (resourceDirectoryError) {
+			EB_CORE_ERROR("GLTF Error: Failed to create resource directory '{}': {}", resourceOutputDirectory.string(), resourceDirectoryError.message());
+			return std::nullopt;
+		}
+
 		ModelCookReport report;
 		auto& am = Application::Instance().GetAssetManager();
 		bool modelIsSkinned = !model.skins.empty();
@@ -168,7 +177,7 @@ namespace Ember {
 
 			std::string name = img.name.empty() ? "Tex_" + std::to_string(i) : SanitizeFileName(img.name);
 			std::string fileName = modelName + "_" + name + ".png";
-			std::string fullPath = (std::filesystem::path(outputDirectory) / fileName).string();
+			std::string fullPath = (resourceOutputDirectory / fileName).string();
 
 			if (!std::filesystem::exists(fullPath)) {
 				stbi_write_png(fullPath.c_str(), img.width, img.height, img.component, img.image.data(), img.width * img.component);
@@ -213,7 +222,7 @@ namespace Ember {
 
 		for (size_t i = 0; i < model.materials.size(); i++) {
 			bool materialIsSkinned = i < materialUsesSkin.size() ? materialUsesSkin[i] : false;
-			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, outputDirectory, cookedImages, materialIsSkinned));
+			report.Materials.push_back(ProcessMaterial(modelName, (int)i, model, resourceOutputDirectory.string(), cookedImages, materialIsSkinned));
 			am.Load<MaterialBase>(report.Materials.back().id, report.Materials.back().name, report.Materials.back().path, false);
 		}
 
@@ -221,7 +230,7 @@ namespace Ember {
 		std::vector<std::vector<CookedAssetInfo>> meshToPrims(model.meshes.size());
 		for (size_t i = 0; i < model.meshes.size(); i++) {
 			int rigidBoneID = (i < meshRigidBoneMap.size() && meshRigidBoneMap[i] >= 0) ? meshRigidBoneMap[i] : -1;
-			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, outputDirectory, rigidBoneID);
+			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, resourceOutputDirectory.string(), rigidBoneID);
 			for (auto& p : meshToPrims[i]) {
 				report.Meshes.push_back(p);
 				am.Load<Mesh>(p.id, p.name, p.path, false);
@@ -269,7 +278,7 @@ namespace Ember {
 
 			skeletonID = UUID();
 			auto skeleton = SharedPtr<Skeleton>::Create(skeletonID, modelName + "_Skeleton", bones, invBinds);
-			std::string skelPath = (std::filesystem::path(outputDirectory) / (modelName + ".ebskeleton")).string();
+			std::string skelPath = (resourceOutputDirectory / (modelName + ".ebskeleton")).string();
 			SkeletonSerializer::Serialize(skelPath, skeleton);
 			report.Skeleton = { skeletonID, modelName + "_Skeleton", skelPath };
 		}
@@ -310,20 +319,20 @@ namespace Ember {
 			std::vector<BoneAnimationTrack> trackList;
 			for (auto& pair : tracks) trackList.push_back(pair.second);
 			auto anim = SharedPtr<Animation>::Create(gAnim.name.empty() ? "Anim_" + std::to_string(i) : gAnim.name, duration, trackList);
-			std::string animPath = (std::filesystem::path(outputDirectory) / (modelName + "_" + anim->GetName() + ".ebanim")).string();
+			std::string animPath = (resourceOutputDirectory / (modelName + "_" + anim->GetName() + ".ebanim")).string();
 			AnimationSerializer::Serialize(animPath, anim);
 			report.Animations.push_back({ UUID(), anim->GetName(), animPath });
 		}
 
 		// 5. COOK MODEL HIERARCHY
 		UUID modelUUID = UUID();
-		std::string manifestPath = (std::filesystem::path(outputDirectory) / (modelName + ".ebmodel")).string();
+		std::string manifestPath = (modelOutputDirectory / (modelName + ".ebmodel")).string();
 
 		CookedModelNode intermediateRoot;
 		intermediateRoot.Name = modelName + "_Root";
 		const auto& scene = model.scenes[sceneIndex];
 		for (int nodeIdx : scene.nodes) {
-			intermediateRoot.ChildNodes.push_back(ProcessNode(nodeIdx, model, outputDirectory, meshToPrims));
+			intermediateRoot.ChildNodes.push_back(ProcessNode(nodeIdx, model, resourceOutputDirectory.string(), meshToPrims));
 		}
 
 		auto convertNode = [&](const CookedModelNode& cooked, auto& self) -> ModelNode {
