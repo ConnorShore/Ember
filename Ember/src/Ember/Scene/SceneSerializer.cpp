@@ -1335,10 +1335,9 @@ namespace Ember {
 		ryml::NodeRef entitiesNode = root["Entities"];
 		entitiesNode |= ryml::SEQ;
 
-		auto view = m_Scene->GetRegistry().Query<IDComponent>();
-		for (auto entityID : view)
+		auto entities = m_Scene->GetAllEntities();
+		for (Entity entity : entities)
 		{
-			Entity entity = { entityID, m_Scene.Ptr() };
 			if (entity == Constants::Entities::InvalidEntityID)
 				continue;
 
