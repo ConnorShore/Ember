@@ -166,7 +166,7 @@ namespace Ember {
 			if (animator.SkeletonHandle == Constants::InvalidUUID)
 				return nullptr;
 
-			return Application::Instance().GetAssetManager().GetAsset<Skeleton>(animator.SkeletonHandle);
+			return m_AssetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
 		}
 
 		void SetTargetEntity(BoneSocketComponent& component, UUID entityHandle)

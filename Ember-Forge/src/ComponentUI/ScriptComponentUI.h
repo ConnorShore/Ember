@@ -35,13 +35,12 @@ namespace Ember {
 	private:
 		void DrawProperties(ScriptComponent& component, const std::filesystem::path& scriptDir, bool& openCreateModal)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
 			bool scriptExists = component.ScriptHandle != Constants::InvalidUUID;
 
 			std::string fileName = "None (Script)";
 			if (scriptExists)
 			{
-				auto scriptAsset = assetManager.GetAsset<Script>(component.ScriptHandle);
+				auto scriptAsset = m_AssetManager.GetAsset<Script>(component.ScriptHandle);
 				if (scriptAsset)
 					fileName = std::filesystem::path(scriptAsset->GetFilePath()).filename().string();
 			}
@@ -66,7 +65,7 @@ namespace Ember {
 
 				if (UI::PropertyGrid::AssetReference("Script Asset", fileName, payloadType, droppedPath, browseFunc, clearFunc))
 				{
-					auto script = assetManager.Load<Script>(droppedPath);
+					auto script = m_AssetManager.Load<Script>(droppedPath);
 					component.ScriptHandle = script->GetUUID();
 					component.Initialized = false;
 				}
@@ -76,7 +75,7 @@ namespace Ember {
 				if (scriptExists)
 				{
 					UI::UICallbackFunc editFunc = [&]() {
-						std::string scriptPath = assetManager.GetAsset<Script>(component.ScriptHandle)->GetFilePath();
+						std::string scriptPath = m_AssetManager.GetAsset<Script>(component.ScriptHandle)->GetFilePath();
 						ScriptEditor::OpenScript(scriptPath);
 						};
 					UI::PropertyGrid::ActionRow("Actions", "Edit Script", editFunc, "Create New", createFunc);
@@ -146,7 +145,6 @@ namespace Ember {
 
 		void HandleScriptImport(const std::string& sourceFile, const std::filesystem::path& scriptDir, ScriptComponent& component)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
 			std::string finalPath = sourceFile;
 
 			// If script is outside the project's Asset directory, copy it in
@@ -158,13 +156,13 @@ namespace Ember {
 
 			// Avoid reloading if it's the exact same asset
 			SharedPtr<Script> scriptAsset;
-			if (assetManager.GetAsset<Script>(component.ScriptHandle) && assetManager.GetAsset<Script>(component.ScriptHandle)->GetFilePath() == finalPath)
+			if (m_AssetManager.GetAsset<Script>(component.ScriptHandle) && m_AssetManager.GetAsset<Script>(component.ScriptHandle)->GetFilePath() == finalPath)
 			{
-				scriptAsset = assetManager.GetAsset<Script>(component.ScriptHandle);
+				scriptAsset = m_AssetManager.GetAsset<Script>(component.ScriptHandle);
 			}
 			else
 			{
-				scriptAsset = assetManager.Load<Script>(finalPath);
+				scriptAsset = m_AssetManager.Load<Script>(finalPath);
 				scriptAsset->SetIsEngineAsset(false);
 			}
 
@@ -185,8 +183,7 @@ namespace Ember {
 			newScriptFile.close();
 
 			// Load it
-			auto& assetManager = Application::Instance().GetAssetManager();
-			auto scriptAsset = assetManager.Load<Script>(filepath);
+			auto scriptAsset = m_AssetManager.Load<Script>(filepath);
 			scriptAsset->SetIsEngineAsset(false);
 
 			// Update component
@@ -222,8 +219,7 @@ namespace Ember {
 			if (component.ScriptHandle == Constants::InvalidUUID)
 				return;
 
-			auto& assetManager = Application::Instance().GetAssetManager();
-			auto scriptAsset = assetManager.GetAsset<Script>(component.ScriptHandle);
+			auto scriptAsset = m_AssetManager.GetAsset<Script>(component.ScriptHandle);
 			if (!scriptAsset)
 				return;
 

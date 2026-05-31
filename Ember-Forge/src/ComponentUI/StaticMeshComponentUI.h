@@ -22,7 +22,6 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(StaticMeshComponent& component) override
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
 			bool meshExists = component.MeshHandle != Constants::InvalidUUID;
 			std::string meshName = "None (Mesh)";
 
@@ -38,7 +37,7 @@ namespace Ember {
 					meshName = "Capsule";
 				else
 				{
-					auto meshAsset = assetManager.GetAsset<Mesh>(component.MeshHandle);
+					auto meshAsset = m_AssetManager.GetAsset<Mesh>(component.MeshHandle);
 					if (meshAsset)
 						meshName = std::filesystem::path(meshAsset->GetFilePath()).filename().string();
 				}
@@ -59,7 +58,7 @@ namespace Ember {
 
 				if (UI::PropertyGrid::AssetReference("Mesh", meshName, payloadType, droppedPath, browseFunc, clearFunc))
 				{
-					auto mesh = assetManager.Load<Mesh>(droppedPath);
+					auto mesh = m_AssetManager.Load<Mesh>(droppedPath);
 					if (mesh)
 						component.MeshHandle = mesh->GetUUID();
 				}
@@ -84,7 +83,7 @@ namespace Ember {
 						std::string meshFile = FileDialog::OpenFile(defaultDir.c_str(), "3D Model (*.obj;*.fbx)", "*.obj;*.fbx");
 						if (!meshFile.empty())
 						{
-							auto meshAsset = assetManager.Load<Mesh>(meshFile);
+							auto meshAsset = m_AssetManager.Load<Mesh>(meshFile);
 							if (meshAsset)
 								component.MeshHandle = meshAsset->GetUUID();
 						}

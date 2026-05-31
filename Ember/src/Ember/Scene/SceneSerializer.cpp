@@ -18,8 +18,119 @@
 #include <fstream>
 #include <sstream>
 #include <queue>
+#include <vector>
 
 namespace Ember {
+
+#define EMBER_FOR_EACH_COMPONENT_ORDER_TYPE(X) \
+	X(IDComponent) \
+	X(TagComponent) \
+	X(RelationshipComponent) \
+	X(TransformComponent) \
+	X(RigidBodyComponent) \
+	X(BoxColliderComponent) \
+	X(SphereColliderComponent) \
+	X(CapsuleColliderComponent) \
+	X(ConvexMeshColliderComponent) \
+	X(ConcaveMeshColliderComponent) \
+	X(CharacterControllerComponent) \
+	X(SpriteComponent) \
+	X(StaticMeshComponent) \
+	X(SkinnedMeshComponent) \
+	X(MaterialComponent) \
+	X(CameraComponent) \
+	X(DirectionalLightComponent) \
+	X(SpotLightComponent) \
+	X(PointLightComponent) \
+	X(ScriptComponent) \
+	X(OutlineComponent) \
+	X(EditorIconComponent) \
+	X(AnimatorComponent) \
+	X(BoneSocketComponent) \
+	X(PrefabComponent) \
+	X(LifetimeComponent) \
+	X(TextComponent) \
+	X(DisabledComponent) \
+	X(PoolComponent) \
+	X(PoolConfigComponent) \
+	X(ParticleEmitterComponent) \
+	X(PostProcessVolumeComponent) \
+	X(AudioSourceComponent) \
+	X(SingleSoundComponent) \
+	X(AudioListenerComponent) \
+	X(WaypointComponent) \
+	X(AIAgentComponent) \
+	X(AIPathComponent) \
+	X(NavigationGridComponent) \
+	X(LocalAvoidanceComponent) \
+	X(CanvasComponent) \
+	X(RectTransformComponent)
+
+	template<typename T>
+	static bool TrySerializeComponentOrderEntry(Entity entity, ComponentType componentType, ryml::NodeRef& componentOrderNode, const char* componentName)
+	{
+		if (entity.GetComponentType<T>() != componentType)
+			return false;
+
+		if (entity.ContainsComponent<T>())
+			componentOrderNode.append_child() << std::string(componentName);
+
+		return true;
+	}
+
+	static void SerializeComponentOrder(ryml::NodeRef& entityNode, Entity entity)
+	{
+		ryml::NodeRef componentOrderNode = entityNode["ComponentOrder"];
+		componentOrderNode |= ryml::SEQ;
+
+		for (ComponentType componentType : entity.GetComponentOrder())
+		{
+#define TRY_SERIALIZE_COMPONENT_ORDER_ENTRY(Component) \
+			if (TrySerializeComponentOrderEntry<Component>(entity, componentType, componentOrderNode, #Component)) \
+				continue;
+
+			EMBER_FOR_EACH_COMPONENT_ORDER_TYPE(TRY_SERIALIZE_COMPONENT_ORDER_ENTRY)
+
+#undef TRY_SERIALIZE_COMPONENT_ORDER_ENTRY
+		}
+	}
+
+	template<typename T>
+	static bool TryDeserializeComponentOrderEntry(Entity entity, const std::string& componentName, std::vector<ComponentType>& componentOrder, const char* expectedComponentName)
+	{
+		if (componentName != expectedComponentName)
+			return false;
+
+		if (entity.ContainsComponent<T>())
+			componentOrder.push_back(entity.GetComponentType<T>());
+
+		return true;
+	}
+
+	static void DeserializeComponentOrder(ryml::NodeRef& entityNode, Entity entity)
+	{
+		if (!entityNode.has_child("ComponentOrder"))
+			return;
+
+		std::vector<ComponentType> componentOrder;
+		for (ryml::NodeRef componentNode : entityNode["ComponentOrder"].children())
+		{
+			std::string componentName;
+			componentNode >> componentName;
+
+#define TRY_DESERIALIZE_COMPONENT_ORDER_ENTRY(Component) \
+			if (TryDeserializeComponentOrderEntry<Component>(entity, componentName, componentOrder, #Component)) \
+				continue;
+
+			EMBER_FOR_EACH_COMPONENT_ORDER_TYPE(TRY_DESERIALIZE_COMPONENT_ORDER_ENTRY)
+
+#undef TRY_DESERIALIZE_COMPONENT_ORDER_ENTRY
+		}
+
+		entity.SetComponentOrder(componentOrder);
+	}
+
+#undef EMBER_FOR_EACH_COMPONENT_ORDER_TYPE
 
 	// =========================================================================
 	// HELPER: SERIALIZE SINGLE ENTITY
@@ -28,6 +139,7 @@ namespace Ember {
 	{
 		entityNode |= ryml::MAP;
 		entityNode["Entity"] << (uint64_t)entity.GetComponent<IDComponent>().ID;
+		SerializeComponentOrder(entityNode, entity);
 
 		if (entity.ContainsComponent<TagComponent>())
 		{
@@ -1319,6 +1431,8 @@ namespace Ember {
 			Util::DeserializeVector2f(rectNode["AnchoredPosition"], rect.AnchoredPosition);
 			rectNode["Rotation"] >> rect.Rotation;
 		}
+
+		DeserializeComponentOrder(entityNode, deserializedEntity);
 	}
 
 

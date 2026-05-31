@@ -101,13 +101,12 @@ namespace Ember {
 	private:
 		void RenderPhysicsMaterialSection(T& component)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
 			bool matExists = component.PhysicsMaterialHandle != Constants::InvalidUUID;
 			std::string matName = "None (Physics Material)";
 
 			if (matExists)
 			{
-				auto matAsset = assetManager.GetAsset<PhysicsMaterial>(component.PhysicsMaterialHandle);
+				auto matAsset = this->m_AssetManager.GetAsset<PhysicsMaterial>(component.PhysicsMaterialHandle);
 				if (matAsset)
 					matName = std::filesystem::path(matAsset->GetFilePath()).filename().string();
 			}
@@ -130,7 +129,7 @@ namespace Ember {
 
 				if (UI::PropertyGrid::AssetReference("PhysicsMaterial", matName, payloadType, droppedPath, browseFunc, clearFunc))
 				{
-					auto mat = assetManager.Load<PhysicsMaterial>(droppedPath);
+					auto mat = this->m_AssetManager.Load<PhysicsMaterial>(droppedPath);
 					if (mat)
 						component.PhysicsMaterialHandle = mat->GetUUID(); // FIXED: Changed mesh->GetUUID() to mat->GetUUID()
 				}
@@ -150,7 +149,7 @@ namespace Ember {
 						std::string matFile = FileDialog::OpenFile(defaultDir.c_str(), "Physics Material (*.ebpmat)", "*.ebpmat;");
 						if (!matFile.empty())
 						{
-							auto matAsset = assetManager.Load<PhysicsMaterial>(matFile);
+							auto matAsset = this->m_AssetManager.Load<PhysicsMaterial>(matFile);
 							if (matAsset)
 								component.PhysicsMaterialHandle = matAsset->GetUUID();
 						}
@@ -180,7 +179,7 @@ namespace Ember {
 				if (ImGui::Button("Create", ImVec2(120, 0)))
 				{
 					// Use your AssetManager's variadic Create template to instantly build and register it!
-					auto newMat = assetManager.Create<PhysicsMaterial>(UUID(), std::string(matNameBuffer));
+					auto newMat = this->m_AssetManager.Create<PhysicsMaterial>(UUID(), std::string(matNameBuffer));
 					std::string newMatName = newMat->GetName();
 
 					// Assign the newly created UUID directly to the component
@@ -221,7 +220,7 @@ namespace Ember {
 			// Render the physics material properties if one is assigned
 			if (matExists)
 			{
-				auto matAsset = assetManager.GetAsset<PhysicsMaterial>(component.PhysicsMaterialHandle);
+				auto matAsset = this->m_AssetManager.GetAsset<PhysicsMaterial>(component.PhysicsMaterialHandle);
 				if (matAsset)
 				{
 					if (UI::PropertyGrid::Begin("PhysicsMaterialProps"))

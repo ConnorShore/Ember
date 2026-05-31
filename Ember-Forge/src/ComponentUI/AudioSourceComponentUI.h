@@ -60,9 +60,6 @@ namespace Ember {
 	private:
 		void RenderAudioClipSelector(AudioSourceComponent& component)
 		{
-			// Audio asset selector
-			auto& assetManager = Application::Instance().GetAssetManager();
-
 			auto chooseClipFunc = [&]() {
 				ImGui::OpenPopup("ChooseAudioClipPopup");
 				};
@@ -74,7 +71,7 @@ namespace Ember {
 			bool clipExists = component.AudioClipHandle != Constants::InvalidUUID;
 			if (clipExists)
 			{
-				auto audioAsset = assetManager.GetAsset<AudioClip>(component.AudioClipHandle);
+				auto audioAsset = m_AssetManager.GetAsset<AudioClip>(component.AudioClipHandle);
 				if (audioAsset)
 				{
 					UI::PropertyGrid::AssetReference("Audio Clip", audioAsset->GetName(), DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetAudioClip),
@@ -90,12 +87,12 @@ namespace Ember {
 			// Set component handle
 			if (!selectedAudioClip.empty())
 			{
-				auto audioAsset = assetManager.GetAssetByPath<AudioClip>(selectedAudioClip);
+				auto audioAsset = m_AssetManager.GetAssetByPath<AudioClip>(selectedAudioClip);
 				if (audioAsset != nullptr)
 					component.AudioClipHandle = audioAsset->GetUUID();
 				else
 				{
-					auto audioAsset = assetManager.Load<AudioClip>(selectedAudioClip);
+					auto audioAsset = m_AssetManager.Load<AudioClip>(selectedAudioClip);
 					component.AudioClipHandle = audioAsset ? audioAsset->GetUUID() : (UUID)Constants::InvalidUUID;
 				}
 			}
@@ -109,7 +106,7 @@ namespace Ember {
 					std::string audioFile = FileDialog::OpenFile(defaultDir.c_str(), std::format("Audio ({})", fileTypes).c_str(), fileTypes.c_str());
 					if (!audioFile.empty())
 					{
-						auto audioAsset = assetManager.Load<AudioClip>(audioFile);
+						auto audioAsset = m_AssetManager.Load<AudioClip>(audioFile);
 						if (audioAsset)
 							component.AudioClipHandle = audioAsset->GetUUID();
 					}

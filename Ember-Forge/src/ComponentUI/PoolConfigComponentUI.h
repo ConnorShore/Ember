@@ -24,9 +24,8 @@ namespace Ember {
 				UI::PropertyGrid::Checkbox("Loop Entities", component.LoopEntities);
 				
 				// Drag drop and picker for prefab
-				auto& assetManager = Application::Instance().GetAssetManager();
 				bool prefabExists = component.PrefabHandle != Constants::InvalidUUID;
-				if (!assetManager.ContainsAsset(component.PrefabHandle))
+				if (!m_AssetManager.ContainsAsset(component.PrefabHandle))
 				{
 					component.PrefabHandle = Constants::InvalidUUID;
 					prefabExists = false;
@@ -35,7 +34,7 @@ namespace Ember {
 				std::string prefabName = "None";
 				if (prefabExists)
 				{
-					auto prefabAsset = assetManager.GetAsset<Prefab>(component.PrefabHandle);
+					auto prefabAsset = m_AssetManager.GetAsset<Prefab>(component.PrefabHandle);
 					prefabName = std::filesystem::path(prefabAsset->GetFilePath()).filename().string();
 				}
 
@@ -52,7 +51,7 @@ namespace Ember {
 
 				if (UI::PropertyGrid::AssetReference("Prefab", prefabName, payloadType, droppedPath, browseFunc, clearFunc))
 				{
-					auto prefab = assetManager.Load<Prefab>(droppedPath);
+					auto prefab = m_AssetManager.Load<Prefab>(droppedPath);
 					if (prefab)
 						component.PrefabHandle = prefab->GetUUID();
 					else

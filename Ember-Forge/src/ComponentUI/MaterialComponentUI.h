@@ -34,7 +34,7 @@ namespace Ember {
 
 			if (containsMaterial)
 			{
-				material = Application::Instance().GetAssetManager().GetAsset<MaterialBase>(component.MaterialHandle);
+				material = m_AssetManager.GetAsset<MaterialBase>(component.MaterialHandle);
 			}
 
 			// 1. Material Selection & Creation
@@ -140,8 +140,6 @@ namespace Ember {
 
 		void DrawShaderSection(SharedPtr<MaterialBase>& material)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-
 			ImGui::TextDisabled("SHADER SETTINGS");
 			ImGui::Spacing();
 
@@ -152,7 +150,7 @@ namespace Ember {
 				auto clearShaderFunc = [&]() { material->SetShader(nullptr); };
 
 				std::map<std::string, std::vector<SharedPtr<Shader>>> shaderMap;
-				auto shaders = assetManager.GetAssetsOfType<Shader>();
+				auto shaders = m_AssetManager.GetAssetsOfType<Shader>();
 				for (auto& shader : shaders)
 				{
 					if (shader->IsEngineAsset()) 
@@ -310,7 +308,7 @@ namespace Ember {
 							material->SetUniform(prop.UniformName, defaultTex);
 							}))
 						{
-							auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
+							auto newTexture = m_AssetManager.Load<Texture2D>(droppedFilePath);
 							material->SetUniform(prop.UniformName, newTexture);
 
 							auto evt = UINotificationEvent(std::format("{} texture updated to {}", prop.UniformName, droppedFilePath));
@@ -441,7 +439,7 @@ namespace Ember {
 		{
 			std::string entityName = m_Context->SelectedEntity.GetComponent<TagComponent>().Tag;
 			std::string newMaterialName = entityName + "_Material";
-			auto newMaterial = Application::Instance().GetAssetManager().Create<Material>(newMaterialName, nullptr, RenderQueue::Opaque);
+			auto newMaterial = m_AssetManager.Create<Material>(newMaterialName, nullptr, RenderQueue::Opaque);
 
 			if (newMaterial)
 			{
@@ -517,17 +515,15 @@ namespace Ember {
 
 		SharedPtr<Texture2D> GetDefaultTextureForUniform(const std::string& uniformName)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-
 			std::string nameLower = uniformName;
 			std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
 
 			if (nameLower.find("normal") != std::string::npos || nameLower.find("bump") != std::string::npos)
-				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNormalTex);
+				return m_AssetManager.GetAsset<Texture2D>(Constants::Assets::DefaultNormalTex);
 			else if (nameLower.find("emiss") != std::string::npos || nameLower.find("ao") != std::string::npos)
-				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultBlackTex);
+				return m_AssetManager.GetAsset<Texture2D>(Constants::Assets::DefaultBlackTex);
 			else
-				return assetManager.GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
+				return m_AssetManager.GetAsset<Texture2D>(Constants::Assets::DefaultWhiteTex);
 		}
 
 		// ==============================================================================
@@ -634,8 +630,7 @@ namespace Ember {
 			}
 			out.close();
 
-			auto& assetManager = Application::Instance().GetAssetManager();
-			auto shaderAsset = assetManager.Load<Shader>(shaderName, filePath.string());
+			auto shaderAsset = m_AssetManager.Load<Shader>(shaderName, filePath.string());
 			if (shaderAsset)
 			{
 				shaderAsset->SetIsEngineAsset(false);
