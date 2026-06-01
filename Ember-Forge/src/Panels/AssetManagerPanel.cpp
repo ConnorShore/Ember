@@ -80,8 +80,6 @@ namespace Ember {
 	{
 		ImGui::Begin(m_Title.c_str());
 
-		RenderPanelControls();
-
 		float availableWidth = ImGui::GetContentRegionAvail().x;
 		float maxFolderPaneWidth = std::max(160.0f, availableWidth - 180.0f);
 		m_FolderPaneWidth = std::clamp(m_FolderPaneWidth, 160.0f, maxFolderPaneWidth);
@@ -99,8 +97,12 @@ namespace Ember {
 
 		ImGui::SameLine(0.0f, 0.0f);
 		ImGui::BeginChild("AssetManagerContentPane", ImVec2(0.0f, 0.0f), true);
+		RenderPanelControls();
+
+		ImGui::BeginChild("AssetManagerTilePane", ImVec2(0.0f, 0.0f), false);
 		RenderDirectoryContents();
 		RenderAssetPanelContextMenu();
+		ImGui::EndChild();
 		ImGui::EndChild();
 
 		RenderRenameScenePopup();
@@ -119,88 +121,90 @@ namespace Ember {
 	void AssetManagerPanel::RenderPanelControls()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-		if (m_CurrentDirectory != m_RootDirectory)
-		{
-			if (ImGui::Button("<", ImVec2(28.0f, 0.0f)))
-			{
-				m_CurrentDirectory = m_CurrentDirectory.parent_path();
-			}
-		}
-		else
-		{
-			ImGui::BeginDisabled();
-			ImGui::Button("<", ImVec2(28.0f, 0.0f));
-			ImGui::EndDisabled();
-		}
-		ImGui::PopStyleColor();
-
-		ImGui::SameLine();
-
-		std::string rootLabel = m_RootDirectory.filename().string();
-		if (rootLabel.empty())
-			rootLabel = "Assets";
-
-		if (ImGui::SmallButton(rootLabel.c_str()))
-			m_CurrentDirectory = m_RootDirectory;
-
-		std::error_code relativeError;
-		std::filesystem::path relativePath = std::filesystem::relative(m_CurrentDirectory, m_RootDirectory, relativeError);
-		std::filesystem::path breadcrumbPath = m_RootDirectory;
-		if (!relativeError)
-		{
-			for (const auto& part : relativePath)
-			{
-				if (part == ".")
-					continue;
-
-				breadcrumbPath /= part;
-				ImGui::SameLine();
-				ImGui::TextDisabled("/");
-				ImGui::SameLine();
-
-				std::string label = part.string();
-				ImGui::PushID(breadcrumbPath.string().c_str());
-				if (ImGui::SmallButton(label.c_str()))
-					m_CurrentDirectory = breadcrumbPath;
-				ImGui::PopID();
-			}
-		}
-
-		ImGui::Spacing();
-
-		if (ImGui::Button("+ Folder"))
-		{
-			m_NewDirectoryName = "NewFolder";
-			m_ShowCreateDirectoryPopup = true;
-		}
-
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(240.0f);
-		ImGui::InputTextWithHint("##AssetSearch", "Search assets", m_SearchBuffer.data(), m_SearchBuffer.size());
-
 		ImGuiStyle& style = ImGui::GetStyle();
-		float sliderWidth = 150.0f;
-		float labelWidth = ImGui::CalcTextSize("Tile Size").x;
-		float spacing = style.ItemInnerSpacing.x;
-		float totalRightWidth = sliderWidth + labelWidth + spacing;
 
-		float currentCursorX = ImGui::GetCursorPosX();
-		float rightAlignedX = ImGui::GetWindowContentRegionMax().x - totalRightWidth;
-		if (rightAlignedX > currentCursorX + style.ItemSpacing.x)
+		float searchWidth = 220.0f;
+		float sliderWidth = 140.0f;
+		float tileLabelWidth = ImGui::CalcTextSize("Tile Size").x;
+		float newFolderWidth = ImGui::CalcTextSize("+ Folder").x + style.FramePadding.x * 2.0f;
+		float rightColumnWidth = newFolderWidth + style.ItemSpacing.x + searchWidth + style.ItemSpacing.x + tileLabelWidth + style.ItemInnerSpacing.x + sliderWidth;
+
+		if (ImGui::BeginTable("AssetManagerHeaderRow", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
 		{
-			ImGui::SameLine(rightAlignedX);
-		}
-		else
-		{
+			ImGui::TableSetupColumn("Left", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("Right", ImGuiTableColumnFlags_WidthFixed, rightColumnWidth);
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ImGui::AlignTextToFramePadding();
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+			if (m_CurrentDirectory != m_RootDirectory)
+			{
+				if (ImGui::Button("<", ImVec2(28.0f, 0.0f)))
+					m_CurrentDirectory = m_CurrentDirectory.parent_path();
+			}
+			else
+			{
+				ImGui::BeginDisabled();
+				ImGui::Button("<", ImVec2(28.0f, 0.0f));
+				ImGui::EndDisabled();
+			}
+			ImGui::PopStyleColor();
+
 			ImGui::SameLine();
-		}
 
-		ImGui::Text("Tile Size");
-		ImGui::SameLine(0, spacing);
-		ImGui::SetNextItemWidth(sliderWidth);
-		ImGui::SliderInt("##TileSize", &m_IconSize, 48, 192);
+			std::string rootLabel = m_RootDirectory.filename().string();
+			if (rootLabel.empty())
+				rootLabel = "Assets";
+
+			if (ImGui::SmallButton(rootLabel.c_str()))
+				m_CurrentDirectory = m_RootDirectory;
+
+			std::error_code relativeError;
+			std::filesystem::path relativePath = std::filesystem::relative(m_CurrentDirectory, m_RootDirectory, relativeError);
+			std::filesystem::path breadcrumbPath = m_RootDirectory;
+			if (!relativeError)
+			{
+				for (const auto& part : relativePath)
+				{
+					if (part == ".")
+						continue;
+
+					breadcrumbPath /= part;
+					ImGui::SameLine();
+					ImGui::TextDisabled("/");
+					ImGui::SameLine();
+
+					std::string label = part.string();
+					ImGui::PushID(breadcrumbPath.string().c_str());
+					if (ImGui::SmallButton(label.c_str()))
+						m_CurrentDirectory = breadcrumbPath;
+					ImGui::PopID();
+				}
+			}
+
+			ImGui::TableSetColumnIndex(1);
+
+			if (ImGui::Button("+ Folder"))
+			{
+				m_NewDirectoryName = "NewFolder";
+				m_ShowCreateDirectoryPopup = true;
+			}
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(searchWidth);
+			ImGui::InputTextWithHint("##AssetSearch", "Search assets", m_SearchBuffer.data(), m_SearchBuffer.size());
+
+			ImGui::SameLine();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Tile Size");
+			ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
+			ImGui::SetNextItemWidth(sliderWidth);
+			ImGui::SliderInt("##TileSize", &m_IconSize, 48, 192);
+
+			ImGui::EndTable();
+		}
 
 		ImGui::PopStyleVar();
 
