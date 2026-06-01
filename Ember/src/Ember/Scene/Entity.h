@@ -39,6 +39,8 @@ namespace Ember {
 
 		template<typename T>
 		inline ComponentType GetComponentType();
+		inline const std::vector<ComponentType>& GetComponentOrder() const;
+		inline void SetComponentOrder(const std::vector<ComponentType>& componentOrder) const;
 
 		std::vector<Entity> GetAllChildren();
 		uint32_t GetNumChildren();
@@ -124,6 +126,16 @@ namespace Ember {
 	inline ComponentType Entity::GetComponentType()
 	{
 		return m_SceneHandle->GetRegistry().GetComponentType<T>();
+	}
+
+	inline const std::vector<ComponentType>& Entity::GetComponentOrder() const
+	{
+		return m_SceneHandle->GetRegistry().GetComponentOrder(m_EntityHandle);
+	}
+
+	inline void Entity::SetComponentOrder(const std::vector<ComponentType>& componentOrder) const
+	{
+		m_SceneHandle->GetRegistry().SetComponentOrder(m_EntityHandle, componentOrder);
 	}
 
 }

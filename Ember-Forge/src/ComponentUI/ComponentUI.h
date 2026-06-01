@@ -25,12 +25,12 @@ namespace Ember {
 	// Component UI Template Class
 	//////////////////////////////////////////////////////////////////////////
 
-	// Templated base for per-component editor UIs; subclasses implement RenderComponentImpl
 	template<typename T>
 	class ComponentUI : public ComponentUIBase
 	{
 	public:
-		ComponentUI(EditorContext* context) : m_Context(context) {}
+		ComponentUI(EditorContext* context)
+			: m_Context(context), m_AssetManager(Application::Instance().GetAssetManager()) {}
 		virtual ~ComponentUI() = default;
 
 		virtual void Render(Entity entity) override
@@ -56,6 +56,7 @@ namespace Ember {
 
 	protected:
 		EditorContext* m_Context;
+		AssetManager& m_AssetManager;
 		bool m_CanRemove = true;
 
     private:

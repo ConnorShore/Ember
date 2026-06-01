@@ -20,8 +20,11 @@ namespace Ember {
 		void RenderContextMenu();
 		void RenderEntityTree();
 		void DrawTreeNode(Entity entity);
+		void HandleEntityDragDrop(Entity entity);
 		void RenderRootParentDragDropZone();
 
+		bool CanDropEntityAsChild(UUID payloadUUID, Entity targetParent);
+		bool CanDropEntityAsSibling(UUID payloadUUID, Entity targetSibling);
 		bool IsAncestor(Entity ancestor, Entity descendant);
 		bool IsDescendant(Entity descendant, Entity ancestor);
 

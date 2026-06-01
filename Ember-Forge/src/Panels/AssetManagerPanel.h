@@ -1,10 +1,14 @@
 #pragma once
 
 #include "Panel.h"
+#include <array>
 #include <filesystem>
+#include <vector>
 
 
 namespace Ember {
+
+	class Asset;
 
 	class AssetManagerPanel : public Panel
 	{
@@ -20,12 +24,16 @@ namespace Ember {
 
 	private:
 		void RenderPanelControls();
+		void RenderFolderHierarchy();
+		void RenderDirectoryTreeNode(const std::filesystem::path& directory, bool rootNode = false);
 		void RenderDirectoryContents();
 		void RenderFileEntry(const std::filesystem::directory_entry& entry);
 		void RenderDirectoryEntry(const std::filesystem::directory_entry& entry);
+		void RenderEntryLabel(const std::string& label, float tileWidth);
 		void RenderFileEntryContextMenu(const std::filesystem::directory_entry& entry);
 		void RenderDirectoryEntryContextMenu(const std::filesystem::directory_entry& entry);
 		void RenderAssetPanelContextMenu();
+		void HandleCurrentDirectoryDropTarget(const ImRect& dropRect);
 
 		void RenderTextureOptions(const std::string& filePath);
 		void RenderModelOptions(const std::string& filePath);
@@ -43,12 +51,19 @@ namespace Ember {
 		void RenderDeleteConfirmPopup();
 
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
+		SharedPtr<Asset> AddFileAsAsset(const std::filesystem::path& filePath);
+		bool IsValidAssetFile(const std::filesystem::path& filePath) const;
+		bool ShouldHideEntry(const std::filesystem::directory_entry& entry) const;
+		bool EntryMatchesSearch(const std::filesystem::directory_entry& entry) const;
+		std::vector<std::filesystem::directory_entry> GetVisibleEntries(const std::filesystem::path& directory, bool applySearch) const;
 
 	private:
 		std::filesystem::path m_RootDirectory, m_CurrentDirectory;
 		ImTextureID m_FileTexID, m_DirectoryTexID;
 
 		int m_IconSize = 100;
+		float m_FolderPaneWidth = 220.0f;
+		std::array<char, 128> m_SearchBuffer = {};
 
 		std::array<std::string, 2> m_HiddenFiles = { "Assets.eba", "*.ebproj"};
 

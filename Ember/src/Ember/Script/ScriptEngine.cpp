@@ -45,7 +45,8 @@ namespace Ember {
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
 		ClearTimeouts();
 
-		// Bind math types so scripts using Vector3f.new(...) as default values can be parsed
+		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
+		BindCore(*s_LuaState);
 		BindMath(*s_LuaState);
 
 		EB_CORE_INFO("ScriptEngine Initialized (Editor State)");
@@ -113,7 +114,8 @@ namespace Ember {
 		s_LuaState = new sol::state();
 		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
 
-		// Bind math types so scripts using Vector3f.new(...) as default values can be parsed
+		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
+		BindCore(*s_LuaState);
 		BindMath(*s_LuaState);
 	}
 
@@ -122,6 +124,13 @@ namespace Ember {
         EB_CORE_ASSERT(s_LuaState, "Attempted to access Lua State while it is dead! Are you in Play Mode?");
         return *s_LuaState;
     }
+
+	sol::object ScriptEngine::ScriptPropertyValueToLua(sol::state& luaState, const ScriptPropertyValue& value)
+	{
+		return std::visit([&](const auto& typedValue) -> sol::object {
+			return sol::make_object(luaState, typedValue);
+		}, value);
+	}
 
 	std::vector<ScriptProperty> ScriptEngine::GetScriptProperties(const SharedPtr<Script>& scriptAsset)
 	{
@@ -150,6 +159,7 @@ namespace Ember {
 
 			ScriptPropertyType type = ScriptPropertyType::Unknown;
 			ScriptPropertyValue val;
+			ScriptReferenceKind referenceKind = ScriptReferenceKind::None;
 			std::vector<std::pair<std::string, int>> enumOptions;
             switch (value.get_type())
             {
@@ -198,9 +208,28 @@ namespace Ember {
 				}
 				case sol::type::table:
 				{
+					sol::table tableValue = value.as<sol::table>();
+					sol::optional<std::string> propertyType = tableValue["__ember_property_type"];
+					if (propertyType && propertyType.value() == "Reference")
+					{
+						sol::optional<std::string> kindName = tableValue["Kind"];
+						referenceKind = ScriptReferenceKindFromString(kindName.value_or("Asset"));
+
+						uint64_t rawValue = (uint64_t)Constants::InvalidUUID;
+						sol::optional<uint64_t> numericValue = tableValue["Value"];
+						if (numericValue)
+							rawValue = numericValue.value();
+
+						type = referenceKind == ScriptReferenceKind::Entity
+							? ScriptPropertyType::EntityRef
+							: ScriptPropertyType::AssetRef;
+						val = UUID(rawValue);
+						break;
+					}
+
 					// Treat string-keyed tables of integers as enums.
 					// e.g. PickupType = { Ammo = 1, Health = 2, Points = 3 }
-					sol::table enumTable = value.as<sol::table>();
+					sol::table enumTable = tableValue;
 					bool isEnum = !enumTable.empty();
 					for (auto& [enumKey, enumValue] : enumTable)
 					{
@@ -242,7 +271,12 @@ namespace Ember {
                     continue; // Skip unsupported types
 			}
 
-				properties.emplace_back(name, val, type, std::move(enumOptions));
+				if (type == ScriptPropertyType::Enum)
+					properties.emplace_back(name, val, type, std::move(enumOptions));
+				else if (type == ScriptPropertyType::EntityRef || type == ScriptPropertyType::AssetRef)
+					properties.emplace_back(name, val, type, referenceKind);
+				else
+					properties.emplace_back(name, val, type);
 				}
 
 				// Sort properties by their declaration order in the script file so the

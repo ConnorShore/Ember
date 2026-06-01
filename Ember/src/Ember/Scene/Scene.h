@@ -13,6 +13,7 @@
 #include "Ember/Render/RenderPassSettings.h"
 
 #include <unordered_map>
+#include <vector>
 
 namespace Ember {
 
@@ -52,13 +53,17 @@ namespace Ember {
         Entity AddEntity(const std::string& name = "");
 		Entity AddEntity(UUID uuid, const std::string& name);
 		Entity GetEntity(UUID uuid);
+		Entity GetEntityByHandle(EntityID entityID);
 		Entity GetEntity(const std::string& name);
+		bool TryGetEntityName(UUID uuid, std::string& outName);
 		Entity DuplicateEntity(Entity entity);
 
 		SharedPtr<Prefab> CreatePrefab(Entity entity, const std::string& filepath);
 
 		void SetEntityParent(UUID childUUID, Entity newParent);
 		void RemoveParent(Entity child);
+		void ReorderEntity(UUID entityUUID, UUID targetUUID, bool insertAfter);
+		void MoveEntityToRootEnd(UUID entityUUID);
 
 		template<IsCoreAsset T>
 		inline void RegisterAsset(const SharedPtr<T>& asset);
@@ -73,6 +78,7 @@ namespace Ember {
 		inline std::vector<SharedPtr<T>> GetAssetsOfType();
 
 		std::vector<Entity> GetAllEntities() const;
+		void Clear();
 
 		template<typename Driver, typename... Filters>
 		std::vector<Entity> GetAllEntitiesWithComponents()
@@ -126,6 +132,7 @@ namespace Ember {
 		ScopedPtr<PoolManager> m_PoolManager;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
+		std::vector<UUID> m_EntityOrder;
 		// TODO: May want a entity name map for faster lookup by name
 
 		std::vector<Entity> m_PendingRemovals;

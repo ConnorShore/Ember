@@ -42,7 +42,7 @@ namespace Ember {
 		for (UUID childUUID : relationship.Children)
 		{
 			Entity child = scene->GetEntity(childUUID);
-			if (!child)
+			if (child == Constants::Entities::InvalidEntityID)
 				continue;
 
 			EntityID childEntity = child.GetEntityHandle();

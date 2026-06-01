@@ -85,13 +85,12 @@ namespace Ember {
 					UI::PropertyGrid::Float("Scale Variation", component.ScaleVariation);
 
 					// Texture asset picker
-					auto& assetManager = Application::Instance().GetAssetManager();
 					bool textureExists = component.TextureHandle != Constants::Assets::DefaultWhiteTexUUID;
 					std::string fileName = "None (Texture)";
 
 					if (textureExists)
 					{
-						auto textureAsset = assetManager.GetAsset<Texture>(component.TextureHandle);
+						auto textureAsset = m_AssetManager.GetAsset<Texture>(component.TextureHandle);
 						if (textureAsset)
 							fileName = std::filesystem::path(textureAsset->GetFilePath()).filename().string();
 					}
@@ -105,7 +104,7 @@ namespace Ember {
 						std::string textureFile = FileDialog::OpenFile(textureDir.string().c_str(), std::format("Textures ({})", extensions).c_str(), extensions.c_str());
 						if (!textureFile.empty())
 						{
-							auto texture = assetManager.Load<Texture>(textureFile);
+							auto texture = m_AssetManager.Load<Texture>(textureFile);
 							component.TextureHandle = texture->GetUUID();
 						}
 						};
@@ -116,7 +115,7 @@ namespace Ember {
 
 					if (UI::PropertyGrid::AssetReference("Texture Asset", fileName, payloadType, droppedPath, browseFunc, clearFunc))
 					{
-						auto texture = assetManager.Load<Texture>(droppedPath);
+						auto texture = m_AssetManager.Load<Texture>(droppedPath);
 						component.TextureHandle = texture->GetUUID();
 					}
 

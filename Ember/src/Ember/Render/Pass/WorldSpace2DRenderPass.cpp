@@ -11,7 +11,7 @@ namespace Ember {
 	static Entity FindNearestCanvasAncestor(Scene* scene, Entity entity)
 	{
 		Entity current = entity;
-		while (current)
+		while (current != Constants::Entities::InvalidEntityID)
 		{
 			if (current.ContainsComponent<CanvasComponent>())
 				return current;

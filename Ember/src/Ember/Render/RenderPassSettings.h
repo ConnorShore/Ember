@@ -6,7 +6,11 @@
 #include "Ember/ECS/Types.h"
 #include "Ember/Math/Math.h"
 
+#include <functional>
+
 namespace Ember {
+
+	class Scene;
 
 	struct RenderPassSettings
 	{
@@ -16,6 +20,7 @@ namespace Ember {
 		Filter VolumeMask = FilterPreset::All;
 		bool DrawHUD = true;
 		EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
+		std::function<void(Scene*, EntityID)> PreDebugDrawCallback = nullptr;
 	};
 
 }

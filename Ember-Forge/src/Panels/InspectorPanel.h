@@ -15,16 +15,19 @@ namespace Ember {
 	public:
 		enum class Category
 		{
-			None = 0,
-			Core,
+			Transform = 0,
 			Rendering,
 			Lighting,
+			Camera,
 			Physics,
 			Audio,
 			Animation,
 			Scripting,
 			AI,
-			UI
+			UI,
+			Gameplay,
+			Effects,
+			Miscellaneous
 		};
 
 	public:
@@ -36,6 +39,8 @@ namespace Ember {
 
 	private:
 		void DrawEntityHeader(Entity entity);
+		void RenderEntityComponents(Entity entity);
+		ComponentUIBase* FindComponentUI(ComponentType componentType, Entity entity) const;
 
 	private:
 		std::map<Category, std::vector<ScopedPtr<ComponentUIBase>>> m_ComponentUIs;

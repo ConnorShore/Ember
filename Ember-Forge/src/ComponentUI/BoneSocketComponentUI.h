@@ -85,7 +85,7 @@ namespace Ember {
 			ImGui::SameLine();
 			if (ImGui::Button("->"))
 			{
-				if (targetEntity)
+				if (targetEntity != Constants::Entities::InvalidEntityID)
 					m_Context->SelectedEntity = targetEntity;
 			}
 		}
@@ -159,14 +159,14 @@ namespace Ember {
 				animatorEntity = m_Context->ActiveScene()->GetEntity(skinnedMesh.AnimatorEntityHandle);
 			}
 
-			if (!animatorEntity || !animatorEntity.ContainsComponent<AnimatorComponent>())
+			if (animatorEntity == Constants::Entities::InvalidEntityID || !animatorEntity.ContainsComponent<AnimatorComponent>())
 				return nullptr;
 
 			auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
 			if (animator.SkeletonHandle == Constants::InvalidUUID)
 				return nullptr;
 
-			return Application::Instance().GetAssetManager().GetAsset<Skeleton>(animator.SkeletonHandle);
+			return m_AssetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
 		}
 
 		void SetTargetEntity(BoneSocketComponent& component, UUID entityHandle)
@@ -185,7 +185,7 @@ namespace Ember {
 		void PreserveCurrentWorldTransform(BoneSocketComponent& component)
 		{
 			Entity entity = m_Context->SelectedEntity;
-			if (!entity || !entity.ContainsComponent<TransformComponent>())
+			if (entity == Constants::Entities::InvalidEntityID || !entity.ContainsComponent<TransformComponent>())
 				return;
 
 			BoneSocketSystem::SetOffsetFromWorldTransform(component, entity.GetComponent<TransformComponent>().WorldTransform, m_Context->ActiveScene().Ptr());

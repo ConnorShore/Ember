@@ -38,6 +38,37 @@ namespace Ember {
 				}(), ...);
 		}
 
+		static void EraseUUID(std::vector<UUID>& uuids, UUID uuid)
+		{
+			uuids.erase(std::remove(uuids.begin(), uuids.end(), uuid), uuids.end());
+		}
+
+		static void MoveUUIDToBack(std::vector<UUID>& uuids, UUID uuid)
+		{
+			EraseUUID(uuids, uuid);
+			uuids.push_back(uuid);
+		}
+
+		static void MoveUUIDRelative(std::vector<UUID>& uuids, UUID movingUUID, UUID targetUUID, bool insertAfter)
+		{
+			if (movingUUID == targetUUID)
+				return;
+
+			EraseUUID(uuids, movingUUID);
+
+			auto targetIt = std::find(uuids.begin(), uuids.end(), targetUUID);
+			if (targetIt == uuids.end())
+			{
+				uuids.push_back(movingUUID);
+				return;
+			}
+
+			if (insertAfter)
+				++targetIt;
+
+			uuids.insert(targetIt, movingUUID);
+		}
+
 		// Clears all runtime-only physics pointer fields on an entity so that the
 		// PhysicsSystem will create fresh, independent objects for it.
 		static void ResetPhysicsRuntimeState(Entity entity)
@@ -128,16 +159,22 @@ namespace Ember {
 	{
 	}
 
+	void Scene::Clear()
+	{
+		m_PendingRemovals.clear();
+		m_EntityUUIDMap.clear();
+		m_EntityOrder.clear();
+		m_PoolManager = ScopedPtr<PoolManager>::Create();
+		m_Registry = ScopedPtr<Registry>::Create();
+	}
+
 	// Deep-copies the scene, preserving all UUIDs so relationships remain valid
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{
 		auto newScene = SharedPtr<Scene>::Create(other->GetName(), other->GetFilePath());
-		auto view = other->GetRegistry().Query<IDComponent>();
-		for (auto entity : view)
+		auto entities = other->GetAllEntities();
+		for (Entity srcEntity : entities)
 		{
-			// We need the raw entity handle from the other scene to extract its data
-			Entity srcEntity = { entity, other.Ptr() };
-
 			// 2. Create a new entity in THIS scene using the EXACT SAME UUID and Name
 			UUID id = srcEntity.GetComponent<IDComponent>().ID;
 			std::string name = srcEntity.GetName();
@@ -389,6 +426,7 @@ namespace Ember {
 		entity.AttachComponent<RelationshipComponent>();
 
 		m_EntityUUIDMap[uuid] = handle;
+		m_EntityOrder.push_back(uuid);
 
 		return entity;
 	}
@@ -402,6 +440,22 @@ namespace Ember {
 		return Entity();
 	}
 
+	Entity Scene::GetEntityByHandle(EntityID entityID)
+	{
+		if (entityID == Constants::Entities::InvalidEntityID || entityID >= Constants::Entities::MaxEntities || !m_Registry)
+			return Entity();
+
+		if (!m_Registry->ContainsComponent<IDComponent>(entityID) || !m_Registry->ContainsComponent<TagComponent>(entityID))
+			return Entity();
+
+		UUID uuid = m_Registry->GetComponent<IDComponent>(entityID).ID;
+		auto it = m_EntityUUIDMap.find(uuid);
+		if (it == m_EntityUUIDMap.end() || it->second != entityID)
+			return Entity();
+
+		return { entityID, this };
+	}
+
 	Entity Scene::GetEntity(const std::string& name)
 	{
 		auto view = m_Registry->Query<TagComponent>();
@@ -412,6 +466,21 @@ namespace Ember {
 				return { entity, this };
 		}
 		return Entity();
+	}
+
+	bool Scene::TryGetEntityName(UUID uuid, std::string& outName)
+	{
+		auto it = m_EntityUUIDMap.find(uuid);
+		if (it == m_EntityUUIDMap.end())
+			return false;
+
+		EntityID entityID = it->second;
+		Entity entity = GetEntityByHandle(entityID);
+		if (entity == Constants::Entities::InvalidEntityID)
+			return false;
+
+		outName = m_Registry->GetComponent<TagComponent>(entityID).Tag;
+		return true;
 	}
 
 	Entity Scene::DuplicateEntity(Entity entity)
@@ -446,11 +515,14 @@ namespace Ember {
 	void Scene::SetEntityParent(UUID childUUID, Entity newParent)
 	{
 		EB_CORE_ASSERT(newParent.ContainsComponent<RelationshipComponent>(), "New parent entity must have a RelationshipComponent!");
-		auto& parentRelationship = newParent.GetComponent<RelationshipComponent>();
-		parentRelationship.Children.push_back(childUUID);
-
 		auto childEntity = GetEntity(childUUID);
+		if (childEntity == Constants::Entities::InvalidEntityID)
+			return;
+
 		auto& childRelationship = childEntity.GetComponent<RelationshipComponent>();
+		UUID newParentUUID = newParent.GetUUID();
+		if (childRelationship.ParentHandle == newParentUUID)
+			return;
 
 		// If the child had a previous parent, we need to remove it from that parent's children list
 		if (childRelationship.ParentHandle != Constants::InvalidUUID)
@@ -459,12 +531,15 @@ namespace Ember {
 			if (oldParent != Constants::Entities::InvalidEntityID)
 			{
 				auto& oldParentRelationship = oldParent.GetComponent<RelationshipComponent>();
-				oldParentRelationship.Children.erase(std::remove(oldParentRelationship.Children.begin(), oldParentRelationship.Children.end(), childUUID), oldParentRelationship.Children.end());
+				Utils::EraseUUID(oldParentRelationship.Children, childUUID);
 			}
 		}
 
+		auto& parentRelationship = newParent.GetComponent<RelationshipComponent>();
+		Utils::MoveUUIDToBack(parentRelationship.Children, childUUID);
+
 		// Set new parent handle
-		childRelationship.ParentHandle = newParent.GetUUID();
+		childRelationship.ParentHandle = newParentUUID;
 
 		// Recompute the child's local transform relative to the new parent (if not in screen space)
 		// NewLocal = Inverse(ParentWorld) * CurrentChildWorld
@@ -488,15 +563,86 @@ namespace Ember {
 
 	void Scene::RemoveParent(Entity child)
 	{
+		if (child == Constants::Entities::InvalidEntityID)
+			return;
+
 		auto& relationship = child.GetComponent<RelationshipComponent>();
 		if (relationship.ParentHandle != Constants::InvalidUUID)
 		{
 			auto parentEntity = GetEntity(relationship.ParentHandle);
-			auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
-			parentRelationship.Children.erase(std::remove(parentRelationship.Children.begin(), parentRelationship.Children.end(), child.GetUUID()), parentRelationship.Children.end());
+			if (parentEntity != Constants::Entities::InvalidEntityID)
+			{
+				auto& parentRelationship = parentEntity.GetComponent<RelationshipComponent>();
+				Utils::EraseUUID(parentRelationship.Children, child.GetUUID());
+			}
 
 			relationship.ParentHandle = Constants::InvalidUUID;
 		}
+	}
+
+	void Scene::ReorderEntity(UUID entityUUID, UUID targetUUID, bool insertAfter)
+	{
+		if (entityUUID == targetUUID)
+			return;
+
+		Entity entity = GetEntity(entityUUID);
+		Entity target = GetEntity(targetUUID);
+		if (entity == Constants::Entities::InvalidEntityID || target == Constants::Entities::InvalidEntityID)
+			return;
+
+		UUID targetParentUUID = target.GetComponent<RelationshipComponent>().ParentHandle;
+		Entity targetParent;
+		if (targetParentUUID != Constants::InvalidUUID)
+		{
+			if (targetParentUUID == entityUUID)
+				return;
+
+			targetParent = GetEntity(targetParentUUID);
+			if (targetParent == Constants::Entities::InvalidEntityID)
+				return;
+
+			Entity current = targetParent;
+			while (current != Constants::Entities::InvalidEntityID)
+			{
+				if (current.GetUUID() == entityUUID)
+					return;
+
+				UUID parentUUID = current.GetComponent<RelationshipComponent>().ParentHandle;
+				if (parentUUID == Constants::InvalidUUID)
+					break;
+
+				current = GetEntity(parentUUID);
+			}
+		}
+
+		auto& relationship = entity.GetComponent<RelationshipComponent>();
+		if (relationship.ParentHandle != targetParentUUID)
+		{
+			if (targetParentUUID == Constants::InvalidUUID)
+				RemoveParent(entity);
+			else
+				SetEntityParent(entityUUID, targetParent);
+		}
+
+		if (targetParentUUID == Constants::InvalidUUID)
+		{
+			Utils::MoveUUIDRelative(m_EntityOrder, entityUUID, targetUUID, insertAfter);
+		}
+		else
+		{
+			auto& siblings = targetParent.GetComponent<RelationshipComponent>().Children;
+			Utils::MoveUUIDRelative(siblings, entityUUID, targetUUID, insertAfter);
+		}
+	}
+
+	void Scene::MoveEntityToRootEnd(UUID entityUUID)
+	{
+		Entity entity = GetEntity(entityUUID);
+		if (entity == Constants::Entities::InvalidEntityID)
+			return;
+
+		RemoveParent(entity);
+		Utils::MoveUUIDToBack(m_EntityOrder, entityUUID);
 	}
 
 	// Recursively duplicates an entity and its children.
@@ -597,7 +743,7 @@ namespace Ember {
 			if (newParentId != Constants::InvalidUUID)
 			{
 				Entity newParent = GetEntity(newParentId);
-				if (newParent)
+				if (newParent != Constants::Entities::InvalidEntityID)
 					newParent.GetComponent<RelationshipComponent>().Children.push_back(newEntity.GetUUID());
 			}
 		}
@@ -629,8 +775,18 @@ namespace Ember {
 		std::vector<Entity> entities;
 		entities.reserve(m_EntityUUIDMap.size());
 
+		for (UUID uuid : m_EntityOrder)
+		{
+			auto it = m_EntityUUIDMap.find(uuid);
+			if (it != m_EntityUUIDMap.end())
+				entities.emplace_back(it->second, const_cast<Scene*>(this));
+		}
+
 		for (const auto& [uuid, id] : m_EntityUUIDMap)
-			entities.emplace_back(id, const_cast<Scene*>(this));
+		{
+			if (std::find(m_EntityOrder.begin(), m_EntityOrder.end(), uuid) == m_EntityOrder.end())
+				entities.emplace_back(id, const_cast<Scene*>(this));
+		}
 
 		return entities;
 	}
@@ -685,6 +841,7 @@ namespace Ember {
 		UUID entityUUID = entity.GetUUID();
 		m_Registry->DestroyEntity(entity.GetEntityHandle());
 		m_EntityUUIDMap.erase(entityUUID);
+		Utils::EraseUUID(m_EntityOrder, entityUUID);
 	}
 
 	void Scene::RemoveEntity(Entity entity)

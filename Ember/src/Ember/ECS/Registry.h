@@ -173,6 +173,16 @@ namespace Ember {
 			return m_EntityManager->ContainsComponent(entity, type);
 		}
 
+		inline const std::vector<ComponentType>& GetComponentOrder(EntityID entity) const
+		{
+			return m_EntityManager->GetComponentOrder(entity);
+		}
+
+		inline void SetComponentOrder(EntityID entity, const std::vector<ComponentType>& componentOrder)
+		{
+			m_EntityManager->SetComponentOrder(entity, componentOrder);
+		}
+
 		template<typename... Args>
 		inline bool ContainsComponents(EntityID entity)
 		{

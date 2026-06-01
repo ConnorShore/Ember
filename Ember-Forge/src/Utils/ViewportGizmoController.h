@@ -8,11 +8,13 @@ namespace Ember {
 
 	struct EditorContext;
 	class EditorCamera;
+	class Scene;
 
 	class ViewportGizmoController
 	{
 	public:
 		void Render(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType);
+		static void DrawSceneDebugGizmos(Scene* scene, EntityID selectedEntity);
 		bool IsHovered() const { return m_RectTransformGizmoHovered; }
 
 	private:

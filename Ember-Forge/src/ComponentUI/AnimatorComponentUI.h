@@ -34,13 +34,11 @@ namespace Ember {
 
 		inline void RenderAnimatorPicker(AnimatorComponent& component)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-
 			std::string animName;
 			if (component.CurrentAnimationHandle == Constants::InvalidUUID)
 				animName = "None";
 			else
-				animName = assetManager.GetAsset<Animation>(component.CurrentAnimationHandle)->GetName();
+				animName = m_AssetManager.GetAsset<Animation>(component.CurrentAnimationHandle)->GetName();
 
 			if (UI::PropertyGrid::BeginComboBox("Animation", animName.c_str()))
 			{
@@ -54,7 +52,7 @@ namespace Ember {
 				ImGui::Separator();
 
 				// Show all animations in the asset manager
-				auto animations = assetManager.GetAssetsOfType<Animation>();
+				auto animations = m_AssetManager.GetAssetsOfType<Animation>();
 				for (auto& anim : animations)
 				{
 					bool isSelected = component.CurrentAnimationHandle == anim->GetUUID();

@@ -24,9 +24,6 @@ namespace Ember {
 				UI::PropertyGrid::InputText("Text", component.Text);
 				UI::PropertyGrid::Color4("Color", component.Color);
 
-				// Font asset selector
-				auto& assetManager = Application::Instance().GetAssetManager();
-
 				auto chooseFontFunc = [&]() {
 					ImGui::OpenPopup("ChooseFontPopup");
 					};
@@ -38,7 +35,7 @@ namespace Ember {
 				bool fontExists = component.FontHandle != Constants::InvalidUUID;
 				if (fontExists)
 				{
-					auto fontAsset = assetManager.GetAsset<Font>(component.FontHandle);
+					auto fontAsset = m_AssetManager.GetAsset<Font>(component.FontHandle);
 					if (fontAsset)
 					{
 						UI::PropertyGrid::AssetReference("Font", fontAsset->GetName(), DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetFont),
@@ -54,12 +51,12 @@ namespace Ember {
 				// Set component handle
 				if (!selectedFont.empty())
 				{
-					auto fontAsset = assetManager.GetAssetByPath<Font>(selectedFont);
+					auto fontAsset = m_AssetManager.GetAssetByPath<Font>(selectedFont);
 					if (fontAsset != nullptr)
 						component.FontHandle = fontAsset->GetUUID();
 					else
 					{
-						auto fontAsset = assetManager.Load<Font>(selectedFont);
+						auto fontAsset = m_AssetManager.Load<Font>(selectedFont);
 						component.FontHandle = fontAsset ? fontAsset->GetUUID() : (UUID)Constants::InvalidUUID;
 					}
 				}
@@ -72,7 +69,7 @@ namespace Ember {
 						std::string fontFile = FileDialog::OpenFile(defaultDir.c_str(), "Font (*.ttf;*.otf;*.ebfont)", "*.ttf;*.otf;*.ebfont");
 						if (!fontFile.empty())
 						{
-							auto fontAsset = assetManager.Load<Font>(fontFile);
+							auto fontAsset = m_AssetManager.Load<Font>(fontFile);
 							if (fontAsset)
 								component.FontHandle = fontAsset->GetUUID();
 						}

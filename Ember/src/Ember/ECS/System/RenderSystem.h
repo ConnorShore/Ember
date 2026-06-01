@@ -16,6 +16,7 @@
 #include "Ember/Render/Frustum.h"
 #include "Ember/Render/RenderPassSettings.h"
 
+#include <functional>
 #include <vector>
 #include <map>
 
@@ -67,7 +68,6 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 		void SetFinalPostProcessSettings(Scene* scene);
 		void ApplyPostProcessSettings();
-		void DrawEditorCameraGizmos(Scene* scene);
 
 	private:
 		// TODO: Make this a render graph
@@ -107,6 +107,7 @@ namespace Ember {
 
 			bool DrawHUD = true;
 			EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
+			std::function<void(Scene*, EntityID)> PreDebugDrawCallback = nullptr;
 
 			void Reset()
 			{
@@ -119,6 +120,7 @@ namespace Ember {
 				OutputFramebufferId = -1;
 				DrawHUD = true;
 				SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
+				PreDebugDrawCallback = nullptr;
 			}
 
 		} m_RenderSceneState;

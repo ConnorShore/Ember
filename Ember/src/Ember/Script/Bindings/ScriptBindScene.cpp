@@ -36,6 +36,14 @@ namespace Ember {
 		sceneTable.set_function("GetEntityByName", [scene](const std::string& name) {
 			return scene->GetEntity(name);
 		});
+		sceneTable.set_function("GetEntityByUUID", sol::overload(
+			[scene](UUID uuid) {
+				return scene->GetEntity(uuid);
+			},
+			[scene](uint64_t uuid) {
+				return scene->GetEntity(UUID(uuid));
+			}
+		));
 
 		// Prefab
 		sceneTable.set_function("InstantiatePrefab", sol::overload(
@@ -50,6 +58,37 @@ namespace Ember {
 			},
 			[scene](const std::string& assetName, Entity parent, const Vector3f& position) {
 				auto prefabAsset = Application::Instance().GetAssetManager().GetAsset<Prefab>(assetName);
+				return scene->InstantiatePrefab(prefabAsset, parent, &position);
+			},
+			[scene](UUID assetUUID, const Vector3f& position) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (assetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(assetUUID))
+				{
+					EB_CORE_WARN("Scene.InstantiatePrefab ignored an invalid prefab UUID: {}", assetUUID);
+					return Entity();
+				}
+				auto prefabAsset = assetManager.GetAsset<Prefab>(assetUUID);
+				return scene->InstantiatePrefab(prefabAsset, &position);
+			},
+			[scene](UUID assetUUID, Entity parent) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (assetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(assetUUID))
+				{
+					EB_CORE_WARN("Scene.InstantiatePrefab ignored an invalid prefab UUID: {}", assetUUID);
+					return Entity();
+				}
+				auto prefabAsset = assetManager.GetAsset<Prefab>(assetUUID);
+				Vector3f pos(0.0f);
+				return scene->InstantiatePrefab(prefabAsset, parent, &pos);
+			},
+			[scene](UUID assetUUID, Entity parent, const Vector3f& position) {
+				auto& assetManager = Application::Instance().GetAssetManager();
+				if (assetUUID == Constants::InvalidUUID || !assetManager.ContainsAsset(assetUUID))
+				{
+					EB_CORE_WARN("Scene.InstantiatePrefab ignored an invalid prefab UUID: {}", assetUUID);
+					return Entity();
+				}
+				auto prefabAsset = assetManager.GetAsset<Prefab>(assetUUID);
 				return scene->InstantiatePrefab(prefabAsset, parent, &position);
 			}
 		));
@@ -69,6 +108,12 @@ namespace Ember {
 			[scene](const std::string& poolID, const std::string& prefabName, uint32_t initialSize, bool loopEntities) {
 				auto prefab = Application::Instance().GetAssetManager().GetAsset<Prefab>(prefabName);
 				scene->GetPoolManager().CreatePool(scene, poolID, prefab->GetUUID(), initialSize, loopEntities);
+			},
+			[scene](const std::string& poolID, UUID prefabUUID, uint32_t initialSize) {
+				scene->GetPoolManager().CreatePool(scene, poolID, prefabUUID, initialSize);
+			},
+			[scene](const std::string& poolID, UUID prefabUUID, uint32_t initialSize, bool loopEntities) {
+				scene->GetPoolManager().CreatePool(scene, poolID, prefabUUID, initialSize, loopEntities);
 			}
 		));
 

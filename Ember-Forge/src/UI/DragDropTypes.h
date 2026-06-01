@@ -80,7 +80,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetPrefab: return "*.ebprefab";
 			case DragDropPayloadType::AssetFont: return "*.ttf;*.otf;.ebfont;";
 			case DragDropPayloadType::AssetAudioClip: return "*.wav;*.mp3;*.ogg;";
-			case DragDropPayloadType::Scene: return "*.ebs;";
+			case DragDropPayloadType::Scene: return "*.ebs;*.ebscene;";
 			default: return "*.*";
 			}
 		}
@@ -108,7 +108,7 @@ namespace Ember {
 				return DragDropPayloadType::AssetFont;
 			if (extension == ".wav" || extension == ".mp3" || extension == ".ogg")
 				return DragDropPayloadType::AssetAudioClip;
-			if (extension == ".ebs")
+			if (extension == ".ebs" || extension == ".ebscene")
 				return DragDropPayloadType::Scene;
 			return DragDropPayloadType::None;
 		}

@@ -30,7 +30,7 @@ namespace Ember {
 				SharedPtr<Texture2D> currentTexture = nullptr;
 				bool hasTexture = component.TextureHandle != Constants::InvalidUUID;
 				if (hasTexture)
-					currentTexture = Application::Instance().GetAssetManager().GetAsset<Texture2D>(component.TextureHandle);
+					currentTexture = m_AssetManager.GetAsset<Texture2D>(component.TextureHandle);
 
 				bool hasValidTexture = currentTexture
 					&& currentTexture->GetName() != Constants::Assets::DefaultWhiteTex
@@ -42,7 +42,7 @@ namespace Ember {
 					component.TextureHandle = Constants::InvalidUUID;
 				}))
 				{
-					auto newTexture = Application::Instance().GetAssetManager().Load<Texture2D>(droppedFilePath);
+					auto newTexture = m_AssetManager.Load<Texture2D>(droppedFilePath);
 					component.TextureHandle = newTexture->GetUUID();
 				}
 

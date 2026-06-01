@@ -21,19 +21,17 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(SkinnedMeshComponent& component) override
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-
 			if (UI::PropertyGrid::Begin("AnimatorComponentProps"))
 			{
-				RenderMeshPicker(component, assetManager);
-				RenderAnimatorEntitySelector(component, assetManager);
+				RenderMeshPicker(component);
+				RenderAnimatorEntitySelector(component);
 
 				UI::PropertyGrid::End();
 			}
 
 		}
 
-		inline void RenderMeshPicker(SkinnedMeshComponent& component, AssetManager& assetManager)
+		inline void RenderMeshPicker(SkinnedMeshComponent& component)
 		{
 			bool meshExists = component.MeshHandle != Constants::InvalidUUID;
 			std::string meshName = "None (Mesh)";
@@ -48,7 +46,7 @@ namespace Ember {
 					meshName = "Sphere";
 				else
 				{
-					auto meshAsset = assetManager.GetAsset<Mesh>(component.MeshHandle);
+					auto meshAsset = m_AssetManager.GetAsset<Mesh>(component.MeshHandle);
 					if (meshAsset)
 						meshName = std::filesystem::path(meshAsset->GetFilePath()).filename().string();
 				}
@@ -67,7 +65,7 @@ namespace Ember {
 
 			if (UI::PropertyGrid::AssetReference("Mesh", meshName, payloadType, droppedPath, browseFunc, clearFunc))
 			{
-				auto mesh = assetManager.Load<Mesh>(droppedPath);
+				auto mesh = m_AssetManager.Load<Mesh>(droppedPath);
 				if (mesh)
 					component.MeshHandle = mesh->GetUUID();
 			}
@@ -90,7 +88,7 @@ namespace Ember {
 					std::string meshFile = FileDialog::OpenFile(defaultDir.c_str(), "3D Model (*.obj;*.fbx)", "*.obj;*.fbx");
 					if (!meshFile.empty())
 					{
-						auto meshAsset = assetManager.Load<Mesh>(meshFile);
+						auto meshAsset = m_AssetManager.Load<Mesh>(meshFile);
 						if (meshAsset)
 							component.MeshHandle = meshAsset->GetUUID();
 					}
@@ -102,7 +100,7 @@ namespace Ember {
 		}
 
 		
-		void RenderAnimatorEntitySelector(SkinnedMeshComponent& component, AssetManager& assetManager)
+		void RenderAnimatorEntitySelector(SkinnedMeshComponent& component)
 		{
 			if (component.AnimatorEntityHandle == Constants::InvalidUUID) 
 			{
@@ -114,7 +112,7 @@ namespace Ember {
 			auto animatorEntity = m_Context->ActiveScene()->GetEntity(component.AnimatorEntityHandle);
 
 			std::string animatorName = "None (Animator)";
-			if (animatorEntity)
+			if (animatorEntity != Constants::Entities::InvalidEntityID)
 				animatorName = animatorEntity.GetName();
 
 			if (UI::PropertyGrid::BeginComboBox("Animator Entity", animatorName.c_str()))
@@ -143,7 +141,7 @@ namespace Ember {
 			ImGui::SameLine();
 			if (ImGui::Button("->"))
 			{
-				if (animatorEntity)
+				if (animatorEntity != Constants::Entities::InvalidEntityID)
 					m_Context->SelectedEntity = animatorEntity;
 			}
 		}

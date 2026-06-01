@@ -35,7 +35,7 @@ namespace Ember {
 		}
 
 		Entity animatorEntity = scene->GetEntity(skinnedMesh.AnimatorEntityHandle);
-		if (animatorEntity && animatorEntity.ContainsComponent<AnimatorComponent>())
+		if (animatorEntity != Constants::Entities::InvalidEntityID && animatorEntity.ContainsComponent<AnimatorComponent>())
 		{
 			skinnedMesh.RuntimeAnimatorID = animatorEntity.GetEntityHandle();
 			return animatorEntity;
@@ -49,7 +49,7 @@ namespace Ember {
 		if (targetEntity.ContainsComponent<SkinnedMeshComponent>())
 			return targetEntity;
 
-		if (!animatorEntity)
+		if (animatorEntity == Constants::Entities::InvalidEntityID)
 			return targetEntity;
 
 		auto& registry = scene->GetRegistry();
@@ -80,11 +80,11 @@ namespace Ember {
 			return false;
 
 		Entity targetEntity = scene->GetEntity(socket.TargetEntityHandle);
-		if (!targetEntity || !targetEntity.ContainsComponent<TransformComponent>())
+		if (targetEntity == Constants::Entities::InvalidEntityID || !targetEntity.ContainsComponent<TransformComponent>())
 			return false;
 
 		Entity animatorEntity = ResolveAnimatorEntity(targetEntity, scene);
-		if (!animatorEntity)
+		if (animatorEntity == Constants::Entities::InvalidEntityID)
 			return false;
 
 		auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
@@ -132,11 +132,11 @@ namespace Ember {
 				continue;
 
 			Entity targetEntity = scene->GetEntity(socket.TargetEntityHandle);
-			if (!targetEntity || !targetEntity.ContainsComponent<TransformComponent>())
+			if (targetEntity == Constants::Entities::InvalidEntityID || !targetEntity.ContainsComponent<TransformComponent>())
 				continue;
 
 			Entity animatorEntity = ResolveAnimatorEntity(targetEntity, scene);
-			if (!animatorEntity)
+			if (animatorEntity == Constants::Entities::InvalidEntityID)
 				continue;
 
 			auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
@@ -172,7 +172,7 @@ namespace Ember {
 			for (UUID child : relationship.Children)
 			{
 				Entity childEntity = scene->GetEntity(child);
-				if (childEntity)
+				if (childEntity != Constants::Entities::InvalidEntityID)
 					UpdateChildTransformTree(childEntity.GetEntityHandle(), transform.WorldTransform, scene);
 			}
 		}
@@ -200,7 +200,7 @@ namespace Ember {
 		for (UUID child : relationship.Children)
 		{
 			Entity childEntity = scene->GetEntity(child);
-			if (childEntity)
+			if (childEntity != Constants::Entities::InvalidEntityID)
 				UpdateChildTransformTree(childEntity.GetEntityHandle(), transform.WorldTransform, scene);
 		}
 	}

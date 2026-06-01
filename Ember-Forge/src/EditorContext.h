@@ -8,6 +8,7 @@
 #include <Ember/ECS/Types.h>
 
 #include <vector>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -24,6 +25,12 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
+
+		bool IsEditingPrefab = false;
+		Entity PrefabRootEntity;
+		std::string ActivePrefabPath;
+		std::string RequestedSceneOpenPath;
+		std::string RequestedPrefabOpenPath;
 
 		// Deferred removals: entities/components are queued during rendering and
 		// actually removed after the frame to avoid invalidating iterators.

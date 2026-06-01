@@ -152,7 +152,7 @@ namespace Ember {
 				{
 					for (const auto& property : cachedProperties)
 					{
-						script.Instance[property.Name] = sol::make_object(luaState, property.Value);
+						script.Instance[property.Name] = ScriptEngine::ScriptPropertyValueToLua(luaState, property.Value);
 					}
 				}
 				else
@@ -160,7 +160,7 @@ namespace Ember {
 					auto parsedProperties = ScriptEngine::GetScriptProperties(scriptAsset);
 					for (const auto& property : parsedProperties)
 					{
-						script.Instance[property.Name] = sol::make_object(luaState, property.Value);
+						script.Instance[property.Name] = ScriptEngine::ScriptPropertyValueToLua(luaState, property.Value);
 					}
 					scriptAsset->SetExposedProperties(parsedProperties);
 				}
@@ -169,7 +169,7 @@ namespace Ember {
 				for (const auto& [name, overrideProp] : script.UserPropertyOverrides)
 				{
 					// Shove the C++ override directly into the Lua table
-					sol::object objValue = sol::make_object(ScriptEngine::GetState(), overrideProp.Value);
+					sol::object objValue = ScriptEngine::ScriptPropertyValueToLua(luaState, overrideProp.Value);
 					script.Instance[name] = objValue;
 				}
 
