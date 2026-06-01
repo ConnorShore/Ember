@@ -2203,14 +2203,14 @@ namespace Ember {
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4* colors = style.Colors;
 
-		// --- Sizing & Spacing (Spacious & Modern) ---
-		style.WindowPadding = ImVec2(12.0f, 12.0f);
-		style.FramePadding = ImVec2(8.0f, 6.0f);
-		style.ItemSpacing = ImVec2(10.0f, 8.0f);
-		style.ItemInnerSpacing = ImVec2(6.0f, 6.0f);
-		style.IndentSpacing = 20.0f;
-		style.ScrollbarSize = 14.0f;
-		style.GrabMinSize = 12.0f;
+		// --- Sizing & Spacing (Slightly denser for higher information density) ---
+		style.WindowPadding = ImVec2(10.0f, 9.0f);
+		style.FramePadding = ImVec2(6.0f, 4.0f);
+		style.ItemSpacing = ImVec2(8.0f, 6.0f);
+		style.ItemInnerSpacing = ImVec2(5.0f, 4.0f);
+		style.IndentSpacing = 16.0f;
+		style.ScrollbarSize = 12.0f;
+		style.GrabMinSize = 10.0f;
 
 		// --- Borders & Rounding (Flat, subtle rounding) ---
 		style.WindowRounding = 4.0f;
