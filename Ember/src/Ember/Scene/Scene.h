@@ -78,6 +78,7 @@ namespace Ember {
 		inline std::vector<SharedPtr<T>> GetAssetsOfType();
 
 		std::vector<Entity> GetAllEntities() const;
+		void Clear();
 
 		template<typename Driver, typename... Filters>
 		std::vector<Entity> GetAllEntitiesWithComponents()

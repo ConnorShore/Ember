@@ -5,6 +5,7 @@
 #include "EditorContext.h"
 #include "ProjectSettingsDialog.h"
 #include "Utils/ViewportGizmoController.h"
+#include "Viewers/EditorViewportTabs.h"
 
 #include <Ember/Event/KeyEvent.h>
 #include <Ember/Event/MouseEvent.h>
@@ -39,10 +40,11 @@ namespace Ember {
 
 		void RenderMenuBar();
 		void RenderSceneViewport();
+		void RenderActiveViewerViewport();
 		void RenderNewProjectPopup();
 		void RenderNewScenePopup();
 		void RenderWelcomePopup();
-		void RenderPrefabEditBanner();
+		void RenderClosePrefabPrompt();
 
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
@@ -70,10 +72,21 @@ namespace Ember {
 		void NewScene();
 		void OpenScene(const std::string& scenePath = "");
 		void SaveProject(bool saveAs = false);
-		void OpenPrefab(const std::string& prefabPath);
+		void OpenPrefab(const std::string& prefabPath = "");
 		bool SaveOpenPrefab();
-		void CloseOpenPrefab(bool saveBeforeClose);
+		void HandleSceneOpenRequest();
 		void HandlePrefabOpenRequest();
+
+		EditorViewportViewer* GetActiveViewer();
+		const EditorViewportViewer* GetActiveViewer() const;
+		void OnViewportViewerActivated(size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer);
+		bool OnViewportViewerCloseRequested(size_t viewerIndex, EditorViewportViewer& viewer, bool saveBeforeClose);
+		void ActivateViewer(size_t viewerIndex);
+		bool CloseViewer(size_t viewerIndex, bool saveBeforeClose);
+		bool CloseAllViewers(bool savePrefabs);
+		SharedPtr<Scene> LoadSceneForViewer(const std::string& scenePath);
+		void OpenSceneViewer(const std::string& scenePath);
+		void OpenPrefabViewer(const std::string& prefabPath);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
@@ -134,10 +147,10 @@ namespace Ember {
 	private:
 		EditorContext m_Context;
 		SharedPtr<Scene> m_EditorScene;
-		SharedPtr<Scene> m_SceneBeforePrefabEdit;
 		SharedPtr<Scene> m_PrefabEditScene;
 		SharedPtr<Prefab> m_EditingPrefab;
 		std::string m_EditingPrefabPath;
+		EditorViewportTabs m_ViewportTabs;
 
 		EditorCamera m_Camera;
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
@@ -154,6 +167,9 @@ namespace Ember {
 
 		bool m_ShowStatsWindow = false;
 		bool m_SkipSceneUiThisFrame = false;
+		bool m_ShowClosePrefabPrompt = false;
+		bool m_SavePrefabsWithoutPrompt = false;
+		int m_PendingPrefabCloseViewerIndex = -1;
 
 		bool m_DrawAllHUD = false;
 

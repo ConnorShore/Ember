@@ -458,10 +458,19 @@ namespace Ember {
 			// TODO: Select the item
 		}
 
-		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)
-			&& AssetPayloadTypeForPath(filePath) == DragDropPayloadType::AssetPrefab)
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 		{
-			m_Context->RequestedPrefabOpenPath = filePath.string();
+			switch (AssetPayloadTypeForPath(filePath))
+			{
+			case DragDropPayloadType::Scene:
+				m_Context->RequestedSceneOpenPath = filePath.string();
+				break;
+			case DragDropPayloadType::AssetPrefab:
+				m_Context->RequestedPrefabOpenPath = filePath.string();
+				break;
+			default:
+				break;
+			}
 		}
 
 		if (Application::Instance().GetAssetManager().ContainsAssetWithPath(filePath.string()))
@@ -961,6 +970,12 @@ namespace Ember {
 
 	void AssetManagerPanel::RenderSceneOptions(const std::string& filePath)
 	{
+		if (ImGui::MenuItem("Open Scene"))
+		{
+			m_Context->RequestedSceneOpenPath = filePath;
+			ImGui::CloseCurrentPopup();
+		}
+
 		if (ImGui::MenuItem("Rename"))
 		{
 			m_RenameSceneOldFilePath = filePath;

@@ -159,6 +159,15 @@ namespace Ember {
 	{
 	}
 
+	void Scene::Clear()
+	{
+		m_PendingRemovals.clear();
+		m_EntityUUIDMap.clear();
+		m_EntityOrder.clear();
+		m_PoolManager = ScopedPtr<PoolManager>::Create();
+		m_Registry = ScopedPtr<Registry>::Create();
+	}
+
 	// Deep-copies the scene, preserving all UUIDs so relationships remain valid
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{

@@ -1577,6 +1577,7 @@ namespace Ember {
 		std::string sceneName;
 		root["Scene"] >> sceneName;
 		EB_CORE_TRACE("Deserializing Scene: {0}", sceneName);
+		m_Scene->Clear();
 
 		if (root.has_child("Entities"))
 		{

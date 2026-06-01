@@ -29,6 +29,7 @@ namespace Ember {
 		bool IsEditingPrefab = false;
 		Entity PrefabRootEntity;
 		std::string ActivePrefabPath;
+		std::string RequestedSceneOpenPath;
 		std::string RequestedPrefabOpenPath;
 
 		// Deferred removals: entities/components are queued during rendering and

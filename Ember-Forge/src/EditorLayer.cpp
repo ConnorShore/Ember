@@ -389,7 +389,7 @@ namespace Ember {
 
 		DrawToolbar();
 		RenderSceneViewport();
-		RenderPrefabEditBanner();
+		RenderClosePrefabPrompt();
 
 		// Project Settings Pop up
 		if (m_ShowProjectSettingsPopup)
@@ -407,6 +407,7 @@ namespace Ember {
 		for (auto& panel : m_Panels)
 			panel->OnImGuiRender();
 
+		HandleSceneOpenRequest();
 		HandlePrefabOpenRequest();
 
 		// Pop up for new project
@@ -440,6 +441,13 @@ namespace Ember {
 		if (m_Context.IsEditingPrefab)
 		{
 			auto evt = UINotificationEvent("Close prefab edit mode before entering Play mode.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		if (!m_EditorScene)
+		{
+			auto evt = UINotificationEvent("Open a scene tab before entering Play mode.", UINotificationEvent::Severity::Warning);
 			m_Context.EventCallback(evt);
 			return;
 		}
@@ -632,14 +640,19 @@ namespace Ember {
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists && !editingPrefab))
+			if (ImGui::MenuItem("New Scene", "Ctrl+N", false, projectExists && m_Context.CurrentSceneState == SceneState::Edit))
 			{
 				NewScene();
 			}
 
-			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists && !editingPrefab))
+			if (ImGui::MenuItem("Open Scene", "Ctrl+O", false, projectExists && m_Context.CurrentSceneState == SceneState::Edit))
 			{
 				OpenScene();
+			}
+
+			if (ImGui::MenuItem("Open Prefab", nullptr, false, projectExists && m_Context.CurrentSceneState == SceneState::Edit))
+			{
+				OpenPrefab();
 			}
 
 			if (ImGui::MenuItem(editingPrefab ? "Save Prefab" : "Save Scene", "Ctrl+S", false, projectExists))
@@ -653,19 +666,6 @@ namespace Ember {
 			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists && !editingPrefab))
 			{
 				SaveProject(true);
-			}
-
-			if (editingPrefab)
-			{
-				ImGui::Separator();
-				if (ImGui::MenuItem("Save and Close Prefab"))
-				{
-					CloseOpenPrefab(true);
-				}
-				if (ImGui::MenuItem("Close Prefab Without Saving"))
-				{
-					CloseOpenPrefab(false);
-				}
 			}
 
 			ImGui::EndMenu();
@@ -726,10 +726,24 @@ namespace Ember {
 
 	void EditorLayer::RenderSceneViewport()
 	{
-		ImGui::Begin("Scene");
+		bool renderedActiveTab = m_ViewportTabs.Render(
+			[this]() { RenderActiveViewerViewport(); },
+			[this](size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer) { OnViewportViewerActivated(previousViewerIndex, activeViewerIndex, activeViewer); },
+			[this](size_t viewerIndex, EditorViewportViewer& viewer, bool saveBeforeClose) { return OnViewportViewerCloseRequested(viewerIndex, viewer, saveBeforeClose); });
+
+		if (!renderedActiveTab)
+		{
+			m_ViewportHovered = false;
+			m_ViewportFocused = false;
+		}
+	}
+
+	void EditorLayer::RenderActiveViewerViewport()
+	{
 
 		// Save view port info for mouse picking and viewport resizing
 		m_ViewportHovered = ImGui::IsWindowHovered();
+		m_ViewportFocused = ImGui::IsWindowFocused();
 
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -739,7 +753,7 @@ namespace Ember {
 		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+		if (viewportPanelSize.x > 0.0f && viewportPanelSize.y > 0.0f && (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y))
 		{
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
@@ -753,7 +767,7 @@ namespace Ember {
 		uint32_t textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
 		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(textureID)), ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		// Drag drop zone for models and prefabs
+		// Drag drop zone for models, scenes, and prefab viewers
 		if (ImGui::BeginDragDropTarget())
 		{
 			// Models
@@ -761,28 +775,27 @@ namespace Ember {
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
 					CreateEntityFromModel(filePath);
 				}
 			}
 
-			// Prefabs
+			// Prefabs open in their own viewer tab
 			{
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
-					CreateEntityFromPrefab(filePath);
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
+					OpenPrefab(filePath);
 				}
 			}
 
 			// Scenes
-			if (!m_Context.IsEditingPrefab)
 			{
 				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize);
+					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
 					OpenScene(filePath);
 				}
 			}
@@ -840,41 +853,73 @@ namespace Ember {
 
 		// Draw Transform Gizmos for selected entity
 		m_ViewportGizmos.Render(&m_Context, m_Camera, m_ViewportBounds, m_GizmoType);
-
-		ImGui::End();
 	}
 
-	void EditorLayer::RenderPrefabEditBanner()
+	void EditorLayer::RenderClosePrefabPrompt()
 	{
-		if (!m_Context.IsEditingPrefab)
+		const char* popupName = "Close Prefab";
+		if (m_ShowClosePrefabPrompt)
+		{
+			ImGui::OpenPopup(popupName);
+			m_ShowClosePrefabPrompt = false;
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(360.0f, 0.0f), ImGuiCond_Appearing);
+		if (!ImGui::BeginPopupModal(popupName, nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
 			return;
 
-		ImVec2 windowPos(m_ViewportBounds[0].x + 12.0f, m_ViewportBounds[0].y + 12.0f);
-		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-		ImGui::SetNextWindowBgAlpha(0.88f);
+		EditorViewportViewer* viewer = m_PendingPrefabCloseViewerIndex >= 0
+			? m_ViewportTabs.GetViewer(static_cast<size_t>(m_PendingPrefabCloseViewerIndex))
+			: nullptr;
 
-		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-			ImGuiWindowFlags_NoMove;
-
-		if (ImGui::Begin("Prefab Edit Banner", nullptr, flags))
+		if (!viewer || viewer->GetType() != EditorViewportViewer::Type::Prefab)
 		{
-			std::string prefabName = std::filesystem::path(m_Context.ActivePrefabPath).filename().string();
-			ImGui::Text("Prefab: %s", prefabName.c_str());
-			ImGui::Separator();
-
-			if (ImGui::Button("Save"))
-				SaveOpenPrefab();
-
-			ImGui::SameLine();
-			if (ImGui::Button("Save & Close"))
-				CloseOpenPrefab(true);
-
-			ImGui::SameLine();
-			if (ImGui::Button("Close Without Saving"))
-				CloseOpenPrefab(false);
+			m_PendingPrefabCloseViewerIndex = -1;
+			ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+			return;
 		}
-		ImGui::End();
+
+		std::string prefabName = std::filesystem::path(viewer->GetFilePath()).filename().string();
+		if (prefabName.empty())
+			prefabName = viewer->GetTitle();
+
+		ImGui::TextWrapped("Save changes to %s before closing?", prefabName.c_str());
+		ImGui::Spacing();
+
+		int viewerIndex = m_PendingPrefabCloseViewerIndex;
+		if (ImGui::Button("Save", ImVec2(100.0f, 0.0f)))
+		{
+			ActivateViewer(static_cast<size_t>(viewerIndex));
+			if (SaveOpenPrefab() && CloseViewer(static_cast<size_t>(viewerIndex), false))
+			{
+				auto evt = UINotificationEvent("Closed prefab tab.");
+				m_Context.EventCallback(evt);
+				m_PendingPrefabCloseViewerIndex = -1;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Discard", ImVec2(100.0f, 0.0f)))
+		{
+			if (CloseViewer(static_cast<size_t>(viewerIndex), false))
+			{
+				auto evt = UINotificationEvent("Closed prefab tab.");
+				m_Context.EventCallback(evt);
+				m_PendingPrefabCloseViewerIndex = -1;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(100.0f, 0.0f)))
+		{
+			m_PendingPrefabCloseViewerIndex = -1;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 
 	void EditorLayer::RenderWelcomePopup()
@@ -1002,6 +1047,14 @@ namespace Ember {
 
 			if (ImGui::Button("Create", ImVec2(120, 0)))
 			{
+				if (!CloseAllViewers(true))
+				{
+					ImGui::EndPopup();
+					return;
+				}
+
+				ClearEntitySelectionState();
+
 				std::filesystem::path projectDirPath = std::filesystem::path(m_NewProjectSettings.ProjectDirectory) / m_NewProjectSettings.ProjectName;
 				std::filesystem::create_directories(projectDirPath);
 
@@ -1066,9 +1119,17 @@ namespace Ember {
 			if (ImGui::Button("Create", ImVec2(120, 0)))
 			{
 				UINotificationEvent evt;
-				auto newScene = Application::Instance().GetSceneManager().CreateScene(m_NewSceneName);
-				if (newScene)
+				auto& assetManager = Application::Instance().GetAssetManager();
+				auto scenePath = ProjectManager::GetActive()->GetScenesDirectory() / (m_NewSceneName + ".ebs");
+				auto newScene = assetManager.Load<Scene>(m_NewSceneName, scenePath.string(), false);
+				SceneSerializer serializer(newScene);
+
+				if (newScene && serializer.Serialize(scenePath.string()))
+				{
+					ProjectManager::GetActive()->AddSceneToBuild(newScene->GetUUID());
+					OpenScene(newScene->GetFilePath());
 					evt = UINotificationEvent("New Scene created!");
+				}
 				else
 					evt = UINotificationEvent("Failed to create scene!", UINotificationEvent::Severity::Error);
 
@@ -1152,13 +1213,11 @@ namespace Ember {
 				break;
 
 			case KeyCode::Escape:
-				if (m_Context.IsEditingPrefab)
-					CloseOpenPrefab(true);
 				break;
 
 			// Entity Hot keys
 			case KeyCode::Delete:
-				if (m_Context.SelectedEntity != m_InvalidEntity)
+				if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 					RemoveEntity(m_Context.SelectedEntity);
 				break;
 
@@ -1167,7 +1226,7 @@ namespace Ember {
 				{
 					if (m_Context.CurrentSceneState == SceneState::Play)
 						OnRuntimeStop();
-					else
+					else if (m_EditorScene && !m_Context.IsEditingPrefab)
 						OnRuntimeStart();
 				}
 				break;
@@ -1185,7 +1244,7 @@ namespace Ember {
 				return false;
 
 			// If a gizmo is drawn and the mouse is over it, we should not change the selected entity
-			bool isGizmoDrawn = m_Context.SelectedEntity != m_InvalidEntity && m_GizmoType != -1;
+			bool isGizmoDrawn = m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_GizmoType != -1;
 			if (isGizmoDrawn && (ImGuizmo::IsOver() || m_ViewportGizmos.IsHovered()))
 				return false;
 
@@ -1399,7 +1458,7 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
-		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit || m_Context.IsEditingPrefab);
+		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit || m_Context.IsEditingPrefab || !m_EditorScene);
 
 		// --- PLAY STANDALONE (Orange Tint) ---
 		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
@@ -1499,7 +1558,10 @@ namespace Ember {
 			ImGui::Text("Renderer Stats");
 			ImGui::Separator();
 			ImGui::Text("FPS: %.1f", CalculateFPS(delta));
-			ImGui::Text("Entities: %d", m_Context.ActiveScene()->GetAllEntities().size());
+			if (auto activeScene = m_Context.ActiveScene())
+				ImGui::Text("Entities: %d", activeScene->GetAllEntities().size());
+			else
+				ImGui::Text("Entities: 0");
 		}
 		ImGui::End();
 	}
@@ -1558,7 +1620,7 @@ namespace Ember {
 		}
 
 		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
-			m_Context.SelectedEntity = m_InvalidEntity;
+			m_Context.SelectedEntity = Entity();
 
 		for (auto entity : m_Context.PendingEntityRemovals) {
 			std::string entityName = entity.GetName();
@@ -1635,13 +1697,8 @@ namespace Ember {
 		if (projectFile.empty())
 			return;
 
-		if (m_Context.IsEditingPrefab)
-		{
-			if (!SaveOpenPrefab())
-				return;
-
-			CloseOpenPrefab(false);
-		}
+		if (!CloseAllViewers(true))
+			return;
 
 		ClearEntitySelectionState();
 
@@ -1670,9 +1727,9 @@ namespace Ember {
 
 	void EditorLayer::OpenScene(const std::string& scenePath /* = "" */)
 	{
-		if (m_Context.IsEditingPrefab)
+		if (m_Context.CurrentSceneState != SceneState::Edit)
 		{
-			auto evt = UINotificationEvent("Close prefab edit mode before opening a scene.", UINotificationEvent::Severity::Warning);
+			auto evt = UINotificationEvent("Stop Play mode before opening a scene.", UINotificationEvent::Severity::Warning);
 			m_Context.EventCallback(evt);
 			return;
 		}
@@ -1680,15 +1737,11 @@ namespace Ember {
 		std::string sceneFile = scenePath;
 		if (sceneFile.empty())
 		{
-			const char* sceneDirectory = ProjectManager::GetActive()->GetScenesDirectory().string().c_str();
-			sceneFile = FileDialog::OpenFile(sceneDirectory, "Ember Scene (*.ebs)", "*.ebs");
+			std::string sceneDirectory = ProjectManager::GetActive()->GetScenesDirectory().string();
+			sceneFile = FileDialog::OpenFile(sceneDirectory.c_str(), "Ember Scene (*.ebs;*.ebscene)", "*.ebs;*.ebscene");
 		}
 
-		if (!sceneFile.empty())
-		{
-			auto& sceneManager = Application::Instance().GetSceneManager();
-			sceneManager.LoadScene(sceneFile);
-		}
+		OpenSceneViewer(sceneFile);
 	}
 
 	void EditorLayer::SaveProject(bool saveAs /* = false */)
@@ -1699,18 +1752,22 @@ namespace Ember {
 			return;
 		}
 
+		auto activeScene = m_Context.ActiveScene();
+		if (!activeScene)
+		{
+			auto evt = UINotificationEvent("No scene tab is open to save.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
 		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
-			: m_Context.ActiveScene()->GetFilePath();
+			: activeScene->GetFilePath();
 
 		if (!sceneName.empty())
 		{
 			auto& assetManager = Application::Instance().GetAssetManager();
-
-			// Strip editor-only outline components before serializing
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && m_Context.SelectedEntity.ContainsComponent<OutlineComponent>())
-				m_Context.SelectedEntity.DetachComponent<OutlineComponent>();
 
 			// Serialize scenes
 			auto scenes = assetManager.GetAssetsOfType<Scene>();
@@ -1718,14 +1775,26 @@ namespace Ember {
 			{
 				if (!scene->IsEngineAsset() && !scene->GetFilePath().empty())
 				{
+					std::vector<Entity> outlinedEntities;
+					for (Entity entity : scene->GetAllEntities())
+					{
+						if (entity.ContainsComponent<OutlineComponent>())
+						{
+							outlinedEntities.push_back(entity);
+							entity.DetachComponent<OutlineComponent>();
+						}
+					}
+
 					SceneSerializer ser(scene);
 					ser.Serialize(scene->GetFilePath());
+
+					for (Entity entity : outlinedEntities)
+					{
+						if (entity != Constants::Entities::InvalidEntityID && entity.ContainsComponent<IDComponent>())
+							entity.AttachComponent<OutlineComponent>(m_OutlineEntitySelectedComp);
+					}
 				}
 			}
-
-			// Re-apply outline component after saving so the user doesn't lose their selection highlight
-			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-				OutlineEntity(m_Context.SelectedEntity);
 
 			// Serialize materials (in case their values changed)
 			auto materials = assetManager.GetAssetsOfType<MaterialInstance>();
@@ -1763,7 +1832,14 @@ namespace Ember {
 			assetSerializer.Serialize(assetFilePath.string());
 
 			if (saveAs)
-				m_Context.ActiveScene()->SetFilePath(sceneName);
+			{
+				activeScene->SetFilePath(sceneName);
+				if (auto* activeViewer = GetActiveViewer())
+				{
+					activeViewer->SetFilePath(sceneName);
+					activeViewer->SetTitle(EditorViewportTabs::TitleFromPath(sceneName, activeScene->GetName()));
+				}
+			}
 
 			// Save project as well to update any project settings
 			ProjectManager::SaveActiveProject();
@@ -1775,75 +1851,21 @@ namespace Ember {
 
 	void EditorLayer::OpenPrefab(const std::string& prefabPath)
 	{
-		if (prefabPath.empty() || m_Context.CurrentSceneState != SceneState::Edit)
-			return;
-
-		if (m_Context.IsEditingPrefab)
+		if (m_Context.CurrentSceneState != SceneState::Edit)
 		{
-			if (std::filesystem::equivalent(std::filesystem::path(prefabPath), std::filesystem::path(m_EditingPrefabPath)))
-				return;
-
-			if (!SaveOpenPrefab())
-				return;
-
-			CloseOpenPrefab(false);
-		}
-
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto prefab = assetManager.Load<Prefab>(prefabPath, false);
-		if (!prefab)
-		{
-			auto evt = UINotificationEvent(std::format("Failed to open prefab: {}", std::filesystem::path(prefabPath).filename().string()), UINotificationEvent::Severity::Error);
+			auto evt = UINotificationEvent("Stop Play mode before opening a prefab.", UINotificationEvent::Severity::Warning);
 			m_Context.EventCallback(evt);
 			return;
 		}
 
-		RemovePendingComponents();
-		RemovePendingEntities();
-
-		m_SceneBeforePrefabEdit = m_EditorScene;
-		m_PrefabEditScene = SharedPtr<Scene>::Create(std::format("Prefab: {}", prefab->GetName()), prefab->GetFilePath());
-
-		SceneSerializer serializer(m_PrefabEditScene);
-		Entity prefabRoot = serializer.DeserializePrefab(prefab, true);
-		if (prefabRoot == Constants::Entities::InvalidEntityID)
+		std::string prefabFile = prefabPath;
+		if (prefabFile.empty())
 		{
-			auto evt = UINotificationEvent(std::format("Failed to deserialize prefab: {}", prefab->GetName()), UINotificationEvent::Severity::Error);
-			m_Context.EventCallback(evt);
-			m_PrefabEditScene = nullptr;
-			m_SceneBeforePrefabEdit = nullptr;
-			return;
+			std::string prefabDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			prefabFile = FileDialog::OpenFile(prefabDirectory.c_str(), "Ember Prefab (*.ebprefab)", "*.ebprefab");
 		}
 
-		auto& prefabComponent = prefabRoot.ContainsComponent<PrefabComponent>()
-			? prefabRoot.GetComponent<PrefabComponent>()
-			: prefabRoot.AttachComponent<PrefabComponent>();
-		prefabComponent.PrefabHandle = prefab->GetUUID();
-
-		for (Entity entity : m_PrefabEditScene->GetAllEntities())
-		{
-			if (entity == prefabRoot)
-				continue;
-
-			auto& relationship = entity.GetComponent<RelationshipComponent>();
-			if (relationship.ParentHandle == Constants::InvalidUUID)
-				m_PrefabEditScene->SetEntityParent(entity.GetUUID(), prefabRoot);
-		}
-
-		m_EditingPrefab = prefab;
-		m_EditingPrefabPath = prefab->GetFilePath();
-		m_Context.IsEditingPrefab = true;
-		m_Context.ActivePrefabPath = m_EditingPrefabPath;
-		m_Context.PrefabRootEntity = prefabRoot;
-		m_Context.SelectedEntity = prefabRoot;
-		m_PreviousSelectedEntity = Entity();
-
-		auto& sceneManager = Application::Instance().GetSceneManager();
-		sceneManager.SetActiveScene(m_PrefabEditScene);
-		m_PrefabEditScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-
-		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));
-		m_Context.EventCallback(evt);
+		OpenPrefabViewer(prefabFile);
 	}
 
 	bool EditorLayer::SaveOpenPrefab()
@@ -1901,37 +1923,6 @@ namespace Ember {
 		return true;
 	}
 
-	void EditorLayer::CloseOpenPrefab(bool saveBeforeClose)
-	{
-		if (!m_Context.IsEditingPrefab)
-			return;
-
-		if (saveBeforeClose && !SaveOpenPrefab())
-			return;
-
-		m_Context.IsEditingPrefab = false;
-		m_Context.ActivePrefabPath.clear();
-		m_Context.PrefabRootEntity = Entity();
-		m_Context.SelectedEntity = Entity();
-		m_PreviousSelectedEntity = Entity();
-
-		auto sceneToRestore = m_SceneBeforePrefabEdit ? m_SceneBeforePrefabEdit : m_EditorScene;
-		if (sceneToRestore)
-		{
-			Application::Instance().GetSceneManager().SetActiveScene(sceneToRestore);
-			sceneToRestore->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			m_EditorScene = sceneToRestore;
-		}
-
-		m_PrefabEditScene = nullptr;
-		m_SceneBeforePrefabEdit = nullptr;
-		m_EditingPrefab = nullptr;
-		m_EditingPrefabPath.clear();
-
-		auto evt = UINotificationEvent("Closed prefab edit mode.");
-		m_Context.EventCallback(evt);
-	}
-
 	void EditorLayer::HandlePrefabOpenRequest()
 	{
 		if (m_Context.RequestedPrefabOpenPath.empty())
@@ -1942,17 +1933,265 @@ namespace Ember {
 		OpenPrefab(path);
 	}
 
+	void EditorLayer::HandleSceneOpenRequest()
+	{
+		if (m_Context.RequestedSceneOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestedSceneOpenPath;
+		m_Context.RequestedSceneOpenPath.clear();
+		OpenScene(path);
+	}
+
+	EditorViewportViewer* EditorLayer::GetActiveViewer()
+	{
+		return m_ViewportTabs.GetActiveViewer();
+	}
+
+	const EditorViewportViewer* EditorLayer::GetActiveViewer() const
+	{
+		return m_ViewportTabs.GetActiveViewer();
+	}
+
+	void EditorLayer::OnViewportViewerActivated(size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer)
+	{
+		if (previousViewerIndex != activeViewerIndex && previousViewerIndex != static_cast<size_t>(-1))
+		{
+			RemovePendingComponents();
+			RemovePendingEntities();
+			m_ViewportTabs.StoreViewerState(previousViewerIndex, m_Context.SelectedEntity, m_PreviousSelectedEntity);
+		}
+
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+			return;
+
+		SharedPtr<Scene> scene = activeViewer.GetScene();
+		if (!scene)
+			return;
+
+		m_Context.IsEditingPrefab = activeViewer.GetType() == EditorViewportViewer::Type::Prefab;
+		if (m_Context.IsEditingPrefab)
+		{
+			auto& prefabViewer = static_cast<PrefabViewportViewer&>(activeViewer);
+			m_PrefabEditScene = prefabViewer.GetScene();
+			m_EditingPrefab = prefabViewer.PrefabAsset;
+			m_EditingPrefabPath = prefabViewer.GetFilePath();
+			m_Context.ActivePrefabPath = m_EditingPrefabPath;
+			m_Context.PrefabRootEntity = prefabViewer.RootEntity;
+		}
+		else
+		{
+			m_EditorScene = scene;
+			m_PrefabEditScene = nullptr;
+			m_EditingPrefab = nullptr;
+			m_EditingPrefabPath.clear();
+			m_Context.ActivePrefabPath.clear();
+			m_Context.PrefabRootEntity = Entity();
+		}
+
+		Application::Instance().GetSceneManager().SetActiveScene(scene);
+		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
+			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+
+		m_Context.SelectedEntity = ResolveEntityInScene(scene, activeViewer.SelectedEntity);
+		if (m_Context.SelectedEntity == Constants::Entities::InvalidEntityID)
+			m_Context.SelectedEntity = Entity();
+
+		m_PreviousSelectedEntity = ResolveEntityInScene(scene, activeViewer.PreviousSelectedEntity);
+		if (m_PreviousSelectedEntity == Constants::Entities::InvalidEntityID)
+			m_PreviousSelectedEntity = Entity();
+
+		m_EditorRenderPassSettings.SelectedEntity = m_Context.SelectedEntity != Constants::Entities::InvalidEntityID
+			? m_Context.SelectedEntity.GetEntityHandle()
+			: Constants::Entities::InvalidEntityID;
+	}
+
+	bool EditorLayer::OnViewportViewerCloseRequested(size_t viewerIndex, EditorViewportViewer& viewer, bool saveBeforeClose)
+	{
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+		{
+			auto evt = UINotificationEvent("Stop Play mode before closing a scene tab.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return false;
+		}
+
+		if (viewer.GetType() == EditorViewportViewer::Type::Prefab && saveBeforeClose)
+		{
+			ActivateViewer(viewerIndex);
+
+			if (m_SavePrefabsWithoutPrompt)
+				return SaveOpenPrefab();
+
+			m_PendingPrefabCloseViewerIndex = static_cast<int>(viewerIndex);
+			m_ShowClosePrefabPrompt = true;
+			return false;
+		}
+
+		return true;
+	}
+
+	void EditorLayer::ActivateViewer(size_t viewerIndex)
+	{
+		m_ViewportTabs.ActivateViewer(viewerIndex,
+			[this](size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer) { OnViewportViewerActivated(previousViewerIndex, activeViewerIndex, activeViewer); });
+	}
+
+	bool EditorLayer::CloseViewer(size_t viewerIndex, bool saveBeforeClose)
+	{
+		bool closed = m_ViewportTabs.CloseViewer(viewerIndex, saveBeforeClose,
+			[this](size_t closeViewerIndex, EditorViewportViewer& viewer, bool save) { return OnViewportViewerCloseRequested(closeViewerIndex, viewer, save); },
+			[this](size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer) { OnViewportViewerActivated(previousViewerIndex, activeViewerIndex, activeViewer); });
+
+		if (closed && m_ViewportTabs.Empty())
+		{
+			m_Context.IsEditingPrefab = false;
+			m_Context.ActivePrefabPath.clear();
+			m_Context.PrefabRootEntity = Entity();
+			m_PrefabEditScene = nullptr;
+			m_EditingPrefab = nullptr;
+			m_EditingPrefabPath.clear();
+			m_EditorScene = nullptr;
+			Application::Instance().GetSceneManager().SetActiveScene(nullptr);
+			ClearEntitySelectionState();
+		}
+
+		return closed;
+	}
+
+	bool EditorLayer::CloseAllViewers(bool savePrefabs)
+	{
+		bool previousSavePrefabsWithoutPrompt = m_SavePrefabsWithoutPrompt;
+		m_SavePrefabsWithoutPrompt = savePrefabs;
+
+		bool closed = m_ViewportTabs.CloseAllViewers(savePrefabs,
+			[this](size_t closeViewerIndex, EditorViewportViewer& viewer, bool save) { return OnViewportViewerCloseRequested(closeViewerIndex, viewer, save); },
+			[this](size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer) { OnViewportViewerActivated(previousViewerIndex, activeViewerIndex, activeViewer); });
+
+		m_SavePrefabsWithoutPrompt = previousSavePrefabsWithoutPrompt;
+
+		if (closed && m_ViewportTabs.Empty())
+		{
+			m_Context.IsEditingPrefab = false;
+			m_Context.ActivePrefabPath.clear();
+			m_Context.PrefabRootEntity = Entity();
+			m_PrefabEditScene = nullptr;
+			m_EditingPrefab = nullptr;
+			m_EditingPrefabPath.clear();
+			m_EditorScene = nullptr;
+			Application::Instance().GetSceneManager().SetActiveScene(nullptr);
+			ClearEntitySelectionState();
+		}
+
+		return closed;
+	}
+
+	SharedPtr<Scene> EditorLayer::LoadSceneForViewer(const std::string& scenePath)
+	{
+		if (scenePath.empty())
+			return nullptr;
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		SharedPtr<Scene> scene = assetManager.Load<Scene>(scenePath, false);
+		if (!scene)
+			return nullptr;
+
+		SceneSerializer serializer(scene);
+		if (!serializer.Deserialize(scenePath))
+		{
+			auto evt = UINotificationEvent(std::format("Failed to open scene: {}", std::filesystem::path(scenePath).filename().string()), UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return nullptr;
+		}
+
+		return scene;
+	}
+
+	void EditorLayer::OpenSceneViewer(const std::string& scenePath)
+	{
+		if (scenePath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::Scene, scenePath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		SharedPtr<Scene> scene = LoadSceneForViewer(scenePath);
+		if (!scene)
+			return;
+
+		std::string sceneFilePath = scene->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(scenePath).string() : scene->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(sceneFilePath, scene->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddSceneViewer(scene, sceneFilePath, title);
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened scene: {}", std::filesystem::path(sceneFilePath).filename().string()));
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::OpenPrefabViewer(const std::string& prefabPath)
+	{
+		if (prefabPath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::Prefab, prefabPath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefab = assetManager.Load<Prefab>(prefabPath, false);
+		if (!prefab)
+		{
+			auto evt = UINotificationEvent(std::format("Failed to open prefab: {}", std::filesystem::path(prefabPath).filename().string()), UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		SharedPtr<Scene> prefabScene = SharedPtr<Scene>::Create(std::format("Prefab: {}", prefab->GetName()), prefab->GetFilePath());
+		SceneSerializer serializer(prefabScene);
+		Entity prefabRoot = serializer.DeserializePrefab(prefab, true);
+		if (prefabRoot == Constants::Entities::InvalidEntityID)
+		{
+			auto evt = UINotificationEvent(std::format("Failed to deserialize prefab: {}", prefab->GetName()), UINotificationEvent::Severity::Error);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		auto& prefabComponent = prefabRoot.ContainsComponent<PrefabComponent>()
+			? prefabRoot.GetComponent<PrefabComponent>()
+			: prefabRoot.AttachComponent<PrefabComponent>();
+		prefabComponent.PrefabHandle = prefab->GetUUID();
+
+		for (Entity entity : prefabScene->GetAllEntities())
+		{
+			if (entity == prefabRoot)
+				continue;
+
+			auto& relationship = entity.GetComponent<RelationshipComponent>();
+			if (relationship.ParentHandle == Constants::InvalidUUID)
+				prefabScene->SetEntityParent(entity.GetUUID(), prefabRoot);
+		}
+
+		std::string prefabFilePath = prefab->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(prefabPath).string() : prefab->GetFilePath();
+		std::string title = std::format("{} [Prefab]", EditorViewportTabs::TitleFromPath(prefabFilePath, prefab->GetName()));
+		size_t viewerIndex = m_ViewportTabs.AddPrefabViewer(prefabScene, prefab, prefabRoot, prefabFilePath, title);
+		m_ViewportTabs.StoreViewerState(viewerIndex, prefabRoot, Entity());
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));
+		m_Context.EventCallback(evt);
+	}
+
 	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
 	{
-		if (m_Context.IsEditingPrefab)
-			CloseOpenPrefab(false);
-
-		m_EditorScene = newScene;
-
-		// SetActiveScene handles OnDetach on the old scene and OnAttach on the new one
-		Application::Instance().GetSceneManager().SetActiveScene(newScene);
-
-		m_Context.ActiveScene()->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+		CloseAllViewers(false);
+		size_t viewerIndex = m_ViewportTabs.AddSceneViewer(newScene, newScene->GetFilePath(), EditorViewportTabs::TitleFromPath(newScene->GetFilePath(), newScene->GetName()));
+		ActivateViewer(viewerIndex);
 		ClearEntitySelectionState();
 	}
 
