@@ -41,7 +41,8 @@
       "Ember",
       "Ember-Runtime",
       "Ember-Tools",
-      "ImGuizmo"
+      "ImGuizmo",
+      "imgui-node-editor"
    }
 
    filter "system:windows"

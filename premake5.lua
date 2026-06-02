@@ -14,6 +14,7 @@ include "Ember/vendor/lua"
 include "Ember/vendor/reactphysics3d"
 
 include "Ember-Forge/vendor/ImGuizmo"
+include "Ember-Forge/vendor/imgui-node-editor"
 
 include "Ember"
 include "Ember-Runtime"
