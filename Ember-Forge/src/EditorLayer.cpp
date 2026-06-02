@@ -727,7 +727,7 @@ namespace Ember {
 	void EditorLayer::RenderSceneViewport()
 	{
 		bool renderedActiveTab = m_ViewportTabs.Render(
-			[this]() { RenderActiveViewerViewport(); },
+			this,
 			[this](size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer) { OnViewportViewerActivated(previousViewerIndex, activeViewerIndex, activeViewer); },
 			[this](size_t viewerIndex, EditorViewportViewer& viewer, bool saveBeforeClose) { return OnViewportViewerCloseRequested(viewerIndex, viewer, saveBeforeClose); });
 
@@ -736,123 +736,6 @@ namespace Ember {
 			m_ViewportHovered = false;
 			m_ViewportFocused = false;
 		}
-	}
-
-	void EditorLayer::RenderActiveViewerViewport()
-	{
-
-		// Save view port info for mouse picking and viewport resizing
-		m_ViewportHovered = ImGui::IsWindowHovered();
-		m_ViewportFocused = ImGui::IsWindowFocused();
-
-		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-		auto viewportOffset = ImGui::GetWindowPos(); // Includes tab bar height
-
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
-
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		if (viewportPanelSize.x > 0.0f && viewportPanelSize.y > 0.0f && (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y))
-		{
-			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-			m_OutputFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			// Keep the preview FBO sized to the main viewport so we can reuse the scene's render pass FBOs as-is
-			m_CameraPreviewFramebuffer->ViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			if (auto activeScene = m_Context.ActiveScene())
-				activeScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			m_Camera.SetViewportSize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-		}
-
-		uint32_t textureID = m_OutputFramebuffer->GetColorAttachmentID(0);
-		ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(textureID)), ImVec2{ viewportPanelSize.x, viewportPanelSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-		// Drag drop zone for models, scenes, and prefab viewers
-		if (ImGui::BeginDragDropTarget())
-		{
-			// Models
-			{
-				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetModel);
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
-					CreateEntityFromModel(filePath);
-				}
-			}
-
-			// Prefabs open in their own viewer tab
-			{
-				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
-					OpenPrefab(filePath);
-				}
-			}
-
-			// Scenes
-			{
-				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
-				{
-					std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
-					OpenScene(filePath);
-				}
-			}
-
-			ImGui::EndDragDropTarget();
-		}
-
-		// Render camera preview if selected entity has a camera component
-		// TODO: Bug, the scene registry will be null sometimes after coming out of play mode
-		if (m_Context.CurrentSceneState == SceneState::Edit
-			&& m_Context.SelectedEntity != Constants::Entities::InvalidEntityID 
-			&& m_Context.SelectedEntity.ContainsComponent<CameraComponent>())
-		{
-			ImVec2 viewportMinRegion = ImGui::GetWindowContentRegionMin();
-			ImVec2 viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-			ImVec2 viewportOffset = ImGui::GetWindowPos();
-
-			float padding = 15.0f;
-			float previewWidth = 320.0f;
-			float previewHeight = 180.0f; // 16:9 ratio
-
-			// X is now the MinRegion + padding, instead of MaxRegion - width
-			ImVec2 previewPos = ImVec2(
-				viewportOffset.x + viewportMinRegion.x + padding,
-				viewportOffset.y + viewportMaxRegion.y - previewHeight - padding
-			);
-
-			// Calculate the max point (bottom right) of the preview box
-			ImVec2 previewMax = ImVec2(previewPos.x + previewWidth, previewPos.y + previewHeight);
-
-			m_CameraPreviewViewportSize = Vector2f(previewWidth, previewHeight);
-
-			// Get the window draw list so we can paint custom shapes!
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-			// The Drop Shadow
-			// We draw a semi-transparent black rectangle offset by a few pixels
-			float shadowOffset = 5.0f;
-			ImU32 shadowColor = IM_COL32(0, 0, 0, 85); // RGBA (150 alpha makes it semi-transparent)
-			drawList->AddRectFilled(
-				ImVec2(previewPos.x - shadowOffset, previewPos.y + shadowOffset),
-				ImVec2(previewMax.x - shadowOffset, previewMax.y + shadowOffset),
-				shadowColor
-			);
-
-			// Just set the cursor and draw the image. No BeginChild needed!
-			ImGui::SetCursorScreenPos(previewPos);
-			uint32_t textureID = m_CameraPreviewFramebuffer->GetColorAttachmentID(0);
-			ImGui::Image((ImTextureID)(intptr_t)textureID, ImVec2(previewWidth, previewHeight), ImVec2(0, 1), ImVec2(1, 0));
-
-			// Draw a crisp 1-pixel border perfectly outlining the image
-			ImU32 borderColor = IM_COL32(0, 0, 0, 255); // Light grey
-			drawList->AddRect(previewPos, previewMax, borderColor, 0.0f, 0, 1.0f);
-		}
-
-		// Draw Transform Gizmos for selected entity
-		m_ViewportGizmos.Render(&m_Context, m_Camera, m_ViewportBounds, m_GizmoType);
 	}
 
 	void EditorLayer::RenderClosePrefabPrompt()
