@@ -1,6 +1,6 @@
 #pragma once
 #include "Panel.h"
-#include "Ember/Asset/Animation.h"
+#include "Ember/Animation/Animation.h"
 
 namespace Ember {
 

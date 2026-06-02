@@ -2,7 +2,9 @@
 #include "AnimationSystem.h"
 #include "ScriptSystem.h"
 
-#include "Ember/Asset/Animation.h"
+#include "Ember/Animation/AnimationStateMachine.h"
+#include "Ember/Animation/Animation.h"
+#include "Ember/Animation/AnimationCondition.h"
 
 #include "Ember/Scene/Scene.h"
 
@@ -93,6 +95,52 @@ namespace Ember {
 
 	// ------------------------
 
+	static const AnimationState* ResolveState(const SharedPtr<AnimationStateMachine>& stateMachine, const std::string& stateName)
+	{
+		if (!stateMachine || stateName.empty())
+			return nullptr;
+
+		const auto& states = stateMachine->GetStates();
+		auto stateIt = states.find(stateName);
+		return stateIt != states.end() ? &stateIt->second : nullptr;
+	}
+
+	static const AnimationState* ResolveCurrentState(const SharedPtr<AnimationStateMachine>& stateMachine, AnimatorComponent& animator)
+	{
+		if (!stateMachine)
+			return nullptr;
+
+		const auto& states = stateMachine->GetStates();
+		if (states.empty())
+		{
+			animator.CurrentStateName.clear();
+			return nullptr;
+		}
+
+		if (!animator.CurrentStateName.empty())
+		{
+			auto currentStateIt = states.find(animator.CurrentStateName);
+			if (currentStateIt != states.end())
+				return &currentStateIt->second;
+		}
+
+		const std::string& defaultState = stateMachine->GetDefaultState();
+		if (!defaultState.empty() && states.contains(defaultState))
+		{
+			animator.CurrentStateName = defaultState;
+			animator.CurrentTime = 0.0f;
+			animator.PreviousStateName.clear();
+			animator.PreviousTime = 0.0f;
+			animator.CurrentBlendTime = 0.0f;
+			animator.ActiveBlendDuration = 0.0f;
+			animator.IsBlending = false;
+			return ResolveState(stateMachine, animator.CurrentStateName);
+		}
+
+		animator.CurrentStateName.clear();
+		return nullptr;
+	}
+
 	void AnimationSystem::OnAttach()
 	{
 		EB_CORE_INFO("Animation System attached!");
@@ -113,69 +161,134 @@ namespace Ember {
 			auto& animator = scene->GetRegistry().GetComponent<AnimatorComponent>(entity);
 
 			// Safety checks
-			if (animator.SkeletonHandle == Constants::InvalidUUID || animator.CurrentAnimationHandle == Constants::InvalidUUID)
+			if (animator.SkeletonHandle == Constants::InvalidUUID)
 				continue;
 
 			auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
-			auto animation = assetManager.GetAsset<Animation>(animator.CurrentAnimationHandle);
-			auto prevAnimation = animator.PreviousAnimationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(animator.PreviousAnimationHandle) : nullptr;
+			if (!skeleton)
+				continue;
+
+			auto animStateMachine = animator.AnimationStateMachineHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationStateMachine>(animator.AnimationStateMachineHandle) : nullptr;
+			const AnimationState* currentState = ResolveCurrentState(animStateMachine, animator);
+
+			// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
+			if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(animator.CurrentStateName))
+			{
+				const auto& transitions = animStateMachine->GetTransitions().at(animator.CurrentStateName);
+				for (const auto& transition : transitions)
+				{
+					if (transition.ToStateName == animator.CurrentStateName || !ResolveState(animStateMachine, transition.ToStateName))
+						continue;
+
+					// Check condition to see if one is met, if so trigger transition and set prev and current states
+					bool activateTransition = true;
+					for (const auto& condition : transition.Conditions)
+					{
+						if (!AnimationConditionEvaluator::Evaluate(condition, animator.Blackboard.FloatParameters, animator.Blackboard.BoolParameters))
+						{
+							activateTransition = false;
+							break;
+						}
+					}
+
+					if (!activateTransition)
+						continue;
+
+					animator.PreviousStateName = animator.CurrentStateName;
+					animator.PreviousTime = animator.CurrentTime;
+					animator.CurrentStateName = transition.ToStateName;
+					animator.CurrentTime = 0.0f;
+					animator.CurrentBlendTime = 0.0f;
+					animator.ActiveBlendDuration = std::max(transition.BlendDuration, 0.0f);
+					animator.IsBlending = animator.ActiveBlendDuration > 0.0f;
+					if (!animator.IsBlending)
+					{
+						animator.PreviousStateName.clear();
+						animator.PreviousTime = 0.0f;
+					}
+					currentState = ResolveState(animStateMachine, animator.CurrentStateName);
+					break;
+				}
+			}
 
 			const auto& bones = skeleton->GetBones();
 			const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
 
 			float blendWeight = 1.0f;
 
-			// Advance the clock
-			if (animator.IsPlaying)
+			auto animation = currentState && currentState->AnimationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(currentState->AnimationHandle) : nullptr;
+			SharedPtr<Animation> prevAnimation = nullptr;
+			if (currentState && animation)
 			{
 				float duration = animation->GetDuration();
 
-				//If a animation is currently crossfading, we need to handle the logic
-				if (animator.PreviousAnimationHandle != Constants::InvalidUUID && prevAnimation)
+				//If a animation is currently cross fading, we need to handle the logic
+				if (animator.IsBlending)
 				{
-					animator.PreviousTime += (delta * animator.PlaybackSpeed);
-					if (animator.Loop)
-						animator.PreviousTime = fmod(animator.PreviousTime, prevAnimation->GetDuration());
+					const AnimationState* previousState = ResolveState(animStateMachine, animator.PreviousStateName);
+					if (previousState && previousState->AnimationHandle != Constants::InvalidUUID)
+						prevAnimation = assetManager.GetAsset<Animation>(previousState->AnimationHandle);
 
-					// Calculate Blend Weight (0.0 to 1.0)
-					animator.CurrentBlendTime += delta;
-					blendWeight = std::clamp(animator.CurrentBlendTime / animator.BlendDuration, 0.0f, 1.0f);
-
-					if (blendWeight >= 1.0f)
+					if (!previousState || !prevAnimation || animator.ActiveBlendDuration <= 0.0f)
 					{
-						// Blend finished, clear the previous state
-						animator.PreviousAnimationHandle = Constants::InvalidUUID;
+						animator.PreviousStateName.clear();
 						animator.CurrentBlendTime = 0.0f;
-						animator.BlendDuration = 0.0f;
+						animator.ActiveBlendDuration = 0.0f;
+						animator.IsBlending = false;
+					}
+					else
+					{
+						animator.PreviousTime += (delta * previousState->BasePlaybackSpeed);
+						float previousDuration = prevAnimation->GetDuration();
+						if (previousDuration > 0.0f)
+						{
+							if (previousState->Looping)
+							{
+								animator.PreviousTime = fmod(animator.PreviousTime, previousDuration);
+								if (animator.PreviousTime < 0.0f)
+									animator.PreviousTime += previousDuration;
+							}
+							else
+							{
+								animator.PreviousTime = std::clamp(animator.PreviousTime.Seconds(), 0.0f, previousDuration);
+							}
+						}
+
+						// Calculate Blend Weight (0.0 to 1.0)
+						animator.CurrentBlendTime += delta;
+						blendWeight = std::clamp(animator.CurrentBlendTime / animator.ActiveBlendDuration, 0.0f, 1.0f);
+
+						if (blendWeight >= 1.0f)
+						{
+							// Blend finished, clear the previous state
+							animator.PreviousStateName.clear();
+							animator.CurrentBlendTime = 0.0f;
+							animator.ActiveBlendDuration = 0.0f;
+							animator.IsBlending = false;
+						}
 					}
 				}
 
 				float lastFrameTime = animator.CurrentTime;
-				animator.CurrentTime += (delta * animator.PlaybackSpeed);
+				animator.CurrentTime += (delta * currentState->BasePlaybackSpeed);
 
-				// Animation finished
-				bool triggerReset = false;
-				if (animator.PlaybackSpeed > 0.0f && animator.CurrentTime > duration)
+				if (duration > 0.0f && currentState->BasePlaybackSpeed > 0.0f && animator.CurrentTime > duration)
 				{
-					if (animator.Loop)
+					if (currentState->Looping)
 						animator.CurrentTime = fmod(animator.CurrentTime, duration);
-					else 
-					{
-						animator.CurrentTime = duration;	// Clamp to end
-						triggerReset = true;
-					}
-				}
-				else if (animator.PlaybackSpeed < 0.0f && animator.CurrentTime <= 0.0f)
-				{
-					animator.CurrentTime = std::fmod(animator.CurrentTime, duration);
-
-					if (animator.CurrentTime < 0.0f)
-						animator.CurrentTime += duration;
 					else
+						animator.CurrentTime = duration;	// Clamp to end
+				}
+				else if (duration > 0.0f && currentState->BasePlaybackSpeed < 0.0f && animator.CurrentTime < 0.0f)
+				{
+					if (currentState->Looping)
 					{
-						animator.CurrentTime = 0.0f;	// Clamp to start
-						animator.IsPlaying = false;
+						animator.CurrentTime = std::fmod(animator.CurrentTime, duration);
+						if (animator.CurrentTime < 0.0f)
+							animator.CurrentTime += duration;
 					}
+					else
+						animator.CurrentTime = 0.0f;	// Clamp to start
 				}
 
 				// See if any animation events need to be fired at this timestamp
@@ -185,17 +298,6 @@ namespace Ember {
 					{
 						ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
 					}
-				}
-
-				// If animation finishes and isn't looped, set animation to invalid uuid and reset animator stats
-				if (triggerReset)
-				{
-					animator.PreviousAnimationHandle = animator.CurrentAnimationHandle;
-					animator.CurrentAnimationHandle = Constants::InvalidUUID;
-					animator.CurrentTime = 0.0f;
-					animator.PreviousTime = 0.0f;
-					animator.PlaybackSpeed = 1.0f;
-					animator.IsPlaying = false;
 				}
 			}
 
@@ -281,22 +383,8 @@ namespace Ember {
 		}
 	}
 
-	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp)
+	static void ApplyPoseToAnimator(AnimatorComponent& animator, const SharedPtr<Skeleton>& skeleton, const SharedPtr<Animation>& animation, float timestamp)
 	{
-		if (!entity.ContainsComponent<AnimatorComponent>())
-			return;
-
-		auto& animator = entity.GetComponent<AnimatorComponent>();
-		auto& assetManager = Application::Instance().GetAssetManager();
-
-		// Safety checks
-		if (animator.SkeletonHandle == Constants::InvalidUUID)
-			return;
-
-		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
-		if (!skeleton)
-			return;
-
 		const auto& bones = skeleton->GetBones();
 		const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
 
@@ -304,8 +392,7 @@ namespace Ember {
 		std::vector<Matrix4f> localTransforms(bones.size());
 		std::vector<Matrix4f> globalTransforms(bones.size());
 
-		// --- 1. EVALUATE LOCAL TRANSFORMS ---
-		if (animationHandle == Constants::InvalidUUID)
+		if (!animation)
 		{
 			// Invalid Handle: Reset time and fill with default Bind Pose
 			animator.CurrentTime = 0.0f;
@@ -320,10 +407,6 @@ namespace Ember {
 		else
 		{
 			// Valid Handle: Evaluate the Animation Curve
-			auto animation = assetManager.GetAsset<Animation>(animationHandle);
-			if (!animation)
-				return;
-
 			animator.CurrentTime = timestamp;
 
 			for (uint32_t i = 0; i < bones.size(); i++)
@@ -374,6 +457,57 @@ namespace Ember {
 			animator.BonePoseMatrices[i] = globalTransforms[i];
 			animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
 		}
+	}
+
+	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp)
+	{
+		if (!entity.ContainsComponent<AnimatorComponent>())
+			return;
+
+		auto& animator = entity.GetComponent<AnimatorComponent>();
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		if (animator.SkeletonHandle == Constants::InvalidUUID)
+			return;
+
+		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
+		if (!skeleton)
+			return;
+
+		auto animation = animationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(animationHandle) : nullptr;
+		ApplyPoseToAnimator(animator, skeleton, animation, timestamp);
+	}
+
+	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, const std::string& currentStateName, Entity entity, float timestamp)
+	{
+		if (!entity.ContainsComponent<AnimatorComponent>())
+			return;
+
+		auto& animator = entity.GetComponent<AnimatorComponent>();
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		if (animator.SkeletonHandle == Constants::InvalidUUID)
+			return;
+
+		auto skeleton = assetManager.GetAsset<Skeleton>(animator.SkeletonHandle);
+		if (!skeleton)
+			return;
+
+		auto stateMachine = animator.AnimationStateMachineHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationStateMachine>(animator.AnimationStateMachineHandle) : nullptr;
+		std::string resolvedStateName = currentStateName;
+		if (stateMachine && resolvedStateName.empty())
+			resolvedStateName = stateMachine->GetDefaultState();
+
+		const AnimationState* currentState = ResolveState(stateMachine, resolvedStateName);
+		SharedPtr<Animation> animation = nullptr;
+		if (currentState)
+		{
+			animator.CurrentStateName = resolvedStateName;
+			if (currentState->AnimationHandle != Constants::InvalidUUID)
+				animation = assetManager.GetAsset<Animation>(currentState->AnimationHandle);
+		}
+
+		ApplyPoseToAnimator(animator, skeleton, animation, timestamp);
 	}
 
 }
