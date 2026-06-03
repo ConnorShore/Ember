@@ -37,7 +37,7 @@ namespace Ember {
 		{
 			component.CurrentTime = 0.0f;
 			component.PreviousTime = 0.0f;
-			component.PreviousStateName.clear();
+			component.PreviousStateId = Constants::InvalidUUID;
 			component.CurrentBlendTime = 0.0f;
 			component.ActiveBlendDuration = 0.0f;
 			component.IsBlending = false;
@@ -60,7 +60,7 @@ namespace Ember {
 				if (UI::PropertyGrid::ComboBoxItem("None", component.AnimationStateMachineHandle == Constants::InvalidUUID))
 				{
 					component.AnimationStateMachineHandle = Constants::InvalidUUID;
-					component.CurrentStateName.clear();
+					component.CurrentStateId = Constants::InvalidUUID;
 					ResetRuntimeState(component);
 				}
 
@@ -73,7 +73,7 @@ namespace Ember {
 					if (UI::PropertyGrid::ComboBoxItem(stateMachine->GetName().c_str(), isSelected))
 					{
 						component.AnimationStateMachineHandle = stateMachine->GetUUID();
-						component.CurrentStateName = stateMachine->GetDefaultState();
+						component.CurrentStateId = stateMachine->GetDefaultState();
 						ResetRuntimeState(component);
 					}
 					if (isSelected)
@@ -106,23 +106,32 @@ namespace Ember {
 			if (!stateMachine)
 				return;
 
-			std::string stateName = component.CurrentStateName.empty() ? "Default" : component.CurrentStateName;
-			if (UI::PropertyGrid::BeginComboBox("Current State", stateName.c_str()))
+			// Find display name for current state
+			std::string currentDisplayName = "Default";
+			if (component.CurrentStateId != Constants::InvalidUUID)
 			{
-				if (UI::PropertyGrid::ComboBoxItem("Default", component.CurrentStateName.empty()))
+				const auto& states = stateMachine->GetStates();
+				auto it = states.find(component.CurrentStateId);
+				if (it != states.end())
+					currentDisplayName = it->second.Name;
+			}
+
+			if (UI::PropertyGrid::BeginComboBox("Current State", currentDisplayName.c_str()))
+			{
+				if (UI::PropertyGrid::ComboBoxItem("Default", component.CurrentStateId == Constants::InvalidUUID))
 				{
-					component.CurrentStateName.clear();
+					component.CurrentStateId = Constants::InvalidUUID;
 					ResetRuntimeState(component);
 				}
 
 				ImGui::Separator();
 
-				for (const auto& [name, state] : stateMachine->GetStates())
+				for (const auto& [stateId, state] : stateMachine->GetStates())
 				{
-					bool isSelected = component.CurrentStateName == name;
-					if (UI::PropertyGrid::ComboBoxItem(name.c_str(), isSelected))
+					bool isSelected = component.CurrentStateId == stateId;
+					if (UI::PropertyGrid::ComboBoxItem(state.Name.c_str(), isSelected))
 					{
-						component.CurrentStateName = name;
+						component.CurrentStateId = stateId;
 						ResetRuntimeState(component);
 					}
 					if (isSelected)

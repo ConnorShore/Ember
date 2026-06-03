@@ -4,6 +4,7 @@
 #include "AnimationTransition.h"
 
 #include "Ember/Asset/Asset.h"
+#include "Ember/Core/Constants.h"
 
 #include <unordered_map>
 
@@ -19,26 +20,26 @@ namespace Ember {
 
 		void AddState(const AnimationState& state)
 		{
-			m_States[state.Name] = state;
+			m_States[state.Id] = state;
 		}
 
 		void AddTransition(const AnimationTransition& transition)
 		{
-			m_Transitions[transition.FromStateName].push_back(transition);
+			m_Transitions[transition.FromStateId].push_back(transition);
 		}
 
-		const std::string& GetDefaultState() const { return m_DefaultState; }
-		void SetDefaultState(const std::string& defaultState) { m_DefaultState = defaultState; }
+		const UUID& GetDefaultState() const { return m_DefaultState; }
+		void SetDefaultState(const UUID& defaultState) { m_DefaultState = defaultState; }
 
-		const std::unordered_map<std::string, AnimationState>& GetStates() const { return m_States; }
-		const std::unordered_map<std::string, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
+		const std::unordered_map<UUID, AnimationState>& GetStates() const { return m_States; }
+		const std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
 
 		static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
-	
+
 	private:
-		std::string m_DefaultState; 
-		std::unordered_map<std::string, AnimationState> m_States;
-		std::unordered_map<std::string, std::vector<AnimationTransition>> m_Transitions;
+		UUID m_DefaultState = Constants::InvalidUUID;
+		std::unordered_map<UUID, AnimationState> m_States;
+		std::unordered_map<UUID, std::vector<AnimationTransition>> m_Transitions;
 	};
 
 }

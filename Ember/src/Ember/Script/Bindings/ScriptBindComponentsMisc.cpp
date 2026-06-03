@@ -8,8 +8,8 @@ namespace Ember {
 		state.new_usertype<AnimatorComponent>("AnimatorComponent",
 			"SkeletonHandle", &AnimatorComponent::SkeletonHandle,
 			"AnimationStateMachineHandle", &AnimatorComponent::AnimationStateMachineHandle,
-			"CurrentStateName", &AnimatorComponent::CurrentStateName,
-			"PreviousStateName", &AnimatorComponent::PreviousStateName,
+			"CurrentStateId", &AnimatorComponent::CurrentStateId,
+			"PreviousStateId", &AnimatorComponent::PreviousStateId,
 			"CurrentTime", sol::property(
 				[](AnimatorComponent& c) { return c.CurrentTime.Seconds(); },
 				[](AnimatorComponent& c, float time) { c.CurrentTime = time; }

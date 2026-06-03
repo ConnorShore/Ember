@@ -95,13 +95,13 @@ namespace Ember {
 
 	// ------------------------
 
-	static const AnimationState* ResolveState(const SharedPtr<AnimationStateMachine>& stateMachine, const std::string& stateName)
+	static const AnimationState* ResolveState(const SharedPtr<AnimationStateMachine>& stateMachine, UUID stateId)
 	{
-		if (!stateMachine || stateName.empty())
+		if (!stateMachine || stateId == Constants::InvalidUUID)
 			return nullptr;
 
 		const auto& states = stateMachine->GetStates();
-		auto stateIt = states.find(stateName);
+		auto stateIt = states.find(stateId);
 		return stateIt != states.end() ? &stateIt->second : nullptr;
 	}
 
@@ -113,31 +113,31 @@ namespace Ember {
 		const auto& states = stateMachine->GetStates();
 		if (states.empty())
 		{
-			animator.CurrentStateName.clear();
+			animator.CurrentStateId = Constants::InvalidUUID;
 			return nullptr;
 		}
 
-		if (!animator.CurrentStateName.empty())
+		if (animator.CurrentStateId != Constants::InvalidUUID)
 		{
-			auto currentStateIt = states.find(animator.CurrentStateName);
+			auto currentStateIt = states.find(animator.CurrentStateId);
 			if (currentStateIt != states.end())
 				return &currentStateIt->second;
 		}
 
-		const std::string& defaultState = stateMachine->GetDefaultState();
-		if (!defaultState.empty() && states.contains(defaultState))
+		const UUID& defaultState = stateMachine->GetDefaultState();
+		if (defaultState != Constants::InvalidUUID && states.contains(defaultState))
 		{
-			animator.CurrentStateName = defaultState;
+			animator.CurrentStateId = defaultState;
 			animator.CurrentTime = 0.0f;
-			animator.PreviousStateName.clear();
+			animator.PreviousStateId = Constants::InvalidUUID;
 			animator.PreviousTime = 0.0f;
 			animator.CurrentBlendTime = 0.0f;
 			animator.ActiveBlendDuration = 0.0f;
 			animator.IsBlending = false;
-			return ResolveState(stateMachine, animator.CurrentStateName);
+			return ResolveState(stateMachine, animator.CurrentStateId);
 		}
 
-		animator.CurrentStateName.clear();
+		animator.CurrentStateId = Constants::InvalidUUID;
 		return nullptr;
 	}
 
@@ -172,12 +172,12 @@ namespace Ember {
 			const AnimationState* currentState = ResolveCurrentState(animStateMachine, animator);
 
 			// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
-			if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(animator.CurrentStateName))
+			if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(animator.CurrentStateId))
 			{
-				const auto& transitions = animStateMachine->GetTransitions().at(animator.CurrentStateName);
+				const auto& transitions = animStateMachine->GetTransitions().at(animator.CurrentStateId);
 				for (const auto& transition : transitions)
 				{
-					if (transition.ToStateName == animator.CurrentStateName || !ResolveState(animStateMachine, transition.ToStateName))
+					if (transition.ToStateId == animator.CurrentStateId || !ResolveState(animStateMachine, transition.ToStateId))
 						continue;
 
 					// Check condition to see if one is met, if so trigger transition and set prev and current states
@@ -194,19 +194,19 @@ namespace Ember {
 					if (!activateTransition)
 						continue;
 
-					animator.PreviousStateName = animator.CurrentStateName;
+					animator.PreviousStateId = animator.CurrentStateId;
 					animator.PreviousTime = animator.CurrentTime;
-					animator.CurrentStateName = transition.ToStateName;
+					animator.CurrentStateId = transition.ToStateId;
 					animator.CurrentTime = 0.0f;
 					animator.CurrentBlendTime = 0.0f;
 					animator.ActiveBlendDuration = std::max(transition.BlendDuration, 0.0f);
 					animator.IsBlending = animator.ActiveBlendDuration > 0.0f;
 					if (!animator.IsBlending)
 					{
-						animator.PreviousStateName.clear();
+						animator.PreviousStateId = Constants::InvalidUUID;
 						animator.PreviousTime = 0.0f;
 					}
-					currentState = ResolveState(animStateMachine, animator.CurrentStateName);
+					currentState = ResolveState(animStateMachine, animator.CurrentStateId);
 					break;
 				}
 			}
@@ -225,13 +225,13 @@ namespace Ember {
 				//If a animation is currently cross fading, we need to handle the logic
 				if (animator.IsBlending)
 				{
-					const AnimationState* previousState = ResolveState(animStateMachine, animator.PreviousStateName);
+					const AnimationState* previousState = ResolveState(animStateMachine, animator.PreviousStateId);
 					if (previousState && previousState->AnimationHandle != Constants::InvalidUUID)
 						prevAnimation = assetManager.GetAsset<Animation>(previousState->AnimationHandle);
 
 					if (!previousState || !prevAnimation || animator.ActiveBlendDuration <= 0.0f)
 					{
-						animator.PreviousStateName.clear();
+						animator.PreviousStateId = Constants::InvalidUUID;
 						animator.CurrentBlendTime = 0.0f;
 						animator.ActiveBlendDuration = 0.0f;
 						animator.IsBlending = false;
@@ -261,7 +261,7 @@ namespace Ember {
 						if (blendWeight >= 1.0f)
 						{
 							// Blend finished, clear the previous state
-							animator.PreviousStateName.clear();
+							animator.PreviousStateId = Constants::InvalidUUID;
 							animator.CurrentBlendTime = 0.0f;
 							animator.ActiveBlendDuration = 0.0f;
 							animator.IsBlending = false;
@@ -478,7 +478,7 @@ namespace Ember {
 		ApplyPoseToAnimator(animator, skeleton, animation, timestamp);
 	}
 
-	void AnimationSystem::SetAnimationToTimestamp(Scene* scene, const std::string& currentStateName, Entity entity, float timestamp)
+	void AnimationSystem::SetStateToTimestamp(Scene* scene, UUID currentStateId, Entity entity, float timestamp)
 	{
 		if (!entity.ContainsComponent<AnimatorComponent>())
 			return;
@@ -494,15 +494,15 @@ namespace Ember {
 			return;
 
 		auto stateMachine = animator.AnimationStateMachineHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationStateMachine>(animator.AnimationStateMachineHandle) : nullptr;
-		std::string resolvedStateName = currentStateName;
-		if (stateMachine && resolvedStateName.empty())
-			resolvedStateName = stateMachine->GetDefaultState();
+		UUID resolvedStateId = currentStateId;
+		if (stateMachine && resolvedStateId == Constants::InvalidUUID)
+			resolvedStateId = stateMachine->GetDefaultState();
 
-		const AnimationState* currentState = ResolveState(stateMachine, resolvedStateName);
+		const AnimationState* currentState = ResolveState(stateMachine, resolvedStateId);
 		SharedPtr<Animation> animation = nullptr;
 		if (currentState)
 		{
-			animator.CurrentStateName = resolvedStateName;
+			animator.CurrentStateId = resolvedStateId;
 			if (currentState->AnimationHandle != Constants::InvalidUUID)
 				animation = assetManager.GetAsset<Animation>(currentState->AnimationHandle);
 		}

@@ -9,6 +9,7 @@ namespace Ember {
 
 	struct AnimationState
 	{
+		UUID Id;
 		std::string Name;
 		UUID AnimationHandle = Constants::InvalidUUID;
 		bool Looping = false;

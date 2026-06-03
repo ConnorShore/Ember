@@ -11,7 +11,8 @@ namespace Ember {
 	// File format versions:
 	//   1 = Default state + states + transitions (legacy string conditions)
 	//   2 = AnimationCondition payload per transition condition
-	const uint32_t ASMS_FILE_VERSION = 2;
+	//   3 = States and transitions identified by UUID; default state stored as UUID
+	const uint32_t ASMS_FILE_VERSION = 3;
 
 	namespace
 	{
@@ -85,13 +86,18 @@ namespace Ember {
 		file.write((const char*)&magic, sizeof(uint32_t));
 		file.write((const char*)&version, sizeof(uint32_t));
 
-		WriteString(file, animationStateMachine->GetDefaultState());
+		// Write default state UUID
+		uint64_t defaultStateId = (uint64_t)animationStateMachine->GetDefaultState();
+		file.write((const char*)&defaultStateId, sizeof(uint64_t));
 
 		const auto& states = animationStateMachine->GetStates();
 		uint32_t stateCount = static_cast<uint32_t>(states.size());
 		file.write((const char*)&stateCount, sizeof(uint32_t));
-		for (const auto& [stateName, state] : states)
+		for (const auto& [stateId, state] : states)
 		{
+			uint64_t stateUUID = (uint64_t)state.Id;
+			file.write((const char*)&stateUUID, sizeof(uint64_t));
+
 			WriteString(file, state.Name);
 
 			uint64_t animationHandle = (uint64_t)state.AnimationHandle;
@@ -110,12 +116,14 @@ namespace Ember {
 		}
 		file.write((const char*)&transitionCount, sizeof(uint32_t));
 
-		for (const auto& [fromState, transitions] : transitionsBySource)
+		for (const auto& [fromStateId, transitions] : transitionsBySource)
 		{
 			for (const auto& transition : transitions)
 			{
-				WriteString(file, transition.FromStateName);
-				WriteString(file, transition.ToStateName);
+				uint64_t fromId = (uint64_t)transition.FromStateId;
+				uint64_t toId = (uint64_t)transition.ToStateId;
+				file.write((const char*)&fromId, sizeof(uint64_t));
+				file.write((const char*)&toId, sizeof(uint64_t));
 				file.write((const char*)&transition.BlendDuration, sizeof(float));
 
 				uint32_t conditionCount = static_cast<uint32_t>(transition.Conditions.size());
@@ -160,13 +168,29 @@ namespace Ember {
 		std::string name = filepath.stem().string();
 		auto animationStateMachine = SharedPtr<AnimationStateMachine>::Create(uuid, name, filepath.string());
 
-		std::string defaultState;
-		if (!ReadString(file, defaultState))
+		// Legacy (v1/v2): default state was stored as a name string; resolve to UUID after states are loaded.
+		std::string legacyDefaultStateName;
+		UUID defaultStateId = Constants::InvalidUUID;
+
+		if (version < 3)
 		{
-			EB_CORE_ERROR("Failed reading default state from animation state machine file: {0}", filepath.string());
-			return nullptr;
+			if (!ReadString(file, legacyDefaultStateName))
+			{
+				EB_CORE_ERROR("Failed reading default state from animation state machine file: {0}", filepath.string());
+				return nullptr;
+			}
 		}
-		animationStateMachine->SetDefaultState(defaultState);
+		else
+		{
+			uint64_t defaultId = 0;
+			file.read((char*)&defaultId, sizeof(uint64_t));
+			if (!file.good())
+			{
+				EB_CORE_ERROR("Failed reading default state UUID from animation state machine file: {0}", filepath.string());
+				return nullptr;
+			}
+			defaultStateId = UUID(defaultId);
+		}
 
 		uint32_t stateCount = 0;
 		file.read((char*)&stateCount, sizeof(uint32_t));
@@ -176,13 +200,31 @@ namespace Ember {
 			return nullptr;
 		}
 
+		// For legacy files: map state name -> generated UUID so transitions can reference them
+		std::unordered_map<std::string, UUID> legacyNameToId;
+
 		for (uint32_t i = 0; i < stateCount; i++)
 		{
 			AnimationState state;
+
+			if (version >= 3)
+			{
+				uint64_t stateUUID = 0;
+				file.read((char*)&stateUUID, sizeof(uint64_t));
+				state.Id = UUID(stateUUID);
+			}
+
 			if (!ReadString(file, state.Name))
 			{
 				EB_CORE_ERROR("Failed reading state name from animation state machine file: {0}", filepath.string());
 				return nullptr;
+			}
+
+			if (version < 3)
+			{
+				// Generate a stable UUID from the name hash for legacy files
+				state.Id = UUID(std::hash<std::string>{}(state.Name));
+				legacyNameToId[state.Name] = state.Id;
 			}
 
 			uint64_t animationHandle = 0;
@@ -203,6 +245,14 @@ namespace Ember {
 			animationStateMachine->AddState(state);
 		}
 
+		// Resolve legacy default state name to UUID
+		if (version < 3)
+		{
+			if (!legacyDefaultStateName.empty() && legacyNameToId.contains(legacyDefaultStateName))
+				defaultStateId = legacyNameToId[legacyDefaultStateName];
+		}
+		animationStateMachine->SetDefaultState(defaultStateId);
+
 		uint32_t transitionCount = 0;
 		file.read((char*)&transitionCount, sizeof(uint32_t));
 		if (!file.good())
@@ -214,10 +264,25 @@ namespace Ember {
 		for (uint32_t i = 0; i < transitionCount; i++)
 		{
 			AnimationTransition transition;
-			if (!ReadString(file, transition.FromStateName) || !ReadString(file, transition.ToStateName))
+
+			if (version >= 3)
 			{
-				EB_CORE_ERROR("Failed reading transition states from animation state machine file: {0}", filepath.string());
-				return nullptr;
+				uint64_t fromId = 0, toId = 0;
+				file.read((char*)&fromId, sizeof(uint64_t));
+				file.read((char*)&toId, sizeof(uint64_t));
+				transition.FromStateId = UUID(fromId);
+				transition.ToStateId = UUID(toId);
+			}
+			else
+			{
+				std::string fromName, toName;
+				if (!ReadString(file, fromName) || !ReadString(file, toName))
+				{
+					EB_CORE_ERROR("Failed reading transition states from animation state machine file: {0}", filepath.string());
+					return nullptr;
+				}
+				transition.FromStateId = legacyNameToId.contains(fromName) ? legacyNameToId[fromName] : UUID(Constants::InvalidUUID);
+				transition.ToStateId = legacyNameToId.contains(toName) ? legacyNameToId[toName] : UUID(Constants::InvalidUUID);
 			}
 
 			file.read((char*)&transition.BlendDuration, sizeof(float));

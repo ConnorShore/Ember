@@ -420,8 +420,8 @@ namespace Ember {
 			ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
 			animatorNode |= ryml::MAP;
 			animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
-			animatorNode["AnimationStateMachineHandle"] << (uint64_t)animator.AnimationStateMachineHandle;
-			animatorNode["CurrentStateName"] << animator.CurrentStateName;
+				animatorNode["AnimationStateMachineHandle"] << (uint64_t)animator.AnimationStateMachineHandle;
+				animatorNode["CurrentStateId"] << (uint64_t)animator.CurrentStateId;
 		}
 		if (entity.ContainsComponent<BoneSocketComponent>())
 		{
@@ -1137,8 +1137,12 @@ namespace Ember {
 
 			ac.SkeletonHandle = (UUID)skelHandle;
 			ac.AnimationStateMachineHandle = (UUID)stateMachineHandle;
-			if (animatorNode.has_child("CurrentStateName"))
-				animatorNode["CurrentStateName"] >> ac.CurrentStateName;
+			if (animatorNode.has_child("CurrentStateId"))
+			{
+				uint64_t currentStateId = Constants::InvalidUUID;
+				animatorNode["CurrentStateId"] >> currentStateId;
+				ac.CurrentStateId = (UUID)currentStateId;
+			}
 		}
 
 		if (entityNode.has_child("BoneSocketComponent"))

@@ -652,8 +652,8 @@ namespace Ember {
 		AnimationBlackboard Blackboard;
 
 		// Runtime Graph State
-		std::string CurrentStateName = "";
-		std::string PreviousStateName = "";
+		UUID CurrentStateId = Constants::InvalidUUID;
+		UUID PreviousStateId = Constants::InvalidUUID;
 
 		// Runtime data (for current entity)
 		TimeStep CurrentTime = 0.0f;
