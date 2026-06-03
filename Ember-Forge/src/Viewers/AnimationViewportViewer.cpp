@@ -4,10 +4,15 @@
 #include "EditorLayer.h"
 
 #include <imgui/imgui.h>
+#include <format>
+
+namespace ed = ax::NodeEditor;
 
 namespace Ember {
-	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
-		: EditorViewportViewer(Type::Animation, scene, filePath, title) {
+
+	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
+		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationStateMachine(animationStateMachine){
+		m_NodeEditorContext = ed::CreateEditor();
 	}
 
 	void AnimationViewportViewer::OnImGuiRender(EditorLayer* editor)
@@ -15,12 +20,10 @@ namespace Ember {
 		editor->SetViewportHovered(ImGui::IsWindowHovered());
 		editor->SetViewportFocused(ImGui::IsWindowFocused());
 
-		// TODO: Setup ed::SetCurrentEditor(m_NodeEditorContext);
+		ed::SetCurrentEditor(m_NodeEditorContext);
 
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		ImGui::Text("Animation Node Editor Context Will Render Here");
+		ed::Begin(std::format("##AnimationGraph_{}", m_AnimationStateMachine->GetName()).c_str());
 
-		// ed::Begin("Animation Graph");
-		// ed::End();
+		ed::End();
 	}
 }

@@ -31,6 +31,7 @@
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>
 #include <Ember/Physics/Raycast.h>
+#include <Ember/Animation/AnimationStateMachine.h>
 
 #include <random>
 #include <thread>
@@ -409,6 +410,7 @@ namespace Ember {
 
 		HandleSceneOpenRequest();
 		HandlePrefabOpenRequest();
+		HandleAnimationOpenRequest();
 
 		// Pop up for new project
 		RenderNewScenePopup();
@@ -1806,6 +1808,25 @@ namespace Ember {
 		return true;
 	}
 
+	void EditorLayer::OpenAnimationState(const std::string& path)
+	{
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+		{
+			auto evt = UINotificationEvent("Stop Play mode before opening an animation state machine.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		std::string animationStateFile = path;
+		if (animationStateFile.empty())
+		{
+			std::string animationStateDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation State Machine (*.ebasm)", "*.ebasm");
+		}
+
+		OpenAnimationViewer(animationStateFile);
+	}
+
 	void EditorLayer::HandlePrefabOpenRequest()
 	{
 		if (m_Context.RequestedPrefabOpenPath.empty())
@@ -1824,6 +1845,16 @@ namespace Ember {
 		std::string path = m_Context.RequestedSceneOpenPath;
 		m_Context.RequestedSceneOpenPath.clear();
 		OpenScene(path);
+	}
+
+	void EditorLayer::HandleAnimationOpenRequest()
+	{
+		if (m_Context.RequestAnimationStateOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestAnimationStateOpenPath;
+		m_Context.RequestAnimationStateOpenPath.clear();
+		OpenAnimationState(path);
 	}
 
 	EditorViewportViewer* EditorLayer::GetActiveViewer()
@@ -2067,6 +2098,32 @@ namespace Ember {
 		ActivateViewer(viewerIndex);
 
 		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::OpenAnimationViewer(const std::string& animationStatePath)
+	{
+		if (animationStatePath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::Animation, animationStatePath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto animationStateMachine = assetManager.Load<AnimationStateMachine>(animationStatePath, false);
+		if (!animationStateMachine)
+			return;
+
+		std::string asmFilePath = animationStateMachine->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(animationStatePath).string() : animationStateMachine->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(animationStatePath, animationStateMachine->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddAnimationViewer(m_Context.ActiveScene(), animationStateMachine, asmFilePath, title);
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened Animation State Machine: {}", std::filesystem::path(animationStatePath).filename().string()));
 		m_Context.EventCallback(evt);
 	}
 

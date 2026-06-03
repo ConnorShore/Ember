@@ -2,6 +2,8 @@
 #include "EditorViewportTabs.h"
 #include "EditorLayer.h"
 
+#include <Ember/Animation/AnimationStateMachine.h>
+
 namespace Ember {
 
 	std::filesystem::path EditorViewportTabs::NormalizedPath(const std::string& path)
@@ -89,19 +91,19 @@ namespace Ember {
 
 	size_t EditorViewportTabs::AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(std::make_unique<SceneViewportViewer>(scene, filePath, title));
+		m_Viewers.push_back(ScopedPtr<SceneViewportViewer>::Create(scene, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 
 	size_t EditorViewportTabs::AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(std::make_unique<PrefabViewportViewer>(scene, prefab, rootEntity, filePath, title));
+		m_Viewers.push_back(ScopedPtr<PrefabViewportViewer>::Create(scene, prefab, rootEntity, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 
-	size_t EditorViewportTabs::AddAnimationViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
+	size_t EditorViewportTabs::AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(std::make_unique<AnimationViewportViewer>(scene, filePath, title));
+		m_Viewers.push_back(ScopedPtr<AnimationViewportViewer>::Create(scene, animationStateMachine, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 
@@ -109,22 +111,22 @@ namespace Ember {
 
 	EditorViewportViewer* EditorViewportTabs::GetActiveViewer() {
 		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size()) return nullptr;
-		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].get();
+		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].Ptr();
 	}
 
 	const EditorViewportViewer* EditorViewportTabs::GetActiveViewer() const {
 		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size()) return nullptr;
-		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].get();
+		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].Ptr();
 	}
 
 	EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex) {
 		if (viewerIndex >= m_Viewers.size()) return nullptr;
-		return m_Viewers[viewerIndex].get();
+		return m_Viewers[viewerIndex].Ptr();
 	}
 
 	const EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex) const {
 		if (viewerIndex >= m_Viewers.size()) return nullptr;
-		return m_Viewers[viewerIndex].get();
+		return m_Viewers[viewerIndex].Ptr();
 	}
 
 	int EditorViewportTabs::FindViewer(EditorViewportViewer::Type type, const std::string& filePath) const {

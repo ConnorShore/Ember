@@ -6,12 +6,13 @@
 #include "AnimationViewportViewer.h"
 
 #include <functional>
-#include <memory>
 #include <string>
 #include <vector>
 #include <filesystem>
 
 namespace Ember {
+
+	class AnimationStateMachine;
 
 	class EditorViewportTabs
 	{
@@ -28,7 +29,7 @@ namespace Ember {
 
 		size_t AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
 		size_t AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title);
-		size_t AddAnimationViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
+		size_t AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title);
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;
@@ -49,7 +50,7 @@ namespace Ember {
 		void Clear();
 
 	private:
-		std::vector<std::unique_ptr<EditorViewportViewer>> m_Viewers;
+		std::vector<ScopedPtr<EditorViewportViewer>> m_Viewers;
 		int m_ActiveViewerIndex = -1;
 		bool m_SyncActiveViewerSelection = false;
 	};

@@ -4,6 +4,7 @@
 #include "ComponentUI.h"
 #include "Ui/PropertyGrid.h"
 
+#include <Ember/Event/UIEvent.h>
 #include <Ember/Animation/AnimationStateMachine.h>
 
 #include <imgui/imgui.h>
@@ -80,6 +81,22 @@ namespace Ember {
 				}
 
 				UI::PropertyGrid::EndComboBox();
+			}
+
+			if (selectedStateMachine)
+			{
+				ImGui::SameLine();
+				if (ImGui::Button("Edit"))
+				{
+					// Open the ASM editor for this state machine
+					m_Context->RequestAnimationStateOpenPath = selectedStateMachine->GetFilePath();
+				}
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("New"))
+			{
+				// TODO: Create a new ASM asset and open it for editing
 			}
 		}
 
