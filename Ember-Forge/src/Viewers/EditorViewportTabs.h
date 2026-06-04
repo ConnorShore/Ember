@@ -13,6 +13,10 @@
 namespace Ember {
 
 	class AnimationStateMachine;
+	class Prefab;
+	class Entity;
+	class Scene;
+	class EditorLayer;
 
 	class EditorViewportTabs
 	{

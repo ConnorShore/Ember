@@ -4,11 +4,11 @@
 #include "EditorConstants.h"
 
 #include "Panels/SceneHierarchyPanel.h"
-#include "Panels/InspectorPanel.h"
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
 #include "Panels/NotificationPanel.h"
 #include "Panels/AnimationScrubberPanel.h"
+#include "Panels/Inspector/InspectorPanel.h"
 
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"

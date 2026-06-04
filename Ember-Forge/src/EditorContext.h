@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Viewers/EditorViewportViewer.h"
+
 #include <Ember/Core/Application.h>
 #include <Ember/Scene/Scene.h>
 #include <Ember/Scene/Entity.h>
@@ -25,6 +27,7 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
+		EditorViewportViewer::Type ActiveViewportType = EditorViewportViewer::Type::Scene;
 
 		bool IsEditingPrefab = false;
 		Entity PrefabRootEntity;

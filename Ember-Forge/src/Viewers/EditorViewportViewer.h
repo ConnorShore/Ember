@@ -1,20 +1,21 @@
 #pragma once
 
-#include "EditorContext.h"
-#include <Ember/Core/Time.h>
+#include <Ember/Scene/Entity.h>
+
 #include <string>
-#include <memory>
 
 namespace Ember {
 
 	class EditorLayer;
+	class Scene;
 
 	class EditorViewportViewer
 	{
 	public:
 		enum class Type
 		{
-			Scene = 0,
+			None = 0,
+			Scene,
 			Prefab,
 			Animation
 		};

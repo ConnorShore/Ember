@@ -42,6 +42,8 @@ namespace Ember {
 
 		if (m_Viewers.empty())
 		{
+			editor->GetContext().ActiveViewportType = EditorViewportViewer::Type::None;
+
 			ImGui::TextDisabled("No scene or prefab open.");
 			ImGui::End();
 			return false;
@@ -67,6 +69,8 @@ namespace Ember {
 					if (tabOpen)
 					{
 						// Give the concrete viewer control over its own ImGui render pass
+						editor->GetContext().ActiveViewportType = viewer.GetType();
+
 						viewer.OnImGuiRender(editor);
 						renderedActiveTab = true;
 					}

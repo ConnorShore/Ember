@@ -64,6 +64,10 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 13629381204485307944
+    Name: MountBehavior
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MountBehavior.lua
+  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
@@ -99,10 +103,6 @@ Assets:
     UUID: 5025897937436236093
     Name: MouseLook
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
-  - Type: Script
-    UUID: 13629381204485307944
-    Name: MountBehavior
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MountBehavior.lua
   - Type: Script
     UUID: 8102167312162542918
     Name: WeaponController

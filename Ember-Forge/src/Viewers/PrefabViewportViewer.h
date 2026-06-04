@@ -4,6 +4,10 @@
 
 namespace Ember {
 
+	class Scene;
+	class Prefab;
+	class Entity;
+
 	class PrefabViewportViewer final : public EditorViewportViewer
 	{
 	public:
