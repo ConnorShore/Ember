@@ -32,6 +32,15 @@ namespace Ember {
 		return title.empty() ? fallback : title;
 	}
 
+	void EditorViewportTabs::OnUpdate(TimeStep delta, EditorLayer* editor)
+	{
+		for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++)
+		{
+			auto& viewer = *m_Viewers[viewerIndex];
+			viewer.OnUpdate(delta, editor);
+		}
+	}
+
 	bool EditorViewportTabs::Render(EditorLayer* editor, const ActivateViewerCallback& activateViewer, const CloseViewerCallback& closeViewer)
 	{
 		ImGuiWindowClass windowClass;
@@ -68,6 +77,14 @@ namespace Ember {
 
 					if (tabOpen)
 					{
+						// If first frame tab is opened, call viewer.OnOpen()
+						// TODO: Get this working
+						if (viewerIndex != m_ActiveTabIndex)
+						{
+							viewer.OnOpen(editor);
+							m_ActiveTabIndex = static_cast<uint8_t>(viewerIndex);
+						}
+
 						// Give the concrete viewer control over its own ImGui render pass
 						editor->GetContext().ActiveViewportType = viewer.GetType();
 

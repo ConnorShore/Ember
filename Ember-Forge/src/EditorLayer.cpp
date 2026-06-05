@@ -197,6 +197,9 @@ namespace Ember {
 		for (auto& panel : m_Panels)
 			panel->OnUpdate(delta);
 
+		// Update viewport tabs
+		m_ViewportTabs.OnUpdate(delta, this);
+
 		if (auto activeScene = m_Context.ActiveScene())
 		{
 			m_OutputFramebuffer->Bind();

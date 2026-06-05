@@ -12,6 +12,11 @@
 
    multiprocessorcompile "On"
 
+   defines
+   {
+      "EB_EDITOR",
+   }
+
    files
    { 
       "src/**.h",

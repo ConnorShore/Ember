@@ -31,6 +31,7 @@ namespace Ember {
 		void SetFilePath(const std::string& filePath) { m_FilePath = filePath; }
 		void SetTitle(const std::string& title) { m_Title = title; }
 
+		virtual void OnOpen(EditorLayer* editor) {}
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) {}
 		virtual void OnImGuiRender(EditorLayer* editor) = 0;
 

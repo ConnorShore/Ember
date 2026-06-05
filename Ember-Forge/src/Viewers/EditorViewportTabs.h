@@ -29,6 +29,7 @@ namespace Ember {
 		static std::string TitleFromPath(const std::string& path, const std::string& fallback);
 
 		// Pass EditorLayer so it can be forwarded to the concrete Viewers
+		void OnUpdate(TimeStep delta, EditorLayer* editor);
 		bool Render(EditorLayer* editor, const ActivateViewerCallback& activateViewer, const CloseViewerCallback& closeViewer);
 
 		size_t AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
@@ -57,5 +58,6 @@ namespace Ember {
 		std::vector<ScopedPtr<EditorViewportViewer>> m_Viewers;
 		int m_ActiveViewerIndex = -1;
 		bool m_SyncActiveViewerSelection = false;
+		uint8_t m_ActiveTabIndex = 0;
 	};
 }

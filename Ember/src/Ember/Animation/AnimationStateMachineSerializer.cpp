@@ -106,6 +106,10 @@ namespace Ember {
 			uint8_t looping = state.Looping ? 1u : 0u;
 			file.write((const char*)&looping, sizeof(uint8_t));
 			file.write((const char*)&state.BasePlaybackSpeed, sizeof(float));
+
+			// Write node positions
+			Vector2f nodePos = state.NodePosition;
+			file.write((const char*)&nodePos, sizeof(Vector2f));
 		}
 
 		const auto& transitionsBySource = animationStateMachine->GetTransitions();
@@ -241,6 +245,8 @@ namespace Ember {
 				EB_CORE_ERROR("Failed reading state payload from animation state machine file: {0}", filepath.string());
 				return nullptr;
 			}
+
+			file.read((char*)&state.NodePosition, sizeof(Vector2f));
 
 			animationStateMachine->AddState(state);
 		}

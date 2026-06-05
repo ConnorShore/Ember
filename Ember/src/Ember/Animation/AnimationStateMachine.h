@@ -47,7 +47,9 @@ namespace Ember {
 		const UUID& GetDefaultState() const { return m_DefaultState; }
 		void SetDefaultState(const UUID& defaultState) { m_DefaultState = defaultState; }
 
+		std::unordered_map<UUID, AnimationState>& GetStates() { return m_States; }
 		const std::unordered_map<UUID, AnimationState>& GetStates() const { return m_States; }
+		std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() { return m_Transitions; }
 		const std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
 
 		static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }

@@ -5,6 +5,9 @@
 
 #include <string>
 
+#include "Ember/Math/Math.h"
+
+
 namespace Ember {
 
 	struct AnimationState
@@ -14,6 +17,9 @@ namespace Ember {
 		UUID AnimationHandle = Constants::InvalidUUID;
 		bool Looping = false;
 		float BasePlaybackSpeed = 1.0f;
+
+		Vector2f NodePosition = Vector2f(0.0f);
+		bool PositionSet = false;
 	};
 
 }

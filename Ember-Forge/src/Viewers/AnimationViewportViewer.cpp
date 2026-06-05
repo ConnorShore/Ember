@@ -1,7 +1,13 @@
 #include "efpch.h"
 #include "AnimationViewportViewer.h"
 #include "EditorLayer.h"
-#include <imgui.h>
+
+#include <Ember/Core/ProjectManager.h>
+#include <Ember/Animation/AnimationStateMachineSerializer.h>
+#include <Ember/Event/UIEvent.h>
+#include <imgui/imgui.h>
+
+#include <string>
 #include <format>
 
 namespace Ember {
@@ -16,13 +22,40 @@ namespace Ember {
 		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationStateMachine(animationStateMachine)
 	{
 		ne::Config config;
-		config.SettingsFile = "AnimationNodeEditor.json";
+		std::string path = (ProjectManager::GetActive()->GetProjectDirectory() / "AnimationNodeEditor.json").string();
+		//config.SettingsFile = path.c_str();
+		config.SettingsFile = nullptr; // Disable built-in persistence for now since we want to handle it ourselves
 		m_NodeEditorContext = ne::CreateEditor(&config);
 	}
 
 	AnimationViewportViewer::~AnimationViewportViewer()
 	{
 		ne::DestroyEditor(m_NodeEditorContext);
+	}
+
+	void AnimationViewportViewer::OnOpen(EditorLayer* editor)
+	{
+		// Mark all states to set position
+		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
+			state.PositionSet = false;
+	}
+
+	void AnimationViewportViewer::OnUpdate(TimeStep delta, EditorLayer* editor)
+	{
+		if (m_IsDirty)
+		{
+			m_SaveCooldown -= delta;
+
+			if (m_SaveCooldown <= 0.0f)
+			{
+				AnimationStateMachineSerializer::Serialize(m_AnimationStateMachine->GetFilePath(), m_AnimationStateMachine);
+				m_IsDirty = false;
+
+				// Auto-save notification
+				auto evt = UINotificationEvent("Auto-Saved Animation State Machine", UINotificationEvent::Severity::Info);
+				editor->GetContext().EventCallback(evt);
+			}
+		}
 	}
 
 	void AnimationViewportViewer::OnImGuiRender(EditorLayer* editor)
@@ -82,16 +115,21 @@ namespace Ember {
 	{
 		// Only build the data structures once!
 		if (m_GraphNeedsRebuild)
-		{
 			RebuildGraph();
-		}
 
-		// TECHNIQUE 1: Force straight wires (Override bezier curve strength to 0)
+		// Force straight wires (Override bezier curve strength to 0)
 		ne::PushStyleVar(ne::StyleVar_LinkStrength, 0.0f);
 
-		// 1. Draw all Nodes
-		for (auto& [name, node] : m_Nodes)
+		// Draw all Nodes
+		for (auto& [id, node] : m_Nodes)
 		{
+			auto& state = m_AnimationStateMachine->GetStates().at(id);
+			if (!state.PositionSet)
+			{
+				ne::SetNodePosition(node.ID, ImVec2(state.NodePosition.x, state.NodePosition.y));
+				state.PositionSet = true;
+			}
+
 			ne::BeginNode(node.ID);
 
 			// Draw the State Name
@@ -99,7 +137,7 @@ namespace Ember {
 			ImGui::TextUnformatted(node.Name.c_str());
 			ImGui::PopStyleColor();
 
-			// TECHNIQUE 2: The "Center Pin" Illusion
+			// Create connection from the center
 			ImVec2 nodeSize = ImGui::GetItemRectSize();
 			ImVec2 nodePos = ImGui::GetItemRectMin();
 			ImVec2 centerPos = ImVec2(nodePos.x + (nodeSize.x * 0.5f), nodePos.y + (nodeSize.y * 0.5f));
@@ -117,6 +155,17 @@ namespace Ember {
 			ne::EndPin();
 
 			ne::EndNode();
+
+			// Check if position is updated by the user
+			ImVec2 currentUIPos = ne::GetNodePosition(node.ID);
+			if (currentUIPos.x != state.NodePosition.x || currentUIPos.y != state.NodePosition.y)
+			{
+				state.NodePosition = Vector2f(currentUIPos.x, currentUIPos.y);
+
+				// Mark dirty to re-save the asset with the new position data
+				m_SaveCooldown = AUTO_SAVE_DELAY;
+				m_IsDirty = true;
+			}
 		}
 
 		// Draw all Links (Transitions)
@@ -125,7 +174,7 @@ namespace Ember {
 			ne::Link(link.ID, link.StartPinID, link.EndPinID, link.Color, 2.0f);
 
 			// Animate a pulsing flow down the wire to visually indicate the direction 
-			// of the transition, instantly solving the bidirectional ambiguity problem!
+			// of the transition, instantly solving the bidirectional ambiguity problem
 			ne::Flow(link.ID);
 		}
 
