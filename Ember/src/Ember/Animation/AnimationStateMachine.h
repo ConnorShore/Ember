@@ -28,6 +28,22 @@ namespace Ember {
 			m_Transitions[transition.FromStateId].push_back(transition);
 		}
 
+		void RemoveTransition(UUID fromStateId, UUID toStateId)
+		{
+			auto it = m_Transitions.find(fromStateId);
+			if (it == m_Transitions.end())
+				return;
+
+			auto& vec = it->second;
+			vec.erase(
+				std::remove_if(vec.begin(), vec.end(),
+					[&toStateId](const AnimationTransition& t) { return t.ToStateId == toStateId; }),
+				vec.end());
+
+			if (vec.empty())
+				m_Transitions.erase(it);
+		}
+
 		const UUID& GetDefaultState() const { return m_DefaultState; }
 		void SetDefaultState(const UUID& defaultState) { m_DefaultState = defaultState; }
 
