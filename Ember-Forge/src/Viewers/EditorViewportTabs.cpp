@@ -34,11 +34,17 @@ namespace Ember {
 
 	void EditorViewportTabs::OnUpdate(TimeStep delta, EditorLayer* editor)
 	{
-		for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++)
-		{
-			auto& viewer = *m_Viewers[viewerIndex];
-			viewer.OnUpdate(delta, editor);
-		}
+		//for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++)
+		//{
+		//	auto& viewer = *m_Viewers[viewerIndex];
+		//	viewer.OnUpdate(delta, editor);
+		//}
+
+		// Update active viewer tab only
+		if (m_ActiveViewerIndex < 0 || m_ActiveViewerIndex >= m_Viewers.size())
+			return;
+
+		m_Viewers[m_ActiveViewerIndex]->OnUpdate(delta, editor);
 	}
 
 	bool EditorViewportTabs::Render(EditorLayer* editor, const ActivateViewerCallback& activateViewer, const CloseViewerCallback& closeViewer)
@@ -51,7 +57,8 @@ namespace Ember {
 
 		if (m_Viewers.empty())
 		{
-			editor->GetContext().ActiveViewportType = EditorViewportViewer::Type::None;
+			//editor->GetContext().ActiveViewportType = EditorViewportViewer::Type::None;
+			editor->GetContext().ActiveViewportViewer = nullptr;
 
 			ImGui::TextDisabled("No scene or prefab open.");
 			ImGui::End();
@@ -86,7 +93,8 @@ namespace Ember {
 						}
 
 						// Give the concrete viewer control over its own ImGui render pass
-						editor->GetContext().ActiveViewportType = viewer.GetType();
+						//editor->GetContext().ActiveViewportType = viewer.GetType();
+						editor->GetContext().ActiveViewportViewer = &viewer;
 
 						viewer.OnImGuiRender(editor);
 						renderedActiveTab = true;

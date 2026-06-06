@@ -64,6 +64,10 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 1928101263865073231
+    Name: PickupWeapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
+  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
@@ -127,10 +131,6 @@ Assets:
     UUID: 17429251933582378423
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
-  - Type: Script
-    UUID: 1928101263865073231
-    Name: PickupWeapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
   - Type: Material
     UUID: 4587007159136363848
     Name: M4_Weapon
@@ -208,6 +208,10 @@ Assets:
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebmodel
   - Type: Prefab
+    UUID: 3822534466298593180
+    Name: AmmoPowerup
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/AmmoPowerup.ebprefab
+  - Type: Prefab
     UUID: 7525331889912364400
     Name: M4_Pickup
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/M4_Pickup.ebprefab
@@ -223,10 +227,6 @@ Assets:
     UUID: 16836608058861364347
     Name: HolographicSight
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/HolographicSight.ebprefab
-  - Type: Prefab
-    UUID: 3822534466298593180
-    Name: AmmoPowerup
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/AmmoPowerup.ebprefab
   - Type: Prefab
     UUID: 17919492092461288605
     Name: HolographicSightPickup

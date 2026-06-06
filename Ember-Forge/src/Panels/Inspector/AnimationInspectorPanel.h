@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InspectorPanel.h"
+#include "GraphNodeUI/GraphNodeUI.h"
 
 namespace Ember {
 
@@ -13,7 +14,8 @@ namespace Ember {
 		virtual void OnImGuiRender() override;
 
 	private:
-
+		void RenderAnimationState(AnimationState* animState);
+		void RenderAnimationTransition(AnimationTransition* animTransition);
 	};
 
 }

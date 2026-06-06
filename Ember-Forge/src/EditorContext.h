@@ -27,7 +27,7 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
-		EditorViewportViewer::Type ActiveViewportType = EditorViewportViewer::Type::Scene;
+		EditorViewportViewer* ActiveViewportViewer = nullptr;
 
 		bool IsEditingPrefab = false;
 		Entity PrefabRootEntity;

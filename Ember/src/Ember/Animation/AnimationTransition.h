@@ -9,6 +9,7 @@ namespace Ember {
 
 	struct AnimationTransition
 	{
+		UUID Id;
 		UUID FromStateId;
 		UUID ToStateId;
 		float BlendDuration = 0.25f;

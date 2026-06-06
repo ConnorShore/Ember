@@ -52,7 +52,26 @@ namespace Ember {
 		std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() { return m_Transitions; }
 		const std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
 
+		AnimationTransition* GetTransitionById(UUID transitionId)
+		{
+			for (auto& [fromStateId, transitions] : m_Transitions)
+			{
+				for (auto& transition : transitions)
+				{
+					if (transition.Id == transitionId)
+						return &transition;
+				}
+			}
+			return nullptr;
+		}
+
 		static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
+
+	public:
+		Vector2f EntryNodePosition = Vector2f(0.0f);
+		Vector2f ExitNodePosition = Vector2f(0.0f);
+		bool EntryNodePositionSet = false;
+		bool ExitNodePositionSet = false;
 
 	private:
 		UUID m_DefaultState = Constants::InvalidUUID;

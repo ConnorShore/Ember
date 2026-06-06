@@ -12,7 +12,8 @@ namespace Ember {
 	//   1 = Default state + states + transitions (legacy string conditions)
 	//   2 = AnimationCondition payload per transition condition
 	//   3 = States and transitions identified by UUID; default state stored as UUID
-	const uint32_t ASMS_FILE_VERSION = 3;
+	//   4 = Transition UUID persisted for unique transition identity
+	const uint32_t ASMS_FILE_VERSION = 4;
 
 	namespace
 	{
@@ -124,8 +125,10 @@ namespace Ember {
 		{
 			for (const auto& transition : transitions)
 			{
+				uint64_t transitionId = (uint64_t)transition.Id;
 				uint64_t fromId = (uint64_t)transition.FromStateId;
 				uint64_t toId = (uint64_t)transition.ToStateId;
+				file.write((const char*)&transitionId, sizeof(uint64_t));
 				file.write((const char*)&fromId, sizeof(uint64_t));
 				file.write((const char*)&toId, sizeof(uint64_t));
 				file.write((const char*)&transition.BlendDuration, sizeof(float));
@@ -138,6 +141,10 @@ namespace Ember {
 				}
 			}
 		}
+
+		// Write entry/exit node positions
+		file.write((const char*)&animationStateMachine->EntryNodePosition, sizeof(Vector2f));
+		file.write((const char*)&animationStateMachine->ExitNodePosition, sizeof(Vector2f));
 
 		file.close();
 		return true;
@@ -271,7 +278,17 @@ namespace Ember {
 		{
 			AnimationTransition transition;
 
-			if (version >= 3)
+			if (version >= 4)
+			{
+				uint64_t transitionId = 0, fromId = 0, toId = 0;
+				file.read((char*)&transitionId, sizeof(uint64_t));
+				file.read((char*)&fromId, sizeof(uint64_t));
+				file.read((char*)&toId, sizeof(uint64_t));
+				transition.Id = UUID(transitionId);
+				transition.FromStateId = UUID(fromId);
+				transition.ToStateId = UUID(toId);
+			}
+			else if (version >= 3)
 			{
 				uint64_t fromId = 0, toId = 0;
 				file.read((char*)&fromId, sizeof(uint64_t));
@@ -333,6 +350,10 @@ namespace Ember {
 
 			animationStateMachine->AddTransition(transition);
 		}
+
+		// Read entry/exit node positions
+		file.read((char*)&animationStateMachine->EntryNodePosition, sizeof(Vector2f));
+		file.read((char*)&animationStateMachine->ExitNodePosition, sizeof(Vector2f));
 
 		animationStateMachine->SetFilePath(filepath.string());
 		return animationStateMachine;

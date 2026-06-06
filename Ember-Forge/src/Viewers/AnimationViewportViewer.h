@@ -27,9 +27,30 @@ namespace Ember {
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) override;
 		virtual void OnImGuiRender(EditorLayer* editor) override;
 
+		AnimationState* GetSelectedState() { return m_SelectedState; }
+		AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
+
 	private:
 		void RebuildGraph();
 		void DrawAllNodes();
+		void DrawStateNode(Node& node);
+		void DrawTransitionLink(Link& link);
+
+		void DrawStartState();
+		void DrawEndState();
+
+		void UpdateNodePositionFromUI(Node& node, Vector2f& nodeSavedPosition);
+
+		void CheckNodeSelected();
+
+	private:
+		const uint64_t ENTRY_NODE_ID = 0xFFFFFFFFFFFFFFFE;
+		const uint64_t ENTRY_PIN_ID = 0xFFFFFFFFFFFFFFFD;
+		const uint64_t ENTRY_LINK_ID = 0xFFFFFFFFFFFFFFFC;
+
+		const uint64_t EXIT_NODE_ID = 0xFFFFFFFFFFFFFFFB;
+		const uint64_t EXIT_PIN_ID = 0xFFFFFFFFFFFFFFFA;
+		const uint64_t EXIT_LINK_ID = 0xFFFFFFFFFFFFFFF9;
 
 	private:
 		ax::NodeEditor::EditorContext* m_NodeEditorContext = nullptr;
@@ -41,7 +62,13 @@ namespace Ember {
 		std::unordered_map<UUID, Node> m_Nodes;
 		std::unordered_map<uint64_t, Link> m_Links;
 
+		Node m_EntryNode;
+		Node m_ExitNode;
+
 		bool m_IsDirty = false; // Set to true when the graph has been modified and needs to be save
 		float m_SaveCooldown = 0.0f;
+
+		AnimationState* m_SelectedState = nullptr;
+		AnimationTransition* m_SelectedTransition = nullptr;
 	};
 }

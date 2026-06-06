@@ -12,6 +12,8 @@
 
 namespace Ember {
 
+	// Ids that are reserved for the Entry and Exit nodes and their pins and links.
+	// Ids associated with actual states/transitions will use their UUIDs
 	static uint32_t GetNextId()
 	{
 		static uint32_t id = 1;
@@ -26,6 +28,15 @@ namespace Ember {
 		//config.SettingsFile = path.c_str();
 		config.SettingsFile = nullptr; // Disable built-in persistence for now since we want to handle it ourselves
 		m_NodeEditorContext = ne::CreateEditor(&config);
+
+		// Draw Default Nodes
+		m_EntryNode = Node(ENTRY_NODE_ID, "Start", ImColor(64, 255, 128));
+		m_EntryNode.Outputs.emplace_back(ENTRY_PIN_ID, "", PinType::Flow);
+		m_EntryNode.Outputs[0].Node = &m_EntryNode;
+
+		m_ExitNode = Node(EXIT_NODE_ID, "End", ImColor(255, 64, 128));
+		m_ExitNode.Inputs.emplace_back(EXIT_PIN_ID, "", PinType::Flow);
+		m_ExitNode.Inputs[0].Node = &m_ExitNode;
 	}
 
 	AnimationViewportViewer::~AnimationViewportViewer()
@@ -36,6 +47,9 @@ namespace Ember {
 	void AnimationViewportViewer::OnOpen(EditorLayer* editor)
 	{
 		// Mark all states to set position
+		m_AnimationStateMachine->EntryNodePositionSet = false;
+		m_AnimationStateMachine->ExitNodePositionSet = false;
+
 		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
 			state.PositionSet = false;
 	}
@@ -69,6 +83,10 @@ namespace Ember {
 		DrawAllNodes();
 
 		ne::End();
+
+		// See if any nodes have been selected
+		CheckNodeSelected();
+
 		ne::SetCurrentEditor(nullptr);
 	}
 
@@ -77,11 +95,13 @@ namespace Ember {
 		m_Nodes.clear();
 		m_Links.clear();
 
+		// TODO: Use UUID for node id's and transition ids (pins can stay the same)
+
 		// Build all Nodes
 		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
 		{
 			// Emplace first so the memory address is stable
-			m_Nodes[stateId] = Node(GetNextId(), state.Name.c_str(), ImColor(64, 128, 255));
+			m_Nodes[stateId] = Node(stateId, state.Name.c_str(), ImColor(64, 128, 255));
 			Node& node = m_Nodes[stateId];
 
 			node.Inputs.emplace_back(GetNextId(), "", PinType::Flow);
@@ -100,11 +120,31 @@ namespace Ember {
 
 			for (auto& transition : transitions)
 			{
-				if (m_Nodes.find(transition.ToStateId) == m_Nodes.end()) continue;
+				if (m_Nodes.find(transition.ToStateId) == m_Nodes.end())
+					continue;
+
 				Node& endNode = m_Nodes[transition.ToStateId];
 
-				uint64_t linkId = GetNextId();
+				//uint64_t linkId = GetNextId();
+				uint64_t linkId = transition.Id;
 				m_Links[linkId] = Link(linkId, startNode.Outputs[0].ID, endNode.Inputs[0].ID);
+			}
+		}
+
+		// Connect Entry Node to Default State
+		m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID, 
+			m_EntryNode.Outputs[0].ID, 
+			m_Nodes[m_AnimationStateMachine->GetDefaultState()].Inputs[0].ID, 
+			ImColor(30, 190, 30)
+		);
+
+		// Connect all States with no outgoing transitions to the Exit Node
+		for (auto& [stateId, node] : m_Nodes)
+		{
+			if (m_AnimationStateMachine->GetTransitions().find(stateId) == m_AnimationStateMachine->GetTransitions().end())
+			{
+				uint64_t linkId = GetNextId();	// This is just a visual link so we don't need to use the actual transition ID since it doesn't exist in the data
+				m_Links[linkId] = Link(linkId, node.Outputs[0].ID, m_ExitNode.Inputs[0].ID, ImColor(190, 30, 30));
 			}
 		}
 
@@ -120,6 +160,9 @@ namespace Ember {
 		// Force straight wires (Override bezier curve strength to 0)
 		ne::PushStyleVar(ne::StyleVar_LinkStrength, 0.0f);
 
+		// Draw start state node separately since it has a different visual representation
+		DrawStartState();
+
 		// Draw all Nodes
 		for (auto& [id, node] : m_Nodes)
 		{
@@ -130,54 +173,204 @@ namespace Ember {
 				state.PositionSet = true;
 			}
 
-			ne::BeginNode(node.ID);
-
-			// Draw the State Name
-			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
-			ImGui::TextUnformatted(node.Name.c_str());
-			ImGui::PopStyleColor();
-
-			// Create connection from the center
-			ImVec2 nodeSize = ImGui::GetItemRectSize();
-			ImVec2 nodePos = ImGui::GetItemRectMin();
-			ImVec2 centerPos = ImVec2(nodePos.x + (nodeSize.x * 0.5f), nodePos.y + (nodeSize.y * 0.5f));
-
-			// Draw Input Pin (Center, Invisible anchor point)
-			ImGui::SetCursorScreenPos(centerPos);
-			ne::BeginPin(node.Inputs[0].ID, ne::PinKind::Input);
-			ImGui::Dummy(ImVec2(1, 1));
-			ne::EndPin();
-
-			// Draw Output Pin (Center, Invisible anchor point)
-			ImGui::SetCursorScreenPos(centerPos);
-			ne::BeginPin(node.Outputs[0].ID, ne::PinKind::Output);
-			ImGui::Dummy(ImVec2(1, 1));
-			ne::EndPin();
-
-			ne::EndNode();
+			// Draw the node and its pins
+			DrawStateNode(node);
 
 			// Check if position is updated by the user
-			ImVec2 currentUIPos = ne::GetNodePosition(node.ID);
-			if (currentUIPos.x != state.NodePosition.x || currentUIPos.y != state.NodePosition.y)
-			{
-				state.NodePosition = Vector2f(currentUIPos.x, currentUIPos.y);
-
-				// Mark dirty to re-save the asset with the new position data
-				m_SaveCooldown = AUTO_SAVE_DELAY;
-				m_IsDirty = true;
-			}
+			UpdateNodePositionFromUI(node, state.NodePosition);
 		}
+
+		// Draw end state node separately since it has a different visual representation
+		DrawEndState();
 
 		// Draw all Links (Transitions)
 		for (auto& [id, link] : m_Links)
 		{
-			ne::Link(link.ID, link.StartPinID, link.EndPinID, link.Color, 2.0f);
+			DrawTransitionLink(link);
+		}
 
+		ne::PopStyleVar();
+	}
+
+	void AnimationViewportViewer::DrawStateNode(Node& node)
+	{
+		ImVec4 nodeBg = node.Color;
+
+		// Slightly darken the node background for better contrast with white text and borders
+		nodeBg.x *= 0.8f;
+		nodeBg.y *= 0.8f;
+		nodeBg.z *= 0.8f;
+		nodeBg.w = 1.0f; // Add some transparency for a softer look
+
+		ImVec4 nodeBorder = node.Color;
+		nodeBorder.w = 1.0f;
+
+		ne::PushStyleColor(ne::StyleColor_NodeBg, nodeBg);
+		ne::PushStyleColor(ne::StyleColor_NodeBorder, nodeBorder);
+		ne::PushStyleColor(ne::StyleColor_HovNodeBorder, nodeBorder);
+		ne::PushStyleColor(ne::StyleColor_SelNodeBorder, nodeBorder);
+
+		ne::BeginNode(node.ID);
+
+		// Establish the Top-Left origin of the node
+		ImVec2 startPos = ImGui::GetCursorScreenPos();
+
+		// Define our constraints
+		ImVec2 minSize(120.0f, 40.0f); // Our AAA State Machine block size
+		ImVec2 padding(20.0f, 15.0f);  // Extra space just in case the name is huge
+
+		// Measure the text to see if it exceeds our minimums
+		ImVec2 textSize = ImGui::CalcTextSize(node.Name.c_str());
+		float finalWidth = std::max(minSize.x, textSize.x + padding.x);
+		float finalHeight = std::max(minSize.y, textSize.y + padding.y);
+
+		// Center the text perfectly inside our calculated dimensions
+		float offsetX = (finalWidth - textSize.x) * 0.5f;
+		float offsetY = (finalHeight - textSize.y) * 0.5f;
+
+		ImGui::SetCursorScreenPos(ImVec2(startPos.x + offsetX, startPos.y + offsetY));
+		ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
+		ImGui::TextUnformatted(node.Name.c_str());
+		ImGui::PopStyleColor();
+
+		// Force the node bounds to expand
+		// Move the cursor to the bottom-right corner and drop an invisible element
+		ImGui::SetCursorScreenPos(ImVec2(startPos.x + finalWidth, startPos.y + finalHeight));
+		ImGui::Dummy(ImVec2(0, 0));
+
+		// Draw the invisible center pins using our new perfect dimensions
+		ImVec2 centerPos = ImVec2(startPos.x + (finalWidth * 0.5f), startPos.y + (finalHeight * 0.5f));
+
+		// Draw Input Pin (Center, Invisible anchor point)
+		if (node.Inputs.size() > 0)
+		{
+			ImGui::SetCursorScreenPos(centerPos);
+			ne::BeginPin(node.Inputs[0].ID, ne::PinKind::Input);
+			ImGui::Dummy(ImVec2(1, 1));
+			ne::EndPin();
+		}
+
+		// Draw Output Pin (Center, Invisible anchor point)
+		if (node.Outputs.size() > 0)
+		{
+			ImGui::SetCursorScreenPos(centerPos);
+			ne::BeginPin(node.Outputs[0].ID, ne::PinKind::Output);
+			ImGui::Dummy(ImVec2(1, 1));
+			ne::EndPin();
+		}
+
+		ne::EndNode();
+
+		ne::PopStyleColor(4);
+	}
+
+	void AnimationViewportViewer::DrawTransitionLink(Link& link)
+	{
+		ne::Link(link.ID, link.StartPinID, link.EndPinID, link.Color, 2.0f);
+
+		// Skip flow for purely visual links (Start -> Default and State -> End)
+		bool isVisualLink =
+			link.StartPinID.Get() == m_EntryNode.Outputs[0].ID.Get() ||
+			link.EndPinID.Get() == m_ExitNode.Inputs[0].ID.Get();
+
+		if (!isVisualLink)
+		{
 			// Animate a pulsing flow down the wire to visually indicate the direction 
 			// of the transition, instantly solving the bidirectional ambiguity problem
 			ne::Flow(link.ID);
 		}
 
-		ne::PopStyleVar();
+		// TODO: In the future, will want a preview window and when testing the animation state flow, will provide a "Live flow"
+		//  that shows the flow traveling down the wires in real time as the animation plays out (See UE5's Animation State Machine for reference)
 	}
+
+	void AnimationViewportViewer::DrawStartState()
+	{
+		if (!m_AnimationStateMachine->EntryNodePositionSet)
+		{
+			ne::SetNodePosition(ENTRY_NODE_ID, ImVec2(m_AnimationStateMachine->EntryNodePosition.x, m_AnimationStateMachine->EntryNodePosition.y));
+			m_AnimationStateMachine->EntryNodePositionSet = true;
+		}
+
+		DrawStateNode(m_EntryNode);
+
+		// Check if position is updated by the user
+		UpdateNodePositionFromUI(m_EntryNode, m_AnimationStateMachine->EntryNodePosition);
+	}
+
+	void AnimationViewportViewer::DrawEndState()
+	{
+		if (!m_AnimationStateMachine->ExitNodePositionSet)
+		{
+			ne::SetNodePosition(EXIT_NODE_ID, ImVec2(m_AnimationStateMachine->ExitNodePosition.x, m_AnimationStateMachine->ExitNodePosition.y));
+			m_AnimationStateMachine->ExitNodePositionSet = true;
+		}
+
+		DrawStateNode(m_ExitNode);
+
+		// Check if position is updated by the user
+		UpdateNodePositionFromUI(m_ExitNode, m_AnimationStateMachine->ExitNodePosition);
+	}
+
+	void AnimationViewportViewer::UpdateNodePositionFromUI(Node& node, Vector2f& nodeSavedPosition)
+	{
+		ImVec2 currentUIPos = ne::GetNodePosition(node.ID);
+		if (currentUIPos.x != nodeSavedPosition.x || currentUIPos.y != nodeSavedPosition.y)
+		{
+			nodeSavedPosition = Vector2f(currentUIPos.x, currentUIPos.y);
+
+			// Mark dirty to re-save the asset with the new position data
+			m_SaveCooldown = AUTO_SAVE_DELAY;
+			m_IsDirty = true;
+		}
+	}
+
+	void AnimationViewportViewer::CheckNodeSelected()
+	{
+		if (!ne::HasSelectionChanged())
+			return;
+
+		// Find out how many items (nodes + links) are selected
+		int selectedObjectCount = ne::GetSelectedObjectCount();
+
+		std::vector<ne::NodeId> selectedNodes;
+		selectedNodes.resize(selectedObjectCount);
+
+		std::vector<ne::LinkId> selectedLinks;
+		selectedLinks.resize(selectedObjectCount);
+
+		// Populate the array with only the selected nodes
+		int nodeCount = ne::GetSelectedNodes(selectedNodes.data(), selectedNodes.size());
+		int linkCount = ne::GetSelectedLinks(selectedLinks.data(), selectedLinks.size());
+		if (nodeCount > 0)
+		{
+			ne::NodeId clickedNode = selectedNodes[0];
+			uint64_t nodeId = static_cast<uint64_t>(clickedNode.Get());
+			
+			if (m_AnimationStateMachine->GetStates().contains(nodeId))
+				m_SelectedState = &m_AnimationStateMachine->GetStates().at(nodeId);
+			else
+				m_SelectedState = nullptr;
+
+			// De-select any transition
+			m_SelectedTransition = nullptr;
+		}
+		else if (linkCount > 0)
+		{
+			ne::LinkId clickedLink = selectedLinks[0];
+			uint64_t linkId = static_cast<uint64_t>(clickedLink.Get());
+
+			m_SelectedTransition = m_AnimationStateMachine->GetTransitionById(linkId);
+
+			// De-select any nodes
+			m_SelectedState = nullptr;
+		}
+		else
+		{
+			// The user clicked the background and deselected everything
+			m_SelectedState = nullptr;
+			m_SelectedTransition = nullptr;
+		}
+	}
+
 }

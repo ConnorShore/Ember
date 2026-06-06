@@ -46,7 +46,7 @@ namespace Ember {
 		PinKind     Kind;
 
 		Pin() = default;
-		Pin(int id, const char* name, PinType type) :
+		Pin(uint64_t id, const char* name, PinType type) :
 			ID(id), Node(nullptr), Name(name), Type(type), Kind(PinKind::Input)
 		{
 		}
@@ -66,7 +66,7 @@ namespace Ember {
 		std::string SavedState;
 
 		Node() = default;
-		Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :
+		Node(uint64_t id, const char* name, ImColor color = ImColor(255, 255, 255)) :
 			ID(id), Name(name), Color(color), Type(NodeType::Blueprint), Size(0, 0)
 		{
 		}
@@ -82,8 +82,8 @@ namespace Ember {
 		ImColor Color;
 
 		Link() = default;
-		Link(ne::LinkId id, ne::PinId startPinId, ne::PinId endPinId) :
-			ID(id), StartPinID(startPinId), EndPinID(endPinId), Color(255, 255, 255)
+		Link(uint64_t id, ne::PinId startPinId, ne::PinId endPinId, ImColor color = ImColor(255,255,255)) :
+			ID(id), StartPinID(startPinId), EndPinID(endPinId), Color(color)
 		{
 		}
 	};

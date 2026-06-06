@@ -38,7 +38,11 @@ namespace Ember {
 
 	InspectorPanel::InspectorPanelState InspectorPanel::GetPanelState()
 	{
-		switch (m_Context->ActiveViewportType)
+		auto activeViewportType = m_Context->ActiveViewportViewer 
+			? m_Context->ActiveViewportViewer->GetType()
+			: EditorViewportViewer::Type::None;
+
+		switch (activeViewportType)
 		{
 		case EditorViewportViewer::Type::Scene:
 			return InspectorPanelState::Scene;
