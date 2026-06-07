@@ -5,6 +5,8 @@
 
 namespace Ember {
 
+	class AssetManager;
+
 	class AnimationInspectorPanel : public InspectorPanelContent
 	{
 	public:
@@ -16,6 +18,9 @@ namespace Ember {
 	private:
 		void RenderAnimationState(AnimationState* animState);
 		void RenderAnimationTransition(AnimationTransition* animTransition);
+
+	private:
+		AssetManager& m_AssetManager;
 	};
 
 }

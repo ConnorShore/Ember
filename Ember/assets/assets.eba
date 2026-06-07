@@ -132,6 +132,10 @@ Assets:
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
   - Type: Material
+    UUID: 3531595371019758275
+    Name: AssaultRifle_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
+  - Type: Material
     UUID: 4587007159136363848
     Name: M4_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
@@ -139,10 +143,6 @@ Assets:
     UUID: 8747674591623748722
     Name: HolographicReticleMat
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/HolographicReticleMat.ebmat
-  - Type: Material
-    UUID: 3531595371019758275
-    Name: AssaultRifle_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
   - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
@@ -240,6 +240,10 @@ Assets:
     Name: Roboto-Regular
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
+    UUID: 8785379131387521162
+    Name: ReloadEnd
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadEnd.mp3
+  - Type: AudioClip
     UUID: 10601745296411271244
     Name: M4_Shot
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/M4_Shot.mp3
@@ -251,10 +255,6 @@ Assets:
     UUID: 15776698392225788213
     Name: ReloadStart
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadStart.mp3
-  - Type: AudioClip
-    UUID: 8785379131387521162
-    Name: ReloadEnd
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadEnd.mp3
   - Type: AudioClip
     UUID: 4535810649324835630
     Name: AmmoPickupSFX

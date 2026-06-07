@@ -1093,8 +1093,11 @@ namespace Ember {
 				}
 				else if (activeProject && control)
 				{
-					if (m_Context.IsEditingPrefab)
+					auto viewerType = m_Context.ActiveViewportViewer ? m_Context.ActiveViewportViewer->GetType() : EditorViewportViewer::Type::None;
+					if (viewerType == EditorViewportViewer::Type::Prefab)
 						SaveOpenPrefab();
+					else if (viewerType == EditorViewportViewer::Type::Animation)
+						static_cast<AnimationViewportViewer*>(m_Context.ActiveViewportViewer)->SaveAnimationStateMachine(this);
 					else
 						SaveProject(false);
 				}
@@ -1346,7 +1349,8 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
-		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit || m_Context.IsEditingPrefab || !m_EditorScene);
+		auto viewportType = m_Context.ActiveViewportViewer ? m_Context.ActiveViewportViewer->GetType() : EditorViewportViewer::Type::None;
+		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit);
 
 		// --- PLAY STANDALONE (Orange Tint) ---
 		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
@@ -1387,6 +1391,7 @@ namespace Ember {
 		ImGui::SameLine();
 
 		// --- PLAY / STOP EDITOR SCENE (No Tint) ---
+		ImGui::BeginDisabled(viewportType != EditorViewportViewer::Type::Scene);
 		if (m_Context.CurrentSceneState == SceneState::Play || m_Context.CurrentSceneState == SceneState::Pause)
 		{
 			if (ImGui::ImageButton("StopButton", m_ToolbarProps.StopButtonTextureID, ImVec2(iconSize, iconSize)))
@@ -1404,6 +1409,7 @@ namespace Ember {
 			}
 			ImGui::EndDisabled();
 		}
+		ImGui::EndDisabled();
 
 		ImGui::SameLine();
 

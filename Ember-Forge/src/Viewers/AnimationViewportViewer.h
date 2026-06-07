@@ -27,8 +27,12 @@ namespace Ember {
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) override;
 		virtual void OnImGuiRender(EditorLayer* editor) override;
 
-		AnimationState* GetSelectedState() { return m_SelectedState; }
-		AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
+		void SaveAnimationStateMachine(EditorLayer* editor);
+
+		inline void RenameNode(UUID stateId, const std::string& name) { m_Nodes[stateId].Name = name.c_str(); }
+
+		inline AnimationState* GetSelectedState() { return m_SelectedState; }
+		inline AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
 
 	private:
 		void RebuildGraph();

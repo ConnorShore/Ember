@@ -62,12 +62,7 @@ namespace Ember {
 
 			if (m_SaveCooldown <= 0.0f)
 			{
-				AnimationStateMachineSerializer::Serialize(m_AnimationStateMachine->GetFilePath(), m_AnimationStateMachine);
-				m_IsDirty = false;
-
-				// Auto-save notification
-				auto evt = UINotificationEvent("Auto-Saved Animation State Machine", UINotificationEvent::Severity::Info);
-				editor->GetContext().EventCallback(evt);
+				SaveAnimationStateMachine(editor);
 			}
 		}
 	}
@@ -88,6 +83,16 @@ namespace Ember {
 		CheckNodeSelected();
 
 		ne::SetCurrentEditor(nullptr);
+	}
+
+	void AnimationViewportViewer::SaveAnimationStateMachine(EditorLayer* editor)
+	{
+		AnimationStateMachineSerializer::Serialize(m_AnimationStateMachine->GetFilePath(), m_AnimationStateMachine);
+		m_IsDirty = false;
+
+		// Auto-save notification
+		auto evt = UINotificationEvent("Auto-Saved Animation State Machine", UINotificationEvent::Severity::Info);
+		editor->GetContext().EventCallback(evt);
 	}
 
 	void AnimationViewportViewer::RebuildGraph()
