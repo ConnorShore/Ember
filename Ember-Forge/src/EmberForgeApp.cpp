@@ -21,9 +21,10 @@ namespace Ember {
 	{
 		ApplicationSpecification spec;
 		spec.Name = "Ember Forge";
+		spec.WindowSpecification.Title = "Ember Forge";
 		spec.WindowSpecification.Width = 1600;
 		spec.WindowSpecification.Height = 900;
-		spec.WindowSpecification.Title = "Ember Forge";
+		spec.WindowSpecification.StartMaximized = true;
 
 		// The Editor explicitly points to the source code folders
 		spec.EngineAssetDir = "Ember/assets";

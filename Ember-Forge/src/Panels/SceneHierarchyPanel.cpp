@@ -100,6 +100,10 @@ namespace Ember {
 
 	void SceneHierarchyPanel::RenderContextMenu()
 	{
+		// Only available in scene viewers
+		if (m_Context->ActiveViewportViewer == nullptr || m_Context->ActiveViewportViewer->GetType() != EditorViewportViewer::Type::Scene)
+			return;
+
 		// Only available in edit mode
 		if (m_Context->CurrentSceneState != SceneState::Edit)
 			return;
