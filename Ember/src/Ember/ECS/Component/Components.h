@@ -676,6 +676,11 @@ namespace Ember {
 			Blackboard.SetBool(name, value);
 		}
 
+		void SetInt(const std::string& name, int32_t value)
+		{
+			Blackboard.SetInt(name, value);
+		}
+
 		AnimatorComponent() = default;
 		AnimatorComponent(const AnimatorComponent&) = default;
 	};

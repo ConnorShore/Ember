@@ -2,6 +2,7 @@
 
 #include "AnimationState.h"
 #include "AnimationTransition.h"
+#include "AnimationParameter.h"
 
 #include "Ember/Asset/Asset.h"
 #include "Ember/Core/Constants.h"
@@ -65,6 +66,26 @@ namespace Ember {
 			return nullptr;
 		}
 
+		std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
+		const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
+
+		void AddParameter(const std::string& name, AnimationParameterType paramType)
+		{
+			AnimationParameter parameter;
+			parameter.Type = paramType;
+			m_Parameters[name] = parameter;
+		}
+
+		void AddParameter(const std::string& name, const AnimationParameter& parameter)
+		{
+			m_Parameters[name] = parameter;
+		}
+
+		void RemoveParameter(const std::string& name)
+		{
+			m_Parameters.erase(name);
+		}
+
 		static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
 
 	public:
@@ -77,6 +98,7 @@ namespace Ember {
 		UUID m_DefaultState = Constants::InvalidUUID;
 		std::unordered_map<UUID, AnimationState> m_States;
 		std::unordered_map<UUID, std::vector<AnimationTransition>> m_Transitions;
+		std::unordered_map<std::string, AnimationParameter> m_Parameters;
 	};
 
 }

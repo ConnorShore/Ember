@@ -13,7 +13,10 @@ namespace Ember {
 	//   2 = AnimationCondition payload per transition condition
 	//   3 = States and transitions identified by UUID; default state stored as UUID
 	//   4 = Transition UUID persisted for unique transition identity
-	const uint32_t ASMS_FILE_VERSION = 4;
+	//   5 = Unified AnimationParameter map on ASM; int threshold added to conditions
+	//   6 = ASM parameters store definitions only (name + AnimationParameterType)
+	//   7 = ASM parameters store full AnimationParameter defaults again
+	const uint32_t ASMS_FILE_VERSION = 7;
 
 	namespace
 	{
@@ -51,9 +54,21 @@ namespace Ember {
 			file.write((const char*)&op, sizeof(uint32_t));
 			file.write((const char*)&condition.FloatValue, sizeof(float));
 			file.write((const char*)&boolValue, sizeof(uint8_t));
+			file.write((const char*)&condition.IntValue, sizeof(int32_t));
 		}
 
-		bool ReadCondition(std::ifstream& file, AnimationCondition& condition)
+		void WriteParameter(std::ofstream& file, const std::string& name, const AnimationParameter& parameter)
+		{
+			WriteString(file, name);
+			uint32_t type = static_cast<uint32_t>(parameter.Type);
+			uint8_t boolValue = parameter.BoolValue ? 1u : 0u;
+			file.write((const char*)&type, sizeof(uint32_t));
+			file.write((const char*)&parameter.FloatValue, sizeof(float));
+			file.write((const char*)&boolValue, sizeof(uint8_t));
+			file.write((const char*)&parameter.IntValue, sizeof(int32_t));
+		}
+
+		bool ReadCondition(std::ifstream& file, AnimationCondition& condition, uint32_t fileVersion)
 		{
 			if (!ReadString(file, condition.ParameterName))
 				return false;
@@ -69,9 +84,52 @@ namespace Ember {
 			if (!file.good())
 				return false;
 
+			if (fileVersion >= 5)
+			{
+				file.read((char*)&condition.IntValue, sizeof(int32_t));
+				if (!file.good())
+					return false;
+			}
+
 			condition.Type = static_cast<AnimationParameterType>(type);
 			condition.Operator = static_cast<AnimationConditionOperator>(op);
 			condition.BoolValue = boolValue != 0;
+			return true;
+		}
+
+		bool ReadParameterWithValues(std::ifstream& file, std::string& name, AnimationParameter& parameter)
+		{
+			if (!ReadString(file, name))
+				return false;
+
+			uint32_t type = 0;
+			uint8_t boolValue = 0;
+			file.read((char*)&type, sizeof(uint32_t));
+			file.read((char*)&parameter.FloatValue, sizeof(float));
+			file.read((char*)&boolValue, sizeof(uint8_t));
+			file.read((char*)&parameter.IntValue, sizeof(int32_t));
+			if (!file.good())
+				return false;
+
+			parameter.Type = static_cast<AnimationParameterType>(type);
+			parameter.BoolValue = boolValue != 0;
+			return true;
+		}
+
+		bool ReadParameterV6(std::ifstream& file, std::string& name, AnimationParameter& parameter)
+		{
+			if (!ReadString(file, name))
+				return false;
+
+			uint32_t type = 0;
+			file.read((char*)&type, sizeof(uint32_t));
+			if (!file.good())
+				return false;
+
+			parameter.Type = static_cast<AnimationParameterType>(type);
+			parameter.FloatValue = 0.0f;
+			parameter.BoolValue = false;
+			parameter.IntValue = 0;
 			return true;
 		}
 	}
@@ -145,6 +203,15 @@ namespace Ember {
 		// Write entry/exit node positions
 		file.write((const char*)&animationStateMachine->EntryNodePosition, sizeof(Vector2f));
 		file.write((const char*)&animationStateMachine->ExitNodePosition, sizeof(Vector2f));
+
+		// Write parameter definitions (v5+)
+		const auto& parameters = animationStateMachine->GetParameters();
+		uint32_t paramCount = static_cast<uint32_t>(parameters.size());
+		file.write((const char*)&paramCount, sizeof(uint32_t));
+		for (const auto& [name, parameter] : parameters)
+		{
+			WriteParameter(file, name, parameter);
+		}
 
 		file.close();
 		return true;
@@ -324,7 +391,7 @@ namespace Ember {
 				AnimationCondition condition;
 				if (version >= 2)
 				{
-					if (!ReadCondition(file, condition))
+					if (!ReadCondition(file, condition, version))
 					{
 						EB_CORE_ERROR("Failed reading transition condition from animation state machine file: {0}", filepath.string());
 						return nullptr;
@@ -354,6 +421,36 @@ namespace Ember {
 		// Read entry/exit node positions
 		file.read((char*)&animationStateMachine->EntryNodePosition, sizeof(Vector2f));
 		file.read((char*)&animationStateMachine->ExitNodePosition, sizeof(Vector2f));
+
+		// Read parameter definitions/defaults (v5+)
+		if (version >= 5)
+		{
+			uint32_t paramCount = 0;
+			file.read((char*)&paramCount, sizeof(uint32_t));
+			if (!file.good())
+			{
+				EB_CORE_ERROR("Failed reading parameter count from animation state machine file: {0}", filepath.string());
+				return nullptr;
+			}
+
+			for (uint32_t i = 0; i < paramCount; i++)
+			{
+				std::string paramName;
+				AnimationParameter parameter;
+				bool readSuccess = false;
+				if (version == 6)
+					readSuccess = ReadParameterV6(file, paramName, parameter);
+				else
+					readSuccess = ReadParameterWithValues(file, paramName, parameter);
+
+				if (!readSuccess)
+				{
+					EB_CORE_ERROR("Failed reading parameter from animation state machine file: {0}", filepath.string());
+					return nullptr;
+				}
+				animationStateMachine->AddParameter(paramName, parameter);
+			}
+		}
 
 		animationStateMachine->SetFilePath(filepath.string());
 		return animationStateMachine;

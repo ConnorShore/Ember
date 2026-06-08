@@ -171,6 +171,21 @@ namespace Ember {
 			auto animStateMachine = animator.AnimationStateMachineHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationStateMachine>(animator.AnimationStateMachineHandle) : nullptr;
 			const AnimationState* currentState = ResolveCurrentState(animStateMachine, animator);
 
+			std::unordered_map<std::string, AnimationParameter> effectiveParameters;
+			if (animStateMachine)
+				effectiveParameters = animStateMachine->GetParameters();
+
+			// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
+			for (auto parameter : animator.Blackboard.Parameters)
+			{
+				if (animStateMachine && !animStateMachine->GetParameters().contains(parameter.first))
+				{
+					EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
+				}
+
+				effectiveParameters[parameter.first] = parameter.second;
+			}
+
 			// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
 			if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(animator.CurrentStateId))
 			{
@@ -184,7 +199,7 @@ namespace Ember {
 					bool activateTransition = true;
 					for (const auto& condition : transition.Conditions)
 					{
-						if (!AnimationConditionEvaluator::Evaluate(condition, animator.Blackboard.FloatParameters, animator.Blackboard.BoolParameters))
+						if (!AnimationConditionEvaluator::Evaluate(condition, effectiveParameters))
 						{
 							activateTransition = false;
 							break;

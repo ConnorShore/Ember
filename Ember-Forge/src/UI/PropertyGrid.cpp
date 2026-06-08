@@ -99,6 +99,27 @@ namespace Ember {
 			return modified;
 		}
 
+		void LabelWithValue(const std::string& label, const std::string& value)
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", label.c_str());
+
+			ImGui::TableNextColumn();
+			ImGui::PushItemWidth(-FLT_MIN);
+
+			char buffer[256];
+			strncpy_s(buffer, sizeof(buffer), value.c_str(), _TRUNCATE);
+
+			ImGui::BeginDisabled(true);
+			ImGui::InputText(std::format("##{}", label).c_str(), buffer, sizeof(buffer));
+			ImGui::EndDisabled();
+
+			ImGui::PopItemWidth();
+		}
+
+
 		bool DirectoryInput(const std::string& label, std::string& directoryPath, UICallbackFunc browseFunc)
 		{
 			ImGui::PushID(label.c_str());
@@ -700,6 +721,5 @@ namespace Ember {
 
 			return UI::BeginComboBox("##combo", defaultValue);
 		}
-
 	}
 }

@@ -1,16 +1,11 @@
 #pragma once
 
+#include "AnimationParameter.h"
+
 #include <string>
 #include <unordered_map>
 
 namespace Ember {
-
-	enum class AnimationParameterType
-	{
-		Float,
-		Bool,
-		Trigger // Optional: A bool that resets to false once consumed
-	};
 
 	enum class AnimationConditionOperator
 	{
@@ -26,33 +21,39 @@ namespace Ember {
 		AnimationParameterType Type;
 		AnimationConditionOperator Operator;
 
-		// We store both, but only read the one that matches 'Type'.
-		// (This is much easier to serialize to YAML than a std::variant)
+		// Threshold values — only the one matching 'Type' is used.
+		// (Kept as flat fields for simple binary serialization)
 		float FloatValue = 0.0f;
 		bool BoolValue = false;
+		int32_t IntValue = 0;
 	};
 
 	class AnimationConditionEvaluator
 	{
 	public:
-		inline static bool Evaluate(const AnimationCondition& condition, const std::unordered_map<std::string, float>& floatParams, const std::unordered_map<std::string, bool>& boolParams)
+		inline static bool Evaluate(const AnimationCondition& condition, const std::unordered_map<std::string, AnimationParameter>& params)
 		{
+			auto it = params.find(condition.ParameterName);
+
 			switch (condition.Type)
 			{
 			case AnimationParameterType::Float:
-				if (!floatParams.contains(condition.ParameterName))
-					return false; // Parameter not found
-				return EvaluateFloatCondition(floatParams.at(condition.ParameterName), condition.Operator, condition.FloatValue);
+				if (it == params.end())
+					return false;
+				return EvaluateFloatCondition(it->second.FloatValue, condition.Operator, condition.FloatValue);
 			case AnimationParameterType::Bool:
-				if (!boolParams.contains(condition.ParameterName))
-					return false; // Parameter not found
-				return EvaluateBoolCondition(boolParams.at(condition.ParameterName), condition.Operator, condition.BoolValue);
+				if (it == params.end())
+					return false;
+				return EvaluateBoolCondition(it->second.BoolValue, condition.Operator, condition.BoolValue);
+			case AnimationParameterType::Int:
+				if (it == params.end())
+					return false;
+				return EvaluateIntCondition(it->second.IntValue, condition.Operator, condition.IntValue);
 			case AnimationParameterType::Trigger:
 				// For triggers, we would need additional logic to reset the trigger after it's consumed.
-				// This is a simplified example and may require a more complex implementation in a real system.
-				if (!boolParams.contains(condition.ParameterName))
-					return false; // Parameter not found
-				return EvaluateBoolCondition(boolParams.at(condition.ParameterName), condition.Operator, true);
+				if (it == params.end())
+					return false;
+				return EvaluateBoolCondition(it->second.BoolValue, condition.Operator, true);
 			default:
 				return false;
 			}
@@ -80,6 +81,23 @@ namespace Ember {
 		{
 			switch (op)
 			{
+			case AnimationConditionOperator::Equal:
+				return paramValue == conditionValue;
+			case AnimationConditionOperator::NotEqual:
+				return paramValue != conditionValue;
+			default:
+				return false;
+			}
+		}
+
+		inline static bool EvaluateIntCondition(int32_t paramValue, AnimationConditionOperator op, int32_t conditionValue)
+		{
+			switch (op)
+			{
+			case AnimationConditionOperator::GreaterThan:
+				return paramValue > conditionValue;
+			case AnimationConditionOperator::LessThan:
+				return paramValue < conditionValue;
 			case AnimationConditionOperator::Equal:
 				return paramValue == conditionValue;
 			case AnimationConditionOperator::NotEqual:

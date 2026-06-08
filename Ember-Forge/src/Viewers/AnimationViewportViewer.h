@@ -29,10 +29,17 @@ namespace Ember {
 
 		void SaveAnimationStateMachine(EditorLayer* editor);
 
+		inline void MarkAnimationStateMachineDirty()
+		{
+			m_SaveCooldown = AUTO_SAVE_DELAY;
+			m_IsDirty = true;
+		}
+
 		inline void RenameNode(UUID stateId, const std::string& name) { m_Nodes[stateId].Name = name.c_str(); }
 
 		inline AnimationState* GetSelectedState() { return m_SelectedState; }
 		inline AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
+		inline SharedPtr<AnimationStateMachine> GetAnimationStateMachine() { return m_AnimationStateMachine; }
 
 	private:
 		void RebuildGraph();
