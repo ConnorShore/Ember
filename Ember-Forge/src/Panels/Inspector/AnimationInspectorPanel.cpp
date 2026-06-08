@@ -12,6 +12,33 @@
 
 namespace Ember {
 
+	namespace
+	{
+		const char* ConditionOperatorToString(AnimationConditionOperator op)
+		{
+			switch (op)
+			{
+			case AnimationConditionOperator::GreaterThan: return ">";
+			case AnimationConditionOperator::LessThan: return "<";
+			case AnimationConditionOperator::Equal: return "==";
+			case AnimationConditionOperator::NotEqual: return "!=";
+			default: return "?";
+			}
+		}
+
+		bool IsBoolLikeParameterType(AnimationParameterType type)
+		{
+			return type == AnimationParameterType::Bool || type == AnimationParameterType::Trigger;
+		}
+
+		AnimationConditionOperator DefaultOperatorForType(AnimationParameterType type)
+		{
+			return IsBoolLikeParameterType(type)
+				? AnimationConditionOperator::Equal
+				: AnimationConditionOperator::GreaterThan;
+		}
+	}
+
 	AnimationInspectorPanel::AnimationInspectorPanel(EditorContext* context)
 		: InspectorPanelContent(context), m_AssetManager(Application::Instance().GetAssetManager())
 	{
@@ -130,11 +157,174 @@ namespace Ember {
 			{
 				UI::PropertyGrid::LabelWithValue("From State", fromStateName);
 				UI::PropertyGrid::LabelWithValue("To State", toStateName);
-
-				// TODO: Add transition conditions that can be edited/added/removed/etc
-
 				UI::PropertyGrid::End();
 			}
+
+			// Render conditions
+			auto& parameters = stateMachine->GetParameters();
+			std::vector<std::string> parameterNames;
+			parameterNames.reserve(parameters.size());
+			for (const auto& [name, parameter] : parameters)
+				parameterNames.push_back(name);
+			std::sort(parameterNames.begin(), parameterNames.end());
+
+			bool changed = false;
+
+			ImGui::SeparatorText("Conditions");
+			if (ImGui::Button("Add Condition"))
+			{
+				if (!parameterNames.empty())
+				{
+					const std::string& defaultParamName = parameterNames.front();
+					const AnimationParameter& defaultParameter = parameters.at(defaultParamName);
+
+					AnimationCondition condition;
+					condition.ParameterName = defaultParamName;
+					condition.Type = defaultParameter.Type;
+					condition.Operator = DefaultOperatorForType(defaultParameter.Type);
+					condition.FloatValue = defaultParameter.FloatValue;
+					condition.BoolValue = defaultParameter.BoolValue;
+					condition.IntValue = defaultParameter.IntValue;
+
+					animTransition->Conditions.push_back(condition);
+					changed = true;
+				}
+			}
+
+			if (parameterNames.empty())
+				ImGui::TextDisabled("Create animation parameters to add transition conditions.");
+
+			if (!animTransition->Conditions.empty())
+			{
+				if (ImGui::BeginTable("TransitionConditionTable", 4, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+				{
+					ImGui::TableSetupColumn("Parameter", ImGuiTableColumnFlags_WidthStretch, 0.42f);
+					ImGui::TableSetupColumn("Operator", ImGuiTableColumnFlags_WidthStretch, 0.16f);
+					ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.34f);
+					ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 32.0f);
+					ImGui::TableHeadersRow();
+
+					for (size_t i = 0; i < animTransition->Conditions.size();)
+					{
+						AnimationCondition& condition = animTransition->Conditions[i];
+						bool removeCondition = false;
+
+						ImGui::PushID(static_cast<int>(i));
+						ImGui::TableNextRow();
+
+						ImGui::TableSetColumnIndex(0);
+						ImGui::SetNextItemWidth(-FLT_MIN);
+
+						std::string parameterPreview = condition.ParameterName;
+						if (!condition.ParameterName.empty() && !parameters.contains(condition.ParameterName))
+							parameterPreview = std::format("Missing ({})", condition.ParameterName);
+
+						if (ImGui::BeginCombo("##ConditionParameter", parameterPreview.c_str()))
+						{
+							for (const std::string& parameterName : parameterNames)
+							{
+								bool isSelected = condition.ParameterName == parameterName;
+								if (ImGui::Selectable(parameterName.c_str(), isSelected))
+								{
+									const AnimationParameter& parameter = parameters.at(parameterName);
+									const AnimationParameterType previousType = condition.Type;
+									condition.ParameterName = parameterName;
+									condition.Type = parameter.Type;
+
+									if (IsBoolLikeParameterType(condition.Type) && !IsBoolLikeParameterType(previousType))
+										condition.Operator = AnimationConditionOperator::Equal;
+									else if (IsBoolLikeParameterType(condition.Type) &&
+										!(condition.Operator == AnimationConditionOperator::Equal || condition.Operator == AnimationConditionOperator::NotEqual))
+										condition.Operator = AnimationConditionOperator::Equal;
+
+									changed = true;
+								}
+								if (isSelected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						ImGui::TableSetColumnIndex(1);
+						ImGui::SetNextItemWidth(-FLT_MIN);
+
+						const bool boolLike = IsBoolLikeParameterType(condition.Type);
+						if (ImGui::BeginCombo("##ConditionOperator", ConditionOperatorToString(condition.Operator)))
+						{
+							const std::initializer_list<AnimationConditionOperator> boolOps = {
+								AnimationConditionOperator::Equal,
+								AnimationConditionOperator::NotEqual
+							};
+							const std::initializer_list<AnimationConditionOperator> numericOps = {
+								AnimationConditionOperator::GreaterThan,
+								AnimationConditionOperator::LessThan,
+								AnimationConditionOperator::Equal,
+								AnimationConditionOperator::NotEqual
+							};
+
+							const auto& ops = boolLike ? boolOps : numericOps;
+							for (AnimationConditionOperator op : ops)
+							{
+								bool isSelected = condition.Operator == op;
+								if (ImGui::Selectable(ConditionOperatorToString(op), isSelected))
+								{
+									condition.Operator = op;
+									changed = true;
+								}
+								if (isSelected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						ImGui::TableSetColumnIndex(2);
+						ImGui::SetNextItemWidth(-FLT_MIN);
+						switch (condition.Type)
+						{
+						case AnimationParameterType::Float:
+							if (ImGui::DragFloat("##ConditionFloat", &condition.FloatValue, 0.1f))
+								changed = true;
+							break;
+						case AnimationParameterType::Int:
+							if (ImGui::DragInt("##ConditionInt", &condition.IntValue, 1.0f))
+								changed = true;
+							break;
+						case AnimationParameterType::Bool:
+						case AnimationParameterType::Trigger:
+							if (ImGui::Checkbox("##ConditionBool", &condition.BoolValue))
+								changed = true;
+							break;
+						default:
+							break;
+						}
+
+						ImGui::TableSetColumnIndex(3);
+						if (ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f)))
+							removeCondition = true;
+
+						ImGui::PopID();
+
+						if (removeCondition)
+						{
+							animTransition->Conditions.erase(animTransition->Conditions.begin() + static_cast<int64_t>(i));
+							changed = true;
+							continue;
+						}
+
+						++i;
+					}
+
+					ImGui::EndTable();
+				}
+			}
+			else
+			{
+				ImGui::TextDisabled("No transition conditions.");
+			}
+
+			if (changed)
+				animationViewport->MarkAnimationStateMachineDirty();
+
 
 			UI::Nodes::EndExpandableNode();
 		}

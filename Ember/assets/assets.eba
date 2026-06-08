@@ -44,13 +44,13 @@ Assets:
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
   - Type: Texture
-    UUID: 9008232455192275898
-    Name: AssaultRifle_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
-  - Type: Texture
     UUID: 15863835653609318779
     Name: HolographicReticle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
+  - Type: Texture
+    UUID: 9008232455192275898
+    Name: AssaultRifle_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -63,10 +63,6 @@ Assets:
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
-  - Type: Script
-    UUID: 5025897937436236093
-    Name: MouseLook
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
   - Type: Script
     UUID: 1928101263865073231
     Name: PickupWeapon
@@ -103,6 +99,10 @@ Assets:
     UUID: 8562544563539838448
     Name: PlayerInteraction
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
+  - Type: Script
+    UUID: 5025897937436236093
+    Name: MouseLook
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
   - Type: Script
     UUID: 13629381204485307944
     Name: MountBehavior
