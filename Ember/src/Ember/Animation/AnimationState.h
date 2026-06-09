@@ -20,6 +20,10 @@ namespace Ember {
 
 		Vector2f NodePosition = Vector2f(0.0f);
 		bool PositionSet = false;
+
+		AnimationState() = default;
+		AnimationState(const std::string& name) 
+			: Id(UUID()), Name(name) {}
 	};
 
 }

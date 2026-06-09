@@ -5,6 +5,7 @@
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Animation/AnimationStateMachineSerializer.h>
 #include <Ember/Event/UIEvent.h>
+#include <Ember/Input/Input.h>
 #include <imgui/imgui.h>
 
 #include <string>
@@ -75,7 +76,9 @@ namespace Ember {
 		ne::SetCurrentEditor(m_NodeEditorContext);
 		ne::Begin(std::format("##AnimationGraph_{}", m_AnimationStateMachine->GetName()).c_str());
 
+		HandleHotkeys();
 		DrawAllNodes();
+		RenderContextMenus();
 
 		ne::End();
 
@@ -83,6 +86,20 @@ namespace Ember {
 		CheckNodeSelected();
 
 		ne::SetCurrentEditor(nullptr);
+	}
+
+	void AnimationViewportViewer::HandleHotkeys()
+	{
+		// Check for delete key to delete selected node or link
+		if (Input::IsKeyPressed(KeyCode::Delete))
+		{
+			if (m_SelectedState)
+				DeleteNode(m_SelectedState->Id);
+
+			// TODO: Maybe only delete through inspector (allow delete if not a two way connection?)
+			//else if (m_SelectedTransition)
+			//	DeleteTransition(m_SelectedTransition->Id);
+		}
 	}
 
 	void AnimationViewportViewer::SaveAnimationStateMachine(EditorLayer* editor)
@@ -99,8 +116,6 @@ namespace Ember {
 	{
 		m_Nodes.clear();
 		m_Links.clear();
-
-		// TODO: Use UUID for node id's and transition ids (pins can stay the same)
 
 		// Build all Nodes
 		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
@@ -376,6 +391,112 @@ namespace Ember {
 			m_SelectedState = nullptr;
 			m_SelectedTransition = nullptr;
 		}
+	}
+
+	void AnimationViewportViewer::RenderContextMenus()
+	{
+		// Suspend the node editor so we can draw standard ImGui popups over it
+		ne::Suspend();
+
+		// Query the editor to see if the user right-clicked the empty canvas
+		if (ne::ShowBackgroundContextMenu())
+		{
+			ImGui::OpenPopup("AnimationGraphContextMenu");
+		}
+
+		// Render node context menu if the user right-clicked a node
+		if (ne::ShowNodeContextMenu(&m_NodePopupId))
+		{ 
+			ImGui::OpenPopup("NodeContextMenu");
+		}
+
+		// Draw the popups
+		RenderDefaultContextMenu();
+		RenderNodeContextMenu(m_NodePopupId);
+
+		// Resume the node editor context
+		ne::Resume();
+	}
+
+	void AnimationViewportViewer::RenderDefaultContextMenu()
+	{
+		if (ImGui::BeginPopup("AnimationGraphContextMenu"))
+		{
+			// Get the screen-space position where the user initially right-clicked
+			ImVec2 clickPos = ImGui::GetMousePosOnOpeningCurrentPopup();
+
+			if (ImGui::MenuItem("Create New State"))
+			{
+				ImVec2 canvasPos = ne::ScreenToCanvas(clickPos);
+
+				// Ensure unique state name
+				std::string newStateName = "New State";
+				int suffix = 1;
+				while (m_AnimationStateMachine->ContainsState(newStateName))
+					newStateName = "New State " + std::to_string(suffix++);
+
+				auto& state = m_AnimationStateMachine->CreateState(newStateName);
+
+				// Set the newly created state's position to the converted canvas coordinates
+				state.NodePosition = { canvasPos.x, canvasPos.y };
+
+				// Mark the graph to rebuild and save
+				m_GraphNeedsRebuild = true;
+				m_IsDirty = true;
+				m_SaveCooldown = AUTO_SAVE_DELAY;
+
+				m_SelectedState = &state;
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void AnimationViewportViewer::RenderNodeContextMenu(ne::NodeId nodeId)
+	{
+		if (nodeId.Get() == Constants::InvalidUUID)
+			return;
+
+		if (ImGui::BeginPopup("NodeContextMenu"))
+		{
+			UUID nodeIdValue = static_cast<UUID>(nodeId.Get());
+
+			if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+			{
+				// Context menu for State Nodes
+				if (ImGui::MenuItem("Create Transition"))
+				{
+					EB_CORE_INFO("Creating transition");
+				}
+
+				if (ImGui::MenuItem("Delete State"))
+				{
+					DeleteNode(nodeIdValue);
+				}
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void AnimationViewportViewer::DeleteNode(UUID nodeId)
+	{
+		m_AnimationStateMachine->RemoveState(nodeId);
+		m_Nodes.erase(nodeId);
+		m_SelectedState = nullptr;
+
+		m_GraphNeedsRebuild = true;
+		MarkAnimationStateMachineDirty();
+	}
+
+	void AnimationViewportViewer::DeleteTransition(UUID transitionId)
+	{
+		m_AnimationStateMachine->RemoveTransition(transitionId);
+		m_Links.erase(transitionId);
+		m_SelectedTransition = nullptr;
+
+		m_GraphNeedsRebuild = true;
+		MarkAnimationStateMachineDirty();
 	}
 
 }

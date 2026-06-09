@@ -43,6 +43,7 @@ namespace Ember {
 
 	private:
 		void RebuildGraph();
+		void HandleHotkeys();
 		void DrawAllNodes();
 		void DrawStateNode(Node& node);
 		void DrawTransitionLink(Link& link);
@@ -53,6 +54,13 @@ namespace Ember {
 		void UpdateNodePositionFromUI(Node& node, Vector2f& nodeSavedPosition);
 
 		void CheckNodeSelected();
+
+		void RenderContextMenus();
+		void RenderDefaultContextMenu();
+		void RenderNodeContextMenu(ne::NodeId nodeId);
+
+		void DeleteNode(UUID nodeId);
+		void DeleteTransition(UUID transitionId);
 
 	private:
 		const uint64_t ENTRY_NODE_ID = 0xFFFFFFFFFFFFFFFE;
@@ -81,5 +89,7 @@ namespace Ember {
 
 		AnimationState* m_SelectedState = nullptr;
 		AnimationTransition* m_SelectedTransition = nullptr;
+
+		ne::NodeId m_NodePopupId = Constants::InvalidUUID;
 	};
 }

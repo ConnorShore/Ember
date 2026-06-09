@@ -19,17 +19,57 @@ namespace Ember {
 		AnimationStateMachine(const std::string& name, const std::string& filePath)
 			: AnimationStateMachine(UUID(), name, filePath) { }
 
-		void AddState(const AnimationState& state)
+		inline AnimationState& CreateState(const std::string& stateName)
+		{
+			AnimationState state(stateName);
+			m_States[state.Id] = state;
+			return m_States[state.Id];
+		}
+
+		inline void AddState(const AnimationState& state)
 		{
 			m_States[state.Id] = state;
 		}
 
-		void AddTransition(const AnimationTransition& transition)
+		inline void RemoveState(UUID stateId)
+		{
+			m_States.erase(stateId);
+			m_Transitions.erase(stateId);
+			for (auto& [fromStateId, transitions] : m_Transitions)
+			{
+				transitions.erase(
+					std::remove_if(transitions.begin(), transitions.end(),
+						[&stateId](const AnimationTransition& t) { return t.ToStateId == stateId; }),
+					transitions.end());
+			}
+		}
+
+		inline void AddTransition(const AnimationTransition& transition)
 		{
 			m_Transitions[transition.FromStateId].push_back(transition);
 		}
 
-		void RemoveTransition(UUID fromStateId, UUID toStateId)
+		inline void RemoveTransition(UUID transitionId)
+		{
+			for (auto& [fromStateId, transitions] : m_Transitions)
+			{
+				transitions.erase(
+					std::remove_if(transitions.begin(), transitions.end(),
+						[&transitionId](const AnimationTransition& t) { return t.Id == transitionId; }),
+					transitions.end());
+			}
+
+			// Clean up any empty transition lists
+			for (auto it = m_Transitions.begin(); it != m_Transitions.end(); )
+			{
+				if (it->second.empty())
+					it = m_Transitions.erase(it);
+				else
+					++it;
+			}
+		}
+
+		inline void RemoveTransition(UUID fromStateId, UUID toStateId)
 		{
 			auto it = m_Transitions.find(fromStateId);
 			if (it == m_Transitions.end())
@@ -45,15 +85,25 @@ namespace Ember {
 				m_Transitions.erase(it);
 		}
 
-		const UUID& GetDefaultState() const { return m_DefaultState; }
-		void SetDefaultState(const UUID& defaultState) { m_DefaultState = defaultState; }
+		inline const UUID& GetDefaultState() const { return m_DefaultState; }
+		inline void SetDefaultState(const UUID& defaultState) { m_DefaultState = defaultState; }
 
-		std::unordered_map<UUID, AnimationState>& GetStates() { return m_States; }
-		const std::unordered_map<UUID, AnimationState>& GetStates() const { return m_States; }
-		std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() { return m_Transitions; }
-		const std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
+		inline const bool ContainsState(const std::string& stateName) const
+		{
+			for (const auto& [id, state] : m_States)
+			{
+				if (state.Name == stateName)
+					return true;
+			}
+			return false;
+		}
 
-		AnimationTransition* GetTransitionById(UUID transitionId)
+		inline std::unordered_map<UUID, AnimationState>& GetStates() { return m_States; }
+		inline const std::unordered_map<UUID, AnimationState>& GetStates() const { return m_States; }
+		inline std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() { return m_Transitions; }
+		inline const std::unordered_map<UUID, std::vector<AnimationTransition>>& GetTransitions() const { return m_Transitions; }
+
+		inline AnimationTransition* GetTransitionById(UUID transitionId)
 		{
 			for (auto& [fromStateId, transitions] : m_Transitions)
 			{
@@ -66,27 +116,27 @@ namespace Ember {
 			return nullptr;
 		}
 
-		std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
-		const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
+		inline std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
+		inline const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
 
-		void AddParameter(const std::string& name, AnimationParameterType paramType)
+		inline void AddParameter(const std::string& name, AnimationParameterType paramType)
 		{
 			AnimationParameter parameter;
 			parameter.Type = paramType;
 			m_Parameters[name] = parameter;
 		}
 
-		void AddParameter(const std::string& name, const AnimationParameter& parameter)
+		inline void AddParameter(const std::string& name, const AnimationParameter& parameter)
 		{
 			m_Parameters[name] = parameter;
 		}
 
-		void RemoveParameter(const std::string& name)
+		inline void RemoveParameter(const std::string& name)
 		{
 			m_Parameters.erase(name);
 		}
 
-		static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
+		inline static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
 
 	public:
 		Vector2f EntryNodePosition = Vector2f(0.0f);

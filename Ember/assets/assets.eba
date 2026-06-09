@@ -60,17 +60,13 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
-    UUID: 16605421126880563658
-    Name: MuzzleFlash
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MuzzleFlash.lua
-  - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
-    UUID: 10753367411955256691
-    Name: WeaponHolder
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+    UUID: 15631423950997928565
+    Name: WeaponAiming
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponAiming.lua
   - Type: Script
     UUID: 1928101263865073231
     Name: PickupWeapon
@@ -87,6 +83,10 @@ Assets:
     UUID: 7847366610859754620
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/Tracer.lua
+  - Type: Script
+    UUID: 16605421126880563658
+    Name: MuzzleFlash
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MuzzleFlash.lua
   - Type: Script
     UUID: 16404415058251315788
     Name: WeaponFire
@@ -120,13 +120,13 @@ Assets:
     Name: PlayerController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
   - Type: Script
-    UUID: 15631423950997928565
-    Name: WeaponAiming
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponAiming.lua
-  - Type: Script
     UUID: 10843162672597406671
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
+  - Type: Script
+    UUID: 10753367411955256691
+    Name: WeaponHolder
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
   - Type: Script
     UUID: 17429251933582378423
     Name: AmmoUI
