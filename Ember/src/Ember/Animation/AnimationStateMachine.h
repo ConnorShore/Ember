@@ -44,6 +44,16 @@ namespace Ember {
 			}
 		}
 
+		inline AnimationTransition& CreateTransition(UUID fromStateId, UUID toStateId)
+		{
+			AnimationTransition transition;
+			transition.Id = UUID();
+			transition.FromStateId = fromStateId;
+			transition.ToStateId = toStateId;
+			m_Transitions[fromStateId].push_back(transition);
+			return m_Transitions[fromStateId].back();
+		}
+
 		inline void AddTransition(const AnimationTransition& transition)
 		{
 			m_Transitions[transition.FromStateId].push_back(transition);

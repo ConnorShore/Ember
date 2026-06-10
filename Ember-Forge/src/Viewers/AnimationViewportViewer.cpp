@@ -78,9 +78,16 @@ namespace Ember {
 
 		HandleHotkeys();
 		DrawAllNodes();
+		HandleInteractiveTransition();
 		RenderContextMenus();
 
 		ne::End();
+
+		if (m_InteractiveTransitionOrigin.Get() != Constants::InvalidUUID)
+		{
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			drawList->AddLine(m_InteractiveTransitionScreenStart, ImGui::GetMousePos(), IM_COL32(240, 120, 30, 255), 3.0f);
+		}
 
 		// See if any nodes have been selected
 		CheckNodeSelected();
@@ -95,8 +102,6 @@ namespace Ember {
 		{
 			if (m_SelectedState)
 				DeleteNode(m_SelectedState->Id);
-
-			// TODO: Maybe only delete through inspector (allow delete if not a two way connection?)
 			//else if (m_SelectedTransition)
 			//	DeleteTransition(m_SelectedTransition->Id);
 		}
@@ -460,13 +465,12 @@ namespace Ember {
 		if (ImGui::BeginPopup("NodeContextMenu"))
 		{
 			UUID nodeIdValue = static_cast<UUID>(nodeId.Get());
-
 			if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
 			{
 				// Context menu for State Nodes
 				if (ImGui::MenuItem("Create Transition"))
 				{
-					EB_CORE_INFO("Creating transition");
+					m_InteractiveTransitionOrigin = nodeId;
 				}
 
 				if (ImGui::MenuItem("Delete State"))
@@ -476,6 +480,52 @@ namespace Ember {
 			}
 
 			ImGui::EndPopup();
+		}
+	}
+
+	void AnimationViewportViewer::HandleInteractiveTransition()
+	{
+		// Bail out if we aren't actively drawing a transition
+		UUID originId = m_InteractiveTransitionOrigin.Get();
+		if (originId == Constants::InvalidUUID)
+			return;
+
+		// 1. Find the exact center of the Origin Node in Canvas space
+		ImVec2 nodePos = ne::GetNodePosition(m_InteractiveTransitionOrigin);
+		ImVec2 nodeSize = ne::GetNodeSize(m_InteractiveTransitionOrigin);
+		ImVec2 centerCanvasPos = ImVec2(nodePos.x + (nodeSize.x * 0.5f), nodePos.y + (nodeSize.y * 0.5f));
+
+		// 2. Convert to Screen space and cache it for the drawing phase outside ne::End()
+		m_InteractiveTransitionScreenStart = ne::CanvasToScreen(centerCanvasPos);
+
+		// 3. Handle Completion Click
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		{
+			ne::NodeId hoveredNodeId = ne::GetHoveredNode();
+			if (hoveredNodeId)
+			{
+				UUID targetId = static_cast<UUID>(hoveredNodeId.Get());
+
+				// Make sure we didn't click ourselves, and the target is a valid state
+				if (targetId != originId && m_AnimationStateMachine->GetStates().contains(targetId))
+				{
+					// Add the transition to the animation state machine
+					m_AnimationStateMachine->CreateTransition(originId, targetId);
+
+					m_GraphNeedsRebuild = true;
+					m_IsDirty = true;
+					m_SaveCooldown = AUTO_SAVE_DELAY;
+				}
+			}
+
+			// Regardless of whether they clicked a node or the background, exit the drawing state
+			m_InteractiveTransitionOrigin = Constants::InvalidUUID;
+		}
+
+		// 4. Handle Cancellation
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) || Input::IsKeyPressed(KeyCode::Escape))
+		{
+			m_InteractiveTransitionOrigin = Constants::InvalidUUID;
 		}
 	}
 

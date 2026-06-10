@@ -58,6 +58,7 @@ namespace Ember {
 		void RenderContextMenus();
 		void RenderDefaultContextMenu();
 		void RenderNodeContextMenu(ne::NodeId nodeId);
+		void HandleInteractiveTransition();
 
 		void DeleteNode(UUID nodeId);
 		void DeleteTransition(UUID transitionId);
@@ -91,5 +92,7 @@ namespace Ember {
 		AnimationTransition* m_SelectedTransition = nullptr;
 
 		ne::NodeId m_NodePopupId = Constants::InvalidUUID;
+		ne::NodeId m_InteractiveTransitionOrigin = Constants::InvalidUUID;
+		ImVec2 m_InteractiveTransitionScreenStart;
 	};
 }
