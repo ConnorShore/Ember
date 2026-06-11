@@ -30,6 +30,29 @@ namespace Ember {
 		void OnUpdate(TimeStep delta) override;
 		void OnImGuiRender(TimeStep delta) override;
 
+		// --- Public Access for Viewers ---
+		EditorContext& GetContext() { return m_Context; }
+		EditorCamera& GetCamera() { return m_Camera; }
+		SharedPtr<Framebuffer> GetOutputFramebuffer() { return m_OutputFramebuffer; }
+		SharedPtr<Framebuffer> GetCameraPreviewFramebuffer() { return m_CameraPreviewFramebuffer; }
+		ViewportGizmoController& GetViewportGizmos() { return m_ViewportGizmos; }
+		int GetGizmoType() const { return m_GizmoType; }
+
+		bool IsViewportHovered() const { return m_ViewportHovered; }
+		void SetViewportHovered(bool hovered) { m_ViewportHovered = hovered; }
+		bool IsViewportFocused() const { return m_ViewportFocused; }
+		void SetViewportFocused(bool focused) { m_ViewportFocused = focused; }
+
+		Vector2f GetViewportSize() const { return m_ViewportSize; }
+		void SetViewportSize(const Vector2f& size) { m_ViewportSize = size; }
+		void SetViewportBounds(const Vector2f& min, const Vector2f& max) { m_ViewportBounds[0] = min; m_ViewportBounds[1] = max; }
+		Vector2f* GetViewportBounds() { return m_ViewportBounds; }
+		void SetCameraPreviewViewportSize(const Vector2f& size) { m_CameraPreviewViewportSize = size; }
+
+		void CreateEntityFromModel(const std::string& modelFilePath);
+		void OpenPrefab(const std::string& prefabPath = "");
+		void OpenScene(const std::string& scenePath = "");
+
 	private:
 		void LoadDefaultAssets();
 
@@ -40,7 +63,6 @@ namespace Ember {
 
 		void RenderMenuBar();
 		void RenderSceneViewport();
-		void RenderActiveViewerViewport();
 		void RenderNewProjectPopup();
 		void RenderNewScenePopup();
 		void RenderWelcomePopup();
@@ -61,7 +83,6 @@ namespace Ember {
 		void RemovePendingEntities();
 		void RemovePendingComponents();
 
-		void CreateEntityFromModel(const std::string& modelFilePath);
 		void CreateEntityFromPrefab(const std::string& prefabFilePath);
 		void SyncEditorIconComponents(Scene* scene);
 
@@ -70,12 +91,12 @@ namespace Ember {
 		void NewProject();
 		void OpenProject();
 		void NewScene();
-		void OpenScene(const std::string& scenePath = "");
 		void SaveProject(bool saveAs = false);
-		void OpenPrefab(const std::string& prefabPath = "");
 		bool SaveOpenPrefab();
+		void OpenAnimationState(const std::string& path);
 		void HandleSceneOpenRequest();
 		void HandlePrefabOpenRequest();
+		void HandleAnimationOpenRequest();
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;
@@ -87,6 +108,7 @@ namespace Ember {
 		SharedPtr<Scene> LoadSceneForViewer(const std::string& scenePath);
 		void OpenSceneViewer(const std::string& scenePath);
 		void OpenPrefabViewer(const std::string& prefabPath);
+		void OpenAnimationViewer(const std::string& animationStatePath);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
@@ -140,7 +162,6 @@ namespace Ember {
 			return numErased > 0;
 		}
 
-
 	private:
 		const Entity m_InvalidEntity = Entity(Constants::Entities::InvalidEntityID, nullptr);
 
@@ -156,7 +177,7 @@ namespace Ember {
 		SharedPtr<Framebuffer> m_OutputFramebuffer;
 		SharedPtr<Framebuffer> m_CameraPreviewFramebuffer;
 
-		Vector2f m_ViewportBounds[2];	// Top Left and Bottom Right corners in screen space
+		Vector2f m_ViewportBounds[2];
 		Vector2f m_ViewportSize;
 		Vector2f m_CameraPreviewViewportSize = { 320.0f, 180.0f };
 
@@ -184,7 +205,7 @@ namespace Ember {
 
 		bool m_ShowNewScenePopup = false;
 		std::string m_NewSceneName = "";
-		
+
 		bool m_ShowProjectSettingsPopup = false;
 		ProjectSettingsDialog m_ProjectSettingsDialog;
 
@@ -204,5 +225,4 @@ namespace Ember {
 			uint32_t StopButtonTextureID;
 		} m_ToolbarProps;
 	};
-
 }

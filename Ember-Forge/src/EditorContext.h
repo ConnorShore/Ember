@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Viewers/EditorViewportViewer.h"
+
 #include <Ember/Core/Application.h>
 #include <Ember/Scene/Scene.h>
 #include <Ember/Scene/Entity.h>
@@ -25,12 +27,14 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
+		EditorViewportViewer* ActiveViewportViewer = nullptr;
 
 		bool IsEditingPrefab = false;
 		Entity PrefabRootEntity;
 		std::string ActivePrefabPath;
 		std::string RequestedSceneOpenPath;
 		std::string RequestedPrefabOpenPath;
+		std::string RequestAnimationStateOpenPath;
 
 		// Deferred removals: entities/components are queued during rendering and
 		// actually removed after the frame to avoid invalidating iterators.

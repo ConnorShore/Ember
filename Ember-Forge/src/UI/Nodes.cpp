@@ -112,6 +112,9 @@ namespace Ember {
 			if (removed && onRemoveFunc)
 			{
 				onRemoveFunc();
+
+				EndExpandableNode(); // Close the tree node immediately to avoid UI glitches after removal
+				return false;
 			}
 
 			return ret;

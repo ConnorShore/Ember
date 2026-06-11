@@ -16,3 +16,6 @@
 [submodule "Ember/vendor/reactphysics3d"]
 	path = Ember/vendor/reactphysics3d
 	url = https://github.com/ConnorShore/reactphysics3d.git
+[submodule "Ember-Forge/vendor/imgui-node-editor"]
+	path = Ember-Forge/vendor/imgui-node-editor
+	url = https://github.com/ConnorShore/imgui-node-editor.git

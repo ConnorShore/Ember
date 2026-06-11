@@ -2,6 +2,8 @@
 
 #include "System.h"
 
+#include "Ember/Asset/UUID.h"
+
 namespace Ember {
 
 	class Entity;
@@ -17,6 +19,7 @@ namespace Ember {
 		void OnUpdate(TimeStep delta, Scene* scene) override;
 
 		void SetAnimationToTimestamp(Scene* scene, UUID animationHandle, Entity entity, float timestamp);
+		void SetStateToTimestamp(Scene* scene, UUID stateId, Entity entity, float timestamp);
 	};
 
 }

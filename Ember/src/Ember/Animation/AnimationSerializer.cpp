@@ -1,5 +1,7 @@
 #include "ebpch.h"
+
 #include "AnimationSerializer.h"
+
 #include <fstream>
 
 namespace Ember {

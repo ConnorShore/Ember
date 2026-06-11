@@ -12,6 +12,11 @@
 
    multiprocessorcompile "On"
 
+   defines
+   {
+      "EB_EDITOR",
+   }
+
    files
    { 
       "src/**.h",
@@ -22,8 +27,10 @@
    {
       "src",
       "vendor/ImGuizmo",
+      "vendor/imgui-node-editor",
       "%{wks.location}/Ember/src",
       "%{wks.location}/Ember/vendor",
+      "%{wks.location}/Ember/vendor/imgui",
       "%{wks.location}/Ember/vendor/glm",
       "%{wks.location}/Ember/vendor/stb",
       "%{wks.location}/Ember/vendor/miniaudio",
@@ -41,7 +48,8 @@
       "Ember",
       "Ember-Runtime",
       "Ember-Tools",
-      "ImGuizmo"
+      "ImGuizmo",
+      "imgui-node-editor"
    }
 
    filter "system:windows"

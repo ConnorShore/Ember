@@ -8,7 +8,6 @@
 #include "MeshSerializer.h"
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
-#include "AnimationSerializer.h"
 #include "SkeletonSerializer.h"
 #include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
@@ -23,6 +22,8 @@
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
 #include "Ember/Render/Mesh.h"
+#include "Ember/Animation/AnimationSerializer.h"
+#include "Ember/Animation/AnimationStateMachineSerializer.h"
 
 #include <unordered_map>
 #include <concepts>
@@ -87,6 +88,8 @@ namespace Ember {
 				return ModelSerializer::Serialize(SharedPtr<Model>(DynamicPointerCast<Model>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, Animation>)
 				return AnimationSerializer::Serialize(SharedPtr<Animation>(DynamicPointerCast<Animation>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, AnimationStateMachine>)
+				return AnimationStateMachineSerializer::Serialize(absolutePath, SharedPtr<AnimationStateMachine>(DynamicPointerCast<AnimationStateMachine>(asset)));
 			else if constexpr (std::same_as<T, Skeleton>)
 				return SkeletonSerializer::Serialize(SharedPtr<Skeleton>(DynamicPointerCast<Skeleton>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
@@ -145,6 +148,8 @@ namespace Ember {
 				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Animation>)
 				newAsset = AnimationSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, AnimationStateMachine>)
+				newAsset = AnimationStateMachineSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, Skeleton>)
 				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)

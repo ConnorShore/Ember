@@ -1,5 +1,5 @@
 #include "efpch.h"
-#include "InspectorPanel.h"
+#include "SceneInspectorPanel.h"
 
 #include "ComponentUI/TransformComponentUI.h"
 #include "ComponentUI/CameraComponentUI.h"
@@ -35,36 +35,31 @@
 #include "ComponentUI/CanvasComponentUI.h"
 #include "ComponentUI/RectTransformComponentUI.h"
 
-#include <imgui/imgui.h>
-
-#include <format>
-#include <unordered_set>
-
 namespace Ember {
 
-	static std::string GetCategoryName(InspectorPanel::Category category)
+	static std::string GetCategoryName(SceneInspectorPanel::Category category)
 	{
 		switch (category)
 		{
-		case InspectorPanel::Category::Transform: return "Transform";
-		case InspectorPanel::Category::Rendering: return "Rendering";
-		case InspectorPanel::Category::Lighting: return "Lighting";
-		case InspectorPanel::Category::Camera: return "Camera";
-		case InspectorPanel::Category::Physics: return "Physics";
-		case InspectorPanel::Category::Audio: return "Audio";
-		case InspectorPanel::Category::Animation: return "Animation";
-		case InspectorPanel::Category::Scripting: return "Scripting";
-		case InspectorPanel::Category::AI: return "AI & Navigation";
-		case InspectorPanel::Category::UI: return "UI";
-		case InspectorPanel::Category::Gameplay: return "Gameplay";
-		case InspectorPanel::Category::Effects: return "Effects";
-		case InspectorPanel::Category::Miscellaneous: return "Miscellaneous";
+		case SceneInspectorPanel::Category::Transform: return "Transform";
+		case SceneInspectorPanel::Category::Rendering: return "Rendering";
+		case SceneInspectorPanel::Category::Lighting: return "Lighting";
+		case SceneInspectorPanel::Category::Camera: return "Camera";
+		case SceneInspectorPanel::Category::Physics: return "Physics";
+		case SceneInspectorPanel::Category::Audio: return "Audio";
+		case SceneInspectorPanel::Category::Animation: return "Animation";
+		case SceneInspectorPanel::Category::Scripting: return "Scripting";
+		case SceneInspectorPanel::Category::AI: return "AI & Navigation";
+		case SceneInspectorPanel::Category::UI: return "UI";
+		case SceneInspectorPanel::Category::Gameplay: return "Gameplay";
+		case SceneInspectorPanel::Category::Effects: return "Effects";
+		case SceneInspectorPanel::Category::Miscellaneous: return "Miscellaneous";
 		default: return "Unknown";
 		}
 	}
 
-	InspectorPanel::InspectorPanel(EditorContext* context)
-		: Panel("Inspector", context)
+	SceneInspectorPanel::SceneInspectorPanel(EditorContext* context)
+		: InspectorPanelContent(context)
 	{
 		// --- TRANSFORM ---
 		m_ComponentUIs[Category::Transform].emplace_back(ScopedPtr<TransformComponentUI>::Create(m_Context));
@@ -124,83 +119,65 @@ namespace Ember {
 		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<CanvasComponentUI>::Create(m_Context));
 	}
 
-	InspectorPanel::~InspectorPanel()
+	SceneInspectorPanel::~SceneInspectorPanel()
 	{
 	}
 
-	void InspectorPanel::OnEvent(Event& event)
-	{
-	}
-
-	void InspectorPanel::OnImGuiRender()
+	void SceneInspectorPanel::OnImGuiRender()
 	{
 		auto activeScene = m_Context->ActiveScene();
 		Entity entity = activeScene ? activeScene->GetEntityByHandle(m_Context->SelectedEntity.GetEntityHandle()) : Entity();
 		if (entity == Constants::Entities::InvalidEntityID)
 		{
-			m_Context->SelectedEntity = Entity();
-
 			// Blank panel if no entity selected
-			ImGui::Begin(m_Title.c_str());
 			ImGui::Text("Select an Entity to inspect properties");
-			ImGui::End();
 			return;
 		}
 
-		m_Context->SelectedEntity = entity;
-
+		bool isActive = !entity.ContainsComponent<DisabledComponent>();
+		if (ImGui::Checkbox("##Active", &isActive))
 		{
-			ImGui::Begin(m_Title.c_str());
-
-			bool isActive = !entity.ContainsComponent<DisabledComponent>();
-			if (ImGui::Checkbox("##Active", &isActive))
+			if (isActive)
 			{
-				if (isActive)
-				{
-					if (entity.ContainsComponent<DisabledComponent>())
-						entity.DetachComponent<DisabledComponent>();
+				if (entity.ContainsComponent<DisabledComponent>())
+					entity.DetachComponent<DisabledComponent>();
 
-					for (auto& child : entity.GetAllChildren())
-					{
-						if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<DisabledComponent>())
-							child.DetachComponent<DisabledComponent>();
-					}
-				}
-				else
+				for (auto& child : entity.GetAllChildren())
 				{
-					if (!entity.ContainsComponent<DisabledComponent>())
-						entity.AttachComponent<DisabledComponent>();
-
-					for (auto& child : entity.GetAllChildren())
-					{
-						if (child != Constants::Entities::InvalidEntityID && !child.ContainsComponent<DisabledComponent>())
-							child.AttachComponent<DisabledComponent>();
-					}
+					if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<DisabledComponent>())
+						child.DetachComponent<DisabledComponent>();
 				}
 			}
-
-			ImGui::SameLine();
-
-			// Entity Header
-			DrawEntityHeader(entity);
-
-			ImGui::Separator();
-
-			// --- SCROLLABLE REGION ---
-
-			// Create a child region that takes up the remaining width and height (ImVec2(0, 0))
-			// The false parameter means it won't draw a border around the child region
-			if (ImGui::BeginChild("ComponentRegion", ImVec2(0, 0), false, ImGuiWindowFlags_None))
+			else
 			{
-				RenderEntityComponents(entity);
-			}
-			ImGui::EndChild(); // End the scrollable region
+				if (!entity.ContainsComponent<DisabledComponent>())
+					entity.AttachComponent<DisabledComponent>();
 
-			ImGui::End(); // End the main Inspector window
+				for (auto& child : entity.GetAllChildren())
+				{
+					if (child != Constants::Entities::InvalidEntityID && !child.ContainsComponent<DisabledComponent>())
+						child.AttachComponent<DisabledComponent>();
+				}
+			}
 		}
+
+		ImGui::SameLine();
+
+		// Entity Header
+		DrawEntityHeader(entity);
+
+		ImGui::Separator();
+
+		// --- SCROLLABLE REGION ---
+
+		// Create a child region that takes up the remaining width and height (ImVec2(0, 0))
+		// The false parameter means it won't draw a border around the child region
+		if (ImGui::BeginChild("ComponentRegion", ImVec2(0, 0), false, ImGuiWindowFlags_None))
+			RenderEntityComponents(entity);
+		ImGui::EndChild(); // End the scrollable region
 	}
 
-	void InspectorPanel::DrawEntityHeader(Entity entity)
+	void SceneInspectorPanel::DrawEntityHeader(Entity entity)
 	{
 		if (UI::PropertyGrid::Begin("EntityHeader"))
 		{
@@ -231,7 +208,7 @@ namespace Ember {
 		}
 	}
 
-	void InspectorPanel::RenderEntityComponents(Entity entity)
+	void SceneInspectorPanel::RenderEntityComponents(Entity entity)
 	{
 		ComponentType transformComponentType = entity.GetComponentType<TransformComponent>();
 		bool hasRectTransform = entity.ContainsComponent<RectTransformComponent>();
@@ -270,7 +247,7 @@ namespace Ember {
 		}
 	}
 
-	ComponentUIBase* InspectorPanel::FindComponentUI(ComponentType componentType, Entity entity) const
+	ComponentUIBase* SceneInspectorPanel::FindComponentUI(ComponentType componentType, Entity entity) const
 	{
 		for (auto& [category, components] : m_ComponentUIs)
 		{

@@ -90,6 +90,9 @@ namespace Ember {
 			BOOL useDarkMode = TRUE;
 			DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 
+			if (config.StartMaximized)
+				glfwMaximizeWindow(m_Window);
+
 			// Create graphics context
 			m_GraphicsContext = GraphicsContext::Create(m_Window);
 			m_GraphicsContext->Init();

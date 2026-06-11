@@ -6,9 +6,9 @@
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Material.h"
-#include "Ember/Asset/Animation.h"
 #include "Ember/Asset/Model.h"
 #include "Ember/Asset/Skeleton.h"
+#include "Ember/Animation/Animation.h"
 
 namespace Ember {
 

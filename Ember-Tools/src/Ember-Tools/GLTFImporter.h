@@ -2,7 +2,7 @@
 
 #include <Ember/Asset/Model.h>
 #include <Ember/Asset/Skeleton.h>
-#include <Ember/Asset/Animation.h>
+#include <Ember/Animation/Animation.h>
 #include <Ember/Render/SkinnedMesh.h>
 
 #include <string>

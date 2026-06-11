@@ -18,6 +18,7 @@
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
 #include "Ember/AI/NavNode.h"
+#include "Ember/Animation/AnimationBlackboard.h"
 
 #include <sol/sol.hpp>
 
@@ -645,67 +646,42 @@ namespace Ember {
 	struct AnimatorComponent
 	{
 		UUID SkeletonHandle = Constants::InvalidUUID;
-		UUID CurrentAnimationHandle = Constants::InvalidUUID;
+		UUID AnimationStateMachineHandle = Constants::InvalidUUID;
 
-		// Runtime data
+		// Blackboard data for the Animation State Machine
+		AnimationBlackboard Blackboard;
+
+		// Runtime Graph State
+		UUID CurrentStateId = Constants::InvalidUUID;
+		UUID PreviousStateId = Constants::InvalidUUID;
+
+		// Runtime data (for current entity)
 		TimeStep CurrentTime = 0.0f;
 		TimeStep PreviousTime = 0.0f;
-		float PlaybackSpeed = 1.0f;
-		bool IsPlaying = true;
-		bool Loop = true;
-
-		// Blending
-		UUID PreviousAnimationHandle = Constants::InvalidUUID;
-		float BlendDuration = 0.0f;
 		float CurrentBlendTime = 0.0f;
+		float ActiveBlendDuration = 0.0f;
+		bool IsBlending = false;
 
 		// Caches
 		std::vector<Matrix4f> BonePoseMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 		std::vector<Matrix4f> BoneMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
 
-		void PlayAnimation(const std::string& name, float playbackSpeed = 1.0f, float blendDuration = 0.0f)
+		void SetFloat(const std::string& name, float value)
 		{
-			PlaybackSpeed = playbackSpeed;
-			Loop = false;
-			CrossfadeToAnimation(name, blendDuration);
+			Blackboard.SetFloat(name, value);
 		}
 
-		void PlayLoopAnimation(const std::string& name, float playbackSpeed = 1.0f, float blendDuration = 0.0f)
+		void SetBool(const std::string& name, bool value)
 		{
-			PlaybackSpeed = playbackSpeed;
-			Loop = true;
-			CrossfadeToAnimation(name, blendDuration);
+			Blackboard.SetBool(name, value);
 		}
 
-		void CrossfadeToAnimation(const std::string& name, float blendDuration)
+		void SetInt(const std::string& name, int32_t value)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-			auto animationAsset = assetManager.GetAsset<Animation>(name);
-			UUID targetAnim = animationAsset ? animationAsset->GetUUID() : (UUID)Constants::InvalidUUID;
-			if (CurrentAnimationHandle == targetAnim || targetAnim == Constants::InvalidUUID)
-				return;
-
-			CurrentAnimationHandle = targetAnim;
-			if (CurrentAnimationHandle == Constants::InvalidUUID)
-			{
-				CurrentAnimationHandle = targetAnim;
-				CurrentTime = 0.0f;
-				IsPlaying = true;
-				return;
-			}
-
-			PreviousAnimationHandle = CurrentAnimationHandle;
-			PreviousTime = CurrentTime;
-			CurrentAnimationHandle = targetAnim;
-			CurrentTime = 0.0f;
-			BlendDuration = blendDuration;
-			CurrentBlendTime = 0.0f;
-			IsPlaying = true;
+			Blackboard.SetInt(name, value);
 		}
 
 		AnimatorComponent() = default;
-		AnimatorComponent(UUID skeletonUUID, UUID animationUUID)
-			: SkeletonHandle(skeletonUUID), CurrentAnimationHandle(animationUUID) {}
 		AnimatorComponent(const AnimatorComponent&) = default;
 	};
 

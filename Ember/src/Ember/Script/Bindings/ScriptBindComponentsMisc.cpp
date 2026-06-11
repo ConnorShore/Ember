@@ -6,33 +6,23 @@ namespace Ember {
 	void BindMiscComponents(sol::state& state)
 	{
 		state.new_usertype<AnimatorComponent>("AnimatorComponent",
-			"CurrentAnimationHandle", &AnimatorComponent::CurrentAnimationHandle,
+			"SkeletonHandle", &AnimatorComponent::SkeletonHandle,
+			"AnimationStateMachineHandle", &AnimatorComponent::AnimationStateMachineHandle,
+			"CurrentStateId", &AnimatorComponent::CurrentStateId,
+			"PreviousStateId", &AnimatorComponent::PreviousStateId,
 			"CurrentTime", sol::property(
-				[](AnimatorComponent& c) { return (float)c.CurrentTime; },
+				[](AnimatorComponent& c) { return c.CurrentTime.Seconds(); },
 				[](AnimatorComponent& c, float time) { c.CurrentTime = time; }
 			),
-			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
-			"IsPlaying", &AnimatorComponent::IsPlaying,
-			"Loop", &AnimatorComponent::Loop,
-			"Crossfade", sol::overload(
-				[](AnimatorComponent& c, const std::string& name, float blendDuration) { c.CrossfadeToAnimation(name, blendDuration); },
-				[](AnimatorComponent& c, const std::string& name) { c.CrossfadeToAnimation(name, 0.0f); },
-				[](AnimatorComponent& c, UUID targetAnim, float blendDuration) { 
-					auto& assetManager = Application::Instance().GetAssetManager();
-					auto animationAsset = assetManager.GetAsset<Animation>(targetAnim);
-					c.CrossfadeToAnimation(animationAsset ? animationAsset->GetName() : "", blendDuration);
-				}
+			"PreviousTime", sol::property(
+				[](AnimatorComponent& c) { return c.PreviousTime.Seconds(); },
+				[](AnimatorComponent& c, float time) { c.PreviousTime = time; }
 			),
-			"Play", sol::overload(
-				[](AnimatorComponent& c, const std::string& name) { c.PlayAnimation(name);  },
-				[](AnimatorComponent& c, const std::string& name, float playbackSpeed) { c.PlayAnimation(name, playbackSpeed); },
-				[](AnimatorComponent& c, const std::string& name, float playbackSpeed, float blendDuration) { c.PlayAnimation(name, playbackSpeed, blendDuration); }
-			),
-			"PlayLoop", sol::overload(
-				[](AnimatorComponent& c, const std::string& name) { c.PlayLoopAnimation(name);  },
-				[](AnimatorComponent& c, const std::string& name, float playbackSpeed) { c.PlayLoopAnimation(name, playbackSpeed); },
-				[](AnimatorComponent& c, const std::string& name, float playbackSpeed, float blendDuration) { c.PlayLoopAnimation(name, playbackSpeed, blendDuration); }
-			)
+			"CurrentBlendTime", &AnimatorComponent::CurrentBlendTime,
+			"ActiveBlendDuration", &AnimatorComponent::ActiveBlendDuration,
+			"IsBlending", &AnimatorComponent::IsBlending,
+			"SetFloat", &AnimatorComponent::SetFloat,
+			"SetBool", &AnimatorComponent::SetBool
 		);
 
 		state.new_usertype<BoneSocketComponent>("BoneSocketComponent",

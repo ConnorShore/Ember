@@ -1,17 +1,17 @@
 #pragma once
 
-#include "Panel.h"
-
-#include "ComponentUI/ComponentUI.h"
-
-#include <map>
-#include <vector>
-#include <string>
+#include "InspectorPanel.h"
 
 namespace Ember {
 
-	class InspectorPanel : public Panel
+	class SceneInspectorPanel : public InspectorPanelContent
 	{
+	public:
+		SceneInspectorPanel(EditorContext* context);
+		virtual ~SceneInspectorPanel();
+
+		virtual void OnImGuiRender() override;
+
 	public:
 		enum class Category
 		{
@@ -30,13 +30,6 @@ namespace Ember {
 			Miscellaneous
 		};
 
-	public:
-		InspectorPanel(EditorContext* context);
-		virtual ~InspectorPanel();
-
-		void OnEvent(Event& event) override;
-		void OnImGuiRender() override;
-
 	private:
 		void DrawEntityHeader(Entity entity);
 		void RenderEntityComponents(Entity entity);
@@ -45,4 +38,5 @@ namespace Ember {
 	private:
 		std::map<Category, std::vector<ScopedPtr<ComponentUIBase>>> m_ComponentUIs;
 	};
+
 }

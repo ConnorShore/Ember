@@ -24,6 +24,8 @@ namespace Ember {
 		bool InputText(const std::string& label, std::string& value);
 		bool DirectoryInput(const std::string& label, std::string& directoryPath, UICallbackFunc browseFunc);
 
+		void LabelWithValue(const std::string& label, const std::string& value);
+
 		// Property Grid Widgets
 		bool SliderInt(const std::string& label, int& value, int min = 0, int max = 0);
 		bool SliderFloat(const std::string& label, float& value, float min = 0.0f, float max = 0.0f);

@@ -1,23 +1,10 @@
 #include "efpch.h"
-
 #include "EditorViewportTabs.h"
+#include "EditorLayer.h"
+
+#include <Ember/Animation/AnimationStateMachine.h>
 
 namespace Ember {
-
-	EditorViewportViewer::EditorViewportViewer(Type type, SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
-		: m_Type(type), m_Scene(scene), m_FilePath(filePath), m_Title(title)
-	{
-	}
-
-	SceneViewportViewer::SceneViewportViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
-		: EditorViewportViewer(Type::Scene, scene, filePath, title)
-	{
-	}
-
-	PrefabViewportViewer::PrefabViewportViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title)
-		: EditorViewportViewer(Type::Prefab, scene, filePath, title), PrefabAsset(prefab), RootEntity(rootEntity)
-	{
-	}
 
 	std::filesystem::path EditorViewportTabs::NormalizedPath(const std::string& path)
 	{
@@ -45,7 +32,22 @@ namespace Ember {
 		return title.empty() ? fallback : title;
 	}
 
-	bool EditorViewportTabs::Render(const RenderActiveViewerCallback& renderActiveViewer, const ActivateViewerCallback& activateViewer, const CloseViewerCallback& closeViewer)
+	void EditorViewportTabs::OnUpdate(TimeStep delta, EditorLayer* editor)
+	{
+		//for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++)
+		//{
+		//	auto& viewer = *m_Viewers[viewerIndex];
+		//	viewer.OnUpdate(delta, editor);
+		//}
+
+		// Update active viewer tab only
+		if (m_ActiveViewerIndex < 0 || m_ActiveViewerIndex >= m_Viewers.size())
+			return;
+
+		m_Viewers[m_ActiveViewerIndex]->OnUpdate(delta, editor);
+	}
+
+	bool EditorViewportTabs::Render(EditorLayer* editor, const ActivateViewerCallback& activateViewer, const CloseViewerCallback& closeViewer)
 	{
 		ImGuiWindowClass windowClass;
 		windowClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
@@ -55,6 +57,9 @@ namespace Ember {
 
 		if (m_Viewers.empty())
 		{
+			//editor->GetContext().ActiveViewportType = EditorViewportViewer::Type::None;
+			editor->GetContext().ActiveViewportViewer = nullptr;
+
 			ImGui::TextDisabled("No scene or prefab open.");
 			ImGui::End();
 			return false;
@@ -79,7 +84,19 @@ namespace Ember {
 
 					if (tabOpen)
 					{
-						renderActiveViewer();
+						// If first frame tab is opened, call viewer.OnOpen()
+						// TODO: Get this working
+						if (viewerIndex != m_ActiveTabIndex)
+						{
+							viewer.OnOpen(editor);
+							m_ActiveTabIndex = static_cast<uint8_t>(viewerIndex);
+						}
+
+						// Give the concrete viewer control over its own ImGui render pass
+						//editor->GetContext().ActiveViewportType = viewer.GetType();
+						editor->GetContext().ActiveViewportViewer = &viewer;
+
+						viewer.OnImGuiRender(editor);
 						renderedActiveTab = true;
 					}
 
@@ -103,79 +120,66 @@ namespace Ember {
 
 	size_t EditorViewportTabs::AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(std::make_unique<SceneViewportViewer>(scene, filePath, title));
+		m_Viewers.push_back(ScopedPtr<SceneViewportViewer>::Create(scene, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 
 	size_t EditorViewportTabs::AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(std::make_unique<PrefabViewportViewer>(scene, prefab, rootEntity, filePath, title));
+		m_Viewers.push_back(ScopedPtr<PrefabViewportViewer>::Create(scene, prefab, rootEntity, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 
-	EditorViewportViewer* EditorViewportTabs::GetActiveViewer()
+	size_t EditorViewportTabs::AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
 	{
-		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size())
-			return nullptr;
-
-		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].get();
+		m_Viewers.push_back(ScopedPtr<AnimationViewportViewer>::Create(scene, animationStateMachine, filePath, title));
+		return m_Viewers.size() - 1;
 	}
 
-	const EditorViewportViewer* EditorViewportTabs::GetActiveViewer() const
-	{
-		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size())
-			return nullptr;
+	// [The rest of EditorViewportTabs.cpp remains identical for GetActiveViewer, ActivateViewer, CloseViewer, etc.]
 
-		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].get();
+	EditorViewportViewer* EditorViewportTabs::GetActiveViewer() {
+		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size()) return nullptr;
+		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].Ptr();
 	}
 
-	EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex)
-	{
-		if (viewerIndex >= m_Viewers.size())
-			return nullptr;
-
-		return m_Viewers[viewerIndex].get();
+	const EditorViewportViewer* EditorViewportTabs::GetActiveViewer() const {
+		if (m_ActiveViewerIndex < 0 || static_cast<size_t>(m_ActiveViewerIndex) >= m_Viewers.size()) return nullptr;
+		return m_Viewers[static_cast<size_t>(m_ActiveViewerIndex)].Ptr();
 	}
 
-	const EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex) const
-	{
-		if (viewerIndex >= m_Viewers.size())
-			return nullptr;
-
-		return m_Viewers[viewerIndex].get();
+	EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex) {
+		if (viewerIndex >= m_Viewers.size()) return nullptr;
+		return m_Viewers[viewerIndex].Ptr();
 	}
 
-	int EditorViewportTabs::FindViewer(EditorViewportViewer::Type type, const std::string& filePath) const
-	{
-		for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++)
-		{
+	const EditorViewportViewer* EditorViewportTabs::GetViewer(size_t viewerIndex) const {
+		if (viewerIndex >= m_Viewers.size()) return nullptr;
+		return m_Viewers[viewerIndex].Ptr();
+	}
+
+	int EditorViewportTabs::FindViewer(EditorViewportViewer::Type type, const std::string& filePath) const {
+		for (size_t viewerIndex = 0; viewerIndex < m_Viewers.size(); viewerIndex++) {
 			const auto& viewer = *m_Viewers[viewerIndex];
 			if (viewer.GetType() == type && PathsMatch(viewer.GetFilePath(), filePath))
 				return static_cast<int>(viewerIndex);
 		}
-
 		return -1;
 	}
 
-	void EditorViewportTabs::StoreViewerState(size_t viewerIndex, Entity selectedEntity, Entity previousSelectedEntity)
-	{
-		if (EditorViewportViewer* viewer = GetViewer(viewerIndex))
-		{
+	void EditorViewportTabs::StoreViewerState(size_t viewerIndex, Entity selectedEntity, Entity previousSelectedEntity) {
+		if (EditorViewportViewer* viewer = GetViewer(viewerIndex)) {
 			viewer->SelectedEntity = selectedEntity;
 			viewer->PreviousSelectedEntity = previousSelectedEntity;
 		}
 	}
 
-	void EditorViewportTabs::StoreActiveViewerState(Entity selectedEntity, Entity previousSelectedEntity)
-	{
-		if (m_ActiveViewerIndex < 0)
-			return;
-
+	void EditorViewportTabs::StoreActiveViewerState(Entity selectedEntity, Entity previousSelectedEntity) {
+		if (m_ActiveViewerIndex < 0) return;
 		StoreViewerState(static_cast<size_t>(m_ActiveViewerIndex), selectedEntity, previousSelectedEntity);
 	}
 
-	void EditorViewportTabs::ActivateViewer(size_t viewerIndex, const ActivateViewerCallback& activateViewer)
-	{
+	void EditorViewportTabs::ActivateViewer(size_t viewerIndex, const ActivateViewerCallback& activateViewer) {
 		if (viewerIndex >= m_Viewers.size())
 			return;
 
@@ -185,8 +189,7 @@ namespace Ember {
 		activateViewer(previousViewerIndex, viewerIndex, *m_Viewers[viewerIndex]);
 	}
 
-	bool EditorViewportTabs::CloseViewer(size_t viewerIndex, bool saveBeforeClose, const CloseViewerCallback& closeViewer, const ActivateViewerCallback& activateViewer)
-	{
+	bool EditorViewportTabs::CloseViewer(size_t viewerIndex, bool saveBeforeClose, const CloseViewerCallback& closeViewer, const ActivateViewerCallback& activateViewer) {
 		if (viewerIndex >= m_Viewers.size())
 			return true;
 
@@ -195,42 +198,29 @@ namespace Ember {
 
 		bool closedActiveViewer = static_cast<int>(viewerIndex) == m_ActiveViewerIndex;
 		m_Viewers.erase(m_Viewers.begin() + static_cast<std::ptrdiff_t>(viewerIndex));
-
-		if (m_Viewers.empty())
-		{
+		if (m_Viewers.empty()) 
+		{ 
 			m_ActiveViewerIndex = -1;
-			return true;
+			return true; 
 		}
 
-		if (closedActiveViewer)
+		if (closedActiveViewer) 
 		{
 			m_ActiveViewerIndex = -1;
 			ActivateViewer(std::min(viewerIndex, m_Viewers.size() - 1), activateViewer);
 		}
 		else if (static_cast<int>(viewerIndex) < m_ActiveViewerIndex)
-		{
 			m_ActiveViewerIndex--;
-		}
 
 		return true;
 	}
 
-	bool EditorViewportTabs::CloseAllViewers(bool savePrefabs, const CloseViewerCallback& closeViewer, const ActivateViewerCallback& activateViewer)
-	{
-		while (!m_Viewers.empty())
-		{
-			if (!CloseViewer(0, savePrefabs, closeViewer, activateViewer))
-				return false;
-		}
-
+	bool EditorViewportTabs::CloseAllViewers(bool savePrefabs, const CloseViewerCallback& closeViewer, const ActivateViewerCallback& activateViewer) {
+		while (!m_Viewers.empty()) { if (!CloseViewer(0, savePrefabs, closeViewer, activateViewer)) return false; }
 		return true;
 	}
 
-	void EditorViewportTabs::Clear()
-	{
-		m_Viewers.clear();
-		m_ActiveViewerIndex = -1;
-		m_SyncActiveViewerSelection = false;
+	void EditorViewportTabs::Clear() {
+		m_Viewers.clear(); m_ActiveViewerIndex = -1; m_SyncActiveViewerSelection = false;
 	}
-
 }

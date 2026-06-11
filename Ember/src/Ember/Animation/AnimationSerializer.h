@@ -1,6 +1,7 @@
 #pragma once
+
 #include "Ember/Core/Core.h"
-#include "Ember/Asset/Animation.h"
+#include "Ember/Animation/Animation.h"
 
 namespace Ember {
 

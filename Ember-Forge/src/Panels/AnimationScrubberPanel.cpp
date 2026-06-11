@@ -2,7 +2,7 @@
 #include "AnimationScrubberPanel.h"
 
 #include <Ember/Core/Application.h>
-#include <Ember/Asset/AnimationEvent.h>
+#include <Ember/Animation/AnimationEvent.h>
 #include <Ember/ECS/System/AnimationSystem.h>
 
 #include <imgui/imgui.h>

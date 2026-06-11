@@ -6,7 +6,7 @@
 #include <Ember/Asset/MeshSerializer.h>
 #include <Ember/Asset/MaterialSerializer.h>
 #include <Ember/Asset/SkeletonSerializer.h>
-#include <Ember/Asset/AnimationSerializer.h>
+#include <Ember/Animation/AnimationSerializer.h>
 
 #include <filesystem>
 #include <fstream>
