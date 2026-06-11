@@ -1,11 +1,9 @@
 #pragma once
 #include "EditorViewportViewer.h"
 #include "GraphNodes.h"
-
 #include <Ember/Animation/AnimationStateMachine.h>
 #include <Ember/Animation/AnimationTransition.h>
 #include <imgui_node_editor.h>
-
 #include <unordered_map>
 #include <string>
 
@@ -28,6 +26,8 @@ namespace Ember {
 		virtual void OnImGuiRender(EditorLayer* editor) override;
 
 		void SaveAnimationStateMachine(EditorLayer* editor);
+		void DeleteNode(UUID nodeId);
+		void DeleteTransition(UUID transitionId);
 
 		inline void MarkAnimationStateMachineDirty()
 		{
@@ -36,6 +36,12 @@ namespace Ember {
 		}
 
 		inline void RenameNode(UUID stateId, const std::string& name) { m_Nodes[stateId].Name = name.c_str(); }
+
+		void SetSelectedTransition(AnimationTransition* transition)
+		{
+			m_SelectedTransition = transition;
+			m_SelectedState = nullptr;
+		}
 
 		inline AnimationState* GetSelectedState() { return m_SelectedState; }
 		inline AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
@@ -47,6 +53,7 @@ namespace Ember {
 		void DrawAllNodes();
 		void DrawStateNode(Node& node);
 		void DrawTransitionLink(Link& link);
+		void StartTransitionCreation(ne::NodeId originNodeId);
 
 		void DrawStartState();
 		void DrawEndState();
@@ -55,13 +62,11 @@ namespace Ember {
 
 		void CheckNodeSelected();
 
-		void RenderContextMenus();
+		void HandleContextMenuQueries();
 		void RenderDefaultContextMenu();
 		void RenderNodeContextMenu(ne::NodeId nodeId);
+		void RenderLinkContextMenu(ne::LinkId linkId);
 		void HandleInteractiveTransition();
-
-		void DeleteNode(UUID nodeId);
-		void DeleteTransition(UUID transitionId);
 
 	private:
 		const uint64_t ENTRY_NODE_ID = 0xFFFFFFFFFFFFFFFE;
@@ -91,8 +96,18 @@ namespace Ember {
 		AnimationState* m_SelectedState = nullptr;
 		AnimationTransition* m_SelectedTransition = nullptr;
 
-		ne::NodeId m_NodePopupId = Constants::InvalidUUID;
-		ne::NodeId m_InteractiveTransitionOrigin = Constants::InvalidUUID;
+		UUID m_InteractiveTransitionOrigin = Constants::InvalidUUID;
 		ImVec2 m_InteractiveTransitionScreenStart;
+
+		// Context Menu Data
+		ne::NodeId m_NodePopupId = 0;
+		ne::LinkId m_LinkPopupId = 0;
+		ImVec2 m_ContextPopupMousePos;
+		ImVec2 m_ContextPopupCanvasPos;
+
+		// Deferred Popup Triggers
+		bool m_RequestDefaultContextMenu = false;
+		bool m_RequestNodeContextMenu = false;
+		bool m_RequestLinkContextMenu = false;
 	};
 }

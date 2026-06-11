@@ -109,8 +109,11 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderAnimationState(AnimationState* animState)
 	{
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
 		std::string nodeLabel = std::format("Animation State: {}###AnimStateNode_{}", animState->Name, animState->Id);
-		if (UI::Nodes::BeginExpandableNode(nodeLabel))
+		if (UI::Nodes::BeginRemoveableExpandableNode(nodeLabel, [&]() {
+			animationViewport->DeleteNode(animState->Id);
+			}))
 		{
 			if (UI::PropertyGrid::Begin("AnimStateProps"))
 			{
@@ -169,7 +172,47 @@ namespace Ember {
 		std::string toStateName = getStateName(animTransition->ToStateId);
 		std::string nodeLabel = std::format("Transition: {} -> {}###AnimTrans_{}", fromStateName, toStateName, animTransition->Id);
 
-		if (UI::Nodes::BeginExpandableNode(nodeLabel))
+		// Helper lambda to check if this transition has a corresponding reverse transition (two way link)
+		auto isTwoWayTransition = [&]() -> bool {
+			if (animTransition->FromStateId != Constants::InvalidUUID && animTransition->ToStateId != Constants::InvalidUUID)
+			{
+				auto toIdTransitionsIt = stateMachine->GetTransitions().find(animTransition->ToStateId);
+				if (toIdTransitionsIt != stateMachine->GetTransitions().end())
+				{
+					for (auto& transition : toIdTransitionsIt->second)
+					{
+						if (transition.ToStateId == animTransition->FromStateId)
+						{
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+			}();
+
+		auto setTwoWaySelectedTransition = [&](UUID toBeDeletedId)
+			{
+				// If the deleted transition is part of a two way link, select the other transition after deletion to keep the inspector populated
+				auto toIdTransitionsIt = stateMachine->GetTransitions().find(animTransition->ToStateId);
+				for (auto& transition : toIdTransitionsIt->second)
+				{
+					if (transition.ToStateId == animTransition->FromStateId && transition.Id != toBeDeletedId)
+					{
+						animationViewport->SetSelectedTransition(&transition);
+						break;
+					}
+				}
+			};
+
+		if (UI::Nodes::BeginRemoveableExpandableNode(nodeLabel, [&]() {
+			// Remove the transition from the state machine
+			animationViewport->DeleteTransition(animTransition->Id);
+
+			// If the deleted transition was part of a two way link, select the other transition after deletion to keep the inspector populated
+			if (isTwoWayTransition)
+				setTwoWaySelectedTransition(animTransition->Id);
+			}))
 		{
 			RenderTransitionConditions(animTransition);
 			UI::Nodes::EndExpandableNode();
