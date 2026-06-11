@@ -85,16 +85,19 @@ namespace Ember {
 
 		if (selectedTransition)
 		{
+			const UUID selectedFromStateId = selectedTransition->FromStateId;
+			const UUID selectedToStateId = selectedTransition->ToStateId;
+
 			RenderAnimationTransition(selectedTransition);
 
 			// Render reverse transition if it exists
 			auto stateMachine = animationViewport->GetAnimationStateMachine();
-			auto toIdTransitionsIt = stateMachine->GetTransitions().find(selectedTransition->ToStateId);
+			auto toIdTransitionsIt = stateMachine->GetTransitions().find(selectedToStateId);
 			if (toIdTransitionsIt != stateMachine->GetTransitions().end())
 			{
 				for (auto& transition : toIdTransitionsIt->second)
 				{
-					if (transition.ToStateId == selectedTransition->FromStateId)
+					if (transition.ToStateId == selectedFromStateId)
 					{
 						RenderAnimationTransition(&transition);
 						break;
@@ -172,16 +175,20 @@ namespace Ember {
 		std::string toStateName = getStateName(animTransition->ToStateId);
 		std::string nodeLabel = std::format("Transition: {} -> {}###AnimTrans_{}", fromStateName, toStateName, animTransition->Id);
 
+		const UUID fromStateId = animTransition->FromStateId;
+		const UUID toStateId = animTransition->ToStateId;
+		const UUID transitionId = animTransition->Id;
+
 		// Helper lambda to check if this transition has a corresponding reverse transition (two way link)
 		auto isTwoWayTransition = [&]() -> bool {
-			if (animTransition->FromStateId != Constants::InvalidUUID && animTransition->ToStateId != Constants::InvalidUUID)
+			if (fromStateId != Constants::InvalidUUID && toStateId != Constants::InvalidUUID)
 			{
-				auto toIdTransitionsIt = stateMachine->GetTransitions().find(animTransition->ToStateId);
+				auto toIdTransitionsIt = stateMachine->GetTransitions().find(toStateId);
 				if (toIdTransitionsIt != stateMachine->GetTransitions().end())
 				{
 					for (auto& transition : toIdTransitionsIt->second)
 					{
-						if (transition.ToStateId == animTransition->FromStateId)
+						if (transition.ToStateId == fromStateId)
 						{
 							return true;
 						}
@@ -191,13 +198,16 @@ namespace Ember {
 			return false;
 			}();
 
-		auto setTwoWaySelectedTransition = [&](UUID toBeDeletedId)
+		auto setTwoWaySelectedTransition = [&]()
 			{
 				// If the deleted transition is part of a two way link, select the other transition after deletion to keep the inspector populated
-				auto toIdTransitionsIt = stateMachine->GetTransitions().find(animTransition->ToStateId);
+				auto toIdTransitionsIt = stateMachine->GetTransitions().find(toStateId);
+				if (toIdTransitionsIt == stateMachine->GetTransitions().end())
+					return;
+
 				for (auto& transition : toIdTransitionsIt->second)
 				{
-					if (transition.ToStateId == animTransition->FromStateId && transition.Id != toBeDeletedId)
+					if (transition.ToStateId == fromStateId && transition.Id != transitionId)
 					{
 						animationViewport->SetSelectedTransition(&transition);
 						break;
@@ -207,11 +217,11 @@ namespace Ember {
 
 		if (UI::Nodes::BeginRemoveableExpandableNode(nodeLabel, [&]() {
 			// Remove the transition from the state machine
-			animationViewport->DeleteTransition(animTransition->Id);
+			animationViewport->DeleteTransition(transitionId);
 
 			// If the deleted transition was part of a two way link, select the other transition after deletion to keep the inspector populated
 			if (isTwoWayTransition)
-				setTwoWaySelectedTransition(animTransition->Id);
+				setTwoWaySelectedTransition();
 			}))
 		{
 			RenderTransitionConditions(animTransition);
