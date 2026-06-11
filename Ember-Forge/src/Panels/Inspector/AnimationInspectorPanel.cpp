@@ -80,34 +80,48 @@ namespace Ember {
 		auto selectedState = animationViewport->GetSelectedState();
 		auto selectedTransition = animationViewport->GetSelectedTransition();
 
-		if (selectedState)
-			RenderAnimationState(selectedState);
+		// Calculate exactly 50% of the available vertical space, accounting for the separator's spacing
+		float halfHeight = (ImGui::GetContentRegionAvail().y - ImGui::GetStyle().ItemSpacing.y) * 0.5f;
 
-		if (selectedTransition)
+		// Render state/transition on top half
+		if (ImGui::BeginChild("InspectorTopHalf", ImVec2(0, halfHeight)))
 		{
-			const UUID selectedFromStateId = selectedTransition->FromStateId;
-			const UUID selectedToStateId = selectedTransition->ToStateId;
+			if (selectedState)
+				RenderAnimationState(selectedState);
 
-			RenderAnimationTransition(selectedTransition);
-
-			// Render reverse transition if it exists
-			auto stateMachine = animationViewport->GetAnimationStateMachine();
-			auto toIdTransitionsIt = stateMachine->GetTransitions().find(selectedToStateId);
-			if (toIdTransitionsIt != stateMachine->GetTransitions().end())
+			if (selectedTransition)
 			{
-				for (auto& transition : toIdTransitionsIt->second)
+				const UUID selectedFromStateId = selectedTransition->FromStateId;
+				const UUID selectedToStateId = selectedTransition->ToStateId;
+
+				RenderAnimationTransition(selectedTransition);
+
+				// Render reverse transition if it exists
+				auto stateMachine = animationViewport->GetAnimationStateMachine();
+				auto toIdTransitionsIt = stateMachine->GetTransitions().find(selectedToStateId);
+				if (toIdTransitionsIt != stateMachine->GetTransitions().end())
 				{
-					if (transition.ToStateId == selectedFromStateId)
+					for (auto& transition : toIdTransitionsIt->second)
 					{
-						RenderAnimationTransition(&transition);
-						break;
+						if (transition.ToStateId == selectedFromStateId)
+						{
+							RenderAnimationTransition(&transition);
+							break;
+						}
 					}
 				}
 			}
 		}
+		ImGui::EndChild();
 
 		ImGui::Separator();
-		RenderAnimationParameters();
+
+		// Render params on bottom half
+		if (ImGui::BeginChild("InspectorBottomHalf", ImVec2(0, 0)))
+		{
+			RenderAnimationParameters();
+		}
+		ImGui::EndChild();
 	}
 
 	void AnimationInspectorPanel::RenderAnimationState(AnimationState* animState)
@@ -385,8 +399,9 @@ namespace Ember {
 	void AnimationInspectorPanel::RenderAnimationParameters()
 	{
 		ImGui::Spacing();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 6.0f);
 		ImGui::TextUnformatted("Parameters");
-		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 36.0f);
 		if (ImGui::Button("+##AddParam", ImVec2(24, 24)))
 		{
 			m_NewParameterName.clear();
