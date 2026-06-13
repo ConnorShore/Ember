@@ -49,6 +49,7 @@ namespace Ember {
 		AnimationStateMachine* GetEditableStateMachine();
 
 	private:
+		void DrawLayerPanel();
 		void RebuildGraph();
 		void HandleHotkeys();
 		void DrawAllNodes();
@@ -82,6 +83,12 @@ namespace Ember {
 		ax::NodeEditor::EditorContext* m_NodeEditorContext = nullptr;
 		SharedPtr<AnimationController> m_AnimationController;
 
+		// Layer Management
+		int m_ActiveLayerIndex = 0;
+		int m_RenamingLayerIndex = -1;
+		std::string m_LayerRenameBuffer;
+		bool m_FocusLayerRename = false;
+
 		bool m_GraphNeedsRebuild = true;
 
 		// Keyed by StateId to easily resolve Transitions
@@ -105,6 +112,7 @@ namespace Ember {
 		ne::LinkId m_LinkPopupId = 0;
 		ImVec2 m_ContextPopupMousePos;
 		ImVec2 m_ContextPopupCanvasPos;
+		bool m_PositionDefaultContextMenu = false;
 
 		// Deferred Popup Triggers
 		bool m_RequestDefaultContextMenu = false;

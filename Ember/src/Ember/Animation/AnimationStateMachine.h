@@ -16,6 +16,11 @@ namespace Ember {
 		{
 			AnimationState state(stateName);
 			m_States[state.Id] = state;
+
+			// If this is the first state created, set it as the default
+			if (m_States.size() == 1)
+				m_DefaultState = state.Id;
+
 			return m_States[state.Id];
 		}
 
@@ -120,8 +125,8 @@ namespace Ember {
 		}
 
 	public:
-		Vector2f EntryNodePosition = Vector2f(0.0f);
-		Vector2f ExitNodePosition = Vector2f(0.0f);
+		Vector2f EntryNodePosition = Vector2f(0.0f, 0.0f);
+		Vector2f ExitNodePosition = Vector2f(300.0f, 0.0f);
 		bool EntryNodePositionSet = false;
 		bool ExitNodePositionSet = false;
 

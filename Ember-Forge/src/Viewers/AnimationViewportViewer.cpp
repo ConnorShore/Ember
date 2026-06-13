@@ -56,7 +56,10 @@ namespace Ember {
 		if (layers.empty())
 			layers.emplace_back();
 
-		return &layers[0].StateMachine;
+		if (m_ActiveLayerIndex >= layers.size())
+			m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
+
+		return &layers[m_ActiveLayerIndex].StateMachine;
 	}
 
 	void AnimationViewportViewer::OnOpen(EditorLayer* editor)
@@ -95,67 +98,78 @@ namespace Ember {
 		editor->SetViewportHovered(ImGui::IsWindowHovered());
 		editor->SetViewportFocused(ImGui::IsWindowFocused());
 
-		ne::SetCurrentEditor(m_NodeEditorContext);
-		ne::Begin(std::format("##AnimationGraph_{}", GetTitle()).c_str());
-
-		HandleHotkeys();
-		DrawAllNodes();
-
-		// These ONLY execute logic/math. They do NOT draw or open popups!
-		HandleInteractiveTransition();
-		HandleContextMenuQueries();
-
-		ne::End();
-
-		// =========================================================================
-		// --- DRAW OUTSIDE THE NODE EDITOR ---
-		// By drawing here, we avoid the ImGui/Node Editor docked viewport matrix bug!
-		// =========================================================================
-
-		// 1. Draw the interactive transition wire
-		if (m_InteractiveTransitionOrigin != Constants::InvalidUUID)
+		// Layer Selection Panel (Left Panel)
+		if (ImGui::BeginChild("LayersPanel", ImVec2(250, 0), true))
 		{
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			drawList->AddLine(m_InteractiveTransitionScreenStart, ImGui::GetMousePos(), IM_COL32(240, 120, 30, 255), 3.0f);
+			DrawLayerPanel();
 		}
+		ImGui::EndChild();
 
-		// 2. Open popups safely in the current ID scope
-		if (m_RequestDefaultContextMenu)
+		ImGui::SameLine();
+
+		// Node Editor Canvas (Right Panel)
+		if (ImGui::BeginChild("NodeCanvas", ImVec2(0, 0), false))
 		{
-			ImGui::OpenPopup("AnimationGraphContextMenu");
-			m_RequestDefaultContextMenu = false;
-		}
-		if (m_RequestNodeContextMenu)
-		{
-			ImGui::OpenPopup("NodeContextMenu");
-			m_RequestNodeContextMenu = false;
-		}
-		if (m_RequestLinkContextMenu)
-		{
-			ImGui::OpenPopup("LinkContextMenu");
-			m_RequestLinkContextMenu = false;
-		}
+			ne::SetCurrentEditor(m_NodeEditorContext);
+			ne::Begin(std::format("##AnimationGraph_{}", GetTitle()).c_str());
 
-		// 3. Render the popups
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-		RenderDefaultContextMenu();
-		RenderNodeContextMenu(m_NodePopupId);
-		RenderLinkContextMenu(m_LinkPopupId);
-		ImGui::PopStyleVar();
+			HandleHotkeys();
+			DrawAllNodes();
 
-		// See if any nodes have been selected
-		CheckNodeSelected();
+			// These ONLY execute logic/math. They do NOT draw or open popups!
+			HandleInteractiveTransition();
+			HandleContextMenuQueries();
 
-		ne::SetCurrentEditor(nullptr);
+			ne::End();
+
+			// Draw the interactive transition wire
+			if (m_InteractiveTransitionOrigin != Constants::InvalidUUID)
+			{
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				drawList->AddLine(m_InteractiveTransitionScreenStart, ImGui::GetMousePos(), IM_COL32(240, 120, 30, 255), 3.0f);
+			}
+
+			// Open popups safely in the current ID scope
+			if (m_RequestDefaultContextMenu)
+			{
+				if (m_PositionDefaultContextMenu)
+					m_ContextPopupMousePos = ImGui::GetMousePos();
+
+				ImGui::OpenPopup("AnimationGraphContextMenu");
+				m_RequestDefaultContextMenu = false;
+			}
+			if (m_RequestNodeContextMenu)
+			{
+				ImGui::OpenPopup("NodeContextMenu");
+				m_RequestNodeContextMenu = false;
+			}
+			if (m_RequestLinkContextMenu)
+			{
+				ImGui::OpenPopup("LinkContextMenu");
+				m_RequestLinkContextMenu = false;
+			}
+
+			// Render the popups
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+			RenderDefaultContextMenu();
+			RenderNodeContextMenu(m_NodePopupId);
+			RenderLinkContextMenu(m_LinkPopupId);
+			ImGui::PopStyleVar();
+
+			// See if any nodes have been selected
+			CheckNodeSelected();
+
+			ne::SetCurrentEditor(nullptr);
+		}
+		ImGui::EndChild();
 	}
 
 	void AnimationViewportViewer::HandleHotkeys()
 	{
 		if (Input::IsKeyPressed(KeyCode::Space))
 		{
-			// Capture hardware mouse, convert to canvas, and flag the popup to open
-			m_ContextPopupMousePos = ImGui::GetMousePos();
-			m_ContextPopupCanvasPos = ne::ScreenToCanvas(m_ContextPopupMousePos);
+			// Spacebar should open the menu at the cursor.
+			m_PositionDefaultContextMenu = true;
 			m_RequestDefaultContextMenu = true;
 		}
 
@@ -175,6 +189,7 @@ namespace Ember {
 		{
 			m_ContextPopupMousePos = ImGui::GetMousePos();
 			m_ContextPopupCanvasPos = ne::ScreenToCanvas(m_ContextPopupMousePos);
+			m_PositionDefaultContextMenu = false;
 			m_RequestDefaultContextMenu = true;
 		}
 
@@ -196,6 +211,120 @@ namespace Ember {
 
 		auto evt = UINotificationEvent("Auto-Saved Animation Controller", UINotificationEvent::Severity::Info);
 		editor->GetContext().EventCallback(evt);
+	}
+
+	void AnimationViewportViewer::DrawLayerPanel()
+	{
+		ImGui::Text("Animation Layers");
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 24.0f);
+
+		// Add Layer Button
+		if (ImGui::Button("+##AddLayer", ImVec2(24, 24)))
+		{
+			auto& newLayer = m_AnimationController->CreateLayer("New Layer");
+			m_ActiveLayerIndex = static_cast<int>(m_AnimationController->GetLayers().size()) - 1;
+
+			// Start renaming the new layer immediately
+			m_RenamingLayerIndex = static_cast<int>(m_AnimationController->GetLayers().size()) - 1;
+			m_LayerRenameBuffer = newLayer.Name;
+			m_FocusLayerRename = true; // Tell ImGui to auto-focus the text box next frame
+
+			m_IsDirty = true;
+		}
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		auto& layers = m_AnimationController->GetLayers();
+		for (int i = 0; i < layers.size(); ++i)
+		{
+			auto& layer = layers[i];
+
+			ImGui::PushID(i);
+
+			// If this layer is being renamed, show an input box instead of regular text
+			if (m_RenamingLayerIndex == i)
+			{
+				char renameBuf[256];
+				strncpy_s(renameBuf, sizeof(renameBuf), m_LayerRenameBuffer.c_str(), _TRUNCATE);
+
+				// Force the cursor into this box if it was just created/clicked
+				if (m_FocusLayerRename)
+				{
+					ImGui::SetKeyboardFocusHere();
+					m_FocusLayerRename = false;
+				}
+
+				ImGui::SetNextItemWidth(-FLT_MIN);
+
+				// Commit the name change if the user presses Enter or clicks away
+				if (ImGui::InputText("##LayerRename", renameBuf, sizeof(renameBuf), ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::IsItemDeactivatedAfterEdit())
+				{
+					std::string newName = renameBuf;
+					if (!newName.empty())
+					{
+						layer.Name = newName;
+						m_IsDirty = true;
+					}
+					m_RenamingLayerIndex = -1; // Exit rename state
+				}
+				else
+				{
+					m_LayerRenameBuffer = renameBuf; // Keep buffer updated while typing
+				}
+			}
+			else
+			{
+				// Regular layer display
+				bool isSelected = (m_ActiveLayerIndex == i);
+				if (ImGui::Selectable(layer.Name.c_str(), isSelected))
+				{
+					m_ActiveLayerIndex = i;
+
+					//ne::ClearSelection();
+					m_SelectedState = nullptr;
+					m_SelectedTransition = nullptr;
+					m_GraphNeedsRebuild = true;
+				}
+
+				// Double-click to rename
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					m_RenamingLayerIndex = i;
+					m_LayerRenameBuffer = layer.Name;
+					m_FocusLayerRename = true;
+				}
+
+				// Right-click context menu
+				if (ImGui::BeginPopupContextItem("LayerContextMenu"))
+				{
+					if (ImGui::MenuItem("Rename Layer"))
+					{
+						m_RenamingLayerIndex = i;
+						m_LayerRenameBuffer = layer.Name;
+						m_FocusLayerRename = true;
+					}
+
+					if (i > 0 && ImGui::MenuItem("Delete Layer"))
+					{
+						layers.erase(layers.begin() + i);
+
+						if (m_ActiveLayerIndex >= layers.size())
+							m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
+
+						// If we deleted the layer we were renaming, clear the state
+						if (m_RenamingLayerIndex == i)
+							m_RenamingLayerIndex = -1;
+
+						m_GraphNeedsRebuild = true;
+						m_IsDirty = true;
+					}
+					ImGui::EndPopup();
+				}
+			}
+
+			ImGui::PopID();
+		}
 	}
 
 	void AnimationViewportViewer::RebuildGraph()
@@ -272,6 +401,9 @@ namespace Ember {
 
 		for (auto& [id, node] : m_Nodes)
 		{
+			if (!stateMachine->GetStates().contains(id))
+				continue;
+
 			auto& state = stateMachine->GetStates().at(id);
 			if (!state.PositionSet)
 			{
@@ -533,13 +665,21 @@ namespace Ember {
 		if (!stateMachine)
 			return;
 
-		ImGui::SetNextWindowPos(m_ContextPopupMousePos, ImGuiCond_Appearing);
+		if (m_PositionDefaultContextMenu)
+			ImGui::SetNextWindowPos(m_ContextPopupMousePos, ImGuiCond_Appearing);
 
 		if (ImGui::BeginPopup("AnimationGraphContextMenu"))
 		{
+			ImVec2 popupOpenMousePos = m_PositionDefaultContextMenu
+				? m_ContextPopupMousePos
+				: ImGui::GetMousePosOnOpeningCurrentPopup();
+			ImVec2 popupCanvasPos = ne::ScreenToCanvas(popupOpenMousePos);
+
+			m_PositionDefaultContextMenu = false;
+
 			if (ImGui::MenuItem("Create New State"))
 			{
-				ImVec2 canvasPos = m_ContextPopupCanvasPos;
+				ImVec2 canvasPos = popupCanvasPos;
 
 				std::string newStateName = "New State";
 				int suffix = 1;

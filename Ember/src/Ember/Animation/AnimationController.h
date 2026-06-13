@@ -23,6 +23,14 @@ namespace Ember {
 		AnimationController(const std::string& name, const std::string& filePath)
 			: AnimationController(UUID(), name, filePath) { }
 
+		inline AnimationLayer& CreateLayer(const std::string& layerName)
+		{
+			AnimationLayer layer;
+			layer.Name = layerName;
+			m_Layers.push_back(layer);
+			return m_Layers.back();
+		}
+
 		inline std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
 		inline const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
 		inline void SetParameters(const std::unordered_map<std::string, AnimationParameter>& parameters) { m_Parameters = parameters; }
