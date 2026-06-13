@@ -31,7 +31,7 @@
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>
 #include <Ember/Physics/Raycast.h>
-#include <Ember/Animation/AnimationStateMachine.h>
+#include <Ember/Animation/AnimationController.h>
 
 #include <random>
 #include <thread>
@@ -1821,7 +1821,7 @@ namespace Ember {
 	{
 		if (m_Context.CurrentSceneState != SceneState::Edit)
 		{
-			auto evt = UINotificationEvent("Stop Play mode before opening an animation state machine.", UINotificationEvent::Severity::Warning);
+			auto evt = UINotificationEvent("Stop Play mode before opening an animation controller.", UINotificationEvent::Severity::Warning);
 			m_Context.EventCallback(evt);
 			return;
 		}
@@ -1830,7 +1830,7 @@ namespace Ember {
 		if (animationStateFile.empty())
 		{
 			std::string animationStateDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
-			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation State Machine (*.ebasm)", "*.ebasm");
+			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation Controller (*.ebcontroller)", "*.ebcontroller");
 		}
 
 		OpenAnimationViewer(animationStateFile);
@@ -2123,16 +2123,16 @@ namespace Ember {
 		}
 
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto animationStateMachine = assetManager.Load<AnimationStateMachine>(animationStatePath, false);
-		if (!animationStateMachine)
+		auto animationController = assetManager.Load<AnimationController>(animationStatePath, false);
+		if (!animationController)
 			return;
 
-		std::string asmFilePath = animationStateMachine->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(animationStatePath).string() : animationStateMachine->GetFilePath();
-		std::string title = EditorViewportTabs::TitleFromPath(animationStatePath, animationStateMachine->GetName());
-		size_t viewerIndex = m_ViewportTabs.AddAnimationViewer(m_Context.ActiveScene(), animationStateMachine, asmFilePath, title);
+		std::string controllerFilePath = animationController->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(animationStatePath).string() : animationController->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(animationStatePath, animationController->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddAnimationViewer(m_Context.ActiveScene(), animationController, controllerFilePath, title);
 		ActivateViewer(viewerIndex);
 
-		auto evt = UINotificationEvent(std::format("Opened Animation State Machine: {}", std::filesystem::path(animationStatePath).filename().string()));
+		auto evt = UINotificationEvent(std::format("Opened Animation Controller: {}", std::filesystem::path(animationStatePath).filename().string()));
 		m_Context.EventCallback(evt);
 	}
 

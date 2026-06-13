@@ -139,7 +139,9 @@ namespace Ember {
 			{
 				Entity animatorEntity{ entityID, scene };
 				auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
-				animationSystem->SetStateToTimestamp(scene, animator.CurrentStateId, animatorEntity, animator.CurrentTime.Seconds());
+				if (animator.LayerStates.empty())
+					animator.LayerStates.emplace_back();
+				animationSystem->SetStateToTimestamp(scene, animator.LayerStates[0].CurrentStateId, animatorEntity, animator.LayerStates[0].CurrentTime.Seconds());
 			}
 		}
 	}
@@ -951,7 +953,9 @@ namespace Ember {
 
 			// Initialize bone matrices immediately so newly instantiated skinned prefabs
 			// render at correct size/pose even before the next AnimationSystem tick.
-			animationSystem->SetStateToTimestamp(scene, animator.CurrentStateId, animatorEntity, animator.CurrentTime.Seconds());
+			if (animator.LayerStates.empty())
+				animator.LayerStates.emplace_back();
+			animationSystem->SetStateToTimestamp(scene, animator.LayerStates[0].CurrentStateId, animatorEntity, animator.LayerStates[0].CurrentTime.Seconds());
 		}
 
 		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);

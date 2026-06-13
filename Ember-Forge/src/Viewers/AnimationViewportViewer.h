@@ -1,7 +1,7 @@
 #pragma once
 #include "EditorViewportViewer.h"
 #include "GraphNodes.h"
-#include <Ember/Animation/AnimationStateMachine.h>
+#include <Ember/Animation/AnimationController.h>
 #include <Ember/Animation/AnimationTransition.h>
 #include <imgui_node_editor.h>
 #include <unordered_map>
@@ -18,7 +18,7 @@ namespace Ember {
 	class AnimationViewportViewer final : public EditorViewportViewer
 	{
 	public:
-		AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title);
+		AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title);
 		virtual ~AnimationViewportViewer();
 
 		virtual void OnOpen(EditorLayer* editor) override;
@@ -45,7 +45,8 @@ namespace Ember {
 
 		inline AnimationState* GetSelectedState() { return m_SelectedState; }
 		inline AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
-		inline SharedPtr<AnimationStateMachine> GetAnimationStateMachine() { return m_AnimationStateMachine; }
+		inline SharedPtr<AnimationController> GetAnimationController() { return m_AnimationController; }
+		AnimationStateMachine* GetEditableStateMachine();
 
 	private:
 		void RebuildGraph();
@@ -79,7 +80,7 @@ namespace Ember {
 
 	private:
 		ax::NodeEditor::EditorContext* m_NodeEditorContext = nullptr;
-		SharedPtr<AnimationStateMachine> m_AnimationStateMachine;
+		SharedPtr<AnimationController> m_AnimationController;
 
 		bool m_GraphNeedsRebuild = true;
 

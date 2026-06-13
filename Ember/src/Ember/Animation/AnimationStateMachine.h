@@ -2,23 +2,16 @@
 
 #include "AnimationState.h"
 #include "AnimationTransition.h"
-#include "AnimationParameter.h"
 
-#include "Ember/Asset/Asset.h"
 #include "Ember/Core/Constants.h"
 
 #include <unordered_map>
 
 namespace Ember {
 
-	class AnimationStateMachine : public Asset
+	class AnimationStateMachine
 	{
 	public:
-		AnimationStateMachine(UUID uuid, const std::string& name, const std::string& filePath)
-			: Asset(uuid, name, filePath, AssetType::AnimationStateMachine) { }
-		AnimationStateMachine(const std::string& name, const std::string& filePath)
-			: AnimationStateMachine(UUID(), name, filePath) { }
-
 		inline AnimationState& CreateState(const std::string& stateName)
 		{
 			AnimationState state(stateName);
@@ -126,28 +119,6 @@ namespace Ember {
 			return nullptr;
 		}
 
-		inline std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
-		inline const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
-
-		inline void AddParameter(const std::string& name, AnimationParameterType paramType)
-		{
-			AnimationParameter parameter;
-			parameter.Type = paramType;
-			m_Parameters[name] = parameter;
-		}
-
-		inline void AddParameter(const std::string& name, const AnimationParameter& parameter)
-		{
-			m_Parameters[name] = parameter;
-		}
-
-		inline void RemoveParameter(const std::string& name)
-		{
-			m_Parameters.erase(name);
-		}
-
-		inline static AssetType GetStaticType() { return AssetType::AnimationStateMachine; }
-
 	public:
 		Vector2f EntryNodePosition = Vector2f(0.0f);
 		Vector2f ExitNodePosition = Vector2f(0.0f);
@@ -158,7 +129,6 @@ namespace Ember {
 		UUID m_DefaultState = Constants::InvalidUUID;
 		std::unordered_map<UUID, AnimationState> m_States;
 		std::unordered_map<UUID, std::vector<AnimationTransition>> m_Transitions;
-		std::unordered_map<std::string, AnimationParameter> m_Parameters;
 	};
 
 }

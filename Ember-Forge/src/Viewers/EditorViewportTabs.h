@@ -12,7 +12,7 @@
 
 namespace Ember {
 
-	class AnimationStateMachine;
+	class AnimationController;
 	class Prefab;
 	class Entity;
 	class Scene;
@@ -34,7 +34,7 @@ namespace Ember {
 
 		size_t AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
 		size_t AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title);
-		size_t AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title);
+		size_t AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title);
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;

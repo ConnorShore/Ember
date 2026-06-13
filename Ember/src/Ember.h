@@ -87,6 +87,7 @@
 #include "Ember/Asset/Font.h"
 #include "Ember/Asset/AudioClip.h"
 #include "Ember/Animation/Animation.h"
+#include "Ember/Animation/AnimationController.h"
 #include "Ember/Animation/AnimationEvent.h"
 
 #include "Ember/Utils/PlatformUtil.h"

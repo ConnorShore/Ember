@@ -7,20 +7,7 @@ namespace Ember {
 	{
 		state.new_usertype<AnimatorComponent>("AnimatorComponent",
 			"SkeletonHandle", &AnimatorComponent::SkeletonHandle,
-			"AnimationStateMachineHandle", &AnimatorComponent::AnimationStateMachineHandle,
-			"CurrentStateId", &AnimatorComponent::CurrentStateId,
-			"PreviousStateId", &AnimatorComponent::PreviousStateId,
-			"CurrentTime", sol::property(
-				[](AnimatorComponent& c) { return c.CurrentTime.Seconds(); },
-				[](AnimatorComponent& c, float time) { c.CurrentTime = time; }
-			),
-			"PreviousTime", sol::property(
-				[](AnimatorComponent& c) { return c.PreviousTime.Seconds(); },
-				[](AnimatorComponent& c, float time) { c.PreviousTime = time; }
-			),
-			"CurrentBlendTime", &AnimatorComponent::CurrentBlendTime,
-			"ActiveBlendDuration", &AnimatorComponent::ActiveBlendDuration,
-			"IsBlending", &AnimatorComponent::IsBlending,
+			"ControllerHandle", &AnimatorComponent::ControllerHandle,
 			"SetFloat", &AnimatorComponent::SetFloat,
 			"SetBool", &AnimatorComponent::SetBool
 		);

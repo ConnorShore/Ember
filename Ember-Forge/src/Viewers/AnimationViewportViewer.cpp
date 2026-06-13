@@ -3,7 +3,7 @@
 #include "EditorLayer.h"
 
 #include <Ember/Core/ProjectManager.h>
-#include <Ember/Animation/AnimationStateMachineSerializer.h>
+#include <Ember/Animation/AnimationControllerSerializer.h>
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Input/Input.h>
 #include <imgui/imgui.h>
@@ -21,9 +21,12 @@ namespace Ember {
 		return id++;
 	}
 
-	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
-		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationStateMachine(animationStateMachine)
+	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title)
+		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationController(animationController)
 	{
+		if (m_AnimationController && m_AnimationController->GetLayers().empty())
+			m_AnimationController->GetLayers().emplace_back();
+
 		ne::Config config;
 		std::string path = (ProjectManager::GetActive()->GetProjectDirectory() / "AnimationNodeEditor.json").string();
 		config.SettingsFile = nullptr; // Disable built-in persistence for now since we want to handle it ourselves
@@ -44,13 +47,29 @@ namespace Ember {
 		ne::DestroyEditor(m_NodeEditorContext);
 	}
 
+	AnimationStateMachine* AnimationViewportViewer::GetEditableStateMachine()
+	{
+		if (!m_AnimationController)
+			return nullptr;
+
+		auto& layers = m_AnimationController->GetLayers();
+		if (layers.empty())
+			layers.emplace_back();
+
+		return &layers[0].StateMachine;
+	}
+
 	void AnimationViewportViewer::OnOpen(EditorLayer* editor)
 	{
-		// Mark all states to set position
-		m_AnimationStateMachine->EntryNodePositionSet = false;
-		m_AnimationStateMachine->ExitNodePositionSet = false;
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
 
-		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
+		// Mark all states to set position
+		stateMachine->EntryNodePositionSet = false;
+		stateMachine->ExitNodePositionSet = false;
+
+		for (auto& [stateId, state] : stateMachine->GetStates())
 			state.PositionSet = false;
 	}
 
@@ -69,11 +88,15 @@ namespace Ember {
 
 	void AnimationViewportViewer::OnImGuiRender(EditorLayer* editor)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		editor->SetViewportHovered(ImGui::IsWindowHovered());
 		editor->SetViewportFocused(ImGui::IsWindowFocused());
 
 		ne::SetCurrentEditor(m_NodeEditorContext);
-		ne::Begin(std::format("##AnimationGraph_{}", m_AnimationStateMachine->GetName()).c_str());
+		ne::Begin(std::format("##AnimationGraph_{}", GetTitle()).c_str());
 
 		HandleHotkeys();
 		DrawAllNodes();
@@ -168,20 +191,24 @@ namespace Ember {
 
 	void AnimationViewportViewer::SaveAnimationStateMachine(EditorLayer* editor)
 	{
-		AnimationStateMachineSerializer::Serialize(m_AnimationStateMachine->GetFilePath(), m_AnimationStateMachine);
+		AnimationControllerSerializer::Serialize(GetFilePath(), m_AnimationController);
 		m_IsDirty = false;
 
-		auto evt = UINotificationEvent("Auto-Saved Animation State Machine", UINotificationEvent::Severity::Info);
+		auto evt = UINotificationEvent("Auto-Saved Animation Controller", UINotificationEvent::Severity::Info);
 		editor->GetContext().EventCallback(evt);
 	}
 
 	void AnimationViewportViewer::RebuildGraph()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		m_Nodes.clear();
 		m_Links.clear();
 
 		// Build all Nodes
-		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
+		for (auto& [stateId, state] : stateMachine->GetStates())
 		{
 			m_Nodes[stateId] = Node(stateId, state.Name.c_str(), ImColor(64, 128, 255));
 			Node& node = m_Nodes[stateId];
@@ -194,7 +221,7 @@ namespace Ember {
 		}
 
 		// Build all Links (Transitions)
-		for (auto& [stateId, transitions] : m_AnimationStateMachine->GetTransitions())
+		for (auto& [stateId, transitions] : stateMachine->GetTransitions())
 		{
 			if (m_Nodes.find(stateId) == m_Nodes.end()) continue;
 			Node& startNode = m_Nodes[stateId];
@@ -213,14 +240,14 @@ namespace Ember {
 		// Connect Entry Node to Default State
 		m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID,
 			m_EntryNode.Outputs[0].ID,
-			m_Nodes[m_AnimationStateMachine->GetDefaultState()].Inputs[0].ID,
+			m_Nodes[stateMachine->GetDefaultState()].Inputs[0].ID,
 			ImColor(30, 190, 30)
 		);
 
 		// Connect all States with no outgoing transitions to the Exit Node
 		for (auto& [stateId, node] : m_Nodes)
 		{
-			if (m_AnimationStateMachine->GetTransitions().find(stateId) == m_AnimationStateMachine->GetTransitions().end())
+			if (stateMachine->GetTransitions().find(stateId) == stateMachine->GetTransitions().end())
 			{
 				uint64_t linkId = GetNextId();
 				m_Links[linkId] = Link(linkId, node.Outputs[0].ID, m_ExitNode.Inputs[0].ID, ImColor(190, 30, 30));
@@ -232,6 +259,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawAllNodes()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (m_GraphNeedsRebuild)
 			RebuildGraph();
 
@@ -241,7 +272,7 @@ namespace Ember {
 
 		for (auto& [id, node] : m_Nodes)
 		{
-			auto& state = m_AnimationStateMachine->GetStates().at(id);
+			auto& state = stateMachine->GetStates().at(id);
 			if (!state.PositionSet)
 			{
 				ne::SetNodePosition(node.ID, ImVec2(state.NodePosition.x, state.NodePosition.y));
@@ -264,6 +295,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawStateNode(Node& node)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		ImVec4 nodeBg = node.Color;
 		nodeBg.x *= 0.8f;
 		nodeBg.y *= 0.8f;
@@ -336,7 +371,7 @@ namespace Ember {
 			{
 				if (isClicked) // Line starts the exact frame the mouse goes down
 				{
-					if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+					if (stateMachine->GetStates().contains(nodeIdValue))
 						StartTransitionCreation(node.ID);
 				}
 			}
@@ -350,9 +385,9 @@ namespace Ember {
 					// If they clicked/released the origin node, ignore it so they can keep drawing!
 					if (nodeIdValue != originId)
 					{
-						if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+						if (stateMachine->GetStates().contains(nodeIdValue))
 						{
-							m_AnimationStateMachine->CreateTransition(originId, nodeIdValue);
+							stateMachine->CreateTransition(originId, nodeIdValue);
 							m_GraphNeedsRebuild = true;
 							m_IsDirty = true;
 							m_SaveCooldown = AUTO_SAVE_DELAY;
@@ -397,26 +432,34 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawStartState()
 	{
-		if (!m_AnimationStateMachine->EntryNodePositionSet)
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		if (!stateMachine->EntryNodePositionSet)
 		{
-			ne::SetNodePosition(ENTRY_NODE_ID, ImVec2(m_AnimationStateMachine->EntryNodePosition.x, m_AnimationStateMachine->EntryNodePosition.y));
-			m_AnimationStateMachine->EntryNodePositionSet = true;
+			ne::SetNodePosition(ENTRY_NODE_ID, ImVec2(stateMachine->EntryNodePosition.x, stateMachine->EntryNodePosition.y));
+			stateMachine->EntryNodePositionSet = true;
 		}
 
 		DrawStateNode(m_EntryNode);
-		UpdateNodePositionFromUI(m_EntryNode, m_AnimationStateMachine->EntryNodePosition);
+		UpdateNodePositionFromUI(m_EntryNode, stateMachine->EntryNodePosition);
 	}
 
 	void AnimationViewportViewer::DrawEndState()
 	{
-		if (!m_AnimationStateMachine->ExitNodePositionSet)
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		if (!stateMachine->ExitNodePositionSet)
 		{
-			ne::SetNodePosition(EXIT_NODE_ID, ImVec2(m_AnimationStateMachine->ExitNodePosition.x, m_AnimationStateMachine->ExitNodePosition.y));
-			m_AnimationStateMachine->ExitNodePositionSet = true;
+			ne::SetNodePosition(EXIT_NODE_ID, ImVec2(stateMachine->ExitNodePosition.x, stateMachine->ExitNodePosition.y));
+			stateMachine->ExitNodePositionSet = true;
 		}
 
 		DrawStateNode(m_ExitNode);
-		UpdateNodePositionFromUI(m_ExitNode, m_AnimationStateMachine->ExitNodePosition);
+		UpdateNodePositionFromUI(m_ExitNode, stateMachine->ExitNodePosition);
 	}
 
 	void AnimationViewportViewer::UpdateNodePositionFromUI(Node& node, Vector2f& nodeSavedPosition)
@@ -440,6 +483,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::CheckNodeSelected()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (!ne::HasSelectionChanged())
 			return;
 
@@ -458,8 +505,8 @@ namespace Ember {
 			ne::NodeId clickedNode = selectedNodes[0];
 			uint64_t nodeId = static_cast<uint64_t>(clickedNode.Get());
 
-			if (m_AnimationStateMachine->GetStates().contains(nodeId))
-				m_SelectedState = &m_AnimationStateMachine->GetStates().at(nodeId);
+			if (stateMachine->GetStates().contains(nodeId))
+				m_SelectedState = &stateMachine->GetStates().at(nodeId);
 			else
 				m_SelectedState = nullptr;
 
@@ -470,7 +517,7 @@ namespace Ember {
 			ne::LinkId clickedLink = selectedLinks[0];
 			uint64_t linkId = static_cast<uint64_t>(clickedLink.Get());
 
-			m_SelectedTransition = m_AnimationStateMachine->GetTransitionById(linkId);
+			m_SelectedTransition = stateMachine->GetTransitionById(linkId);
 			m_SelectedState = nullptr;
 		}
 		else
@@ -482,6 +529,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderDefaultContextMenu()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		ImGui::SetNextWindowPos(m_ContextPopupMousePos, ImGuiCond_Appearing);
 
 		if (ImGui::BeginPopup("AnimationGraphContextMenu"))
@@ -492,10 +543,10 @@ namespace Ember {
 
 				std::string newStateName = "New State";
 				int suffix = 1;
-				while (m_AnimationStateMachine->ContainsState(newStateName))
+				while (stateMachine->ContainsState(newStateName))
 					newStateName = "New State " + std::to_string(suffix++);
 
-				auto& state = m_AnimationStateMachine->CreateState(newStateName);
+				auto& state = stateMachine->CreateState(newStateName);
 				state.NodePosition = { canvasPos.x, canvasPos.y };
 
 				m_GraphNeedsRebuild = true;
@@ -510,13 +561,17 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderNodeContextMenu(ne::NodeId nodeId)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (nodeId.Get() == Constants::InvalidUUID)
 			return;
 
 		if (ImGui::BeginPopup("NodeContextMenu"))
 		{
 			UUID nodeIdValue = static_cast<UUID>(nodeId.Get());
-			if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+			if (stateMachine->GetStates().contains(nodeIdValue))
 			{
 				if (ImGui::MenuItem("Create Transition"))
 				{
@@ -535,13 +590,17 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderLinkContextMenu(ne::LinkId linkId)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (linkId.Get() == Constants::InvalidUUID)
 			return;
 
 		if (ImGui::BeginPopup("LinkContextMenu"))
 		{
 			UUID linkIdValue = static_cast<UUID>(linkId.Get());
-			if (m_AnimationStateMachine->GetTransitionById(linkIdValue))
+			if (stateMachine->GetTransitionById(linkIdValue))
 			{
 				if (ImGui::MenuItem("Delete Transition"))
 				{
@@ -585,7 +644,11 @@ namespace Ember {
 
 	void AnimationViewportViewer::DeleteNode(UUID nodeId)
 	{
-		m_AnimationStateMachine->RemoveState(nodeId);
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		stateMachine->RemoveState(nodeId);
 		m_Nodes.erase(nodeId);
 		m_SelectedState = nullptr;
 
@@ -595,7 +658,11 @@ namespace Ember {
 
 	void AnimationViewportViewer::DeleteTransition(UUID transitionId)
 	{
-		m_AnimationStateMachine->RemoveTransition(transitionId);
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		stateMachine->RemoveTransition(transitionId);
 		m_Links.erase(transitionId);
 		m_SelectedTransition = nullptr;
 
