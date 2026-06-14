@@ -50,4 +50,8 @@
 # Logs directory
 Logs/
 
+# Binary game files
+*.bin
+
+# Misc files
 TODOs.md

@@ -43,6 +43,17 @@ namespace Ember {
 		constexpr uint32_t MODEL_COOKED_MAGIC = 0x45424D44; // EBMD
 		constexpr uint32_t MODEL_COOKED_VERSION = 1;
 
+			SharedPtr<MaterialBase> ResolveModelMaterial(AssetManager& assetManager, UUID materialUUID)
+			{
+				if (materialUUID != Constants::InvalidUUID && assetManager.ContainsAsset(materialUUID))
+					return assetManager.GetAsset<MaterialBase>(materialUUID);
+
+				if (assetManager.ContainsAsset(Constants::Assets::StandardGeometryMatUUID))
+					return assetManager.GetAsset<MaterialBase>(Constants::Assets::StandardGeometryMatUUID);
+
+				return nullptr;
+			}
+
 		std::filesystem::path GetCookedPath(const std::filesystem::path& filepath)
 		{
 			auto cookedPath = filepath;
@@ -98,13 +109,13 @@ namespace Ember {
 					return false;
 
 				MeshMaterialNode meshNode;
-				if (meshID != Constants::InvalidUUID)
+				if (meshID != Constants::InvalidUUID && assetManager.ContainsAsset(UUID(meshID)))
 					meshNode.MeshAsset = assetManager.GetAsset<Mesh>(UUID(meshID));
 
 				UUID materialUUID = UUID(materialID);
 				if (!materialIndexMap.contains(materialUUID))
 				{
-					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUID));
+					materials.push_back(ResolveModelMaterial(assetManager, materialUUID));
 					materialIndexMap[materialUUID] = static_cast<uint32_t>(materials.size() - 1);
 				}
 
@@ -318,12 +329,13 @@ namespace Ember {
 				MeshMaterialNode meshNode;
 
 				// Load the actual Mesh Asset via AssetManager!
-				meshNode.MeshAsset = assetManager.GetAsset<Mesh>(meshUUID);
+				if (assetManager.ContainsAsset(meshUUID))
+					meshNode.MeshAsset = assetManager.GetAsset<Mesh>(meshUUID);
 
 				// Deduplicate: only add each unique material UUID once to the materials list
 				if (materialIndexMap.find(materialUUID) == materialIndexMap.end())
 				{
-					materials.push_back(assetManager.GetAsset<MaterialBase>(materialUUID));
+					materials.push_back(ResolveModelMaterial(assetManager, materialUUID));
 					materialIndexMap[materialUUID] = static_cast<uint32_t>(materials.size() - 1);
 				}
 

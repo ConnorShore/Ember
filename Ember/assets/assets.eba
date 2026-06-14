@@ -60,18 +60,6 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
-    UUID: 16605421126880563658
-    Name: MuzzleFlash
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MuzzleFlash.lua
-  - Type: Script
-    UUID: 1928101263865073231
-    Name: PickupWeapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
-  - Type: Script
-    UUID: 12117729415864912341
-    Name: PickupItem
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
-  - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
@@ -80,13 +68,25 @@ Assets:
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
   - Type: Script
+    UUID: 1928101263865073231
+    Name: PickupWeapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
+  - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/CharacterMovement.lua
   - Type: Script
+    UUID: 12117729415864912341
+    Name: PickupItem
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
+  - Type: Script
     UUID: 7847366610859754620
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/Tracer.lua
+  - Type: Script
+    UUID: 16605421126880563658
+    Name: MuzzleFlash
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/MuzzleFlash.lua
   - Type: Script
     UUID: 16404415058251315788
     Name: WeaponFire
@@ -240,6 +240,10 @@ Assets:
     Name: Roboto-Regular
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
+    UUID: 15776698392225788213
+    Name: ReloadStart
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadStart.mp3
+  - Type: AudioClip
     UUID: 10601745296411271244
     Name: M4_Shot
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/M4_Shot.mp3
@@ -251,10 +255,6 @@ Assets:
     UUID: 2869832050986379881
     Name: EmptyGun
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/EmptyGun.mp3
-  - Type: AudioClip
-    UUID: 15776698392225788213
-    Name: ReloadStart
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadStart.mp3
   - Type: AudioClip
     UUID: 4535810649324835630
     Name: AmmoPickupSFX

@@ -181,6 +181,12 @@ namespace Ember {
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
 
+			if (!newAsset)
+			{
+				EB_CORE_ERROR("Failed to load asset {} ['{}'] from file: {}", (uint64_t)uuid, name, absolutePath);
+				return nullptr;
+			}
+
 			newAsset->SetIsEngineAsset(engineAsset);
 
 			m_Assets[newAsset->GetUUID()] = newAsset;
