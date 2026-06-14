@@ -2,20 +2,250 @@
 
 #include "AnimationSerializer.h"
 
+#include <ryml.hpp>
+#include <ryml_std.hpp>
+
 #include <fstream>
+#include <sstream>
 
 namespace Ember {
 
-	// Magic number for validation: "ANIM"
-	const uint32_t ANIM_FILE_MAGIC = 0x414E494D;
-	// File format versions:
-	//   1 = Position + Rotation tracks only (legacy)
-	//   2 = Adds Scale tracks per bone
-	const uint32_t ANIM_FILE_VERSION = 2;
+	namespace {
+		constexpr uint32_t ANIM_SOURCE_FILE_VERSION = 1;
+		constexpr uint32_t ANIM_FILE_MAGIC = 0x414E494D; // "ANIM"
+		constexpr uint32_t ANIM_FILE_VERSION = 2;
 
-	bool AnimationSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
+		std::filesystem::path GetCookedPath(const std::filesystem::path& filepath)
+		{
+			auto cookedPath = filepath;
+			cookedPath.replace_extension(".bin");
+			return cookedPath;
+		}
+
+		bool AnimationFileLooksBinary(const std::filesystem::path& filepath)
+		{
+			std::ifstream file(filepath, std::ios::binary);
+			if (!file.is_open())
+				return false;
+
+			uint32_t magic = 0;
+			file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+			return file.good() && magic == ANIM_FILE_MAGIC;
+		}
+	}
+
+	bool AnimationSerializer::SerializeSource(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
 	{
-		std::ofstream file(filepath, std::ios::binary | std::ios::trunc);
+		if (!animation)
+			return false;
+
+		auto outputPath = filepath;
+		outputPath.replace_extension(".ebanim");
+
+		ryml::Tree tree;
+		auto root = tree.rootref();
+		root |= ryml::MAP;
+
+		root["Version"] << ANIM_SOURCE_FILE_VERSION;
+		root["Animation"] << animation->GetName();
+		root["UUID"] << static_cast<uint64_t>(animation->GetUUID());
+		root["Duration"] << animation->GetDuration();
+
+		auto tracksNode = root["Tracks"];
+		tracksNode |= ryml::SEQ;
+		for (const auto& track : animation->GetTracks())
+		{
+			auto trackNode = tracksNode.append_child();
+			trackNode |= ryml::MAP;
+			trackNode["BoneID"] << track.BoneID;
+
+			auto positionsNode = trackNode["PositionKeys"];
+			positionsNode |= ryml::SEQ;
+			for (const auto& key : track.PositionKeyframes)
+			{
+				auto keyNode = positionsNode.append_child();
+				keyNode |= ryml::MAP;
+				keyNode["Time"] << key.TimeStamp.Seconds();
+				auto valueNode = keyNode["Value"];
+				valueNode |= ryml::SEQ | ryml::FLOW_SL;
+				valueNode.append_child() << key.Position.x;
+				valueNode.append_child() << key.Position.y;
+				valueNode.append_child() << key.Position.z;
+			}
+
+			auto rotationsNode = trackNode["RotationKeys"];
+			rotationsNode |= ryml::SEQ;
+			for (const auto& key : track.RotationKeyframes)
+			{
+				auto keyNode = rotationsNode.append_child();
+				keyNode |= ryml::MAP;
+				keyNode["Time"] << key.TimeStamp.Seconds();
+				auto valueNode = keyNode["Value"];
+				valueNode |= ryml::SEQ | ryml::FLOW_SL;
+				valueNode.append_child() << key.Rotation.x;
+				valueNode.append_child() << key.Rotation.y;
+				valueNode.append_child() << key.Rotation.z;
+				valueNode.append_child() << key.Rotation.w;
+			}
+
+			auto scalesNode = trackNode["ScaleKeys"];
+			scalesNode |= ryml::SEQ;
+			for (const auto& key : track.ScaleKeyframes)
+			{
+				auto keyNode = scalesNode.append_child();
+				keyNode |= ryml::MAP;
+				keyNode["Time"] << key.TimeStamp.Seconds();
+				auto valueNode = keyNode["Value"];
+				valueNode |= ryml::SEQ | ryml::FLOW_SL;
+				valueNode.append_child() << key.Scale.x;
+				valueNode.append_child() << key.Scale.y;
+				valueNode.append_child() << key.Scale.z;
+			}
+		}
+
+		auto eventsNode = root["Events"];
+		eventsNode |= ryml::SEQ;
+		for (const auto& event : animation->GetEvents())
+		{
+			auto eventNode = eventsNode.append_child();
+			eventNode |= ryml::MAP;
+			eventNode["Name"] << event.Name;
+			eventNode["Timestamp"] << event.Timestamp;
+		}
+
+		std::ofstream fout(outputPath);
+		if (!fout.is_open())
+			return false;
+
+		fout << tree;
+		fout.close();
+		return true;
+	}
+
+	SharedPtr<Animation> AnimationSerializer::DeserializeSource(UUID uuid, const std::filesystem::path& filepath)
+	{
+		std::ifstream stream(filepath);
+		if (!stream.is_open())
+		{
+			EB_CORE_ERROR("Failed to open animation source file: {0}", filepath.string());
+			return nullptr;
+		}
+
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+		std::string yamlData = strStream.str();
+
+		ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(yamlData));
+		auto root = tree.rootref();
+
+		float duration = 0.0f;
+		if (root.has_child("Duration"))
+			root["Duration"] >> duration;
+
+		std::vector<BoneAnimationTrack> tracks;
+		if (root.has_child("Tracks"))
+		{
+			for (auto trackNode : root["Tracks"].children())
+			{
+				BoneAnimationTrack track;
+				if (trackNode.has_child("BoneID"))
+					trackNode["BoneID"] >> track.BoneID;
+
+				if (trackNode.has_child("PositionKeys"))
+				{
+					for (auto keyNode : trackNode["PositionKeys"].children())
+					{
+						PositionKeyframe key;
+						float time = 0.0f;
+						if (keyNode.has_child("Time"))
+							keyNode["Time"] >> time;
+						key.TimeStamp = TimeStep(time);
+
+						auto valueNode = keyNode["Value"];
+						if (valueNode.valid() && valueNode.is_seq() && valueNode.num_children() == 3)
+						{
+							valueNode[0] >> key.Position.x;
+							valueNode[1] >> key.Position.y;
+							valueNode[2] >> key.Position.z;
+						}
+
+						track.PositionKeyframes.push_back(key);
+					}
+				}
+
+				if (trackNode.has_child("RotationKeys"))
+				{
+					for (auto keyNode : trackNode["RotationKeys"].children())
+					{
+						RotationKeyframe key;
+						float time = 0.0f;
+						if (keyNode.has_child("Time"))
+							keyNode["Time"] >> time;
+						key.TimeStamp = TimeStep(time);
+
+						auto valueNode = keyNode["Value"];
+						if (valueNode.valid() && valueNode.is_seq() && valueNode.num_children() == 4)
+						{
+							valueNode[0] >> key.Rotation.x;
+							valueNode[1] >> key.Rotation.y;
+							valueNode[2] >> key.Rotation.z;
+							valueNode[3] >> key.Rotation.w;
+						}
+
+						track.RotationKeyframes.push_back(key);
+					}
+				}
+
+				if (trackNode.has_child("ScaleKeys"))
+				{
+					for (auto keyNode : trackNode["ScaleKeys"].children())
+					{
+						ScaleKeyframe key;
+						float time = 0.0f;
+						if (keyNode.has_child("Time"))
+							keyNode["Time"] >> time;
+						key.TimeStamp = TimeStep(time);
+
+						auto valueNode = keyNode["Value"];
+						if (valueNode.valid() && valueNode.is_seq() && valueNode.num_children() == 3)
+						{
+							valueNode[0] >> key.Scale.x;
+							valueNode[1] >> key.Scale.y;
+							valueNode[2] >> key.Scale.z;
+						}
+
+						track.ScaleKeyframes.push_back(key);
+					}
+				}
+
+				tracks.push_back(std::move(track));
+			}
+		}
+
+		std::vector<AnimationEvent> events;
+		if (root.has_child("Events"))
+		{
+			for (auto eventNode : root["Events"].children())
+			{
+				AnimationEvent evt;
+				if (eventNode.has_child("Name"))
+					eventNode["Name"] >> evt.Name;
+				if (eventNode.has_child("Timestamp"))
+					eventNode["Timestamp"] >> evt.Timestamp;
+				events.push_back(std::move(evt));
+			}
+		}
+
+		auto anim = SharedPtr<Animation>::Create(uuid, filepath.stem().string(), duration, tracks);
+		anim->SetEvents(events);
+		anim->SetFilePath(filepath.string());
+		return anim;
+	}
+
+	bool AnimationSerializer::SerializeCooked(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
+	{
+		auto cookedPath = GetCookedPath(filepath);
+		std::ofstream file(cookedPath, std::ios::binary | std::ios::trunc);
 		if (!file.is_open()) return false;
 
 		// Write Header
@@ -73,7 +303,7 @@ namespace Ember {
 		return true;
 	}
 
-	SharedPtr<Animation> AnimationSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath)
+	SharedPtr<Animation> AnimationSerializer::DeserializeCooked(UUID uuid, const std::filesystem::path& filepath)
 	{
 		std::ifstream file(filepath, std::ios::binary);
 		if (!file.is_open())
@@ -161,6 +391,29 @@ namespace Ember {
 		anim->SetEvents(events);
 
 		return anim;
+	}
+
+	bool AnimationSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
+	{
+		return SerializeSource(filepath, animation);
+	}
+
+	SharedPtr<Animation> AnimationSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath)
+	{
+		switch (AssetSerializationMode::GetRuntimeLoadTier())
+		{
+		case RuntimeAssetLoadTier::ForceSourceYaml:
+			if (filepath.extension() == ".bin" || AnimationFileLooksBinary(filepath))
+				return DeserializeCooked(uuid, filepath);
+			return DeserializeSource(uuid, filepath);
+		case RuntimeAssetLoadTier::ForceCookedBinary:
+			return DeserializeCooked(uuid, GetCookedPath(filepath));
+		case RuntimeAssetLoadTier::Auto:
+		default:
+			if (filepath.extension() == ".bin" || AnimationFileLooksBinary(filepath))
+				return DeserializeCooked(uuid, filepath);
+			return DeserializeSource(uuid, filepath);
+		}
 	}
 
 }

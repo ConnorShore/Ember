@@ -1361,7 +1361,6 @@ namespace Ember {
 
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
 
-			// TODO: account for different architectures and systems
 			std::string configFolder;
 #if defined(EB_DEBUG)
 			configFolder = "Debug-windows-x86_64";

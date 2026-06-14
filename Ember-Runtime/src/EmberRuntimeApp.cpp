@@ -28,12 +28,12 @@ namespace Ember {
 		spec.WindowSpecification.Title = "My Ember Game";
 
 		std::string engineAssetDir = "EmberCore";
-		if (argc >= 2) {
+		if (argc >= 3) {
 			engineAssetDir = argv[2];
 		}
 
 		std::string projectAssetDir = "GameData";
-		if (argc >= 3) {
+		if (argc >= 4) {
 			projectAssetDir = argv[3];
 		}
 

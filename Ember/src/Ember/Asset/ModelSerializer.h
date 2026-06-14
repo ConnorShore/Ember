@@ -2,6 +2,7 @@
 
 #include "UUID.h"
 #include "Model.h"
+#include "AssetSerializationMode.h"
 #include "Ember/Core/Core.h"
 
 #include <ryml.hpp>
@@ -19,6 +20,12 @@ namespace Ember {
 	class ModelSerializer
 	{
 	public:
+		static bool SerializeSource(const std::filesystem::path& filepath, const SharedPtr<Model>& model);
+		static SharedPtr<Model> DeserializeSource(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager);
+
+		static bool SerializeCooked(const std::filesystem::path& filepath, const SharedPtr<Model>& model);
+		static SharedPtr<Model> DeserializeCooked(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager);
+
 		static bool Serialize(const std::filesystem::path& filepath, const SharedPtr<Model>& model);
 		static SharedPtr<Model> Deserialize(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager);
 

@@ -2,10 +2,82 @@
 #include "ProjectManager.h"
 #include "ProjectSerializer.h"
 #include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/MaterialSerializer.h"
+#include "Ember/Asset/ModelSerializer.h"
+#include "Ember/Asset/MeshSerializer.h"
+#include "Ember/Asset/PhysicsMaterialSerializer.h"
+#include "Ember/Asset/SkeletonSerializer.h"
+#include "Ember/Asset/SkeletonMaskSerializer.h"
+#include "Ember/Animation/AnimationSerializer.h"
+#include "Ember/Animation/AnimationControllerSerializer.h"
+#include "Ember/Render/TextureImporter.h"
+#include "Ember/Render/Shader.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Scene/Scene.h"
+#include "Ember/Scene/SceneSerializer.h"
 
 namespace Ember {
+	namespace {
+		template<typename T, typename Fn>
+		void CookAssets(const AssetManager& assetManager, Fn&& cookFn)
+		{
+			for (const auto& asset : assetManager.GetAssetsOfType<T>())
+			{
+				if (!asset || asset->GetFilePath().empty())
+					continue;
+				cookFn(asset);
+			}
+		}
+
+		void CookProjectAssets(AssetManager& assetManager)
+		{
+			CookAssets<Texture>(assetManager, [](const SharedPtr<Texture>& textureAsset) {
+				auto texture2D = DynamicPointerCast<Texture2D>(textureAsset);
+				if (texture2D)
+					TextureImporter::SaveCooked(texture2D, texture2D->GetFilePath());
+			});
+
+			CookAssets<Shader>(assetManager, [](const SharedPtr<Shader>& shaderAsset) {
+				ShaderImporter::SaveCooked(shaderAsset, shaderAsset->GetFilePath());
+			});
+
+			CookAssets<Mesh>(assetManager, [](const SharedPtr<Mesh>& meshAsset) {
+				MeshSerializer::SerializeCooked(meshAsset->GetFilePath(), meshAsset);
+			});
+
+			CookAssets<Model>(assetManager, [](const SharedPtr<Model>& modelAsset) {
+				ModelSerializer::SerializeCooked(modelAsset->GetFilePath(), modelAsset);
+			});
+
+			CookAssets<Skeleton>(assetManager, [](const SharedPtr<Skeleton>& skeletonAsset) {
+				SkeletonSerializer::SerializeCooked(skeletonAsset->GetFilePath(), skeletonAsset);
+			});
+
+			CookAssets<SkeletonMask>(assetManager, [](const SharedPtr<SkeletonMask>& maskAsset) {
+				SkeletonMaskSerializer::SerializeCooked(maskAsset->GetFilePath(), maskAsset);
+			});
+
+			CookAssets<Animation>(assetManager, [](const SharedPtr<Animation>& animationAsset) {
+				AnimationSerializer::SerializeCooked(animationAsset->GetFilePath(), animationAsset);
+			});
+
+			CookAssets<AnimationController>(assetManager, [](const SharedPtr<AnimationController>& controllerAsset) {
+				AnimationControllerSerializer::SerializeCooked(controllerAsset->GetFilePath(), controllerAsset);
+			});
+
+			CookAssets<PhysicsMaterial>(assetManager, [](const SharedPtr<PhysicsMaterial>& materialAsset) {
+				PhysicsMaterialSerializer::SerializeCooked(materialAsset->GetFilePath(), materialAsset);
+			});
+
+			CookAssets<Material>(assetManager, [&](const SharedPtr<Material>& materialAsset) {
+				MaterialSerializer::SerializeCooked(materialAsset->GetFilePath(), materialAsset);
+			});
+
+			CookAssets<Scene>(assetManager, [](const SharedPtr<Scene>& sceneAsset) {
+				SceneSerializer(sceneAsset).SerializeCooked(sceneAsset->GetFilePath());
+			});
+		}
+	}
 
 	SharedPtr<Project> ProjectManager::s_ActiveProject = nullptr;
 
@@ -151,6 +223,9 @@ namespace Ember {
 		try
 		{
 			auto copyOptions = std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive;
+
+			// Generate cooked sidecar binaries before copying the asset trees.
+			CookProjectAssets(Application::Instance().GetAssetManager());
 
 			// Copy the Executable
 			std::filesystem::copy_file(runtimeExeSrc, exeDest, std::filesystem::copy_options::overwrite_existing);

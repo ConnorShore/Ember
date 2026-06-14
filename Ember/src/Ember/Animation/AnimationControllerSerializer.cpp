@@ -2,17 +2,69 @@
 
 #include "AnimationControllerSerializer.h"
 
+#include "Ember/Core/Application.h"
+
 #include <ryml.hpp>
 #include <ryml_std.hpp>
 
 #include <fstream>
 #include <sstream>
 
+namespace {
+	template<typename T>
+	void WriteRaw(std::ofstream& stream, const T& value)
+	{
+		stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
+	}
+
+	template<typename T>
+	bool ReadRaw(std::ifstream& stream, T& value)
+	{
+		stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+		return stream.good();
+	}
+
+	void WriteString(std::ofstream& stream, const std::string& value)
+	{
+		uint16_t len = static_cast<uint16_t>(value.size());
+		WriteRaw(stream, len);
+		if (len > 0)
+			stream.write(value.data(), len);
+	}
+
+	bool ReadString(std::ifstream& stream, std::string& value)
+	{
+		uint16_t len = 0;
+		if (!ReadRaw(stream, len))
+			return false;
+
+		value.resize(len);
+		if (len > 0)
+			stream.read(value.data(), len);
+
+		return stream.good();
+	}
+}
+
 namespace Ember {
 
 	namespace
 	{
-		constexpr uint32_t EBCONTROLLER_FILE_VERSION = 1;
+		constexpr uint32_t EBCONTROLLER_SOURCE_FILE_VERSION = 1;
+		constexpr uint32_t EBCONTROLLER_COOKED_MAGIC = 0x45424343; // 'EBCC'
+		constexpr uint32_t EBCONTROLLER_COOKED_VERSION = 1;
+
+		bool IsCookedPath(const std::filesystem::path& filepath)
+		{
+			return filepath.extension() == ".bin";
+		}
+
+		std::filesystem::path GetCookedPath(const std::filesystem::path& filepath)
+		{
+			auto cookedPath = filepath;
+			cookedPath.replace_extension(".bin");
+			return cookedPath;
+		}
 
 		void SerializeVector2f(ryml::NodeRef node, const Vector2f& value)
 		{
@@ -180,7 +232,17 @@ namespace Ember {
 		}
 	}
 
-	bool AnimationControllerSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<AnimationController>& animationController)
+	void AnimationControllerSerializer::SetRuntimeLoadTier(RuntimeAssetLoadTier tier)
+	{
+		AssetSerializationMode::SetRuntimeLoadTier(tier);
+	}
+
+	RuntimeAssetLoadTier AnimationControllerSerializer::GetRuntimeLoadTier()
+	{
+		return AssetSerializationMode::GetRuntimeLoadTier();
+	}
+
+	bool AnimationControllerSerializer::SerializeSource(const std::filesystem::path& filepath, const SharedPtr<AnimationController>& animationController)
 	{
 		if (!animationController)
 			return false;
@@ -192,7 +254,7 @@ namespace Ember {
 		auto root = tree.rootref();
 		root |= ryml::MAP;
 
-		root["Version"] << EBCONTROLLER_FILE_VERSION;
+		root["Version"] << EBCONTROLLER_SOURCE_FILE_VERSION;
 
 		auto parametersNode = root["Parameters"];
 		parametersNode |= ryml::SEQ;
@@ -230,7 +292,7 @@ namespace Ember {
 		return true;
 	}
 
-	SharedPtr<AnimationController> AnimationControllerSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath)
+	SharedPtr<AnimationController> AnimationControllerSerializer::DeserializeSource(UUID uuid, const std::filesystem::path& filepath)
 	{
 		std::ifstream stream(filepath);
 		if (!stream.is_open())
@@ -294,6 +356,267 @@ namespace Ember {
 		}
 
 		return animationController;
+	}
+
+	bool AnimationControllerSerializer::SerializeCooked(const std::filesystem::path& filepath, const SharedPtr<AnimationController>& animationController)
+	{
+		if (!animationController)
+			return false;
+
+		auto outputPath = GetCookedPath(filepath);
+		std::ofstream stream(outputPath, std::ios::binary | std::ios::trunc);
+		if (!stream.is_open())
+			return false;
+
+		WriteRaw(stream, EBCONTROLLER_COOKED_MAGIC);
+		WriteRaw(stream, EBCONTROLLER_COOKED_VERSION);
+
+		const auto& parameters = animationController->GetParameters();
+		uint32_t parameterCount = static_cast<uint32_t>(parameters.size());
+		WriteRaw(stream, parameterCount);
+		for (const auto& [name, parameter] : parameters)
+		{
+			WriteString(stream, name);
+
+			uint8_t type = static_cast<uint8_t>(parameter.Type);
+			uint8_t boolValue = parameter.BoolValue ? 1 : 0;
+			WriteRaw(stream, type);
+			WriteRaw(stream, parameter.FloatValue);
+			WriteRaw(stream, boolValue);
+			WriteRaw(stream, parameter.IntValue);
+		}
+
+		const auto& layers = animationController->GetLayers();
+		uint32_t layerCount = static_cast<uint32_t>(layers.size());
+		WriteRaw(stream, layerCount);
+		for (const auto& layer : layers)
+		{
+			WriteString(stream, layer.Name);
+			WriteRaw(stream, layer.Weight);
+			uint64_t maskHandle = static_cast<uint64_t>(layer.MaskHandle);
+			WriteRaw(stream, maskHandle);
+
+			const auto& stateMachine = layer.StateMachine;
+			uint64_t defaultState = static_cast<uint64_t>(stateMachine.GetDefaultState());
+			WriteRaw(stream, defaultState);
+
+			const auto& states = stateMachine.GetStates();
+			uint32_t stateCount = static_cast<uint32_t>(states.size());
+			WriteRaw(stream, stateCount);
+			for (const auto& [stateId, state] : states)
+			{
+				WriteRaw(stream, static_cast<uint64_t>(state.Id));
+				WriteString(stream, state.Name);
+				WriteRaw(stream, static_cast<uint64_t>(state.AnimationHandle));
+
+				uint8_t looping = state.Looping ? 1 : 0;
+				WriteRaw(stream, looping);
+				WriteRaw(stream, state.BasePlaybackSpeed);
+			}
+
+			uint32_t transitionCount = 0;
+			for (const auto& [fromStateId, transitions] : stateMachine.GetTransitions())
+				transitionCount += static_cast<uint32_t>(transitions.size());
+
+			WriteRaw(stream, transitionCount);
+			for (const auto& [fromStateId, transitions] : stateMachine.GetTransitions())
+			{
+				for (const auto& transition : transitions)
+				{
+					WriteRaw(stream, static_cast<uint64_t>(transition.Id));
+					WriteRaw(stream, static_cast<uint64_t>(transition.FromStateId));
+					WriteRaw(stream, static_cast<uint64_t>(transition.ToStateId));
+					WriteRaw(stream, transition.BlendDuration);
+
+					uint32_t conditionCount = static_cast<uint32_t>(transition.Conditions.size());
+					WriteRaw(stream, conditionCount);
+					for (const auto& condition : transition.Conditions)
+					{
+						WriteString(stream, condition.ParameterName);
+
+						uint8_t type = static_cast<uint8_t>(condition.Type);
+						uint8_t op = static_cast<uint8_t>(condition.Operator);
+						uint8_t boolValue = condition.BoolValue ? 1 : 0;
+						WriteRaw(stream, type);
+						WriteRaw(stream, op);
+						WriteRaw(stream, condition.FloatValue);
+						WriteRaw(stream, boolValue);
+						WriteRaw(stream, condition.IntValue);
+					}
+				}
+			}
+		}
+
+		stream.close();
+		return true;
+	}
+
+	SharedPtr<AnimationController> AnimationControllerSerializer::DeserializeCooked(UUID uuid, const std::filesystem::path& filepath)
+	{
+		std::ifstream stream(filepath, std::ios::binary);
+		if (!stream.is_open())
+		{
+			EB_CORE_ERROR("Failed to open cooked animation controller file: {0}", filepath.string());
+			return nullptr;
+		}
+
+		uint32_t magic = 0;
+		uint32_t version = 0;
+		if (!ReadRaw(stream, magic) || !ReadRaw(stream, version))
+		{
+			EB_CORE_ERROR("Failed reading cooked animation controller header: {0}", filepath.string());
+			return nullptr;
+		}
+
+		if (magic != EBCONTROLLER_COOKED_MAGIC)
+		{
+			EB_CORE_ERROR("Invalid cooked animation controller magic: {0}", filepath.string());
+			return nullptr;
+		}
+
+		if (version > EBCONTROLLER_COOKED_VERSION)
+		{
+			EB_CORE_ERROR("Unsupported cooked animation controller version {0} in {1}", version, filepath.string());
+			return nullptr;
+		}
+
+		auto animationController = SharedPtr<AnimationController>::Create(uuid, filepath.stem().string(), filepath.string());
+
+		uint32_t parameterCount = 0;
+		if (!ReadRaw(stream, parameterCount))
+			return nullptr;
+
+		auto& parameters = animationController->GetParameters();
+		for (uint32_t i = 0; i < parameterCount; ++i)
+		{
+			std::string name;
+			if (!ReadString(stream, name))
+				return nullptr;
+
+			AnimationParameter parameter;
+			uint8_t type = 0;
+			uint8_t boolValue = 0;
+			if (!ReadRaw(stream, type) || !ReadRaw(stream, parameter.FloatValue) || !ReadRaw(stream, boolValue) || !ReadRaw(stream, parameter.IntValue))
+				return nullptr;
+
+			parameter.Type = static_cast<AnimationParameterType>(type);
+			parameter.BoolValue = (boolValue != 0);
+			parameters[name] = parameter;
+		}
+
+		uint32_t layerCount = 0;
+		if (!ReadRaw(stream, layerCount))
+			return nullptr;
+
+		auto& layers = animationController->GetLayers();
+		layers.reserve(layerCount);
+		for (uint32_t layerIndex = 0; layerIndex < layerCount; ++layerIndex)
+		{
+			AnimationLayer layer;
+			if (!ReadString(stream, layer.Name))
+				return nullptr;
+
+			uint64_t maskHandle = Constants::InvalidUUID;
+			if (!ReadRaw(stream, layer.Weight) || !ReadRaw(stream, maskHandle))
+				return nullptr;
+			layer.MaskHandle = UUID(maskHandle);
+
+			uint64_t defaultState = Constants::InvalidUUID;
+			if (!ReadRaw(stream, defaultState))
+				return nullptr;
+			layer.StateMachine.SetDefaultState(UUID(defaultState));
+
+			uint32_t stateCount = 0;
+			if (!ReadRaw(stream, stateCount))
+				return nullptr;
+
+			for (uint32_t stateIndex = 0; stateIndex < stateCount; ++stateIndex)
+			{
+				AnimationState state;
+				uint64_t stateId = Constants::InvalidUUID;
+				uint64_t animationHandle = Constants::InvalidUUID;
+				uint8_t looping = 0;
+
+				if (!ReadRaw(stream, stateId) || !ReadString(stream, state.Name) || !ReadRaw(stream, animationHandle) || !ReadRaw(stream, looping) || !ReadRaw(stream, state.BasePlaybackSpeed))
+					return nullptr;
+
+				state.Id = UUID(stateId);
+				state.AnimationHandle = UUID(animationHandle);
+				state.Looping = (looping != 0);
+				state.PositionSet = false;
+				state.NodePosition = Vector2f(0.0f);
+				layer.StateMachine.AddState(state);
+			}
+
+			uint32_t transitionCount = 0;
+			if (!ReadRaw(stream, transitionCount))
+				return nullptr;
+
+			for (uint32_t transitionIndex = 0; transitionIndex < transitionCount; ++transitionIndex)
+			{
+				AnimationTransition transition;
+				uint64_t transitionId = Constants::InvalidUUID;
+				uint64_t fromStateId = Constants::InvalidUUID;
+				uint64_t toStateId = Constants::InvalidUUID;
+
+				if (!ReadRaw(stream, transitionId) || !ReadRaw(stream, fromStateId) || !ReadRaw(stream, toStateId) || !ReadRaw(stream, transition.BlendDuration))
+					return nullptr;
+
+				transition.Id = UUID(transitionId);
+				transition.FromStateId = UUID(fromStateId);
+				transition.ToStateId = UUID(toStateId);
+
+				uint32_t conditionCount = 0;
+				if (!ReadRaw(stream, conditionCount))
+					return nullptr;
+
+				transition.Conditions.reserve(conditionCount);
+				for (uint32_t conditionIndex = 0; conditionIndex < conditionCount; ++conditionIndex)
+				{
+					AnimationCondition condition;
+					if (!ReadString(stream, condition.ParameterName))
+						return nullptr;
+
+					uint8_t type = 0;
+					uint8_t op = 0;
+					uint8_t boolValue = 0;
+					if (!ReadRaw(stream, type) || !ReadRaw(stream, op) || !ReadRaw(stream, condition.FloatValue) || !ReadRaw(stream, boolValue) || !ReadRaw(stream, condition.IntValue))
+						return nullptr;
+
+					condition.Type = static_cast<AnimationParameterType>(type);
+					condition.Operator = static_cast<AnimationConditionOperator>(op);
+					condition.BoolValue = (boolValue != 0);
+					transition.Conditions.push_back(condition);
+				}
+
+				layer.StateMachine.AddTransition(transition);
+			}
+
+			layers.push_back(std::move(layer));
+		}
+
+		return animationController;
+	}
+
+	bool AnimationControllerSerializer::Serialize(const std::filesystem::path& filepath, const SharedPtr<AnimationController>& animationController)
+	{
+		return SerializeSource(filepath, animationController);
+	}
+
+	SharedPtr<AnimationController> AnimationControllerSerializer::Deserialize(UUID uuid, const std::filesystem::path& filepath)
+	{
+		const RuntimeAssetLoadTier runtimeTier = GetRuntimeLoadTier();
+
+		if (runtimeTier == RuntimeAssetLoadTier::ForceSourceYaml)
+			return DeserializeSource(uuid, filepath);
+
+		if (runtimeTier == RuntimeAssetLoadTier::ForceCookedBinary)
+			return DeserializeCooked(uuid, GetCookedPath(filepath));
+
+		if (IsCookedPath(filepath))
+			return DeserializeCooked(uuid, filepath);
+
+		return DeserializeSource(uuid, filepath);
 	}
 
 }

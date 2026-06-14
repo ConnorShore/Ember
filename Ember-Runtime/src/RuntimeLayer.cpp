@@ -2,6 +2,7 @@
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Render/RenderAction.h>
+#include <Ember/Asset/AssetSerializationMode.h>
 
 #include <imgui/imgui.h>
 
@@ -9,6 +10,10 @@ namespace Ember {
 
 	void RuntimeLayer::OnAttach()
 	{
+		const bool developerRawMode = Application::Instance().GetCommandLineArgsCount() >= 4;
+		AssetSerializationMode::SetRuntimeLoadTier(
+			developerRawMode ? RuntimeAssetLoadTier::ForceSourceYaml : RuntimeAssetLoadTier::ForceCookedBinary);
+
 		// Load the exported project configuration
 		std::string projectPath = "project.ebproj";	// Default to looking for the project file in the current working directory
 		auto& app = Application::Instance();
@@ -21,7 +26,10 @@ namespace Ember {
 		auto runtimeScene = SharedPtr<Scene>::Create("RuntimeScene", "");
 		Application::Instance().GetSceneManager().SetActiveScene(runtimeScene);
 		SceneSerializer serializer(runtimeScene);
-		serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());
+		if (AssetSerializationMode::GetRuntimeLoadTier() == RuntimeAssetLoadTier::ForceCookedBinary)
+			serializer.DeserializeCooked(ProjectManager::GetActive()->GetStartScenePath().string());
+		else
+			serializer.Deserialize(ProjectManager::GetActive()->GetStartScenePath().string());
 
 		// 3. Size the camera and render passes to the actual OS Window, not an ImGui panel!
 		auto& window = Application::Instance().GetWindow();

@@ -644,7 +644,7 @@ namespace Ember {
 			std::string outputPath = (std::filesystem::path(outputDirectory) / primFileName).string();
 
 			// Cook directly to disk! No Mesh object created yet.
-			if (MeshSerializer::Serialize(outputPath, vertices, indices, isSkinned))
+			if (MeshSerializer::SerializeCooked(outputPath, vertices, indices, isSkinned))
 				cookedPrims.push_back({ meshUUID, primFileName, outputPath });
 		}
 

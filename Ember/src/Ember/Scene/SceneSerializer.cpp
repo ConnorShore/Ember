@@ -1698,6 +1698,20 @@ namespace Ember {
 		return true;
 	}
 
+	bool SceneSerializer::SerializeCooked(const std::string& filepath)
+	{
+		auto cookedPath = std::filesystem::path(filepath);
+		cookedPath.replace_extension(".bin");
+		return Serialize(cookedPath.string());
+	}
+
+	bool SceneSerializer::DeserializeCooked(const std::string& filepath)
+	{
+		auto cookedPath = std::filesystem::path(filepath);
+		cookedPath.replace_extension(".bin");
+		return Deserialize(cookedPath.string());
+	}
+
 
 	// =========================================================================
 	// PREFAB SERIALIZATION

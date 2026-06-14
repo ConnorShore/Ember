@@ -7,6 +7,7 @@
 #include "Ember/Render/Mesh.h"
 #include "Ember/Render/Material.h"
 #include "Ember/Asset/Skeleton.h" 
+#include "Ember/Asset/SkeletonMask.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
 
@@ -63,6 +64,7 @@ namespace Ember {
 
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Mesh>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Skeleton>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<SkeletonMask>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Animation>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<AnimationController>());
 
@@ -147,6 +149,8 @@ namespace Ember {
 				m_AssetManagerHandle->Load<Model>(uuid, name, path, false);
 			else if (type == "Skeleton")
 				m_AssetManagerHandle->Load<Skeleton>(uuid, name, path, false);
+			else if (type == "SkeletonMask")
+				m_AssetManagerHandle->Load<SkeletonMask>(uuid, name, path, false);
 			else if (type == "Animation")
 				m_AssetManagerHandle->Load<Animation>(uuid, name, path, false);
 			else if (type == "AnimationController")
