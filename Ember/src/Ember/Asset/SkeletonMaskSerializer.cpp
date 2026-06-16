@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "SkeletonMaskSerializer.h"
 
+#include "Ember/Core/Application.h"
+
 #include <ryml.hpp>
 #include <ryml_std.hpp>
 
@@ -106,6 +108,17 @@ namespace Ember {
 		auto root = tree.rootref();
 
 		auto skeletonMask = SharedPtr<SkeletonMask>::Create(uuid, filepath.stem().string(), filepath.string());
+		if (root.has_child("SkeletonHandle"))
+		{
+			uint64_t skeletonHandle = 0;
+			root["SkeletonHandle"] >> skeletonHandle;
+			if (skeletonHandle != static_cast<uint64_t>(Constants::InvalidUUID))
+			{
+				auto skeleton = Application::Instance().GetAssetManager().GetAsset<Skeleton>((UUID)skeletonHandle);
+				skeletonMask->SetSkeleton(skeleton);
+
+			}
+		}
 		if (root.has_child("BoneWeights"))
 		{
 			for (auto weightNode : root["BoneWeights"].children())

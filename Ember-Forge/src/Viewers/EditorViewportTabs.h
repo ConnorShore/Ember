@@ -4,6 +4,7 @@
 #include "SceneViewportViewer.h"
 #include "PrefabViewportViewer.h"
 #include "AnimationViewportViewer.h"
+#include "SkeletonMaskViewportViewer.h"
 
 #include <functional>
 #include <string>
@@ -13,6 +14,7 @@
 namespace Ember {
 
 	class AnimationController;
+	class SkeletonMask;
 	class Prefab;
 	class Entity;
 	class Scene;
@@ -35,6 +37,7 @@ namespace Ember {
 		size_t AddSceneViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
 		size_t AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title);
 		size_t AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title);
+		size_t AddSkeletonMaskViewer(SharedPtr<Scene> scene, SharedPtr<SkeletonMask> skeletonMask, const std::string& filePath, const std::string& title);
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;

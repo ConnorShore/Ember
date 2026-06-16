@@ -17,7 +17,8 @@ namespace Ember {
 			None = 0,
 			Scene,
 			Prefab,
-			Animation
+			Animation,
+			SkeletonMask
 		};
 
 		EditorViewportViewer(Type type, SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);

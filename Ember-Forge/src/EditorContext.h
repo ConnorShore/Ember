@@ -35,6 +35,7 @@ namespace Ember {
 		std::string RequestedSceneOpenPath;
 		std::string RequestedPrefabOpenPath;
 		std::string RequestAnimationStateOpenPath;
+		std::string RequestSkeletonMaskOpenPath;
 
 		// Deferred removals: entities/components are queued during rendering and
 		// actually removed after the frame to avoid invalidating iterators.

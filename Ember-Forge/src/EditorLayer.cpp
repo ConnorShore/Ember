@@ -414,6 +414,7 @@ namespace Ember {
 		HandleSceneOpenRequest();
 		HandlePrefabOpenRequest();
 		HandleAnimationOpenRequest();
+		HandleSkeletonMaskOpenRequest();
 
 		// Pop up for new project
 		RenderNewScenePopup();
@@ -1835,6 +1836,25 @@ namespace Ember {
 		OpenAnimationViewer(animationStateFile);
 	}
 
+	void EditorLayer::OpenSkeletonMask(const std::string& path)
+	{
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+		{
+			auto evt = UINotificationEvent("Stop Play mode before opening a skeleton mask.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		std::string skeletonMaskFile = path;
+		if (skeletonMaskFile.empty())
+		{
+			std::string skeletonMaskDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			skeletonMaskFile = FileDialog::OpenFile(skeletonMaskDirectory.c_str(), "Ember Skeleton Mask (*.ebmask)", "*.ebmask");
+		}
+
+		OpenSkeletonMaskViewer(skeletonMaskFile);
+	}
+
 	void EditorLayer::HandlePrefabOpenRequest()
 	{
 		if (m_Context.RequestedPrefabOpenPath.empty())
@@ -1863,6 +1883,16 @@ namespace Ember {
 		std::string path = m_Context.RequestAnimationStateOpenPath;
 		m_Context.RequestAnimationStateOpenPath.clear();
 		OpenAnimationState(path);
+	}
+
+	void EditorLayer::HandleSkeletonMaskOpenRequest()
+	{
+		if (m_Context.RequestSkeletonMaskOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestSkeletonMaskOpenPath;
+		m_Context.RequestSkeletonMaskOpenPath.clear();
+		OpenSkeletonMask(path);
 	}
 
 	EditorViewportViewer* EditorLayer::GetActiveViewer()
@@ -2135,6 +2165,33 @@ namespace Ember {
 		m_Context.EventCallback(evt);
 	}
 
+
+	void EditorLayer::OpenSkeletonMaskViewer(const std::string& skeletonMaskPath)
+	{
+		if (skeletonMaskPath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::SkeletonMask, skeletonMaskPath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto skeletonMask = assetManager.Load<SkeletonMask>(skeletonMaskPath, false);
+		if (!skeletonMask)
+			return;
+
+		std::string skeletonFilePath = skeletonMask->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(skeletonMaskPath).string() : skeletonMask->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(skeletonMaskPath, skeletonMask->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddSkeletonMaskViewer(m_Context.ActiveScene(), skeletonMask, skeletonFilePath, title);
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened Skeleton Mask: {}", std::filesystem::path(skeletonMaskPath).filename().string()));
+		m_Context.EventCallback(evt);
+	}
+
 	void EditorLayer::SetNewScene(SharedPtr<Scene> newScene)
 	{
 		CloseAllViewers(false);
@@ -2243,4 +2300,5 @@ namespace Ember {
 		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
 		colors[ImGuiCol_ResizeGripActive] = accentActive;
 	}
+
 }

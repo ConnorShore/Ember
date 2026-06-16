@@ -136,6 +136,12 @@ namespace Ember {
 		return m_Viewers.size() - 1;
 	}
 
+	size_t EditorViewportTabs::AddSkeletonMaskViewer(SharedPtr<Scene> scene, SharedPtr<SkeletonMask> skeletonMask, const std::string& filePath, const std::string& title)
+	{
+		m_Viewers.push_back(ScopedPtr<SkeletonMaskViewportViewer>::Create(scene, skeletonMask, filePath, title));
+		return m_Viewers.size() - 1;
+	}
+
 	// [The rest of EditorViewportTabs.cpp remains identical for GetActiveViewer, ActivateViewer, CloseViewer, etc.]
 
 	EditorViewportViewer* EditorViewportTabs::GetActiveViewer() {

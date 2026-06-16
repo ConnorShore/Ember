@@ -94,9 +94,11 @@ namespace Ember {
 		void SaveProject(bool saveAs = false);
 		bool SaveOpenPrefab();
 		void OpenAnimationState(const std::string& path);
+		void OpenSkeletonMask(const std::string& path);
 		void HandleSceneOpenRequest();
 		void HandlePrefabOpenRequest();
 		void HandleAnimationOpenRequest();
+		void HandleSkeletonMaskOpenRequest();
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;
@@ -109,6 +111,7 @@ namespace Ember {
 		void OpenSceneViewer(const std::string& scenePath);
 		void OpenPrefabViewer(const std::string& prefabPath);
 		void OpenAnimationViewer(const std::string& animationStatePath);
+		void OpenSkeletonMaskViewer(const std::string& skeletonMaskPath);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 
