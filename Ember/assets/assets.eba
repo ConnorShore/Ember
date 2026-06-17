@@ -44,13 +44,13 @@ Assets:
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
   - Type: Texture
-    UUID: 9008232455192275898
-    Name: AssaultRifle_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
-  - Type: Texture
     UUID: 15863835653609318779
     Name: HolographicReticle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
+  - Type: Texture
+    UUID: 9008232455192275898
+    Name: AssaultRifle_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -187,6 +187,10 @@ Assets:
     UUID: 9200567303542518273
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebskeleton
+  - Type: SkeletonMask
+    UUID: 6205344509844990405
+    Name: TestMask
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/TestMask.ebmask
   - Type: Animation
     UUID: 6612716991326083235
     Name: M4_Reload

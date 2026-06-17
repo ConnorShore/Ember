@@ -1099,6 +1099,8 @@ namespace Ember {
 						SaveOpenPrefab();
 					else if (viewerType == EditorViewportViewer::Type::Animation)
 						static_cast<AnimationViewportViewer*>(m_Context.ActiveViewportViewer)->SaveAnimationStateMachine(this);
+					else if (viewerType == EditorViewportViewer::Type::SkeletonMask)
+						static_cast<SkeletonMaskViewportViewer*>(m_Context.ActiveViewportViewer)->SaveSkeletonMask(this);
 					else
 						SaveProject(false);
 				}
