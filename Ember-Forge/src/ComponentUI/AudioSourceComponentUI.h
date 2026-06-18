@@ -102,7 +102,7 @@ namespace Ember {
 				if (ImGui::MenuItem("Load from file..."))
 				{
 					std::string fileTypes = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetAudioClip);
-					std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Audio").string();
+					std::string defaultDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::AudioClip).string();
 					std::string audioFile = FileDialog::OpenFile(defaultDir.c_str(), std::format("Audio ({})", fileTypes).c_str(), fileTypes.c_str());
 					if (!audioFile.empty())
 					{

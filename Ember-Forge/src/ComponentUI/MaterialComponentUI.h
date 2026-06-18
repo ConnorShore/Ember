@@ -391,7 +391,7 @@ namespace Ember {
 
 				ImGui::Spacing();
 
-				auto shaderDir = ProjectManager::GetActive()->GetAssetDirectory() / "Shaders";
+				auto shaderDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Shader);
 
 				if (ImGui::Button("Create", ImVec2(120, 0)))
 				{

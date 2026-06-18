@@ -24,6 +24,14 @@ namespace Ember {
 			return m_Layers.back();
 		}
 
+		void InitializeDefaultController()
+		{
+			if (m_Layers.empty())
+			{
+				CreateLayer("Base Layer");
+			}
+		}
+
 		inline std::unordered_map<std::string, AnimationParameter>& GetParameters() { return m_Parameters; }
 		inline const std::unordered_map<std::string, AnimationParameter>& GetParameters() const { return m_Parameters; }
 		inline void SetParameters(const std::unordered_map<std::string, AnimationParameter>& parameters) { m_Parameters = parameters; }

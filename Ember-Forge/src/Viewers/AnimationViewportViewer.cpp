@@ -229,6 +229,8 @@ namespace Ember {
 			m_LayerRenameBuffer = newLayer.Name;
 			m_FocusLayerRename = true; // Tell ImGui to auto-focus the text box next frame
 
+			m_SelectedState = nullptr;
+			m_SelectedTransition = nullptr;
 			m_IsDirty = true;
 		}
 
@@ -367,11 +369,14 @@ namespace Ember {
 		}
 
 		// Connect Entry Node to Default State
-		m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID,
-			m_EntryNode.Outputs[0].ID,
-			m_Nodes[stateMachine->GetDefaultState()].Inputs[0].ID,
-			ImColor(30, 190, 30)
-		);
+		if (stateMachine->GetDefaultState() != Constants::InvalidUUID)
+		{
+			m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID,
+				m_EntryNode.Outputs[0].ID,
+				m_Nodes[stateMachine->GetDefaultState()].Inputs[0].ID,
+				ImColor(30, 190, 30)
+			);
+		}
 
 		// Connect all States with no outgoing transitions to the Exit Node
 		for (auto& [stateId, node] : m_Nodes)

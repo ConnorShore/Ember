@@ -6,6 +6,7 @@
 
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Animation/AnimationController.h>
+#include <Ember/Asset/AssetRegistrySerializer.h>
 
 #include <imgui/imgui.h>
 
@@ -36,6 +37,12 @@ namespace Ember {
 			}
 		}
 
+		inline void RenderPopups(AnimatorComponent& component) override
+		{
+			RenderNewControllerPopup(component);
+		}
+
+	private:
 		inline void ResetRuntimeState(AnimatorComponent& component)
 		{
 			if (component.LayerStates.empty())
@@ -109,7 +116,8 @@ namespace Ember {
 			ImGui::SameLine();
 			if (ImGui::Button("New"))
 			{
-				// TODO: Create a new ASM asset and open it for editing
+				m_ShowNewControllerPopup = true;
+				m_NewControllerName = "NewAnimController";
 			}
 		}
 
@@ -160,6 +168,66 @@ namespace Ember {
 				UI::PropertyGrid::EndComboBox();
 			}
 		}
+
+		inline void RenderNewControllerPopup(AnimatorComponent& component)
+		{
+			if (m_ShowNewControllerPopup)
+			{
+				ImGui::OpenPopup("New Animation Controller");
+				m_ShowNewControllerPopup = false;
+			}
+			if (ImGui::BeginPopupModal("New Animation Controller", NULL, ImGuiWindowFlags_NoSavedSettings))
+			{
+				if (UI::PropertyGrid::Begin("NewControllerProps"))
+				{
+					UI::PropertyGrid::InputText("Name", m_NewControllerName);
+					UI::PropertyGrid::End();
+				}
+
+				ImGui::Dummy(ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()));
+
+				ImGui::BeginDisabled(m_NewControllerName.empty());
+				if (ImGui::Button("Create", ImVec2(120, 0)))
+				{
+					auto filePath = (ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::AnimationController) / (m_NewControllerName + ".ebcontroller")).string();
+					auto newController = SharedPtr<AnimationController>::Create(m_NewControllerName, filePath);
+					newController->InitializeDefaultController();
+
+					AnimationControllerSerializer serializer;
+					if (serializer.Serialize(filePath, newController))
+					{
+						auto controllerAsset = m_AssetManager.Load<AnimationController>(filePath, false);
+						component.ControllerHandle = controllerAsset->GetUUID();
+						
+						// Save asset manager state to disk so that the new controller is registered
+						std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
+						AssetRegistrySerializer assetSerializer(&m_AssetManager);
+						assetSerializer.Serialize(assetFilePath.string());
+
+						m_Context->RequestAnimationStateOpenPath = filePath;
+						ImGui::CloseCurrentPopup();
+					}
+					else
+					{
+						auto evt = UINotificationEvent("Failed to create animation controller!", UINotificationEvent::Severity::Error);
+						m_Context->EventCallback(evt);
+					}
+				}
+				ImGui::EndDisabled();
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel", ImVec2(120, 0)))
+				{
+					m_NewControllerName = "NewAnimController";
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
+			}
+		}
+
+	private:
+		bool m_ShowNewControllerPopup = false;
+		std::string m_NewControllerName = "NewAnimController";
 	};
 
 }

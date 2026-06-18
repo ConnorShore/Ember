@@ -1633,7 +1633,7 @@ namespace Ember {
 		std::string sceneFile = scenePath;
 		if (sceneFile.empty())
 		{
-			std::string sceneDirectory = ProjectManager::GetActive()->GetScenesDirectory().string();
+			std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
 			sceneFile = FileDialog::OpenFile(sceneDirectory.c_str(), "Ember Scene (*.ebs;*.ebscene)", "*.ebs;*.ebscene");
 		}
 
@@ -1656,7 +1656,7 @@ namespace Ember {
 			return;
 		}
 
-		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+		std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
 			: activeScene->GetFilePath();
@@ -1723,7 +1723,7 @@ namespace Ember {
 			}
 
 			// Serialize assets
-			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
+			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
 			AssetRegistrySerializer assetSerializer(&assetManager);
 			assetSerializer.Serialize(assetFilePath.string());
 
@@ -1757,7 +1757,7 @@ namespace Ember {
 		std::string prefabFile = prefabPath;
 		if (prefabFile.empty())
 		{
-			std::string prefabDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			std::string prefabDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Prefab).string();
 			prefabFile = FileDialog::OpenFile(prefabDirectory.c_str(), "Ember Prefab (*.ebprefab)", "*.ebprefab");
 		}
 
@@ -1831,7 +1831,7 @@ namespace Ember {
 		std::string animationStateFile = path;
 		if (animationStateFile.empty())
 		{
-			std::string animationStateDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			std::string animationStateDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::AnimationController).string();
 			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation Controller (*.ebcontroller)", "*.ebcontroller");
 		}
 
@@ -1850,7 +1850,7 @@ namespace Ember {
 		std::string skeletonMaskFile = path;
 		if (skeletonMaskFile.empty())
 		{
-			std::string skeletonMaskDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			std::string skeletonMaskDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::SkeletonMask).string();
 			skeletonMaskFile = FileDialog::OpenFile(skeletonMaskDirectory.c_str(), "Ember Skeleton Mask (*.ebmask)", "*.ebmask");
 		}
 

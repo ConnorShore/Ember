@@ -145,7 +145,7 @@ namespace Ember {
 
 					if (ImGui::MenuItem("Load from file..."))
 					{
-						std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Physics Materials").string();
+						std::string defaultDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::PhysicsMaterial).string();
 						std::string matFile = FileDialog::OpenFile(defaultDir.c_str(), "Physics Material (*.ebpmat)", "*.ebpmat;");
 						if (!matFile.empty())
 						{
@@ -186,8 +186,7 @@ namespace Ember {
 					component.PhysicsMaterialHandle = newMat->GetUUID();
 
 					// Serialize the asset
-					std::filesystem::path assetDirectory = ProjectManager::GetActive()->GetAssetDirectory();
-					std::filesystem::path filePath = assetDirectory / "Physics Materials" / (newMatName + ".ebpmat");
+					std::filesystem::path filePath = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::PhysicsMaterial) / (newMatName + ".ebpmat");
 					newMat->SetFilePath(filePath.string());
 					newMat->SetIsEngineAsset(false);
 

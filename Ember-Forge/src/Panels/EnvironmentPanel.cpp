@@ -218,7 +218,7 @@ namespace Ember {
 
 			if (ImGui::Button("Create", ImVec2(120, 0)))
 			{
-				auto texDir = ProjectManager::GetActive()->GetAssetDirectory() / "Textures";
+				auto texDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Texture);
 				std::string newTexPath = (texDir / std::format("{}.png", lutName)).string();
 				if (std::filesystem::exists(std::filesystem::absolute(newTexPath)))
 				{

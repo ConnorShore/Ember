@@ -95,7 +95,7 @@ namespace Ember {
 							fileName = std::filesystem::path(textureAsset->GetFilePath()).filename().string();
 					}
 
-					auto textureDir = ProjectManager::GetActive()->GetAssetDirectory() / "Textures";
+					auto textureDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Texture);
 					std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
 					std::string droppedPath;
 
