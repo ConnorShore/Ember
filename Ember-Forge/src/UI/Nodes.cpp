@@ -100,11 +100,12 @@ namespace Ember {
 			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
 
-			std::string buttonID = "Remove##" + title;
-			if (ImGui::Button(buttonID.c_str()))
+			ImGui::PushID(title.c_str());
+			if (ImGui::Button("Remove"))
 			{
 				removed = true;
 			}
+			ImGui::PopID();
 
 			ImGui::PopStyleColor(1);
 			ImGui::PopStyleVar(3);

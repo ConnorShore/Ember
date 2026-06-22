@@ -6,6 +6,8 @@
 #include <Ember/Animation/AnimationControllerSerializer.h>
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Input/Input.h>
+#include "UI/Nodes.h"
+#include "UI/PropertyGrid.h"
 #include <imgui/imgui.h>
 
 #include <string>
@@ -224,13 +226,9 @@ namespace Ember {
 			auto& newLayer = m_AnimationController->CreateLayer("New Layer");
 			m_ActiveLayerIndex = static_cast<int>(m_AnimationController->GetLayers().size()) - 1;
 
-			// Start renaming the new layer immediately
-			m_RenamingLayerIndex = static_cast<int>(m_AnimationController->GetLayers().size()) - 1;
-			m_LayerRenameBuffer = newLayer.Name;
-			m_FocusLayerRename = true; // Tell ImGui to auto-focus the text box next frame
-
 			m_SelectedState = nullptr;
 			m_SelectedTransition = nullptr;
+			m_GraphNeedsRebuild = true;
 			m_IsDirty = true;
 		}
 
@@ -238,94 +236,64 @@ namespace Ember {
 		ImGui::Spacing();
 
 		auto& layers = m_AnimationController->GetLayers();
+		int layerToRemove = -1;
+
 		for (int i = 0; i < layers.size(); ++i)
 		{
 			auto& layer = layers[i];
+			std::string layerNodeTitle = std::format("{}###LayerNode_{}", layer.Name, i);
 
-			ImGui::PushID(i);
+			// Keep exactly one expanded layer: the selected/active one.
+			ImGui::SetNextItemOpen(m_ActiveLayerIndex == i, ImGuiCond_Always);
 
-			// If this layer is being renamed, show an input box instead of regular text
-			if (m_RenamingLayerIndex == i)
+			bool nodeExpanded = false;
+			if (i > 0)
 			{
-				char renameBuf[256];
-				strncpy_s(renameBuf, sizeof(renameBuf), m_LayerRenameBuffer.c_str(), _TRUNCATE);
-
-				// Force the cursor into this box if it was just created/clicked
-				if (m_FocusLayerRename)
-				{
-					ImGui::SetKeyboardFocusHere();
-					m_FocusLayerRename = false;
-				}
-
-				ImGui::SetNextItemWidth(-FLT_MIN);
-
-				// Commit the name change if the user presses Enter or clicks away
-				if (ImGui::InputText("##LayerRename", renameBuf, sizeof(renameBuf), ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::IsItemDeactivatedAfterEdit())
-				{
-					std::string newName = renameBuf;
-					if (!newName.empty())
-					{
-						layer.Name = newName;
-						m_IsDirty = true;
-					}
-					m_RenamingLayerIndex = -1; // Exit rename state
-				}
-				else
-				{
-					m_LayerRenameBuffer = renameBuf; // Keep buffer updated while typing
-				}
+				nodeExpanded = UI::Nodes::BeginRemoveableExpandableNode(layerNodeTitle, [&]() {
+					layerToRemove = i;
+					});
 			}
 			else
 			{
-				// Regular layer display
-				bool isSelected = (m_ActiveLayerIndex == i);
-				if (ImGui::Selectable(layer.Name.c_str(), isSelected))
-				{
-					m_ActiveLayerIndex = i;
-
-					//ne::ClearSelection();
-					m_SelectedState = nullptr;
-					m_SelectedTransition = nullptr;
-					m_GraphNeedsRebuild = true;
-				}
-
-				// Double-click to rename
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				{
-					m_RenamingLayerIndex = i;
-					m_LayerRenameBuffer = layer.Name;
-					m_FocusLayerRename = true;
-				}
-
-				// Right-click context menu
-				if (ImGui::BeginPopupContextItem("LayerContextMenu"))
-				{
-					if (ImGui::MenuItem("Rename Layer"))
-					{
-						m_RenamingLayerIndex = i;
-						m_LayerRenameBuffer = layer.Name;
-						m_FocusLayerRename = true;
-					}
-
-					if (i > 0 && ImGui::MenuItem("Delete Layer"))
-					{
-						layers.erase(layers.begin() + i);
-
-						if (m_ActiveLayerIndex >= layers.size())
-							m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
-
-						// If we deleted the layer we were renaming, clear the state
-						if (m_RenamingLayerIndex == i)
-							m_RenamingLayerIndex = -1;
-
-						m_GraphNeedsRebuild = true;
-						m_IsDirty = true;
-					}
-					ImGui::EndPopup();
-				}
+				nodeExpanded = UI::Nodes::BeginExpandableNode(layerNodeTitle);
 			}
 
-			ImGui::PopID();
+			// Selecting a layer is done by expanding its node.
+			if (nodeExpanded && m_ActiveLayerIndex != i)
+			{
+				m_ActiveLayerIndex = i;
+				m_SelectedState = nullptr;
+				m_SelectedTransition = nullptr;
+				m_GraphNeedsRebuild = true;
+			}
+
+			if (nodeExpanded)
+			{
+				if (UI::PropertyGrid::Begin(std::format("LayerProps_{}", i)))
+				{
+					if (UI::PropertyGrid::InputText("Name", layer.Name))
+						m_IsDirty = true;
+
+					UI::PropertyGrid::End();
+				}
+
+				UI::Nodes::EndExpandableNode();
+			}
+
+			ImGui::Spacing();
+		}
+
+		if (layerToRemove >= 0 && layerToRemove < layers.size())
+		{
+			layers.erase(layers.begin() + layerToRemove);
+
+			if (m_ActiveLayerIndex >= layers.size())
+				m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
+
+			m_SelectedState = nullptr;
+			m_SelectedTransition = nullptr;
+			m_GraphNeedsRebuild = true;
+			m_IsDirty = true;
 		}
 	}
 

@@ -85,9 +85,6 @@ namespace Ember {
 
 		// Layer Management
 		int m_ActiveLayerIndex = 0;
-		int m_RenamingLayerIndex = -1;
-		std::string m_LayerRenameBuffer;
-		bool m_FocusLayerRename = false;
 
 		bool m_GraphNeedsRebuild = true;
 
