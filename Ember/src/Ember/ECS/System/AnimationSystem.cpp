@@ -160,8 +160,9 @@ namespace Ember {
 		{
 			auto& animator = scene->GetRegistry().GetComponent<AnimatorComponent>(entity);
 			if (animator.LayerStates.empty())
+			{
 				animator.LayerStates.emplace_back();
-			auto& runtime = animator.LayerStates[0];
+			}
 
 			// Safety checks
 			if (animator.SkeletonHandle == Constants::InvalidUUID)
@@ -171,236 +172,272 @@ namespace Ember {
 			if (!skeleton)
 				continue;
 
+			// TODO: Loop over each layer and apply the animation state machine logic for each layer
+			//	Need to account for layer blending and masking as well
 			auto controller = animator.ControllerHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationController>(animator.ControllerHandle) : nullptr;
-			AnimationStateMachine* animStateMachine = nullptr;
-			if (controller && !controller->GetLayers().empty())
-				animStateMachine = &controller->GetLayers()[0].StateMachine;
+			if (controller->GetLayers().empty())
+				continue;
 
-			const AnimationState* currentState = ResolveCurrentState(animStateMachine, runtime);
-
-			std::unordered_map<std::string, AnimationParameter> effectiveParameters;
-			if (controller)
-				effectiveParameters = controller->GetParameters();
-
-			// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
-			for (auto parameter : animator.Blackboard.Parameters)
+			size_t numLayers = controller->GetLayers().size();
+			for (size_t i = 0; i < numLayers; i++)
 			{
-				if (controller && !controller->GetParameters().contains(parameter.first))
+				// TODO: Should I add a layer state or break if num layers is bigger than layer states
+				if (i >= animator.LayerStates.size())
 				{
-					EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
+					EB_CORE_WARN("Animator layer states is empty for layer {}. Placing blank layer state.", i);
+					animator.LayerStates.emplace_back();
 				}
 
-				effectiveParameters[parameter.first] = parameter.second;
-			}
+				auto& runtime = animator.LayerStates[i];
 
-			// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
-			if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(runtime.CurrentStateId))
-			{
-				const auto& transitions = animStateMachine->GetTransitions().at(runtime.CurrentStateId);
-				for (const auto& transition : transitions)
+				AnimationLayer& layer = controller->GetLayer(i);
+				AnimationStateMachine* animStateMachine = &layer.StateMachine;
+				const AnimationState* currentState = ResolveCurrentState(animStateMachine, runtime);
+
+				std::unordered_map<std::string, AnimationParameter> effectiveParameters;
+				if (controller)
+					effectiveParameters = controller->GetParameters();
+
+				// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
+				for (auto parameter : animator.Blackboard.Parameters)
 				{
-					if (transition.ToStateId == runtime.CurrentStateId || !ResolveState(animStateMachine, transition.ToStateId))
-						continue;
-
-					// Check condition to see if one is met, if so trigger transition and set prev and current states
-					bool activateTransition = true;
-					for (const auto& condition : transition.Conditions)
+					if (controller && !controller->GetParameters().contains(parameter.first))
 					{
-						if (!AnimationConditionEvaluator::Evaluate(condition, effectiveParameters))
+						EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
+					}
+
+					effectiveParameters[parameter.first] = parameter.second;
+				}
+
+				// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
+				if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(runtime.CurrentStateId))
+				{
+					const auto& transitions = animStateMachine->GetTransitions().at(runtime.CurrentStateId);
+					for (const auto& transition : transitions)
+					{
+						if (transition.ToStateId == runtime.CurrentStateId || !ResolveState(animStateMachine, transition.ToStateId))
+							continue;
+
+						// Check condition to see if one is met, if so trigger transition and set prev and current states
+						bool activateTransition = true;
+						for (const auto& condition : transition.Conditions)
 						{
-							activateTransition = false;
-							break;
+							if (!AnimationConditionEvaluator::Evaluate(condition, effectiveParameters))
+							{
+								activateTransition = false;
+								break;
+							}
 						}
-					}
 
-					if (!activateTransition)
-						continue;
+						if (!activateTransition)
+							continue;
 
-					runtime.PreviousStateId = runtime.CurrentStateId;
-					runtime.PreviousTime = runtime.CurrentTime;
-					runtime.CurrentStateId = transition.ToStateId;
-					runtime.CurrentTime = 0.0f;
-					runtime.CurrentBlendTime = 0.0f;
-					runtime.ActiveBlendDuration = std::max(transition.BlendDuration, 0.0f);
-					runtime.IsBlending = runtime.ActiveBlendDuration > 0.0f;
-					if (!runtime.IsBlending)
-					{
-						runtime.PreviousStateId = Constants::InvalidUUID;
-						runtime.PreviousTime = 0.0f;
-					}
-					currentState = ResolveState(animStateMachine, runtime.CurrentStateId);
-					break;
-				}
-			}
+						EB_CORE_INFO("Layer: {}; Transitioning from state '{}' to state '{}'!", controller->GetLayers()[0].Name, currentState->Name, ResolveState(animStateMachine, transition.ToStateId)->Name);
 
-			const auto& bones = skeleton->GetBones();
-			const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
-
-			float blendWeight = 1.0f;
-
-			auto animation = currentState && currentState->AnimationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(currentState->AnimationHandle) : nullptr;
-			SharedPtr<Animation> prevAnimation = nullptr;
-			if (currentState && animation)
-			{
-				float duration = animation->GetDuration();
-
-				//If a animation is currently cross fading, we need to handle the logic
-				if (runtime.IsBlending)
-				{
-					const AnimationState* previousState = ResolveState(animStateMachine, runtime.PreviousStateId);
-					if (previousState && previousState->AnimationHandle != Constants::InvalidUUID)
-						prevAnimation = assetManager.GetAsset<Animation>(previousState->AnimationHandle);
-
-					if (!previousState || !prevAnimation || runtime.ActiveBlendDuration <= 0.0f)
-					{
-						runtime.PreviousStateId = Constants::InvalidUUID;
+						runtime.PreviousStateId = runtime.CurrentStateId;
+						runtime.PreviousTime = runtime.CurrentTime;
+						runtime.CurrentStateId = transition.ToStateId;
+						runtime.CurrentTime = 0.0f;
 						runtime.CurrentBlendTime = 0.0f;
-						runtime.ActiveBlendDuration = 0.0f;
-						runtime.IsBlending = false;
-					}
-					else
-					{
-						runtime.PreviousTime += (delta * previousState->BasePlaybackSpeed);
-						float previousDuration = prevAnimation->GetDuration();
-						if (previousDuration > 0.0f)
+						runtime.ActiveBlendDuration = std::max(transition.BlendDuration, 0.0f);
+						runtime.IsBlending = runtime.ActiveBlendDuration > 0.0f;
+						if (!runtime.IsBlending)
 						{
-							if (previousState->Looping)
-							{
-								runtime.PreviousTime = fmod(runtime.PreviousTime, previousDuration);
-								if (runtime.PreviousTime < 0.0f)
-									runtime.PreviousTime += previousDuration;
-							}
-							else
-							{
-								runtime.PreviousTime = std::clamp(runtime.PreviousTime.Seconds(), 0.0f, previousDuration);
-							}
+							runtime.PreviousStateId = Constants::InvalidUUID;
+							runtime.PreviousTime = 0.0f;
 						}
+						currentState = ResolveState(animStateMachine, runtime.CurrentStateId);
+						break;
+					}
+				}
 
-						// Calculate Blend Weight (0.0 to 1.0)
-						runtime.CurrentBlendTime += delta;
-						blendWeight = std::clamp(runtime.CurrentBlendTime / runtime.ActiveBlendDuration, 0.0f, 1.0f);
+				const auto& bones = skeleton->GetBones();
+				const auto& invBindTransforms = skeleton->GetInverseBindTransforms();
 
-						if (blendWeight >= 1.0f)
+				float blendWeight = 1.0f;
+
+				auto animation = currentState && currentState->AnimationHandle != Constants::InvalidUUID ? assetManager.GetAsset<Animation>(currentState->AnimationHandle) : nullptr;
+				SharedPtr<Animation> prevAnimation = nullptr;
+				if (currentState && animation)
+				{
+					float duration = animation->GetDuration();
+
+					//If a animation is currently cross fading, we need to handle the logic
+					if (runtime.IsBlending)
+					{
+						const AnimationState* previousState = ResolveState(animStateMachine, runtime.PreviousStateId);
+						if (previousState && previousState->AnimationHandle != Constants::InvalidUUID)
+							prevAnimation = assetManager.GetAsset<Animation>(previousState->AnimationHandle);
+
+						if (!previousState || !prevAnimation || runtime.ActiveBlendDuration <= 0.0f)
 						{
-							// Blend finished, clear the previous state
 							runtime.PreviousStateId = Constants::InvalidUUID;
 							runtime.CurrentBlendTime = 0.0f;
 							runtime.ActiveBlendDuration = 0.0f;
 							runtime.IsBlending = false;
 						}
+						else
+						{
+							runtime.PreviousTime += (delta * previousState->BasePlaybackSpeed);
+							float previousDuration = prevAnimation->GetDuration();
+							if (previousDuration > 0.0f)
+							{
+								if (previousState->Looping)
+								{
+									runtime.PreviousTime = fmod(runtime.PreviousTime, previousDuration);
+									if (runtime.PreviousTime < 0.0f)
+										runtime.PreviousTime += previousDuration;
+								}
+								else
+								{
+									runtime.PreviousTime = std::clamp(runtime.PreviousTime.Seconds(), 0.0f, previousDuration);
+								}
+							}
+
+							// Calculate Blend Weight (0.0 to 1.0)
+							runtime.CurrentBlendTime += delta;
+							blendWeight = std::clamp(runtime.CurrentBlendTime / runtime.ActiveBlendDuration, 0.0f, 1.0f);
+
+							if (blendWeight >= 1.0f)
+							{
+								// Blend finished, clear the previous state
+								runtime.PreviousStateId = Constants::InvalidUUID;
+								runtime.CurrentBlendTime = 0.0f;
+								runtime.ActiveBlendDuration = 0.0f;
+								runtime.IsBlending = false;
+							}
+						}
 					}
-				}
 
-				float lastFrameTime = runtime.CurrentTime;
-				runtime.CurrentTime += (delta * currentState->BasePlaybackSpeed);
+					float lastFrameTime = runtime.CurrentTime;
+					runtime.CurrentTime += (delta * currentState->BasePlaybackSpeed);
 
-				if (duration > 0.0f && currentState->BasePlaybackSpeed > 0.0f && runtime.CurrentTime > duration)
-				{
-					if (currentState->Looping)
-						runtime.CurrentTime = fmod(runtime.CurrentTime, duration);
-					else
-						runtime.CurrentTime = duration;	// Clamp to end
-				}
-				else if (duration > 0.0f && currentState->BasePlaybackSpeed < 0.0f && runtime.CurrentTime < 0.0f)
-				{
-					if (currentState->Looping)
+					if (duration > 0.0f && currentState->BasePlaybackSpeed > 0.0f && runtime.CurrentTime > duration)
 					{
-						runtime.CurrentTime = std::fmod(runtime.CurrentTime, duration);
-						if (runtime.CurrentTime < 0.0f)
-							runtime.CurrentTime += duration;
+						if (currentState->Looping)
+							runtime.CurrentTime = fmod(runtime.CurrentTime, duration);
+						else
+							runtime.CurrentTime = duration;	// Clamp to end
 					}
-					else
-						runtime.CurrentTime = 0.0f;	// Clamp to start
-				}
-
-				// See if any animation events need to be fired at this timestamp
-				for (const auto& event : animation->GetEvents())
-				{
-					if (lastFrameTime < event.Timestamp && runtime.CurrentTime >= event.Timestamp)
+					else if (duration > 0.0f && currentState->BasePlaybackSpeed < 0.0f && runtime.CurrentTime < 0.0f)
 					{
-						ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
+						if (currentState->Looping)
+						{
+							runtime.CurrentTime = std::fmod(runtime.CurrentTime, duration);
+							if (runtime.CurrentTime < 0.0f)
+								runtime.CurrentTime += duration;
+						}
+						else
+							runtime.CurrentTime = 0.0f;	// Clamp to start
 					}
-				}
-			}
 
-			// Pre-allocate arrays for this frame's math
-			std::vector<Matrix4f> localTransforms(bones.size());
-			std::vector<Matrix4f> globalTransforms(bones.size());
-
-			// 1. Interpolate and Blend!
-			for (uint32_t i = 0; i < bones.size(); i++)
-			{
-				// Default to bind pose
-				Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
-				Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
-				Vector3f currentScale = Vector3f(1.0f);
-
-				// Evaluate Current Animation
-				if (animation) {
-					if (const auto* track = GetTrack(animation, i)) {
-						if (track->PositionKeyframes.size() > 0)
-							currentPos = EvaluatePosition(*track, runtime.CurrentTime);
-						if (track->RotationKeyframes.size() > 0)
-							currentRot = EvaluateRotation(*track, runtime.CurrentTime);
-						if (track->ScaleKeyframes.size() > 0)
-							currentScale = EvaluateScale(*track, runtime.CurrentTime);
+					// See if any animation events need to be fired at this timestamp
+					for (const auto& event : animation->GetEvents())
+					{
+						if (lastFrameTime < event.Timestamp && runtime.CurrentTime >= event.Timestamp)
+						{
+							ScriptSystem::FireAnimationEvent(entity, event.Name, scene);
+						}
 					}
 				}
 
-				// Evaluate Previous Animation & BLEND
-				if (blendWeight < 1.0f && prevAnimation)
+				// Pre-allocate arrays for this frame's math
+				std::vector<Matrix4f> localTransforms(bones.size());
+				std::vector<Matrix4f> globalTransforms(bones.size());
+
+				// 1. Interpolate and Blend!
+				for (uint32_t i = 0; i < bones.size(); i++)
 				{
-					Vector3f prevPos = bones[i].LocalBindPoseTransform.Translation;
-					Quaternion prevRot = bones[i].LocalBindPoseTransform.Rotation;
-					Vector3f prevScale = Vector3f(1.0f);
+					// Default to bind pose
+					Vector3f currentPos = bones[i].LocalBindPoseTransform.Translation;
+					Quaternion currentRot = bones[i].LocalBindPoseTransform.Rotation;
+					Vector3f currentScale = Vector3f(1.0f);
 
-					if (const auto* prevTrack = GetTrack(prevAnimation, i)) {
-						if (prevTrack->PositionKeyframes.size() > 0)
-							prevPos = EvaluatePosition(*prevTrack, runtime.PreviousTime);
-						if (prevTrack->RotationKeyframes.size() > 0)
-							prevRot = EvaluateRotation(*prevTrack, runtime.PreviousTime);
-						if (prevTrack->ScaleKeyframes.size() > 0)
-							prevScale = EvaluateScale(*prevTrack, runtime.PreviousTime);
+					// Evaluate Current Animation
+					if (animation) {
+						if (const auto* track = GetTrack(animation, i)) {
+							if (track->PositionKeyframes.size() > 0)
+								currentPos = EvaluatePosition(*track, runtime.CurrentTime);
+							if (track->RotationKeyframes.size() > 0)
+								currentRot = EvaluateRotation(*track, runtime.CurrentTime);
+							if (track->ScaleKeyframes.size() > 0)
+								currentScale = EvaluateScale(*track, runtime.CurrentTime);
+						}
 					}
 
-					// If blendWeight is 0.2, it takes 80% of prev and 20% of current.
-					currentPos = Math::Mix(prevPos, currentPos, blendWeight);
-					currentRot = glm::normalize(Math::Slerp(prevRot, currentRot, blendWeight));
-					currentScale = Math::Mix(prevScale, currentScale, blendWeight);
+					// Evaluate Previous Animation & BLEND
+					if (blendWeight < 1.0f && prevAnimation)
+					{
+						Vector3f prevPos = bones[i].LocalBindPoseTransform.Translation;
+						Quaternion prevRot = bones[i].LocalBindPoseTransform.Rotation;
+						Vector3f prevScale = Vector3f(1.0f);
+
+						if (const auto* prevTrack = GetTrack(prevAnimation, i)) {
+							if (prevTrack->PositionKeyframes.size() > 0)
+								prevPos = EvaluatePosition(*prevTrack, runtime.PreviousTime);
+							if (prevTrack->RotationKeyframes.size() > 0)
+								prevRot = EvaluateRotation(*prevTrack, runtime.PreviousTime);
+							if (prevTrack->ScaleKeyframes.size() > 0)
+								prevScale = EvaluateScale(*prevTrack, runtime.PreviousTime);
+						}
+
+						// If blendWeight is 0.2, it takes 80% of prev and 20% of current.
+						currentPos = Math::Mix(prevPos, currentPos, blendWeight);
+						currentRot = glm::normalize(Math::Slerp(prevRot, currentRot, blendWeight));
+						currentScale = Math::Mix(prevScale, currentScale, blendWeight);
+					}
+
+					// Combine into the new Local Matrix
+					localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot) * Math::Scale(currentScale);
 				}
 
-				// Combine into the new Local Matrix
-				localTransforms[i] = Math::Translate(currentPos) * Math::ToMatrix4f(currentRot) * Math::Scale(currentScale);
-			}
-
-
-			// Build global pose hierarchy
-			// We can loop linearly because glTF guarantees parent nodes appear before children in the array
-			for (size_t i = 0; i < bones.size(); i++)
-			{
-				if (bones[i].ParentID == -1) {
-					globalTransforms[i] = localTransforms[i]; // Root bone
+				// Set mask for bones based on mask for layer
+				std::vector<float> boneWeights(bones.size(), 1.0f);
+				if (layer.MaskHandle != Constants::InvalidUUID)
+				{
+					auto mask = assetManager.GetAsset<SkeletonMask>(layer.MaskHandle);
+					if (mask)
+					{
+						for (size_t i = 0; i < bones.size(); i++)
+						{
+							boneWeights[i] = mask->GetBoneWeight(bones[i]);
+						}
+					}
 				}
-				else {
-					// Parent Global * Child Local
-					globalTransforms[i] = globalTransforms[bones[i].ParentID] * localTransforms[i];
+
+				// Build global pose hierarchy
+				// We can loop linearly because glTF guarantees parent nodes appear before children in the array
+				for (size_t i = 0; i < bones.size(); i++)
+				{
+					if (boneWeights[i] <= 0.0f) {
+						globalTransforms[i] = Matrix4f(1.0f); // Skip this bone if weight is 0
+						continue;
+					}
+
+					if (bones[i].ParentID == -1) {
+						globalTransforms[i] = localTransforms[i]; // Root bone
+					}
+					else {
+						// Parent Global * Child Local
+						globalTransforms[i] = globalTransforms[bones[i].ParentID] * localTransforms[i];
+					}
 				}
-			}
 
-			// Apply inverse bind pose to get final bone matrices for skinning
-			if (animator.BonePoseMatrices.size() < bones.size()) {
-				animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
-			}
+				// Apply inverse bind pose to get final bone matrices for skinning
+				if (animator.BonePoseMatrices.size() < bones.size()) {
+					animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
+				}
 
-			if (animator.BoneMatrices.size() < bones.size()) {
-				animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
-			}
+				if (animator.BoneMatrices.size() < bones.size()) {
+					animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
+				}
 
-			for (size_t i = 0; i < bones.size(); i++)
-			{
-				// FinalMatrix = GlobalPose * InverseBindPose
-				animator.BonePoseMatrices[i] = globalTransforms[i];
-				animator.BoneMatrices[i] = globalTransforms[i] * invBindTransforms[i];
+				for (size_t i = 0; i < bones.size(); i++)
+				{
+					// FinalMatrix = GlobalPose * InverseBindPose
+					animator.BonePoseMatrices[i] = boneWeights[i] * globalTransforms[i] + (1.0f - boneWeights[i]) * animator.BonePoseMatrices[i];
+					animator.BoneMatrices[i] = boneWeights[i] * (globalTransforms[i] * invBindTransforms[i]) + (1.0f - boneWeights[i]) * animator.BoneMatrices[i];
+				}
 			}
 		}
 	}

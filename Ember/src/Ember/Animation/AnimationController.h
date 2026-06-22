@@ -24,6 +24,11 @@ namespace Ember {
 			return m_Layers.back();
 		}
 
+		inline AnimationLayer& GetLayer(uint32_t index)
+		{
+			return m_Layers[index];
+		}
+
 		void InitializeDefaultController()
 		{
 			if (m_Layers.empty())
