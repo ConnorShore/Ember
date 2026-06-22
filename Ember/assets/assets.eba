@@ -48,10 +48,6 @@ Assets:
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
   - Type: Texture
-    UUID: 12541227798747992686
-    Name: DesertEagle_DesertEagleNormal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleNormal.png
-  - Type: Texture
     UUID: 15863835653609318779
     Name: HolographicReticle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
@@ -59,6 +55,10 @@ Assets:
     UUID: 9008232455192275898
     Name: AssaultRifle_ARColor.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
+  - Type: Texture
+    UUID: 12541227798747992686
+    Name: DesertEagle_DesertEagleNormal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleNormal.png
   - Type: Texture
     UUID: 2902344313391760329
     Name: DesertEagle_DesertEagleDiffuse.png
@@ -152,17 +152,13 @@ Assets:
     Name: DesertEagle_Metal
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Metal.ebmat
   - Type: Material
-    UUID: 13734008897576602447
-    Name: GroundMaterial
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
+    UUID: 3531595371019758275
+    Name: AssaultRifle_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
   - Type: Material
     UUID: 7112033288364404519
     Name: Tracer_Material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Tracer_Material.ebmat
-  - Type: Material
-    UUID: 3531595371019758275
-    Name: AssaultRifle_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
   - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
@@ -175,6 +171,10 @@ Assets:
     UUID: 8747674591623748722
     Name: HolographicReticleMat
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/HolographicReticleMat.ebmat
+  - Type: Material
+    UUID: 13734008897576602447
+    Name: GroundMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
     UUID: 1868779223986162857
     Name: PowerUpMaterial
@@ -232,9 +232,9 @@ Assets:
     Name: DesertEagle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle.ebskeleton
   - Type: SkeletonMask
-    UUID: 6205344509844990405
-    Name: TestMask
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/TestMask.ebmask
+    UUID: 2548850233763151739
+    Name: DEagleSlideMask
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
     UUID: 6612716991326083235
     Name: M4_Reload

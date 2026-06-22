@@ -1,5 +1,6 @@
 #include "efpch.h"
 #include "AnimationViewportViewer.h"
+#include "UI/DragDropTypes.h"
 #include "EditorLayer.h"
 
 #include <Ember/Core/ProjectManager.h>
@@ -101,7 +102,7 @@ namespace Ember {
 		editor->SetViewportFocused(ImGui::IsWindowFocused());
 
 		// Layer Selection Panel (Left Panel)
-		if (ImGui::BeginChild("LayersPanel", ImVec2(250, 0), true))
+		if (ImGui::BeginChild("LayersPanel", ImVec2(300, 0), true))
 		{
 			DrawLayerPanel();
 		}
@@ -271,8 +272,41 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::Begin(std::format("LayerProps_{}", i)))
 				{
+					auto& assetManager = Application::Instance().GetAssetManager();
+
 					if (UI::PropertyGrid::InputText("Name", layer.Name))
 						m_IsDirty = true;
+
+					UI::PropertyGrid::SliderFloat("Weight", layer.Weight, 0.0f, 1.0f);
+
+					// Animation mask asset reference
+					bool maskExists = layer.MaskHandle != Constants::InvalidUUID;
+					std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetSkeletonMask);
+					std::string droppedPath;
+
+					auto browseFunc = [&, i]() {
+						m_SkeletonMaskPopupLayerIndex = i;
+						m_SkeletonMaskPopupSelectedHandle = layer.MaskHandle;
+						ImGui::OpenPopup("ChooseSkeletonMaskPopup");
+					};
+
+					auto clearFunc = maskExists ? UI::UICallbackFunc([&]() {
+						layer.MaskHandle = Constants::InvalidUUID;
+						}) : nullptr;
+
+					std::string maskName = "None (Skeleton Mask)";
+					if (maskExists)
+					{
+						auto maskAsset = assetManager.GetAsset<SkeletonMask>(layer.MaskHandle);
+						if (maskAsset)
+							maskName = std::filesystem::path(maskAsset->GetFilePath()).filename().string();
+					}
+					if (UI::PropertyGrid::AssetReference("Mask", maskName, payloadType, droppedPath, browseFunc, clearFunc))
+					{
+						auto mat = assetManager.Load<SkeletonMask>(droppedPath);
+						if (mat)
+							layer.MaskHandle = mat->GetUUID();
+					}
 
 					UI::PropertyGrid::End();
 				}
@@ -294,6 +328,74 @@ namespace Ember {
 			m_SelectedTransition = nullptr;
 			m_GraphNeedsRebuild = true;
 			m_IsDirty = true;
+		}
+
+		RenderSkeletonMaskPopup();
+	}
+
+	void AnimationViewportViewer::RenderSkeletonMaskPopup()
+	{
+		if (m_SkeletonMaskPopupLayerIndex < 0 || !m_AnimationController)
+			return;
+
+		auto& layers = m_AnimationController->GetLayers();
+		if (m_SkeletonMaskPopupLayerIndex >= layers.size())
+			return;
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 320.0f), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("ChooseSkeletonMaskPopup", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto& layer = layers[m_SkeletonMaskPopupLayerIndex];
+			auto skeletonMasks = assetManager.GetAssetsOfType<SkeletonMask>();
+
+			if (ImGui::BeginChild("##SkeletonMaskList", ImVec2(0.0f, -44.0f), true))
+			{
+				if (skeletonMasks.empty())
+				{
+					ImGui::TextUnformatted("No skeleton masks available.");
+				}
+				else
+				{
+					for (const auto& skeletonMask : skeletonMasks)
+					{
+						std::string maskName = skeletonMask->GetName();
+						if (!skeletonMask->GetFilePath().empty())
+							maskName = std::filesystem::path(skeletonMask->GetFilePath()).filename().string();
+
+						bool isSelected = m_SkeletonMaskPopupSelectedHandle == skeletonMask->GetUUID();
+						if (ImGui::Selectable(maskName.c_str(), isSelected))
+							m_SkeletonMaskPopupSelectedHandle = skeletonMask->GetUUID();
+					}
+				}
+				ImGui::EndChild();
+			}
+
+			bool canSelect = m_SkeletonMaskPopupSelectedHandle != Constants::InvalidUUID;
+			ImGui::BeginDisabled(!canSelect);
+			if (ImGui::Button("Select", ImVec2(120.0f, 0.0f)))
+			{
+				layer.MaskHandle = m_SkeletonMaskPopupSelectedHandle;
+				m_SaveCooldown = AUTO_SAVE_DELAY;
+				m_IsDirty = true;
+				m_SkeletonMaskPopupLayerIndex = -1;
+				m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndDisabled();
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f)))
+			{
+				m_SkeletonMaskPopupLayerIndex = -1;
+				m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
 		}
 	}
 

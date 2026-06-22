@@ -68,6 +68,7 @@ namespace Ember {
 		void RenderDefaultContextMenu();
 		void RenderNodeContextMenu(ne::NodeId nodeId);
 		void RenderLinkContextMenu(ne::LinkId linkId);
+		void RenderSkeletonMaskPopup();
 		void HandleInteractiveTransition();
 
 	private:
@@ -115,5 +116,9 @@ namespace Ember {
 		bool m_RequestDefaultContextMenu = false;
 		bool m_RequestNodeContextMenu = false;
 		bool m_RequestLinkContextMenu = false;
+
+		// Skeleton Mask Selection Popup State
+		int m_SkeletonMaskPopupLayerIndex = -1;
+		UUID m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
 	};
 }

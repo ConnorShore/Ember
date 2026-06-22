@@ -1328,6 +1328,15 @@ namespace Ember {
 					// Open the new skeleton mask in the editor
 					m_Context->RequestSkeletonMaskOpenPath = skeletonMaskPath.string();
 					assetManager.Load<SkeletonMask>(skeletonMaskPath.string());
+
+					// Save the updated asset registry
+					AssetRegistrySerializer registrySerializer(&assetManager);
+					if (!registrySerializer.Serialize(ProjectManager::GetActive()->GetAssetsFilePath().string()))
+					{
+						auto evt = UINotificationEvent(std::format("Failed to update asset registry after creating skeleton mask '{}'", m_SkeletonMaskName), UINotificationEvent::Error);
+						m_Context->EventCallback(evt);
+						assetManager.RemoveAsset(skeletonMask->GetUUID());
+					}
 				}
 				else
 				{
