@@ -50,6 +50,7 @@ namespace Ember {
 		void SetCameraPreviewViewportSize(const Vector2f& size) { m_CameraPreviewViewportSize = size; }
 
 		void CreateEntityFromModel(const std::string& modelFilePath);
+		void CreateEntityFromPrefab(const std::string& prefabFilePath);
 		void OpenPrefab(const std::string& prefabPath = "");
 		void OpenScene(const std::string& scenePath = "");
 
@@ -83,7 +84,6 @@ namespace Ember {
 		void RemovePendingEntities();
 		void RemovePendingComponents();
 
-		void CreateEntityFromPrefab(const std::string& prefabFilePath);
 		void SyncEditorIconComponents(Scene* scene);
 
 		void OutlineEntity(Entity entity);

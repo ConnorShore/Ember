@@ -1810,8 +1810,18 @@ namespace Ember {
 		std::ifstream stream(m_EditingPrefabPath);
 		m_EditingPrefab->YAMLData = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
 
+		// Prefab saves can happen while editing animation events in the scrubber panel.
+		// Persist animation assets here as well so timeline event edits are not lost.
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto animations = assetManager.GetAssetsOfType<Animation>();
+		for (auto& anim : animations)
+		{
+			if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
+				AnimationSerializer::Serialize(anim->GetFilePath(), anim);
+		}
+
 		std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
-		AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+		AssetRegistrySerializer assetSerializer(&assetManager);
 		assetSerializer.Serialize(assetFilePath.string());
 
 		auto evt = UINotificationEvent(std::format("Prefab saved: {}", std::filesystem::path(m_EditingPrefabPath).filename().string()));

@@ -294,6 +294,18 @@ namespace Ember {
 			m_PoolManager->CreatePool(this, config.PoolID, config.PrefabHandle, config.Capacity, config.LoopEntities);
 		}
 
+		// Initialize animator blackboards from their controllers now that all assets are guaranteed to be loaded
+		auto animatorView = m_Registry->ActiveQuery<AnimatorComponent>();
+		for (auto entity : animatorView)
+		{
+			auto& animator = m_Registry->GetComponent<AnimatorComponent>(entity);
+			// Only reinitialize if blackboard is empty (in case it wasn't initialized during deserialization)
+			if (animator.Blackboard.Parameters.empty())
+			{
+				animator.InitializeBlackboardFromController();
+			}
+		}
+
 		ScriptEngine::OnRuntimeStart(this);
 	}
 

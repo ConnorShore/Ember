@@ -57,7 +57,7 @@ namespace Ember {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadTypePrefab.c_str()))
 			{
 				std::string filePath = std::string((char*)payload->Data, payload->DataSize > 0 ? payload->DataSize - 1 : 0);
-				editor->OpenPrefab(filePath);
+				editor->CreateEntityFromPrefab(filePath);
 			}
 
 			std::string payloadTypeScene = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::Scene);

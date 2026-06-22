@@ -421,6 +421,7 @@ namespace Ember {
 			animatorNode |= ryml::MAP;
 			animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
 			animatorNode["ControllerHandle"] << (uint64_t)animator.ControllerHandle;
+			// Note: Blackboard is runtime-only and not serialized
 		}
 		if (entity.ContainsComponent<BoneSocketComponent>())
 		{
@@ -1138,6 +1139,10 @@ namespace Ember {
 			ac.ControllerHandle = (UUID)controllerHandle;
 			if (ac.LayerStates.empty())
 				ac.LayerStates.emplace_back();
+
+			// Initialize blackboard from controller for editor mode
+			// Note: Blackboard is runtime-only, so we don't load any saved values
+			ac.InitializeBlackboardFromController();
 		}
 
 		if (entityNode.has_child("BoneSocketComponent"))

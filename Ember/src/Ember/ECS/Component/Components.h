@@ -683,6 +683,28 @@ namespace Ember {
 			Blackboard.SetInt(name, value);
 		}
 
+		// Initialize blackboard parameters from the animation controller
+		void InitializeBlackboardFromController()
+		{
+			if (ControllerHandle == Constants::InvalidUUID)
+			{
+				Blackboard.Parameters.clear();
+				return;
+			}
+
+			auto controller = Application::Instance().GetAssetManager().GetAsset<AnimationController>(ControllerHandle);
+			if (controller && !controller->GetParameters().empty())
+			{
+				// Copy controller's parameter definitions into the blackboard
+				Blackboard.Parameters = controller->GetParameters();
+			}
+			else if (!controller)
+			{
+				EB_CORE_WARN("AnimatorComponent::InitializeBlackboardFromController - Failed to load animation controller!");
+				Blackboard.Parameters.clear();
+			}
+		}
+
 		AnimatorComponent() = default;
 		AnimatorComponent(const AnimatorComponent&) = default;
 	};
