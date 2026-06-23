@@ -255,6 +255,12 @@ namespace Ember {
 		if (!stateMachine || !controller)
 			return;
 
+		if (UI::PropertyGrid::Begin("TransitionProps"))
+		{
+			UI::PropertyGrid::Float("Blend Duration", animTransition->BlendDuration);
+			UI::PropertyGrid::End();
+		}
+
 		auto& parameters = controller->GetParameters();
 
 		// Header and Add Button aligned to the right
