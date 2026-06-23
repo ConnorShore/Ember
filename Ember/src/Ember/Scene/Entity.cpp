@@ -192,6 +192,45 @@ namespace Ember {
 		return Entity();
 	}
 
+	void Entity::SetActive(bool active, bool recursive /*= true*/)
+	{
+		if (active)
+		{
+			if (ContainsComponent<DisabledComponent>())
+				DetachComponent<DisabledComponent>();
+		}
+		else
+		{
+			if (!ContainsComponent<DisabledComponent>())
+				AttachComponent<DisabledComponent>();
+		}
+
+		if (!recursive)
+			return;
+
+		for (auto& child : GetAllChildren())
+		{
+			if (child == Constants::Entities::InvalidEntityID)
+				continue;
+
+			if (active)
+			{
+				if (child.ContainsComponent<DisabledComponent>())
+					child.DetachComponent<DisabledComponent>();
+			}
+			else
+			{
+				if (!child.ContainsComponent<DisabledComponent>())
+					child.AttachComponent<DisabledComponent>();
+			}
+		}
+	}
+
+	bool Entity::IsActive() const
+	{
+		return !m_SceneHandle->GetRegistry().ContainsComponent<DisabledComponent>(m_EntityHandle);
+	}
+
 	const std::string& Entity::GetName() const
 	{
 		return m_SceneHandle->GetRegistry().GetComponent<TagComponent>(m_EntityHandle).Tag;

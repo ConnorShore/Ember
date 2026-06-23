@@ -292,7 +292,9 @@ The handle to a world object. Almost all gameplay code goes through `Entity`.
 | --- | --- |
 | `:GetName()` | Returns the entity's name (string). |
 | `:GetUUID()` | Returns the entity's `UUID`. |
-| `:SetActive(bool)` | Enables or disables the entity (toggles `DisabledComponent`). |
+| `:SetActive(bool)` | Enables or disables the entity and all descendants (toggles `DisabledComponent`). |
+| `:SetActive(bool, recursive)` | Enables/disables the entity; pass `false` for `recursive` to only affect this entity. |
+| `:IsActive()` | Returns `true` when the entity does not have `DisabledComponent`. |
 | `:AttachComponent(typeName)` | Adds a component by string name; returns the new component (or existing one). |
 | `:DetachComponent(typeName)` | Removes a component by string name. |
 | `:GetComponent(typeName)` | Returns the component, or logs an error and returns `nil` if it isn't present. |

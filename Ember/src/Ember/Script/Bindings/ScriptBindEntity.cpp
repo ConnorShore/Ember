@@ -254,18 +254,11 @@ namespace Ember {
 			"IsValid", [](const Entity& e) { return static_cast<bool>(e); },
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
-			"SetActive", [&state](Entity& e, bool active) {
-				if (active)
-				{
-					if (e.ContainsComponent<DisabledComponent>())
-						e.DetachComponent<DisabledComponent>();
-				}
-				else
-				{
-					if (!e.ContainsComponent<DisabledComponent>())
-						e.AttachComponent<DisabledComponent>();
-				}
-			},
+			"SetActive", sol::overload(
+				[](Entity& e, bool active) { e.SetActive(active, true); },
+				[](Entity& e, bool active, bool recursive) { e.SetActive(active, recursive); }
+			),
+			"IsActive", &Entity::IsActive,
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },

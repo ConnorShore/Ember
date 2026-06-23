@@ -137,28 +137,7 @@ namespace Ember {
 		bool isActive = !entity.ContainsComponent<DisabledComponent>();
 		if (ImGui::Checkbox("##Active", &isActive))
 		{
-			if (isActive)
-			{
-				if (entity.ContainsComponent<DisabledComponent>())
-					entity.DetachComponent<DisabledComponent>();
-
-				for (auto& child : entity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<DisabledComponent>())
-						child.DetachComponent<DisabledComponent>();
-				}
-			}
-			else
-			{
-				if (!entity.ContainsComponent<DisabledComponent>())
-					entity.AttachComponent<DisabledComponent>();
-
-				for (auto& child : entity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID && !child.ContainsComponent<DisabledComponent>())
-						child.AttachComponent<DisabledComponent>();
-				}
-			}
+			entity.SetActive(isActive, true);
 		}
 
 		ImGui::SameLine();

@@ -23,5 +23,9 @@ namespace Ember {
 		state.new_usertype<LifetimeComponent>("LifetimeComponent",
 			"Lifetime", &LifetimeComponent::Lifetime
 		);
+
+		state.new_usertype<PrefabComponent>("PrefabComponent",
+			"PrefabHandle", &PrefabComponent::PrefabHandle
+		);
 	}
 }
