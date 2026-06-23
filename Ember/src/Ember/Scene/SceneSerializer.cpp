@@ -420,8 +420,8 @@ namespace Ember {
 			ryml::NodeRef animatorNode = entityNode["AnimatorComponent"];
 			animatorNode |= ryml::MAP;
 			animatorNode["SkeletonHandle"] << (uint64_t)animator.SkeletonHandle;
-				animatorNode["AnimationStateMachineHandle"] << (uint64_t)animator.AnimationStateMachineHandle;
-				animatorNode["CurrentStateId"] << (uint64_t)animator.CurrentStateId;
+			animatorNode["ControllerHandle"] << (uint64_t)animator.ControllerHandle;
+			// Note: Blackboard is runtime-only and not serialized
 		}
 		if (entity.ContainsComponent<BoneSocketComponent>())
 		{
@@ -1131,18 +1131,18 @@ namespace Ember {
 			if (animatorNode.has_child("SkeletonHandle"))
 				animatorNode["SkeletonHandle"] >> skelHandle;
 
-			uint64_t stateMachineHandle = Constants::InvalidUUID;
-			if (animatorNode.has_child("AnimationStateMachineHandle"))
-				animatorNode["AnimationStateMachineHandle"] >> stateMachineHandle;
+			uint64_t controllerHandle = Constants::InvalidUUID;
+			if (animatorNode.has_child("ControllerHandle"))
+				animatorNode["ControllerHandle"] >> controllerHandle;
 
 			ac.SkeletonHandle = (UUID)skelHandle;
-			ac.AnimationStateMachineHandle = (UUID)stateMachineHandle;
-			if (animatorNode.has_child("CurrentStateId"))
-			{
-				uint64_t currentStateId = Constants::InvalidUUID;
-				animatorNode["CurrentStateId"] >> currentStateId;
-				ac.CurrentStateId = (UUID)currentStateId;
-			}
+			ac.ControllerHandle = (UUID)controllerHandle;
+			if (ac.LayerStates.empty())
+				ac.LayerStates.emplace_back();
+
+			// Initialize blackboard from controller for editor mode
+			// Note: Blackboard is runtime-only, so we don't load any saved values
+			ac.InitializeBlackboardFromController();
 		}
 
 		if (entityNode.has_child("BoneSocketComponent"))
@@ -1701,6 +1701,20 @@ namespace Ember {
 		}
 
 		return true;
+	}
+
+	bool SceneSerializer::SerializeCooked(const std::string& filepath)
+	{
+		auto cookedPath = std::filesystem::path(filepath);
+		cookedPath.replace_extension(".bin");
+		return Serialize(cookedPath.string());
+	}
+
+	bool SceneSerializer::DeserializeCooked(const std::string& filepath)
+	{
+		auto cookedPath = std::filesystem::path(filepath);
+		cookedPath.replace_extension(".bin");
+		return Deserialize(cookedPath.string());
 	}
 
 

@@ -55,6 +55,9 @@ namespace Ember {
 		Entity GetChildByName(const std::string& name);
 		Entity FindEntityInHierarchy(const std::string& name);
 
+		void SetActive(bool active, bool recursive = true);
+		bool IsActive() const;
+
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
 		UUID GetUUID() const;
 		const std::string& GetName() const;

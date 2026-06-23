@@ -43,12 +43,14 @@ namespace Ember {
 		void RenderFontOptions(const std::string& filePath);
 		void RenderShaderOptions(const std::string& filePath);
 		void RenderScriptOptions(const std::string& filePath);
+		void RenderSkeletonMaskOptions(const std::string& filePath);
 
 		void RenderRenameScenePopup();
 		void RenameScene();
 
 		void RenderCreateDirectoryPopup();
 		void RenderDeleteConfirmPopup();
+		void RenderSkeletonMaskOptionsPopup();
 
 		std::string SelectAndLoadFile(const std::string& name, const std::string& type);
 		SharedPtr<Asset> AddFileAsAsset(const std::filesystem::path& filePath);
@@ -75,6 +77,11 @@ namespace Ember {
 		// Create directory popup
 		bool m_ShowCreateDirectoryPopup = false;
 		std::string m_NewDirectoryName;
+
+		// Skeleton mask options
+		bool m_ShowSkeletonMaskOptionsPopup = false;
+		std::string m_SkeletonPath;
+		std::string m_SkeletonMaskName;
 
 		// Delete confirmation dialog state
 		bool m_ShowDeleteConfirmPopup = false;

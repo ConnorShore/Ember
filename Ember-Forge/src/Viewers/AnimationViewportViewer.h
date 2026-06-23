@@ -1,7 +1,7 @@
 #pragma once
 #include "EditorViewportViewer.h"
 #include "GraphNodes.h"
-#include <Ember/Animation/AnimationStateMachine.h>
+#include <Ember/Animation/AnimationController.h>
 #include <Ember/Animation/AnimationTransition.h>
 #include <imgui_node_editor.h>
 #include <unordered_map>
@@ -18,7 +18,7 @@ namespace Ember {
 	class AnimationViewportViewer final : public EditorViewportViewer
 	{
 	public:
-		AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title);
+		AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title);
 		virtual ~AnimationViewportViewer();
 
 		virtual void OnOpen(EditorLayer* editor) override;
@@ -45,9 +45,11 @@ namespace Ember {
 
 		inline AnimationState* GetSelectedState() { return m_SelectedState; }
 		inline AnimationTransition* GetSelectedTransition() { return m_SelectedTransition; }
-		inline SharedPtr<AnimationStateMachine> GetAnimationStateMachine() { return m_AnimationStateMachine; }
+		inline SharedPtr<AnimationController> GetAnimationController() { return m_AnimationController; }
+		AnimationStateMachine* GetEditableStateMachine();
 
 	private:
+		void DrawLayerPanel();
 		void RebuildGraph();
 		void HandleHotkeys();
 		void DrawAllNodes();
@@ -66,6 +68,7 @@ namespace Ember {
 		void RenderDefaultContextMenu();
 		void RenderNodeContextMenu(ne::NodeId nodeId);
 		void RenderLinkContextMenu(ne::LinkId linkId);
+		void RenderSkeletonMaskPopup();
 		void HandleInteractiveTransition();
 
 	private:
@@ -79,7 +82,10 @@ namespace Ember {
 
 	private:
 		ax::NodeEditor::EditorContext* m_NodeEditorContext = nullptr;
-		SharedPtr<AnimationStateMachine> m_AnimationStateMachine;
+		SharedPtr<AnimationController> m_AnimationController;
+
+		// Layer Management
+		int m_ActiveLayerIndex = 0;
 
 		bool m_GraphNeedsRebuild = true;
 
@@ -104,10 +110,15 @@ namespace Ember {
 		ne::LinkId m_LinkPopupId = 0;
 		ImVec2 m_ContextPopupMousePos;
 		ImVec2 m_ContextPopupCanvasPos;
+		bool m_PositionDefaultContextMenu = false;
 
 		// Deferred Popup Triggers
 		bool m_RequestDefaultContextMenu = false;
 		bool m_RequestNodeContextMenu = false;
 		bool m_RequestLinkContextMenu = false;
+
+		// Skeleton Mask Selection Popup State
+		int m_SkeletonMaskPopupLayerIndex = -1;
+		UUID m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
 	};
 }

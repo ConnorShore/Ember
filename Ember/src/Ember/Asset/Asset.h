@@ -16,7 +16,9 @@ namespace Ember {
 		Mesh,
 		Model,
 		Skeleton,
+		SkeletonMask,
 		Animation,
+		AnimationController,
 		AnimationStateMachine,
 		Shader,
 		Material,
@@ -39,8 +41,10 @@ namespace Ember {
 		case AssetType::Material: return "Material";
 		case AssetType::Script: return "Script";
 		case AssetType::Animation: return "Animation";
+		case AssetType::AnimationController: return "AnimationController";
 		case AssetType::AnimationStateMachine: return "AnimationStateMachine";
 		case AssetType::Skeleton: return "Skeleton";
+		case AssetType::SkeletonMask: return "SkeletonMask";
 		case AssetType::PhysicsMaterial: return "PhysicsMaterial";
 		case AssetType::Prefab: return "Prefab";
 		case AssetType::Font: return "Font";
@@ -59,8 +63,10 @@ namespace Ember {
 		if (typeStr == "Material") return AssetType::Material;
 		if (typeStr == "Script") return AssetType::Script;
 		if (typeStr == "Animation") return AssetType::Animation;
+		if (typeStr == "AnimationController") return AssetType::AnimationController;
 		if (typeStr == "AnimationStateMachine") return AssetType::AnimationStateMachine;
 		if (typeStr == "Skeleton") return AssetType::Skeleton;
+		if (typeStr == "SkeletonMask") return AssetType::SkeletonMask;
 		if (typeStr == "PhysicsMaterial") return AssetType::PhysicsMaterial;
 		if (typeStr == "Prefab") return AssetType::Prefab;
 		if (typeStr == "Font") return AssetType::Font;

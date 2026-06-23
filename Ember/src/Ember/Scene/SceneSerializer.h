@@ -19,6 +19,8 @@ namespace Ember {
 		// Scene Operations
 		bool Serialize(const std::string& filepath);
 		bool Deserialize(const std::string& filepath);
+		bool SerializeCooked(const std::string& filepath);
+		bool DeserializeCooked(const std::string& filepath);
 
 		// Prefab Operations
 		bool SerializePrefab(Entity prefabRoot, const std::string& filepath);

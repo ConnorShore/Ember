@@ -2,7 +2,7 @@
 #include "EditorViewportTabs.h"
 #include "EditorLayer.h"
 
-#include <Ember/Animation/AnimationStateMachine.h>
+#include <Ember/Animation/AnimationController.h>
 
 namespace Ember {
 
@@ -130,9 +130,15 @@ namespace Ember {
 		return m_Viewers.size() - 1;
 	}
 
-	size_t EditorViewportTabs::AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
+	size_t EditorViewportTabs::AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title)
 	{
-		m_Viewers.push_back(ScopedPtr<AnimationViewportViewer>::Create(scene, animationStateMachine, filePath, title));
+		m_Viewers.push_back(ScopedPtr<AnimationViewportViewer>::Create(scene, animationController, filePath, title));
+		return m_Viewers.size() - 1;
+	}
+
+	size_t EditorViewportTabs::AddSkeletonMaskViewer(SharedPtr<Scene> scene, SharedPtr<SkeletonMask> skeletonMask, const std::string& filePath, const std::string& title)
+	{
+		m_Viewers.push_back(ScopedPtr<SkeletonMaskViewportViewer>::Create(scene, skeletonMask, filePath, title));
 		return m_Viewers.size() - 1;
 	}
 

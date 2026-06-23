@@ -15,7 +15,7 @@ namespace Ember {
 		UUID characterMovementUUID = Constants::InvalidUUID;
 		if (!assetManager.ContainsAssetWithName("CharacterMovement"))
 		{
-			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy CharacterMovement.lua to existing scriptsDirectory
 			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/CharacterMovement.lua");
@@ -36,7 +36,7 @@ namespace Ember {
 		UUID mouseLookUUID = Constants::InvalidUUID;
 		if (!assetManager.ContainsAssetWithName("MouseLook"))
 		{
-			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy CharacterMovement.lua to existing scriptsDirectory
 			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/MouseLook.lua");
@@ -95,7 +95,7 @@ namespace Ember {
 		UUID aiControllerUUID = Constants::InvalidUUID;
 		if (!assetManager.ContainsAssetWithName("AIController"))
 		{
-			auto scriptsDirectory = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy AIController.lua to existing scriptsDirectory
 			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/AIController.lua");

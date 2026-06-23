@@ -83,6 +83,42 @@ namespace Ember {
 		inline bool IsLastScene() const { return m_ActiveSceneIndex >= m_ScenesInBuild.size() - 1; }
 		inline void ResetSceneIndex() { m_ActiveSceneIndex = 0; }
 
+		inline std::filesystem::path GetDefaultDirectoryForAsset(AssetType type) const
+		{
+			switch (type)
+			{
+			case AssetType::Texture:
+				return GetAssetDirectory() / "Textures";
+			case AssetType::Material:
+				return GetAssetDirectory() / "Materials";
+			case AssetType::Shader:
+				return GetAssetDirectory() / "Shaders";
+			case AssetType::Prefab:
+				return GetAssetDirectory() / "Prefabs";
+			case AssetType::Font:
+				return GetAssetDirectory() / "Fonts";
+			case AssetType::AudioClip:
+				return GetAssetDirectory() / "Audio";
+			case AssetType::Mesh:
+			case AssetType::Model:
+				return GetAssetDirectory() / "Models";
+			case AssetType::Script:
+				return GetAssetDirectory() / "Scripts";
+			case AssetType::Animation:
+			case AssetType::AnimationController:
+			case AssetType::AnimationStateMachine:
+				return GetAssetDirectory() / "Animations";
+			case AssetType::SkeletonMask:
+				return GetAssetDirectory() / "SkeletonMasks";
+			case AssetType::PhysicsMaterial:
+				return GetAssetDirectory() / "Physics Materials";
+			case AssetType::Scene:
+				return GetScenesDirectory();
+			default:
+				return GetAssetDirectory();
+			}
+		}
+
 	private:
 		ProjectConfig m_Config;
 		std::filesystem::path m_ProjectDirectory;

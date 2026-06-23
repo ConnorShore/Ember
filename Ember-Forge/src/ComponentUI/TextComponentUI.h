@@ -65,7 +65,7 @@ namespace Ember {
 				{
 					if (ImGui::MenuItem("Load from file..."))
 					{
-						std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Fonts").string();
+						std::string defaultDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Font).string();
 						std::string fontFile = FileDialog::OpenFile(defaultDir.c_str(), "Font (*.ttf;*.otf;*.ebfont)", "*.ttf;*.otf;*.ebfont");
 						if (!fontFile.empty())
 						{

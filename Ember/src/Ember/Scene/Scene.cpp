@@ -139,7 +139,9 @@ namespace Ember {
 			{
 				Entity animatorEntity{ entityID, scene };
 				auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
-				animationSystem->SetStateToTimestamp(scene, animator.CurrentStateId, animatorEntity, animator.CurrentTime.Seconds());
+				if (animator.LayerStates.empty())
+					animator.LayerStates.emplace_back();
+				animationSystem->SetStateToTimestamp(scene, animator.LayerStates[0].CurrentStateId, animatorEntity, animator.LayerStates[0].CurrentTime.Seconds());
 			}
 		}
 	}
@@ -290,6 +292,18 @@ namespace Ember {
 		{
 			auto& config = m_Registry->GetComponent<PoolConfigComponent>(entity);
 			m_PoolManager->CreatePool(this, config.PoolID, config.PrefabHandle, config.Capacity, config.LoopEntities);
+		}
+
+		// Initialize animator blackboards from their controllers now that all assets are guaranteed to be loaded
+		auto animatorView = m_Registry->ActiveQuery<AnimatorComponent>();
+		for (auto entity : animatorView)
+		{
+			auto& animator = m_Registry->GetComponent<AnimatorComponent>(entity);
+			// Only reinitialize if blackboard is empty (in case it wasn't initialized during deserialization)
+			if (animator.Blackboard.Parameters.empty())
+			{
+				animator.InitializeBlackboardFromController();
+			}
 		}
 
 		ScriptEngine::OnRuntimeStart(this);
@@ -951,7 +965,9 @@ namespace Ember {
 
 			// Initialize bone matrices immediately so newly instantiated skinned prefabs
 			// render at correct size/pose even before the next AnimationSystem tick.
-			animationSystem->SetStateToTimestamp(scene, animator.CurrentStateId, animatorEntity, animator.CurrentTime.Seconds());
+			if (animator.LayerStates.empty())
+				animator.LayerStates.emplace_back();
+			animationSystem->SetStateToTimestamp(scene, animator.LayerStates[0].CurrentStateId, animatorEntity, animator.LayerStates[0].CurrentTime.Seconds());
 		}
 
 		auto& relationship = registry.GetComponent<RelationshipComponent>(entity);

@@ -1,11 +1,14 @@
 #include "efpch.h"
 #include "AnimationViewportViewer.h"
+#include "UI/DragDropTypes.h"
 #include "EditorLayer.h"
 
 #include <Ember/Core/ProjectManager.h>
-#include <Ember/Animation/AnimationStateMachineSerializer.h>
+#include <Ember/Animation/AnimationControllerSerializer.h>
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Input/Input.h>
+#include "UI/Nodes.h"
+#include "UI/PropertyGrid.h"
 #include <imgui/imgui.h>
 
 #include <string>
@@ -21,9 +24,12 @@ namespace Ember {
 		return id++;
 	}
 
-	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationStateMachine> animationStateMachine, const std::string& filePath, const std::string& title)
-		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationStateMachine(animationStateMachine)
+	AnimationViewportViewer::AnimationViewportViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title)
+		: EditorViewportViewer(Type::Animation, scene, filePath, title), m_AnimationController(animationController)
 	{
+		if (m_AnimationController && m_AnimationController->GetLayers().empty())
+			m_AnimationController->GetLayers().emplace_back();
+
 		ne::Config config;
 		std::string path = (ProjectManager::GetActive()->GetProjectDirectory() / "AnimationNodeEditor.json").string();
 		config.SettingsFile = nullptr; // Disable built-in persistence for now since we want to handle it ourselves
@@ -44,13 +50,32 @@ namespace Ember {
 		ne::DestroyEditor(m_NodeEditorContext);
 	}
 
+	AnimationStateMachine* AnimationViewportViewer::GetEditableStateMachine()
+	{
+		if (!m_AnimationController)
+			return nullptr;
+
+		auto& layers = m_AnimationController->GetLayers();
+		if (layers.empty())
+			layers.emplace_back();
+
+		if (m_ActiveLayerIndex >= layers.size())
+			m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
+
+		return &layers[m_ActiveLayerIndex].StateMachine;
+	}
+
 	void AnimationViewportViewer::OnOpen(EditorLayer* editor)
 	{
-		// Mark all states to set position
-		m_AnimationStateMachine->EntryNodePositionSet = false;
-		m_AnimationStateMachine->ExitNodePositionSet = false;
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
 
-		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
+		// Mark all states to set position
+		stateMachine->EntryNodePositionSet = false;
+		stateMachine->ExitNodePositionSet = false;
+
+		for (auto& [stateId, state] : stateMachine->GetStates())
 			state.PositionSet = false;
 	}
 
@@ -69,70 +94,85 @@ namespace Ember {
 
 	void AnimationViewportViewer::OnImGuiRender(EditorLayer* editor)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		editor->SetViewportHovered(ImGui::IsWindowHovered());
 		editor->SetViewportFocused(ImGui::IsWindowFocused());
 
-		ne::SetCurrentEditor(m_NodeEditorContext);
-		ne::Begin(std::format("##AnimationGraph_{}", m_AnimationStateMachine->GetName()).c_str());
-
-		HandleHotkeys();
-		DrawAllNodes();
-
-		// These ONLY execute logic/math. They do NOT draw or open popups!
-		HandleInteractiveTransition();
-		HandleContextMenuQueries();
-
-		ne::End();
-
-		// =========================================================================
-		// --- DRAW OUTSIDE THE NODE EDITOR ---
-		// By drawing here, we avoid the ImGui/Node Editor docked viewport matrix bug!
-		// =========================================================================
-
-		// 1. Draw the interactive transition wire
-		if (m_InteractiveTransitionOrigin != Constants::InvalidUUID)
+		// Layer Selection Panel (Left Panel)
+		if (ImGui::BeginChild("LayersPanel", ImVec2(300, 0), true))
 		{
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			drawList->AddLine(m_InteractiveTransitionScreenStart, ImGui::GetMousePos(), IM_COL32(240, 120, 30, 255), 3.0f);
+			DrawLayerPanel();
 		}
+		ImGui::EndChild();
 
-		// 2. Open popups safely in the current ID scope
-		if (m_RequestDefaultContextMenu)
+		ImGui::SameLine();
+
+		// Node Editor Canvas (Right Panel)
+		if (ImGui::BeginChild("NodeCanvas", ImVec2(0, 0), false))
 		{
-			ImGui::OpenPopup("AnimationGraphContextMenu");
-			m_RequestDefaultContextMenu = false;
-		}
-		if (m_RequestNodeContextMenu)
-		{
-			ImGui::OpenPopup("NodeContextMenu");
-			m_RequestNodeContextMenu = false;
-		}
-		if (m_RequestLinkContextMenu)
-		{
-			ImGui::OpenPopup("LinkContextMenu");
-			m_RequestLinkContextMenu = false;
-		}
+			ne::SetCurrentEditor(m_NodeEditorContext);
+			ne::Begin(std::format("##AnimationGraph_{}", GetTitle()).c_str());
 
-		// 3. Render the popups
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-		RenderDefaultContextMenu();
-		RenderNodeContextMenu(m_NodePopupId);
-		RenderLinkContextMenu(m_LinkPopupId);
-		ImGui::PopStyleVar();
+			HandleHotkeys();
+			DrawAllNodes();
 
-		// See if any nodes have been selected
-		CheckNodeSelected();
+			// These ONLY execute logic/math. They do NOT draw or open popups!
+			HandleInteractiveTransition();
+			HandleContextMenuQueries();
 
-		ne::SetCurrentEditor(nullptr);
+			ne::End();
+
+			// Draw the interactive transition wire
+			if (m_InteractiveTransitionOrigin != Constants::InvalidUUID)
+			{
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				drawList->AddLine(m_InteractiveTransitionScreenStart, ImGui::GetMousePos(), IM_COL32(240, 120, 30, 255), 3.0f);
+			}
+
+			// Open popups safely in the current ID scope
+			if (m_RequestDefaultContextMenu)
+			{
+				if (m_PositionDefaultContextMenu)
+					m_ContextPopupMousePos = ImGui::GetMousePos();
+
+				ImGui::OpenPopup("AnimationGraphContextMenu");
+				m_RequestDefaultContextMenu = false;
+			}
+			if (m_RequestNodeContextMenu)
+			{
+				ImGui::OpenPopup("NodeContextMenu");
+				m_RequestNodeContextMenu = false;
+			}
+			if (m_RequestLinkContextMenu)
+			{
+				ImGui::OpenPopup("LinkContextMenu");
+				m_RequestLinkContextMenu = false;
+			}
+
+			// Render the popups
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+			RenderDefaultContextMenu();
+			RenderNodeContextMenu(m_NodePopupId);
+			RenderLinkContextMenu(m_LinkPopupId);
+			ImGui::PopStyleVar();
+
+			// See if any nodes have been selected
+			CheckNodeSelected();
+
+			ne::SetCurrentEditor(nullptr);
+		}
+		ImGui::EndChild();
 	}
 
 	void AnimationViewportViewer::HandleHotkeys()
 	{
 		if (Input::IsKeyPressed(KeyCode::Space))
 		{
-			// Capture hardware mouse, convert to canvas, and flag the popup to open
-			m_ContextPopupMousePos = ImGui::GetMousePos();
-			m_ContextPopupCanvasPos = ne::ScreenToCanvas(m_ContextPopupMousePos);
+			// Spacebar should open the menu at the cursor.
+			m_PositionDefaultContextMenu = true;
 			m_RequestDefaultContextMenu = true;
 		}
 
@@ -152,6 +192,7 @@ namespace Ember {
 		{
 			m_ContextPopupMousePos = ImGui::GetMousePos();
 			m_ContextPopupCanvasPos = ne::ScreenToCanvas(m_ContextPopupMousePos);
+			m_PositionDefaultContextMenu = false;
 			m_RequestDefaultContextMenu = true;
 		}
 
@@ -168,20 +209,224 @@ namespace Ember {
 
 	void AnimationViewportViewer::SaveAnimationStateMachine(EditorLayer* editor)
 	{
-		AnimationStateMachineSerializer::Serialize(m_AnimationStateMachine->GetFilePath(), m_AnimationStateMachine);
+		AnimationControllerSerializer::Serialize(GetFilePath(), m_AnimationController);
 		m_IsDirty = false;
 
-		auto evt = UINotificationEvent("Auto-Saved Animation State Machine", UINotificationEvent::Severity::Info);
+		auto evt = UINotificationEvent("Auto-Saved Animation Controller", UINotificationEvent::Severity::Info);
 		editor->GetContext().EventCallback(evt);
+	}
+
+	void AnimationViewportViewer::DrawLayerPanel()
+	{
+		ImGui::Text("Animation Layers");
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 24.0f);
+
+		// Add Layer Button
+		if (ImGui::Button("+##AddLayer", ImVec2(24, 24)))
+		{
+			auto& newLayer = m_AnimationController->CreateLayer("New Layer");
+			m_ActiveLayerIndex = static_cast<int>(m_AnimationController->GetLayers().size()) - 1;
+
+			m_SelectedState = nullptr;
+			m_SelectedTransition = nullptr;
+			m_GraphNeedsRebuild = true;
+			m_IsDirty = true;
+		}
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		auto& layers = m_AnimationController->GetLayers();
+		int layerToRemove = -1;
+
+		for (int i = 0; i < layers.size(); ++i)
+		{
+			auto& layer = layers[i];
+			std::string layerNodeTitle = std::format("{}###LayerNode_{}", layer.Name, i);
+
+			// Keep exactly one expanded layer: the selected/active one.
+			ImGui::SetNextItemOpen(m_ActiveLayerIndex == i, ImGuiCond_Always);
+
+			bool nodeExpanded = false;
+			if (i > 0)
+			{
+				nodeExpanded = UI::Nodes::BeginRemoveableExpandableNode(layerNodeTitle, [&]() {
+					layerToRemove = i;
+					});
+			}
+			else
+			{
+				nodeExpanded = UI::Nodes::BeginExpandableNode(layerNodeTitle);
+			}
+
+			// Selecting a layer is done by expanding its node.
+			if (nodeExpanded && m_ActiveLayerIndex != i)
+			{
+				m_ActiveLayerIndex = i;
+				m_SelectedState = nullptr;
+				m_SelectedTransition = nullptr;
+				m_GraphNeedsRebuild = true;
+			}
+
+			if (nodeExpanded)
+			{
+				if (UI::PropertyGrid::Begin(std::format("LayerProps_{}", i)))
+				{
+					auto& assetManager = Application::Instance().GetAssetManager();
+
+					if (UI::PropertyGrid::InputText("Name", layer.Name))
+						m_IsDirty = true;
+
+					UI::PropertyGrid::SliderFloat("Weight", layer.Weight, 0.0f, 1.0f);
+
+					// Layer mode dropdown (first layer is always Override; additive only makes sense for upper layers)
+					const char* modePreview = (layer.Mode == AnimationLayerMode::Additive) ? "Additive" : "Override";
+					if (UI::PropertyGrid::BeginComboBox("Mode", modePreview))
+					{
+						if (ImGui::Selectable("Override", layer.Mode == AnimationLayerMode::Override))
+						{
+							layer.Mode = AnimationLayerMode::Override;
+							m_IsDirty = true;
+						}
+						if (ImGui::Selectable("Additive", layer.Mode == AnimationLayerMode::Additive))
+						{
+							layer.Mode = AnimationLayerMode::Additive;
+							m_IsDirty = true;
+						}
+						UI::PropertyGrid::EndComboBox();
+					}
+
+					// Animation mask asset reference
+					bool maskExists = layer.MaskHandle != Constants::InvalidUUID;
+					std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetSkeletonMask);
+					std::string droppedPath;
+
+					auto browseFunc = [&, i]() {
+						m_SkeletonMaskPopupLayerIndex = i;
+						m_SkeletonMaskPopupSelectedHandle = layer.MaskHandle;
+						ImGui::OpenPopup("ChooseSkeletonMaskPopup");
+					};
+
+					auto clearFunc = maskExists ? UI::UICallbackFunc([&]() {
+						layer.MaskHandle = Constants::InvalidUUID;
+						}) : nullptr;
+
+					std::string maskName = "None (Skeleton Mask)";
+					if (maskExists)
+					{
+						auto maskAsset = assetManager.GetAsset<SkeletonMask>(layer.MaskHandle);
+						if (maskAsset)
+							maskName = std::filesystem::path(maskAsset->GetFilePath()).filename().string();
+					}
+					if (UI::PropertyGrid::AssetReference("Mask", maskName, payloadType, droppedPath, browseFunc, clearFunc))
+					{
+						auto mat = assetManager.Load<SkeletonMask>(droppedPath);
+						if (mat)
+							layer.MaskHandle = mat->GetUUID();
+					}
+
+					UI::PropertyGrid::End();
+				}
+
+				UI::Nodes::EndExpandableNode();
+			}
+
+			ImGui::Spacing();
+		}
+
+		if (layerToRemove >= 0 && layerToRemove < layers.size())
+		{
+			layers.erase(layers.begin() + layerToRemove);
+
+			if (m_ActiveLayerIndex >= layers.size())
+				m_ActiveLayerIndex = static_cast<int>(layers.size()) - 1;
+
+			m_SelectedState = nullptr;
+			m_SelectedTransition = nullptr;
+			m_GraphNeedsRebuild = true;
+			m_IsDirty = true;
+		}
+
+		RenderSkeletonMaskPopup();
+	}
+
+	void AnimationViewportViewer::RenderSkeletonMaskPopup()
+	{
+		if (m_SkeletonMaskPopupLayerIndex < 0 || !m_AnimationController)
+			return;
+
+		auto& layers = m_AnimationController->GetLayers();
+		if (m_SkeletonMaskPopupLayerIndex >= layers.size())
+			return;
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 320.0f), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("ChooseSkeletonMaskPopup", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+			auto& layer = layers[m_SkeletonMaskPopupLayerIndex];
+			auto skeletonMasks = assetManager.GetAssetsOfType<SkeletonMask>();
+
+			if (ImGui::BeginChild("##SkeletonMaskList", ImVec2(0.0f, -44.0f), true))
+			{
+				if (skeletonMasks.empty())
+				{
+					ImGui::TextUnformatted("No skeleton masks available.");
+				}
+				else
+				{
+					for (const auto& skeletonMask : skeletonMasks)
+					{
+						std::string maskName = skeletonMask->GetName();
+						if (!skeletonMask->GetFilePath().empty())
+							maskName = std::filesystem::path(skeletonMask->GetFilePath()).filename().string();
+
+						bool isSelected = m_SkeletonMaskPopupSelectedHandle == skeletonMask->GetUUID();
+						if (ImGui::Selectable(maskName.c_str(), isSelected))
+							m_SkeletonMaskPopupSelectedHandle = skeletonMask->GetUUID();
+					}
+				}
+				ImGui::EndChild();
+			}
+
+			bool canSelect = m_SkeletonMaskPopupSelectedHandle != Constants::InvalidUUID;
+			ImGui::BeginDisabled(!canSelect);
+			if (ImGui::Button("Select", ImVec2(120.0f, 0.0f)))
+			{
+				layer.MaskHandle = m_SkeletonMaskPopupSelectedHandle;
+				m_SaveCooldown = AUTO_SAVE_DELAY;
+				m_IsDirty = true;
+				m_SkeletonMaskPopupLayerIndex = -1;
+				m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndDisabled();
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f)))
+			{
+				m_SkeletonMaskPopupLayerIndex = -1;
+				m_SkeletonMaskPopupSelectedHandle = Constants::InvalidUUID;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
 
 	void AnimationViewportViewer::RebuildGraph()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		m_Nodes.clear();
 		m_Links.clear();
 
 		// Build all Nodes
-		for (auto& [stateId, state] : m_AnimationStateMachine->GetStates())
+		for (auto& [stateId, state] : stateMachine->GetStates())
 		{
 			m_Nodes[stateId] = Node(stateId, state.Name.c_str(), ImColor(64, 128, 255));
 			Node& node = m_Nodes[stateId];
@@ -194,7 +439,7 @@ namespace Ember {
 		}
 
 		// Build all Links (Transitions)
-		for (auto& [stateId, transitions] : m_AnimationStateMachine->GetTransitions())
+		for (auto& [stateId, transitions] : stateMachine->GetTransitions())
 		{
 			if (m_Nodes.find(stateId) == m_Nodes.end()) continue;
 			Node& startNode = m_Nodes[stateId];
@@ -211,16 +456,19 @@ namespace Ember {
 		}
 
 		// Connect Entry Node to Default State
-		m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID,
-			m_EntryNode.Outputs[0].ID,
-			m_Nodes[m_AnimationStateMachine->GetDefaultState()].Inputs[0].ID,
-			ImColor(30, 190, 30)
-		);
+		if (stateMachine->GetDefaultState() != Constants::InvalidUUID)
+		{
+			m_Links[ENTRY_LINK_ID] = Link(ENTRY_LINK_ID,
+				m_EntryNode.Outputs[0].ID,
+				m_Nodes[stateMachine->GetDefaultState()].Inputs[0].ID,
+				ImColor(30, 190, 30)
+			);
+		}
 
 		// Connect all States with no outgoing transitions to the Exit Node
 		for (auto& [stateId, node] : m_Nodes)
 		{
-			if (m_AnimationStateMachine->GetTransitions().find(stateId) == m_AnimationStateMachine->GetTransitions().end())
+			if (stateMachine->GetTransitions().find(stateId) == stateMachine->GetTransitions().end())
 			{
 				uint64_t linkId = GetNextId();
 				m_Links[linkId] = Link(linkId, node.Outputs[0].ID, m_ExitNode.Inputs[0].ID, ImColor(190, 30, 30));
@@ -232,6 +480,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawAllNodes()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (m_GraphNeedsRebuild)
 			RebuildGraph();
 
@@ -241,7 +493,10 @@ namespace Ember {
 
 		for (auto& [id, node] : m_Nodes)
 		{
-			auto& state = m_AnimationStateMachine->GetStates().at(id);
+			if (!stateMachine->GetStates().contains(id))
+				continue;
+
+			auto& state = stateMachine->GetStates().at(id);
 			if (!state.PositionSet)
 			{
 				ne::SetNodePosition(node.ID, ImVec2(state.NodePosition.x, state.NodePosition.y));
@@ -264,6 +519,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawStateNode(Node& node)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		ImVec4 nodeBg = node.Color;
 		nodeBg.x *= 0.8f;
 		nodeBg.y *= 0.8f;
@@ -336,7 +595,7 @@ namespace Ember {
 			{
 				if (isClicked) // Line starts the exact frame the mouse goes down
 				{
-					if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+					if (stateMachine->GetStates().contains(nodeIdValue))
 						StartTransitionCreation(node.ID);
 				}
 			}
@@ -350,9 +609,9 @@ namespace Ember {
 					// If they clicked/released the origin node, ignore it so they can keep drawing!
 					if (nodeIdValue != originId)
 					{
-						if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+						if (stateMachine->GetStates().contains(nodeIdValue))
 						{
-							m_AnimationStateMachine->CreateTransition(originId, nodeIdValue);
+							stateMachine->CreateTransition(originId, nodeIdValue);
 							m_GraphNeedsRebuild = true;
 							m_IsDirty = true;
 							m_SaveCooldown = AUTO_SAVE_DELAY;
@@ -397,26 +656,34 @@ namespace Ember {
 
 	void AnimationViewportViewer::DrawStartState()
 	{
-		if (!m_AnimationStateMachine->EntryNodePositionSet)
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		if (!stateMachine->EntryNodePositionSet)
 		{
-			ne::SetNodePosition(ENTRY_NODE_ID, ImVec2(m_AnimationStateMachine->EntryNodePosition.x, m_AnimationStateMachine->EntryNodePosition.y));
-			m_AnimationStateMachine->EntryNodePositionSet = true;
+			ne::SetNodePosition(ENTRY_NODE_ID, ImVec2(stateMachine->EntryNodePosition.x, stateMachine->EntryNodePosition.y));
+			stateMachine->EntryNodePositionSet = true;
 		}
 
 		DrawStateNode(m_EntryNode);
-		UpdateNodePositionFromUI(m_EntryNode, m_AnimationStateMachine->EntryNodePosition);
+		UpdateNodePositionFromUI(m_EntryNode, stateMachine->EntryNodePosition);
 	}
 
 	void AnimationViewportViewer::DrawEndState()
 	{
-		if (!m_AnimationStateMachine->ExitNodePositionSet)
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		if (!stateMachine->ExitNodePositionSet)
 		{
-			ne::SetNodePosition(EXIT_NODE_ID, ImVec2(m_AnimationStateMachine->ExitNodePosition.x, m_AnimationStateMachine->ExitNodePosition.y));
-			m_AnimationStateMachine->ExitNodePositionSet = true;
+			ne::SetNodePosition(EXIT_NODE_ID, ImVec2(stateMachine->ExitNodePosition.x, stateMachine->ExitNodePosition.y));
+			stateMachine->ExitNodePositionSet = true;
 		}
 
 		DrawStateNode(m_ExitNode);
-		UpdateNodePositionFromUI(m_ExitNode, m_AnimationStateMachine->ExitNodePosition);
+		UpdateNodePositionFromUI(m_ExitNode, stateMachine->ExitNodePosition);
 	}
 
 	void AnimationViewportViewer::UpdateNodePositionFromUI(Node& node, Vector2f& nodeSavedPosition)
@@ -440,6 +707,10 @@ namespace Ember {
 
 	void AnimationViewportViewer::CheckNodeSelected()
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (!ne::HasSelectionChanged())
 			return;
 
@@ -458,8 +729,8 @@ namespace Ember {
 			ne::NodeId clickedNode = selectedNodes[0];
 			uint64_t nodeId = static_cast<uint64_t>(clickedNode.Get());
 
-			if (m_AnimationStateMachine->GetStates().contains(nodeId))
-				m_SelectedState = &m_AnimationStateMachine->GetStates().at(nodeId);
+			if (stateMachine->GetStates().contains(nodeId))
+				m_SelectedState = &stateMachine->GetStates().at(nodeId);
 			else
 				m_SelectedState = nullptr;
 
@@ -470,7 +741,7 @@ namespace Ember {
 			ne::LinkId clickedLink = selectedLinks[0];
 			uint64_t linkId = static_cast<uint64_t>(clickedLink.Get());
 
-			m_SelectedTransition = m_AnimationStateMachine->GetTransitionById(linkId);
+			m_SelectedTransition = stateMachine->GetTransitionById(linkId);
 			m_SelectedState = nullptr;
 		}
 		else
@@ -482,20 +753,32 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderDefaultContextMenu()
 	{
-		ImGui::SetNextWindowPos(m_ContextPopupMousePos, ImGuiCond_Appearing);
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		if (m_PositionDefaultContextMenu)
+			ImGui::SetNextWindowPos(m_ContextPopupMousePos, ImGuiCond_Appearing);
 
 		if (ImGui::BeginPopup("AnimationGraphContextMenu"))
 		{
+			ImVec2 popupOpenMousePos = m_PositionDefaultContextMenu
+				? m_ContextPopupMousePos
+				: ImGui::GetMousePosOnOpeningCurrentPopup();
+			ImVec2 popupCanvasPos = ne::ScreenToCanvas(popupOpenMousePos);
+
+			m_PositionDefaultContextMenu = false;
+
 			if (ImGui::MenuItem("Create New State"))
 			{
-				ImVec2 canvasPos = m_ContextPopupCanvasPos;
+				ImVec2 canvasPos = popupCanvasPos;
 
 				std::string newStateName = "New State";
 				int suffix = 1;
-				while (m_AnimationStateMachine->ContainsState(newStateName))
+				while (stateMachine->ContainsState(newStateName))
 					newStateName = "New State " + std::to_string(suffix++);
 
-				auto& state = m_AnimationStateMachine->CreateState(newStateName);
+				auto& state = stateMachine->CreateState(newStateName);
 				state.NodePosition = { canvasPos.x, canvasPos.y };
 
 				m_GraphNeedsRebuild = true;
@@ -510,13 +793,17 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderNodeContextMenu(ne::NodeId nodeId)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (nodeId.Get() == Constants::InvalidUUID)
 			return;
 
 		if (ImGui::BeginPopup("NodeContextMenu"))
 		{
 			UUID nodeIdValue = static_cast<UUID>(nodeId.Get());
-			if (m_AnimationStateMachine->GetStates().contains(nodeIdValue))
+			if (stateMachine->GetStates().contains(nodeIdValue))
 			{
 				if (ImGui::MenuItem("Create Transition"))
 				{
@@ -535,13 +822,17 @@ namespace Ember {
 
 	void AnimationViewportViewer::RenderLinkContextMenu(ne::LinkId linkId)
 	{
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
 		if (linkId.Get() == Constants::InvalidUUID)
 			return;
 
 		if (ImGui::BeginPopup("LinkContextMenu"))
 		{
 			UUID linkIdValue = static_cast<UUID>(linkId.Get());
-			if (m_AnimationStateMachine->GetTransitionById(linkIdValue))
+			if (stateMachine->GetTransitionById(linkIdValue))
 			{
 				if (ImGui::MenuItem("Delete Transition"))
 				{
@@ -585,7 +876,11 @@ namespace Ember {
 
 	void AnimationViewportViewer::DeleteNode(UUID nodeId)
 	{
-		m_AnimationStateMachine->RemoveState(nodeId);
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		stateMachine->RemoveState(nodeId);
 		m_Nodes.erase(nodeId);
 		m_SelectedState = nullptr;
 
@@ -595,7 +890,11 @@ namespace Ember {
 
 	void AnimationViewportViewer::DeleteTransition(UUID transitionId)
 	{
-		m_AnimationStateMachine->RemoveTransition(transitionId);
+		auto* stateMachine = GetEditableStateMachine();
+		if (!stateMachine)
+			return;
+
+		stateMachine->RemoveTransition(transitionId);
 		m_Links.erase(transitionId);
 		m_SelectedTransition = nullptr;
 

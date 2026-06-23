@@ -669,7 +669,7 @@ namespace Ember {
 
 	void SceneHierarchyPanel::CreatePrefab(Entity entity)
 	{
-		std::string filePath = (ProjectManager::GetActive()->GetAssetDirectory() / "Prefabs" / (entity.GetName() + ".ebprefab")).string();
+		std::string filePath = (ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Prefab) / (entity.GetName() + ".ebprefab")).string();
 		SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 		if (prefab == nullptr)
 		{

@@ -97,7 +97,9 @@ namespace Ember {
 				RenderAnimationTransition(selectedTransition);
 
 				// Render reverse transition if it exists
-				auto stateMachine = animationViewport->GetAnimationStateMachine();
+				auto* stateMachine = animationViewport->GetEditableStateMachine();
+				if (!stateMachine)
+					return;
 				auto toIdTransitionsIt = stateMachine->GetTransitions().find(selectedToStateId);
 				if (toIdTransitionsIt != stateMachine->GetTransitions().end())
 				{
@@ -173,7 +175,9 @@ namespace Ember {
 	void AnimationInspectorPanel::RenderAnimationTransition(AnimationTransition* animTransition)
 	{
 		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
-		auto stateMachine = animationViewport->GetAnimationStateMachine();
+		auto* stateMachine = animationViewport->GetEditableStateMachine();
+		if (!stateMachine)
+			return;
 
 		auto getStateName = [&](UUID stateId) -> std::string {
 			if (stateId != Constants::InvalidUUID)
@@ -246,8 +250,18 @@ namespace Ember {
 	void AnimationInspectorPanel::RenderTransitionConditions(AnimationTransition* animTransition)
 	{
 		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
-		auto stateMachine = animationViewport->GetAnimationStateMachine();
-		auto& parameters = stateMachine->GetParameters();
+		auto* stateMachine = animationViewport->GetEditableStateMachine();
+		auto controller = animationViewport->GetAnimationController();
+		if (!stateMachine || !controller)
+			return;
+
+		if (UI::PropertyGrid::Begin("TransitionProps"))
+		{
+			UI::PropertyGrid::Float("Blend Duration", animTransition->BlendDuration);
+			UI::PropertyGrid::End();
+		}
+
+		auto& parameters = controller->GetParameters();
 
 		// Header and Add Button aligned to the right
 		ImGui::Spacing();
@@ -416,7 +430,10 @@ namespace Ember {
 	void AnimationInspectorPanel::RenderAddParameterPopup()
 	{
 		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
-		auto stateMachine = animationViewport->GetAnimationStateMachine();
+		auto controller = animationViewport->GetAnimationController();
+		if (!controller)
+			return;
+		auto& parameters = controller->GetParameters();
 
 		if (ImGui::BeginPopup("AddAnimationParameterPopup"))
 		{
@@ -440,13 +457,15 @@ namespace Ember {
 			}
 
 			const std::string parameterName = m_NewParameterName.empty() ? "New Parameter" : m_NewParameterName;
-			bool canCreate = !parameterName.empty() && !stateMachine->GetParameters().contains(parameterName);
+			bool canCreate = !parameterName.empty() && !parameters.contains(parameterName);
 			if (!canCreate)
 				ImGui::BeginDisabled();
 
 			if (ImGui::Button("Create", ImVec2(120.0f, 0.0f)))
 			{
-				stateMachine->AddParameter(parameterName, m_NewParameterType);
+				AnimationParameter parameter;
+				parameter.Type = m_NewParameterType;
+				parameters[parameterName] = parameter;
 				m_NewParameterName.clear();
 				m_NewParameterType = AnimationParameterType::Float;
 				animationViewport->MarkAnimationStateMachineDirty();
@@ -467,8 +486,10 @@ namespace Ember {
 	void AnimationInspectorPanel::RenderAnimationParametersTable()
 	{
 		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
-		auto stateMachine = animationViewport->GetAnimationStateMachine();
-		auto& parameters = stateMachine->GetParameters();
+		auto controller = animationViewport->GetAnimationController();
+		if (!controller)
+			return;
+		auto& parameters = controller->GetParameters();
 
 		if (parameters.empty())
 		{
@@ -587,7 +608,7 @@ namespace Ember {
 					ImGui::TableSetColumnIndex(3);
 					if (ImGui::Button("-", ImVec2(24, 0)))
 					{
-						stateMachine->RemoveParameter(name);
+						parameters.erase(name);
 						changed = true;
 						ImGui::PopID();
 						break;

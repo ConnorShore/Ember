@@ -73,7 +73,7 @@ namespace Ember {
 				{
 					if (ImGui::MenuItem("Load from file..."))
 					{
-						std::string defaultDir = (ProjectManager::GetActive()->GetAssetDirectory() / "Models").string();
+						std::string defaultDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Mesh).string();
 						std::string meshFile = FileDialog::OpenFile(defaultDir.c_str(), "Ember Mesh (*.ebmesh)", "*.ebmesh;");
 						if (!meshFile.empty())
 						{

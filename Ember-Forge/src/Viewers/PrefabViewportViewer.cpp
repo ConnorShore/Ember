@@ -11,6 +11,12 @@ namespace Ember {
 		: EditorViewportViewer(Type::Prefab, scene, filePath, title), PrefabAsset(prefab), RootEntity(rootEntity) {
 	}
 
+	void PrefabViewportViewer::OnOpen(EditorLayer* editor)
+	{
+		// Set the prefab as the selected entity
+		editor->GetContext().SelectedEntity = RootEntity;
+	}
+
 	void PrefabViewportViewer::OnImGuiRender(EditorLayer* editor)
 	{
 		// Note: The implementation is currently identical to SceneViewportViewer

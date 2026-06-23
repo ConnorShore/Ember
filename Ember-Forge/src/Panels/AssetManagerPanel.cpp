@@ -108,6 +108,7 @@ namespace Ember {
 		RenderRenameScenePopup();
 		RenderCreateDirectoryPopup();
 		RenderDeleteConfirmPopup();
+		RenderSkeletonMaskOptionsPopup();
 
 		ImGui::End();
 	}
@@ -727,6 +728,9 @@ namespace Ember {
 			case DragDropPayloadType::AssetScript:
 				RenderScriptOptions(filePath.string());
 				break;
+			case DragDropPayloadType::AssetSkeletonMask:
+				RenderSkeletonMaskOptions(filePath.string());
+				break;
 			}
 
 			// Common options for all asset types
@@ -767,6 +771,18 @@ namespace Ember {
 			if (ImGui::MenuItem("New Directory"))
 			{
 				m_ShowCreateDirectoryPopup = true;
+			}
+
+			if (ImGui::BeginMenu("New Asset"))
+			{
+				if (ImGui::MenuItem("Skeleton Mask"))
+				{
+					m_ShowSkeletonMaskOptionsPopup = true;
+					m_SkeletonMaskName = "NewSkeletonMask";
+					m_SkeletonPath.clear();
+				}
+
+				ImGui::EndMenu();
 			}
 
 			if (ImGui::BeginMenu("Import Asset"))
@@ -931,6 +947,9 @@ namespace Ember {
 			break;
 		case DragDropPayloadType::AssetAudioClip:
 			asset = assetManager.Load<AudioClip>(path, false);
+			break;
+		case DragDropPayloadType::AssetSkeletonMask:
+			asset = assetManager.Load<SkeletonMask>(path, false);
 			break;
 		case DragDropPayloadType::Scene:
 			asset = assetManager.Load<Scene>(path, false);
@@ -1239,6 +1258,107 @@ namespace Ember {
 		}
 	}
 
+	void AssetManagerPanel::RenderSkeletonMaskOptionsPopup()
+	{
+		if (m_ShowSkeletonMaskOptionsPopup)
+		{
+			ImGui::OpenPopup("Create Skeleton Mask");
+			m_ShowSkeletonMaskOptionsPopup = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(500, 200), ImGuiCond_Appearing);
+
+		if (ImGui::BeginPopupModal("Create Skeleton Mask", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+		{
+			auto& assetManager = Application::Instance().GetAssetManager();
+			SharedPtr<Skeleton> skeletonAsset = nullptr;
+			std::string skeletonPreview = "None";
+			if (!m_SkeletonPath.empty())
+			{
+				skeletonAsset = assetManager.GetAssetByPath<Skeleton>(m_SkeletonPath);
+				if (skeletonAsset)
+					skeletonPreview = skeletonAsset->GetName();
+				else
+					m_SkeletonPath.clear();
+			}
+
+			if (UI::PropertyGrid::Begin("SkeletonMaskOptions"))
+			{
+				UI::PropertyGrid::InputText("Mask Name", m_SkeletonMaskName);
+
+				auto skeletonAssets = assetManager.GetAssetsOfType<Skeleton>();
+				if (UI::PropertyGrid::BeginComboBox("Skeleton", skeletonPreview))
+				{
+					if (UI::PropertyGrid::ComboBoxItem("None", m_SkeletonPath.empty()))
+					{
+						m_SkeletonPath.clear();
+						skeletonAsset = nullptr;
+					}
+
+					for (size_t i = 0; i < skeletonAssets.size(); i++)
+					{
+						bool isSelected = skeletonAsset == skeletonAssets[i];
+						if (UI::PropertyGrid::ComboBoxItem(skeletonAssets[i]->GetName(), isSelected))
+						{
+							skeletonAsset = skeletonAssets[i];
+							m_SkeletonPath = skeletonAsset->GetFilePath();
+							skeletonPreview = skeletonAsset->GetName();
+						}
+					}
+
+					UI::PropertyGrid::EndComboBox();
+				}
+				UI::PropertyGrid::End();
+			}
+
+			ImGui::BeginDisabled(!skeletonAsset || m_SkeletonMaskName.empty());
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				auto skeletonMaskPath = m_CurrentDirectory / (m_SkeletonMaskName + ".ebmask");
+				auto skeletonMask = SharedPtr<SkeletonMask>::Create(m_SkeletonMaskName);
+				skeletonMask->SetFilePath(skeletonMaskPath.string());
+				skeletonMask->SetSkeleton(skeletonAsset);
+				skeletonMask->SetIsEngineAsset(false);
+
+				SkeletonMaskSerializer serializer;
+				if (serializer.Serialize(skeletonMaskPath, skeletonMask))
+				{
+					// Open the new skeleton mask in the editor
+					m_Context->RequestSkeletonMaskOpenPath = skeletonMaskPath.string();
+					assetManager.Load<SkeletonMask>(skeletonMaskPath.string());
+
+					// Save the updated asset registry
+					AssetRegistrySerializer registrySerializer(&assetManager);
+					if (!registrySerializer.Serialize(ProjectManager::GetActive()->GetAssetsFilePath().string()))
+					{
+						auto evt = UINotificationEvent(std::format("Failed to update asset registry after creating skeleton mask '{}'", m_SkeletonMaskName), UINotificationEvent::Error);
+						m_Context->EventCallback(evt);
+						assetManager.RemoveAsset(skeletonMask->GetUUID());
+					}
+				}
+				else
+				{
+					auto evt = UINotificationEvent(std::format("Failed to create skeleton mask asset '{}'", m_SkeletonMaskName), UINotificationEvent::Error);
+					m_Context->EventCallback(evt);
+					assetManager.RemoveAsset(skeletonMask->GetUUID());
+				}
+
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndDisabled();
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
 	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)
 	{
 
@@ -1259,6 +1379,15 @@ namespace Ember {
 		if (ImGui::MenuItem("Edit Script"))
 		{
 			ScriptEditor::OpenScript(filePath);
+		}
+	}
+
+	void AssetManagerPanel::RenderSkeletonMaskOptions(const std::string& filePath)
+	{
+		if (ImGui::MenuItem("Edit Skeleton Mask"))
+		{
+			m_Context->RequestSkeletonMaskOpenPath = filePath;
+			ImGui::CloseCurrentPopup();
 		}
 	}
 

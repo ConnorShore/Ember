@@ -18,6 +18,8 @@ namespace Ember {
 		AssetFont,
 		AssetAudioClip,
 		AssetAnimation,
+		AssetSkeleton,
+		AssetSkeletonMask,
 		Scene,
 		SceneEntity,
 		Count
@@ -42,6 +44,8 @@ namespace Ember {
 			case DragDropPayloadType::AssetFont: return "ASSET_FONT";
 			case DragDropPayloadType::AssetAudioClip: return "ASSET_AUDIO_CLIP";
 			case DragDropPayloadType::AssetAnimation: return "ASSET_ANIMATION";
+			case DragDropPayloadType::AssetSkeleton: return "ASSET_SKELETON";
+			case DragDropPayloadType::AssetSkeletonMask: return "ASSET_SKELETON_MASK";
 			case DragDropPayloadType::Scene: return "SCENE";
 			case DragDropPayloadType::SceneEntity: return "SCENE_ENTITY";
 			default: return "Unknown";
@@ -61,6 +65,8 @@ namespace Ember {
 			if (str == "ASSET_FONT") return DragDropPayloadType::AssetFont;
 			if (str == "ASSET_AUDIO_CLIP") return DragDropPayloadType::AssetAudioClip;
 			if (str == "ASSET_ANIMATION") return DragDropPayloadType::AssetAnimation;
+			if (str == "ASSET_SKELETON") return DragDropPayloadType::AssetSkeleton;
+			if (str == "ASSET_SKELETON_MASK") return DragDropPayloadType::AssetSkeletonMask;
 			if (str == "SCENE") return DragDropPayloadType::Scene;
 			if (str == "SCENE_ENTITY") return DragDropPayloadType::SceneEntity;
 			return DragDropPayloadType::None;
@@ -84,6 +90,8 @@ namespace Ember {
 			case DragDropPayloadType::AssetFont: return "*.ttf;*.otf;.ebfont;";
 			case DragDropPayloadType::AssetAudioClip: return "*.wav;*.mp3;*.ogg;";
 			case DragDropPayloadType::AssetAnimation: return "*.ebanim;";
+			case DragDropPayloadType::AssetSkeleton: return "*.ebskeleton;";
+			case DragDropPayloadType::AssetSkeletonMask: return "*.ebmask;";
 			case DragDropPayloadType::Scene: return "*.ebs;*.ebscene;";
 			default: return "*.*";
 			}
@@ -114,6 +122,10 @@ namespace Ember {
 				return DragDropPayloadType::AssetAudioClip;
 			if (extension == ".ebanim")
 				return DragDropPayloadType::AssetAnimation;
+			if (extension == ".ebskeleton")
+				return DragDropPayloadType::AssetSkeleton;
+			if (extension == ".ebmask")
+				return DragDropPayloadType::AssetSkeletonMask;
 			if (extension == ".ebs" || extension == ".ebscene")
 				return DragDropPayloadType::Scene;
 			return DragDropPayloadType::None;

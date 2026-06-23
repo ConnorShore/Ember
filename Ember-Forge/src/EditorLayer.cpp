@@ -31,7 +31,7 @@
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>
 #include <Ember/Physics/Raycast.h>
-#include <Ember/Animation/AnimationStateMachine.h>
+#include <Ember/Animation/AnimationController.h>
 
 #include <random>
 #include <thread>
@@ -414,6 +414,7 @@ namespace Ember {
 		HandleSceneOpenRequest();
 		HandlePrefabOpenRequest();
 		HandleAnimationOpenRequest();
+		HandleSkeletonMaskOpenRequest();
 
 		// Pop up for new project
 		RenderNewScenePopup();
@@ -1098,6 +1099,8 @@ namespace Ember {
 						SaveOpenPrefab();
 					else if (viewerType == EditorViewportViewer::Type::Animation)
 						static_cast<AnimationViewportViewer*>(m_Context.ActiveViewportViewer)->SaveAnimationStateMachine(this);
+					else if (viewerType == EditorViewportViewer::Type::SkeletonMask)
+						static_cast<SkeletonMaskViewportViewer*>(m_Context.ActiveViewportViewer)->SaveSkeletonMask(this);
 					else
 						SaveProject(false);
 				}
@@ -1361,7 +1364,6 @@ namespace Ember {
 
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
 
-			// TODO: account for different architectures and systems
 			std::string configFolder;
 #if defined(EB_DEBUG)
 			configFolder = "Debug-windows-x86_64";
@@ -1631,7 +1633,7 @@ namespace Ember {
 		std::string sceneFile = scenePath;
 		if (sceneFile.empty())
 		{
-			std::string sceneDirectory = ProjectManager::GetActive()->GetScenesDirectory().string();
+			std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
 			sceneFile = FileDialog::OpenFile(sceneDirectory.c_str(), "Ember Scene (*.ebs;*.ebscene)", "*.ebs;*.ebscene");
 		}
 
@@ -1654,7 +1656,7 @@ namespace Ember {
 			return;
 		}
 
-		std::string sceneDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+		std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
 		std::string sceneName = saveAs
 			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
 			: activeScene->GetFilePath();
@@ -1721,7 +1723,7 @@ namespace Ember {
 			}
 
 			// Serialize assets
-			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
+			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
 			AssetRegistrySerializer assetSerializer(&assetManager);
 			assetSerializer.Serialize(assetFilePath.string());
 
@@ -1755,7 +1757,7 @@ namespace Ember {
 		std::string prefabFile = prefabPath;
 		if (prefabFile.empty())
 		{
-			std::string prefabDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
+			std::string prefabDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Prefab).string();
 			prefabFile = FileDialog::OpenFile(prefabDirectory.c_str(), "Ember Prefab (*.ebprefab)", "*.ebprefab");
 		}
 
@@ -1808,8 +1810,18 @@ namespace Ember {
 		std::ifstream stream(m_EditingPrefabPath);
 		m_EditingPrefab->YAMLData = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
 
+		// Prefab saves can happen while editing animation events in the scrubber panel.
+		// Persist animation assets here as well so timeline event edits are not lost.
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto animations = assetManager.GetAssetsOfType<Animation>();
+		for (auto& anim : animations)
+		{
+			if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
+				AnimationSerializer::Serialize(anim->GetFilePath(), anim);
+		}
+
 		std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetDirectory() / "Assets.eba";
-		AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+		AssetRegistrySerializer assetSerializer(&assetManager);
 		assetSerializer.Serialize(assetFilePath.string());
 
 		auto evt = UINotificationEvent(std::format("Prefab saved: {}", std::filesystem::path(m_EditingPrefabPath).filename().string()));
@@ -1821,7 +1833,7 @@ namespace Ember {
 	{
 		if (m_Context.CurrentSceneState != SceneState::Edit)
 		{
-			auto evt = UINotificationEvent("Stop Play mode before opening an animation state machine.", UINotificationEvent::Severity::Warning);
+			auto evt = UINotificationEvent("Stop Play mode before opening an animation controller.", UINotificationEvent::Severity::Warning);
 			m_Context.EventCallback(evt);
 			return;
 		}
@@ -1829,11 +1841,30 @@ namespace Ember {
 		std::string animationStateFile = path;
 		if (animationStateFile.empty())
 		{
-			std::string animationStateDirectory = ProjectManager::GetActive()->GetAssetDirectory().string();
-			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation State Machine (*.ebasm)", "*.ebasm");
+			std::string animationStateDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::AnimationController).string();
+			animationStateFile = FileDialog::OpenFile(animationStateDirectory.c_str(), "Ember Animation Controller (*.ebcontroller)", "*.ebcontroller");
 		}
 
 		OpenAnimationViewer(animationStateFile);
+	}
+
+	void EditorLayer::OpenSkeletonMask(const std::string& path)
+	{
+		if (m_Context.CurrentSceneState != SceneState::Edit)
+		{
+			auto evt = UINotificationEvent("Stop Play mode before opening a skeleton mask.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		std::string skeletonMaskFile = path;
+		if (skeletonMaskFile.empty())
+		{
+			std::string skeletonMaskDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::SkeletonMask).string();
+			skeletonMaskFile = FileDialog::OpenFile(skeletonMaskDirectory.c_str(), "Ember Skeleton Mask (*.ebmask)", "*.ebmask");
+		}
+
+		OpenSkeletonMaskViewer(skeletonMaskFile);
 	}
 
 	void EditorLayer::HandlePrefabOpenRequest()
@@ -1864,6 +1895,16 @@ namespace Ember {
 		std::string path = m_Context.RequestAnimationStateOpenPath;
 		m_Context.RequestAnimationStateOpenPath.clear();
 		OpenAnimationState(path);
+	}
+
+	void EditorLayer::HandleSkeletonMaskOpenRequest()
+	{
+		if (m_Context.RequestSkeletonMaskOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestSkeletonMaskOpenPath;
+		m_Context.RequestSkeletonMaskOpenPath.clear();
+		OpenSkeletonMask(path);
 	}
 
 	EditorViewportViewer* EditorLayer::GetActiveViewer()
@@ -2123,16 +2164,43 @@ namespace Ember {
 		}
 
 		auto& assetManager = Application::Instance().GetAssetManager();
-		auto animationStateMachine = assetManager.Load<AnimationStateMachine>(animationStatePath, false);
-		if (!animationStateMachine)
+		auto animationController = assetManager.Load<AnimationController>(animationStatePath, false);
+		if (!animationController)
 			return;
 
-		std::string asmFilePath = animationStateMachine->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(animationStatePath).string() : animationStateMachine->GetFilePath();
-		std::string title = EditorViewportTabs::TitleFromPath(animationStatePath, animationStateMachine->GetName());
-		size_t viewerIndex = m_ViewportTabs.AddAnimationViewer(m_Context.ActiveScene(), animationStateMachine, asmFilePath, title);
+		std::string controllerFilePath = animationController->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(animationStatePath).string() : animationController->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(animationStatePath, animationController->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddAnimationViewer(m_Context.ActiveScene(), animationController, controllerFilePath, title);
 		ActivateViewer(viewerIndex);
 
-		auto evt = UINotificationEvent(std::format("Opened Animation State Machine: {}", std::filesystem::path(animationStatePath).filename().string()));
+		auto evt = UINotificationEvent(std::format("Opened Animation Controller: {}", std::filesystem::path(animationStatePath).filename().string()));
+		m_Context.EventCallback(evt);
+	}
+
+
+	void EditorLayer::OpenSkeletonMaskViewer(const std::string& skeletonMaskPath)
+	{
+		if (skeletonMaskPath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::SkeletonMask, skeletonMaskPath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto skeletonMask = assetManager.Load<SkeletonMask>(skeletonMaskPath, false);
+		if (!skeletonMask)
+			return;
+
+		std::string skeletonFilePath = skeletonMask->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(skeletonMaskPath).string() : skeletonMask->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(skeletonMaskPath, skeletonMask->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddSkeletonMaskViewer(m_Context.ActiveScene(), skeletonMask, skeletonFilePath, title);
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened Skeleton Mask: {}", std::filesystem::path(skeletonMaskPath).filename().string()));
 		m_Context.EventCallback(evt);
 	}
 
@@ -2244,4 +2312,5 @@ namespace Ember {
 		colors[ImGuiCol_ResizeGripHovered] = accentHovered;
 		colors[ImGuiCol_ResizeGripActive] = accentActive;
 	}
+
 }

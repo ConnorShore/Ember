@@ -3,6 +3,7 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Asset/Asset.h"
+#include "Ember/Asset/AssetSerializationMode.h"
 
 #include "ShaderParser.h"
 
@@ -69,13 +70,73 @@ namespace Ember {
 	class ShaderImporter
 	{
 	public:
-		static SharedPtr<Shader> Load(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {})
+		static bool SaveSource(const SharedPtr<Shader>& shader, const std::string& filePath)
+		{
+			if (!shader)
+				return false;
+			if (shader->GetFilePath().empty())
+				return false;
+
+			std::error_code ec;
+			std::filesystem::copy_file(shader->GetFilePath(), filePath, std::filesystem::copy_options::overwrite_existing, ec);
+			return !ec;
+		}
+
+		static bool SaveCooked(const SharedPtr<Shader>& shader, const std::string& filePath)
+		{
+			auto cookedPath = std::filesystem::path(filePath);
+			cookedPath.replace_extension(".bin");
+			return SaveSource(shader, cookedPath.string());
+		}
+
+		static bool Save(const SharedPtr<Shader>& shader, const std::string& filePath)
+		{
+			return SaveSource(shader, filePath);
+		}
+
+		static SharedPtr<Shader> LoadSource(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {})
 		{
 			return Shader::Create(uuid, filePath, macros);
 		}
-		static SharedPtr<Shader> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {})
+
+		static SharedPtr<Shader> LoadSource(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {})
 		{
 			return Shader::Create(uuid, name, filePath, macros);
+		}
+
+		static SharedPtr<Shader> Load(UUID uuid, const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			switch (AssetSerializationMode::GetRuntimeLoadTier())
+			{
+			case RuntimeAssetLoadTier::ForceSourceYaml:
+				return LoadSource(uuid, filePath, macros);
+			case RuntimeAssetLoadTier::ForceCookedBinary:
+			{
+				auto cookedPath = std::filesystem::path(filePath);
+				cookedPath.replace_extension(".bin");
+				return Shader::Create(uuid, cookedPath.string(), macros);
+			}
+			case RuntimeAssetLoadTier::Auto:
+			default:
+				return Shader::Create(uuid, filePath, macros);
+			}
+		}
+		static SharedPtr<Shader> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros = {})
+		{
+			switch (AssetSerializationMode::GetRuntimeLoadTier())
+			{
+			case RuntimeAssetLoadTier::ForceSourceYaml:
+				return LoadSource(uuid, name, filePath, macros);
+			case RuntimeAssetLoadTier::ForceCookedBinary:
+			{
+				auto cookedPath = std::filesystem::path(filePath);
+				cookedPath.replace_extension(".bin");
+				return Shader::Create(uuid, name, cookedPath.string(), macros);
+			}
+			case RuntimeAssetLoadTier::Auto:
+			default:
+				return Shader::Create(uuid, name, filePath, macros);
+			}
 		}
 		static SharedPtr<Shader> Load(const std::string& filePath, const ShaderMacros& macros = {})
 		{

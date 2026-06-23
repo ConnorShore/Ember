@@ -9,6 +9,7 @@
 #include "MaterialSerializer.h"
 #include "ModelSerializer.h"
 #include "SkeletonSerializer.h"
+#include "SkeletonMaskSerializer.h"
 #include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
 #include "Font.h"
@@ -23,7 +24,7 @@
 #include "Ember/Render/Material.h"
 #include "Ember/Render/Mesh.h"
 #include "Ember/Animation/AnimationSerializer.h"
-#include "Ember/Animation/AnimationStateMachineSerializer.h"
+#include "Ember/Animation/AnimationControllerSerializer.h"
 
 #include <unordered_map>
 #include <concepts>
@@ -88,10 +89,12 @@ namespace Ember {
 				return ModelSerializer::Serialize(SharedPtr<Model>(DynamicPointerCast<Model>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, Animation>)
 				return AnimationSerializer::Serialize(SharedPtr<Animation>(DynamicPointerCast<Animation>(asset)), absolutePath);
-			else if constexpr (std::same_as<T, AnimationStateMachine>)
-				return AnimationStateMachineSerializer::Serialize(absolutePath, SharedPtr<AnimationStateMachine>(DynamicPointerCast<AnimationStateMachine>(asset)));
+			else if constexpr (std::same_as<T, AnimationController>)
+				return AnimationControllerSerializer::Serialize(absolutePath, SharedPtr<AnimationController>(DynamicPointerCast<AnimationController>(asset)));
 			else if constexpr (std::same_as<T, Skeleton>)
 				return SkeletonSerializer::Serialize(SharedPtr<Skeleton>(DynamicPointerCast<Skeleton>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, SkeletonMask>)
+				return SkeletonMaskSerializer::Serialize(SharedPtr<SkeletonMask>(DynamicPointerCast<SkeletonMask>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				return PhysicsMaterialSerializer::Serialize(SharedPtr<PhysicsMaterial>(DynamicPointerCast<PhysicsMaterial>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, Scene>)
@@ -148,10 +151,12 @@ namespace Ember {
 				newAsset = ScriptImporter::LoadScript(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, Animation>)
 				newAsset = AnimationSerializer::Deserialize(uuid, absolutePath);
-			else if constexpr (std::same_as<T, AnimationStateMachine>)
-				newAsset = AnimationStateMachineSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, AnimationController>)
+				newAsset = AnimationControllerSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, Skeleton>)
 				newAsset = SkeletonSerializer::Deserialize(uuid, absolutePath);
+			else if constexpr (std::same_as<T, SkeletonMask>)
+				newAsset = SkeletonMaskSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				newAsset = PhysicsMaterialSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::same_as<T, Prefab>)
@@ -175,6 +180,12 @@ namespace Ember {
 			}
 			else
 				EB_CORE_ASSERT(false, "Attempted to call Load on a non-loadable Asset type!");
+
+			if (!newAsset)
+			{
+				EB_CORE_ERROR("Failed to load asset {} ['{}'] from file: {}", (uint64_t)uuid, name, absolutePath);
+				return nullptr;
+			}
 
 			newAsset->SetIsEngineAsset(engineAsset);
 

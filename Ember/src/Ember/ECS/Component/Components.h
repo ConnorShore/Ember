@@ -643,24 +643,26 @@ namespace Ember {
 		EditorIconComponent(const EditorIconComponent&) = default;
 	};
 
-	struct AnimatorComponent
+	struct AnimationLayerRuntime
 	{
-		UUID SkeletonHandle = Constants::InvalidUUID;
-		UUID AnimationStateMachineHandle = Constants::InvalidUUID;
-
-		// Blackboard data for the Animation State Machine
-		AnimationBlackboard Blackboard;
-
-		// Runtime Graph State
 		UUID CurrentStateId = Constants::InvalidUUID;
 		UUID PreviousStateId = Constants::InvalidUUID;
-
-		// Runtime data (for current entity)
 		TimeStep CurrentTime = 0.0f;
 		TimeStep PreviousTime = 0.0f;
 		float CurrentBlendTime = 0.0f;
 		float ActiveBlendDuration = 0.0f;
 		bool IsBlending = false;
+	};
+
+	struct AnimatorComponent
+	{
+		UUID SkeletonHandle = Constants::InvalidUUID;
+		UUID ControllerHandle = Constants::InvalidUUID;
+
+		// Blackboard data for the Animation State Machine
+		AnimationBlackboard Blackboard;
+
+		std::vector<AnimationLayerRuntime> LayerStates;
 
 		// Caches
 		std::vector<Matrix4f> BonePoseMatrices = std::vector<Matrix4f>(Constants::Renderer::MaxBones, Matrix4f(1.0f));
@@ -679,6 +681,28 @@ namespace Ember {
 		void SetInt(const std::string& name, int32_t value)
 		{
 			Blackboard.SetInt(name, value);
+		}
+
+		// Initialize blackboard parameters from the animation controller
+		void InitializeBlackboardFromController()
+		{
+			if (ControllerHandle == Constants::InvalidUUID)
+			{
+				Blackboard.Parameters.clear();
+				return;
+			}
+
+			auto controller = Application::Instance().GetAssetManager().GetAsset<AnimationController>(ControllerHandle);
+			if (controller && !controller->GetParameters().empty())
+			{
+				// Copy controller's parameter definitions into the blackboard
+				Blackboard.Parameters = controller->GetParameters();
+			}
+			else if (!controller)
+			{
+				EB_CORE_WARN("AnimatorComponent::InitializeBlackboardFromController - Failed to load animation controller!");
+				Blackboard.Parameters.clear();
+			}
 		}
 
 		AnimatorComponent() = default;

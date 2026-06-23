@@ -24,7 +24,7 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(ScriptComponent& component) override
 		{
-			auto scriptDir = ProjectManager::GetActive()->GetAssetDirectory() / "Scripts";
+			auto scriptDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 			bool openCreateModal = false;
 
 			DrawProperties(component, scriptDir, openCreateModal);

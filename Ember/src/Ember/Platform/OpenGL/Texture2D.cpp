@@ -19,7 +19,7 @@ namespace Ember {
 		}
 
 		Texture2D::Texture2D(UUID uuid, const std::string& name, const std::string& filePath)
-			: Ember::Texture2D(uuid, name, filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0)
+			: Ember::Texture2D(uuid, name, filePath), m_Width(0), m_Height(0), m_BytesPerPixel(0), m_Format(TextureFormat::None)
 		{
 			stbi_set_flip_vertically_on_load(1);
 			bool isHDR = stbi_is_hdr(filePath.c_str());
@@ -36,6 +36,8 @@ namespace Ember {
 				float* data = stbi_loadf(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);
 				if (data)
 				{
+					m_Format = TextureFormat::RGBA16F;
+					m_BytesPerPixel = TextureFormatToBytesPerPixel(m_Format);
 					m_NumMipMaps = 1 + (int)std::floor(std::log2(std::max(m_Width, m_Height)));
 					glTextureStorage2D(m_Id, m_NumMipMaps, GL_RGBA16F, m_Width, m_Height);
 					glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_FLOAT, data);
@@ -48,6 +50,8 @@ namespace Ember {
 				unsigned char* data = stbi_load(filePath.c_str(), &m_Width, &m_Height, &m_BytesPerPixel, 4);
 				if (data)
 				{
+					m_Format = TextureFormat::RGBA8;
+					m_BytesPerPixel = TextureFormatToBytesPerPixel(m_Format);
 					m_NumMipMaps = 1 + (int)std::floor(std::log2(std::max(m_Width, m_Height)));
 					glTextureStorage2D(m_Id, m_NumMipMaps, GL_RGBA8, m_Width, m_Height);
 					glTextureSubImage2D(m_Id, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);

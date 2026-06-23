@@ -62,6 +62,13 @@ namespace Ember {
 				if (ImGui::Selectable(anim->GetName().c_str(), isSelected))
 				{
 					SetCurrentAnimation(anim);
+
+					// Apply the animation at time 0 to show the initial keyframe pose
+					if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID)
+					{
+						auto animSystem = Application::Instance().GetSystem<AnimationSystem>();
+						animSystem->SetAnimationToTimestamp(m_Context->ActiveScene().Ptr(), anim->GetUUID(), m_Context->SelectedEntity, 0.0f);
+					}
 				}
 
 				// Set the initial focus when opening the combo

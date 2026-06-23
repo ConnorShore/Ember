@@ -66,6 +66,8 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<LocalAvoidanceComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<LocalAvoidanceComponent>()); });
 		if (componentTypeStr == "ParticleEmitterComponent")
 			return guardGet(entity.ContainsComponent<ParticleEmitterComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<ParticleEmitterComponent>()); });
+		if (componentTypeStr == "PrefabComponent")
+			return guardGet(entity.ContainsComponent<PrefabComponent>(), [&] { return sol::make_object(state, &entity.GetComponent<PrefabComponent>()); });
 
 		if (componentTypeStr == "ScriptComponent")
 		{
@@ -127,6 +129,8 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<LocalAvoidanceComponent>());
 		if (componentTypeStr == "ParticleEmitterComponent")
 			return sol::make_object(state, entity.ContainsComponent<ParticleEmitterComponent>());
+		if (componentTypeStr == "PrefabComponent")
+			return sol::make_object(state, entity.ContainsComponent<PrefabComponent>());
 
 		if (componentTypeStr == "DisabledComponent")
 		{
@@ -250,18 +254,11 @@ namespace Ember {
 			"IsValid", [](const Entity& e) { return static_cast<bool>(e); },
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
-			"SetActive", [&state](Entity& e, bool active) {
-				if (active)
-				{
-					if (e.ContainsComponent<DisabledComponent>())
-						e.DetachComponent<DisabledComponent>();
-				}
-				else
-				{
-					if (!e.ContainsComponent<DisabledComponent>())
-						e.AttachComponent<DisabledComponent>();
-				}
-			},
+			"SetActive", sol::overload(
+				[](Entity& e, bool active) { e.SetActive(active, true); },
+				[](Entity& e, bool active, bool recursive) { e.SetActive(active, recursive); }
+			),
+			"IsActive", &Entity::IsActive,
 			"AttachComponent", [&state](Entity& e, const std::string& componentTypeStr) { return AddComponentFromString(componentTypeStr, e, state); },
 			"DetachComponent", [](Entity& e, const std::string& componentTypeStr) { DetachComponentFromString(componentTypeStr, e); },
 			"GetComponent", [&state](Entity& e, const std::string& componentTypeStr) { return GetComponentFromString(componentTypeStr, e, state); },

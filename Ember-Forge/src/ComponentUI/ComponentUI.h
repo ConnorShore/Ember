@@ -36,6 +36,7 @@ namespace Ember {
 		virtual void Render(Entity entity) override
 		{
 			RenderComponent(GetName(), entity, [this](T& component) { RenderComponentImpl(component); });
+			RenderPopups(entity.GetComponent<T>());
 		}
 
 		virtual const char* GetName() const = 0;
@@ -53,6 +54,7 @@ namespace Ember {
 
 	protected:
 		virtual void RenderComponentImpl(T& component) = 0;
+		virtual void RenderPopups(T& component) {}
 
 	protected:
 		EditorContext* m_Context;

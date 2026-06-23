@@ -7,6 +7,7 @@
 #include <Ember/Asset/MaterialSerializer.h>
 #include <Ember/Asset/SkeletonSerializer.h>
 #include <Ember/Animation/AnimationSerializer.h>
+#include <Ember/Render/StaticMesh.h>
 
 #include <filesystem>
 #include <fstream>
@@ -232,8 +233,17 @@ namespace Ember {
 			int rigidBoneID = (i < meshRigidBoneMap.size() && meshRigidBoneMap[i] >= 0) ? meshRigidBoneMap[i] : -1;
 			meshToPrims[i] = ProcessMesh(modelName, (int)i, model, resourceOutputDirectory.string(), rigidBoneID);
 			for (auto& p : meshToPrims[i]) {
+				auto loadedMesh = am.Load<Mesh>(p.id, p.name, p.path, false);
+				if (!loadedMesh) {
+					EB_CORE_ERROR("GLTF Import: Failed to load cooked mesh '{}' from '{}'.", p.name, p.path);
+					p.id = Constants::InvalidUUID;
+					continue;
+				}
+
+				// Keep cooked IDs aligned with the actual asset UUID returned by the AssetManager.
+				// This avoids stale UUIDs when path de-duplication returns an existing mesh asset.
+				p.id = loadedMesh->GetUUID();
 				report.Meshes.push_back(p);
-				am.Load<Mesh>(p.id, p.name, p.path, false);
 			}
 		}
 
@@ -340,6 +350,10 @@ namespace Ember {
 			node.Name = cooked.Name;
 			node.LocalTransform = cooked.LocalTransform;
 			for (const auto& m : cooked.Meshes) {
+				if (m.MeshID == Constants::InvalidUUID || !am.ContainsAsset(m.MeshID)) {
+					EB_CORE_WARN("GLTF Import: Skipping missing mesh asset {} while converting node '{}'.", (uint64_t)m.MeshID, cooked.Name);
+					continue;
+				}
 				node.Meshes.push_back({ am.GetAsset<Mesh>(m.MeshID), m.MaterialIndex });
 			}
 			for (const auto& c : cooked.ChildNodes) {
@@ -640,12 +654,41 @@ namespace Ember {
 			}
 
 			UUID meshUUID = UUID();
-			std::string primFileName = modelName + "_" + safeMeshName + "_Prim" + std::to_string(primIndex) + ".ebmesh";
-			std::string outputPath = (std::filesystem::path(outputDirectory) / primFileName).string();
+			std::string primFileName = modelName + "_Mesh" + std::to_string(meshIndex) + "_" + safeMeshName + "_Prim" + std::to_string(primIndex) + ".ebmesh";
+			std::filesystem::path sourcePath = std::filesystem::path(outputDirectory) / primFileName;
 
-			// Cook directly to disk! No Mesh object created yet.
-			if (MeshSerializer::Serialize(outputPath, vertices, indices, isSkinned))
-				cookedPrims.push_back({ meshUUID, primFileName, outputPath });
+			SharedPtr<Mesh> meshAsset;
+			if (isSkinned)
+			{
+				meshAsset = SharedPtr<SkinnedMesh>::Create(meshUUID, sourcePath.stem().string(), vertices, indices);
+			}
+			else
+			{
+				std::vector<StaticMeshVertex> staticVertices(vertices.size());
+				for (size_t v = 0; v < vertices.size(); v++)
+				{
+					staticVertices[v].Position = vertices[v].Position;
+					staticVertices[v].Normal = vertices[v].Normal;
+					staticVertices[v].TexCoords = vertices[v].TexCoords;
+					staticVertices[v].Tangent = vertices[v].Tangent;
+					staticVertices[v].Bitangent = vertices[v].Bitangent;
+				}
+				meshAsset = SharedPtr<StaticMesh>::Create(meshUUID, sourcePath.stem().string(), staticVertices, indices);
+			}
+
+			if (!meshAsset)
+			{
+				EB_CORE_ERROR("GLTF Import: Failed to create mesh asset '{}' for serialization.", primFileName);
+				continue;
+			}
+
+			if (!MeshSerializer::SerializeSource(sourcePath, meshAsset))
+			{
+				EB_CORE_ERROR("GLTF Import: Failed to serialize mesh source '{}' to '{}'.", primFileName, sourcePath.string());
+				continue;
+			}
+
+			cookedPrims.push_back({ meshUUID, primFileName, sourcePath.string() });
 		}
 
 		return cookedPrims;
@@ -680,7 +723,10 @@ namespace Ember {
 					if (primitive.material > -1)
 						safeMaterialIndex = (uint32_t)primitive.material;
 
-					node.Meshes.push_back({ cooked[cookedIndex].id, safeMaterialIndex });
+					if (cooked[cookedIndex].id != Constants::InvalidUUID)
+						node.Meshes.push_back({ cooked[cookedIndex].id, safeMaterialIndex });
+					else
+						EB_CORE_WARN("GLTF Import: Skipping invalid cooked mesh entry for node '{}', mesh index {}, primitive {}.", node.Name, gNode.mesh, i);
 					cookedIndex++;
 				}
 			}

@@ -88,7 +88,7 @@ namespace Ember {
 		if (triggerFunc.valid())
 		{
 			Entity otherEntity = { otherID, scene };
-		sol::protected_function_result result = triggerFunc(script.Instance, Entity{receiver}, Entity{otherEntity});
+			sol::protected_function_result result = triggerFunc(script.Instance, Entity{receiver}, Entity{otherEntity});
 			if (!result.valid())
 			{
 				sol::error err = result;
