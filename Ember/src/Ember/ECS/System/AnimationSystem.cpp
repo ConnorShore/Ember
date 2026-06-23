@@ -405,15 +405,16 @@ namespace Ember {
 					}
 				}
 
+				// If no valid animation is playing in this layer, skip all bone writes.
+				// This allows a state with no animation assigned to act as a full passthrough —
+				// the previous layers' pose is preserved for any masked bones.
+				if (!animation)
+					continue;
+
 				// Build global pose hierarchy
 				// We can loop linearly because glTF guarantees parent nodes appear before children in the array
 				for (size_t i = 0; i < bones.size(); i++)
 				{
-					if (boneWeights[i] <= 0.0f) {
-						globalTransforms[i] = Matrix4f(1.0f); // Skip this bone if weight is 0
-						continue;
-					}
-
 					if (bones[i].ParentID == -1) {
 						globalTransforms[i] = localTransforms[i]; // Root bone
 					}
@@ -423,20 +424,85 @@ namespace Ember {
 					}
 				}
 
-				// Apply inverse bind pose to get final bone matrices for skinning
-				if (animator.BonePoseMatrices.size() < bones.size()) {
-					animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
-				}
-
-				if (animator.BoneMatrices.size() < bones.size()) {
-					animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
-				}
-
-				for (size_t i = 0; i < bones.size(); i++)
+				if (layer.Mode == AnimationLayerMode::Additive)
 				{
-					// FinalMatrix = GlobalPose * InverseBindPose
-					animator.BonePoseMatrices[i] = boneWeights[i] * globalTransforms[i] + (1.0f - boneWeights[i]) * animator.BonePoseMatrices[i];
-					animator.BoneMatrices[i] = boneWeights[i] * (globalTransforms[i] * invBindTransforms[i]) + (1.0f - boneWeights[i]) * animator.BoneMatrices[i];
+					// Additive blending must operate in local TRS space.
+					// Linear interpolation of raw matrices is invalid for transforms that contain
+					// rotation: the columns become non-orthonormal after lerp, which causes the
+					// translation delta to bleed into wrong axes (e.g. slide moves up instead of back).
+					//
+					// Correct approach:
+					//   delta_pos = animLocalPos - bindLocalPos          (vector addition)
+					//   delta_rot = animLocalRot * inverse(bindLocalRot) (quaternion multiplication)
+					// These are applied to the accumulated local TRS from previous layers, which is
+					// extracted by multiplying out the parent's inverse global.
+
+					if (animator.BonePoseMatrices.size() < bones.size())
+						animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
+					if (animator.BoneMatrices.size() < bones.size())
+						animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
+
+					std::vector<Matrix4f> newGlobalTransforms(bones.size());
+
+					for (size_t i = 0; i < bones.size(); i++)
+					{
+						const float effectiveWeight = boneWeights[i] * layer.Weight;
+
+						// Animation local TRS (already cross-fade-blended into localTransforms[i]).
+						// Extract position from the 4th column (column-major); rotation via quat_cast of upper-left 3x3.
+						const Vector3f animLocalPos = Vector3f(localTransforms[i][3]);
+						const Quaternion animLocalRot = glm::normalize(glm::quat_cast(Matrix3f(localTransforms[i])));
+
+						// Bind pose local TRS
+						const Vector3f bindLocalPos = bones[i].LocalBindPoseTransform.Translation;
+						const Quaternion bindLocalRot = glm::normalize(bones[i].LocalBindPoseTransform.Rotation);
+
+						// Delta from bind pose in local space
+						const Vector3f deltaPos = animLocalPos - bindLocalPos;
+						const Quaternion deltaRot = glm::normalize(animLocalRot * glm::inverse(bindLocalRot));
+
+						// Accumulated local TRS from previous layers (recover local by removing parent's global)
+						const Matrix4f accGlobal = animator.BonePoseMatrices[i];
+						const Matrix4f accLocal = (bones[i].ParentID == -1)
+							? accGlobal
+							: Math::Inverse(animator.BonePoseMatrices[bones[i].ParentID]) * accGlobal;
+
+						const Vector3f accLocalPos = Vector3f(accLocal[3]);
+						const Quaternion accLocalRot = glm::normalize(glm::quat_cast(Matrix3f(accLocal)));
+
+						// Apply weighted delta to accumulated local TRS
+						const Vector3f newLocalPos = accLocalPos + effectiveWeight * deltaPos;
+						const Quaternion newLocalRot = glm::normalize(
+							accLocalRot * Math::Slerp(Quaternion(1.0f, 0.0f, 0.0f, 0.0f), deltaRot, effectiveWeight));
+
+						const Matrix4f newLocal = Math::Translate(newLocalPos) * Math::ToMatrix4f(newLocalRot);
+
+						// Rebuild global hierarchy
+						newGlobalTransforms[i] = (bones[i].ParentID == -1)
+							? newLocal
+							: newGlobalTransforms[bones[i].ParentID] * newLocal;
+					}
+
+					for (size_t i = 0; i < bones.size(); i++)
+					{
+						animator.BonePoseMatrices[i] = newGlobalTransforms[i];
+						animator.BoneMatrices[i] = newGlobalTransforms[i] * invBindTransforms[i];
+					}
+				}
+				else
+				{
+					// Override: blend between the accumulated pose and this layer's pose.
+					if (animator.BonePoseMatrices.size() < bones.size())
+						animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));
+					if (animator.BoneMatrices.size() < bones.size())
+						animator.BoneMatrices.resize(bones.size(), Matrix4f(1.0f));
+
+					for (size_t i = 0; i < bones.size(); i++)
+					{
+						const float effectiveWeight = boneWeights[i] * layer.Weight;
+						animator.BonePoseMatrices[i] = effectiveWeight * globalTransforms[i] + (1.0f - effectiveWeight) * animator.BonePoseMatrices[i];
+						animator.BoneMatrices[i] = effectiveWeight * (globalTransforms[i] * invBindTransforms[i]) + (1.0f - effectiveWeight) * animator.BoneMatrices[i];
+					}
 				}
 			}
 		}

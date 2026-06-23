@@ -52,7 +52,7 @@ namespace Ember {
 	{
 		constexpr uint32_t EBCONTROLLER_SOURCE_FILE_VERSION = 1;
 		constexpr uint32_t EBCONTROLLER_COOKED_MAGIC = 0x45424343; // 'EBCC'
-		constexpr uint32_t EBCONTROLLER_COOKED_VERSION = 1;
+		constexpr uint32_t EBCONTROLLER_COOKED_VERSION = 2;
 
 		bool IsCookedPath(const std::filesystem::path& filepath)
 		{
@@ -278,6 +278,7 @@ namespace Ember {
 			layerNode["Name"] << layer.Name;
 			layerNode["Weight"] << layer.Weight;
 			layerNode["MaskHandle"] << (uint64_t)layer.MaskHandle;
+			layerNode["Mode"] << static_cast<uint32_t>(layer.Mode);
 			SerializeStateMachine(layerNode["StateMachine"], layer.StateMachine);
 		}
 
@@ -348,6 +349,12 @@ namespace Ember {
 					layerNode["Weight"] >> layer.Weight;
 				if (layerNode.has_child("MaskHandle"))
 					layerNode["MaskHandle"] >> maskHandle;
+				if (layerNode.has_child("Mode"))
+				{
+					uint32_t mode = 0;
+					layerNode["Mode"] >> mode;
+					layer.Mode = static_cast<AnimationLayerMode>(mode);
+				}
 
 				layer.MaskHandle = UUID(maskHandle);
 				DeserializeStateMachine(layerNode["StateMachine"], layer.StateMachine);
@@ -395,6 +402,8 @@ namespace Ember {
 			WriteRaw(stream, layer.Weight);
 			uint64_t maskHandle = static_cast<uint64_t>(layer.MaskHandle);
 			WriteRaw(stream, maskHandle);
+			uint8_t layerMode = static_cast<uint8_t>(layer.Mode);
+			WriteRaw(stream, layerMode);
 
 			const auto& stateMachine = layer.StateMachine;
 			uint64_t defaultState = static_cast<uint64_t>(stateMachine.GetDefaultState());
@@ -520,6 +529,14 @@ namespace Ember {
 			if (!ReadRaw(stream, layer.Weight) || !ReadRaw(stream, maskHandle))
 				return nullptr;
 			layer.MaskHandle = UUID(maskHandle);
+
+			if (version >= 2)
+			{
+				uint8_t layerMode = 0;
+				if (!ReadRaw(stream, layerMode))
+					return nullptr;
+				layer.Mode = static_cast<AnimationLayerMode>(layerMode);
+			}
 
 			uint64_t defaultState = Constants::InvalidUUID;
 			if (!ReadRaw(stream, defaultState))

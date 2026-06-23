@@ -279,6 +279,23 @@ namespace Ember {
 
 					UI::PropertyGrid::SliderFloat("Weight", layer.Weight, 0.0f, 1.0f);
 
+					// Layer mode dropdown (first layer is always Override; additive only makes sense for upper layers)
+					const char* modePreview = (layer.Mode == AnimationLayerMode::Additive) ? "Additive" : "Override";
+					if (UI::PropertyGrid::BeginComboBox("Mode", modePreview))
+					{
+						if (ImGui::Selectable("Override", layer.Mode == AnimationLayerMode::Override))
+						{
+							layer.Mode = AnimationLayerMode::Override;
+							m_IsDirty = true;
+						}
+						if (ImGui::Selectable("Additive", layer.Mode == AnimationLayerMode::Additive))
+						{
+							layer.Mode = AnimationLayerMode::Additive;
+							m_IsDirty = true;
+						}
+						UI::PropertyGrid::EndComboBox();
+					}
+
 					// Animation mask asset reference
 					bool maskExists = layer.MaskHandle != Constants::InvalidUUID;
 					std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetSkeletonMask);
