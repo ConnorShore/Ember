@@ -16,6 +16,8 @@ namespace Ember {
 		virtual void OnOpen(EditorLayer* editor) override;
 		virtual void OnImGuiRender(EditorLayer* editor) override;
 
+		void RefreshPrefab();
+
 		SharedPtr<Prefab> PrefabAsset;
 		Entity RootEntity;
 	};

@@ -431,7 +431,16 @@ namespace Ember {
 					Entity entity = m_Context->ActiveScene()->GetEntity(entityUUID);
 					if (entity != Constants::Entities::InvalidEntityID)
 					{
+						auto& assetManager = Application::Instance().GetAssetManager();
 						std::string filePath = (m_CurrentDirectory / (entity.GetName() + ".ebprefab")).string();
+
+						// If prefab exists, remove existing prefab and create a new one in asset manager (but keep existing UUID)
+						//if (assetManager.ContainsAssetWithPath(filePath))
+						//{
+						//	SharedPtr<Prefab> existingPrefab = assetManager.Load<Prefab>(filePath, false);
+						//	if (existingPrefab)
+						//		assetManager.RemoveAsset(existingPrefab->GetFilePath());
+						//}
 
 						SharedPtr<Prefab> prefab = m_Context->ActiveScene()->CreatePrefab(entity, filePath);
 						if (prefab == nullptr)
@@ -1328,15 +1337,6 @@ namespace Ember {
 					// Open the new skeleton mask in the editor
 					m_Context->RequestSkeletonMaskOpenPath = skeletonMaskPath.string();
 					assetManager.Load<SkeletonMask>(skeletonMaskPath.string());
-
-					// Save the updated asset registry
-					AssetRegistrySerializer registrySerializer(&assetManager);
-					if (!registrySerializer.Serialize(ProjectManager::GetActive()->GetAssetsFilePath().string()))
-					{
-						auto evt = UINotificationEvent(std::format("Failed to update asset registry after creating skeleton mask '{}'", m_SkeletonMaskName), UINotificationEvent::Error);
-						m_Context->EventCallback(evt);
-						assetManager.RemoveAsset(skeletonMask->GetUUID());
-					}
 				}
 				else
 				{

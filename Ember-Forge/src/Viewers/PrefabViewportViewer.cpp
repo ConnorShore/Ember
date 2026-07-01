@@ -64,4 +64,14 @@ namespace Ember {
 
 		editor->GetViewportGizmos().Render(&editor->GetContext(), editor->GetCamera(), editor->GetViewportBounds(), editor->GetGizmoType());
 	}
+
+	void PrefabViewportViewer::RefreshPrefab()
+	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto prefab = assetManager.Load<Prefab>(PrefabAsset->GetFilePath());
+		EB_CORE_ASSERT(prefab, "Failed to reload prefab from file in prefab viewer: {}", PrefabAsset->GetFilePath());
+
+		// TODO: Need to figure out how to refresh entity so if the viewer is reopened after the prefab is reloaded, it will show the updated prefab
+	}
+
 }

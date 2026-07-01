@@ -2,6 +2,8 @@
 #include "Scene.h"
 #include "SceneSerializer.h"
 
+#include "Ember/Asset/AssetRegistrySerializer.h"
+
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Core/ProjectManager.h"
@@ -510,14 +512,16 @@ namespace Ember {
 		// Serialize the entity and its children to a prefab file
 		SceneSerializer serializer(this);
 		if (!serializer.SerializePrefab(entity, filepath))
-		{
 			return nullptr;
-		}
 
 		// Load entity as a prefab asset
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto prefab = assetManager.Load<Prefab>(filepath);
 		prefab->SetIsEngineAsset(false);
+
+		// Save asset metadata for the prefab
+		AssetRegistrySerializer assetSerializer(&Application::Instance().GetAssetManager());
+		assetSerializer.Serialize(ProjectManager::GetActive()->GetAssetsFilePath().string());
 
 		// Add prefab component to entity
 		auto& pc = entity.AttachComponent<PrefabComponent>();
