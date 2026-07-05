@@ -1,13 +1,13 @@
 #include "ebpch.h"
 #include "ProjectManager.h"
 #include "ProjectSerializer.h"
-#include "Ember/Asset/AssetRegistrySerializer.h"
-#include "Ember/Asset/MaterialSerializer.h"
-#include "Ember/Asset/ModelSerializer.h"
-#include "Ember/Asset/MeshSerializer.h"
-#include "Ember/Asset/PhysicsMaterialSerializer.h"
-#include "Ember/Asset/SkeletonSerializer.h"
-#include "Ember/Asset/SkeletonMaskSerializer.h"
+#include "Ember/Asset/Serializers/AssetRegistrySerializer.h"
+#include "Ember/Asset/Serializers/MaterialSerializer.h"
+#include "Ember/Asset/Serializers/ModelSerializer.h"
+#include "Ember/Asset/Serializers/MeshSerializer.h"
+#include "Ember/Asset/Serializers/PhysicsMaterialSerializer.h"
+#include "Ember/Asset/Serializers/SkeletonSerializer.h"
+#include "Ember/Asset/Serializers/SkeletonMaskSerializer.h"
 #include "Ember/Animation/AnimationSerializer.h"
 #include "Ember/Animation/AnimationControllerSerializer.h"
 #include "Ember/Render/TextureImporter.h"
@@ -75,7 +75,7 @@ namespace Ember {
 
 			CookAssets<Scene>(assetManager, [](const SharedPtr<Scene>& sceneAsset) {
 				SceneSerializer(sceneAsset).SerializeCooked(sceneAsset->GetFilePath());
-			});
+				});
 		}
 	}
 

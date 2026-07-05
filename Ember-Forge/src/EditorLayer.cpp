@@ -26,7 +26,7 @@
 #include <Ember/Scene/SceneManager.h>
 #include <Ember/Animation/Animation.h>
 #include <Ember/Animation/AnimationSerializer.h>
-#include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/Asset/Serializers/AssetRegistrySerializer.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>

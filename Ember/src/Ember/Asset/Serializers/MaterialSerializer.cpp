@@ -1,6 +1,6 @@
 #include "ebpch.h"
 #include "MaterialSerializer.h"
-#include "AssetManager.h"
+#include "Ember/Asset/AssetManager.h"
 #include "Ember/Utils/SerializationUtils.h"
 
 namespace Ember {

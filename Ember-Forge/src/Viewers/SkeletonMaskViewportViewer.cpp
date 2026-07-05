@@ -5,7 +5,7 @@
 #include "UI/PropertyGrid.h"
 #include "UI/DragDropTypes.h"
 #include <Ember/Asset/AssetManager.h>
-#include <Ember/Asset/SkeletonMaskSerializer.h>
+#include <Ember/Asset/Serializers/SkeletonMaskSerializer.h>
 #include <Ember/Event/UIEvent.h>
 
 #include <imgui/imgui.h>

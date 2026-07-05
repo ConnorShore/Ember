@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Ember/Core/Core.h"
 #include "Texture2D.h"
-#include "Ember/Asset/AssetSerializationMode.h"
+
+#include "Ember/Core/Core.h"
+#include "Ember/Asset/Serializers/AssetSerializationMode.h"
 
 #include "stb_image_write.h"
 

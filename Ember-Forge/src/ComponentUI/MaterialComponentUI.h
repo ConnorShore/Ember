@@ -3,7 +3,7 @@
 #include "UI/UIWidgets.h"
 
 #include <Ember/Event/UIEvent.h>
-#include <Ember/Asset/MaterialSerializer.h>
+#include <Ember/Asset/Serializers/MaterialSerializer.h>
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Core/ProjectManager.h>
 

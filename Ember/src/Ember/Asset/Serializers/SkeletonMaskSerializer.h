@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SkeletonMask.h"
+#include "Ember/Asset/SkeletonMask.h"
 #include "AssetSerializationMode.h"
 
 #include <filesystem>

@@ -2,7 +2,7 @@
 #include "Scene.h"
 #include "SceneSerializer.h"
 
-#include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/Serializers/AssetRegistrySerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Core/Application.h"

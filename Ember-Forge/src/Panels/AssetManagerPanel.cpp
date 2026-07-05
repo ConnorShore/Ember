@@ -5,7 +5,7 @@
 
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Event/UIEvent.h>
-#include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/Asset/Serializers/AssetRegistrySerializer.h>
 #include <Ember/Asset/Font.h>
 #include <Ember/Asset/NavigationMeshData.h>
 #include <Ember/Core/ProjectManager.h>

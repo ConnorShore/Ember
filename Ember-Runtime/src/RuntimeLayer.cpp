@@ -2,7 +2,7 @@
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Scene/SceneSerializer.h>
 #include <Ember/Render/RenderAction.h>
-#include <Ember/Asset/AssetSerializationMode.h>
+#include <Ember/Asset/Serializers/AssetSerializationMode.h>
 
 #include <imgui/imgui.h>
 

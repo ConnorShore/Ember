@@ -6,7 +6,7 @@
 
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Animation/AnimationController.h>
-#include <Ember/Asset/AssetRegistrySerializer.h>
+#include <Ember/Asset/Serializers/AssetRegistrySerializer.h>
 
 #include <imgui/imgui.h>
 

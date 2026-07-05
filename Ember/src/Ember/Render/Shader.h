@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Ember/Asset/Serializers/AssetSerializationMode.h"
+
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Asset/Asset.h"
-#include "Ember/Asset/AssetSerializationMode.h"
 
 #include "ShaderParser.h"
 

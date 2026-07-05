@@ -1,7 +1,7 @@
 #include "ebpch.h"
 #include "AssetRegistrySerializer.h"
 
-#include "Model.h"
+#include "Ember/Asset/Model.h"
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Render/Mesh.h"

@@ -2,7 +2,8 @@
 
 #include "Ember/Core/Core.h"
 #include "Ember/Animation/Animation.h"
-#include "Ember/Asset/AssetSerializationMode.h"
+
+#include "Ember/Asset/Serializers/AssetSerializationMode.h"
 
 namespace Ember {
 
