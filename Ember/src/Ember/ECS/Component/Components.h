@@ -18,6 +18,7 @@
 #include "Ember/Audio/AudioSource.h"
 #include "Ember/Audio/AudioSoundProperties.h"
 #include "Ember/AI/NavNode.h"
+#include "Ember/AI/NavigationMeshBakeSettings.h"
 #include "Ember/Animation/AnimationBlackboard.h"
 
 #include <sol/sol.hpp>
@@ -922,6 +923,20 @@ namespace Ember {
 
 		NavigationGridComponent() = default;
 		NavigationGridComponent(const NavigationGridComponent&) = default;
+	};
+
+	struct NavigationMeshComponent
+	{
+		NavigationMeshBakeSettings BakeSettings;
+
+		// Generation Bounds (Local to the entity)
+		Vector3f BoundsSize = { 100.0f, 20.0f, 100.0f };
+		Vector3f BoundsCenterOffset = { 0.0f, 0.0f, 0.0f };
+
+		UUID NavMeshDataHandle = Constants::InvalidUUID;
+
+		NavigationMeshComponent() = default;
+		NavigationMeshComponent(const NavigationMeshComponent&) = default;
 	};
 
 	struct LocalAvoidanceComponent

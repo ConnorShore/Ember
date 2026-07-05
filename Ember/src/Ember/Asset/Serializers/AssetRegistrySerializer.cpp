@@ -10,6 +10,7 @@
 #include "Ember/Asset/SkeletonMask.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
+#include "Ember/Asset/NavigationMeshData.h"
 
 #include "Ember/Animation/Animation.h"
 #include "Ember/Animation/AnimationController.h"
@@ -71,6 +72,7 @@ namespace Ember {
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Model>());
 
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<PhysicsMaterial>());
+		serializeType(m_AssetManagerHandle->GetAssetsOfType<NavigationMeshData>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Prefab>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<Font>());
 		serializeType(m_AssetManagerHandle->GetAssetsOfType<AudioClip>());
@@ -157,6 +159,8 @@ namespace Ember {
 				m_AssetManagerHandle->Load<AnimationController>(uuid, name, path, false);
 			else if (type == "PhysicsMaterial")
 				m_AssetManagerHandle->Load<PhysicsMaterial>(uuid, name, path, false);
+			else if (type == "NavMeshData")
+				m_AssetManagerHandle->Load<NavigationMeshData>(uuid, name, path, false);
 			else if (type == "Prefab")
 				m_AssetManagerHandle->Load<Prefab>(uuid, name, path, false);
 			else if (type == "Font")

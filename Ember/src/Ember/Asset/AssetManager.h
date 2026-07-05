@@ -5,15 +5,18 @@
 #include "Model.h"
 #include "Skeleton.h"
 #include "PhysicsMaterial.h"
-#include "MeshSerializer.h"
-#include "MaterialSerializer.h"
-#include "ModelSerializer.h"
-#include "SkeletonSerializer.h"
-#include "SkeletonMaskSerializer.h"
-#include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
 #include "Font.h"
 #include "AudioClip.h"
+#include "NavigationMeshData.h"
+
+#include "Serializers/MeshSerializer.h"
+#include "Serializers/MaterialSerializer.h"
+#include "Serializers/ModelSerializer.h"
+#include "Serializers/SkeletonSerializer.h"
+#include "Serializers/SkeletonMaskSerializer.h"
+#include "Serializers/PhysicsMaterialSerializer.h"
+#include "Serializers/NavigationMeshSerializer.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -97,6 +100,8 @@ namespace Ember {
 				return SkeletonMaskSerializer::Serialize(SharedPtr<SkeletonMask>(DynamicPointerCast<SkeletonMask>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				return PhysicsMaterialSerializer::Serialize(SharedPtr<PhysicsMaterial>(DynamicPointerCast<PhysicsMaterial>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, NavigationMeshData>)
+				return NavigationMeshSerializer::Serialize(SharedPtr<NavigationMeshData>(DynamicPointerCast<NavigationMeshData>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, Scene>)
 			{
 				// Scenes are saved through the SceneManager, but we still want to allow them to be registered in the AssetManager
@@ -165,6 +170,8 @@ namespace Ember {
 				newAsset = SharedPtr<Font>::Create(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, AudioClip>)
 				newAsset = SharedPtr<AudioClip>::Create(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, NavigationMeshData>)
+				newAsset = NavigationMeshSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);

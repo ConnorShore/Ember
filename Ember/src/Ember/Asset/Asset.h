@@ -27,7 +27,8 @@ namespace Ember {
 		Prefab,
 		Font,
 		AudioClip,
-		Scene
+		Scene,
+		NavMeshData
 	};
 
 	static std::string GetAssetTypeString(AssetType type)
@@ -50,6 +51,7 @@ namespace Ember {
 		case AssetType::Font: return "Font";
 		case AssetType::AudioClip: return "AudioClip";
 		case AssetType::Scene: return "Scene";
+		case AssetType::NavMeshData: return "NavMeshData";
 		default: EB_CORE_ASSERT(false, "Unknown asset type!"); return "";
 		}
 	}
@@ -72,6 +74,7 @@ namespace Ember {
 		if (typeStr == "Font") return AssetType::Font;
 		if (typeStr == "AudioClip") return AssetType::AudioClip;
 		if (typeStr == "Scene") return AssetType::Scene;
+		if (typeStr == "NavMeshData") return AssetType::NavMeshData;
 		
 		EB_CORE_ASSERT(false, "Unknown asset type!"); 
 		return AssetType::None;

@@ -12,6 +12,7 @@ include "Ember/vendor/imgui"
 include "Ember/vendor/rapidyaml"
 include "Ember/vendor/lua"
 include "Ember/vendor/reactphysics3d"
+include "Ember/vendor/recastnavigation"
 
 include "Ember-Forge/vendor/ImGuizmo"
 include "Ember-Forge/vendor/imgui-node-editor"

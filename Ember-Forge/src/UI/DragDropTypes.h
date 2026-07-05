@@ -20,6 +20,7 @@ namespace Ember {
 		AssetAnimation,
 		AssetSkeleton,
 		AssetSkeletonMask,
+		AssetNavMeshData,
 		Scene,
 		SceneEntity,
 		Count
@@ -46,6 +47,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetAnimation: return "ASSET_ANIMATION";
 			case DragDropPayloadType::AssetSkeleton: return "ASSET_SKELETON";
 			case DragDropPayloadType::AssetSkeletonMask: return "ASSET_SKELETON_MASK";
+			case DragDropPayloadType::AssetNavMeshData: return "ASSET_NAV_MESH_DATA";
 			case DragDropPayloadType::Scene: return "SCENE";
 			case DragDropPayloadType::SceneEntity: return "SCENE_ENTITY";
 			default: return "Unknown";
@@ -67,6 +69,7 @@ namespace Ember {
 			if (str == "ASSET_ANIMATION") return DragDropPayloadType::AssetAnimation;
 			if (str == "ASSET_SKELETON") return DragDropPayloadType::AssetSkeleton;
 			if (str == "ASSET_SKELETON_MASK") return DragDropPayloadType::AssetSkeletonMask;
+			if (str == "ASSET_NAV_MESH_DATA") return DragDropPayloadType::AssetNavMeshData;
 			if (str == "SCENE") return DragDropPayloadType::Scene;
 			if (str == "SCENE_ENTITY") return DragDropPayloadType::SceneEntity;
 			return DragDropPayloadType::None;
@@ -92,6 +95,7 @@ namespace Ember {
 			case DragDropPayloadType::AssetAnimation: return "*.ebanim;";
 			case DragDropPayloadType::AssetSkeleton: return "*.ebskeleton;";
 			case DragDropPayloadType::AssetSkeletonMask: return "*.ebmask;";
+			case DragDropPayloadType::AssetNavMeshData: return "*.ebnav;";
 			case DragDropPayloadType::Scene: return "*.ebs;*.ebscene;";
 			default: return "*.*";
 			}
@@ -126,6 +130,8 @@ namespace Ember {
 				return DragDropPayloadType::AssetSkeleton;
 			if (extension == ".ebmask")
 				return DragDropPayloadType::AssetSkeletonMask;
+			if (extension == ".ebnav")
+				return DragDropPayloadType::AssetNavMeshData;
 			if (extension == ".ebs" || extension == ".ebscene")
 				return DragDropPayloadType::Scene;
 			return DragDropPayloadType::None;

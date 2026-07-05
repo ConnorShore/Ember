@@ -7,6 +7,7 @@
 #include <Ember/Event/UIEvent.h>
 #include <Ember/Asset/AssetRegistrySerializer.h>
 #include <Ember/Asset/Font.h>
+#include <Ember/Asset/NavigationMeshData.h>
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Core/ProjectSerializer.h>
 #include <Ember/Scene/Scene.h>
@@ -959,6 +960,9 @@ namespace Ember {
 			break;
 		case DragDropPayloadType::AssetSkeletonMask:
 			asset = assetManager.Load<SkeletonMask>(path, false);
+			break;
+		case DragDropPayloadType::AssetNavMeshData:
+			asset = assetManager.Load<NavigationMeshData>(path, false);
 			break;
 		case DragDropPayloadType::Scene:
 			asset = assetManager.Load<Scene>(path, false);
