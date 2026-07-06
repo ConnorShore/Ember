@@ -216,7 +216,6 @@ namespace Ember {
 
 			if (ImGui::BeginMenu("AI"))
 			{
-
 				if (ImGui::MenuItem("Navigation Grid"))
 				{
 					auto entity = Presets::CreateNavigationGrid(m_Context->ActiveScene());

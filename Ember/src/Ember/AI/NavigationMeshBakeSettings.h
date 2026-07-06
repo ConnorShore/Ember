@@ -6,6 +6,7 @@ namespace Ember {
 	{
 		float CellSize = 0.3f;
 		float CellHeight = 0.2f;
+
 		float AgentHeight = 2.0f;
 		float AgentRadius = 0.5f;
 		float AgentMaxClimb = 0.5f;

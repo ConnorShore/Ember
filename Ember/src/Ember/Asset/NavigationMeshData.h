@@ -9,6 +9,10 @@ namespace Ember {
 	class NavigationMeshData : public Asset
 	{
 	public:
+		NavigationMeshData(const std::string& name, const std::string& filePath)
+			: Asset(name, filePath, AssetType::NavMeshData)
+		{
+		}
 		NavigationMeshData(UUID uuid, const std::string& name, const std::string& filePath)
 			: Asset(uuid, name, filePath, AssetType::NavMeshData)
 		{
