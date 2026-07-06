@@ -27,6 +27,13 @@ namespace Ember {
 		s_Vertices.push_back({ pointA, color });
 	}
 
+	void DebugRenderer::DrawFilledTriangle(const Vector3f& pointA, const Vector3f& pointB, const Vector3f& pointC, const Vector4f& color)
+	{
+		s_FilledTriangleVertices.push_back({ pointA, color });
+		s_FilledTriangleVertices.push_back({ pointB, color });
+		s_FilledTriangleVertices.push_back({ pointC, color });
+	}
+
 	void DebugRenderer::DrawCube(const Vector3f& center, const Vector3f& scale, const Vector4f& color)
 	{
 		Vector3f halfScale = scale * 0.5f;
@@ -93,9 +100,15 @@ namespace Ember {
 		return s_Vertices;
 	}
 
+	const std::vector<DebugVertex>& DebugRenderer::GetFilledTriangleVertices()
+	{
+		return s_FilledTriangleVertices;
+	}
+
 	void DebugRenderer::Clear()
 	{
 		s_Vertices.clear();
+		s_FilledTriangleVertices.clear();
 	}
 
 }

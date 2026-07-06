@@ -73,6 +73,7 @@ namespace Ember {
 		virtual void DrawIndexedInstanced(const SharedPtr<VertexArray>& vertexArray, uint32_t indexCount, uint32_t instanceCount) = 0;
 
 		virtual void DrawLines(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount) = 0;
+		virtual void DrawTriangles(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount) = 0;
 
 	public:
 		static API GetApi() { return s_Api; }

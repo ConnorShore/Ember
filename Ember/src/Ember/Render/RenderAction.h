@@ -129,6 +129,11 @@ namespace Ember {
 			m_RendererApi->DrawLines(vertexArray, vertexCount);
 		}
 
+		static inline void DrawTriangles(const SharedPtr<VertexArray>& vertexArray, uint32_t vertexCount)
+		{
+			m_RendererApi->DrawTriangles(vertexArray, vertexCount);
+		}
+
 	private:
 		static ScopedPtr<RendererAPI> m_RendererApi;
 	};

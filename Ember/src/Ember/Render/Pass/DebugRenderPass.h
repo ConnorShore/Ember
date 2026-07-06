@@ -20,6 +20,8 @@ namespace Ember {
 
 	private:
 		SharedPtr<Shader> m_DebugShader;
+		SharedPtr<VertexArray> m_FilledTriangleVAO;
+		SharedPtr<VertexBuffer> m_FilledTriangleVBO;
 		SharedPtr<VertexArray> m_DebugLineVAO;
 		SharedPtr<VertexBuffer> m_DebugLineVBO;
 	};

@@ -77,7 +77,7 @@ namespace Ember {
 			{
 				for (size_t i = 0; i + 2 < m_Vertices.size(); i += 3)
 				{
-					DebugRenderer::DrawTriangle(m_Vertices[i].Position, m_Vertices[i + 1].Position, m_Vertices[i + 2].Position, m_Vertices[i].Color);
+					DebugRenderer::DrawFilledTriangle(m_Vertices[i].Position, m_Vertices[i + 1].Position, m_Vertices[i + 2].Position, m_Vertices[i].Color);
 				}
 				break;
 			}
@@ -85,8 +85,8 @@ namespace Ember {
 			{
 				for (size_t i = 0; i + 3 < m_Vertices.size(); i += 4)
 				{
-					DebugRenderer::DrawTriangle(m_Vertices[i].Position, m_Vertices[i + 1].Position, m_Vertices[i + 2].Position, m_Vertices[i].Color);
-					DebugRenderer::DrawTriangle(m_Vertices[i].Position, m_Vertices[i + 2].Position, m_Vertices[i + 3].Position, m_Vertices[i].Color);
+					DebugRenderer::DrawFilledTriangle(m_Vertices[i].Position, m_Vertices[i + 1].Position, m_Vertices[i + 2].Position, m_Vertices[i].Color);
+					DebugRenderer::DrawFilledTriangle(m_Vertices[i].Position, m_Vertices[i + 2].Position, m_Vertices[i + 3].Position, m_Vertices[i].Color);
 				}
 				break;
 			}

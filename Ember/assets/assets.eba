@@ -80,10 +80,6 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
-    UUID: 4494000890898150304
-    Name: Crosshair
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
-  - Type: Script
     UUID: 1928101263865073231
     Name: PickupWeapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
@@ -115,6 +111,10 @@ Assets:
     UUID: 16404415058251315788
     Name: WeaponFire
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponFire.lua
+  - Type: Script
+    UUID: 4494000890898150304
+    Name: Crosshair
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
   - Type: Script
     UUID: 3366872985723856610
     Name: WeaponRecoil
@@ -188,6 +188,10 @@ Assets:
     Name: DesertEagle_DesertEagle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagle.ebmat
   - Type: Mesh
+    UUID: 9147101475226164417
+    Name: AssaultRifle_Cube.003_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.003_Prim0.ebmesh
+  - Type: Mesh
     UUID: 5985712711574680378
     Name: DesertEagle_Mesh1_Cube_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.ebmesh
@@ -203,10 +207,6 @@ Assets:
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.001_Prim0.ebmesh
-  - Type: Mesh
-    UUID: 9147101475226164417
-    Name: AssaultRifle_Cube.003_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.003_Prim0.ebmesh
   - Type: Mesh
     UUID: 16822605104283055229
     Name: M4_Cube.001_Prim0
@@ -280,7 +280,7 @@ Assets:
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebmodel
   - Type: NavMeshData
-    UUID: 14249093980844217135
+    UUID: 10364099531230575482
     Name: NavMesh_Default_NavigationSurface
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
   - Type: Prefab
