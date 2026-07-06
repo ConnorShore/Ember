@@ -121,25 +121,20 @@ namespace Ember {
 				CreateEmptyEntity();
 			}
 
+			Entity entity;
 			if (ImGui::BeginMenu("Create Controller"))
 			{
 				if (ImGui::MenuItem("1st Person Character"))
 				{
-					auto entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene());
+					entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene());
 					if (entity == Constants::Entities::InvalidEntityID)
 						return;
-
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
 				}
 				if (ImGui::MenuItem("AI Character"))
 				{
-					auto entity = Presets::CreateAICharacterController(m_Context->ActiveScene());
+					entity = Presets::CreateAICharacterController(m_Context->ActiveScene());
 					if (entity == Constants::Entities::InvalidEntityID)
 						return;
-
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
 				}
 				ImGui::EndMenu();
 			}
@@ -148,23 +143,19 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Cube"))
 				{
-					auto entity = Presets::CreateCube(m_Context->ActiveScene());
-					CreateEntity(entity);
+					entity = Presets::CreateCube(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Sphere"))
 				{
-					auto entity = Presets::CreateSphere(m_Context->ActiveScene());
-					CreateEntity(entity);
+					entity = Presets::CreateSphere(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Quad"))
 				{
-					auto entity = Presets::CreateQuad(m_Context->ActiveScene());
-					CreateEntity(entity);
+					entity = Presets::CreateQuad(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Capsule"))
 				{
-					auto entity = Presets::CreateCapsule(m_Context->ActiveScene());
-					CreateEntity(entity);
+					entity = Presets::CreateCapsule(m_Context->ActiveScene());
 				}
 
 				ImGui::EndMenu();
@@ -174,21 +165,15 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Point Light"))
 				{
-					auto entity = Presets::CreatePointLight(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreatePointLight(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Directional Light"))
 				{
-					auto entity = Presets::CreateDirectionalLight(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateDirectionalLight(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Spot Light"))
 				{
-					auto entity = Presets::CreateSpotLight(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateSpotLight(m_Context->ActiveScene());
 				}
 
 				ImGui::EndMenu();
@@ -198,17 +183,13 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("3D Camera"))
 				{
-					auto entity = Presets::Create3DCamera(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::Create3DCamera(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Camera From View"))
 				{
 					Quaternion orientation = m_Context->EditorCamera->GetOrientation();
 					Vector3f position = m_Context->EditorCamera->GetPosition();
-					auto entity = Presets::Create3DCamera(m_Context->ActiveScene(), position, orientation);
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::Create3DCamera(m_Context->ActiveScene(), position, orientation);
 				}
 
 				ImGui::EndMenu();
@@ -216,17 +197,17 @@ namespace Ember {
 
 			if (ImGui::BeginMenu("AI"))
 			{
+				if (ImGui::MenuItem("Navigation Surface"))
+				{
+					entity = Presets::CreateNavigationMesh(m_Context->ActiveScene());
+				}
 				if (ImGui::MenuItem("Navigation Grid"))
 				{
-					auto entity = Presets::CreateNavigationGrid(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateNavigationGrid(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Waypoint"))
 				{
-					auto entity = Presets::CreateWaypoint(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateWaypoint(m_Context->ActiveScene());
 				}
 
 				ImGui::EndMenu();
@@ -236,21 +217,15 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Canvas"))
 				{
-					auto entity = Presets::CreateCanvas(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateCanvas(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Sprite"))
 				{
-					auto entity = Presets::CreateUISprite(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateUISprite(m_Context->ActiveScene());
 				}
 				if (ImGui::MenuItem("Text"))
 				{
-					auto entity = Presets::CreateUIText(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreateUIText(m_Context->ActiveScene());
 				}
 				ImGui::EndMenu();
 			}
@@ -259,12 +234,13 @@ namespace Ember {
 			{
 				if (ImGui::MenuItem("Post Process Volume"))
 				{
-					auto entity = Presets::CreatePostProcessVolume(m_Context->ActiveScene());
-					SetSelectedEntity(entity);
-					RenameEntity(entity);
+					entity = Presets::CreatePostProcessVolume(m_Context->ActiveScene());
 				}
 				ImGui::EndMenu();
 			}
+
+			if (entity != Constants::Entities::InvalidEntityID)
+				CreateEntity(entity);
 
 			ImGui::EndPopup();
 		}

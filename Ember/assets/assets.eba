@@ -280,9 +280,9 @@ Assets:
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebmodel
   - Type: NavMeshData
-    UUID: 14194800001482954935
-    Name: NavMesh_Default_Empty_Entity
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_Empty_Entity.ebnav
+    UUID: 4222001222886544000
+    Name: NavMesh_Default_NavigationSurface
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
   - Type: Prefab
     UUID: 7525331889912364400
     Name: M4_Pickup

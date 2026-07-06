@@ -82,18 +82,18 @@ namespace Ember {
 				bakedMesh->SetBakeSettings(component.BakeSettings);
 
 				// Bake the nav mesh using the current scene geometry and the specified bake settings.
-				auto buildResult = NavigationMeshBuilder::BuildNavigationMesh(m_Context->ActiveScene().Ptr(), m_Context->SelectedEntity, component.BakeSettings);
-				//if (!buildResult.Success)
-				//{
-				//	auto evt = UINotificationEvent(buildResult.Error.empty() ? "Navigation mesh bake failed." : buildResult.Error, UINotificationEvent::Severity::Warning);
-				//	m_Context->EventCallback(evt);
-				//	return;
-				//}
+				auto buildResult = NavigationMeshBuilder::BuildNavigationMesh(m_Context->ActiveScene(), m_Context->SelectedEntity, component.BakeSettings);
+				if (!buildResult.Success)
+				{
+					auto evt = UINotificationEvent(buildResult.Error.empty() ? "Navigation mesh bake failed." : buildResult.Error, UINotificationEvent::Severity::Warning);
+					m_Context->EventCallback(evt);
+					return;
+				}
 
 				// Store baked Detour bytes directly on the asset.
 				bakedMesh->SetRawDataBlob(std::move(buildResult.RawDataBlob));
 
-				// Optional editor-side runtime init for preview/debug use.
+				// Initialize nav mesh from the data
 				bakedMesh->InitializeFromRawData();
 
 				// Serialize source metadata + sidecar blob.

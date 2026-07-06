@@ -23,7 +23,7 @@ namespace Ember {
 			dtNavMesh* RuntimeNavMesh = nullptr;
 		};
 
-		static BuildResult BuildNavigationMesh(Scene* scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings);
+		static BuildResult BuildNavigationMesh(const SharedPtr<Scene>& scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings);
 	};
 
 }

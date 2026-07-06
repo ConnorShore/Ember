@@ -35,7 +35,8 @@ namespace Ember {
 		// Called by your Asset Loader after reading the binary file
 		bool InitializeFromRawData()
 		{
-			if (m_NavMeshDataBlob.empty()) return false;
+			if (m_NavMeshDataBlob.empty())
+				return false;
 
 			m_NavMesh = dtAllocNavMesh();
 
