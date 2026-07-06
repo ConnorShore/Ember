@@ -9,9 +9,77 @@
 #include <DetourNavMeshBuilder.h>
 
 #include <algorithm>
+#include <limits>
 
 namespace Ember {
 	namespace {
+		struct HeightfieldResource
+		{
+			rcHeightfield* Ptr = rcAllocHeightfield();
+			~HeightfieldResource()
+			{
+				if (Ptr)
+					rcFreeHeightField(Ptr);
+			}
+		};
+
+		struct CompactHeightfieldResource
+		{
+			rcCompactHeightfield* Ptr = rcAllocCompactHeightfield();
+			~CompactHeightfieldResource()
+			{
+				if (Ptr)
+					rcFreeCompactHeightfield(Ptr);
+			}
+		};
+
+		struct ContourSetResource
+		{
+			rcContourSet* Ptr = rcAllocContourSet();
+			~ContourSetResource()
+			{
+				if (Ptr)
+					rcFreeContourSet(Ptr);
+			}
+		};
+
+		struct PolyMeshResource
+		{
+			rcPolyMesh* Ptr = rcAllocPolyMesh();
+			~PolyMeshResource()
+			{
+				if (Ptr)
+					rcFreePolyMesh(Ptr);
+			}
+		};
+
+		struct PolyMeshDetailResource
+		{
+			rcPolyMeshDetail* Ptr = rcAllocPolyMeshDetail();
+			~PolyMeshDetailResource()
+			{
+				if (Ptr)
+					rcFreePolyMeshDetail(Ptr);
+			}
+		};
+
+		struct TriAreasResource
+		{
+			explicit TriAreasResource(int count)
+				: Count(count), Ptr(count > 0 ? new unsigned char[count] : nullptr)
+			{
+			}
+
+			~TriAreasResource()
+			{
+				delete[] Ptr;
+				Ptr = nullptr;
+			}
+
+			int Count = 0;
+			unsigned char* Ptr = nullptr;
+		};
+
 		struct AABB
 		{
 			Vector3f Min = Vector3f(0.0f);
@@ -81,6 +149,39 @@ namespace Ember {
 		}
 	}
 
+	struct NavigationMeshBuilder::BuildPipelineState
+	{
+		BuildPipelineState(const SharedPtr<Scene>& scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings)
+			: SceneHandle(scene), NavMeshEntity(navMeshEntity), Settings(settings)
+		{
+			Vertices.reserve(4096);
+			Triangles.reserve(4096);
+		}
+
+		const SharedPtr<Scene>& SceneHandle;
+		Entity NavMeshEntity;
+		const NavigationMeshBakeSettings& Settings;
+
+		AABB NavBounds;
+		std::vector<float> Vertices;
+		std::vector<int> Triangles;
+
+		int NumVerts = 0;
+		int NumTris = 0;
+		const float* RecastVerts = nullptr;
+		const int* RecastTris = nullptr;
+
+		ScopedPtr<rcContext> BuildContext;
+		rcConfig Config{};
+
+		ScopedPtr<HeightfieldResource> Heightfield;
+		ScopedPtr<TriAreasResource> TriAreas;
+		ScopedPtr<CompactHeightfieldResource> CompactHeightfield;
+		ScopedPtr<ContourSetResource> ContourSet;
+		ScopedPtr<PolyMeshResource> PolyMesh;
+		ScopedPtr<PolyMeshDetailResource> DetailMesh;
+	};
+
 	NavigationMeshBuilder::BuildResult NavigationMeshBuilder::BuildNavigationMesh(const SharedPtr<Scene>& scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings)
 	{
 		BuildResult result;
@@ -96,19 +197,30 @@ namespace Ember {
 			return result;
 		}
 
+		BuildPipelineState state(scene, navMeshEntity, settings);
+
 		// TODO: Have ability to filter either rendered geometry or physics colliders only (using rendered geometry for now).
 		EB_CORE_ASSERT(navMeshEntity.ContainsComponent<NavigationMeshComponent>(), "Entity must contain navigation mesh component");
-		const auto navBounds = BuildNavBoundsAABB(navMeshEntity);
+		state.NavBounds = BuildNavBoundsAABB(navMeshEntity);
 
+		if (!ExtractStaticMeshGeometry(state, result))
+			return result;
+
+		if (!BuildRecastPipeline(state, result))
+			return result;
+
+		if (!CreateDetourNavMesh(state, result))
+			return result;
+
+		return result;
+	}
+
+	bool NavigationMeshBuilder::ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result)
+	{
 		// 1. Extract all static mesh geometry from the scene that overlaps the nav bounds.
-		std::vector<float> vertices;
-		std::vector<int> triangles;
-		vertices.reserve(4096);
-		triangles.reserve(4096);
-
 		auto& assetManager = Application::Instance().GetAssetManager();
 
-		auto& registry = scene->GetRegistry();
+		auto& registry = state.SceneHandle->GetRegistry();
 		for (EntityID staticMesh : registry.ActiveQuery<StaticMeshComponent, TransformComponent>())
 		{
 			auto [meshComp, transform] = registry.GetComponents<StaticMeshComponent, TransformComponent>(staticMesh);
@@ -121,7 +233,7 @@ namespace Ember {
 
 			const Matrix4f& world = transform.GetWorldTransform();
 			const AABB meshWorldAABB = BuildWorldAABBFromLocalBounds(world, mesh->GetMinBounds(), mesh->GetMaxBounds());
-			if (!AABBOverlaps(meshWorldAABB, navBounds))
+			if (!AABBOverlaps(meshWorldAABB, state.NavBounds))
 				continue;
 
 			auto localVerts = mesh->GetVertexPositions();
@@ -130,55 +242,87 @@ namespace Ember {
 			if (localVerts.size() < 3 || localTris.size() < 3)
 				continue;
 
-			const int baseVertex = static_cast<int>(vertices.size() / 3);
+			const int baseVertex = static_cast<int>(state.Vertices.size() / 3);
 
 			for (size_t i = 0; i + 2 < localVerts.size(); i += 3)
 			{
 				const Vector3f localPos(localVerts[i], localVerts[i + 1], localVerts[i + 2]);
 				const Vector3f worldPos = world * localPos;
 
-				vertices.push_back(worldPos.x);
-				vertices.push_back(worldPos.y);
-				vertices.push_back(worldPos.z);
+				state.Vertices.push_back(worldPos.x);
+				state.Vertices.push_back(worldPos.y);
+				state.Vertices.push_back(worldPos.z);
 			}
 
 			for (uint32_t idx : localTris)
 			{
-				triangles.push_back(baseVertex + static_cast<int>(idx));
+				state.Triangles.push_back(baseVertex + static_cast<int>(idx));
 			}
 		}
 
-		const int numVerts = static_cast<int>(vertices.size() / 3);
-		const int numTris = static_cast<int>(triangles.size() / 3);
-		if (numVerts == 0 || numTris == 0)
+		state.NumVerts = static_cast<int>(state.Vertices.size() / 3);
+		state.NumTris = static_cast<int>(state.Triangles.size() / 3);
+		if (state.NumVerts == 0 || state.NumTris == 0)
 		{
 			result.Error = "Navigation mesh bake failed: no static mesh geometry overlaps the nav bounds.";
-			return result;
+			return false;
 		}
 
-		const float* verts = vertices.data();
-		const int* tris = triangles.data();
+		state.RecastVerts = state.Vertices.data();
+		state.RecastTris = state.Triangles.data();
+		return true;
+	}
 
+	bool NavigationMeshBuilder::BuildRecastPipeline(BuildPipelineState& state, BuildResult& result)
+	{
 		// 2) Build rcConfig from settings and run Recast pipeline.
-		ScopedPtr<rcContext> buildContext = ScopedPtr<rcContext>::Create(false);
+		if (!InitializeConfigAndBounds(state, result))
+			return false;
 
-		rcConfig config{};
-		memset(&config, 0, sizeof(config));
-		config.cs = settings.CellSize;
-		config.ch = settings.CellHeight;
-		config.walkableSlopeAngle = settings.AgentMaxSlope;
-		config.walkableHeight = static_cast<int>(ceilf(settings.AgentHeight / config.ch));
-		config.walkableClimb = static_cast<int>(floorf(settings.AgentMaxClimb / config.ch));
-		config.walkableRadius = static_cast<int>(ceilf(settings.AgentRadius / config.cs));
+		if (!PrepareHeightfieldInput(state, result))
+			return false;
+
+		if (!RasterizeInputMesh(state, result))
+			return false;
+
+		if (!FilterWalkableSurfaces(state, result))
+			return false;
+
+		if (!PartitionWalkableSurface(state, result))
+			return false;
+
+		if (!TraceAndSimplifyContours(state, result))
+			return false;
+
+		if (!TriangulateContoursToPolyMesh(state, result))
+			return false;
+
+		if (!BuildPolyMeshDetail(state, result))
+			return false;
+
+		return true;
+	}
+
+	bool NavigationMeshBuilder::InitializeConfigAndBounds(BuildPipelineState& state, BuildResult& result)
+	{
+		state.BuildContext = ScopedPtr<rcContext>::Create(false);
+
+		memset(&state.Config, 0, sizeof(state.Config));
+		state.Config.cs = state.Settings.CellSize;
+		state.Config.ch = state.Settings.CellHeight;
+		state.Config.walkableSlopeAngle = state.Settings.AgentMaxSlope;
+		state.Config.walkableHeight = static_cast<int>(ceilf(state.Settings.AgentHeight / state.Config.ch));
+		state.Config.walkableClimb = static_cast<int>(floorf(state.Settings.AgentMaxClimb / state.Config.ch));
+		state.Config.walkableRadius = static_cast<int>(ceilf(state.Settings.AgentRadius / state.Config.cs));
 
 		// TODO: Add config settings for rest of props once we get them from user, for now use default values
-		config.maxEdgeLen = 12; // Default value
-		config.maxSimplificationError = 1.3f; // Default value
-		config.minRegionArea = 8; // Default value
-		config.mergeRegionArea = 20; // Default value
-		config.maxVertsPerPoly = 6; // Default value
-		config.detailSampleDist = 6.0f; // Default value
-		config.detailSampleMaxError = 1.0f; // Default value
+		state.Config.maxEdgeLen = 12; // Default value
+		state.Config.maxSimplificationError = 1.3f; // Default value
+		state.Config.minRegionArea = 8; // Default value
+		state.Config.mergeRegionArea = 20; // Default value
+		state.Config.maxVertsPerPoly = 6; // Default value
+		state.Config.detailSampleDist = 6.0f; // Default value
+		state.Config.detailSampleMaxError = 1.0f; // Default value
 		//config.maxEdgeLen = static_cast<int>(edgeMaxLen / cellSize);
 		//config.maxSimplificationError = edgeMaxError;
 		//config.minRegionArea = static_cast<int>(rcSqr(regionMinSize));      // Note: area = size*size
@@ -201,43 +345,47 @@ namespace Ember {
 			std::numeric_limits<float>::lowest()
 		};
 
-		for (size_t i = 0; i + 2 < vertices.size(); i += 3)
+		for (size_t i = 0; i + 2 < state.Vertices.size(); i += 3)
 		{
-			boundsMin[0] = std::min(boundsMin[0], vertices[i + 0]);
-			boundsMin[1] = std::min(boundsMin[1], vertices[i + 1]);
-			boundsMin[2] = std::min(boundsMin[2], vertices[i + 2]);
+			boundsMin[0] = std::min(boundsMin[0], state.Vertices[i + 0]);
+			boundsMin[1] = std::min(boundsMin[1], state.Vertices[i + 1]);
+			boundsMin[2] = std::min(boundsMin[2], state.Vertices[i + 2]);
 
-			boundsMax[0] = std::max(boundsMax[0], vertices[i + 0]);
-			boundsMax[1] = std::max(boundsMax[1], vertices[i + 1]);
-			boundsMax[2] = std::max(boundsMax[2], vertices[i + 2]);
+			boundsMax[0] = std::max(boundsMax[0], state.Vertices[i + 0]);
+			boundsMax[1] = std::max(boundsMax[1], state.Vertices[i + 1]);
+			boundsMax[2] = std::max(boundsMax[2], state.Vertices[i + 2]);
 		}
 
-		rcVcopy(config.bmin, boundsMin);
-		rcVcopy(config.bmax, boundsMax);
-		rcCalcGridSize(config.bmin, config.bmax, config.cs, &config.width, &config.height);
+		rcVcopy(state.Config.bmin, boundsMin);
+		rcVcopy(state.Config.bmax, boundsMax);
+		rcCalcGridSize(state.Config.bmin, state.Config.bmax, state.Config.cs, &state.Config.width, &state.Config.height);
 
+		return true;
+	}
+
+	bool NavigationMeshBuilder::PrepareHeightfieldInput(BuildPipelineState& state, BuildResult& result)
+	{
 		// Rasterize input meshes.
 		// Allocate voxel heightfield where we will store our rasterized input data.
-		rcHeightfield* heightfield = nullptr;
-		heightfield = rcAllocHeightfield();
-		if (!heightfield)
+		state.Heightfield = ScopedPtr<HeightfieldResource>::Create();
+		if (!state.Heightfield || !state.Heightfield->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'heightfield'.";
-			return result;
+			return false;
 		}
 
 		if (!rcCreateHeightfield(
-			buildContext.Ptr(),
-			*heightfield,
-			config.width,
-			config.height,
-			config.bmin,
-			config.bmax,
-			config.cs,
-			config.ch))
+			state.BuildContext.Ptr(),
+			*state.Heightfield->Ptr,
+			state.Config.width,
+			state.Config.height,
+			state.Config.bmin,
+			state.Config.bmax,
+			state.Config.cs,
+			state.Config.ch))
 		{
 			result.Error = "Navigation mesh bake failed: Could not create solid heightfield.";
-			return result;
+			return false;
 		}
 
 		// Allocate array that can hold triangle area types.
@@ -245,26 +393,36 @@ namespace Ember {
 		// triangles as unwalkable.
 		// If you have multiple meshes you need to process, allocate
 		// an array which can hold the max number of triangles you need to process.
-		unsigned char* triAreas = new unsigned char[numTris];
-		if (!triAreas)
+		state.TriAreas = ScopedPtr<TriAreasResource>::Create(state.NumTris);
+		if (!state.TriAreas || !state.TriAreas->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'triAreas'.";
-			return result;
+			return false;
 		}
-		memset(triAreas, 0, numTris * sizeof(unsigned char));
+		memset(state.TriAreas->Ptr, 0, static_cast<size_t>(state.TriAreas->Count) * sizeof(unsigned char));
 
 		// Record which triangles in the input mesh are walkable.
 		// This information is recorded in triAreas
-		rcMarkWalkableTriangles(buildContext.Ptr(), config.walkableSlopeAngle, verts, numVerts, tris, numTris, triAreas);
+		rcMarkWalkableTriangles(state.BuildContext.Ptr(), state.Config.walkableSlopeAngle, state.RecastVerts, state.NumVerts, state.RecastTris, state.NumTris, state.TriAreas->Ptr);
+		return true;
+	}
 
+	bool NavigationMeshBuilder::RasterizeInputMesh(BuildPipelineState& state, BuildResult& result)
+	{
 		// 2.1: Rasterize the input mesh
 		// If your have multiple meshes, you can transform them, calculate the
 		// terrain type for each mesh and rasterize them here.
-		if (!rcRasterizeTriangles(buildContext.Ptr(), verts, numVerts, tris, triAreas, numTris, *heightfield, config.walkableClimb))
+		if (!rcRasterizeTriangles(state.BuildContext.Ptr(), state.RecastVerts, state.NumVerts, state.RecastTris, state.TriAreas->Ptr, state.NumTris, *state.Heightfield->Ptr, state.Config.walkableClimb))
 		{
 			result.Error = "Navigation mesh bake failed: Could not rasterize triangles.";
-			return result;
+			return false;
 		}
+		return true;
+	}
+
+	bool NavigationMeshBuilder::FilterWalkableSurfaces(BuildPipelineState& state, BuildResult& result)
+	{
+		(void)result;
 
 		// 2.2: Filter walkable surfaces.
 		// Once all geometry is rasterized, we do initial pass of filtering to
@@ -277,44 +435,49 @@ namespace Ember {
 
 		if (filterLowHangingObstacles)
 		{
-			rcFilterLowHangingWalkableObstacles(buildContext.Ptr(), config.walkableClimb, *heightfield);
+			rcFilterLowHangingWalkableObstacles(state.BuildContext.Ptr(), state.Config.walkableClimb, *state.Heightfield->Ptr);
 		}
 		if (filterLedgeSpans)
 		{
-			rcFilterLedgeSpans(buildContext.Ptr(), config.walkableHeight, config.walkableClimb, *heightfield);
+			rcFilterLedgeSpans(state.BuildContext.Ptr(), state.Config.walkableHeight, state.Config.walkableClimb, *state.Heightfield->Ptr);
 		}
 		if (filterWalkableLowHeightSpans)
 		{
-			rcFilterWalkableLowHeightSpans(buildContext.Ptr(), config.walkableHeight, *heightfield);
+			rcFilterWalkableLowHeightSpans(state.BuildContext.Ptr(), state.Config.walkableHeight, *state.Heightfield->Ptr);
 		}
 
+		return true;
+	}
+
+	bool NavigationMeshBuilder::PartitionWalkableSurface(BuildPipelineState& state, BuildResult& result)
+	{
 		// 2.3: Partition walkable surface into simple regions.
 		// Compact the heightfield so that it is faster to work with.
 		// This will result more cache coherent data.  This step will also
 		// generate neighbor connection information between walkable cells.
-		rcCompactHeightfield* compactHeightfield = rcAllocCompactHeightfield();
-		if (!compactHeightfield)
+		state.CompactHeightfield = ScopedPtr<CompactHeightfieldResource>::Create();
+		if (!state.CompactHeightfield || !state.CompactHeightfield->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'compactHeightfield'.";
-			return result;
+			return false;
 		}
 		if (!rcBuildCompactHeightfield(
-			buildContext.Ptr(),
-			config.walkableHeight,
-			config.walkableClimb,
-			*heightfield,
-			*compactHeightfield))
+			state.BuildContext.Ptr(),
+			state.Config.walkableHeight,
+			state.Config.walkableClimb,
+			*state.Heightfield->Ptr,
+			*state.CompactHeightfield->Ptr))
 		{
 			result.Error = "Navigation mesh bake failed: Could not build compact data.";
-			return result;
+			return false;
 		}
 
 		// Erode the walkable area by agent radius.
 		// This allows us to path an agent through the navmesh as if it was a single point
-		if (!rcErodeWalkableArea(buildContext.Ptr(), config.walkableRadius, *compactHeightfield))
+		if (!rcErodeWalkableArea(state.BuildContext.Ptr(), state.Config.walkableRadius, *state.CompactHeightfield->Ptr))
 		{
 			result.Error = "Navigation mesh bake failed: Could not erode walkable area.";
-			return result;
+			return false;
 		}
 
 		// (Optional) Marks the surface type of voxels in an area defined by a convex volume.
@@ -377,17 +540,17 @@ namespace Ember {
 		//if (partitionType == SamplePartitionType::WATERSHED)
 		//{
 			// Prepare for region partitioning, by calculating distance field along the walkable surface.
-			if (!rcBuildDistanceField(buildContext.Ptr(), *compactHeightfield))
+			if (!rcBuildDistanceField(state.BuildContext.Ptr(), *state.CompactHeightfield->Ptr))
 			{
 				result.Error = "Navigation mesh bake failed: Could not build distance field.";
-				return result;
+				return false;
 			}
 
 			// Partition the walkable surface into contiguous regions.
-			if (!rcBuildRegions(buildContext.Ptr(), *compactHeightfield, 0, config.minRegionArea, config.mergeRegionArea))
+			if (!rcBuildRegions(state.BuildContext.Ptr(), *state.CompactHeightfield->Ptr, 0, state.Config.minRegionArea, state.Config.mergeRegionArea))
 			{
 				result.Error = "Navigation mesh bake failed: Could not build watershed regions.";
-				return result;
+				return false;
 			}
 		//}
 		//else if (partitionType == SamplePartitionType::MONOTONE)
@@ -411,66 +574,83 @@ namespace Ember {
 		//	}
 		//}
 
+		return true;
+	}
+
+	bool NavigationMeshBuilder::TraceAndSimplifyContours(BuildPipelineState& state, BuildResult& result)
+	{
 		// 2.4: Trace and simplify region contours.
 		// Create contour.
-		rcContourSet* contourSet = rcAllocContourSet();
-		if (!contourSet)
+		state.ContourSet = ScopedPtr<ContourSetResource>::Create();
+		if (!state.ContourSet || !state.ContourSet->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'contourSet'.";
-			return result;
+			return false;
 		}
-		if (!rcBuildContours(buildContext.Ptr(), *compactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *contourSet))
+		if (!rcBuildContours(state.BuildContext.Ptr(), *state.CompactHeightfield->Ptr, state.Config.maxSimplificationError, state.Config.maxEdgeLen, *state.ContourSet->Ptr))
 		{
 			result.Error = "Navigation mesh bake failed: Could not create contours.";
-			return result;
+			return false;
 		}
+		return true;
+	}
 
+	bool NavigationMeshBuilder::TriangulateContoursToPolyMesh(BuildPipelineState& state, BuildResult& result)
+	{
 		//
 		// Step 6. Triangulate contours to build navmesh polygons.
 		//
-		rcPolyMesh* polyMesh = rcAllocPolyMesh();
-		if (!polyMesh)
+		state.PolyMesh = ScopedPtr<PolyMeshResource>::Create();
+		if (!state.PolyMesh || !state.PolyMesh->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'polyMesh'.";
-			return result;
+			return false;
 		}
-		if (!rcBuildPolyMesh(buildContext.Ptr(), *contourSet, config.maxVertsPerPoly, *polyMesh))
+		if (!rcBuildPolyMesh(state.BuildContext.Ptr(), *state.ContourSet->Ptr, state.Config.maxVertsPerPoly, *state.PolyMesh->Ptr))
 		{
 			result.Error = "Navigation mesh bake failed: Could not triangulate contours.";
-			return result;
+			return false;
 		}
+		return true;
+	}
 
+	bool NavigationMeshBuilder::BuildPolyMeshDetail(BuildPipelineState& state, BuildResult& result)
+	{
 		// 2.6: Create a navmesh from the triangulated polygons.
 		// Calculates additional information necessary to run pathing queries.
-		rcPolyMeshDetail* detailMesh = rcAllocPolyMeshDetail();
-		if (!detailMesh)
+		state.DetailMesh = ScopedPtr<PolyMeshDetailResource>::Create();
+		if (!state.DetailMesh || !state.DetailMesh->Ptr)
 		{
 			result.Error = "Navigation mesh bake failed: Out of memory 'detailMesh'.";
-			return result;
+			return false;
 		}
 		if (!rcBuildPolyMeshDetail(
-			buildContext.Ptr(),
-			*polyMesh,
-			*compactHeightfield,
-			config.detailSampleDist,
-			config.detailSampleMaxError,
-			*detailMesh))
+			state.BuildContext.Ptr(),
+			*state.PolyMesh->Ptr,
+			*state.CompactHeightfield->Ptr,
+			state.Config.detailSampleDist,
+			state.Config.detailSampleMaxError,
+			*state.DetailMesh->Ptr))
 		{
 			result.Error = "Navigation mesh bake failed: Could not build detail mesh.";
-			return result;
+			return false;
 		}
+		return true;
+	}
 
+	bool NavigationMeshBuilder::CreateDetourNavMesh(BuildPipelineState& state, BuildResult& result)
+	{
 		// At this point the navigation mesh data is ready to use.
-	// See duDebugDrawPolyMesh or dtCreateNavMeshData as examples how to access
-	// the navmesh data.
+		// See duDebugDrawPolyMesh or dtCreateNavMeshData as examples how to access
+		// the navmesh data.
 
-	//
-	// (Optional) Step 8. Create Detour data from Recast poly mesh.
-	//
+		//
+		// (Optional) Step 8. Create Detour data from Recast poly mesh.
+		//
 
-	// The GUI may allow more max points per polygon than Detour can handle.
-	// Only build the detour navmesh if we do not exceed the limit.
-		if (config.maxVertsPerPoly <= DT_VERTS_PER_POLYGON)
+		// The GUI may allow more max points per polygon than Detour can handle.
+		// Only build the detour navmesh if we do not exceed the limit.
+		if (state.Config.maxVertsPerPoly <= DT_VERTS_PER_POLYGON)
 		{
 			unsigned char* navData = 0;
 			int navDataSize = 0;
@@ -500,39 +680,40 @@ namespace Ember {
 
 			dtNavMeshCreateParams params;
 			memset(&params, 0, sizeof(params));
-			params.verts = polyMesh->verts;
-			params.vertCount = polyMesh->nverts;
-			params.polys = polyMesh->polys;
-			params.polyAreas = polyMesh->areas;
-			params.polyFlags = polyMesh->flags;
-			params.polyCount = polyMesh->npolys;
-			params.nvp = polyMesh->nvp;
-			params.detailMeshes = detailMesh->meshes;
-			params.detailVerts = detailMesh->verts;
-			params.detailVertsCount = detailMesh->nverts;
-			params.detailTris = detailMesh->tris;
-			params.detailTriCount = detailMesh->ntris;
-			//params.offMeshConVerts = inputGeometry->offmeshConnVerts.data();
-			//params.offMeshConRad = inputGeometry->offmeshConnRadius.data();
-			//params.offMeshConDir = inputGeometry->offmeshConnBidirectional.data();
-			//params.offMeshConAreas = inputGeometry->offmeshConnArea.data();
-			//params.offMeshConFlags = inputGeometry->offmeshConnFlags.data();
-			//params.offMeshConUserID = inputGeometry->offmeshConnId.data();
-			//params.offMeshConCount = static_cast<int>(inputGeometry->offmeshConnArea.size());
-			params.walkableHeight = settings.AgentHeight;
-			params.walkableRadius = settings.AgentRadius;
-			params.walkableClimb = settings.AgentMaxClimb;
-			rcVcopy(params.bmin, polyMesh->bmin);
-			rcVcopy(params.bmax, polyMesh->bmax);
-			params.cs = config.cs;
-			params.ch = config.ch;
+			params.verts = state.PolyMesh->Ptr->verts;
+			params.vertCount = state.PolyMesh->Ptr->nverts;
+			params.polys = state.PolyMesh->Ptr->polys;
+			params.polyAreas = state.PolyMesh->Ptr->areas;
+			params.polyFlags = state.PolyMesh->Ptr->flags;
+			params.polyCount = state.PolyMesh->Ptr->npolys;
+			params.nvp = state.PolyMesh->Ptr->nvp;
+			params.detailMeshes = state.DetailMesh->Ptr->meshes;
+			params.detailVerts = state.DetailMesh->Ptr->verts;
+			params.detailVertsCount = state.DetailMesh->Ptr->nverts;
+			params.detailTris = state.DetailMesh->Ptr->tris;
+			params.detailTriCount = state.DetailMesh->Ptr->ntris;
+			// No authored off-mesh links in v1.
+			params.offMeshConVerts = nullptr;
+			params.offMeshConRad = nullptr;
+			params.offMeshConDir = nullptr;
+			params.offMeshConAreas = nullptr;
+			params.offMeshConFlags = nullptr;
+			params.offMeshConUserID = nullptr;
+			params.offMeshConCount = 0;
+			params.walkableHeight = state.Settings.AgentHeight;
+			params.walkableRadius = state.Settings.AgentRadius;
+			params.walkableClimb = state.Settings.AgentMaxClimb;
+			rcVcopy(params.bmin, state.PolyMesh->Ptr->bmin);
+			rcVcopy(params.bmax, state.PolyMesh->Ptr->bmax);
+			params.cs = state.Config.cs;
+			params.ch = state.Config.ch;
 			params.buildBvTree = true;
 
 			// 3) Fill dtNavMeshCreateParams and call dtCreateNavMeshData(...).
 			if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
 			{
 				result.Error = "Navigation mesh bake failed: Could not build Detour navmesh.";
-				return result;
+				return false;
 			}
 
 			dtNavMesh* navMesh = dtAllocNavMesh();
@@ -540,7 +721,7 @@ namespace Ember {
 			{
 				dtFree(navData);
 				result.Error = "Navigation mesh bake failed: Could not create Detour navmesh.";
-				return result;
+				return false;
 			}
 
 			// Copy blob before navMesh takes ownership and may free navData.
@@ -552,29 +733,17 @@ namespace Ember {
 			{
 				dtFreeNavMesh(navMesh);
 				result.Error = "Navigation mesh bake failed: Could not init Detour navmesh.";
-				return result;
+				return false;
 			}
 
 			result.Success = true;
 			result.RuntimeNavMesh = navMesh;
 			result.Error = "";
+			return true;
 		}
 
-		// TODO: Clean up all pointers
-		delete[] triAreas;
-		triAreas = nullptr;
-		rcFreeHeightField(heightfield);
-		heightfield = nullptr;
-		rcFreeCompactHeightfield(compactHeightfield);
-		compactHeightfield = nullptr;
-		rcFreeContourSet(contourSet);
-		contourSet = nullptr;
-		rcFreePolyMesh(polyMesh);
-		polyMesh = nullptr;
-		rcFreePolyMeshDetail(detailMesh);
-		detailMesh = nullptr;
-
-		return result;
+		result.Error = "Navigation mesh bake failed: maxVertsPerPoly exceeds Detour limit.";
+		return false;
 	}
 
 }

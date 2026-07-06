@@ -38,11 +38,24 @@ namespace Ember {
 			if (m_NavMeshDataBlob.empty())
 				return false;
 
-			m_NavMesh = dtAllocNavMesh();
+			if (m_NavMesh)
+			{
+				dtFreeNavMesh(m_NavMesh);
+				m_NavMesh = nullptr;
+			}
 
-			// Detour takes ownership of the memory pointer here depending on flags.
-			// You typically pass the raw bytes directly into the init function.
-			dtStatus status = m_NavMesh->init(m_NavMeshDataBlob.data(), m_NavMeshDataBlob.size(), DT_ALLOC_PERM);
+			m_NavMesh = dtAllocNavMesh();
+			if (!m_NavMesh)
+				return false;
+
+			// Keep ownership of m_NavMeshDataBlob in this asset (flags = 0).
+			dtStatus status = m_NavMesh->init(m_NavMeshDataBlob.data(), static_cast<int>(m_NavMeshDataBlob.size()), 0);
+			if (dtStatusFailed(status))
+			{
+				dtFreeNavMesh(m_NavMesh);
+				m_NavMesh = nullptr;
+				return false;
+			}
 
 			return dtStatusSucceed(status);
 		}

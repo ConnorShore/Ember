@@ -26,7 +26,9 @@
       "vendor/sol2/include",
       "vendor/reactphysics3d/include",
       "vendor/recastnavigation/Recast/Include",
-      "vendor/recastnavigation/Detour/Include"
+      "vendor/recastnavigation/Detour/Include",
+      "vendor/recastnavigation/DetourTileCache/Include",
+      "vendor/recastnavigation/DebugUtils/Include"
    }
 
    files 

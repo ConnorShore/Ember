@@ -24,6 +24,23 @@ namespace Ember {
 		};
 
 		static BuildResult BuildNavigationMesh(const SharedPtr<Scene>& scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings);
+
+	private:
+		struct BuildPipelineState;
+
+		static bool ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result);
+
+		static bool BuildRecastPipeline(BuildPipelineState& state, BuildResult& result);
+		static bool InitializeConfigAndBounds(BuildPipelineState& state, BuildResult& result);
+		static bool PrepareHeightfieldInput(BuildPipelineState& state, BuildResult& result);
+		static bool RasterizeInputMesh(BuildPipelineState& state, BuildResult& result);
+		static bool FilterWalkableSurfaces(BuildPipelineState& state, BuildResult& result);
+		static bool PartitionWalkableSurface(BuildPipelineState& state, BuildResult& result);
+		static bool TraceAndSimplifyContours(BuildPipelineState& state, BuildResult& result);
+		static bool TriangulateContoursToPolyMesh(BuildPipelineState& state, BuildResult& result);
+		static bool BuildPolyMeshDetail(BuildPipelineState& state, BuildResult& result);
+
+		static bool CreateDetourNavMesh(BuildPipelineState& state, BuildResult& result);
 	};
 
 }

@@ -720,6 +720,12 @@ namespace Ember {
 					ImGui::MenuItem("Draw AI Paths", nullptr, &debugSettings.Enabled);
 				}
 
+				bool drawSelectedNavMesh = ViewportGizmoController::GetDrawSelectedNavMeshDebug();
+				if (ImGui::MenuItem("Draw Selected NavMesh", nullptr, &drawSelectedNavMesh))
+				{
+					ViewportGizmoController::SetDrawSelectedNavMeshDebug(drawSelectedNavMesh);
+				}
+
 				ImGui::EndMenu();
 			}
 

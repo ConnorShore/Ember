@@ -80,6 +80,10 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 4494000890898150304
+    Name: Crosshair
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
+  - Type: Script
     UUID: 1928101263865073231
     Name: PickupWeapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupWeapon.lua
@@ -111,10 +115,6 @@ Assets:
     UUID: 16404415058251315788
     Name: WeaponFire
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponFire.lua
-  - Type: Script
-    UUID: 4494000890898150304
-    Name: Crosshair
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
   - Type: Script
     UUID: 3366872985723856610
     Name: WeaponRecoil
@@ -280,7 +280,7 @@ Assets:
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebmodel
   - Type: NavMeshData
-    UUID: 4222001222886544000
+    UUID: 14249093980844217135
     Name: NavMesh_Default_NavigationSurface
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
   - Type: Prefab
