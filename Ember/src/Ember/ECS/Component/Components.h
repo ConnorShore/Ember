@@ -939,6 +939,23 @@ namespace Ember {
 		NavigationMeshComponent(const NavigationMeshComponent&) = default;
 	};
 
+	struct NavigationMeshModifierComponent
+	{
+		enum class ModifierType
+		{
+			Walkable,
+			NotWalkable
+		};
+
+		UUID NavMeshDataHandle = Constants::InvalidUUID;
+
+		ModifierType Type = ModifierType::Walkable;
+		bool ApplyToChildren = true;
+
+		NavigationMeshModifierComponent() = default;
+		NavigationMeshModifierComponent(const NavigationMeshModifierComponent&) = default;
+	};
+
 	struct LocalAvoidanceComponent
 	{
 		float AvoidanceRadius = 0.5f; // How close other agents can get before we start avoiding them

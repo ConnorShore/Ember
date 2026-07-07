@@ -204,7 +204,8 @@ namespace Ember {
 		EB_CORE_ASSERT(navMeshEntity.ContainsComponent<NavigationMeshComponent>(), "Entity must contain navigation mesh component");
 		state.NavBounds = BuildNavBoundsAABB(navMeshEntity);
 
-		if (!ExtractStaticMeshGeometry(state, result))
+		UUID navMeshId = navMeshEntity.GetComponent<NavigationMeshComponent>().NavMeshDataHandle;
+		if (!ExtractStaticMeshGeometry(state, result, navMeshId))
 			return result;
 
 		if (!BuildRecastPipeline(state, result))
@@ -216,14 +217,35 @@ namespace Ember {
 		return result;
 	}
 
-	bool NavigationMeshBuilder::ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result)
+	bool NavigationMeshBuilder::ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result, UUID navMeshId)
 	{
 		// 1. Extract all static mesh geometry from the scene that overlaps the nav bounds.
 		auto& assetManager = Application::Instance().GetAssetManager();
 
 		auto& registry = state.SceneHandle->GetRegistry();
+
+		// TODO: See if can optimize instead of using 2 vectors
+		std::vector<EntityID> walkableEntities;
+		std::vector<EntityID> nonWalkableEntities;
+		for (EntityID entity : registry.ActiveQuery<NavigationMeshModifierComponent>())
+		{
+			auto& modifierComp = registry.GetComponent<NavigationMeshModifierComponent>(entity);
+			if (modifierComp.NavMeshDataHandle == navMeshId)
+			{
+				if (modifierComp.Type == NavigationMeshModifierComponent::ModifierType::Walkable)
+					walkableEntities.push_back(entity);
+				else if (modifierComp.Type == NavigationMeshModifierComponent::ModifierType::NotWalkable)
+					nonWalkableEntities.push_back(entity);
+			}
+		}
+
+		// Loop over static meshes in the scene and extract their geometry if they overlap the nav bounds and aren't exluded
 		for (EntityID staticMesh : registry.ActiveQuery<StaticMeshComponent, TransformComponent>())
 		{
+			bool isExcluded = std::find(walkableEntities.begin(), walkableEntities.end(), staticMesh) != walkableEntities.end();
+			if (isExcluded)
+				continue;
+
 			auto [meshComp, transform] = registry.GetComponents<StaticMeshComponent, TransformComponent>(staticMesh);
 			if (meshComp.MeshHandle == Constants::InvalidUUID)
 				continue;
@@ -259,6 +281,13 @@ namespace Ember {
 			{
 				state.Triangles.push_back(baseVertex + static_cast<int>(idx));
 			}
+		}
+
+		// TODO: For non walkable modifiers, we need to remove the triangles that overlap the modifier bounds.
+		for (EntityID entity : nonWalkableEntities)
+		{
+			// Need to get static and skinned meshes for these and remove the triangles that overlap the modifier bounds.
+			// Do both types as we will support making the navmesh based of physics colliders instead of geometry in the future
 		}
 
 		state.NumVerts = static_cast<int>(state.Vertices.size() / 3);

@@ -80,10 +80,6 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
-    UUID: 1702313573474944703
-    Name: EnemyController
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Enemy/EnemyController.lua
-  - Type: Script
     UUID: 10753367411955256691
     Name: WeaponHolder
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
@@ -160,6 +156,10 @@ Assets:
     Name: AIController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/AIController.lua
   - Type: Script
+    UUID: 1702313573474944703
+    Name: EnemyController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Enemy/EnemyController.lua
+  - Type: Script
     UUID: 15649694001834023247
     Name: EnemyController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/EnemyController.lua
@@ -204,6 +204,10 @@ Assets:
     Name: EnemyMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/EnemyMaterial.ebmat
   - Type: Mesh
+    UUID: 16822605104283055229
+    Name: M4_Cube.001_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Cube.001_Prim0.ebmesh
+  - Type: Mesh
     UUID: 5610316799824380095
     Name: DesertEagle_Mesh2_Cube.007_Prim1
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
@@ -227,10 +231,6 @@ Assets:
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.001_Prim0.ebmesh
-  - Type: Mesh
-    UUID: 16822605104283055229
-    Name: M4_Cube.001_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Cube.001_Prim0.ebmesh
   - Type: Mesh
     UUID: 13898711898247753575
     Name: M4_Cube.003_Prim0
@@ -296,11 +296,7 @@ Assets:
     Name: M4
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4.ebmodel
   - Type: NavMeshData
-    UUID: 4345054885140693191
-    Name: NavMesh_Default_NavigationSurface
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
-  - Type: NavMeshData
-    UUID: 8649561604102284787
+    UUID: 8017132278425989816
     Name: NavMesh_Default_NavigationSurface
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
   - Type: Prefab
@@ -348,13 +344,13 @@ Assets:
     Name: Roboto-Regular
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
-    UUID: 15776698392225788213
-    Name: ReloadStart
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadStart.mp3
-  - Type: AudioClip
     UUID: 10601745296411271244
     Name: M4_Shot
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/M4_Shot.mp3
+  - Type: AudioClip
+    UUID: 15776698392225788213
+    Name: ReloadStart
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/ReloadStart.mp3
   - Type: AudioClip
     UUID: 8785379131387521162
     Name: ReloadEnd

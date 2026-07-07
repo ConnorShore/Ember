@@ -35,6 +35,7 @@
 #include "ComponentUI/CanvasComponentUI.h"
 #include "ComponentUI/RectTransformComponentUI.h"
 #include "ComponentUI/NavigationMeshComponentUI.h"
+#include "ComponentUI/NavigationMeshModifierComponentUI.h"
 
 namespace Ember {
 
@@ -115,6 +116,7 @@ namespace Ember {
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<LocalAvoidanceComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationMeshComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationGridComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<NavigationMeshModifierComponentUI>::Create(m_Context));
 		m_ComponentUIs[Category::AI].emplace_back(ScopedPtr<WaypointComponentUI>::Create(m_Context));
 
 		// --- UI ---

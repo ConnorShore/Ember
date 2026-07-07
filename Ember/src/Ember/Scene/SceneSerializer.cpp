@@ -63,6 +63,7 @@ namespace Ember {
 	X(AIPathComponent) \
 	X(NavigationGridComponent) \
 	X(NavigationMeshComponent) \
+	X(NavigationMeshModifierComponent) \
 	X(LocalAvoidanceComponent) \
 	X(CanvasComponent) \
 	X(RectTransformComponent)
@@ -661,6 +662,15 @@ namespace Ember {
 			settingsNode["AgentMaxSlope"] << navMesh.BakeSettings.AgentMaxSlope;
 			settingsNode["RegionMinSize"] << navMesh.BakeSettings.RegionMinSize;
 			settingsNode["EdgeMaxError"] << navMesh.BakeSettings.EdgeMaxError;
+		}
+		if (entity.ContainsComponent<NavigationMeshModifierComponent>())
+		{
+			auto& navMeshMod = entity.GetComponent<NavigationMeshModifierComponent>();
+			ryml::NodeRef navMeshModNode = entityNode["NavigationMeshModifierComponent"];
+			navMeshModNode |= ryml::MAP;
+			navMeshModNode["NavMeshDataHandle"] << (uint64_t)navMeshMod.NavMeshDataHandle;
+			navMeshModNode["ModifierType"] << (int)navMeshMod.Type;
+			navMeshModNode["ApplyToChildren"] << navMeshMod.ApplyToChildren;
 		}
 		if (entity.ContainsComponent<AIAgentComponent>())
 		{
@@ -1441,6 +1451,22 @@ namespace Ember {
 			settingsNode["AgentMaxSlope"] >> navMesh.BakeSettings.AgentMaxSlope;
 			settingsNode["RegionMinSize"] >> navMesh.BakeSettings.RegionMinSize;
 			settingsNode["EdgeMaxError"] >> navMesh.BakeSettings.EdgeMaxError;
+		}
+
+		if (entityNode.has_child("NavigationMeshModifierComponent"))
+		{
+			ryml::NodeRef navModNode = entityNode["NavigationMeshModifierComponent"];
+			auto& navMod = deserializedEntity.AttachComponent<NavigationMeshModifierComponent>();
+
+			uint64_t navMeshDataHandle;
+			navModNode["NavMeshDataHandle"] >> navMeshDataHandle;
+			navMod.NavMeshDataHandle = (UUID)navMeshDataHandle;
+
+			int modifierType;
+			navModNode["ModifierType"] >> modifierType;
+			navMod.Type = (NavigationMeshModifierComponent::ModifierType)modifierType;
+
+			navModNode["ApplyToChildren"] >> navMod.ApplyToChildren;
 		}
 
 		if (entityNode.has_child("AIAgentComponent"))

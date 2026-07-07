@@ -30,7 +30,7 @@ namespace Ember {
 	private:
 		struct BuildPipelineState;
 
-		static bool ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result);
+		static bool ExtractStaticMeshGeometry(BuildPipelineState& state, BuildResult& result, UUID navMeshId);
 
 		static bool BuildRecastPipeline(BuildPipelineState& state, BuildResult& result);
 		static bool InitializeConfigAndBounds(BuildPipelineState& state, BuildResult& result);
