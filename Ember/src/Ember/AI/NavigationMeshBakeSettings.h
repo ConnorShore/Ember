@@ -12,6 +12,9 @@ namespace Ember {
 		float AgentMaxClimb = 0.5f;
 		float AgentMaxSlope = 45.0f;
 
+		float RegionMinSize = 8.0f;
+		float EdgeMaxError = 1.3f;
+
 		bool operator==(const NavigationMeshBakeSettings& other) const
 		{
 			return CellSize == other.CellSize &&
@@ -19,7 +22,9 @@ namespace Ember {
 				AgentHeight == other.AgentHeight &&
 				AgentRadius == other.AgentRadius &&
 				AgentMaxClimb == other.AgentMaxClimb &&
-				AgentMaxSlope == other.AgentMaxSlope;
+				AgentMaxSlope == other.AgentMaxSlope &&
+				RegionMinSize == other.RegionMinSize &&
+				EdgeMaxError == other.EdgeMaxError;
 		}
 
 		bool operator!=(const NavigationMeshBakeSettings& other) const

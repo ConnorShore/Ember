@@ -315,18 +315,16 @@ namespace Ember {
 		state.Config.walkableHeight = static_cast<int>(ceilf(state.Settings.AgentHeight / state.Config.ch));
 		state.Config.walkableClimb = static_cast<int>(floorf(state.Settings.AgentMaxClimb / state.Config.ch));
 		state.Config.walkableRadius = static_cast<int>(ceilf(state.Settings.AgentRadius / state.Config.cs));
+		state.Config.minRegionArea = static_cast<int>(rcSqr(state.Settings.RegionMinSize)); // Note: area = size*size
+		state.Config.maxSimplificationError = state.Settings.EdgeMaxError;
 
 		// TODO: Add config settings for rest of props once we get them from user, for now use default values
 		state.Config.maxEdgeLen = 12; // Default value
-		state.Config.maxSimplificationError = 1.3f; // Default value
-		state.Config.minRegionArea = 8; // Default value
 		state.Config.mergeRegionArea = 20; // Default value
 		state.Config.maxVertsPerPoly = 6; // Default value
 		state.Config.detailSampleDist = 6.0f; // Default value
 		state.Config.detailSampleMaxError = 1.0f; // Default value
 		//config.maxEdgeLen = static_cast<int>(edgeMaxLen / cellSize);
-		//config.maxSimplificationError = edgeMaxError;
-		//config.minRegionArea = static_cast<int>(rcSqr(regionMinSize));      // Note: area = size*size
 		//config.mergeRegionArea = static_cast<int>(rcSqr(regionMergeSize));  // Note: area = size*size
 		//config.maxVertsPerPoly = vertsPerPoly;
 		//config.detailSampleDist = detailSampleDist < 0.9f ? 0 : cellSize * detailSampleDist;

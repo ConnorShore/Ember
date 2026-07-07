@@ -204,6 +204,10 @@ Assets:
     Name: EnemyMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/EnemyMaterial.ebmat
   - Type: Mesh
+    UUID: 9147101475226164417
+    Name: AssaultRifle_Cube.003_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.003_Prim0.ebmesh
+  - Type: Mesh
     UUID: 5610316799824380095
     Name: DesertEagle_Mesh2_Cube.007_Prim1
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
@@ -223,10 +227,6 @@ Assets:
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.001_Prim0.ebmesh
-  - Type: Mesh
-    UUID: 9147101475226164417
-    Name: AssaultRifle_Cube.003_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.003_Prim0.ebmesh
   - Type: Mesh
     UUID: 16822605104283055229
     Name: M4_Cube.001_Prim0

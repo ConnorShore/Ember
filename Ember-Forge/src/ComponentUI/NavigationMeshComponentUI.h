@@ -2,6 +2,7 @@
 
 #include "ComponentUI.h"
 #include "Ui/PropertyGrid.h"
+#include "Utils/ActiveNavMeshRenderer.h"
 
 #include <Ember/AI/NavigationMeshBuilder.h>
 #include <Ember/Asset/Serializers/NavigationMeshSerializer.h>
@@ -22,6 +23,15 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(NavigationMeshComponent& component) override
 		{
+			if (UI::PropertyGrid::Begin("DrawNavigationMeshProps"))
+			{
+				bool drawNavMesh = ActiveNavMeshRenderer::GetEnabled();
+				if (UI::PropertyGrid::Checkbox("Draw Navigation Mesh", drawNavMesh))
+					ActiveNavMeshRenderer::SetEnabled(drawNavMesh);
+
+				UI::PropertyGrid::End();
+			}
+
 			ImGui::TextDisabled("Bound Settings");
 			ImGui::Spacing();
 			if (UI::PropertyGrid::Begin("NavigationBoundMeshProps"))
@@ -31,12 +41,14 @@ namespace Ember {
 				UI::PropertyGrid::End();
 			}
 
-			ImGui::TextDisabled("Cell Settings");
+			ImGui::TextDisabled("Region Settings");
 			ImGui::Spacing();
 			if (UI::PropertyGrid::Begin("NavigationCellMeshProps"))
 			{
-				UI::PropertyGrid::Float("Size", component.BakeSettings.CellSize, 0.1f, 0.1f);
-				UI::PropertyGrid::Float("Height", component.BakeSettings.CellHeight, 0.1f, 0.1f);
+				UI::PropertyGrid::Float("Cell Size", component.BakeSettings.CellSize, 0.1f, 0.1f);
+				UI::PropertyGrid::Float("Cell Height", component.BakeSettings.CellHeight, 0.1f, 0.1f);
+				UI::PropertyGrid::Float("Region Min Size", component.BakeSettings.RegionMinSize, 0.1f, 0.1f);
+				UI::PropertyGrid::Float("Edge Max Error", component.BakeSettings.EdgeMaxError, 0.1f, 0.01f);
 				UI::PropertyGrid::End();
 			}
 

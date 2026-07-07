@@ -15,8 +15,6 @@ namespace Ember {
 	public:
 		void Render(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType);
 		static void DrawSceneDebugGizmos(Scene* scene, EntityID selectedEntity);
-		static void SetDrawSelectedNavMeshDebug(bool enabled);
-		static bool GetDrawSelectedNavMeshDebug();
 		bool IsHovered() const { return m_RectTransformGizmoHovered; }
 
 	private:

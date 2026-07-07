@@ -1,12 +1,11 @@
 #include "efpch.h"
 
 #include "Utils/ViewportGizmoController.h"
+#include "Utils/ActiveNavMeshRenderer.h"
 
 #include "EditorContext.h"
 
 #include <Ember/Asset/Font.h>
-#include <Ember/Asset/NavigationMeshData.h>
-#include <Ember/AI/NavMeshDebugDraw.h>
 #include <Ember/Core/Application.h>
 #include <Ember/Input/Input.h>
 #include <Ember/Input/InputCode.h>
@@ -15,8 +14,6 @@
 #include <Ember/Scene/Scene.h>
 #include <Ember/Tools/EditorCamera.h>
 #include <Ember/Math/Math.h>
-
-#include <DetourDebugDraw.h>
 
 #include <ImGuizmo.h>
 #include <imgui/imgui.h>
@@ -28,7 +25,6 @@
 namespace Ember {
 	constexpr float kTwoPi = 6.28318530718f;
 	constexpr float kLightGizmoMinContribution = 0.05f;
-	static bool s_DrawSelectedNavMeshDebug = true;
 
 	static float EstimateInverseSquareRange(float intensity, float minContribution = kLightGizmoMinContribution)
 	{
@@ -203,39 +199,6 @@ namespace Ember {
 		}
 	}
 
-	static void DrawSelectedNavMeshDebug(Scene* scene, EntityID selectedEntity)
-	{
-		if (selectedEntity == (EntityID)Constants::Entities::InvalidEntityID)
-			return;
-
-		auto& registry = scene->GetRegistry();
-		if (!registry.ContainsComponent<NavigationMeshComponent>(selectedEntity))
-			return;
-
-		auto& navMeshComponent = registry.GetComponent<NavigationMeshComponent>(selectedEntity);
-		if (navMeshComponent.NavMeshDataHandle == Constants::InvalidUUID)
-			return;
-
-		auto& assetManager = Application::Instance().GetAssetManager();
-		auto navMeshAsset = assetManager.GetAsset<NavigationMeshData>(navMeshComponent.NavMeshDataHandle);
-		if (!navMeshAsset)
-			return;
-
-		dtNavMesh* navMesh = navMeshAsset->GetNavMesh();
-		if (!navMesh)
-		{
-			if (!navMeshAsset->InitializeFromRawData())
-				return;
-
-			navMesh = navMeshAsset->GetNavMesh();
-			if (!navMesh)
-				return;
-		}
-
-		NavMeshDebugDraw navDraw;
-		duDebugDrawNavMesh(&navDraw, *navMesh, 0);
-	}
-
 	static bool CalculateTextLocalBounds(const TextComponent& textComponent, Vector2f& outMin, Vector2f& outMax)
 	{
 		if (textComponent.FontHandle == Constants::InvalidUUID || textComponent.Text.empty())
@@ -293,18 +256,7 @@ namespace Ember {
 		}
 
 		DrawSelectedLightGizmo(scene, selectedEntity);
-		if (s_DrawSelectedNavMeshDebug)
-			DrawSelectedNavMeshDebug(scene, selectedEntity);
-	}
-
-	void ViewportGizmoController::SetDrawSelectedNavMeshDebug(bool enabled)
-	{
-		s_DrawSelectedNavMeshDebug = enabled;
-	}
-
-	bool ViewportGizmoController::GetDrawSelectedNavMeshDebug()
-	{
-		return s_DrawSelectedNavMeshDebug;
+		ActiveNavMeshRenderer::Draw(scene, selectedEntity);
 	}
 
 	void ViewportGizmoController::Render(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType)

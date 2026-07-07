@@ -12,6 +12,7 @@
 
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+#include "Utils/ActiveNavMeshRenderer.h"
 
 #include <Ember/Render/RenderAction.h>
 #include <Ember/Render/RendererAPI.h>
@@ -720,10 +721,10 @@ namespace Ember {
 					ImGui::MenuItem("Draw AI Paths", nullptr, &debugSettings.Enabled);
 				}
 
-				bool drawSelectedNavMesh = ViewportGizmoController::GetDrawSelectedNavMeshDebug();
+				bool drawSelectedNavMesh = ActiveNavMeshRenderer::GetEnabled();
 				if (ImGui::MenuItem("Draw Selected NavMesh", nullptr, &drawSelectedNavMesh))
 				{
-					ViewportGizmoController::SetDrawSelectedNavMeshDebug(drawSelectedNavMesh);
+					ActiveNavMeshRenderer::SetEnabled(drawSelectedNavMesh);
 				}
 
 				ImGui::EndMenu();

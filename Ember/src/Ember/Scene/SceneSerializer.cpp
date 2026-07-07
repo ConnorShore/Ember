@@ -659,6 +659,8 @@ namespace Ember {
 			settingsNode["AgentRadius"] << navMesh.BakeSettings.AgentRadius;
 			settingsNode["AgentMaxClimb"] << navMesh.BakeSettings.AgentMaxClimb;
 			settingsNode["AgentMaxSlope"] << navMesh.BakeSettings.AgentMaxSlope;
+			settingsNode["RegionMinSize"] << navMesh.BakeSettings.RegionMinSize;
+			settingsNode["EdgeMaxError"] << navMesh.BakeSettings.EdgeMaxError;
 		}
 		if (entity.ContainsComponent<AIAgentComponent>())
 		{
@@ -1437,6 +1439,8 @@ namespace Ember {
 			settingsNode["AgentRadius"] >> navMesh.BakeSettings.AgentRadius;
 			settingsNode["AgentMaxClimb"] >> navMesh.BakeSettings.AgentMaxClimb;
 			settingsNode["AgentMaxSlope"] >> navMesh.BakeSettings.AgentMaxSlope;
+			settingsNode["RegionMinSize"] >> navMesh.BakeSettings.RegionMinSize;
+			settingsNode["EdgeMaxError"] >> navMesh.BakeSettings.EdgeMaxError;
 		}
 
 		if (entityNode.has_child("AIAgentComponent"))
