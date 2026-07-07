@@ -80,6 +80,14 @@ Assets:
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
   - Type: Script
+    UUID: 10753367411955256691
+    Name: WeaponHolder
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
+  - Type: Script
+    UUID: 18321648132521774491
+    Name: SightAttachment
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/SightAttachment.lua
+  - Type: Script
     UUID: 17429251933582378423
     Name: AmmoUI
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/AmmoUI.lua
@@ -144,17 +152,17 @@ Assets:
     Name: WeaponAiming
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponAiming.lua
   - Type: Script
-    UUID: 10753367411955256691
-    Name: WeaponHolder
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponHolder.lua
-  - Type: Script
-    UUID: 18321648132521774491
-    Name: SightAttachment
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/SightAttachment.lua
-  - Type: Script
     UUID: 803391121824597106
     Name: AIController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/AIController.lua
+  - Type: Script
+    UUID: 1702313573474944703
+    Name: EnemyController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Enemy/EnemyController.lua
+  - Type: Script
+    UUID: 15649694001834023247
+    Name: EnemyController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/EnemyController.lua
   - Type: Material
     UUID: 782295293902573577
     Name: DesertEagle_Metal
@@ -163,6 +171,10 @@ Assets:
     UUID: 8747674591623748722
     Name: HolographicReticleMat
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/HolographicReticleMat.ebmat
+  - Type: Material
+    UUID: 13734008897576602447
+    Name: GroundMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
     UUID: 3531595371019758275
     Name: AssaultRifle_Weapon
@@ -180,10 +192,6 @@ Assets:
     Name: M4_Weapon
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
   - Type: Material
-    UUID: 13734008897576602447
-    Name: GroundMaterial
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
-  - Type: Material
     UUID: 1868779223986162857
     Name: PowerUpMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/PowerUpMaterial.ebmat
@@ -193,20 +201,24 @@ Assets:
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagle.ebmat
   - Type: Material
     UUID: 16908592229540959075
-    Name: AICharacterController_StandardGeometry_Clone
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/AICharacterController_StandardGeometry_Clone.ebmat
+    Name: EnemyMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/EnemyMaterial.ebmat
+  - Type: Mesh
+    UUID: 5610316799824380095
+    Name: DesertEagle_Mesh2_Cube.007_Prim1
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
   - Type: Mesh
     UUID: 5985712711574680378
     Name: DesertEagle_Mesh1_Cube_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.ebmesh
   - Type: Mesh
-    UUID: 17797478620356971073
-    Name: AssaultRifle_Cube.004_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.004_Prim0.ebmesh
-  - Type: Mesh
     UUID: 13365133264221018487
     Name: DesertEagle_Mesh2_Cube.007_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 17797478620356971073
+    Name: AssaultRifle_Cube.004_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Cube.004_Prim0.ebmesh
   - Type: Mesh
     UUID: 12205825994227504312
     Name: AssaultRifle_Cube.001_Prim0
@@ -231,10 +243,6 @@ Assets:
     UUID: 15346656199082862049
     Name: DesertEagle_Mesh0_Circle.001_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh0_Circle.001_Prim0.ebmesh
-  - Type: Mesh
-    UUID: 5610316799824380095
-    Name: DesertEagle_Mesh2_Cube.007_Prim1
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
   - Type: Skeleton
     UUID: 9200567303542518273
     Name: M4
@@ -291,6 +299,10 @@ Assets:
     UUID: 8017132278425989816
     Name: NavMesh_Default_NavigationSurface
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
+  - Type: Prefab
+    UUID: 17282698121902118170
+    Name: Enemy
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Enemy.ebprefab
   - Type: Prefab
     UUID: 7525331889912364400
     Name: M4_Pickup

@@ -325,6 +325,23 @@ namespace Ember {
 			}
 		}
 
+		// Initialize nav meshes
+		auto navMeshView = m_Registry->ActiveQuery<NavigationMeshComponent>();
+		for (auto entity : navMeshView)
+		{
+			auto& navMeshComp = m_Registry->GetComponent<NavigationMeshComponent>(entity);
+			if (navMeshComp.NavMeshDataHandle != Constants::InvalidUUID)
+			{
+				SharedPtr<NavigationMeshData> navMeshAsset = Application::Instance().GetAssetManager().GetAsset<NavigationMeshData>(navMeshComp.NavMeshDataHandle);
+				if (navMeshAsset)
+					navMeshAsset->InitializeFromRawData();
+				else
+					EB_CORE_WARN("Scene::OnRuntimeStart: NavigationMeshComponent on entity '{}' has an invalid NavMeshDataHandle!", Entity{ entity, this }.GetName());
+			}
+			else
+				EB_CORE_WARN("Scene::OnRuntimeStart: NavigationMeshComponent on entity '{}' has no NavMeshDataHandle!", Entity{ entity, this }.GetName());
+		}
+
 		ScriptEngine::OnRuntimeStart(this);
 	}
 
