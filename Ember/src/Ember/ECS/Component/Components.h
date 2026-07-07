@@ -888,7 +888,7 @@ namespace Ember {
 
 		// Dynamic properties
 		UUID TargetEntity = Constants::InvalidUUID;
-		UUID GridEntity = Constants::InvalidUUID;
+		UUID GridEntity = Constants::InvalidUUID;	// Navigation grid or navigation mesh
 		float RecalculateInterval = 1.0f;
 
 		// Runtime only (not serialized)

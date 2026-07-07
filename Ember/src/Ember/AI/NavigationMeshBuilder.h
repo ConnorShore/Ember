@@ -3,6 +3,7 @@
 #include "NavigationMeshBakeSettings.h"
 
 #include <DetourNavMesh.h>
+#include <DetourNavMeshQuery.h>
 
 #include <string>
 #include <vector>
@@ -21,6 +22,7 @@ namespace Ember {
 			std::string Error;
 			std::vector<uint8_t> RawDataBlob;
 			dtNavMesh* RuntimeNavMesh = nullptr;
+			dtNavMeshQuery* RuntimeNavMeshQuery = nullptr;
 		};
 
 		static BuildResult BuildNavigationMesh(const SharedPtr<Scene>& scene, Entity navMeshEntity, const NavigationMeshBakeSettings& settings);

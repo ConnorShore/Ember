@@ -62,6 +62,7 @@ namespace Ember {
 	X(AIAgentComponent) \
 	X(AIPathComponent) \
 	X(NavigationGridComponent) \
+	X(NavigationMeshComponent) \
 	X(LocalAvoidanceComponent) \
 	X(CanvasComponent) \
 	X(RectTransformComponent)
@@ -641,6 +642,23 @@ namespace Ember {
 					nodeRef["GridY"] << node.GridY;
 				}
 			}
+		}
+		if (entity.ContainsComponent<NavigationMeshComponent>())
+		{
+			auto& navMesh = entity.GetComponent<NavigationMeshComponent>();
+			ryml::NodeRef navMeshNode = entityNode["NavigationMeshComponent"];
+			navMeshNode |= ryml::MAP;
+			Util::SerializeVector3f(navMeshNode["BoundsSize"], navMesh.BoundsSize);
+			Util::SerializeVector3f(navMeshNode["BoundsCenterOffset"], navMesh.BoundsCenterOffset);
+			navMeshNode["NavMeshDataHandle"] << (uint64_t)navMesh.NavMeshDataHandle;
+			ryml::NodeRef settingsNode = navMeshNode["BakeSettings"];
+			settingsNode |= ryml::MAP;
+			settingsNode["CellSize"] << navMesh.BakeSettings.CellSize;
+			settingsNode["CellHeight"] << navMesh.BakeSettings.CellHeight;
+			settingsNode["AgentHeight"] << navMesh.BakeSettings.AgentHeight;
+			settingsNode["AgentRadius"] << navMesh.BakeSettings.AgentRadius;
+			settingsNode["AgentMaxClimb"] << navMesh.BakeSettings.AgentMaxClimb;
+			settingsNode["AgentMaxSlope"] << navMesh.BakeSettings.AgentMaxSlope;
 		}
 		if (entity.ContainsComponent<AIAgentComponent>())
 		{
@@ -1398,6 +1416,27 @@ namespace Ember {
 
 				navGrid.Grid = grid;
 			}
+		}
+
+		if (entityNode.has_child("NavigationMeshComponent"))
+		{
+			ryml::NodeRef navMeshNode = entityNode["NavigationMeshComponent"];
+			auto& navMesh = deserializedEntity.AttachComponent<NavigationMeshComponent>();
+			
+			Util::DeserializeVector3f(navMeshNode["BoundsSize"], navMesh.BoundsSize);
+			Util::DeserializeVector3f(navMeshNode["BoundsCenterOffset"], navMesh.BoundsCenterOffset);
+
+			uint64_t navMeshHandleId;
+			navMeshNode["NavMeshDataHandle"] >> navMeshHandleId;
+			navMesh.NavMeshDataHandle = (UUID)navMeshHandleId;
+
+			ryml::NodeRef settingsNode = navMeshNode["BakeSettings"];
+			settingsNode["CellSize"] >> navMesh.BakeSettings.CellSize;
+			settingsNode["CellHeight"] >> navMesh.BakeSettings.CellHeight;
+			settingsNode["AgentHeight"] >> navMesh.BakeSettings.AgentHeight;
+			settingsNode["AgentRadius"] >> navMesh.BakeSettings.AgentRadius;
+			settingsNode["AgentMaxClimb"] >> navMesh.BakeSettings.AgentMaxClimb;
+			settingsNode["AgentMaxSlope"] >> navMesh.BakeSettings.AgentMaxSlope;
 		}
 
 		if (entityNode.has_child("AIAgentComponent"))

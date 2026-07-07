@@ -7,6 +7,7 @@
 
 #include <Recast.h>
 #include <DetourNavMeshBuilder.h>
+#include <DetourNavMeshQuery.h>
 
 #include <algorithm>
 #include <limits>
@@ -655,6 +656,12 @@ namespace Ember {
 			unsigned char* navData = 0;
 			int navDataSize = 0;
 
+			// Detour queries use polygon flags for filtering. Ensure walkable polys have a non-zero flag.
+			for (int i = 0; i < state.PolyMesh->Ptr->npolys; ++i)
+			{
+				state.PolyMesh->Ptr->flags[i] = (state.PolyMesh->Ptr->areas[i] == RC_NULL_AREA) ? 0 : 0x1;
+			}
+
 			// Update poly flags from areas.
 			//for (int i = 0; i < polyMesh->npolys; ++i)
 			//{
@@ -736,8 +743,25 @@ namespace Ember {
 				return false;
 			}
 
+			dtNavMeshQuery* navQuery = dtAllocNavMeshQuery();
+			if (!navQuery)
+			{
+				dtFreeNavMesh(navMesh);
+				result.Error = "Navigation mesh bake failed: Could not allocate Detour navmesh query.";
+				return false;
+			}
+			status = navQuery->init(navMesh, 2048);
+			if (dtStatusFailed(status))
+			{
+				dtFreeNavMeshQuery(navQuery);
+				dtFreeNavMesh(navMesh);
+				result.Error = "Navigation mesh bake failed: Could not init Detour navmesh query.";
+				return false;
+			}
+
 			result.Success = true;
 			result.RuntimeNavMesh = navMesh;
+			result.RuntimeNavMeshQuery = navQuery;
 			result.Error = "";
 			return true;
 		}

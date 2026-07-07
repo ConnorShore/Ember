@@ -4,6 +4,7 @@
 
 #include "Ember/AI/NavigationGrid.h"
 #include "Ember/AI/AStar.h"
+#include "Ember/AI/NavMeshPathfinder.h"
 #include "Ember/Render/DebugRenderer.h"
 
 namespace Ember {
@@ -85,11 +86,41 @@ namespace Ember {
 					auto& targetTransform = targetEntity.GetComponent<TransformComponent>();
 
 					auto gridEntity = scene->GetEntity(agentComp.GridEntity);
-					auto& gridComp = gridEntity.GetComponent<NavigationGridComponent>();
+					Vector3f startPos = transform.GetWorldTransform()[3];
+					Vector3f targetPos = targetTransform.GetWorldTransform()[3];
 
-					// Calculate a new path using A* and update the path component
-					auto path = AStar::AStarPath(transform.GetWorldTransform()[3], targetTransform.GetWorldTransform()[3], gridComp.Grid);
-					pathComp.Waypoints = SmoothPath(path);
+					std::vector<Vector3f> path;
+					if (gridEntity.ContainsComponent<NavigationGridComponent>())
+					{
+						auto& gridComp = gridEntity.GetComponent<NavigationGridComponent>();
+
+						// Calculate a new path using A* and update the path component
+						auto aStarPath = AStar::AStarPath(startPos, targetPos, gridComp.Grid);
+						path = SmoothPath(aStarPath);
+					}
+					else if (gridEntity.ContainsComponent<NavigationMeshComponent>())
+					{
+						auto& navMeshComp = gridEntity.GetComponent<NavigationMeshComponent>();
+						if (navMeshComp.NavMeshDataHandle == Constants::InvalidUUID)
+						{
+							EB_CORE_WARN("NavigationMeshComponent's NavMeshDataHandle is invalid!");
+							continue;
+						}
+
+						auto& assetManager = Application::Instance().GetAssetManager();
+						auto navMeshAsset = assetManager.GetAsset<NavigationMeshData>(navMeshComp.NavMeshDataHandle);
+						
+						// Calculate path with recast/detour
+						auto navMesh = navMeshAsset->GetNavMesh();
+						auto navQuery = navMeshAsset->GetNavMeshQuery();
+						path = NavMeshPathfinder::BuildNavMeshPath(navMesh, navQuery, startPos, targetPos);
+					}
+					else
+					{
+						EB_CORE_ERROR("AIAgentComponent's GridEntity does not contain a NavigationGridComponent or NavigationMeshComponent!");
+					}
+					
+					pathComp.Waypoints = path;
 					pathComp.CurrentWaypointIndex = pathComp.Waypoints.size() > 1 ? 1 : 0;	// Point at next node to avoid stutter
 
 					// Reset the timer

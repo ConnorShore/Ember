@@ -2,6 +2,7 @@
 #include "Asset.h"
 #include "Ember/AI/NavigationMeshBakeSettings.h"
 #include <DetourNavMesh.h>
+#include <DetourNavMeshQuery.h>
 #include <vector>
 
 namespace Ember {
@@ -20,6 +21,12 @@ namespace Ember {
 
 		~NavigationMeshData()
 		{
+			if (m_NavMeshQuery)
+			{
+				dtFreeNavMeshQuery(m_NavMeshQuery);
+				m_NavMeshQuery = nullptr;
+			}
+
 			if (m_NavMesh)
 			{
 				dtFreeNavMesh(m_NavMesh);
@@ -31,6 +38,7 @@ namespace Ember {
 		// 1. RUNTIME ACCESS
 		// -------------------------------------------------------------------
 		inline dtNavMesh* GetNavMesh() const { return m_NavMesh; }
+		inline dtNavMeshQuery* GetNavMeshQuery() const { return m_NavMeshQuery; }
 
 		// Called by your Asset Loader after reading the binary file
 		bool InitializeFromRawData()
@@ -44,6 +52,12 @@ namespace Ember {
 				m_NavMesh = nullptr;
 			}
 
+			if (m_NavMeshQuery)
+			{
+				dtFreeNavMeshQuery(m_NavMeshQuery);
+				m_NavMeshQuery = nullptr;
+			}
+
 			m_NavMesh = dtAllocNavMesh();
 			if (!m_NavMesh)
 				return false;
@@ -52,6 +66,24 @@ namespace Ember {
 			dtStatus status = m_NavMesh->init(m_NavMeshDataBlob.data(), static_cast<int>(m_NavMeshDataBlob.size()), 0);
 			if (dtStatusFailed(status))
 			{
+				dtFreeNavMesh(m_NavMesh);
+				m_NavMesh = nullptr;
+				return false;
+			}
+
+			m_NavMeshQuery = dtAllocNavMeshQuery();
+			if (!m_NavMeshQuery)
+			{
+				dtFreeNavMesh(m_NavMesh);
+				m_NavMesh = nullptr;
+				return false;
+			}
+
+			status = m_NavMeshQuery->init(m_NavMesh, 2048);
+			if (dtStatusFailed(status))
+			{
+				dtFreeNavMeshQuery(m_NavMeshQuery);
+				m_NavMeshQuery = nullptr;
 				dtFreeNavMesh(m_NavMesh);
 				m_NavMesh = nullptr;
 				return false;
@@ -78,6 +110,7 @@ namespace Ember {
 
 	private:
 		dtNavMesh* m_NavMesh = nullptr;
+		dtNavMeshQuery* m_NavMeshQuery = nullptr;
 		std::vector<uint8_t> m_NavMeshDataBlob;
 
 		NavigationMeshBakeSettings m_BakeSettings;
