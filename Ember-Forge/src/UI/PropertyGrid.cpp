@@ -99,6 +99,13 @@ namespace Ember {
 			return modified;
 		}
 
+		void DisabledInputText(const std::string& label, const std::string& value)
+		{
+			ImGui::BeginDisabled(true);
+			InputText(label, const_cast<std::string&>(value));
+			ImGui::EndDisabled();
+		}
+
 		void LabelWithValue(const std::string& label, const std::string& value)
 		{
 			ImGui::TableNextRow();
@@ -721,5 +728,6 @@ namespace Ember {
 
 			return UI::BeginComboBox("##combo", defaultValue);
 		}
+
 	}
 }

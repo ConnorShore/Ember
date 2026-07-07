@@ -91,6 +91,9 @@ namespace Ember {
 
 		virtual ~Asset() = default;
 
+		// Called when the asset is removed from the AssetManager. Override this in derived classes to perform any cleanup or resource release.
+		virtual void OnRemove() {}
+
 		inline UUID GetUUID() const { return m_UUID; }
 		inline AssetType GetType() const { return m_Type; }
 		inline const std::string& GetName() const { return m_Name; }

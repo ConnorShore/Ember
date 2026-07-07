@@ -64,69 +64,101 @@ namespace Ember {
 			}
 
 			// TODO: Disable if bake settings are equal to the last bake settings (to avoid unnecessary bakes)
-			if (ImGui::Button("Bake"))
-			{
-				SharedPtr<NavigationMeshData> bakedMesh = nullptr;
-				if (component.NavMeshDataHandle == Constants::InvalidUUID)
-				{
-					// Create a new nav mesh asset
-					std::string sceneName = m_Context->ActiveScene()->GetName();
-					std::string entityName = m_Context->SelectedEntity.GetName();
-					std::string newNavMeshName = std::format("NavMesh_{}_{}", sceneName, entityName);
-					std::string newNavMeshFileName = newNavMeshName + ".ebnav";
-					auto newNavFilePath = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::NavMeshData) / newNavMeshFileName;
-					std::filesystem::create_directories(newNavFilePath.parent_path());
-					auto newNavMeshAsset = m_AssetManager.Create<NavigationMeshData>(newNavMeshName, newNavFilePath.string());
-					newNavMeshAsset->SetIsEngineAsset(false);
-					component.NavMeshDataHandle = newNavMeshAsset->GetUUID();
-				}
-
-				// Load the existing nav mesh asset
-				bakedMesh = m_AssetManager.GetAsset<NavigationMeshData>(component.NavMeshDataHandle);
-				if (!bakedMesh)
-				{
-					auto evt = UINotificationEvent("Failed to load navigation mesh asset.", UINotificationEvent::Severity::Warning);
-					m_Context->EventCallback(evt);
-					return;
-				}
-
-				// Set the bake settings on the baked mesh asset
-				bakedMesh->SetBakeSettings(component.BakeSettings);
-
-				// Bake the nav mesh using the current scene geometry and the specified bake settings.
-				auto buildResult = NavigationMeshBuilder::BuildNavigationMesh(m_Context->ActiveScene(), m_Context->SelectedEntity, component.BakeSettings);
-				if (!buildResult.Success)
-				{
-					auto evt = UINotificationEvent(buildResult.Error.empty() ? "Navigation mesh bake failed." : buildResult.Error, UINotificationEvent::Severity::Warning);
-					m_Context->EventCallback(evt);
-					return;
-				}
-
-				// Store baked Detour bytes directly on the asset.
-				bakedMesh->SetRawDataBlob(std::move(buildResult.RawDataBlob));
-
-				// Initialize nav mesh from the data
-				bakedMesh->InitializeFromRawData();
-
-				// Serialize source metadata + sidecar blob.
-				if (!NavigationMeshSerializer::SerializeSource(bakedMesh->GetFilePath(), bakedMesh))
-				{
-					auto evt = UINotificationEvent("Failed to serialize the baked navigation mesh.", UINotificationEvent::Severity::Warning);
-					m_Context->EventCallback(evt);
-					return;
-				}
-			}
-
+			SharedPtr<NavigationMeshData> navMeshAsset = nullptr;
 			if (component.NavMeshDataHandle != Constants::InvalidUUID)
-			{
-				if (ImGui::Button("Clear"))
-				{
-					// Clear the handle from the component
-					component.NavMeshDataHandle = Constants::InvalidUUID;
+				navMeshAsset = m_AssetManager.GetAsset<NavigationMeshData>(component.NavMeshDataHandle);
 
-					// TODO: Remove the asset from the asset manager or just clear the handle and data
+			if (UI::PropertyGrid::Begin("NavMeshData"))
+			{
+				if (navMeshAsset)
+					UI::PropertyGrid::DisabledInputText("Navigation Data", navMeshAsset->GetName());
+				else
+					UI::PropertyGrid::DisabledInputText("Navigation Data", "None");
+
+				UI::PropertyGrid::End();
+			}
+
+			// Make bake and clear buttons both 1/2 the width of the panel after accounting for label "Navigation Data"
+			float labelWidth = ImGui::CalcTextSize("Navigation Data").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			float buttonWidth = (ImGui::GetContentRegionAvail().x - labelWidth - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
+
+			// Shift button starting position to the right so it aligns with the input text
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + labelWidth);
+
+			if (navMeshAsset)
+			{
+				if (ImGui::Button("Bake", ImVec2(buttonWidth, 0)))
+					BakeNavigationMesh(component);
+
+				ImGui::SameLine(0, ImGui::GetStyle().ItemSpacing.x);
+				if (ImGui::Button("Clear", ImVec2(buttonWidth, 0)))
+				{
+					// Delete the nav mesh asset from the project
+					m_AssetManager.RemoveAsset(component.NavMeshDataHandle);
+					component.NavMeshDataHandle = Constants::InvalidUUID;
 				}
 			}
+			else
+			{
+				if (ImGui::Button("Bake", ImVec2(buttonWidth * 2, 0)))
+					BakeNavigationMesh(component);
+			}
+		}
+
+	private:
+		void BakeNavigationMesh(NavigationMeshComponent& component)
+		{
+			SharedPtr<NavigationMeshData> bakedMesh = nullptr;
+			if (component.NavMeshDataHandle == Constants::InvalidUUID)
+			{
+				// Create a new nav mesh asset
+				std::string sceneName = m_Context->ActiveScene()->GetName();
+				std::string entityName = m_Context->SelectedEntity.GetName();
+				std::string newNavMeshName = std::format("NavMesh_{}_{}", sceneName, entityName);
+				std::string newNavMeshFileName = newNavMeshName + ".ebnav";
+				auto newNavFilePath = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::NavMeshData) / newNavMeshFileName;
+				std::filesystem::create_directories(newNavFilePath.parent_path());
+				auto newNavMeshAsset = m_AssetManager.Create<NavigationMeshData>(newNavMeshName, newNavFilePath.string());
+				newNavMeshAsset->SetIsEngineAsset(false);
+				component.NavMeshDataHandle = newNavMeshAsset->GetUUID();
+			}
+
+			// Load the existing nav mesh asset
+			bakedMesh = m_AssetManager.GetAsset<NavigationMeshData>(component.NavMeshDataHandle);
+			if (!bakedMesh)
+			{
+				auto evt = UINotificationEvent("Failed to load navigation mesh asset.", UINotificationEvent::Severity::Warning);
+				m_Context->EventCallback(evt);
+				return;
+			}
+
+			// Set the bake settings on the baked mesh asset
+			bakedMesh->SetBakeSettings(component.BakeSettings);
+
+			// Bake the nav mesh using the current scene geometry and the specified bake settings.
+			auto buildResult = NavigationMeshBuilder::BuildNavigationMesh(m_Context->ActiveScene(), m_Context->SelectedEntity, component.BakeSettings);
+			if (!buildResult.Success)
+			{
+				auto evt = UINotificationEvent(buildResult.Error.empty() ? "Navigation mesh bake failed." : buildResult.Error, UINotificationEvent::Severity::Warning);
+				m_Context->EventCallback(evt);
+				return;
+			}
+
+			// Store baked Detour bytes directly on the asset.
+			bakedMesh->SetRawDataBlob(std::move(buildResult.RawDataBlob));
+
+			// Initialize nav mesh from the data
+			bakedMesh->InitializeFromRawData();
+
+			// Serialize source metadata + sidecar blob.
+			if (!NavigationMeshSerializer::SerializeSource(bakedMesh->GetFilePath(), bakedMesh))
+			{
+				auto evt = UINotificationEvent("Failed to serialize the baked navigation mesh.", UINotificationEvent::Severity::Warning);
+				m_Context->EventCallback(evt);
+			}
+
+			// Load mesh as non-engine asset
+			m_AssetManager.Load<NavigationMeshData>(bakedMesh->GetFilePath(), false);
 		}
 	};
 

@@ -52,7 +52,7 @@ namespace Ember {
 		SharedPtr<T> Create(Args&&... args)
 		{
 			// Abstract types (Shader, Texture) use their own factory; concrete types are constructed directly
-		  SharedPtr<T> newAsset;
+			SharedPtr<T> newAsset;
 			if constexpr (std::is_abstract_v<T>)
 			{
 				newAsset = T::Create(std::forward<Args>(args)...);
@@ -304,6 +304,19 @@ namespace Ember {
 		void RemoveAsset(UUID uuid)
 		{
 			if (m_Assets.contains(uuid)) {
+
+				// Remove asset file from disk if it is not an engine asset
+				if (!m_Assets[uuid]->IsEngineAsset() && !m_Assets[uuid]->GetFilePath().empty())
+				{
+					std::error_code ec;
+					std::filesystem::remove(m_Assets[uuid]->GetFilePath(), ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to remove asset file '{}': {}", m_Assets[uuid]->GetFilePath(), ec.message());
+					}
+				}
+
+				// Remove assets from lookup tables and the main asset map
 				m_AssetNames.erase(m_Assets[uuid]->GetName());
 				m_AssetPaths.erase(m_Assets[uuid]->GetFilePath());
 				m_Assets.erase(uuid);
