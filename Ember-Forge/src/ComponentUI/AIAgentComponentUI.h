@@ -105,20 +105,51 @@ namespace Ember {
 
 		void RenderDynamicComponentProps(AIAgentComponent& component)
 		{
-			if (UI::PropertyGrid::Begin("AIAgentPropsManual"))
+			if (UI::PropertyGrid::Begin("AIAgentPropsDynamic"))
 			{
 				UI::PropertyGrid::Checkbox("Loop Path", component.Loop);
+				UI::PropertyGrid::Float("Recalculate Interval", component.RecalculateInterval, 0.01f, 0.0f, 100.0f);
 
-				// 1. Tell the widget how to turn a UUID into an Entity Name
-				auto nameResolver = [&](UUID uuid) -> std::string {
-					Entity entity = m_Context->ActiveScene()->GetEntity(uuid);
-					return (entity.GetUUID() != Constants::InvalidUUID) ? entity.GetName() : "Invalid Entity";
-					};
-
+				// Target Entity
+				std::string targetName = "None";
+				if (component.TargetEntity != Constants::InvalidUUID)
+				{
+					Entity targetEnt = m_Context->ActiveScene()->GetEntity(component.TargetEntity);
+					if (targetEnt == Constants::Entities::InvalidEntityID)
+						targetName = "Unknown Entity";
+					else if (targetEnt.GetUUID() != Constants::InvalidUUID)
+						targetName = targetEnt.GetName();
+					else
+						targetName = "Invalid Entity";
+				}
 				std::string payloadStr = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity);
+				UUID droppedTargetUUID = Constants::InvalidUUID;
+				if (UI::PropertyGrid::EntityReference("Target Entity", targetName, payloadStr, droppedTargetUUID))
+				{
+					Entity droppedEnt = m_Context->ActiveScene()->GetEntity(droppedTargetUUID);
+					if (droppedEnt != Constants::Entities::InvalidEntityID && droppedEnt.GetUUID() != Constants::InvalidUUID)
+						component.TargetEntity = droppedEnt.GetUUID();
+				}
 
-				// 2. Render the whole array in one line!
-				UI::PropertyGrid::DynamicUUIDArrayDragDrop("Waypoints", "Point", component.ManualWaypoints, payloadStr, nameResolver);
+				// Surface/Grid Entity
+				std::string gridName = "None";
+				if (component.GridEntity != Constants::InvalidUUID)
+				{
+					Entity gridEnt = m_Context->ActiveScene()->GetEntity(component.GridEntity);
+					if (gridEnt == Constants::Entities::InvalidEntityID)
+						gridName = "Unknown Entity";
+					else if (gridEnt.GetUUID() != Constants::InvalidUUID)
+						gridName = gridEnt.GetName();
+					else
+						gridName = "Invalid Entity";
+				}
+				UUID droppedGridUUID = Constants::InvalidUUID;
+				if (UI::PropertyGrid::EntityReference("Navigation Grid/Surface", gridName, payloadStr, droppedGridUUID))
+				{
+					Entity droppedEnt = m_Context->ActiveScene()->GetEntity(droppedGridUUID);
+					if (droppedEnt != Constants::Entities::InvalidEntityID && droppedEnt.GetUUID() != Constants::InvalidUUID)
+						component.GridEntity = droppedEnt.GetUUID();
+				}
 
 				UI::PropertyGrid::End();
 			}

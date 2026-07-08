@@ -62,6 +62,8 @@ namespace Ember {
 	X(AIAgentComponent) \
 	X(AIPathComponent) \
 	X(NavigationGridComponent) \
+	X(NavigationMeshComponent) \
+	X(NavigationMeshModifierComponent) \
 	X(LocalAvoidanceComponent) \
 	X(CanvasComponent) \
 	X(RectTransformComponent)
@@ -641,6 +643,34 @@ namespace Ember {
 					nodeRef["GridY"] << node.GridY;
 				}
 			}
+		}
+		if (entity.ContainsComponent<NavigationMeshComponent>())
+		{
+			auto& navMesh = entity.GetComponent<NavigationMeshComponent>();
+			ryml::NodeRef navMeshNode = entityNode["NavigationMeshComponent"];
+			navMeshNode |= ryml::MAP;
+			Util::SerializeVector3f(navMeshNode["BoundsSize"], navMesh.BoundsSize);
+			Util::SerializeVector3f(navMeshNode["BoundsCenterOffset"], navMesh.BoundsCenterOffset);
+			navMeshNode["NavMeshDataHandle"] << (uint64_t)navMesh.NavMeshDataHandle;
+			ryml::NodeRef settingsNode = navMeshNode["BakeSettings"];
+			settingsNode |= ryml::MAP;
+			settingsNode["CellSize"] << navMesh.BakeSettings.CellSize;
+			settingsNode["CellHeight"] << navMesh.BakeSettings.CellHeight;
+			settingsNode["AgentHeight"] << navMesh.BakeSettings.AgentHeight;
+			settingsNode["AgentRadius"] << navMesh.BakeSettings.AgentRadius;
+			settingsNode["AgentMaxClimb"] << navMesh.BakeSettings.AgentMaxClimb;
+			settingsNode["AgentMaxSlope"] << navMesh.BakeSettings.AgentMaxSlope;
+			settingsNode["RegionMinSize"] << navMesh.BakeSettings.RegionMinSize;
+			settingsNode["EdgeMaxError"] << navMesh.BakeSettings.EdgeMaxError;
+		}
+		if (entity.ContainsComponent<NavigationMeshModifierComponent>())
+		{
+			auto& navMeshMod = entity.GetComponent<NavigationMeshModifierComponent>();
+			ryml::NodeRef navMeshModNode = entityNode["NavigationMeshModifierComponent"];
+			navMeshModNode |= ryml::MAP;
+			navMeshModNode["NavMeshDataHandle"] << (uint64_t)navMeshMod.NavMeshDataHandle;
+			navMeshModNode["ModifierType"] << (int)navMeshMod.Type;
+			navMeshModNode["ApplyToChildren"] << navMeshMod.ApplyToChildren;
 		}
 		if (entity.ContainsComponent<AIAgentComponent>())
 		{
@@ -1398,6 +1428,45 @@ namespace Ember {
 
 				navGrid.Grid = grid;
 			}
+		}
+
+		if (entityNode.has_child("NavigationMeshComponent"))
+		{
+			ryml::NodeRef navMeshNode = entityNode["NavigationMeshComponent"];
+			auto& navMesh = deserializedEntity.AttachComponent<NavigationMeshComponent>();
+			
+			Util::DeserializeVector3f(navMeshNode["BoundsSize"], navMesh.BoundsSize);
+			Util::DeserializeVector3f(navMeshNode["BoundsCenterOffset"], navMesh.BoundsCenterOffset);
+
+			uint64_t navMeshHandleId;
+			navMeshNode["NavMeshDataHandle"] >> navMeshHandleId;
+			navMesh.NavMeshDataHandle = (UUID)navMeshHandleId;
+
+			ryml::NodeRef settingsNode = navMeshNode["BakeSettings"];
+			settingsNode["CellSize"] >> navMesh.BakeSettings.CellSize;
+			settingsNode["CellHeight"] >> navMesh.BakeSettings.CellHeight;
+			settingsNode["AgentHeight"] >> navMesh.BakeSettings.AgentHeight;
+			settingsNode["AgentRadius"] >> navMesh.BakeSettings.AgentRadius;
+			settingsNode["AgentMaxClimb"] >> navMesh.BakeSettings.AgentMaxClimb;
+			settingsNode["AgentMaxSlope"] >> navMesh.BakeSettings.AgentMaxSlope;
+			settingsNode["RegionMinSize"] >> navMesh.BakeSettings.RegionMinSize;
+			settingsNode["EdgeMaxError"] >> navMesh.BakeSettings.EdgeMaxError;
+		}
+
+		if (entityNode.has_child("NavigationMeshModifierComponent"))
+		{
+			ryml::NodeRef navModNode = entityNode["NavigationMeshModifierComponent"];
+			auto& navMod = deserializedEntity.AttachComponent<NavigationMeshModifierComponent>();
+
+			uint64_t navMeshDataHandle;
+			navModNode["NavMeshDataHandle"] >> navMeshDataHandle;
+			navMod.NavMeshDataHandle = (UUID)navMeshDataHandle;
+
+			int modifierType;
+			navModNode["ModifierType"] >> modifierType;
+			navMod.Type = (NavigationMeshModifierComponent::ModifierType)modifierType;
+
+			navModNode["ApplyToChildren"] >> navMod.ApplyToChildren;
 		}
 
 		if (entityNode.has_child("AIAgentComponent"))

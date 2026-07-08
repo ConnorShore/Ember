@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Skeleton.h"
+#include "Ember/Asset/Skeleton.h"
 #include "AssetSerializationMode.h"
 
 #include "Ember/Core/Core.h"

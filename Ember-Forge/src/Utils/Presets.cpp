@@ -149,6 +149,14 @@ namespace Ember {
 		return newEntity;
 	}
 
+	Ember::Entity Presets::CreateNavigationMesh(const SharedPtr<Scene>& scene)
+	{
+		Entity newEntity = scene->AddEntity("NavigationSurface");
+		newEntity.AttachComponent<NavigationMeshComponent>();
+
+		return newEntity;
+	}
+
 	Entity Presets::CreateCube(const SharedPtr<Scene>& scene)
 	{
 		Entity newEntity = scene->AddEntity("Cube");

@@ -30,6 +30,8 @@
       "%{wks.location}/Ember/vendor/sol2/include",
       "%{wks.location}/Ember/vendor/rapidyaml/src",
       "%{wks.location}/Ember/vendor/reactphysics3d/include",
+	  "%{wks.location}/Ember/vendor/recastnavigation/Recast/Include",
+	  "%{wks.location}/Ember/vendor/recastnavigation/Detour/Include",
 	  "%{wks.location}/Ember/vendor/rapidyaml/ext/c4core/src"
    }
 

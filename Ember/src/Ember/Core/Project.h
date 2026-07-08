@@ -114,6 +114,8 @@ namespace Ember {
 				return GetAssetDirectory() / "Physics Materials";
 			case AssetType::Scene:
 				return GetScenesDirectory();
+			case AssetType::NavMeshData:
+				return GetAssetDirectory() / "NavMeshes";
 			default:
 				return GetAssetDirectory();
 			}

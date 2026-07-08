@@ -19,3 +19,6 @@
 [submodule "Ember-Forge/vendor/imgui-node-editor"]
 	path = Ember-Forge/vendor/imgui-node-editor
 	url = https://github.com/ConnorShore/imgui-node-editor.git
+[submodule "Ember/vendor/recastnavigation"]
+	path = Ember/vendor/recastnavigation
+	url = https://github.com/ConnorShore/recastnavigation.git

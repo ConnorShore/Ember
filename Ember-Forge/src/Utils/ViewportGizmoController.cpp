@@ -1,6 +1,7 @@
 #include "efpch.h"
 
 #include "Utils/ViewportGizmoController.h"
+#include "Utils/ActiveNavMeshRenderer.h"
 
 #include "EditorContext.h"
 
@@ -255,6 +256,7 @@ namespace Ember {
 		}
 
 		DrawSelectedLightGizmo(scene, selectedEntity);
+		ActiveNavMeshRenderer::Draw(scene, selectedEntity);
 	}
 
 	void ViewportGizmoController::Render(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType)

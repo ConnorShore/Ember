@@ -5,15 +5,18 @@
 #include "Model.h"
 #include "Skeleton.h"
 #include "PhysicsMaterial.h"
-#include "MeshSerializer.h"
-#include "MaterialSerializer.h"
-#include "ModelSerializer.h"
-#include "SkeletonSerializer.h"
-#include "SkeletonMaskSerializer.h"
-#include "PhysicsMaterialSerializer.h"
 #include "Prefab.h"
 #include "Font.h"
 #include "AudioClip.h"
+#include "NavigationMeshData.h"
+
+#include "Serializers/MeshSerializer.h"
+#include "Serializers/MaterialSerializer.h"
+#include "Serializers/ModelSerializer.h"
+#include "Serializers/SkeletonSerializer.h"
+#include "Serializers/SkeletonMaskSerializer.h"
+#include "Serializers/PhysicsMaterialSerializer.h"
+#include "Serializers/NavigationMeshSerializer.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/Script/Script.h"
@@ -49,7 +52,7 @@ namespace Ember {
 		SharedPtr<T> Create(Args&&... args)
 		{
 			// Abstract types (Shader, Texture) use their own factory; concrete types are constructed directly
-		  SharedPtr<T> newAsset;
+			SharedPtr<T> newAsset;
 			if constexpr (std::is_abstract_v<T>)
 			{
 				newAsset = T::Create(std::forward<Args>(args)...);
@@ -97,6 +100,8 @@ namespace Ember {
 				return SkeletonMaskSerializer::Serialize(SharedPtr<SkeletonMask>(DynamicPointerCast<SkeletonMask>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, PhysicsMaterial>)
 				return PhysicsMaterialSerializer::Serialize(SharedPtr<PhysicsMaterial>(DynamicPointerCast<PhysicsMaterial>(asset)), absolutePath);
+			else if constexpr (std::same_as<T, NavigationMeshData>)
+				return NavigationMeshSerializer::Serialize(SharedPtr<NavigationMeshData>(DynamicPointerCast<NavigationMeshData>(asset)), absolutePath);
 			else if constexpr (std::same_as<T, Scene>)
 			{
 				// Scenes are saved through the SceneManager, but we still want to allow them to be registered in the AssetManager
@@ -165,6 +170,8 @@ namespace Ember {
 				newAsset = SharedPtr<Font>::Create(uuid, name, absolutePath);
 			else if constexpr (std::same_as<T, AudioClip>)
 				newAsset = SharedPtr<AudioClip>::Create(uuid, name, absolutePath);
+			else if constexpr (std::same_as<T, NavigationMeshData>)
+				newAsset = NavigationMeshSerializer::Deserialize(uuid, absolutePath);
 			else if constexpr (std::derived_from<T, MaterialBase>)
 			{
 				auto baseMaterial = MaterialSerializer::Deserialize(uuid, absolutePath, *this);
@@ -297,6 +304,19 @@ namespace Ember {
 		void RemoveAsset(UUID uuid)
 		{
 			if (m_Assets.contains(uuid)) {
+
+				// Remove asset file from disk if it is not an engine asset
+				if (!m_Assets[uuid]->IsEngineAsset() && !m_Assets[uuid]->GetFilePath().empty())
+				{
+					std::error_code ec;
+					std::filesystem::remove(m_Assets[uuid]->GetFilePath(), ec);
+					if (ec)
+					{
+						EB_CORE_ERROR("Failed to remove asset file '{}': {}", m_Assets[uuid]->GetFilePath(), ec.message());
+					}
+				}
+
+				// Remove assets from lookup tables and the main asset map
 				m_AssetNames.erase(m_Assets[uuid]->GetName());
 				m_AssetPaths.erase(m_Assets[uuid]->GetFilePath());
 				m_Assets.erase(uuid);

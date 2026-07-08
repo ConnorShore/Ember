@@ -2,7 +2,7 @@
 #include "Scene.h"
 #include "SceneSerializer.h"
 
-#include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/Serializers/AssetRegistrySerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Core/Application.h"
@@ -221,6 +221,8 @@ namespace Ember {
 					WaypointComponent,
 					AIPathComponent,
 					NavigationGridComponent,
+					NavigationMeshComponent,
+					NavigationMeshModifierComponent,
 					AIAgentComponent,
 					LocalAvoidanceComponent,
 					CanvasComponent,
@@ -245,6 +247,22 @@ namespace Ember {
 
 				// Use std::move to trigger the new R-Value overload!
 				destEntity.AttachComponent<AudioSourceComponent>(std::move(newAudioComp));
+			}
+
+			// Initialize navigation mesh runtime state for the new scene
+			if (srcEntity.ContainsComponent<NavigationMeshComponent>())
+			{
+				auto& navMeshComp = destEntity.GetComponent<NavigationMeshComponent>();
+				if (navMeshComp.NavMeshDataHandle != Constants::InvalidUUID)
+				{
+					SharedPtr<NavigationMeshData> navMeshAsset = Application::Instance().GetAssetManager().GetAsset<NavigationMeshData>(navMeshComp.NavMeshDataHandle);
+					if (navMeshAsset)
+						navMeshAsset->InitializeFromRawData();
+					else
+						EB_CORE_WARN("CopyScene: NavigationMeshComponent on entity '{}' has an invalid NavMeshDataHandle!", destEntity.GetName());
+				}
+				else
+					EB_CORE_WARN("CopyScene: NavigationMeshComponent on entity '{}' has no NavMeshDataHandle!", destEntity.GetName());
 			}
 
 			// Reset physics runtime pointers so the new scene doesn't alias the source scene's physics objects
@@ -306,6 +324,23 @@ namespace Ember {
 			{
 				animator.InitializeBlackboardFromController();
 			}
+		}
+
+		// Initialize nav meshes
+		auto navMeshView = m_Registry->ActiveQuery<NavigationMeshComponent>();
+		for (auto entity : navMeshView)
+		{
+			auto& navMeshComp = m_Registry->GetComponent<NavigationMeshComponent>(entity);
+			if (navMeshComp.NavMeshDataHandle != Constants::InvalidUUID)
+			{
+				SharedPtr<NavigationMeshData> navMeshAsset = Application::Instance().GetAssetManager().GetAsset<NavigationMeshData>(navMeshComp.NavMeshDataHandle);
+				if (navMeshAsset)
+					navMeshAsset->InitializeFromRawData();
+				else
+					EB_CORE_WARN("Scene::OnRuntimeStart: NavigationMeshComponent on entity '{}' has an invalid NavMeshDataHandle!", Entity{ entity, this }.GetName());
+			}
+			else
+				EB_CORE_WARN("Scene::OnRuntimeStart: NavigationMeshComponent on entity '{}' has no NavMeshDataHandle!", Entity{ entity, this }.GetName());
 		}
 
 		ScriptEngine::OnRuntimeStart(this);
@@ -704,6 +739,8 @@ namespace Ember {
 			WaypointComponent,
 			AIPathComponent,
 			NavigationGridComponent,
+			NavigationMeshComponent,
+			NavigationMeshModifierComponent,
 			AIAgentComponent,
 			LocalAvoidanceComponent,
 			CanvasComponent,

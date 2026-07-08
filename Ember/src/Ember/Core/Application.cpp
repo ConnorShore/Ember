@@ -4,7 +4,7 @@
 #include "Random.h"
 #include "Ember/Input/Input.h"
 #include "Ember/Render/RenderAction.h"
-#include "Ember/Asset/AssetRegistrySerializer.h"
+#include "Ember/Asset/Serializers/AssetRegistrySerializer.h"
 
 #include "Ember/ECS/System/ScriptSystem.h"
 #include "Ember/ECS/System/PhysicsSystem.h"

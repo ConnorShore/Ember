@@ -22,6 +22,7 @@ namespace Ember {
 		bool HeaderWithActionButton(const std::string& headerLabel, const std::string& buttonLabel, const std::string& caption = "");
 		bool Checkbox(const std::string& label, bool& value);
 		bool InputText(const std::string& label, std::string& value);
+		void DisabledInputText(const std::string& label, const std::string& value);
 		bool DirectoryInput(const std::string& label, std::string& directoryPath, UICallbackFunc browseFunc);
 
 		void LabelWithValue(const std::string& label, const std::string& value);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "UUID.h"
-#include "Model.h"
+#include "Ember/Asset/UUID.h"
+#include "Ember/Asset/Model.h"
 #include "AssetSerializationMode.h"
 #include "Ember/Core/Core.h"
 

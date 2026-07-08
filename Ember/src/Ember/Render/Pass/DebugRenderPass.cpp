@@ -17,11 +17,50 @@ namespace Ember {
 
 		m_DebugLineVAO = VertexArray::Create();
 		m_DebugLineVAO->AddVertexBuffer(m_DebugLineVBO);
+
+		m_FilledTriangleVBO = VertexBuffer::Create(MaxDebugVertices * sizeof(DebugVertex));
+		m_FilledTriangleVBO->SetLayout({
+			{ ShaderDataType::Float3, "v_Position" },
+			{ ShaderDataType::Float4, "v_Color" }
+			});
+
+		m_FilledTriangleVAO = VertexArray::Create();
+		m_FilledTriangleVAO->AddVertexBuffer(m_FilledTriangleVBO);
 	}
 
 	void DebugRenderPass::Execute(RenderContext& context)
 	{
+		const auto& triangleVertices = DebugRenderer::GetFilledTriangleVertices();
 		const auto& vertices = DebugRenderer::GetVertices();
+
+		if (!triangleVertices.empty())
+		{
+			auto physicsDebugShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::PhysicsDebugShadUUID);
+			physicsDebugShader->Bind();
+
+			RenderAction::UseDepthTest(true);
+			RenderAction::UseDepthMask(false);
+			RenderAction::UseBlending(true);
+
+			uint32_t requiredSize = static_cast<uint32_t>(triangleVertices.size() * sizeof(DebugVertex));
+			if (requiredSize > m_FilledTriangleVBO->GetSize())
+			{
+				m_FilledTriangleVBO = VertexBuffer::Create(requiredSize);
+				m_FilledTriangleVBO->SetLayout({
+					{ ShaderDataType::Float3, "v_Position" },
+					{ ShaderDataType::Float4, "v_Color" }
+					});
+				m_FilledTriangleVAO = VertexArray::Create();
+				m_FilledTriangleVAO->AddVertexBuffer(m_FilledTriangleVBO);
+			}
+
+			m_FilledTriangleVBO->SetData(triangleVertices.data(), requiredSize);
+			m_FilledTriangleVAO->Bind();
+			RenderAction::DrawTriangles(m_FilledTriangleVAO, static_cast<uint32_t>(triangleVertices.size()));
+
+			RenderAction::UseBlending(false);
+			RenderAction::UseDepthMask(true);
+		}
 
 		if (!vertices.empty())
 		{

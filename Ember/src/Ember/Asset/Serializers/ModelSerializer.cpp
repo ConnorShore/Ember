@@ -1,6 +1,6 @@
 #include "ebpch.h"
 #include "ModelSerializer.h"
-#include "AssetManager.h"
+#include "Ember/Asset/AssetManager.h"
 
 namespace {
 	template<typename T>

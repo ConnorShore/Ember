@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PhysicsMaterial.h"
+#include "Ember/Asset/PhysicsMaterial.h"
 #include "AssetSerializationMode.h"
 
 #include "Ember/Core/Core.h"

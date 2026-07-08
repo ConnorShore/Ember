@@ -3,9 +3,9 @@
 #include <Ember/Core/Application.h>
 #include <Ember/Core/Core.h>
 #include <Ember/Asset/AssetManager.h>
-#include <Ember/Asset/MeshSerializer.h>
-#include <Ember/Asset/MaterialSerializer.h>
-#include <Ember/Asset/SkeletonSerializer.h>
+#include <Ember/Asset/Serializers/MeshSerializer.h>
+#include <Ember/Asset/Serializers/MaterialSerializer.h>
+#include <Ember/Asset/Serializers/SkeletonSerializer.h>
 #include <Ember/Animation/AnimationSerializer.h>
 #include <Ember/Render/StaticMesh.h>
 

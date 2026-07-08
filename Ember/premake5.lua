@@ -24,7 +24,11 @@
 		"vendor/rapidyaml/ext/c4core/src",
       "vendor/lua/src",
       "vendor/sol2/include",
-      "vendor/reactphysics3d/include"
+      "vendor/reactphysics3d/include",
+      "vendor/recastnavigation/Recast/Include",
+      "vendor/recastnavigation/Detour/Include",
+      "vendor/recastnavigation/DetourTileCache/Include",
+      "vendor/recastnavigation/DebugUtils/Include"
    }
 
    files 
@@ -45,6 +49,7 @@
       "rapidyaml",
       "lua",
       "reactphysics3d",
+      "recastnavigation",
       "opengl32.lib",
    }
 

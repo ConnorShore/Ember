@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetManager.h"
+#include "Ember/Asset/AssetManager.h"
 
 #include <string>
 
