@@ -46,39 +46,39 @@ namespace Ember {
 		auto application = state.create_table("Time");
 		application.set_function("Now", []() {
 			return Timer::Now();
-		});
+			});
 
 		auto timer = state.create_table("Timer");
 		timer.set_function("SetTimeout", [](sol::protected_function callback, float delaySeconds) {
 			ScriptEngine::SetTimeout(std::move(callback), delaySeconds);
-		});
+			});
 
 		auto log = state.create_table("Log");
 		log.set_function("Info", [](const std::string& message) {
 			EB_CORE_INFO("{}", message);
-		});
+			});
 
 		log.set_function("Warn", [](const std::string& message) {
 			EB_CORE_WARN("{}", message);
-		});
+			});
 
 		log.set_function("Error", [](const std::string& message) {
 			EB_CORE_ERROR("{}", message);
-		});
+			});
 
 		auto window = state.create_table("Window");
 		window.set_function("GetWidth", []() {
 			return Application::Instance().GetWindow().GetWidth();
-		});
+			});
 		window.set_function("GetHeight", []() {
 			return Application::Instance().GetWindow().GetHeight();
-		});
+			});
 
 		auto renderer = state.create_table("Renderer");
 		renderer.set_function("GetViewportSize", []() {
 			auto renderSystem = Application::Instance().GetSystem<RenderSystem>();
 			return renderSystem->GetViewportSize();
-		});
+			});
 
 		state.set_function("EntityRef", sol::overload(
 			[](sol::this_state state) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::Entity, (uint64_t)Constants::InvalidUUID); },

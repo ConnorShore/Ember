@@ -49,6 +49,8 @@ namespace Ember {
 				type = ScriptPropertyType::String;
 			else if constexpr (std::same_as<T, Vector3f>)
 				type = ScriptPropertyType::Vector3f;
+			else if constexpr (std::same_as<T, uint64_t> || std::same_as<T, UUID>)
+				type = ScriptPropertyType::AssetRef; // Or whatever enum you use for references
 			else
 			{
 				EB_CORE_ASSERT(false, "Unsupported type passed in for prop override!");

@@ -693,7 +693,17 @@ namespace Ember {
 
 			// Extract the Entity IDs
 			EntityID rbID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.body->getUserData()));
-			EntityID collID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.collider->getUserData()));
+
+			// Extract the Collider Entity ID (Struct Pointer Cast)
+			EntityID collID = Constants::Entities::InvalidEntityID;
+			if (info.collider->getUserData() != nullptr)
+			{
+				// Cast it back to the struct pointer
+				auto* colliderData = static_cast<ColliderUserData*>(info.collider->getUserData());
+
+				// Assuming your struct field is named 'Entity' (adjust if you named it 'entityID' or similar)
+				collID = colliderData->EntityID;
+			}
 
 			ret.RigidBodyEntity = rbID;
 			ret.ColliderEntity = collID;
@@ -900,6 +910,7 @@ namespace Ember {
 
 	void PhysicsSystem::CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene)
 	{
+		// TODO: See if user data gets set for collider (i.e. entityID)
 		ColliderSetupCtx ctx;
 		if (!ResolveColliderSetup(entity, scene, ctx))
 			return;
@@ -912,6 +923,7 @@ namespace Ember {
 			radius = 0.5f;
 		}
 
+		//auto physicsShape = m_PhysicsCommon->createSphereShape(radius);
 		AttachAndUpdateMass(entity, sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
 		sphere.CachedWorldScale = ctx.ChildWorldScale;

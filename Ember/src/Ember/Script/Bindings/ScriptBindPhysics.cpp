@@ -12,8 +12,9 @@ namespace Ember {
 	{
 		bool Hit = false;
 		Vector3f CollisionPoint = { 0.0f, 0.0f, 0.0f };
-		Vector3f SurfaceNormal = { 0.0f, 0.0f, 0.0f };
-		Entity HitEntity;
+		Vector3f SurfaceNormal = { 0.0f, 0.0f, 0.0f }; 
+		Entity RigidBodyEntity;
+		Entity ColliderEntity;
 	};
 
 	void BindPhysics(sol::state& state, Scene* scene)
@@ -38,7 +39,7 @@ namespace Ember {
 
 		// Custom filter bindings
 		auto& filterManager = ProjectManager::GetActive()->GetCollisionFilterManager();
-		for (int i = 1; i < 16; i++) {
+		for (int i = 0; i < 16; i++) {
 			std::string customName = filterManager.GetFilterNameBySlot(i);
 			if (!customName.empty()) {
 				collisionFilterTable[customName] = (1 << i);
@@ -48,8 +49,9 @@ namespace Ember {
 		state.new_usertype<LuaRaycastHit>("RaycastHit",
 			"Hit", &LuaRaycastHit::Hit,
 			"CollisionPoint", &LuaRaycastHit::CollisionPoint,
-			"SurfaceNormal", &LuaRaycastHit::SurfaceNormal,
-			"Entity", &LuaRaycastHit::HitEntity
+			"SurfaceNormal", &LuaRaycastHit::SurfaceNormal, 
+			"RigidBodyEntity", &LuaRaycastHit::RigidBodyEntity,
+			"ColliderEntity", &LuaRaycastHit::ColliderEntity
 		);
 
 		state.new_usertype<Hit>("Hit",
@@ -65,10 +67,7 @@ namespace Ember {
 		auto physicsTable = state.create_table("Physics");
 		physicsTable.set_function("CastRay", [scene](const Vector3f& start, const Vector3f& end, sol::optional<Filter> filterOpt) {
 
-			// If the user passed a filter from Lua, use it. Otherwise, fallback to All.
 			Filter filter = filterOpt.value_or(FilterPreset::All);
-
-			// Pass the resolved filter to your engine's backend
 			RaycastData rawData = Raycast::CastRay(start, end, filter);
 
 			LuaRaycastHit luaHit;
@@ -76,11 +75,18 @@ namespace Ember {
 			luaHit.CollisionPoint = rawData.CollisionPoint;
 			luaHit.SurfaceNormal = rawData.SurfaceNormal;
 
-			if (rawData.Hit && rawData.RigidBodyEntity != Constants::Entities::InvalidEntityID)
-				luaHit.HitEntity = Entity(rawData.RigidBodyEntity, scene);
+			// Wrap BOTH entities so Lua can use :ContainsComponent() on them!
+			if (rawData.Hit)
+			{
+				if (rawData.RigidBodyEntity != Constants::Entities::InvalidEntityID)
+					luaHit.RigidBodyEntity = Entity(rawData.RigidBodyEntity, scene);
+
+				if (rawData.ColliderEntity != Constants::Entities::InvalidEntityID)
+					luaHit.ColliderEntity = Entity(rawData.ColliderEntity, scene);
+			}
 
 			return luaHit;
-		});
+			});
 		physicsTable.set_function("CheckOverlapBox", sol::overload(
 			[](const Vector3f& position, const Vector3f& rotation, const Vector3f& scale, Entity entity) {
 				return Collision::CheckOverlapBox(position, rotation, scale, entity);
