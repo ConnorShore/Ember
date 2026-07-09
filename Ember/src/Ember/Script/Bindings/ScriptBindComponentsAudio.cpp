@@ -24,7 +24,10 @@ namespace Ember {
 				[](AudioSourceComponent& c, bool spatialized) { c.Properties.Spatialized = spatialized; }
 			),
 			"Play", sol::as_function(
-				[](AudioSourceComponent& c) { c.Source.Play(c.Properties); }
+				[](AudioSourceComponent& c) { c.Source.Play(); }
+			),
+			"PlayDelayed", sol::as_function(
+				[](AudioSourceComponent& c, float delayMs) { c.Source.PlayDelayed(delayMs); }
 			),
 			"Stop", sol::as_function(
 				[](AudioSourceComponent& c) { c.Source.Stop(); }

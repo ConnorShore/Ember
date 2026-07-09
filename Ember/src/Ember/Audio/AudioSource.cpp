@@ -46,12 +46,19 @@ namespace Ember {
 			m_IsLoaded = false;
 			IsPlaying = false;
 			IsQueued = false;
+			DelayMS = 0.0f;
 		}
 	}
 
-	void AudioSource::Play(AudioSoundProperties& props)
+	void AudioSource::Play()
 	{
 		IsQueued = true;
+	}
+
+	void AudioSource::PlayDelayed(float delayMs)
+	{
+		IsQueued = true;
+		DelayMS = delayMs;
 	}
 
 	void AudioSource::Stop()

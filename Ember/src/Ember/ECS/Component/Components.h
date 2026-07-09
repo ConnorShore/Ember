@@ -265,6 +265,7 @@ namespace Ember {
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
+		Matrix4f CachedWorldTransform = Matrix4f(1.0f);
 
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const Vector3f& size)
@@ -292,6 +293,7 @@ namespace Ember {
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
+		Matrix4f CachedWorldTransform = Matrix4f(1.0f);
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(float radius)
@@ -320,6 +322,7 @@ namespace Ember {
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
+		Matrix4f CachedWorldTransform = Matrix4f(1.0f);
 
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(float radius, float height)
@@ -348,6 +351,7 @@ namespace Ember {
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
+		Matrix4f CachedWorldTransform = Matrix4f(1.0f);
 
 		std::vector<float> PhysicsVertices;
 		reactphysics3d::VertexArray* RP3DVertexArray = nullptr;
@@ -379,6 +383,7 @@ namespace Ember {
 		bool NeedsRebuild = false;
 		ColliderUserData UserData;
 		Vector3f CachedWorldScale = Vector3f(0.0f);
+		Matrix4f CachedWorldTransform = Matrix4f(1.0f);
 
 		std::vector<float> PhysicsVertices;
 		std::vector<uint32_t> PhysicsIndices;
@@ -842,6 +847,7 @@ namespace Ember {
 		AudioSource Source;
 		AudioSoundProperties Properties;
 		UUID AudioClipHandle = Constants::InvalidUUID;
+		bool PlayOnStart = false;
 
 		AudioSourceComponent() = default;
 

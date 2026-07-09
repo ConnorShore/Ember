@@ -71,6 +71,7 @@ namespace Ember {
 		Vector3f RelPos;
 		Vector3f RelRot;
 		Vector3f ChildWorldScale;
+		Matrix4f ChildWorldTransform;
 	};
 
 	static bool ResolveColliderSetup(EntityID entity, Scene* scene, ColliderSetupCtx& ctx)
@@ -93,6 +94,7 @@ namespace Ember {
 
 		Vector3f childWorldPos, childWorldRot;
 		Math::DecomposeTransform(childTransform.WorldTransform, childWorldPos, childWorldRot, ctx.ChildWorldScale);
+		ctx.ChildWorldTransform = childTransform.WorldTransform;
 		// Override with column-length extraction for a numerically stable scale that matches ScaleChanged
 		ctx.ChildWorldScale = Vector3f(
 			glm::length(Vector3f(childTransform.WorldTransform[0])),
@@ -433,7 +435,18 @@ namespace Ember {
 
 	void PhysicsSystem::OnEditorUpdate(TimeStep delta, Scene* scene)
 	{
-		// Sync ECS -> Physics (So when you drag objects with your mouse, the collider moves!)
+		SyncEditorRigidBodies(scene);
+		RebuildEditorColliders(scene);
+
+		if (m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID)
+			DrawSelectedChildColliderPreview(scene, m_PostProcessDebugEntity);
+
+		ShowDebugRendererIfApplicable();
+		UpdateDebugRenderData();
+	}
+
+	void PhysicsSystem::SyncEditorRigidBodies(Scene* scene)
+	{
 		auto& registry = scene->GetRegistry();
 		auto view = registry.ActiveQuery<RigidBodyComponent, TransformComponent>();
 
@@ -441,67 +454,68 @@ namespace Ember {
 		{
 			auto [rb, transform] = registry.GetComponents<RigidBodyComponent, TransformComponent>(entity);
 
-			if (rb.Body != nullptr)
-				{
-					// Enable debug for this body if the global toggle is on, or if it belongs
-					// to the selected post-process volume entity (so its collider is always visible)
-					bool isPostProcessDebugEntity = (m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID && entity == m_PostProcessDebugEntity);
-					rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled || isPostProcessDebugEntity);
+			if (rb.Body == nullptr)
+				continue;
 
-					// Sync body type and gravity so inspector changes are reflected before play
-					rb.Body->setType(ToRp3dBodyType(rb.Type));
-					rb.Body->enableGravity(rb.GravityEnabled);
+			bool isPostProcessDebugEntity = (m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID && entity == m_PostProcessDebugEntity);
+			rb.Body->setIsDebugEnabled(m_DebugRenderSettings.Enabled || isPostProcessDebugEntity);
 
-					// Take the TransformComponent and push it INTO ReactPhysics3D
-					Vector3f worldPos, worldRot, worldScale;
-					Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
+			rb.Body->setType(ToRp3dBodyType(rb.Type));
+			rb.Body->enableGravity(rb.GravityEnabled);
 
-					rp3d::Vector3 newPos(worldPos.x, worldPos.y, worldPos.z);
-					Quaternion q = Math::ToQuaternion(worldRot);
-					rp3d::Quaternion newRot(q.x, q.y, q.z, q.w);
+			Vector3f worldPos, worldRot, worldScale;
+			Math::DecomposeTransform(transform.WorldTransform, worldPos, worldRot, worldScale);
 
-					rb.Body->setTransform(rp3d::Transform(newPos, newRot));
-				}
+			rp3d::Vector3 newPos(worldPos.x, worldPos.y, worldPos.z);
+			Quaternion q = Math::ToQuaternion(worldRot);
+			rp3d::Quaternion newRot(q.x, q.y, q.z, q.w);
+
+			rb.Body->setTransform(rp3d::Transform(newPos, newRot));
+		}
+	}
+
+	bool PhysicsSystem::IsTransformChanged(Scene* scene, EntityID entity, const Matrix4f& cachedWorldTransform) const
+	{
+		auto& registry = scene->GetRegistry();
+		if (!registry.ContainsComponent<TransformComponent>(entity))
+			return false;
+
+		const auto& t = registry.GetComponent<TransformComponent>(entity);
+		const float epsilon = 1e-5f;
+		for (int column = 0; column < 4; column++)
+		{
+			for (int row = 0; row < 4; row++)
+			{
+				if (glm::abs(t.WorldTransform[column][row] - cachedWorldTransform[column][row]) > epsilon)
+					return true;
+			}
 		}
 
-		// Helper: returns true if the entity's current world scale differs from a cached scale
-		auto ScaleChanged = [&](EntityID entity, const Vector3f& cachedScale) -> bool {
-			if (!registry.ContainsComponent<TransformComponent>(entity))
-				return false;
-			const auto& t = registry.GetComponent<TransformComponent>(entity);
-			// Extract scale as column lengths to avoid glm::decompose float imprecision
-			Vector3f worldScale(
-				glm::length(Vector3f(t.WorldTransform[0])),
-				glm::length(Vector3f(t.WorldTransform[1])),
-				glm::length(Vector3f(t.WorldTransform[2]))
-			);
-			const float epsilon = 1e-5f;
-			return glm::abs(worldScale.x - cachedScale.x) > epsilon ||
-				   glm::abs(worldScale.y - cachedScale.y) > epsilon ||
-				   glm::abs(worldScale.z - cachedScale.z) > epsilon;
-		};
+		return false;
+	}
 
-		// Helper: returns true if the entity's current world scale is safe to use for collider rebuild.
-		// While the user is typing a value (e.g. "0.5") the scale may transiently be 0 on an axis, which
-		// makes rotation extraction from the transform produce NaNs and trips rp3d's transform.isValid()
-		// assert in addCollider. Skip the rebuild this frame; a subsequent frame with a valid scale will
-		// re-trigger it via ScaleChanged.
-		auto IsScaleUsable = [&](EntityID entity) -> bool {
-			if (!registry.ContainsComponent<TransformComponent>(entity))
-				return false;
-			const auto& t = registry.GetComponent<TransformComponent>(entity);
-			const float minScale = 1e-4f;
-			return glm::length(Vector3f(t.WorldTransform[0])) > minScale &&
-				   glm::length(Vector3f(t.WorldTransform[1])) > minScale &&
-				   glm::length(Vector3f(t.WorldTransform[2])) > minScale;
-		};
+	bool PhysicsSystem::IsScaleUsable(Scene* scene, EntityID entity) const
+	{
+		auto& registry = scene->GetRegistry();
+		if (!registry.ContainsComponent<TransformComponent>(entity))
+			return false;
 
-		// Rebuild colliders whose properties were changed in the inspector (or whose scale changed)
+		const auto& t = registry.GetComponent<TransformComponent>(entity);
+		const float minScale = 1e-4f;
+		return glm::length(Vector3f(t.WorldTransform[0])) > minScale &&
+			glm::length(Vector3f(t.WorldTransform[1])) > minScale &&
+			glm::length(Vector3f(t.WorldTransform[2])) > minScale;
+	}
+
+	void PhysicsSystem::RebuildEditorColliders(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
 		auto boxView = registry.ActiveQuery<BoxColliderComponent>();
 		for (EntityID entity : boxView)
 		{
 			auto& box = registry.GetComponent<BoxColliderComponent>(entity);
-			if ((box.NeedsRebuild || ScaleChanged(entity, box.CachedWorldScale)) && IsScaleUsable(entity))
+			if ((box.NeedsRebuild || IsTransformChanged(scene, entity, box.CachedWorldTransform)) && IsScaleUsable(scene, entity))
 			{
 				DetachCollider(box, [&]() { m_PhysicsCommon->destroyBoxShape(box.Shape); });
 				CreateBoxCollider(entity, box, scene);
@@ -513,7 +527,7 @@ namespace Ember {
 		for (EntityID entity : sphereView)
 		{
 			auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
-			if ((sphere.NeedsRebuild || ScaleChanged(entity, sphere.CachedWorldScale)) && IsScaleUsable(entity))
+			if ((sphere.NeedsRebuild || IsTransformChanged(scene, entity, sphere.CachedWorldTransform)) && IsScaleUsable(scene, entity))
 			{
 				DetachCollider(sphere, [&]() { m_PhysicsCommon->destroySphereShape(sphere.Shape); });
 				CreateSphereCollider(entity, sphere, scene);
@@ -525,7 +539,7 @@ namespace Ember {
 		for (EntityID entity : capsuleView)
 		{
 			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
-			if ((capsule.NeedsRebuild || ScaleChanged(entity, capsule.CachedWorldScale)) && IsScaleUsable(entity))
+			if ((capsule.NeedsRebuild || IsTransformChanged(scene, entity, capsule.CachedWorldTransform)) && IsScaleUsable(scene, entity))
 			{
 				DetachCollider(capsule, [&]() { m_PhysicsCommon->destroyCapsuleShape(capsule.Shape); });
 				CreateCapsuleCollider(entity, capsule, scene);
@@ -537,7 +551,7 @@ namespace Ember {
 		for (EntityID entity : convexView)
 		{
 			auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
-			if ((mesh.NeedsRebuild || ScaleChanged(entity, mesh.CachedWorldScale)) && IsScaleUsable(entity))
+			if ((mesh.NeedsRebuild || IsTransformChanged(scene, entity, mesh.CachedWorldTransform)) && IsScaleUsable(scene, entity))
 			{
 				DetachCollider(mesh, [&]() {
 					m_PhysicsCommon->destroyConvexMeshShape(mesh.Shape);
@@ -554,7 +568,7 @@ namespace Ember {
 		for (EntityID entity : concaveView)
 		{
 			auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
-			if ((mesh.NeedsRebuild || ScaleChanged(entity, mesh.CachedWorldScale)) && IsScaleUsable(entity))
+			if ((mesh.NeedsRebuild || IsTransformChanged(scene, entity, mesh.CachedWorldTransform)) && IsScaleUsable(scene, entity))
 			{
 				DetachCollider(mesh, [&]() {
 					m_PhysicsCommon->destroyConcaveMeshShape(mesh.Shape);
@@ -569,9 +583,243 @@ namespace Ember {
 				mesh.NeedsRebuild = false;
 			}
 		}
+	}
 
-		ShowDebugRendererIfApplicable();
-		UpdateDebugRenderData();
+	bool PhysicsSystem::HasSupportedColliderComponent(Scene* scene, EntityID entity) const
+	{
+		auto& registry = scene->GetRegistry();
+		return registry.ContainsComponent<BoxColliderComponent>(entity) ||
+			registry.ContainsComponent<SphereColliderComponent>(entity) ||
+			registry.ContainsComponent<CapsuleColliderComponent>(entity) ||
+			registry.ContainsComponent<ConvexMeshColliderComponent>(entity) ||
+			registry.ContainsComponent<ConcaveMeshColliderComponent>(entity);
+	}
+
+	bool PhysicsSystem::ComputeColliderWorldPose(Scene* scene, EntityID selectedEntity, const ColliderOffset& offset, rp3d::Collider* collider,
+		Vector3f& outWorldPos, Quaternion& outWorldRot, Vector3f& outChildWorldScale) const
+	{
+		ColliderSetupCtx ctx;
+		if (!ResolveColliderSetup(selectedEntity, scene, ctx))
+			return false;
+
+		EntityID rootBodyEntity = FindRigidBodyEntity(selectedEntity, scene);
+		if (rootBodyEntity == Constants::Entities::InvalidEntityID)
+			return false;
+
+		if (collider != nullptr)
+		{
+			const rp3d::Transform colliderWorldTransform = collider->getLocalToWorldTransform();
+			const rp3d::Vector3 worldPos = colliderWorldTransform.getPosition();
+			const rp3d::Quaternion worldOrientation = colliderWorldTransform.getOrientation();
+
+			outWorldPos = { worldPos.x, worldPos.y, worldPos.z };
+			outWorldRot = Math::Normalize(Quaternion(worldOrientation.w, worldOrientation.x, worldOrientation.y, worldOrientation.z));
+		}
+		else
+		{
+			rp3d::Transform localColliderTransform = MakeColliderTransform(ctx.RelPos, ctx.RelRot, offset);
+			const rp3d::Transform& rootBodyTransform = ctx.Rb->Body->getTransform();
+
+			const rp3d::Vector3 rootPos = rootBodyTransform.getPosition();
+			const rp3d::Quaternion rootOrientation = rootBodyTransform.getOrientation();
+			const rp3d::Vector3 localPos = localColliderTransform.getPosition();
+			const rp3d::Quaternion localOrientation = localColliderTransform.getOrientation();
+
+			const Quaternion rootQuat(rootOrientation.w, rootOrientation.x, rootOrientation.y, rootOrientation.z);
+			const Quaternion localQuat(localOrientation.w, localOrientation.x, localOrientation.y, localOrientation.z);
+			outWorldRot = Math::Normalize(rootQuat * localQuat);
+
+			const Vector3f localOffset = { localPos.x, localPos.y, localPos.z };
+			outWorldPos = { rootPos.x, rootPos.y, rootPos.z } + Math::Rotate(rootQuat, localOffset);
+		}
+
+		outChildWorldScale = ctx.ChildWorldScale;
+		return true;
+	}
+
+	void PhysicsSystem::DrawSelectedChildColliderPreview(Scene* scene, EntityID selectedEntity)
+	{
+		auto& registry = scene->GetRegistry();
+		if (registry.ContainsComponent<RigidBodyComponent>(selectedEntity) || !HasSupportedColliderComponent(scene, selectedEntity))
+			return;
+
+		const Vector4f previewColor = { 0.15f, 0.95f, 0.35f, 1.0f };
+
+		auto DrawWireBox = [&](const Vector3f& center, const Quaternion& rotation, const Vector3f& halfExtents, const Vector4f& color)
+			{
+				Vector3f corners[8] = {
+					{-halfExtents.x, -halfExtents.y, -halfExtents.z},
+					{ halfExtents.x, -halfExtents.y, -halfExtents.z},
+					{ halfExtents.x,  halfExtents.y, -halfExtents.z},
+					{-halfExtents.x,  halfExtents.y, -halfExtents.z},
+					{-halfExtents.x, -halfExtents.y,  halfExtents.z},
+					{ halfExtents.x, -halfExtents.y,  halfExtents.z},
+					{ halfExtents.x,  halfExtents.y,  halfExtents.z},
+					{-halfExtents.x,  halfExtents.y,  halfExtents.z}
+				};
+
+				for (uint32_t i = 0; i < 8; i++)
+					corners[i] = center + Math::Rotate(rotation, corners[i]);
+
+				const uint32_t edges[12][2] = {
+					{0, 1}, {1, 2}, {2, 3}, {3, 0},
+					{4, 5}, {5, 6}, {6, 7}, {7, 4},
+					{0, 4}, {1, 5}, {2, 6}, {3, 7}
+				};
+
+				for (const auto& edge : edges)
+					DebugRenderer::DrawLine(corners[edge[0]], corners[edge[1]], color);
+			};
+
+		auto DrawWireCircle = [&](const Vector3f& center, const Vector3f& axisA, const Vector3f& axisB, float radius, uint32_t segments, const Vector4f& color)
+			{
+				const float twoPi = 6.28318530718f;
+				Vector3f prev = center + axisA * radius;
+				for (uint32_t i = 1; i <= segments; i++)
+				{
+					float t = (static_cast<float>(i) / static_cast<float>(segments)) * twoPi;
+					Vector3f next = center + (axisA * std::cos(t) + axisB * std::sin(t)) * radius;
+					DebugRenderer::DrawLine(prev, next, color);
+					prev = next;
+				}
+			};
+
+		auto DrawWireSphere = [&](const Vector3f& center, const Quaternion& rotation, float radius, const Vector4f& color)
+			{
+				const uint32_t circleSegments = 32;
+				const Vector3f right = Math::Rotate(rotation, Vector3f(1.0f, 0.0f, 0.0f));
+				const Vector3f up = Math::Rotate(rotation, Vector3f(0.0f, 1.0f, 0.0f));
+				const Vector3f forward = Math::Rotate(rotation, Vector3f(0.0f, 0.0f, 1.0f));
+
+				DrawWireCircle(center, right, up, radius, circleSegments, color);
+				DrawWireCircle(center, right, forward, radius, circleSegments, color);
+				DrawWireCircle(center, up, forward, radius, circleSegments, color);
+			};
+
+		auto DrawWireCapsule = [&](const Vector3f& center, const Quaternion& rotation, float radius, float cylinderHeight, const Vector4f& color)
+			{
+				const uint32_t circleSegments = 32;
+				const Vector3f right = Math::Rotate(rotation, Vector3f(1.0f, 0.0f, 0.0f));
+				const Vector3f up = Math::Rotate(rotation, Vector3f(0.0f, 1.0f, 0.0f));
+				const Vector3f forward = Math::Rotate(rotation, Vector3f(0.0f, 0.0f, 1.0f));
+
+				const float halfCylinder = cylinderHeight * 0.5f;
+				const Vector3f topCenter = center + up * halfCylinder;
+				const Vector3f bottomCenter = center - up * halfCylinder;
+
+				DrawWireCircle(topCenter, right, forward, radius, circleSegments, color);
+				DrawWireCircle(bottomCenter, right, forward, radius, circleSegments, color);
+
+				DebugRenderer::DrawLine(topCenter + right * radius, bottomCenter + right * radius, color);
+				DebugRenderer::DrawLine(topCenter - right * radius, bottomCenter - right * radius, color);
+				DebugRenderer::DrawLine(topCenter + forward * radius, bottomCenter + forward * radius, color);
+				DebugRenderer::DrawLine(topCenter - forward * radius, bottomCenter - forward * radius, color);
+			};
+
+		if (registry.ContainsComponent<BoxColliderComponent>(selectedEntity))
+		{
+			auto& box = registry.GetComponent<BoxColliderComponent>(selectedEntity);
+			Vector3f worldPos, childScale;
+			Quaternion worldRot;
+			if (ComputeColliderWorldPose(scene, selectedEntity, box.Offset, box.Collider, worldPos, worldRot, childScale))
+			{
+				Vector3f halfExtents(
+					(box.Size.x * childScale.x) * 0.5f,
+					(box.Size.y * childScale.y) * 0.5f,
+					(box.Size.z * childScale.z) * 0.5f
+				);
+				halfExtents = Math::Max(halfExtents, Vector3f(0.001f));
+				DrawWireBox(worldPos, worldRot, halfExtents, previewColor);
+			}
+		}
+
+		if (registry.ContainsComponent<SphereColliderComponent>(selectedEntity))
+		{
+			auto& sphere = registry.GetComponent<SphereColliderComponent>(selectedEntity);
+			Vector3f worldPos, childScale;
+			Quaternion worldRot;
+			if (ComputeColliderWorldPose(scene, selectedEntity, sphere.Offset, sphere.Collider, worldPos, worldRot, childScale))
+			{
+				float radius = sphere.Radius * std::max({ childScale.x, childScale.y, childScale.z });
+				radius = std::max(radius, 0.001f);
+				DrawWireSphere(worldPos, worldRot, radius, previewColor);
+			}
+		}
+
+		if (registry.ContainsComponent<CapsuleColliderComponent>(selectedEntity))
+		{
+			auto& capsule = registry.GetComponent<CapsuleColliderComponent>(selectedEntity);
+			Vector3f worldPos, childScale;
+			Quaternion worldRot;
+			if (ComputeColliderWorldPose(scene, selectedEntity, capsule.Offset, capsule.Collider, worldPos, worldRot, childScale))
+			{
+				float maxScale = std::max({ childScale.x, childScale.y, childScale.z });
+				float radius = std::max(capsule.Radius * maxScale, 0.001f);
+				float height = std::max(capsule.Height * maxScale, 0.001f);
+				float cylinderHeight = std::max(0.0f, height - 2.0f * radius);
+				DrawWireCapsule(worldPos, worldRot, radius, cylinderHeight, previewColor);
+				const Vector3f up = Math::Rotate(worldRot, Vector3f(0.0f, 1.0f, 0.0f));
+				const float halfCylinder = cylinderHeight * 0.5f;
+				DrawWireSphere(worldPos + up * halfCylinder, worldRot, radius, previewColor);
+				DrawWireSphere(worldPos - up * halfCylinder, worldRot, radius, previewColor);
+			}
+		}
+
+		auto DrawMeshBoundsPreview = [&](UUID meshHandle, const ColliderOffset& offset, rp3d::Collider* collider)
+			{
+				if (meshHandle == Constants::InvalidUUID)
+					return;
+
+				auto meshAsset = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
+				if (!meshAsset)
+					return;
+
+				Vector3f worldPos, childScale;
+				Quaternion worldRot;
+				if (!ComputeColliderWorldPose(scene, selectedEntity, offset, collider, worldPos, worldRot, childScale))
+					return;
+
+				const Vector3f localMin = meshAsset->GetMinBounds();
+				const Vector3f localMax = meshAsset->GetMaxBounds();
+
+				Vector3f scaledMin(localMin.x * childScale.x, localMin.y * childScale.y, localMin.z * childScale.z);
+				Vector3f scaledMax(localMax.x * childScale.x, localMax.y * childScale.y, localMax.z * childScale.z);
+
+				Vector3f corners[8] = {
+					{scaledMin.x, scaledMin.y, scaledMin.z},
+					{scaledMax.x, scaledMin.y, scaledMin.z},
+					{scaledMax.x, scaledMax.y, scaledMin.z},
+					{scaledMin.x, scaledMax.y, scaledMin.z},
+					{scaledMin.x, scaledMin.y, scaledMax.z},
+					{scaledMax.x, scaledMin.y, scaledMax.z},
+					{scaledMax.x, scaledMax.y, scaledMax.z},
+					{scaledMin.x, scaledMax.y, scaledMax.z}
+				};
+
+				for (uint32_t i = 0; i < 8; i++)
+					corners[i] = worldPos + Math::Rotate(worldRot, corners[i]);
+
+				const uint32_t edges[12][2] = {
+					{0, 1}, {1, 2}, {2, 3}, {3, 0},
+					{4, 5}, {5, 6}, {6, 7}, {7, 4},
+					{0, 4}, {1, 5}, {2, 6}, {3, 7}
+				};
+
+				for (const auto& edge : edges)
+					DebugRenderer::DrawLine(corners[edge[0]], corners[edge[1]], previewColor);
+			};
+
+		if (registry.ContainsComponent<ConvexMeshColliderComponent>(selectedEntity))
+		{
+			auto& convex = registry.GetComponent<ConvexMeshColliderComponent>(selectedEntity);
+			DrawMeshBoundsPreview(convex.MeshHandle, convex.Offset, convex.Collider);
+		}
+
+		if (registry.ContainsComponent<ConcaveMeshColliderComponent>(selectedEntity))
+		{
+			auto& concave = registry.GetComponent<ConcaveMeshColliderComponent>(selectedEntity);
+			DrawMeshBoundsPreview(concave.MeshHandle, concave.Offset, concave.Collider);
+		}
 	}
 
 	void PhysicsSystem::RemoveRigidBody(RigidBodyComponent& rigidBody)
@@ -906,6 +1154,7 @@ namespace Ember {
 		AttachAndUpdateMass(entity, box, m_PhysicsCommon->createBoxShape(extents), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, box.Offset));
 		box.CachedWorldScale = ctx.ChildWorldScale;
+		box.CachedWorldTransform = ctx.ChildWorldTransform;
 	}
 
 	void PhysicsSystem::CreateSphereCollider(EntityID entity, SphereColliderComponent& sphere, Scene* scene)
@@ -927,6 +1176,7 @@ namespace Ember {
 		AttachAndUpdateMass(entity, sphere, m_PhysicsCommon->createSphereShape(radius), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, sphere.Offset));
 		sphere.CachedWorldScale = ctx.ChildWorldScale;
+		sphere.CachedWorldTransform = ctx.ChildWorldTransform;
 	}
 
 	void PhysicsSystem::CreateCapsuleCollider(EntityID entity, CapsuleColliderComponent& capsule, Scene* scene)
@@ -951,11 +1201,12 @@ namespace Ember {
 
 		// rp3d's height is the cylindrical section only (caps are added separately),
 		// but CapsuleColliderComponent.Height is total height (matching the mesh generator).
-		float cylinderHeight = std::max(0.0f, height - 2.0f * radius);
+		float cylinderHeight = std::max(0.01f, height - 2.0f * radius);
 
 		AttachAndUpdateMass(entity, capsule, m_PhysicsCommon->createCapsuleShape(radius, cylinderHeight), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, capsule.Offset));
 		capsule.CachedWorldScale = ctx.ChildWorldScale;
+		capsule.CachedWorldTransform = ctx.ChildWorldTransform;
 	}
 
 	void PhysicsSystem::CreateConvexMeshCollider(EntityID entity, ConvexMeshColliderComponent& mesh, Scene* scene)
@@ -986,6 +1237,7 @@ namespace Ember {
 		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConvexMeshShape(convexMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
 		mesh.CachedWorldScale = ctx.ChildWorldScale;
+		mesh.CachedWorldTransform = ctx.ChildWorldTransform;
 	}
 
 	void PhysicsSystem::CreateConcaveMeshCollider(EntityID entity, ConcaveMeshColliderComponent& mesh, Scene* scene)
@@ -1021,6 +1273,7 @@ namespace Ember {
 		AttachAndUpdateMass(entity, mesh, m_PhysicsCommon->createConcaveMeshShape(mesh.TriangleMesh, scaling), *ctx.Rb,
 			MakeColliderTransform(ctx.RelPos, ctx.RelRot, mesh.Offset));
 		mesh.CachedWorldScale = ctx.ChildWorldScale;
+		mesh.CachedWorldTransform = ctx.ChildWorldTransform;
 	}
 
 	void PhysicsSystem::UpdateRigidbodies(Scene* scene)

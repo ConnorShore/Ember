@@ -581,6 +581,7 @@ namespace Ember {
 			ryml::NodeRef audioNode = entityNode["AudioSourceComponent"];
 			audioNode |= ryml::MAP;
 			audioNode["AudioClipHandle"] << (uint64_t)audioSource.AudioClipHandle;
+			audioNode["PlayOnStart"] << audioSource.PlayOnStart;
 			audioNode["Volume"] << audioSource.Properties.Volume;
 			audioNode["Looping"] << audioSource.Properties.Looping;
 			audioNode["Spatialized"] << audioSource.Properties.Spatialized;
@@ -1359,6 +1360,7 @@ namespace Ember {
 			uint64_t audioClipId;
 			audioNode["AudioClipHandle"] >> audioClipId;
 			audioSource.AudioClipHandle = (UUID)audioClipId;
+			audioNode["PlayOnStart"] >> audioSource.PlayOnStart;
 			audioNode["Volume"] >> audioSource.Properties.Volume;
 			audioNode["Looping"] >> audioSource.Properties.Looping;
 			audioNode["Spatialized"] >> audioSource.Properties.Spatialized;

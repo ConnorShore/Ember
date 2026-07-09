@@ -23,6 +23,7 @@ namespace Ember {
 			if (UI::PropertyGrid::Begin("AudioSourceSourceProps"))
 			{
 				RenderAudioClipSelector(component);
+				UI::PropertyGrid::Checkbox("Play On Start", component.PlayOnStart);
 				UI::PropertyGrid::End();
 			}
 

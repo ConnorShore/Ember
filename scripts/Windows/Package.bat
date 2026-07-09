@@ -74,6 +74,7 @@ echo.
 echo Packaging FAILED.
 echo.
 popd
+PAUSE
 exit /b 1
 
 :end

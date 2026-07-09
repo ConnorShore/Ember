@@ -243,6 +243,7 @@ namespace Ember {
 				// Attach a fresh, blank component to the duplicated entity
 				AudioSourceComponent newAudioComp;
 				newAudioComp.AudioClipHandle = srcAudio.AudioClipHandle;
+				newAudioComp.PlayOnStart = srcAudio.PlayOnStart;
 				newAudioComp.Properties = srcAudio.Properties;
 
 				// Use std::move to trigger the new R-Value overload!

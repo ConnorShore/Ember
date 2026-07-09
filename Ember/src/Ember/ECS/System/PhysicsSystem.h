@@ -88,6 +88,14 @@ namespace Ember {
 		void UpdateRigidbodies(Scene* scene);
 		void UpdateAvoidanceCollisions(Scene* scene);
 		void UpdateScriptTriggers(Scene* scene);
+		void SyncEditorRigidBodies(Scene* scene);
+		void RebuildEditorColliders(Scene* scene);
+		void DrawSelectedChildColliderPreview(Scene* scene, EntityID selectedEntity);
+		bool IsTransformChanged(Scene* scene, EntityID entity, const Matrix4f& cachedWorldTransform) const;
+		bool IsScaleUsable(Scene* scene, EntityID entity) const;
+		bool HasSupportedColliderComponent(Scene* scene, EntityID entity) const;
+		bool ComputeColliderWorldPose(Scene* scene, EntityID selectedEntity, const ColliderOffset& offset, rp3d::Collider* collider,
+			Vector3f& outWorldPos, Quaternion& outWorldRot, Vector3f& outChildWorldScale) const;
 		void ShowDebugRendererIfApplicable();
 		void UpdateDebugRenderData();
 

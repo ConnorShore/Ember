@@ -45,12 +45,14 @@ namespace Ember {
 		void Unload();
 
 		// Playback Controls
-		void Play(AudioSoundProperties& props);
+		void Play();
+		void PlayDelayed(float delayMs);
 		void Stop();
 		void Restart();
 
 		std::atomic<bool> IsPlaying{ false };
 		std::atomic<bool> IsQueued{ false };
+		std::atomic<float> DelayMS{ 0.0f };
 
 		// Remove copy semantics
 		AudioSource& operator=(const AudioSource&) = delete;

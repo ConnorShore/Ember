@@ -33,11 +33,20 @@ namespace Ember {
 
 		auto view = scene->GetRegistry().ActiveQuery<ScriptComponent>();
 
+		// Snapshot entity IDs because script OnCreate/OnUpdate callbacks can mutate the
+		// scene and invalidate query iterators/component references mid-iteration.
+		std::vector<EntityID> scriptEntities;
+		for (auto entityID : view)
+			scriptEntities.push_back(entityID);
+
 		sol::state& luaState = ScriptEngine::GetState();
 
-		for (auto entityID : view)
+		for (auto entityID : scriptEntities)
 		{
 			Entity entity{ entityID, scene };
+			if (!entity.ContainsComponent<ScriptComponent>())
+				continue;
+
 			auto& script = entity.GetComponent<ScriptComponent>();
 
 			if (script.ScriptHandle == Constants::InvalidUUID)
@@ -49,12 +58,19 @@ namespace Ember {
 				InitializeScriptForEntity(entity);
 			}
 
-			if (script.Initialized && script.Instance.valid())
+			// Re-fetch after InitializeScriptForEntity because callbacks can mutate the scene
+			// and invalidate previously held component references.
+			if (!entity.ContainsComponent<ScriptComponent>())
+				continue;
+
+			auto& refreshedScript = entity.GetComponent<ScriptComponent>();
+
+			if (refreshedScript.Initialized && refreshedScript.Instance.valid())
 			{
-				sol::protected_function onUpdate = script.Instance["OnUpdate"];
+				sol::protected_function onUpdate = refreshedScript.Instance["OnUpdate"];
 				if (onUpdate.valid())
 				{
-					sol::protected_function_result updateResult = onUpdate(script.Instance, Entity{entity}, delta.Seconds());
+					sol::protected_function_result updateResult = onUpdate(refreshedScript.Instance, Entity{ entity }, delta.Seconds());
 
 					if (!updateResult.valid())
 					{

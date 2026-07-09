@@ -11,7 +11,7 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 
 ## Table of Contents
 
-- [Script Structure & Lifecycle](#script-structure--lifecycle)
+- [Script Structure &amp; Lifecycle](#script-structure--lifecycle)
   - [Enum Properties](#enum-properties)
 - [Core Types](#core-types)
   - [`UUID`](#uuid)
@@ -20,10 +20,10 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
     - [`Log`](#log)
   - [`Window` / `Renderer`](#window--renderer)
 - [Math](#math)
-  - [Vectors & Matrices](#vectors--matrices)
+  - [Vectors &amp; Matrices](#vectors--matrices)
   - [`Quaternion`](#quaternion)
   - [`Math` table](#math-table)
-- [Entity & Scene](#entity--scene)
+- [Entity &amp; Scene](#entity--scene)
   - [`Entity`](#entity)
   - [`Scene`](#scene)
   - [`SceneManager`](#scenemanager)
@@ -54,13 +54,13 @@ supported type (`int`, `float`, `string`, `bool`, or an enum table — see
 [Enum Properties](#enum-properties)) are surfaced as **editable properties** in the Inspector.
 Any of the following methods, if present, are invoked by the engine:
 
-| Method | When called | Signature |
-| --- | --- | --- |
-| `OnCreate(self, entity)` | Once, when the script is first instantiated. | `entity: Entity` |
-| `OnUpdate(self, entity, delta)` | Every frame the entity is active. | `entity: Entity, delta: number` (seconds) |
-| `OnOverlapTriggerEnter(self, entity, other)` | A trigger collider on `entity` started overlapping `other`. | `entity, other: Entity` |
-| `OnOverlapTriggerStay(self, entity, other)` | Continuous overlap with `other`. | `entity, other: Entity` |
-| `OnOverlapTriggerExit(self, entity, other)` | The overlap with `other` ended. | `entity, other: Entity` |
+| Method                                         | When called                                                    | Signature                                   |
+| ---------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------- |
+| `OnCreate(self, entity)`                     | Once, when the script is first instantiated.                   | `entity: Entity`                          |
+| `OnUpdate(self, entity, delta)`              | Every frame the entity is active.                              | `entity: Entity, delta: number` (seconds) |
+| `OnOverlapTriggerEnter(self, entity, other)` | A trigger collider on`entity` started overlapping `other`. | `entity, other: Entity`                   |
+| `OnOverlapTriggerStay(self, entity, other)`  | Continuous overlap with`other`.                              | `entity, other: Entity`                   |
+| `OnOverlapTriggerExit(self, entity, other)`  | The overlap with`other` ended.                               | `entity, other: Entity`                   |
 
 > The engine treats those five names as reserved lifecycle hooks. Any other field on the returned
 > table is considered a *property* and is candidate for editor exposure.
@@ -136,21 +136,21 @@ original table.
 
 A 64-bit unique identifier.
 
-| Member | Description |
-| --- | --- |
-| `UUID()` / `UUID(uint64)` | Constructors. |
-| `a == b` | Equality check. |
-| `tostring(uuid)` | Decimal string representation. |
+| Member                        | Description                    |
+| ----------------------------- | ------------------------------ |
+| `UUID()` / `UUID(uint64)` | Constructors.                  |
+| `a == b`                    | Equality check.                |
+| `tostring(uuid)`            | Decimal string representation. |
 
 ### `TimeStep`
 
 A wrapper around an elapsed-time value used by the engine.
 
-| Member | Description |
-| --- | --- |
-| `TimeStep()` / `TimeStep(seconds)` | Constructors. |
-| `:Seconds()` | Returns the value in seconds. |
-| `:Milliseconds()` | Returns the value in milliseconds. |
+| Member                                  | Description                           |
+| --------------------------------------- | ------------------------------------- |
+| `TimeStep()` / `TimeStep(seconds)`  | Constructors.                         |
+| `:Seconds()`                          | Returns the value in seconds.         |
+| `:Milliseconds()`                     | Returns the value in milliseconds.    |
 | `a + b`, `a == b`, `tostring(ts)` | Arithmetic / comparison / formatting. |
 
 ### `Log`
@@ -194,13 +194,13 @@ All math primitives are bound directly from `Ember::Math`.
 
 ### Vectors & Matrices
 
-| Type | Constructors | Fields |
-| --- | --- | --- |
-| `Vector2f` | `Vector2f.new()`, `Vector2f.new(x, y)` | `x`, `y` |
-| `Vector3f` | `Vector3f.new()`, `Vector3f.new(x, y, z)` | `x`, `y`, `z` |
+| Type         | Constructors                                     | Fields                     |
+| ------------ | ------------------------------------------------ | -------------------------- |
+| `Vector2f` | `Vector2f.new()`, `Vector2f.new(x, y)`       | `x`, `y`               |
+| `Vector3f` | `Vector3f.new()`, `Vector3f.new(x, y, z)`    | `x`, `y`, `z`        |
 | `Vector4f` | `Vector4f.new()`, `Vector4f.new(x, y, z, w)` | `x`, `y`, `z`, `w` |
-| `Matrix3f` | `Matrix3f.new()`, `Matrix3f.new(diagonal)` | — |
-| `Matrix4f` | `Matrix4f.new()`, `Matrix4f.new(diagonal)` | — |
+| `Matrix3f` | `Matrix3f.new()`, `Matrix3f.new(diagonal)`   | —                         |
+| `Matrix4f` | `Matrix4f.new()`, `Matrix4f.new(diagonal)`   | —                         |
 
 All vectors support `+`, `-`, `*` (scalar), `/` (scalar), and unary `-`.
 `Vector3f` also supports component-wise `a * b`.
@@ -215,16 +215,16 @@ local d = c * 2.0               -- (2, 2, 0)
 
 ### `Quaternion`
 
-| Member | Description |
-| --- | --- |
-| `Quaternion.new()` | Identity quaternion. |
-| `Quaternion.new(x, y, z, w)` | Component-wise constructor. |
-| `Quaternion.new(eulerVec3)` | Construct from Euler angles. |
-| `x`, `y`, `z`, `w` | Components. |
-| `q1 * q2` | Quaternion multiplication. |
-| `q * v3` | Rotates a `Vector3f` by the quaternion. |
-| `:Inverse()` | Returns the inverse rotation matrix (`Matrix4f`). |
-| `:Normalize()` | Returns a normalized copy. |
+| Member                         | Description                                         |
+| ------------------------------ | --------------------------------------------------- |
+| `Quaternion.new()`           | Identity quaternion.                                |
+| `Quaternion.new(x, y, z, w)` | Component-wise constructor.                         |
+| `Quaternion.new(eulerVec3)`  | Construct from Euler angles.                        |
+| `x`, `y`, `z`, `w`     | Components.                                         |
+| `q1 * q2`                    | Quaternion multiplication.                          |
+| `q * v3`                     | Rotates a`Vector3f` by the quaternion.            |
+| `:Inverse()`                 | Returns the inverse rotation matrix (`Matrix4f`). |
+| `:Normalize()`               | Returns a normalized copy.                          |
 
 ### `Math` table
 
@@ -288,24 +288,24 @@ local ok, t, r, s = Math.DecomposeTransform(matrix4)
 
 The handle to a world object. Almost all gameplay code goes through `Entity`.
 
-| Method | Description |
-| --- | --- |
-| `:GetName()` | Returns the entity's name (string). |
-| `:GetUUID()` | Returns the entity's `UUID`. |
-| `:SetActive(bool)` | Enables or disables the entity and all descendants (toggles `DisabledComponent`). |
-| `:SetActive(bool, recursive)` | Enables/disables the entity; pass `false` for `recursive` to only affect this entity. |
-| `:IsActive()` | Returns `true` when the entity does not have `DisabledComponent`. |
-| `:AttachComponent(typeName)` | Adds a component by string name; returns the new component (or existing one). |
-| `:DetachComponent(typeName)` | Removes a component by string name. |
-| `:GetComponent(typeName)` | Returns the component, or logs an error and returns `nil` if it isn't present. |
-| `:ContainsComponent(typeName)` | Returns `true` if the component is attached. |
-| `:GetParent()` | Returns the parent `Entity` (may be invalid). |
-| `:IsRootParent()` | `true` if this entity has no parent. |
-| `:GetRootParent()` | Walks up the hierarchy to the topmost ancestor. |
-| `:GetChildren()` | Returns a Lua-indexable list of child entities. |
-| `:GetChild(name)` | Returns the first child matching `name`. |
-| `:AddChild(entity)` | Re-parents `entity` under this one. |
-| `:GetScriptInstance()` | Returns the script's table on this entity, or `nil` if no `ScriptComponent`. |
+| Method                           | Description                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------- |
+| `:GetName()`                   | Returns the entity's name (string).                                                      |
+| `:GetUUID()`                   | Returns the entity's`UUID`.                                                            |
+| `:SetActive(bool)`             | Enables or disables the entity and all descendants (toggles`DisabledComponent`).       |
+| `:SetActive(bool, recursive)`  | Enables/disables the entity; pass`false` for `recursive` to only affect this entity. |
+| `:IsActive()`                  | Returns`true` when the entity does not have `DisabledComponent`.                     |
+| `:AttachComponent(typeName)`   | Adds a component by string name; returns the new component (or existing one).            |
+| `:DetachComponent(typeName)`   | Removes a component by string name.                                                      |
+| `:GetComponent(typeName)`      | Returns the component, or logs an error and returns`nil` if it isn't present.          |
+| `:ContainsComponent(typeName)` | Returns`true` if the component is attached.                                            |
+| `:GetParent()`                 | Returns the parent`Entity` (may be invalid).                                           |
+| `:IsRootParent()`              | `true` if this entity has no parent.                                                   |
+| `:GetRootParent()`             | Walks up the hierarchy to the topmost ancestor.                                          |
+| `:GetChildren()`               | Returns a Lua-indexable list of child entities.                                          |
+| `:GetChild(name)`              | Returns the first child matching`name`.                                                |
+| `:AddChild(entity)`            | Re-parents`entity` under this one.                                                     |
+| `:GetScriptInstance()`         | Returns the script's table on this entity, or`nil` if no `ScriptComponent`.          |
 
 #### Component type names
 
@@ -371,282 +371,282 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 ### `TransformComponent`
 
-| Field / Method | Type | Notes |
-| --- | --- | --- |
-| `Position` | `Vector3f` | Local position. |
-| `Rotation` | `Vector3f` | Local Euler angles (radians). |
-| `Scale` | `Vector3f` | Local scale. |
-| `WorldPosition` | `Vector3f` (read-only) | Position derived from the world matrix. |
+| Field / Method    | Type                     | Notes                                         |
+| ----------------- | ------------------------ | --------------------------------------------- |
+| `Position`      | `Vector3f`             | Local position.                               |
+| `Rotation`      | `Vector3f`             | Local Euler angles (radians).                 |
+| `Scale`         | `Vector3f`             | Local scale.                                  |
+| `WorldPosition` | `Vector3f` (read-only) | Position derived from the world matrix.       |
 | `WorldRotation` | `Vector3f` (read-only) | Euler rotation derived from the world matrix. |
-| `:GetForward()` | `Vector3f` | Forward direction in world space. |
-| `:GetRight()` | `Vector3f` | Right direction in world space. |
-| `:GetUp()` | `Vector3f` | Up direction in world space. |
+| `:GetForward()` | `Vector3f`             | Forward direction in world space.             |
+| `:GetRight()`   | `Vector3f`             | Right direction in world space.               |
+| `:GetUp()`      | `Vector3f`             | Up direction in world space.                  |
 
 ### Rendering Components
 
 #### `SpriteRendererComponent` (`SpriteComponent`)
 
-| Field | Type |
-| --- | --- |
-| `Color` | `Vector4f` |
-| `TextureHandle` | `UUID` |
-| `IsBillboard` | `bool` |
-| `LockYAxis` | `bool` |
+| Field             | Type         |
+| ----------------- | ------------ |
+| `Color`         | `Vector4f` |
+| `TextureHandle` | `UUID`     |
+| `IsBillboard`   | `bool`     |
+| `LockYAxis`     | `bool`     |
 
 #### `StaticMeshComponent`
 
-| Field | Type |
-| --- | --- |
+| Field          | Type     |
+| -------------- | -------- |
 | `MeshHandle` | `UUID` |
 
 #### `SkinnedMeshComponent`
 
-| Field | Type |
-| --- | --- |
-| `MeshHandle` | `UUID` |
+| Field                    | Type     |
+| ------------------------ | -------- |
+| `MeshHandle`           | `UUID` |
 | `AnimatorEntityHandle` | `UUID` |
 
 #### `MaterialComponent`
 
-| Field / Method | Type / Description |
-| --- | --- |
-| `MaterialHandle` | `UUID` |
-| `:GetInstanced()` | Whether this entity has its own material instance. |
+| Field / Method       | Type / Description                                           |
+| -------------------- | ------------------------------------------------------------ |
+| `MaterialHandle`   | `UUID`                                                     |
+| `:GetInstanced()`  | Whether this entity has its own material instance.           |
 | `:CloneMaterial()` | Creates a per-entity material instance for runtime tweaking. |
 
 #### `OutlineComponent`
 
-| Field | Type |
-| --- | --- |
-| `Color` | `Vector4f` |
-| `Thickness` | `float` |
+| Field         | Type         |
+| ------------- | ------------ |
+| `Color`     | `Vector4f` |
+| `Thickness` | `float`    |
 
 #### `TextComponent`
 
-| Field | Type |
-| --- | --- |
-| `Text` | `string` |
+| Field     | Type         |
+| --------- | ------------ |
+| `Text`  | `string`   |
 | `Color` | `Vector4f` |
 
 #### `ParticleEmitterComponent`
 
-| Field | Type |
-| --- | --- |
-| `EmissionRate` | `float` |
-| `Velocity` | `Vector3f` |
-| `VelocityVariation` | `Vector3f` |
+| Field                         | Type         |
+| ----------------------------- | ------------ |
+| `EmissionRate`              | `float`    |
+| `Velocity`                  | `Vector3f` |
+| `VelocityVariation`         | `Vector3f` |
 | `ColorBegin` / `ColorEnd` | `Vector4f` |
-| `ScaleBegin` / `ScaleEnd` | `float` |
-| `ScaleVariation` | `float` |
-| `TextureHandle` | `UUID` |
-| `Lifetime` | `float` |
-| `LifetimeVariation` | `float` |
-| `GravityMultiplier` | `float` |
-| `IsActive` | `bool` |
+| `ScaleBegin` / `ScaleEnd` | `float`    |
+| `ScaleVariation`            | `float`    |
+| `TextureHandle`             | `UUID`     |
+| `Lifetime`                  | `float`    |
+| `LifetimeVariation`         | `float`    |
+| `GravityMultiplier`         | `float`    |
+| `IsActive`                  | `bool`     |
 
 ### Lighting Components
 
 #### `DirectionalLightComponent`
 
-| Field | Type |
-| --- | --- |
-| `IsActive` | `bool` |
-| `Color` | `Vector4f` |
-| `Intensity` | `float` |
+| Field         | Type         |
+| ------------- | ------------ |
+| `IsActive`  | `bool`     |
+| `Color`     | `Vector4f` |
+| `Intensity` | `float`    |
 
 #### `PointLightComponent`
 
-| Field | Type |
-| --- | --- |
-| `IsActive` | `bool` |
-| `Color` | `Vector4f` |
-| `Intensity` | `float` |
-| `Radius` | `float` |
+| Field         | Type         |
+| ------------- | ------------ |
+| `IsActive`  | `bool`     |
+| `Color`     | `Vector4f` |
+| `Intensity` | `float`    |
+| `Radius`    | `float`    |
 
 #### `SpotLightComponent`
 
-| Field | Type |
-| --- | --- |
-| `IsActive` | `bool` |
-| `Color` | `Vector4f` |
-| `Intensity` | `float` |
-| `CutOffAngle` | `float` |
-| `OuterCutOffAngle` | `float` |
+| Field                | Type         |
+| -------------------- | ------------ |
+| `IsActive`         | `bool`     |
+| `Color`            | `Vector4f` |
+| `Intensity`        | `float`    |
+| `CutOffAngle`      | `float`    |
+| `OuterCutOffAngle` | `float`    |
 
 ### `CameraComponent`
 
-| Field | Type |
-| --- | --- |
-| `IsActive` | `bool` |
-| `ProjectionType` | `Camera.ProjectionType` (`Perspective` / `Orthographic`) |
-| `FieldOfView` | `float` (perspective) |
-| `PerspectiveNear` / `PerspectiveFar` | `float` |
-| `OrthographicSize` | `float` |
-| `OrthographicNear` / `OrthographicFar` | `float` |
+| Field                                      | Type                                                           |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| `IsActive`                               | `bool`                                                       |
+| `ProjectionType`                         | `Camera.ProjectionType` (`Perspective` / `Orthographic`) |
+| `FieldOfView`                            | `float` (perspective)                                        |
+| `PerspectiveNear` / `PerspectiveFar`   | `float`                                                      |
+| `OrthographicSize`                       | `float`                                                      |
+| `OrthographicNear` / `OrthographicFar` | `float`                                                      |
 
 ### Physics Components
 
 #### `RigidBodyComponent`
 
-| Field / Method | Description |
-| --- | --- |
-| `Mass` | `float` |
-| `GravityEnabled` | `bool` |
-| `:ApplyForce(force)` | Apply a continuous force (`Vector3f`). |
-| `:ApplyImpulse(impulse)` | Apply an instantaneous impulse (`Vector3f`). |
-| `:ApplyImpulseAtPoint(impulse, worldPoint)` | Apply an instantaneous impulse at a world-space point so it generates torque. Both args `Vector3f`. |
-| `:CurrentVelocity()` | Returns the current rigid body velocity (`Vector3f`). |
+| Field / Method                                | Description                                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Mass`                                      | `float`                                                                                            |
+| `GravityEnabled`                            | `bool`                                                                                             |
+| `:ApplyForce(force)`                        | Apply a continuous force (`Vector3f`).                                                             |
+| `:ApplyImpulse(impulse)`                    | Apply an instantaneous impulse (`Vector3f`).                                                       |
+| `:ApplyImpulseAtPoint(impulse, worldPoint)` | Apply an instantaneous impulse at a world-space point so it generates torque. Both args`Vector3f`. |
+| `:CurrentVelocity()`                        | Returns the current rigid body velocity (`Vector3f`).                                              |
 
 #### `ColliderOffset`
 
-| Field | Type |
-| --- | --- |
+| Field        | Type         |
+| ------------ | ------------ |
 | `Position` | `Vector3f` |
 | `Rotation` | `Vector3f` |
 
 #### `BoxColliderComponent`
 
-| Field | Type |
-| --- | --- |
-| `Size` | `Vector3f` |
-| `Offset` | `ColliderOffset` |
-| `Category` | `Filter` |
-| `CollisionMask` | `Filter` |
+| Field             | Type               |
+| ----------------- | ------------------ |
+| `Size`          | `Vector3f`       |
+| `Offset`        | `ColliderOffset` |
+| `Category`      | `Filter`         |
+| `CollisionMask` | `Filter`         |
 
 #### `SphereColliderComponent`
 
-| Field | Type |
-| --- | --- |
-| `Radius` | `float` |
-| `Offset` | `ColliderOffset` |
-| `Category`, `CollisionMask` | `Filter` |
+| Field                           | Type               |
+| ------------------------------- | ------------------ |
+| `Radius`                      | `float`          |
+| `Offset`                      | `ColliderOffset` |
+| `Category`, `CollisionMask` | `Filter`         |
 
 #### `CapsuleColliderComponent`
 
-| Field | Type |
-| --- | --- |
-| `Radius` | `float` |
-| `Height` | `float` |
-| `Offset` | `ColliderOffset` |
-| `Category`, `CollisionMask` | `Filter` |
+| Field                           | Type               |
+| ------------------------------- | ------------------ |
+| `Radius`                      | `float`          |
+| `Height`                      | `float`          |
+| `Offset`                      | `ColliderOffset` |
+| `Category`, `CollisionMask` | `Filter`         |
 
 #### `ConvexMeshColliderComponent` / `ConcaveMeshColliderComponent`
 
-| Field | Type |
-| --- | --- |
-| `MeshHandle` | `UUID` |
-| `Offset` | `ColliderOffset` |
-| `Category`, `CollisionMask` | `Filter` |
+| Field                           | Type               |
+| ------------------------------- | ------------------ |
+| `MeshHandle`                  | `UUID`           |
+| `Offset`                      | `ColliderOffset` |
+| `Category`, `CollisionMask` | `Filter`         |
 
 #### `CharacterControllerComponent`
 
-| Field / Method | Description |
-| --- | --- |
-| `WalkSpeed` | `float` |
-| `JumpForce` | `float` |
-| `Velocity` | `Vector3f` |
-| `RequestedMovement` | `Vector3f` |
-| `GravityMultiplier` | `float` |
-| `MaxSlopeAngle` | `float` |
-| `MaxStepHeight` | `float` |
-| `IsGrounded` | `bool` (read-only state) |
-| `GroundEntity` | `Entity` the controller is standing on. |
-| `MovementVelocity` | Current movement velocity (`Vector3f`). |
-| `:Move(displacement)` | Move by `Vector3f` (call from `OnUpdate`). |
-| `:Jump()` | Triggers a jump using `JumpForce`. |
+| Field / Method          | Description                                   |
+| ----------------------- | --------------------------------------------- |
+| `WalkSpeed`           | `float`                                     |
+| `JumpForce`           | `float`                                     |
+| `Velocity`            | `Vector3f`                                  |
+| `RequestedMovement`   | `Vector3f`                                  |
+| `GravityMultiplier`   | `float`                                     |
+| `MaxSlopeAngle`       | `float`                                     |
+| `MaxStepHeight`       | `float`                                     |
+| `IsGrounded`          | `bool` (read-only state)                    |
+| `GroundEntity`        | `Entity` the controller is standing on.     |
+| `MovementVelocity`    | Current movement velocity (`Vector3f`).     |
+| `:Move(displacement)` | Move by`Vector3f` (call from `OnUpdate`). |
+| `:Jump()`             | Triggers a jump using`JumpForce`.           |
 
 ### Audio Components
 
 #### `AudioSourceComponent`
 
-| Field / Method | Description |
-| --- | --- |
-| `AudioClipHandle` | `UUID` of the audio asset. |
-| `Volume`, `Pitch`, `Looping`, `Spatialized` | Property accessors. |
-| `:Play()` | Plays the assigned clip with current properties. |
-| `:Stop()` | Stops playback. |
-| `:Restart()` | Restart from the beginning. |
+| Field / Method                                      | Description                                      |
+| --------------------------------------------------- | ------------------------------------------------ |
+| `AudioClipHandle`                                 | `UUID` of the audio asset.                     |
+| `Volume`, `Pitch`, `Looping`, `Spatialized` | Property accessors.                              |
+| `:Play()`                                         | Plays the assigned clip with current properties. |
+| `:Stop()`                                         | Stops playback.                                  |
+| `:Restart()`                                      | Restart from the beginning.                      |
 
 #### `AudioListenerComponent`
 
 Marks an entity (usually the camera) as a 3D-audio listener for spatialized sounds.
 
-| Field | Type |
-| --- | --- |
-| `IsActive` | `bool` |
+| Field             | Type                                               |
+| ----------------- | -------------------------------------------------- |
+| `IsActive`      | `bool`                                           |
 | `ListenerIndex` | `int` (miniaudio listener index, normally `0`) |
 
 ### AI Components
 
 #### `AIPathComponent`
 
-| Field / Method | Description |
-| --- | --- |
-| `Waypoints` | List of `Vector3f` waypoints (Lua array). |
-| `CurrentWaypointIndex` | Current index along the path. |
-| `Speed` | `float` |
-| `ArrivalTolerance` | `float` |
-| `:GetNextWaypointPosition()` | Returns the `Vector3f` of `Waypoints[CurrentWaypointIndex]`. |
+| Field / Method                 | Description                                                     |
+| ------------------------------ | --------------------------------------------------------------- |
+| `Waypoints`                  | List of`Vector3f` waypoints (Lua array).                      |
+| `CurrentWaypointIndex`       | Current index along the path.                                   |
+| `Speed`                      | `float`                                                       |
+| `ArrivalTolerance`           | `float`                                                       |
+| `:GetNextWaypointPosition()` | Returns the`Vector3f` of `Waypoints[CurrentWaypointIndex]`. |
 
 #### `AIAgentComponent`
 
-| Field | Description |
-| --- | --- |
-| `Mode` | `PathMode.Manual` or `PathMode.Dynamic`. Setting flags the agent dirty. |
-| `Waypoints` | Manual waypoints (when in `Manual` mode). |
-| `Loop` | `bool` |
-| `TargetEntity` | `Entity` to chase (when in `Dynamic` mode). |
-| `GridEntity` | `Entity` representing the navigation grid. |
-| `RecalculateInterval` | `float` |
+| Field                   | Description                                                                 |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `Mode`                | `PathMode.Manual` or `PathMode.Dynamic`. Setting flags the agent dirty. |
+| `Waypoints`           | Manual waypoints (when in`Manual` mode).                                  |
+| `Loop`                | `bool`                                                                    |
+| `TargetEntity`        | `Entity` to chase (when in `Dynamic` mode).                             |
+| `GridEntity`          | `Entity` representing the navigation grid.                                |
+| `RecalculateInterval` | `float`                                                                   |
 
 `PathMode` is a global enum with `Manual` and `Dynamic` values.
 
 #### `LocalAvoidanceComponent`
 
-| Field | Type |
-| --- | --- |
-| `AvoidanceRadius` | `float` |
-| `AvoidanceStrength` | `float` |
-| `AvoidanceVector` | `Vector3f` |
-| `AvoidanceMask` | `Filter` |
+| Field                 | Type         |
+| --------------------- | ------------ |
+| `AvoidanceRadius`   | `float`    |
+| `AvoidanceStrength` | `float`    |
+| `AvoidanceVector`   | `Vector3f` |
+| `AvoidanceMask`     | `Filter`   |
 
 ### Misc Components
 
 #### `AnimatorComponent`
 
-| Field / Method | Description |
-| --- | --- |
-| `CurrentAnimationHandle` | `UUID` of the active animation. |
-| `CurrentTime` | `float` (read/write). |
-| `PlaybackSpeed` | `float` |
-| `IsPlaying` | `bool` |
-| `Loop` | `bool` |
-| `:Crossfade(name, duration)` | Smoothly blends to another animation by name. |
-| `:Crossfade(name)` | Switches to another animation by name without blend time. |
-| `:Crossfade(targetAnimUUID, duration)` | Smoothly blends to another animation by asset UUID. |
-| `:Play(name)` | Plays an animation once by name. |
-| `:Play(name, playbackSpeed)` | Plays once with a custom speed. |
-| `:Play(name, playbackSpeed, blendDuration)` | Plays once with speed and blend duration. |
-| `:PlayLoop(name)` | Plays an animation in a loop by name. |
-| `:PlayLoop(name, playbackSpeed)` | Loops with a custom speed. |
-| `:PlayLoop(name, playbackSpeed, blendDuration)` | Loops with speed and blend duration. |
+| Field / Method                                    | Description                                               |
+| ------------------------------------------------- | --------------------------------------------------------- |
+| `CurrentAnimationHandle`                        | `UUID` of the active animation.                         |
+| `CurrentTime`                                   | `float` (read/write).                                   |
+| `PlaybackSpeed`                                 | `float`                                                 |
+| `IsPlaying`                                     | `bool`                                                  |
+| `Loop`                                          | `bool`                                                  |
+| `:Crossfade(name, duration)`                    | Smoothly blends to another animation by name.             |
+| `:Crossfade(name)`                              | Switches to another animation by name without blend time. |
+| `:Crossfade(targetAnimUUID, duration)`          | Smoothly blends to another animation by asset UUID.       |
+| `:Play(name)`                                   | Plays an animation once by name.                          |
+| `:Play(name, playbackSpeed)`                    | Plays once with a custom speed.                           |
+| `:Play(name, playbackSpeed, blendDuration)`     | Plays once with speed and blend duration.                 |
+| `:PlayLoop(name)`                               | Plays an animation in a loop by name.                     |
+| `:PlayLoop(name, playbackSpeed)`                | Loops with a custom speed.                                |
+| `:PlayLoop(name, playbackSpeed, blendDuration)` | Loops with speed and blend duration.                      |
 
 #### `BoneSocketComponent`
 
 Attaches one entity to a named bone on another animated entity.
 
-| Field | Type |
-| --- | --- |
-| `TargetEntityHandle` | `UUID` |
-| `BoneName` | `string` |
-| `Position` | `Vector3f` local socket offset. |
-| `Rotation` | `Vector3f` local Euler rotation. |
-| `Scale` | `Vector3f` local scale. |
+| Field                  | Type                               |
+| ---------------------- | ---------------------------------- |
+| `TargetEntityHandle` | `UUID`                           |
+| `BoneName`           | `string`                         |
+| `Position`           | `Vector3f` local socket offset.  |
+| `Rotation`           | `Vector3f` local Euler rotation. |
+| `Scale`              | `Vector3f` local scale.          |
 
 #### `LifetimeComponent`
 
-| Field | Type |
-| --- | --- |
+| Field        | Type                                               |
+| ------------ | -------------------------------------------------- |
 | `Lifetime` | `float` (seconds remaining before auto-destroy). |
 
 ---
@@ -708,25 +708,25 @@ Physics.TestCollision(entity)
 
 ### `RaycastHit`
 
-| Field | Type |
-| --- | --- |
-| `Hit` | `bool` |
+| Field              | Type         |
+| ------------------ | ------------ |
+| `Hit`            | `bool`     |
 | `CollisionPoint` | `Vector3f` |
-| `SurfaceNormal` | `Vector3f` |
-| `Entity` | `Entity` |
+| `SurfaceNormal`  | `Vector3f` |
+| `Entity`         | `Entity`   |
 
 ### `Hit` (used inside `OverlapData`)
 
-| Field | Type |
-| --- | --- |
+| Field      | Type         |
+| ---------- | ------------ |
 | `Entity` | `EntityID` |
-| `Filter` | `Filter` |
+| `Filter` | `Filter`   |
 
 ### `OverlapData`
 
-| Field | Type |
-| --- | --- |
-| `Hits` | List of `Hit` |
+| Field    | Type           |
+| -------- | -------------- |
+| `Hits` | List of`Hit` |
 
 ### `CollisionFilter`
 
@@ -790,10 +790,10 @@ local mat   = AssetManager.GetAsset("Material",  "RedPlastic")
 
 Returned asset types expose at minimum:
 
-| Type | Methods |
-| --- | --- |
+| Type          | Methods                                            |
+| ------------- | -------------------------------------------------- |
 | `Animation` | `:GetUUID()`, `:GetName()`, `:GetDuration()` |
-| `Texture` | `:GetUUID()`, `:GetName()` |
+| `Texture`   | `:GetUUID()`, `:GetName()`                     |
 
 > Use the asset's `UUID` to assign it to component `*Handle` fields, e.g.
 > `entity:GetComponent("SpriteRendererComponent").TextureHandle = tex:GetUUID()`.
