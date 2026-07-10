@@ -830,6 +830,86 @@ namespace Ember {
 		rigidBody.Body = nullptr;
 	}
 
+	void PhysicsSystem::TeardownHierarchyPhysics(EntityID rootEntity, Scene* scene)
+	{
+		if (!m_PhysicsWorld || rootEntity == Constants::Entities::InvalidEntityID)
+			return;
+
+		auto& registry = scene->GetRegistry();
+
+		std::function<void(EntityID)> teardownEntity = [&](EntityID entity) {
+			if (entity == Constants::Entities::InvalidEntityID)
+				return;
+
+			if (registry.ContainsComponent<RelationshipComponent>(entity))
+			{
+				for (UUID childUUID : registry.GetComponent<RelationshipComponent>(entity).Children)
+				{
+					Entity child = scene->GetEntity(childUUID);
+					if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+						teardownEntity(child.GetEntityHandle());
+				}
+			}
+
+			if (registry.ContainsComponent<BoxColliderComponent>(entity))
+			{
+				auto& box = registry.GetComponent<BoxColliderComponent>(entity);
+				DetachCollider(box, [&]() { m_PhysicsCommon->destroyBoxShape(box.Shape); });
+				box.NeedsRebuild = false;
+			}
+
+			if (registry.ContainsComponent<SphereColliderComponent>(entity))
+			{
+				auto& sphere = registry.GetComponent<SphereColliderComponent>(entity);
+				DetachCollider(sphere, [&]() { m_PhysicsCommon->destroySphereShape(sphere.Shape); });
+				sphere.NeedsRebuild = false;
+			}
+
+			if (registry.ContainsComponent<CapsuleColliderComponent>(entity))
+			{
+				auto& capsule = registry.GetComponent<CapsuleColliderComponent>(entity);
+				DetachCollider(capsule, [&]() { m_PhysicsCommon->destroyCapsuleShape(capsule.Shape); });
+				capsule.NeedsRebuild = false;
+			}
+
+			if (registry.ContainsComponent<ConvexMeshColliderComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<ConvexMeshColliderComponent>(entity);
+				DetachCollider(mesh, [&]() {
+					m_PhysicsCommon->destroyConvexMeshShape(mesh.Shape);
+					if (mesh.RP3DVertexArray)
+						delete mesh.RP3DVertexArray;
+					mesh.RP3DVertexArray = nullptr;
+				});
+				mesh.NeedsRebuild = false;
+			}
+
+			if (registry.ContainsComponent<ConcaveMeshColliderComponent>(entity))
+			{
+				auto& mesh = registry.GetComponent<ConcaveMeshColliderComponent>(entity);
+				DetachCollider(mesh, [&]() {
+					m_PhysicsCommon->destroyConcaveMeshShape(mesh.Shape);
+					if (mesh.TriangleMesh)
+						m_PhysicsCommon->destroyTriangleMesh(mesh.TriangleMesh);
+					if (mesh.TriangleArray)
+						delete mesh.TriangleArray;
+					mesh.TriangleMesh = nullptr;
+					mesh.TriangleArray = nullptr;
+				});
+				mesh.NeedsRebuild = false;
+			}
+
+			if (registry.ContainsComponent<RigidBodyComponent>(entity))
+			{
+				auto& rb = registry.GetComponent<RigidBodyComponent>(entity);
+				if (rb.Body)
+					RemoveRigidBody(rb);
+			}
+		};
+
+		teardownEntity(rootEntity);
+	}
+
 	void PhysicsSystem::InitializeEntity(EntityID entity, Scene* scene)
 	{
 		if (!m_PhysicsWorld)

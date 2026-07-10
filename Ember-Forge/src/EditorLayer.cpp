@@ -342,6 +342,7 @@ namespace Ember {
 			}
 			else if (registry.ContainsComponent<AudioSourceComponent>(entityID))
 			{
+				//iconTexture = EditorConstants::Assets::AudioSourceTexUUID;
 				iconTexture = Application::Instance().GetAssetManager().ContainsAssetWithName(EditorConstants::Assets::AudioSourceTex)
 					? EditorConstants::Assets::AudioSourceTexUUID
 					: EditorConstants::Assets::PointLightTexUUID;
@@ -435,6 +436,7 @@ namespace Ember {
 		auto directionalLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::DirectionalLightTexUUID, EditorConstants::Assets::DirectionalLightTex, (assetManager.GetProjectAssetDirectory() / "icons/DirectionalLight.png").string());
 		auto spotLightTex = assetManager.Load<Texture2D>(EditorConstants::Assets::SpotLightTexUUID, EditorConstants::Assets::SpotLightTex, (assetManager.GetProjectAssetDirectory() / "icons/SpotLight.png").string());
 		auto cameraTex = assetManager.Load<Texture2D>(EditorConstants::Assets::CameraTexUUID, EditorConstants::Assets::CameraTex, (assetManager.GetProjectAssetDirectory() / "icons/Camera.png").string());
+		//auto audioSourceTex = assetManager.Load<Texture2D>(EditorConstants::Assets::AudioSourceTexUUID, EditorConstants::Assets::AudioSourceTex, (assetManager.GetProjectAssetDirectory() / "icons/AudioSource.png").string());
 
 		auto audioSourceIconPath = assetManager.GetProjectAssetDirectory() / "icons/AudioSource.png";
 		if (std::filesystem::exists(audioSourceIconPath))

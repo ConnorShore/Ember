@@ -54,6 +54,9 @@ namespace Ember {
 
 		void RemoveRigidBody(RigidBodyComponent& rigidBody);
 		void InitializeEntity(EntityID entity, Scene* scene);
+		// Destroys all rp3d bodies/shapes for a prefab hierarchy and clears component physics pointers.
+		// Used when runtime prefab instantiation must discard physics created during deserialization hooks.
+		void TeardownHierarchyPhysics(EntityID rootEntity, Scene* scene);
 
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& direction, float length, Filter filter = FilterPreset::All);
 		RaycastData CastRay(const Vector3f& startPoint, const Vector3f& endPoint, Filter filter = FilterPreset::All);

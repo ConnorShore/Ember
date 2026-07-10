@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ember/Math/Math.h"
+#include "Ember/ECS/Types.h"
 
 #include <reactphysics3d/collision/CollisionCallback.h>
 #include <reactphysics3d/body/RigidBody.h>
@@ -13,6 +14,8 @@ namespace Ember {
 		Vector3f Point;
 		Vector3f Normal;
 		float PenetrationDepth = 0.0f;
+		EntityID OtherBodyEntity = Constants::Entities::InvalidEntityID;
+		EntityID OtherColliderEntity = Constants::Entities::InvalidEntityID;
 	};
 
 	struct CollisionCallbackData
@@ -33,6 +36,28 @@ namespace Ember {
 			for (uint32_t p = 0; p < callbackData.getNbContactPairs(); p++)
 			{
 				reactphysics3d::CollisionCallback::ContactPair pair = callbackData.getContactPair(p);
+				reactphysics3d::Body* body1 = pair.getBody1();
+				reactphysics3d::Body* body2 = pair.getBody2();
+
+				reactphysics3d::Body* otherBody = nullptr;
+				if (body1 == m_TargetBody)
+					otherBody = body2;
+				else if (body2 == m_TargetBody)
+					otherBody = body1;
+
+				EntityID otherBodyEntity = Constants::Entities::InvalidEntityID;
+				if (otherBody && otherBody->getUserData() != nullptr)
+					otherBodyEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(otherBody->getUserData()));
+
+				reactphysics3d::Collider* otherCollider = nullptr;
+				if (body1 == m_TargetBody)
+					otherCollider = pair.getCollider2();
+				else if (body2 == m_TargetBody)
+					otherCollider = pair.getCollider1();
+
+				EntityID otherColliderEntity = Constants::Entities::InvalidEntityID;
+				if (otherCollider && otherCollider->getUserData() != nullptr)
+					otherColliderEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(otherCollider->getUserData()));
 
 				for (uint32_t c = 0; c < pair.getNbContactPoints(); c++)
 				{
@@ -42,6 +67,8 @@ namespace Ember {
 
 					ContactPointData data;
 					data.PenetrationDepth = contactPoint.getPenetrationDepth();
+					data.OtherBodyEntity = otherBodyEntity;
+					data.OtherColliderEntity = otherColliderEntity;
 
 					reactphysics3d::Vector3 normal = contactPoint.getWorldNormal();
 					if (pair.getBody1() == m_TargetBody)

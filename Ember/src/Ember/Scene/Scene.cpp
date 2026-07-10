@@ -962,7 +962,6 @@ namespace Ember {
 
 	static void InitializePrefabPhysics(EntityID entity, PhysicsSystem* physicsSystem, Scene* scene)
 	{
-		std::string name = Entity(entity, scene).GetName();
 		physicsSystem->InitializeEntity(entity, scene);
 
 		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
@@ -993,6 +992,8 @@ namespace Ember {
 					rp3d::Vector3(worldPos.x, worldPos.y, worldPos.z),
 					rp3d::Quaternion(q.x, q.y, q.z, q.w)
 				));
+				rb.Body->setLinearVelocity(rp3d::Vector3(0.0f, 0.0f, 0.0f));
+				rb.Body->setAngularVelocity(rp3d::Vector3(0.0f, 0.0f, 0.0f));
 			}
 		}
 
@@ -1002,6 +1003,36 @@ namespace Ember {
 			Entity child = scene->GetEntity(childUUID);
 			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 				SyncPrefabPhysicsTransforms(child.GetEntityHandle(), scene);
+		}
+	}
+
+	static void InitializePrefabScripts(EntityID entity, ScriptSystem* scriptSystem, Scene* scene)
+	{
+		Entity currentEntity(entity, scene);
+		if (currentEntity.ContainsComponent<ScriptComponent>())
+			scriptSystem->InitializeScriptForEntity(currentEntity);
+
+		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				InitializePrefabScripts(child.GetEntityHandle(), scriptSystem, scene);
+		}
+	}
+
+	static void InitializePrefabAIAgents(EntityID entity, AISystem* aiSystem, Scene* scene)
+	{
+		Entity currentEntity(entity, scene);
+		if (currentEntity.ContainsComponent<AIAgentComponent>())
+			aiSystem->ApplyAgentModeSettings(currentEntity, scene);
+
+		auto& relationship = scene->GetRegistry().GetComponent<RelationshipComponent>(entity);
+		for (UUID childUUID : relationship.Children)
+		{
+			Entity child = scene->GetEntity(childUUID);
+			if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				InitializePrefabAIAgents(child.GetEntityHandle(), aiSystem, scene);
 		}
 	}
 
@@ -1030,98 +1061,69 @@ namespace Ember {
 		}
 	}
 
+	// Brings a freshly deserialized prefab hierarchy to the same runtime-ready state as a
+	// scene-placed instance after CopyScene + OnRuntimeStart (physics, scripts, AI agents).
+	static void FinalizeRuntimePrefabInstance(Scene* scene, Entity root, const Matrix4f& parentWorldTransform)
+	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+
+		// DeserializePrefab attaches components while physics hooks are live, which can create
+		// bodies at the prefab's baked YAML transform. Tear those down and recreate below so
+		// spawn position overrides and compound colliders match hand-placed scene entities.
+		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
+		physicsSystem->TeardownHierarchyPhysics(root.GetEntityHandle(), scene);
+
+		auto transformSystem = systemManager.GetSystem<TransformSystem>();
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), parentWorldTransform, scene);
+
+		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
+		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), scene);
+
+		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), scene);
+		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), scene);
+
+		if (scene->IsRuntime())
+		{
+			InitializePrefabScripts(root.GetEntityHandle(), systemManager.GetSystem<ScriptSystem>().Ptr(), scene);
+			InitializePrefabAIAgents(root.GetEntityHandle(), systemManager.GetSystem<AISystem>().Ptr(), scene);
+		}
+	}
+
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
-		// Deserialize the prefab into a new entity hierarchy.
-		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
-		// using the prefab's stored transform — we must re-sync them below if a spawn
-		// position override is provided.
-		bool isTargetAsset = prefabAsset->GetUUID() == (UUID)9278556515141032553;
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 
-		// Set position if specified
 		if (position != nullptr)
 		{
 			auto& transform = root.GetComponent<TransformComponent>();
 			transform.Position = *position;
 		}
 
-		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
-		// are created at the correct world positions below.
-		auto& systemManager = Application::Instance().GetSystemManager();
-		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
-		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), this);
-		auto transformSystem = systemManager.GetSystem<TransformSystem>();
-		transformSystem->UpdateTransformTree(root.GetEntityHandle(), Matrix4f(1.0f), this);
-
-		// Initialize physics for any entities that don't have bodies yet, then
-		// re-sync ALL existing physics bodies to the (potentially overridden) world
-		// transforms. This is needed because ConnectAndRetroact hooks may have already
-		// created bodies at the prefab's default position during DeserializePrefab.
-		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
-		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
-		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
-
-		// Only run script OnCreate for prefab instances during runtime.
-		// In edit mode, not all gameplay APIs (e.g., Scene table) are bound.
-		if (IsRuntime() && root.ContainsComponent<ScriptComponent>())
-		{
-			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
-			scriptSystem->InitializeScriptForEntity(root);
-		}
-
+		FinalizeRuntimePrefabInstance(this, root, Matrix4f(1.0f));
 		return root;
 	}
 
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position)
 	{
-
-		// Deserialize the prefab into a new entity hierarchy.
-		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
-		// using the prefab's stored transform — we must re-sync them below if a spawn
-		// position override is provided.
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 		parent.AddChild(root);
-		
+
 		auto& childRelationshipComp = root.GetComponent<RelationshipComponent>();
 		childRelationshipComp.ParentHandle = parent.GetUUID();
 
-		// Set position if specified
 		if (position != nullptr)
 		{
 			auto& transform = root.GetComponent<TransformComponent>();
 			transform.Position = *position;
 		}
 
-		// Recompute WorldTransforms for the entire hierarchy so that physics bodies
-		// are created at the correct world positions below.
-		auto& systemManager = Application::Instance().GetSystemManager();
-		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
-		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), this);
-		auto transformSystem = systemManager.GetSystem<TransformSystem>();
 		Matrix4f parentWorldTransform = Matrix4f(1.0f);
 		if (parent.ContainsComponent<TransformComponent>())
 			parentWorldTransform = parent.GetComponent<TransformComponent>().WorldTransform;
-		transformSystem->UpdateTransformTree(root.GetEntityHandle(), parentWorldTransform, this);
 
-		// Initialize physics for any entities that don't have bodies yet, then
-		// re-sync ALL existing physics bodies to the (potentially overridden) world
-		// transforms. This is needed because ConnectAndRetroact hooks may have already
-		// created bodies at the prefab's default position during DeserializePrefab.
-		auto physicsSystem = systemManager.GetSystem<PhysicsSystem>();
-		InitializePrefabPhysics(root.GetEntityHandle(), physicsSystem.Ptr(), this);
-		SyncPrefabPhysicsTransforms(root.GetEntityHandle(), this);
-
-		// Only run script OnCreate for prefab instances during runtime.
-		// In edit mode, not all gameplay APIs (e.g., Scene table) are bound.
-		if (IsRuntime() && root.ContainsComponent<ScriptComponent>())
-		{
-			auto scriptSystem = systemManager.GetSystem<ScriptSystem>();
-			scriptSystem->InitializeScriptForEntity(root);
-		}
-
+		FinalizeRuntimePrefabInstance(this, root, parentWorldTransform);
 		return root;
 	}
 
