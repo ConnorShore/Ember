@@ -76,6 +76,10 @@ Assets:
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
+    UUID: 10843162672597406671
+    Name: WeaponMovement
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
+  - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
@@ -115,10 +119,6 @@ Assets:
     UUID: 7847366610859754620
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/Tracer.lua
-  - Type: Script
-    UUID: 10843162672597406671
-    Name: WeaponMovement
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
   - Type: Script
     UUID: 6068451618412420797
     Name: CharacterMovement
@@ -175,10 +175,18 @@ Assets:
     UUID: 1303867917645546364
     Name: Hitbox
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Hitbox.lua
+  - Type: Script
+    UUID: 18266934061772524094
+    Name: ZombieSpawner
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ZombieSpawner.lua
   - Type: Material
     UUID: 782295293902573577
     Name: DesertEagle_Metal
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Metal.ebmat
+  - Type: Material
+    UUID: 4587007159136363848
+    Name: M4_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
   - Type: Material
     UUID: 8747674591623748722
     Name: HolographicReticleMat
@@ -188,25 +196,21 @@ Assets:
     Name: GroundMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/GroundMaterial.ebmat
   - Type: Material
-    UUID: 3531595371019758275
-    Name: AssaultRifle_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
+    UUID: 1868779223986162857
+    Name: PowerUpMaterial
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/PowerUpMaterial.ebmat
   - Type: Material
     UUID: 7112033288364404519
     Name: Tracer_Material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/Tracer_Material.ebmat
   - Type: Material
+    UUID: 3531595371019758275
+    Name: AssaultRifle_Weapon
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_Weapon.ebmat
+  - Type: Material
     UUID: 18352460508626254789
     Name: BoxMaterial
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/BoxMaterial.ebmat
-  - Type: Material
-    UUID: 4587007159136363848
-    Name: M4_Weapon
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Weapon.ebmat
-  - Type: Material
-    UUID: 1868779223986162857
-    Name: PowerUpMaterial
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Materials/PowerUpMaterial.ebmat
   - Type: Material
     UUID: 15086660637021645114
     Name: DesertEagle_DesertEagle
@@ -223,6 +227,10 @@ Assets:
     UUID: 5985712711574680378
     Name: DesertEagle_Mesh1_Cube_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 12443871631894294282
+    Name: AmmoPowerup_Cylinder.001_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/PowerUps/Ammo/AmmoPowerup_Cylinder.001_Prim0.ebmesh
   - Type: Mesh
     UUID: 15346656199082862049
     Name: DesertEagle_Mesh0_Circle.001_Prim0
@@ -251,10 +259,6 @@ Assets:
     UUID: 13898711898247753575
     Name: M4_Cube.003_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Cube.003_Prim0.ebmesh
-  - Type: Mesh
-    UUID: 12443871631894294282
-    Name: AmmoPowerup_Cylinder.001_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/PowerUps/Ammo/AmmoPowerup_Cylinder.001_Prim0.ebmesh
   - Type: Skeleton
     UUID: 9200567303542518273
     Name: M4

@@ -11,20 +11,20 @@
 
 namespace Ember {
 	namespace Util {
-		static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)
+		inline static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)
 		{
 			node |= ryml::SEQ | ryml::FLOW_SL;
 			node.append_child() << vec.x;
 			node.append_child() << vec.y;
 		}
-		static void SerializeVector3f(ryml::NodeRef node, const Vector3f& vec)
+		inline static void SerializeVector3f(ryml::NodeRef node, const Vector3f& vec)
 		{
 			node |= ryml::SEQ | ryml::FLOW_SL;
 			node.append_child() << vec.x;
 			node.append_child() << vec.y;
 			node.append_child() << vec.z;
 		}
-		static void SerializeVector4f(ryml::NodeRef node, const Vector4f& vec)
+		inline static void SerializeVector4f(ryml::NodeRef node, const Vector4f& vec)
 		{
 			node |= ryml::SEQ | ryml::FLOW_SL;
 			node.append_child() << vec.x;
@@ -33,7 +33,7 @@ namespace Ember {
 			node.append_child() << vec.w;
 		}
 
-		static void SerializeMatrix4f(ryml::NodeRef node, const Matrix4f& mat)
+		inline static void SerializeMatrix4f(ryml::NodeRef node, const Matrix4f& mat)
 		{
 			node |= ryml::SEQ | ryml::FLOW_SL;
 			for (int i = 0; i < 4; i++)
@@ -45,7 +45,7 @@ namespace Ember {
 			}
 		}
 
-		static void DeserializeVector2f(ryml::NodeRef node, Vector2f& vec)
+		inline static void DeserializeVector2f(ryml::NodeRef node, Vector2f& vec)
 		{
 			if (node.is_seq() && node.num_children() == 2)
 			{
@@ -54,7 +54,7 @@ namespace Ember {
 			}
 		}
 
-		static void DeserializeVector3f(ryml::NodeRef node, Vector3f& vec)
+		inline static void DeserializeVector3f(ryml::NodeRef node, Vector3f& vec)
 		{
 			if (node.is_seq() && node.num_children() == 3)
 			{
@@ -64,7 +64,7 @@ namespace Ember {
 			}
 		}
 
-		static void DeserializeVector4f(ryml::NodeRef node, Vector4f& vec)
+		inline static void DeserializeVector4f(ryml::NodeRef node, Vector4f& vec)
 		{
 			if (node.is_seq() && node.num_children() == 4)
 			{
@@ -75,7 +75,7 @@ namespace Ember {
 			}
 		}
 
-		static void DeserializeMatrix4f(ryml::NodeRef node, Matrix4f& mat)
+		inline static void DeserializeMatrix4f(ryml::NodeRef node, Matrix4f& mat)
 		{
 			if (node.is_seq() && node.num_children() == 16)
 			{
@@ -89,7 +89,7 @@ namespace Ember {
 			}
 		}
 
-		static void SerializeGeneralAsset(ryml::NodeRef node, const SharedPtr<Asset>& asset)
+		inline static void SerializeGeneralAsset(ryml::NodeRef node, const SharedPtr<Asset>& asset)
 		{
 			node |= ryml::MAP;
 			node["Type"] << GetAssetTypeString(asset->GetType());
@@ -98,7 +98,7 @@ namespace Ember {
 			node["FilePath"] << asset->GetFilePath();
 		}
 
-		static void SerializeMaterial(ryml::NodeRef node, const SharedPtr<MaterialBase>& material)
+		inline static void SerializeMaterial(ryml::NodeRef node, const SharedPtr<MaterialBase>& material)
 		{
 			SerializeGeneralAsset(node, material);
 			node["RenderQueue"] << static_cast<int>(material->GetRenderQueue());

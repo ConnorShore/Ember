@@ -23,6 +23,8 @@
 
 #include "Ember/Script/ScriptEngine.h"
 
+#include "Ember/Utils/StringUtils.h"
+
 namespace Ember {
 
 	namespace Utils {
@@ -705,8 +707,15 @@ namespace Ember {
 	// so SkinnedMeshComponent handles are updated inline rather than repaired after the fact.
 	Entity Scene::DuplicateEntityRecursive(Entity entity, UUID newParentId, bool isRoot, UUID originalAnimatorUUID, UUID newAnimatorUUID)
 	{
-		std::string name = entity.GetName();
-		Entity newEntity = AddEntity(name + " (Copy)");
+		// Find a unique name for the duplicated entity by appending a number in parentheses if needed
+		std::string baseName = StringUtils::GetBaseName(entity.GetName());
+		int freeIndex = 1;
+		std::string newName;
+		do 
+			newName = std::format("{}({})", baseName, freeIndex++);
+		while (GetEntity(newName) != Constants::Entities::InvalidEntityID);
+
+		Entity newEntity = AddEntity(newName);
 
 		Utils::CopyComponents<
 			TransformComponent,
@@ -1027,6 +1036,7 @@ namespace Ember {
 		// NOTE: ConnectAndRetroact hooks may create physics bodies during deserialization
 		// using the prefab's stored transform — we must re-sync them below if a spawn
 		// position override is provided.
+		bool isTargetAsset = prefabAsset->GetUUID() == (UUID)9278556515141032553;
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 

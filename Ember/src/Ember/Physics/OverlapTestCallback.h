@@ -46,15 +46,17 @@ namespace Ember {
 				if (collidedBody == nullptr || collidedBody == m_ProbeBody || collidedBody == m_BodyToIgnore)
 					continue;
 
-				// User data is stored on the collider, not the body - grab it from the first collider
+				// User data is stored on the collider as a raw EntityID value.
 				if (collidedBody->getNbColliders() == 0)
 					continue;
 
-				ColliderUserData* collisionData = static_cast<ColliderUserData*>(collidedBody->getCollider(0)->getUserData());
-				if (collisionData == nullptr)
+				reactphysics3d::Collider* collider = collidedBody->getCollider(0);
+				if (collider->getUserData() == nullptr)
 					continue;
 
-				m_OverlapData.Hits.push_back({ collisionData->EntityID, collisionData->Filter });
+				EntityID collidedEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(collider->getUserData()));
+				Filter collidedFilter = static_cast<Filter>(collider->getCollisionCategoryBits());
+				m_OverlapData.Hits.push_back({ collidedEntity, collidedFilter });
 			}
 		}
 

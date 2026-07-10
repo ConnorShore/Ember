@@ -128,7 +128,9 @@ namespace Ember {
 
 		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
 		collider.UserData = { entity, collider.Category };
-		collider.Collider->setUserData(&collider.UserData);
+		// Store a stable raw EntityID value in RP3D user data. Pointers to component-owned
+		// structs can become stale when sparse-set storage relocates components on spawn/despawn.
+		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
 
 		// Set trigger
 		collider.Collider->setIsTrigger(collider.IsTrigger);
@@ -942,15 +944,11 @@ namespace Ember {
 			// Extract the Entity IDs
 			EntityID rbID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.body->getUserData()));
 
-			// Extract the Collider Entity ID (Struct Pointer Cast)
+			// Extract the collider entity ID from the raw user-data entity value.
 			EntityID collID = Constants::Entities::InvalidEntityID;
 			if (info.collider->getUserData() != nullptr)
 			{
-				// Cast it back to the struct pointer
-				auto* colliderData = static_cast<ColliderUserData*>(info.collider->getUserData());
-
-				// Assuming your struct field is named 'Entity' (adjust if you named it 'entityID' or similar)
-				collID = colliderData->EntityID;
+				collID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.collider->getUserData()));
 			}
 
 			ret.RigidBodyEntity = rbID;

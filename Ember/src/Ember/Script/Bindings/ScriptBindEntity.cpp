@@ -252,6 +252,7 @@ namespace Ember {
 	{
 		auto entityType = state.new_usertype<Entity>("Entity",
 			"IsValid", [](const Entity& e) { return static_cast<bool>(e); },
+			"GetID", & Entity::GetEntityHandle,
 			"GetName", &Entity::GetName,
 			"GetUUID", &Entity::GetUUID,
 			"SetActive", sol::overload(

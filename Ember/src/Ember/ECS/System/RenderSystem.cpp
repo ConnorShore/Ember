@@ -539,6 +539,10 @@ namespace Ember {
 		auto& registry = scene->GetRegistry();
 		for (const auto& overlapData : volumes)
 		{
+			if (overlapData.CollidedEntity == Constants::Entities::InvalidEntityID ||
+				overlapData.CollidedEntity >= Constants::Entities::MaxEntities)
+				continue;
+
 			if (!registry.ContainsComponent<PostProcessVolumeComponent>(overlapData.CollidedEntity))
 				continue;
 
