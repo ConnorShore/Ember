@@ -26,6 +26,7 @@ namespace Ember {
 	{
 		state.new_usertype<UUID>("UUID",
 			sol::constructors<UUID(), UUID(uint64_t)>(),
+			"IsValid", [](const UUID& id) { return id != Constants::InvalidUUID; },
 			sol::meta_function::equal_to, static_cast<bool(UUID::*)(const UUID&) const>(&UUID::operator==),
 			sol::meta_function::to_string, [](const UUID& a) { return std::to_string((uint64_t)a); }
 		);

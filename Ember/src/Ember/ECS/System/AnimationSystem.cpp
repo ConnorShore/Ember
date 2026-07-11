@@ -199,12 +199,14 @@ namespace Ember {
 					effectiveParameters = controller->GetParameters();
 
 				// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
+				// Edit: Removed this for now as I'm not sure its needed and it was spamming the log a lot.
+				// TODO: Make it so it logs this only once per parameter per animator instead of every frame
 				for (auto parameter : animator.Blackboard.Parameters)
 				{
-					if (controller && !controller->GetParameters().contains(parameter.first))
-					{
-						EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
-					}
+					//if (controller && !controller->GetParameters().contains(parameter.first))
+					//{
+					//	EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
+					//}
 
 					effectiveParameters[parameter.first] = parameter.second;
 				}

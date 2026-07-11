@@ -15,5 +15,10 @@ namespace Ember {
 			"GetRight", &TransformComponent::GetRight,
 			"GetUp", &TransformComponent::GetUp
 		);
+
+		state.new_usertype<RelationshipComponent>("RelationshipComponent",
+			"Parent", &RelationshipComponent::ParentHandle,
+			"Children", &RelationshipComponent::Children
+		);
 	}
 }
