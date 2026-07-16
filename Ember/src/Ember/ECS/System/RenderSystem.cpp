@@ -424,66 +424,94 @@ namespace Ember {
 		std::vector<std::pair<EntityID, AABB>> renderableEntities;
 		renderableEntities.reserve(m_ActiveRenderableEntities.size());
 
-		auto createAndStoreEntityPair = [&](Entity entity, UUID meshHandle, Filter renderLayer) {
-				// If no mesh assigned, return
-				if (meshHandle == Constants::InvalidUUID)
-					return;
+		// NOTE: Render mask filtering is intentionally NOT applied here so that entities
+		// excluded by the camera's render mask still cast shadows in the shadow pass.
+		// The mask is applied later in SortEntitiesByRenderQueue when building the
+		// render queue buckets used by the visible (non-shadow) render passes.
 
-				// NOTE: Render mask filtering is intentionally NOT applied here so that entities
-				// excluded by the camera's render mask still cast shadows in the shadow pass.
-				// The mask is applied later in SortEntitiesByRenderQueue when building the
-				// render queue buckets used by the visible (non-shadow) render passes.
-
-				auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshHandle);
-
-				auto transform = entity.GetComponent<TransformComponent>();
-
-				// Calculate AABB and check if in frustum
-				Vector3f localMin = mesh->GetMinBounds();
-				Vector3f localMax = mesh->GetMaxBounds();
-				Matrix4f worldMat = transform.GetWorldTransform();
-
-				// Define the 8 corners of the local bounding box
-				Vector3f corners[8] = {
-					{localMin.x, localMin.y, localMin.z},
-					{localMax.x, localMin.y, localMin.z},
-					{localMin.x, localMax.y, localMin.z},
-					{localMax.x, localMax.y, localMin.z},
-					{localMin.x, localMin.y, localMax.z},
-					{localMax.x, localMin.y, localMax.z},
-					{localMin.x, localMax.y, localMax.z},
-					{localMax.x, localMax.y, localMax.z}
-				};
-
-				// Initialize world bounds to extreme values
-				Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
-				Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
-
-				// Transform all 8 corners to world space and find the new AABB limits
-				for (int i = 0; i < 8; i++) {
-					Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
-					worldMin = Math::Min(worldMin, worldCorner);
-					worldMax = Math::Max(worldMax, worldCorner);
-				}
-
-				AABB worldAABB{ worldMin, worldMax };
-				renderableEntities.push_back(std::make_pair(entity, worldAABB));
+		auto transformLocalBoundsToWorldAABB = [](Vector3f localMin, Vector3f localMax, const Matrix4f& worldMat) -> AABB {
+			Vector3f corners[8] = {
+				{localMin.x, localMin.y, localMin.z},
+				{localMax.x, localMin.y, localMin.z},
+				{localMin.x, localMax.y, localMin.z},
+				{localMax.x, localMax.y, localMin.z},
+				{localMin.x, localMin.y, localMax.z},
+				{localMax.x, localMin.y, localMax.z},
+				{localMin.x, localMax.y, localMax.z},
+				{localMax.x, localMax.y, localMax.z}
 			};
 
-		// Store Static Meshes
-		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>()) 
+			Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
+			Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
+			for (int i = 0; i < 8; i++)
+			{
+				Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
+				worldMin = Math::Min(worldMin, worldCorner);
+				worldMax = Math::Max(worldMax, worldCorner);
+			}
+			return AABB{ worldMin, worldMax };
+		};
+
+		auto padLocalBounds = [](Vector3f& localMin, Vector3f& localMax, float padding) {
+			if (padding == 1.0f)
+				return;
+			Vector3f center = (localMin + localMax) * 0.5f;
+			Vector3f extents = (localMax - localMin) * 0.5f * padding;
+			localMin = center - extents;
+			localMax = center + extents;
+		};
+
+		// Static meshes — cull with the mesh entity's own world transform.
+		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>())
 		{
 			Entity entity(entityId, scene);
 			auto& meshComp = entity.GetComponent<StaticMeshComponent>();
-			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
+			if (meshComp.MeshHandle == Constants::InvalidUUID)
+				continue;
+
+			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
+			Vector3f localMin = mesh->GetMinBounds();
+			Vector3f localMax = mesh->GetMaxBounds();
+			AABB worldAABB = transformLocalBoundsToWorldAABB(
+				localMin, localMax, entity.GetComponent<TransformComponent>().GetWorldTransform());
+			renderableEntities.push_back(std::make_pair(entity, worldAABB));
 		}
 
-		// Store Skinned Meshes
-		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>()) 
+		// Skinned meshes — take the UNION of:
+		//   1) mesh-entity world transform × bind-pose bounds
+		//   2) animator-root world transform × bind-pose bounds (when available)
+		// Mesh bounds are often authored in character/root space while the mesh entity sits
+		// under a scaled/rotated armature (e.g. Mixamo). Either matrix alone can be wrong for
+		// some hierarchies; the union is conservative (may overdraw, rarely false-culls).
+		constexpr float skinnedBoundsPadding = 1.25f;
+		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>())
 		{
 			Entity entity(entityId, scene);
 			auto& meshComp = entity.GetComponent<SkinnedMeshComponent>();
-			createAndStoreEntityPair(entity, meshComp.MeshHandle, meshComp.Layer);
+			if (meshComp.MeshHandle == Constants::InvalidUUID)
+				continue;
+
+			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
+			Vector3f localMin = mesh->GetMinBounds();
+			Vector3f localMax = mesh->GetMaxBounds();
+			padLocalBounds(localMin, localMax, skinnedBoundsPadding);
+
+			const Matrix4f& meshWorldMat = entity.GetComponent<TransformComponent>().GetWorldTransform();
+			AABB worldAABB = transformLocalBoundsToWorldAABB(localMin, localMax, meshWorldMat);
+
+			if (meshComp.AnimatorEntityHandle != Constants::InvalidUUID)
+			{
+				Entity animatorEntity = scene->GetEntity(meshComp.AnimatorEntityHandle);
+				if (animatorEntity)
+				{
+					AABB animatorAABB = transformLocalBoundsToWorldAABB(
+						localMin, localMax, animatorEntity.GetComponent<TransformComponent>().GetWorldTransform());
+					worldAABB.WorldMin = Math::Min(worldAABB.WorldMin, animatorAABB.WorldMin);
+					worldAABB.WorldMax = Math::Max(worldAABB.WorldMax, animatorAABB.WorldMax);
+				}
+			}
+
+			renderableEntities.push_back(std::make_pair(entity, worldAABB));
 		}
 
 		m_ActiveRenderableEntities = std::move(renderableEntities);
