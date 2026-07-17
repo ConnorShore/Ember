@@ -8,6 +8,7 @@ namespace Ember {
 		state.new_usertype<AnimatorComponent>("AnimatorComponent",
 			"SkeletonHandle", &AnimatorComponent::SkeletonHandle,
 			"ControllerHandle", &AnimatorComponent::ControllerHandle,
+			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
 			"SetFloat", &AnimatorComponent::SetFloat,
 			"SetBool", &AnimatorComponent::SetBool
 		);

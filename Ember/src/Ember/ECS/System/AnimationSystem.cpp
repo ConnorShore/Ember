@@ -280,7 +280,8 @@ namespace Ember {
 						}
 						else
 						{
-							runtime.PreviousTime += (delta * previousState->BasePlaybackSpeed);
+							const float previousEffectiveSpeed = previousState->BasePlaybackSpeed * animator.PlaybackSpeed;
+							runtime.PreviousTime += (delta * previousEffectiveSpeed);
 							float previousDuration = prevAnimation->GetDuration();
 							if (previousDuration > 0.0f)
 							{
@@ -312,16 +313,17 @@ namespace Ember {
 					}
 
 					float lastFrameTime = runtime.CurrentTime;
-					runtime.CurrentTime += (delta * currentState->BasePlaybackSpeed);
+					const float effectiveSpeed = currentState->BasePlaybackSpeed * animator.PlaybackSpeed;
+					runtime.CurrentTime += (delta * effectiveSpeed);
 
-					if (duration > 0.0f && currentState->BasePlaybackSpeed > 0.0f && runtime.CurrentTime > duration)
+					if (duration > 0.0f && effectiveSpeed > 0.0f && runtime.CurrentTime > duration)
 					{
 						if (currentState->Looping)
 							runtime.CurrentTime = fmod(runtime.CurrentTime, duration);
 						else
 							runtime.CurrentTime = duration;	// Clamp to end
 					}
-					else if (duration > 0.0f && currentState->BasePlaybackSpeed < 0.0f && runtime.CurrentTime < 0.0f)
+					else if (duration > 0.0f && effectiveSpeed < 0.0f && runtime.CurrentTime < 0.0f)
 					{
 						if (currentState->Looping)
 						{

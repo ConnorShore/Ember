@@ -665,6 +665,10 @@ namespace Ember {
 		UUID SkeletonHandle = Constants::InvalidUUID;
 		UUID ControllerHandle = Constants::InvalidUUID;
 
+		// Per-instance multiplier applied on top of each state's BasePlaybackSpeed.
+		// Runtime-only; does not mutate the shared AnimationController asset.
+		float PlaybackSpeed = 1.0f;
+
 		// Blackboard data for the Animation State Machine
 		AnimationBlackboard Blackboard;
 

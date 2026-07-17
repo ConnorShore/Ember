@@ -316,6 +316,10 @@ Assets:
     Name: DEagleSlideMask
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
+    UUID: 10171445062614256115
+    Name: Zombie_Zombie Attack
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
+  - Type: Animation
     UUID: 6612716991326083235
     Name: M4_Reload
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
@@ -335,10 +339,6 @@ Assets:
     UUID: 7891003508228372826
     Name: DesertEagle_SlideLock
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_SlideLock.ebanim
-  - Type: Animation
-    UUID: 10171445062614256115
-    Name: Zombie_Zombie Attack
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
   - Type: Animation
     UUID: 2713313368883441983
     Name: Zombie_Zombie Walk
