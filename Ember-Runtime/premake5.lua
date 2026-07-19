@@ -43,6 +43,13 @@
    filter "system:windows"
       systemversion "latest"
 
+   -- Make "uninitialized variable used" a hard build error (C4700 definitely, C4701/C4703
+   -- potentially) so the optimizer-exposed UB behind the Debug-vs-Release rendering divergence
+   -- fails the build at the exact line. `/w1XXXX` force-enables the /W4-level ones; `/weXXXX`
+   -- promotes them to errors. Scoped to engine sources so vendored TUs are unaffected.
+   filter { "system:windows", "files:src/**.cpp" }
+      buildoptions { "/w14700", "/w14701", "/w14703", "/we4700", "/we4701", "/we4703" }
+
    filter "configurations:Debug"
       defines { "EB_DEBUG", "EB_PROFILE" }
       symbols "On"

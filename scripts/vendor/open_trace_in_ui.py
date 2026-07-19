@@ -53,6 +53,7 @@ QUERY_PRESETS = {
           frame_count AS updates,
           ROUND(total_dur / 1e6, 3) AS total_ms,
           ROUND(total_dur / frame_count / 1e3, 3) AS avg_us_per_call,
+          ROUND(total_dur / frame_count / 1e6, 3) AS avg_ms_per_call,
           100.0 AS pct_of_frame
         FROM frame_total
         UNION ALL
@@ -61,6 +62,7 @@ QUERY_PRESETS = {
           updates,
           ROUND(total_dur / 1e6, 3) AS total_ms,
           ROUND(total_dur / updates / 1e3, 3) AS avg_us_per_call,
+          ROUND(total_dur / updates / 1e6, 3) AS avg_ms_per_call,
           ROUND(total_dur * 100.0 / (SELECT total_dur FROM frame_total), 2) AS pct_of_frame
         FROM system_totals
         ORDER BY total_ms DESC

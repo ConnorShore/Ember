@@ -80,13 +80,13 @@ Assets:
     Name: Zombie_world_war_zombie_diffuse.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_diffuse.png
   - Type: Shader
-    UUID: 13675443955098295717
-    Name: Tracer
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
-  - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/HolographicSight.glsl
+  - Type: Shader
+    UUID: 13675443955098295717
+    Name: Tracer
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
   - Type: Script
     UUID: 3344681323696305163
     Name: RoundUIControl
@@ -95,14 +95,6 @@ Assets:
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
-  - Type: Script
-    UUID: 936314447457138483
-    Name: PlayerController
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
-  - Type: Script
-    UUID: 8562544563539838448
-    Name: PlayerInteraction
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
   - Type: Script
     UUID: 5986627421746366671
     Name: SpawnManager
@@ -164,6 +156,10 @@ Assets:
     Name: Crosshair
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
   - Type: Script
+    UUID: 8562544563539838448
+    Name: PlayerInteraction
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
+  - Type: Script
     UUID: 5025897937436236093
     Name: MouseLook
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
@@ -171,6 +167,10 @@ Assets:
     UUID: 8102167312162542918
     Name: WeaponController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponController.lua
+  - Type: Script
+    UUID: 936314447457138483
+    Name: PlayerController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
   - Type: Script
     UUID: 803391121824597106
     Name: AIController

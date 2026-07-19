@@ -31,6 +31,11 @@ namespace Ember {
 		m_GBuffer = Framebuffer::Create(specs);
 		m_FramebufferOutputs["GBuffer"] = m_GBuffer;
 
+		CacheGBufferTextureOutputs();
+	}
+
+	void DeferredGeometryRenderPass::CacheGBufferTextureOutputs()
+	{
 		m_TextureOutputs["AlbedoRoughness"] = m_GBuffer->GetColorAttachmentID(0);
 		m_TextureOutputs["NormalMetallic"] = m_GBuffer->GetColorAttachmentID(1);
 		m_TextureOutputs["PositionAO"] = m_GBuffer->GetColorAttachmentID(2);
@@ -134,6 +139,9 @@ namespace Ember {
 	void DeferredGeometryRenderPass::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		m_GBuffer->ViewportResize(width, height);
+		// The resize recreated the attachment textures with new GL IDs — refresh the cached handles
+		// so downstream passes don't sample stale (or driver-reused) textures.
+		CacheGBufferTextureOutputs();
 	}
 
 	void DeferredGeometryRenderPass::Shutdown()

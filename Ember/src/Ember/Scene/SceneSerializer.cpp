@@ -1690,23 +1690,39 @@ namespace Ember {
 				auto skybox = renderSystem->GetSkybox();
 
 				ryml::NodeRef skyboxNode = envNode["Skybox"];
-				bool skyboxEnabled;
-				skyboxNode["Enabled"] >> skyboxEnabled;
-				skybox->SetEnabled(skyboxEnabled);
 
-				float intensity;
-				skyboxNode["Intensity"] >> intensity;
-				skybox->SetIntensity(intensity);
-
-				uint64_t texUUID;
-				skyboxNode["TextureUUID"] >> texUUID;
-				if (texUUID != Constants::InvalidUUID)
+				// rapidyaml's operator>> leaves its target UNTOUCHED when the child key is
+				// absent/unreadable, so each read must go into an initialized local guarded by
+				// has_child(). Reading "Intensity" into a bare `float intensity;` previously fed
+				// uninitialized stack garbage into SetIntensity() -> u_EnvironmentIntensity, which
+				// scales the IBL ambient and blew out lit geometry non-deterministically in
+				// optimized builds (Debug stack happened to be stable; Release did not).
+				if (skyboxNode.has_child("Enabled"))
 				{
-					auto& assetManager = Application::Instance().GetAssetManager();
-					if (assetManager.ContainsAsset((UUID)texUUID))
-						skybox->Initialize((UUID)texUUID);
-					else
-						EB_CORE_WARN("SceneSerializer: Skybox texture UUID not found in AssetManager. Skybox will not be restored.");
+					bool skyboxEnabled = false;
+					skyboxNode["Enabled"] >> skyboxEnabled;
+					skybox->SetEnabled(skyboxEnabled);
+				}
+
+				if (skyboxNode.has_child("Intensity"))
+				{
+					float intensity = 1.0f;
+					skyboxNode["Intensity"] >> intensity;
+					skybox->SetIntensity(intensity);
+				}
+
+				if (skyboxNode.has_child("TextureUUID"))
+				{
+					uint64_t texUUID = Constants::InvalidUUID;
+					skyboxNode["TextureUUID"] >> texUUID;
+					if (texUUID != Constants::InvalidUUID)
+					{
+						auto& assetManager = Application::Instance().GetAssetManager();
+						if (assetManager.ContainsAsset((UUID)texUUID))
+							skybox->Initialize((UUID)texUUID);
+						else
+							EB_CORE_WARN("SceneSerializer: Skybox texture UUID not found in AssetManager. Skybox will not be restored.");
+					}
 				}
 			}
 
