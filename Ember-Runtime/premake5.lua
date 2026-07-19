@@ -43,8 +43,8 @@
    filter "system:windows"
       systemversion "latest"
 
-filter "configurations:Debug"
-      defines { "EB_DEBUG" }
+   filter "configurations:Debug"
+      defines { "EB_DEBUG", "EB_PROFILE" }
       symbols "On"
       -- kind "ConsoleApp" 
 
@@ -53,6 +53,11 @@ filter "configurations:Debug"
       optimize "On"
       -- kind "WindowedApp"
       -- entrypoint "mainCRTStartup"
+
+   filter "configurations:Profile"
+      defines { "EB_PROFILE", "EB_RELEASE" }
+      optimize "On"
+      symbols "On"
 
    filter "configurations:Dist"
       defines { "EB_DIST" }

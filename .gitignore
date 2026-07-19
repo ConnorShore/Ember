@@ -50,6 +50,9 @@
 # Logs directory
 Logs/
 
+# Chrome-tracing profile sessions (Instrumentor)
+Profiles/
+
 # Binary game files
 *.bin
 

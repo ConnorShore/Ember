@@ -1,12 +1,12 @@
 Assets:
   - Type: Texture
-    UUID: 3453372035684411145
-    Name: RadialGlow
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
-  - Type: Texture
     UUID: 2902344313391760329
     Name: DesertEagle_DesertEagleDiffuse.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.png
+  - Type: Texture
+    UUID: 3453372035684411145
+    Name: RadialGlow
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
   - Type: Texture
     UUID: 18407398070678811137
     Name: DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
@@ -52,6 +52,10 @@ Assets:
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
   - Type: Texture
+    UUID: 15495496485610532023
+    Name: Zombie_world_war_zombie_diffuse.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_diffuse.png
+  - Type: Texture
     UUID: 2037891838812646000
     Name: DesertEagle_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_ORM_Mat0.png
@@ -75,10 +79,6 @@ Assets:
     UUID: 9540991726704474309
     Name: Zombie_world_war_zombie_normal.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_normal.png
-  - Type: Texture
-    UUID: 15495496485610532023
-    Name: Zombie_world_war_zombie_diffuse.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_diffuse.png
   - Type: Shader
     UUID: 3290979914783484062
     Name: HolographicSight
@@ -316,10 +316,6 @@ Assets:
     Name: DEagleSlideMask
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
-    UUID: 10171445062614256115
-    Name: Zombie_Zombie Attack
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
-  - Type: Animation
     UUID: 6612716991326083235
     Name: M4_Reload
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
@@ -331,6 +327,10 @@ Assets:
     UUID: 13210029773156912041
     Name: DesertEagle_Reload
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Reload.ebanim
+  - Type: Animation
+    UUID: 10171445062614256115
+    Name: Zombie_Zombie Attack
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
   - Type: Animation
     UUID: 1061568813566244299
     Name: DesertEagle_Idle

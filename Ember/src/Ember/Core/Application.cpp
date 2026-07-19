@@ -31,6 +31,7 @@ namespace Ember {
 		: m_Specification(applicationSpes)
 	{
 		EB_CORE_ASSERT(s_Instance == nullptr, "Application instance is alredy created!");
+		EB_PROFILE_FUNCTION();
 
 		s_Instance = this;
 
@@ -128,6 +129,7 @@ namespace Ember {
 
 	void Application::Run()
 	{
+		EB_PROFILE_FUNCTION();
 		EB_CORE_INFO("Application running!");
 
 		TimeStamp lastTime = Timer::Now();
