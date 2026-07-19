@@ -11,15 +11,25 @@
 namespace Ember {
 
 	// --- HELPER FUNCTIONS ---
-	// Finds the keyframe index just BEFORE the current time
+	// Finds the keyframe index just BEFORE the current time.
+	// Keyframes are sorted ascending by TimeStamp, so we binary-search the containing segment
+	// instead of scanning linearly from the start on every call. This matters because this runs
+	// 3x (position/rotation/scale) per bone, per animator, per frame, and clips can have many keys.
 	template<typename T>
 	static size_t GetKeyframeIndex(const std::vector<T>& keys, float animationTime)
 	{
-		for (size_t i = 0; i < keys.size() - 1; ++i) {
-			if (animationTime < keys[i + 1].TimeStamp)
-				return i;
-		}
-		return keys.size() > 0 ? keys.size() - 1 : 0;
+		if (keys.size() <= 1)
+			return 0;
+
+		// First keyframe whose TimeStamp is strictly greater than animationTime; the segment we
+		// want starts at the keyframe immediately before it.
+		auto it = std::upper_bound(keys.begin(), keys.end(), animationTime,
+			[](float time, const T& key) { return time < key.TimeStamp; });
+
+		if (it == keys.begin())
+			return 0;
+
+		return static_cast<size_t>((it - keys.begin()) - 1);
 	}
 
 	// Calculates the blend factor (0.0 to 1.0) between two keyframes
@@ -158,6 +168,9 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		View view = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
 
+		// Reused across every animator this frame so we don't allocate a fresh map per animator/layer.
+		std::unordered_map<std::string, AnimationParameter> effectiveParameters;
+
 		for (EntityID entity : view)
 		{
 			EB_PROFILE_SCOPE("AnimationSystem::EvaluateAnimator");
@@ -182,6 +195,19 @@ namespace Ember {
 			if (controller->GetLayers().empty())
 				continue;
 
+			// Build the effective parameter set once per animator: controller defaults overlaid with
+			// the animator's blackboard values. Neither source changes between layers, so there's no
+			// need to rebuild it per layer. clear()+insert reuses the scratch map's buckets instead of
+			// heap-allocating a brand new map (and copying every controller parameter) every frame.
+			effectiveParameters.clear();
+			if (controller)
+			{
+				for (const auto& [name, param] : controller->GetParameters())
+					effectiveParameters[name] = param;
+			}
+			for (const auto& parameter : animator.Blackboard.Parameters)
+				effectiveParameters[parameter.first] = parameter.second;
+
 			size_t numLayers = controller->GetLayers().size();
 			for (size_t i = 0; i < numLayers; i++)
 			{
@@ -198,22 +224,7 @@ namespace Ember {
 				AnimationStateMachine* animStateMachine = &layer.StateMachine;
 				const AnimationState* currentState = ResolveCurrentState(animStateMachine, runtime);
 
-				std::unordered_map<std::string, AnimationParameter> effectiveParameters;
-				if (controller)
-					effectiveParameters = controller->GetParameters();
-
-				// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
-				// Edit: Removed this for now as I'm not sure its needed and it was spamming the log a lot.
-				// TODO: Make it so it logs this only once per parameter per animator instead of every frame
-				for (auto parameter : animator.Blackboard.Parameters)
-				{
-					//if (controller && !controller->GetParameters().contains(parameter.first))
-					//{
-					//	EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
-					//}
-
-					effectiveParameters[parameter.first] = parameter.second;
-				}
+				// effectiveParameters was built once per animator above (controller defaults + blackboard).
 
 				// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
 				if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(runtime.CurrentStateId))

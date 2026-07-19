@@ -12,6 +12,14 @@ Assets:
     Name: DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
   - Type: Texture
+    UUID: 9540991726704474309
+    Name: Zombie_world_war_zombie_normal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_normal.png
+  - Type: Texture
+    UUID: 11044113959953237382
+    Name: Zombie_world_war_zombie_specular.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_specular.png
+  - Type: Texture
     UUID: 17608889885004568014
     Name: AssaultRifle_ARMetallic-ARRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.png
@@ -68,14 +76,6 @@ Assets:
     Name: AssaultRifle_ARColor.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
   - Type: Texture
-    UUID: 11044113959953237382
-    Name: Zombie_world_war_zombie_specular.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_specular.png
-  - Type: Texture
-    UUID: 9540991726704474309
-    Name: Zombie_world_war_zombie_normal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_normal.png
-  - Type: Texture
     UUID: 15495496485610532023
     Name: Zombie_world_war_zombie_diffuse.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_diffuse.png
@@ -91,14 +91,6 @@ Assets:
     UUID: 3344681323696305163
     Name: RoundUIControl
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/RoundUIControl.lua
-  - Type: Script
-    UUID: 8058432714386778896
-    Name: RoundManager
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/RoundManager.lua
-  - Type: Script
-    UUID: 12117729415864912341
-    Name: PickupItem
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
   - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
@@ -119,6 +111,10 @@ Assets:
     UUID: 10843162672597406671
     Name: WeaponMovement
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponMovement.lua
+  - Type: Script
+    UUID: 12117729415864912341
+    Name: PickupItem
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PickupItem.lua
   - Type: Script
     UUID: 18321648132521774491
     Name: SightAttachment
@@ -207,6 +203,10 @@ Assets:
     UUID: 5515958197491920100
     Name: GlobalSystems
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/GlobalSystems.lua
+  - Type: Script
+    UUID: 8058432714386778896
+    Name: RoundManager
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/RoundManager.lua
   - Type: Script
     UUID: 11246612645680594128
     Name: RoundAudioManager
@@ -316,10 +316,6 @@ Assets:
     Name: DEagleSlideMask
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
-    UUID: 6612716991326083235
-    Name: M4_Reload
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
-  - Type: Animation
     UUID: 9936688561769825438
     Name: Zombie_Zombie Idle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Idle.ebanim
@@ -331,6 +327,10 @@ Assets:
     UUID: 10171445062614256115
     Name: Zombie_Zombie Attack
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
+  - Type: Animation
+    UUID: 6612716991326083235
+    Name: M4_Reload
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
   - Type: Animation
     UUID: 1061568813566244299
     Name: DesertEagle_Idle

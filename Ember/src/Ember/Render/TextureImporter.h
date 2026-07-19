@@ -120,6 +120,25 @@ namespace Ember {
 			return Load(UUID(), name, filePath);
 		}
 
+		// A cooked texture is safe to use if it exists and is at least as new as its source image, so
+		// re-importing/editing the source (which rewrites the .png/.jpg) invalidates a stale cook.
+		inline static bool IsCookedTextureFresh(const std::filesystem::path& source, const std::filesystem::path& cooked)
+		{
+			std::error_code ec;
+			if (!std::filesystem::exists(cooked, ec) || ec)
+				return false;
+
+			auto cookedTime = std::filesystem::last_write_time(cooked, ec);
+			if (ec)
+				return false;
+
+			auto sourceTime = std::filesystem::last_write_time(source, ec);
+			if (ec)
+				return true; // Source unreadable but the cook exists — prefer the cook over failing.
+
+			return cookedTime >= sourceTime;
+		}
+
 		inline static SharedPtr<Texture2D> Load(UUID uuid, const std::string& name, const std::string& filePath)
 		{
 			switch (AssetSerializationMode::GetRuntimeLoadTier())
@@ -134,9 +153,24 @@ namespace Ember {
 			}
 			case RuntimeAssetLoadTier::Auto:
 			default:
+			{
+				// The registered path already points at cooked binary data.
 				if (std::filesystem::path(filePath).extension() == ".bin")
 					return LoadCooked(uuid, name, filePath);
+
+				// Source image (e.g. .png/.jpg): prefer a fresh cooked sibling when one exists — reading
+				// raw pixels is far cheaper than decoding a compressed image on the main thread.
+				auto cookedPath = std::filesystem::path(filePath);
+				cookedPath.replace_extension(".bin");
+				if (IsCookedTextureFresh(filePath, cookedPath))
+				{
+					if (auto cooked = LoadCooked(uuid, name, cookedPath.string()))
+						return cooked;
+					// Corrupt/unreadable cook — fall through to decoding the source instead of failing.
+				}
+
 				return LoadSource(uuid, name, filePath);
+			}
 			}
 		}
 	};

@@ -119,8 +119,7 @@ namespace Ember {
 		if (scene->IsRuntime())
 		{
 			auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
-			BakeColorGradeLUT(colorGradePass->Settings);
-			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+			BakeColorGradeLUTIfDirty(colorGradePass->Settings);
 		}
 	}
 
@@ -403,6 +402,23 @@ namespace Ember {
 		}
 
 		free((void*)bakedData);
+	}
+
+	void RenderSystem::BakeColorGradeLUTIfDirty(ColorGradeSettings& settings)
+	{
+		// Skip the (expensive) full-screen bake if the grade hasn't changed since the last one.
+		// This turns a per-frame GPU pass into a bake-on-change operation for static grades, while
+		// still re-baking automatically when volume blending or editor tweaks alter the settings.
+		if (m_HasBakedColorGradeLUT && settings == m_LastBakedColorGradeSettings)
+			return;
+
+		BakeColorGradeLUT(settings);
+
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
+		colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+
+		m_LastBakedColorGradeSettings = settings;
+		m_HasBakedColorGradeLUT = true;
 	}
 
 	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)
@@ -718,9 +734,9 @@ namespace Ember {
 		colorGradePass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.ColorGradeEnabled;
 		if (colorGradePass->Enabled)
 		{
-			// If the color grading settings have changed, we need to re-bake the LUT with the new settings for runtime
-			BakeColorGradeLUT(colorGradePass->Settings);
-			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+			// Only re-bake the LUT when the color grading settings actually change (e.g. from volume
+			// blending or editor edits); a static grade bakes once and is reused every subsequent frame.
+			BakeColorGradeLUTIfDirty(colorGradePass->Settings);
 		}
 
 		auto bloomPass = StaticPointerCast<BloomPass>(GetPostProcessPass("BloomPass"));

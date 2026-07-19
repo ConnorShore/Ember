@@ -32,6 +32,25 @@ namespace Ember {
 			file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
 			return file.good() && magic == ANIM_FILE_MAGIC;
 		}
+
+		// A cooked animation is safe to use if it exists and is at least as new as its source, so
+		// editing/re-importing the source (which rewrites the .ebanim) invalidates a stale cook.
+		bool IsCookedAnimationFresh(const std::filesystem::path& source, const std::filesystem::path& cooked)
+		{
+			std::error_code ec;
+			if (!std::filesystem::exists(cooked, ec) || ec)
+				return false;
+
+			auto cookedTime = std::filesystem::last_write_time(cooked, ec);
+			if (ec)
+				return false;
+
+			auto sourceTime = std::filesystem::last_write_time(source, ec);
+			if (ec)
+				return true; // Source unreadable but the cook exists — prefer the cook over failing.
+
+			return cookedTime >= sourceTime;
+		}
 	}
 
 	bool AnimationSerializer::SerializeSource(const std::filesystem::path& filepath, const SharedPtr<Animation>& animation)
@@ -410,9 +429,25 @@ namespace Ember {
 			return DeserializeCooked(uuid, GetCookedPath(filepath));
 		case RuntimeAssetLoadTier::Auto:
 		default:
+		{
+			// The registered path already points at cooked binary data.
 			if (filepath.extension() == ".bin" || AnimationFileLooksBinary(filepath))
 				return DeserializeCooked(uuid, filepath);
-			return DeserializeSource(uuid, filepath);
+
+			// Source path (.ebanim): prefer a fresh cooked sibling — binary keyframe loading is far
+			// faster than parsing large per-keyframe YAML.
+			if (auto cookedPath = GetCookedPath(filepath); IsCookedAnimationFresh(filepath, cookedPath))
+				return DeserializeCooked(uuid, cookedPath);
+
+			// No usable cook: parse the (slow) YAML source once, then cook a binary sibling so every
+			// subsequent load avoids the YAML cost entirely.
+			EB_CORE_WARN("Animation '{}' has no up-to-date cooked binary; loading from YAML source (slow). "
+				"Writing a cooked sibling so future loads are fast.", filepath.string());
+			auto animation = DeserializeSource(uuid, filepath);
+			if (animation && !SerializeCooked(filepath, animation))
+				EB_CORE_WARN("Failed to write cooked animation sibling for '{}'.", filepath.string());
+			return animation;
+		}
 		}
 	}
 
