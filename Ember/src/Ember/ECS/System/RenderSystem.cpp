@@ -126,6 +126,8 @@ namespace Ember {
 
 	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool isRuntime)
 	{
+		EB_PROFILE_FUNCTION();
+
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		if (!m_RenderSceneState.IsCameraFound)
@@ -152,28 +154,43 @@ namespace Ember {
 
 		// Blend and set final post processing settings based on volume overrides in the scene
 		if (isRuntime)
+		{
+			EB_PROFILE_SCOPE("RenderSystem::SetFinalPostProcessSettings");
 			SetFinalPostProcessSettings(scene);
+		}
 		else
 			m_RenderSceneState.FinalPostProcessVolumeSettings = m_GlobalVolumeSettings;
 
 		renderContext.FinalPostProcessVolumeSettings = &m_RenderSceneState.FinalPostProcessVolumeSettings;
 
 		// Store entities in scene with renderable components and their AABBs for frustum culling in the render passes
-		StoreRenderableEntities(scene);
+		{
+			EB_PROFILE_SCOPE("RenderSystem::StoreRenderableEntities");
+			StoreRenderableEntities(scene);
+		}
 		renderContext.ActiveEntities = &m_ActiveRenderableEntities;
-		
+
 		// Sort entities into render queue buckets
-		SortEntitiesByRenderQueue(scene);
+		{
+			EB_PROFILE_SCOPE("RenderSystem::SortEntitiesByRenderQueue");
+			SortEntitiesByRenderQueue(scene);
+		}
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
 
 		// --- Shadow pass ---
 		auto shadowPass = StaticPointerCast<ShadowRenderPass>(GetRenderPass("ShadowRenderPass"));
-		shadowPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ShadowRenderPass");
+			shadowPass->Execute(renderContext);
+		}
 
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		// Geometry
 		auto deferredGeometryPass = StaticPointerCast<DeferredGeometryRenderPass>(GetRenderPass("DeferredGeometryRenderPass"));
-		deferredGeometryPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DeferredGeometryRenderPass");
+			deferredGeometryPass->Execute(renderContext);
+		}
 
 		// Lighting
 		auto deferredLightingPass = StaticPointerCast<DeferredLightingRenderPass>(GetRenderPass("DeferredLightingRenderPass"));
@@ -183,7 +200,10 @@ namespace Ember {
 		deferredLightingPass->SetTextureInput("Emission", deferredGeometryPass->GetTextureOutput("Emission"));
 		deferredLightingPass->SetTextureInput("DirectionalShadowMap", shadowPass->GetTextureOutput("DirectionalShadowMap"));
 		deferredLightingPass->SetTextureInput("SpotShadowMap", shadowPass->GetTextureOutput("SpotShadowMap"));
-		deferredLightingPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DeferredLightingRenderPass");
+			deferredLightingPass->Execute(renderContext);
+		}
 
 		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
 		RenderAction::CopyDepthBuffer(deferredGeometryPass->GetFramebufferOutput("GBuffer")->GetID(), deferredLightingPass->GetFramebufferOutput("HDRScene")->GetID(), m_RenderSceneState.ViewportDimensions);
@@ -191,61 +211,97 @@ namespace Ember {
 		// --- Skybox ---
 		auto skyboxPass = StaticPointerCast<SkyboxRenderPass>(GetRenderPass("SkyboxRenderPass"));
 		skyboxPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		skyboxPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("SkyboxRenderPass");
+			skyboxPass->Execute(renderContext);
+		}
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
 		auto forwardPass = StaticPointerCast<ForwardEntitiesRenderPass>(GetRenderPass("ForwardEntitiesRenderPass"));
 		forwardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		forwardPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ForwardEntitiesRenderPass");
+			forwardPass->Execute(renderContext);
+		}
 
 		auto transparentPass = StaticPointerCast<TransparentEntitiesRenderPass>(GetRenderPass("TransparentEntitiesRenderPass"));
 		transparentPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		transparentPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("TransparentEntitiesRenderPass");
+			transparentPass->Execute(renderContext);
+		}
 
 		// --- Editor-only grid ---
 		auto gridPass = StaticPointerCast<EditorGridRenderPass>(GetRenderPass("EditorGridRenderPass"));
 		gridPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		gridPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("EditorGridRenderPass");
+			gridPass->Execute(renderContext);
+		}
 
 		// Particles and billboards
 		auto particlePass = StaticPointerCast<ParticleRenderPass>(GetRenderPass("ParticleRenderPass"));
 		particlePass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		particlePass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ParticleRenderPass");
+			particlePass->Execute(renderContext);
+		}
 
 		auto billboardPass = StaticPointerCast<BillboardsRenderPass>(GetRenderPass("BillboardsRenderPass"));
 		billboardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		billboardPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("BillboardsRenderPass");
+			billboardPass->Execute(renderContext);
+		}
 
 		// Draw World-Space 2D BEFORE Post-Processing
 		auto worldSpace2DPass = StaticPointerCast<WorldSpace2DRenderPass>(GetRenderPass("WorldSpace2DRenderPass"));
 		worldSpace2DPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		worldSpace2DPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("WorldSpace2DRenderPass");
+			worldSpace2DPass->Execute(renderContext);
+		}
 
 		// Post Processing & Tone Mapping
-		ApplyPostProcessSettings();
+		{
+			EB_PROFILE_SCOPE("RenderSystem::ApplyPostProcessSettings");
+			ApplyPostProcessSettings();
+		}
 		auto postProcessPass = StaticPointerCast<PostProcessRenderPass>(GetRenderPass("PostProcessRenderPass"));
 		postProcessPass->SetFramebufferInput("GBuffer", deferredGeometryPass->GetFramebufferOutput("GBuffer"));
 		postProcessPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		postProcessPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("PostProcessRenderPass");
+			postProcessPass->Execute(renderContext);
+		}
 
 		// Final Blit to screen
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 
 		auto finalBlitPass = StaticPointerCast<FinalBlitRenderPass>(GetRenderPass("FinalBlitRenderPass"));
 		finalBlitPass->SetTextureInput("FinalScene", postProcessPass->GetTextureOutput("FinalScene"));
-		finalBlitPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("FinalBlitRenderPass");
+			finalBlitPass->Execute(renderContext);
+		}
 
 		// Debug lines
 		if (!isRuntime && m_RenderSceneState.PreDebugDrawCallback)
 			m_RenderSceneState.PreDebugDrawCallback(scene, m_RenderSceneState.SelectedEntity);
 
 		auto debugPass = StaticPointerCast<DebugRenderPass>(GetRenderPass("DebugRenderPass"));
-		debugPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DebugRenderPass");
+			debugPass->Execute(renderContext);
+		}
 
 		// Draw Screen-Space UI AFTER Final Composite
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 		auto screenSpace2DPass = StaticPointerCast<ScreenSpace2DRenderPass>(GetRenderPass("ScreenSpace2DRenderPass"));
-		screenSpace2DPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ScreenSpace2DRenderPass");
+			screenSpace2DPass->Execute(renderContext);
+		}
 
 		// Reset any modified render state so other systems aren't affected (like the Editor's Gizmo system)
 		ResetRenderState();
@@ -286,6 +342,8 @@ namespace Ember {
 
 	void RenderSystem::BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath /*= ""*/)
 	{
+		EB_PROFILE_FUNCTION();
+
 		// Save the current scissor state, then disable it so we can draw to the whole 256x16 buffer
 		// Prevents issues with ImGui's scissor test interfering with the baking process
 		bool isScissorEnabled = RenderAction::IsScissorTestEnabled();

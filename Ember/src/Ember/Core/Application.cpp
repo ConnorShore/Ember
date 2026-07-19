@@ -129,29 +129,45 @@ namespace Ember {
 
 	void Application::Run()
 	{
-		EB_PROFILE_FUNCTION();
 		EB_CORE_INFO("Application running!");
 
 		TimeStamp lastTime = Timer::Now();
 		while (m_Running) {
+			EB_PROFILE_SCOPE("Frame");
+
 			TimeStamp currentTime = Timer::Now();
 			TimeStep delta = currentTime - lastTime;
 			lastTime = currentTime;
 
-			for (auto& layer : m_LayerStack)
-				layer->OnUpdate(delta);
+			{
+				EB_PROFILE_SCOPE("LayerStack::OnUpdate");
+				for (auto& layer : m_LayerStack)
+					layer->OnUpdate(delta);
+			}
 
-			m_ImGuiLayer->BeginFrame();
+			{
+				EB_PROFILE_SCOPE("ImGuiLayer::Frame");
+				m_ImGuiLayer->BeginFrame();
 
-			for (auto& layer : m_LayerStack)
-				layer->OnImGuiRender(delta);
+				for (auto& layer : m_LayerStack)
+					layer->OnImGuiRender(delta);
 
-			m_ImGuiLayer->EndFrame();
+				m_ImGuiLayer->EndFrame();
+			}
 
 			Input::ResetMouseDelta();
-			m_Window->OnUpdate();
 
-			m_SceneManager->ExecuteSceneSwap();
+			{
+				// Includes glfwPollEvents (OS/input) and SwapBuffers (blocks on vsync if enabled) —
+				// see Windows::Window::OnUpdate for the finer-grained split of the two.
+				EB_PROFILE_SCOPE("Window::OnUpdate");
+				m_Window->OnUpdate();
+			}
+
+			{
+				EB_PROFILE_SCOPE("SceneManager::ExecuteSceneSwap");
+				m_SceneManager->ExecuteSceneSwap();
+			}
 		}
 
 		EB_CORE_INFO("Application stopped running!");

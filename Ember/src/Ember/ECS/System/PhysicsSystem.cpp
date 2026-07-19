@@ -410,35 +410,60 @@ namespace Ember {
 
 	void PhysicsSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		EB_PROFILE_FUNCTION();
+
 		ShowDebugRendererIfApplicable();
 
 		const float timeStep = 1.0f / m_Settings.UpdateRate;
 		m_TimeAcumulator += delta;
 
 		// Step the physics simulation
-		while (m_TimeAcumulator >= timeStep)
 		{
-			m_PhysicsWorld->update(timeStep);
-			m_TimeAcumulator -= timeStep;
+			EB_PROFILE_SCOPE("PhysicsSystem::Simulate");
+			while (m_TimeAcumulator >= timeStep)
+			{
+				m_PhysicsWorld->update(timeStep);
+				m_TimeAcumulator -= timeStep;
+			}
 		}
 
 		// Update rigid body transforms from the physics simulation results
-		UpdateRigidbodies(scene);
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::UpdateRigidbodies");
+			UpdateRigidbodies(scene);
+		}
 
 		// Update script triggers
-		UpdateScriptTriggers(scene);
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::UpdateScriptTriggers");
+			UpdateScriptTriggers(scene);
+		}
 
 		// Update Local Avoidance vectors
-		UpdateAvoidanceCollisions(scene);
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::UpdateAvoidanceCollisions");
+			UpdateAvoidanceCollisions(scene);
+		}
 
 		// Update debug render data
-		UpdateDebugRenderData();
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::UpdateDebugRenderData");
+			UpdateDebugRenderData();
+		}
 	}
 
 	void PhysicsSystem::OnEditorUpdate(TimeStep delta, Scene* scene)
 	{
-		SyncEditorRigidBodies(scene);
-		RebuildEditorColliders(scene);
+		EB_PROFILE_FUNCTION();
+
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::SyncEditorRigidBodies");
+			SyncEditorRigidBodies(scene);
+		}
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::RebuildEditorColliders");
+			RebuildEditorColliders(scene);
+		}
 
 		if (m_PostProcessDebugEntity != Constants::Entities::InvalidEntityID)
 			DrawSelectedChildColliderPreview(scene, m_PostProcessDebugEntity);

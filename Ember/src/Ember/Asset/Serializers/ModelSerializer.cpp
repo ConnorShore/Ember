@@ -162,6 +162,8 @@ namespace Ember {
 	// mesh and material assets via the AssetManager and rebuilding the node hierarchy.
 	SharedPtr<Model> ModelSerializer::DeserializeSource(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager)
 	{
+		EB_PROFILE_FUNCTION();
+
 		std::ifstream file(filepath);
 		if (!file.is_open())
 		{
@@ -224,6 +226,8 @@ namespace Ember {
 
 	SharedPtr<Model> ModelSerializer::DeserializeCooked(UUID uuid, const std::filesystem::path& filepath, AssetManager& assetManager)
 	{
+		EB_PROFILE_FUNCTION();
+
 		std::ifstream stream(filepath, std::ios::binary);
 		if (!stream.is_open())
 			return nullptr;

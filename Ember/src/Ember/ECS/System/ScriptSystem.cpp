@@ -25,6 +25,8 @@ namespace Ember {
 
 	void ScriptSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		EB_PROFILE_FUNCTION();
+
 		// Prevents scripts like mouse move from updating if game is paused
 		if (delta.Seconds() <= 0.0f)
 			return;
@@ -43,6 +45,10 @@ namespace Ember {
 
 		for (auto entityID : scriptEntities)
 		{
+			// Detail scope: per-entity Lua dispatch. See the note in AnimationSystem::OnUpdate —
+			// same "bounded zone-name cardinality" tradeoff applies here for many-scripted-entity scenes.
+			EB_PROFILE_SCOPE("ScriptSystem::EntityOnUpdate");
+
 			Entity entity{ entityID, scene };
 			if (!entity.ContainsComponent<ScriptComponent>())
 				continue;
@@ -139,6 +145,8 @@ namespace Ember {
 
 	void ScriptSystem::InitializeScriptForEntity(Entity entity)
 	{
+		EB_PROFILE_FUNCTION();
+
 		if (!entity.ContainsComponent<ScriptComponent>())
 		{
 			EB_CORE_ERROR("Attempted to initialize script for entity '{}' but it doesn't have a ScriptComponent!", entity.GetName());

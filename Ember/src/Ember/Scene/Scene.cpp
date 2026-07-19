@@ -373,38 +373,102 @@ namespace Ember {
 
 	void Scene::OnUpdateRuntime(TimeStep delta)
 	{
+		EB_PROFILE_FUNCTION();
+
 		auto& systemManager = Application::Instance().GetSystemManager();
 
-		systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<AISystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<AudioSystem>()->OnUpdate(delta, this);
+		{
+			EB_PROFILE_SCOPE("LifecycleSystem::OnUpdate");
+			systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("ScriptSystem::OnUpdate");
+			systemManager.GetSystem<ScriptSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("AISystem::OnUpdate");
+			systemManager.GetSystem<AISystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("CharacterControllerSystem::OnUpdate");
+			systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("AnimationSystem::OnUpdate");
+			systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::OnUpdate");
+			systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("ParticleSystem::OnUpdate");
+			systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("TransformSystem::OnUpdate");
+			systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("BoneSocketSystem::OnUpdate");
+			systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("UILayoutSystem::OnUpdate");
+			systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("RenderSystem::OnUpdate");
+			systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("AudioSystem::OnUpdate");
+			systemManager.GetSystem<AudioSystem>()->OnUpdate(delta, this);
+		}
 
-		RemovePendingRemovals();
+		{
+			EB_PROFILE_SCOPE("Scene::RemovePendingRemovals");
+			RemovePendingRemovals();
+		}
 	}
 
 	void Scene::OnUpdateEdit(TimeStep delta, const RenderPassSettings& settings)
 	{
+		EB_PROFILE_FUNCTION();
+
 		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
-		systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
-		systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
+		{
+			EB_PROFILE_SCOPE("TransformSystem::OnUpdate");
+			systemManager.GetSystem<TransformSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("BoneSocketSystem::OnUpdate");
+			systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::OnEditorUpdate");
+			systemManager.GetSystem<PhysicsSystem>()->OnEditorUpdate(delta, this);
+		}
+		{
+			EB_PROFILE_SCOPE("AISystem::OnEditorUpdate");
+			systemManager.GetSystem<AISystem>()->OnEditorUpdate(delta, this);
+		}
 
 		// May need specific OnEditorUpdate method, we will need to see
-		systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
+		{
+			EB_PROFILE_SCOPE("UILayoutSystem::OnUpdate");
+			systemManager.GetSystem<UILayoutSystem>()->OnUpdate(delta, this);
+		}
 
-		systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, settings);
+		{
+			EB_PROFILE_SCOPE("RenderSystem::OnUpdate");
+			systemManager.GetSystem<RenderSystem>()->OnUpdate(delta, this, settings);
+		}
 
-		RemovePendingRemovals();
+		{
+			EB_PROFILE_SCOPE("Scene::RemovePendingRemovals");
+			RemovePendingRemovals();
+		}
 	}
 
 	void Scene::OnEvent(Event& event)

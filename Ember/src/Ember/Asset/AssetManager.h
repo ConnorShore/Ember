@@ -19,6 +19,7 @@
 #include "Serializers/NavigationMeshSerializer.h"
 
 #include "Ember/Core/Core.h"
+#include "Ember/Performance/Profiler.h"
 #include "Ember/Script/Script.h"
 #include "Ember/Script/ScriptImporter.h"
 #include "Ember/Render/Texture2D.h"
@@ -51,6 +52,8 @@ namespace Ember {
 		template<IsCoreAsset T, typename... Args>
 		SharedPtr<T> Create(Args&&... args)
 		{
+			EB_PROFILE_FUNCTION();
+
 			// Abstract types (Shader, Texture) use their own factory; concrete types are constructed directly
 			SharedPtr<T> newAsset;
 			if constexpr (std::is_abstract_v<T>)
@@ -129,6 +132,8 @@ namespace Ember {
 		template<IsCoreAsset T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, bool engineAsset = true)
 		{
+			EB_PROFILE_FUNCTION();
+
 			if (!engineAsset)
 			{
 				EB_CORE_INFO("Loading project asset {} ['{}'] from file: {}", (uint64_t)uuid, name, filePath);
@@ -212,6 +217,8 @@ namespace Ember {
 		template<std::same_as<Shader> T>
 		SharedPtr<T> Load(UUID uuid, const std::string& name, const std::string& filePath, const ShaderMacros& macros)
 		{
+			EB_PROFILE_FUNCTION();
+
 			auto absolutePath = std::filesystem::absolute(filePath).string();
 			if (m_AssetPaths.contains(absolutePath))
 			{

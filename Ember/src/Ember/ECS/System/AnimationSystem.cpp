@@ -153,11 +153,15 @@ namespace Ember {
 
 	void AnimationSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		EB_PROFILE_FUNCTION();
+
 		auto& assetManager = Application::Instance().GetAssetManager();
 		View view = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
 
 		for (EntityID entity : view)
 		{
+			EB_PROFILE_SCOPE("AnimationSystem::EvaluateAnimator");
+
 			auto& animator = scene->GetRegistry().GetComponent<AnimatorComponent>(entity);
 			if (animator.LayerStates.empty())
 			{
