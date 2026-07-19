@@ -58,3 +58,12 @@ Profiles/
 
 # Misc files
 TODOs.md
+
+# Internal docs
+docs/internal/
+
+# Pycache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
