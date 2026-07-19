@@ -2,91 +2,91 @@ Assets:
   - Type: Texture
     UUID: 2902344313391760329
     Name: DesertEagle_DesertEagleDiffuse.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.bin
   - Type: Texture
     UUID: 3453372035684411145
     Name: RadialGlow
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.bin
   - Type: Texture
     UUID: 18407398070678811137
     Name: DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleSpecular-DesertEagleRoughness.bin
   - Type: Texture
-    UUID: 9540991726704474309
-    Name: Zombie_world_war_zombie_normal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_normal.png
+    UUID: 17608889885004568014
+    Name: AssaultRifle_ARMetallic-ARRoughness.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.bin
+  - Type: Texture
+    UUID: 3343954652411117201
+    Name: Crosshair
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.bin
+  - Type: Texture
+    UUID: 8231069642100005462
+    Name: M4_ARNormal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARNormal.bin
+  - Type: Texture
+    UUID: 8049017245590512599
+    Name: M4_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARColor.bin
+  - Type: Texture
+    UUID: 5298883443951100442
+    Name: AssaultRifle_ARNormal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARNormal.bin
+  - Type: Texture
+    UUID: 9513761758882303005
+    Name: box
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/box.bin
+  - Type: Texture
+    UUID: 9596009522481818923
+    Name: BulletHole
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/BulletHole.bin
+  - Type: Texture
+    UUID: 16364078516430552352
+    Name: AssaultRifle_ORM_Mat0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ORM_Mat0.bin
+  - Type: Texture
+    UUID: 16523311715972877363
+    Name: M4_ARMetallic-ARRoughness.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARMetallic-ARRoughness.bin
+  - Type: Texture
+    UUID: 13924914312463152501
+    Name: M4_ORM_Mat0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.bin
+  - Type: Texture
+    UUID: 2037891838812646000
+    Name: DesertEagle_ORM_Mat0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_ORM_Mat0.bin
+  - Type: Texture
+    UUID: 12541227798747992686
+    Name: DesertEagle_DesertEagleNormal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleNormal.bin
+  - Type: Texture
+    UUID: 15863835653609318779
+    Name: HolographicReticle
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.bin
+  - Type: Texture
+    UUID: 9008232455192275898
+    Name: AssaultRifle_ARColor.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.bin
   - Type: Texture
     UUID: 11044113959953237382
     Name: Zombie_world_war_zombie_specular.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_specular.png
   - Type: Texture
-    UUID: 17608889885004568014
-    Name: AssaultRifle_ARMetallic-ARRoughness.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.png
-  - Type: Texture
-    UUID: 3343954652411117201
-    Name: Crosshair
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.png
-  - Type: Texture
-    UUID: 8231069642100005462
-    Name: M4_ARNormal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARNormal.png
-  - Type: Texture
-    UUID: 8049017245590512599
-    Name: M4_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARColor.png
-  - Type: Texture
-    UUID: 5298883443951100442
-    Name: AssaultRifle_ARNormal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARNormal.png
-  - Type: Texture
-    UUID: 9513761758882303005
-    Name: box
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/box.jpg
-  - Type: Texture
-    UUID: 9596009522481818923
-    Name: BulletHole
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/BulletHole.png
-  - Type: Texture
-    UUID: 16364078516430552352
-    Name: AssaultRifle_ORM_Mat0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ORM_Mat0.png
-  - Type: Texture
-    UUID: 16523311715972877363
-    Name: M4_ARMetallic-ARRoughness.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARMetallic-ARRoughness.png
-  - Type: Texture
-    UUID: 13924914312463152501
-    Name: M4_ORM_Mat0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
-  - Type: Texture
-    UUID: 2037891838812646000
-    Name: DesertEagle_ORM_Mat0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_ORM_Mat0.png
-  - Type: Texture
-    UUID: 12541227798747992686
-    Name: DesertEagle_DesertEagleNormal.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleNormal.png
-  - Type: Texture
-    UUID: 15863835653609318779
-    Name: HolographicReticle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
-  - Type: Texture
-    UUID: 9008232455192275898
-    Name: AssaultRifle_ARColor.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARColor.png
+    UUID: 9540991726704474309
+    Name: Zombie_world_war_zombie_normal.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_normal.png
   - Type: Texture
     UUID: 15495496485610532023
     Name: Zombie_world_war_zombie_diffuse.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_world_war_zombie_diffuse.png
   - Type: Shader
-    UUID: 3290979914783484062
-    Name: HolographicSight
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/HolographicSight.glsl
-  - Type: Shader
     UUID: 13675443955098295717
     Name: Tracer
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/Tracer.glsl
+  - Type: Shader
+    UUID: 3290979914783484062
+    Name: HolographicSight
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Shaders/HolographicSight.glsl
   - Type: Script
     UUID: 3344681323696305163
     Name: RoundUIControl
@@ -95,6 +95,14 @@ Assets:
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
+  - Type: Script
+    UUID: 936314447457138483
+    Name: PlayerController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
+  - Type: Script
+    UUID: 8562544563539838448
+    Name: PlayerInteraction
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
   - Type: Script
     UUID: 5986627421746366671
     Name: SpawnManager
@@ -156,10 +164,6 @@ Assets:
     Name: Crosshair
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/HUD/Crosshair.lua
   - Type: Script
-    UUID: 8562544563539838448
-    Name: PlayerInteraction
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerInteraction.lua
-  - Type: Script
     UUID: 5025897937436236093
     Name: MouseLook
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/MouseLook.lua
@@ -167,10 +171,6 @@ Assets:
     UUID: 8102167312162542918
     Name: WeaponController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponController.lua
-  - Type: Script
-    UUID: 936314447457138483
-    Name: PlayerController
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
   - Type: Script
     UUID: 803391121824597106
     Name: AIController
@@ -258,15 +258,15 @@ Assets:
   - Type: Mesh
     UUID: 5610316799824380095
     Name: DesertEagle_Mesh2_Cube.007_Prim1
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.bin
   - Type: Mesh
     UUID: 5985712711574680378
     Name: DesertEagle_Mesh1_Cube_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.ebmesh
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.bin
   - Type: Mesh
     UUID: 6509623147954976681
     Name: Zombie_Mesh0_WorldWar_zombie_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Mesh0_WorldWar_zombie_Prim0.ebmesh
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Mesh0_WorldWar_zombie_Prim0.bin
   - Type: Mesh
     UUID: 12443871631894294282
     Name: AmmoPowerup_Cylinder.001_Prim0
@@ -278,7 +278,7 @@ Assets:
   - Type: Mesh
     UUID: 15346656199082862049
     Name: DesertEagle_Mesh0_Circle.001_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh0_Circle.001_Prim0.ebmesh
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh0_Circle.001_Prim0.bin
   - Type: Mesh
     UUID: 9147101475226164417
     Name: AssaultRifle_Cube.003_Prim0
@@ -286,7 +286,7 @@ Assets:
   - Type: Mesh
     UUID: 13365133264221018487
     Name: DesertEagle_Mesh2_Cube.007_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim0.ebmesh
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim0.bin
   - Type: Mesh
     UUID: 17797478620356971073
     Name: AssaultRifle_Cube.004_Prim0
@@ -316,33 +316,33 @@ Assets:
     Name: DEagleSlideMask
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
+    UUID: 6612716991326083235
+    Name: M4_Reload
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.bin
+  - Type: Animation
     UUID: 9936688561769825438
     Name: Zombie_Zombie Idle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Idle.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Idle.bin
   - Type: Animation
     UUID: 13210029773156912041
     Name: DesertEagle_Reload
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Reload.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Reload.bin
   - Type: Animation
     UUID: 10171445062614256115
     Name: Zombie_Zombie Attack
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.ebanim
-  - Type: Animation
-    UUID: 6612716991326083235
-    Name: M4_Reload
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Attack.bin
   - Type: Animation
     UUID: 1061568813566244299
     Name: DesertEagle_Idle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Idle.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Idle.bin
   - Type: Animation
     UUID: 7891003508228372826
     Name: DesertEagle_SlideLock
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_SlideLock.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_SlideLock.bin
   - Type: Animation
     UUID: 2713313368883441983
     Name: Zombie_Zombie Walk
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Walk.ebanim
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Walk.bin
   - Type: AnimationController
     UUID: 17100135789324560666
     Name: M4_ReloadController

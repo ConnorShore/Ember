@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "AnimationSystem.h"
 #include "ScriptSystem.h"
+#include "VisibilitySystem.h"
 
 #include "Ember/Animation/AnimationController.h"
 #include "Ember/Animation/Animation.h"
@@ -168,6 +169,10 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		View view = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
 
+		// Fetched once per frame (the lookup is a linear system search, not free): off-screen animators
+		// still run their gameplay logic below but skip the expensive per-bone pose evaluation.
+		auto visibilitySystem = Application::Instance().GetSystem<VisibilitySystem>();
+
 		// Reused across every animator this frame so we don't allocate a fresh map per animator/layer.
 		std::unordered_map<std::string, AnimationParameter> effectiveParameters;
 
@@ -207,6 +212,14 @@ namespace Ember {
 			}
 			for (const auto& parameter : animator.Blackboard.Parameters)
 				effectiveParameters[parameter.first] = parameter.second;
+
+			// The per-bone interpolation/hierarchy/skinning-matrix work below is a render-only output —
+			// nothing samples animator.BoneMatrices while the character is off screen. When the
+			// VisibilitySystem reports this animator as not relevant, we still advance its state machine,
+			// clock and events (gameplay stays live) but skip that heavy pose build. The retained
+			// BoneMatrices are rebuilt from the still-advancing clock on the first relevant frame, so
+			// there is no visual pop. Fail-safe: if the system is missing we always build the pose.
+			const bool buildPose = !visibilitySystem || visibilitySystem->IsRelevant(entity);
 
 			size_t numLayers = controller->GetLayers().size();
 			for (size_t i = 0; i < numLayers; i++)
@@ -359,6 +372,12 @@ namespace Ember {
 						}
 					}
 				}
+
+				// Gameplay logic (transitions, clock, events) has advanced above. For off-screen
+				// animators, skip the render-only pose evaluation for every layer — the BoneMatrices
+				// cache holds its last on-screen pose and is rebuilt from the live clock once relevant.
+				if (!buildPose)
+					continue;
 
 				// Pre-allocate arrays for this frame's math
 				std::vector<Matrix4f> localTransforms(bones.size());

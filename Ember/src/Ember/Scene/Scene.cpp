@@ -12,6 +12,7 @@
 #include "Ember/ECS/System/PhysicsSystem.h"
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
+#include "Ember/ECS/System/VisibilitySystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h" 
@@ -355,6 +356,7 @@ namespace Ember {
 
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
+		systemManager.GetSystem<VisibilitySystem>()->OnSceneDetach(this);
 
 		m_PoolManager->DestroyPools();
 		ScriptEngine::OnRuntimeStop(this);
@@ -392,6 +394,13 @@ namespace Ember {
 		{
 			EB_PROFILE_SCOPE("CharacterControllerSystem::OnUpdate");
 			systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
+		}
+		{
+			// Runs before AnimationSystem so its off-screen relevance results are available this frame.
+			// It culls against last frame's transforms (TransformSystem runs later) but dilates the
+			// frustum, so the visible set stays a conservative superset of what actually renders.
+			EB_PROFILE_SCOPE("VisibilitySystem::OnUpdate");
+			systemManager.GetSystem<VisibilitySystem>()->OnUpdate(delta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("AnimationSystem::OnUpdate");

@@ -74,10 +74,16 @@ echo.
 set "EXIT_CODE=0"
 set "OPENED=0"
 
-rem Preferred Ember session order first.
+rem Preferred Ember session order first. Runtime.json gets the "system-frame-breakdown" preset
+rem query auto-run on load, since it's the only session with per-frame system update slices
+rem (see Scene::OnUpdateRuntime/OnUpdateEdit and the "Frame" scope in Application::Run).
 for %%F in (Startup.json Runtime.json Shutdown.json) do (
     if exist "%PROFILES_DIR%\%%F" (
-        call :OpenOne "%PROFILES_DIR%\%%F"
+        if /I "%%F"=="Runtime.json" (
+            call :OpenOne "%PROFILES_DIR%\%%F" --preset system-frame-breakdown
+        ) else (
+            call :OpenOne "%PROFILES_DIR%\%%F"
+        )
         if errorlevel 1 set "EXIT_CODE=1"
     )
 )
@@ -110,7 +116,7 @@ set "TRACE=%~1"
 echo --------------------------------------------
 echo Opening "%TRACE%"
 echo --------------------------------------------
-%PYTHON_CMD% "%OPEN_TRACE_UI%" "%TRACE%"
+%PYTHON_CMD% "%OPEN_TRACE_UI%" "%TRACE%" %2 %3
 if errorlevel 1 (
     echo Failed to open "%TRACE%"
     exit /b 1

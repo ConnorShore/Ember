@@ -11,6 +11,7 @@
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
+#include "Ember/ECS/System/VisibilitySystem.h"
 #include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
@@ -54,6 +55,7 @@ namespace Ember {
 
 		m_SystemManager = ScopedPtr<SystemManager>::Create();
 		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<VisibilitySystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AnimationSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());

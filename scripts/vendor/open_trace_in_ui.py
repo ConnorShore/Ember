@@ -23,6 +23,51 @@ import webbrowser
 import urllib
 
 
+# Premade PerfettoSQL queries, keyed by name, for use with --preset. These are appended to the
+# deep-link URL's `query` param so the Perfetto UI runs them automatically as soon as a trace
+# loads - see https://perfetto.dev/docs/visualization/deep-linking-to-perfetto-ui.
+#
+# "system-frame-breakdown" relies on Scene::OnUpdateRuntime/OnUpdateEdit (Ember/src/Ember/Scene/
+# Scene.cpp) wrapping every ECS system's OnUpdate call in an EB_PROFILE_SCOPE named
+# "<System>::OnUpdate", and on the top-level "Frame" scope in Application::Run that brackets one
+# full frame. It reports each system's total/average time and what percentage of the frame
+# budget it consumes.
+QUERY_PRESETS = {
+    'system-frame-breakdown':
+        '''
+        WITH frame_total AS (
+          SELECT SUM(dur) AS total_dur, COUNT(*) AS frame_count
+          FROM slice WHERE name = 'Frame'
+        ),
+        system_totals AS (
+          SELECT
+            REPLACE(name, '::OnUpdate', '') AS system,
+            COUNT(*) AS updates,
+            SUM(dur) AS total_dur
+          FROM slice
+          WHERE name LIKE '%System::OnUpdate'
+          GROUP BY name
+        )
+        SELECT
+          'Frame (total)' AS system,
+          frame_count AS updates,
+          ROUND(total_dur / 1e6, 3) AS total_ms,
+          ROUND(total_dur / frame_count / 1e3, 3) AS avg_us_per_call,
+          100.0 AS pct_of_frame
+        FROM frame_total
+        UNION ALL
+        SELECT
+          system,
+          updates,
+          ROUND(total_dur / 1e6, 3) AS total_ms,
+          ROUND(total_dur / updates / 1e3, 3) AS avg_us_per_call,
+          ROUND(total_dur * 100.0 / (SELECT total_dur FROM frame_total), 2) AS pct_of_frame
+        FROM system_totals
+        ORDER BY total_ms DESC
+        ''',
+}
+
+
 class ANSI:
   END = '\033[0m'
   BOLD = '\033[1m'
@@ -57,7 +102,7 @@ def prt(msg, colors=ANSI.END):
   print(colors + msg + ANSI.END)
 
 
-def open_trace(path, open_browser, origin):
+def open_trace(path, open_browser, origin, query=None):
   # We reuse the HTTP+RPC port because it's the only one allowed by the CSP.
   PORT = 9001
   path = os.path.abspath(path)
@@ -66,6 +111,8 @@ def open_trace(path, open_browser, origin):
   socketserver.TCPServer.allow_reuse_address = True
   with socketserver.TCPServer(('127.0.0.1', PORT), HttpHandler) as httpd:
     address = f'{origin}/#!/?url=http://127.0.0.1:{PORT}/{fname}&referrer=open_trace_in_ui'
+    if query:
+      address += f'&query={urllib.parse.quote(query)}'
     if open_browser:
       webbrowser.open_new_tab(address)
     else:
@@ -106,8 +153,26 @@ def main():
   )
   parser.add_argument(
       '-i', '--trace', help='input filename (overrides positional argument)')
+  query_group = parser.add_mutually_exclusive_group()
+  query_group.add_argument(
+      '--preset',
+      choices=sorted(QUERY_PRESETS.keys()),
+      help='run a premade PerfettoSQL query as soon as the trace loads')
+  query_group.add_argument(
+      '--query', help='run an arbitrary PerfettoSQL query as soon as the trace loads')
+  parser.add_argument(
+      '--list-presets',
+      action='store_true',
+      default=False,
+      help='print available --preset names and exit')
 
   args = parser.parse_args()
+
+  if args.list_presets:
+    for name in sorted(QUERY_PRESETS.keys()):
+      print(name)
+    sys.exit(0)
+
   open_browser = not args.no_open_browser
 
   trace_file = None
@@ -127,8 +192,13 @@ def main():
   if args.dev_server:
     origin = 'http://localhost:10000'
 
+  query = args.query
+  if args.preset:
+    # Collapse the preset's indentation/newlines into single spaces for a cleaner URL.
+    query = ' '.join(QUERY_PRESETS[args.preset].split())
+
   prt('Opening the trace (%s) in the browser' % trace_file)
-  open_trace(trace_file, open_browser, origin)
+  open_trace(trace_file, open_browser, origin, query)
 
 
 if __name__ == '__main__':
