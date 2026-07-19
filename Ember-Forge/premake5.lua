@@ -60,12 +60,17 @@
       systemversion "latest"
 
    filter "configurations:Debug"
-      defines { "EB_DEBUG" }
+      defines { "EB_DEBUG", "EB_PROFILE" }
       symbols "On"
 
    filter "configurations:Release"
       defines { "EB_RELEASE" }
       optimize "On"
+
+   filter "configurations:Profile"
+      defines { "EB_PROFILE", "EB_RELEASE" }
+      optimize "On"
+      symbols "On"
 
    filter "configurations:Dist"
       defines { "EB_DIST" }

@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "AnimationSystem.h"
 #include "ScriptSystem.h"
+#include "VisibilitySystem.h"
 
 #include "Ember/Animation/AnimationController.h"
 #include "Ember/Animation/Animation.h"
@@ -11,15 +12,25 @@
 namespace Ember {
 
 	// --- HELPER FUNCTIONS ---
-	// Finds the keyframe index just BEFORE the current time
+	// Finds the keyframe index just BEFORE the current time.
+	// Keyframes are sorted ascending by TimeStamp, so we binary-search the containing segment
+	// instead of scanning linearly from the start on every call. This matters because this runs
+	// 3x (position/rotation/scale) per bone, per animator, per frame, and clips can have many keys.
 	template<typename T>
 	static size_t GetKeyframeIndex(const std::vector<T>& keys, float animationTime)
 	{
-		for (size_t i = 0; i < keys.size() - 1; ++i) {
-			if (animationTime < keys[i + 1].TimeStamp)
-				return i;
-		}
-		return keys.size() > 0 ? keys.size() - 1 : 0;
+		if (keys.size() <= 1)
+			return 0;
+
+		// First keyframe whose TimeStamp is strictly greater than animationTime; the segment we
+		// want starts at the keyframe immediately before it.
+		auto it = std::upper_bound(keys.begin(), keys.end(), animationTime,
+			[](float time, const T& key) { return time < key.TimeStamp; });
+
+		if (it == keys.begin())
+			return 0;
+
+		return static_cast<size_t>((it - keys.begin()) - 1);
 	}
 
 	// Calculates the blend factor (0.0 to 1.0) between two keyframes
@@ -153,11 +164,22 @@ namespace Ember {
 
 	void AnimationSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		EB_PROFILE_FUNCTION();
+
 		auto& assetManager = Application::Instance().GetAssetManager();
 		View view = scene->GetRegistry().ActiveQuery<AnimatorComponent>();
 
+		// Fetched once per frame (the lookup is a linear system search, not free): off-screen animators
+		// still run their gameplay logic below but skip the expensive per-bone pose evaluation.
+		auto visibilitySystem = Application::Instance().GetSystem<VisibilitySystem>();
+
+		// Reused across every animator this frame so we don't allocate a fresh map per animator/layer.
+		std::unordered_map<std::string, AnimationParameter> effectiveParameters;
+
 		for (EntityID entity : view)
 		{
+			EB_PROFILE_SCOPE("AnimationSystem::EvaluateAnimator");
+
 			auto& animator = scene->GetRegistry().GetComponent<AnimatorComponent>(entity);
 			if (animator.LayerStates.empty())
 			{
@@ -178,6 +200,27 @@ namespace Ember {
 			if (controller->GetLayers().empty())
 				continue;
 
+			// Build the effective parameter set once per animator: controller defaults overlaid with
+			// the animator's blackboard values. Neither source changes between layers, so there's no
+			// need to rebuild it per layer. clear()+insert reuses the scratch map's buckets instead of
+			// heap-allocating a brand new map (and copying every controller parameter) every frame.
+			effectiveParameters.clear();
+			if (controller)
+			{
+				for (const auto& [name, param] : controller->GetParameters())
+					effectiveParameters[name] = param;
+			}
+			for (const auto& parameter : animator.Blackboard.Parameters)
+				effectiveParameters[parameter.first] = parameter.second;
+
+			// The per-bone interpolation/hierarchy/skinning-matrix work below is a render-only output —
+			// nothing samples animator.BoneMatrices while the character is off screen. When the
+			// VisibilitySystem reports this animator as not relevant, we still advance its state machine,
+			// clock and events (gameplay stays live) but skip that heavy pose build. The retained
+			// BoneMatrices are rebuilt from the still-advancing clock on the first relevant frame, so
+			// there is no visual pop. Fail-safe: if the system is missing we always build the pose.
+			const bool buildPose = !visibilitySystem || visibilitySystem->IsRelevant(entity);
+
 			size_t numLayers = controller->GetLayers().size();
 			for (size_t i = 0; i < numLayers; i++)
 			{
@@ -194,22 +237,7 @@ namespace Ember {
 				AnimationStateMachine* animStateMachine = &layer.StateMachine;
 				const AnimationState* currentState = ResolveCurrentState(animStateMachine, runtime);
 
-				std::unordered_map<std::string, AnimationParameter> effectiveParameters;
-				if (controller)
-					effectiveParameters = controller->GetParameters();
-
-				// Log warnings if animator blackboard contains parameters not in the animation state machine's parameter list
-				// Edit: Removed this for now as I'm not sure its needed and it was spamming the log a lot.
-				// TODO: Make it so it logs this only once per parameter per animator instead of every frame
-				for (auto parameter : animator.Blackboard.Parameters)
-				{
-					//if (controller && !controller->GetParameters().contains(parameter.first))
-					//{
-					//	EB_CORE_WARN("Animator has parameter '{}' that is not defined in the Animation State Machine!", parameter.first);
-					//}
-
-					effectiveParameters[parameter.first] = parameter.second;
-				}
+				// effectiveParameters was built once per animator above (controller defaults + blackboard).
 
 				// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
 				if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(runtime.CurrentStateId))
@@ -344,6 +372,12 @@ namespace Ember {
 						}
 					}
 				}
+
+				// Gameplay logic (transitions, clock, events) has advanced above. For off-screen
+				// animators, skip the render-only pose evaluation for every layer — the BoneMatrices
+				// cache holds its last on-screen pose and is rebuilt from the live clock once relevant.
+				if (!buildPose)
+					continue;
 
 				// Pre-allocate arrays for this frame's math
 				std::vector<Matrix4f> localTransforms(bones.size());

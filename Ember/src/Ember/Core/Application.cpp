@@ -11,6 +11,7 @@
 #include "Ember/ECS/System/Rendersystem.h"
 #include "Ember/ECS/System/TransformSystem.h"
 #include "Ember/ECS/System/AnimationSystem.h"
+#include "Ember/ECS/System/VisibilitySystem.h"
 #include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/CharacterControllerSystem.h"
 #include "Ember/ECS/System/LifecycleSystem.h"
@@ -31,6 +32,7 @@ namespace Ember {
 		: m_Specification(applicationSpes)
 	{
 		EB_CORE_ASSERT(s_Instance == nullptr, "Application instance is alredy created!");
+		EB_PROFILE_FUNCTION();
 
 		s_Instance = this;
 
@@ -53,6 +55,7 @@ namespace Ember {
 
 		m_SystemManager = ScopedPtr<SystemManager>::Create();
 		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
+		m_SystemManager->RegisterSystem(SharedPtr<VisibilitySystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<AnimationSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
@@ -132,24 +135,41 @@ namespace Ember {
 
 		TimeStamp lastTime = Timer::Now();
 		while (m_Running) {
+			EB_PROFILE_SCOPE("Frame");
+
 			TimeStamp currentTime = Timer::Now();
 			TimeStep delta = currentTime - lastTime;
 			lastTime = currentTime;
 
-			for (auto& layer : m_LayerStack)
-				layer->OnUpdate(delta);
+			{
+				EB_PROFILE_SCOPE("LayerStack::OnUpdate");
+				for (auto& layer : m_LayerStack)
+					layer->OnUpdate(delta);
+			}
 
-			m_ImGuiLayer->BeginFrame();
+			{
+				EB_PROFILE_SCOPE("ImGuiLayer::Frame");
+				m_ImGuiLayer->BeginFrame();
 
-			for (auto& layer : m_LayerStack)
-				layer->OnImGuiRender(delta);
+				for (auto& layer : m_LayerStack)
+					layer->OnImGuiRender(delta);
 
-			m_ImGuiLayer->EndFrame();
+				m_ImGuiLayer->EndFrame();
+			}
 
 			Input::ResetMouseDelta();
-			m_Window->OnUpdate();
 
-			m_SceneManager->ExecuteSceneSwap();
+			{
+				// Includes glfwPollEvents (OS/input) and SwapBuffers (blocks on vsync if enabled) —
+				// see Windows::Window::OnUpdate for the finer-grained split of the two.
+				EB_PROFILE_SCOPE("Window::OnUpdate");
+				m_Window->OnUpdate();
+			}
+
+			{
+				EB_PROFILE_SCOPE("SceneManager::ExecuteSceneSwap");
+				m_SceneManager->ExecuteSceneSwap();
+			}
 		}
 
 		EB_CORE_INFO("Application stopped running!");

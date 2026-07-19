@@ -25,6 +25,33 @@ namespace Ember {
 			file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
 			return file.good() && magic == MESH_FILE_MAGIC;
 		}
+
+		// Cooked binary sibling for a mesh source path (foo.ebmesh -> foo.bin).
+		inline std::filesystem::path GetCookedMeshPath(const std::filesystem::path& filepath)
+		{
+			auto cooked = filepath;
+			cooked.replace_extension(".bin");
+			return cooked;
+		}
+
+		// A cooked mesh is safe to use if it exists and is at least as new as its source, so that
+		// re-importing/editing the source (which rewrites the .ebmesh) invalidates a stale cook.
+		inline bool IsCookedMeshFresh(const std::filesystem::path& source, const std::filesystem::path& cooked)
+		{
+			std::error_code ec;
+			if (!std::filesystem::exists(cooked, ec) || ec)
+				return false;
+
+			auto cookedTime = std::filesystem::last_write_time(cooked, ec);
+			if (ec)
+				return false;
+
+			auto sourceTime = std::filesystem::last_write_time(source, ec);
+			if (ec)
+				return true; // Source unreadable but the cook exists — prefer the cook over failing.
+
+			return cookedTime >= sourceTime;
+		}
 	}
 
 	class MeshSerializer
@@ -169,7 +196,9 @@ namespace Ember {
 			std::vector<uint32_t> indices;
 			if (root.has_child("Indices"))
 			{
-				for (auto idxNode : root["Indices"].children())
+				auto indicesNode = root["Indices"];
+				indices.reserve(indicesNode.num_children());
+				for (auto idxNode : indicesNode.children())
 				{
 					uint32_t idx = 0;
 					idxNode >> idx;
@@ -182,6 +211,7 @@ namespace Ember {
 				std::vector<SkinnedMeshVertex> vertices;
 				if (root.has_child("Vertices"))
 				{
+					vertices.reserve(root["Vertices"].num_children());
 					for (auto vNode : root["Vertices"].children())
 					{
 						SkinnedMeshVertex vertex{};
@@ -229,6 +259,7 @@ namespace Ember {
 			std::vector<StaticMeshVertex> vertices;
 			if (root.has_child("Vertices"))
 			{
+				vertices.reserve(root["Vertices"].num_children());
 				for (auto vNode : root["Vertices"].children())
 				{
 					StaticMeshVertex vertex{};
@@ -366,6 +397,26 @@ namespace Ember {
 			return SerializeSource(filepath, mesh);
 		}
 
+		// Parses the (slow) YAML mesh source, then writes a cooked binary sibling so subsequent
+		// loads take the fast binary path. Parsing per-vertex YAML for a large (e.g. skinned) mesh
+		// can take seconds to tens of seconds; a cooked read is effectively a memcpy.
+		static SharedPtr<Mesh> DeserializeSourceAndCook(UUID uuid, const std::filesystem::path& filepath)
+		{
+			EB_CORE_WARN("Mesh '{}' has no up-to-date cooked binary; loading from YAML source (slow). "
+				"Writing a cooked sibling so future loads are fast.", filepath.string());
+
+			auto mesh = DeserializeSource(uuid, filepath);
+			if (!mesh)
+				return nullptr;
+
+			// Cook-on-load: persist a binary sibling next to the source. Failure is non-fatal —
+			// we still return the mesh, we just don't get the speedup on the next load.
+			if (!SerializeCooked(filepath, mesh))
+				EB_CORE_WARN("Failed to write cooked mesh sibling for '{}'.", filepath.string());
+
+			return mesh;
+		}
+
 		static SharedPtr<Mesh> Deserialize(UUID uuid, const std::filesystem::path& filepath)
 		{
 			switch (AssetSerializationMode::GetRuntimeLoadTier())
@@ -382,9 +433,17 @@ namespace Ember {
 			}
 			case RuntimeAssetLoadTier::Auto:
 			default:
+				// The registered path already points at cooked binary data.
 				if (filepath.extension() == ".bin" || MeshFileLooksBinary(filepath))
 					return DeserializeCooked(uuid, filepath);
-				return DeserializeSource(uuid, filepath);
+
+				// Source path (e.g. .ebmesh): prefer a fresh cooked sibling when one exists — binary
+				// loading is orders of magnitude faster than parsing per-vertex YAML.
+				if (auto cookedPath = GetCookedMeshPath(filepath); IsCookedMeshFresh(filepath, cookedPath))
+					return DeserializeCooked(uuid, cookedPath);
+
+				// No usable cook: parse the YAML source once, then cook it for next time.
+				return DeserializeSourceAndCook(uuid, filepath);
 			}
 		}
 	};

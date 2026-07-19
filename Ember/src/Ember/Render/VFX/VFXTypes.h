@@ -37,6 +37,21 @@ namespace Ember {
 			Gamma = { 1.0f, 1.0f, 1.0f, 0.0f };
 			Gain = { 1.0f, 1.0f, 1.0f, 0.0f };
 		}
+
+		// Exact comparison is intentional: this drives the LUT-bake dirty check, so we want to
+		// re-bake on any change at all, and unchanged settings are copied bit-for-bit from the same source.
+		bool operator==(const ColorGradeSettings& other) const
+		{
+			return Temperature == other.Temperature
+				&& Tint == other.Tint
+				&& Contrast == other.Contrast
+				&& Saturation == other.Saturation
+				&& Lift == other.Lift
+				&& Gamma == other.Gamma
+				&& Gain == other.Gain;
+		}
+
+		bool operator!=(const ColorGradeSettings& other) const { return !(*this == other); }
 	};
 
 	struct FogSettings

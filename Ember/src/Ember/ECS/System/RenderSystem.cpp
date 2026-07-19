@@ -3,6 +3,7 @@
 #include "RenderSystem.h"
 #include "PhysicsSystem.h"
 #include "ParticleSystem.h"
+#include "VisibilitySystem.h"
 
 #include "Ember/Core/Application.h"
 #include "Ember/Scene/Scene.h"
@@ -119,13 +120,14 @@ namespace Ember {
 		if (scene->IsRuntime())
 		{
 			auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
-			BakeColorGradeLUT(colorGradePass->Settings);
-			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+			BakeColorGradeLUTIfDirty(colorGradePass->Settings);
 		}
 	}
 
 	void RenderSystem::ExecuteRenderPipeline(Scene* scene, bool isRuntime)
 	{
+		EB_PROFILE_FUNCTION();
+
 		RenderAction::GetPreviousFramebuffer(&m_RenderSceneState.OutputFramebufferId);
 
 		if (!m_RenderSceneState.IsCameraFound)
@@ -152,28 +154,43 @@ namespace Ember {
 
 		// Blend and set final post processing settings based on volume overrides in the scene
 		if (isRuntime)
+		{
+			EB_PROFILE_SCOPE("RenderSystem::SetFinalPostProcessSettings");
 			SetFinalPostProcessSettings(scene);
+		}
 		else
 			m_RenderSceneState.FinalPostProcessVolumeSettings = m_GlobalVolumeSettings;
 
 		renderContext.FinalPostProcessVolumeSettings = &m_RenderSceneState.FinalPostProcessVolumeSettings;
 
 		// Store entities in scene with renderable components and their AABBs for frustum culling in the render passes
-		StoreRenderableEntities(scene);
+		{
+			EB_PROFILE_SCOPE("RenderSystem::StoreRenderableEntities");
+			StoreRenderableEntities(scene);
+		}
 		renderContext.ActiveEntities = &m_ActiveRenderableEntities;
-		
+
 		// Sort entities into render queue buckets
-		SortEntitiesByRenderQueue(scene);
+		{
+			EB_PROFILE_SCOPE("RenderSystem::SortEntitiesByRenderQueue");
+			SortEntitiesByRenderQueue(scene);
+		}
 		renderContext.RenderQueueBuckets = &m_RenderQueueBuckets;
 
 		// --- Shadow pass ---
 		auto shadowPass = StaticPointerCast<ShadowRenderPass>(GetRenderPass("ShadowRenderPass"));
-		shadowPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ShadowRenderPass");
+			shadowPass->Execute(renderContext);
+		}
 
 		// --- Deferred pipeline: geometry into GBuffer, then full-screen lighting resolve ---
 		// Geometry
 		auto deferredGeometryPass = StaticPointerCast<DeferredGeometryRenderPass>(GetRenderPass("DeferredGeometryRenderPass"));
-		deferredGeometryPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DeferredGeometryRenderPass");
+			deferredGeometryPass->Execute(renderContext);
+		}
 
 		// Lighting
 		auto deferredLightingPass = StaticPointerCast<DeferredLightingRenderPass>(GetRenderPass("DeferredLightingRenderPass"));
@@ -183,7 +200,10 @@ namespace Ember {
 		deferredLightingPass->SetTextureInput("Emission", deferredGeometryPass->GetTextureOutput("Emission"));
 		deferredLightingPass->SetTextureInput("DirectionalShadowMap", shadowPass->GetTextureOutput("DirectionalShadowMap"));
 		deferredLightingPass->SetTextureInput("SpotShadowMap", shadowPass->GetTextureOutput("SpotShadowMap"));
-		deferredLightingPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DeferredLightingRenderPass");
+			deferredLightingPass->Execute(renderContext);
+		}
 
 		// Blit GBuffer depth into HDR buffer so forward objects are properly depth-tested
 		RenderAction::CopyDepthBuffer(deferredGeometryPass->GetFramebufferOutput("GBuffer")->GetID(), deferredLightingPass->GetFramebufferOutput("HDRScene")->GetID(), m_RenderSceneState.ViewportDimensions);
@@ -191,61 +211,97 @@ namespace Ember {
 		// --- Skybox ---
 		auto skyboxPass = StaticPointerCast<SkyboxRenderPass>(GetRenderPass("SkyboxRenderPass"));
 		skyboxPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		skyboxPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("SkyboxRenderPass");
+			skyboxPass->Execute(renderContext);
+		}
 
 		// --- Forward pipeline: depth-tested draws on top of the deferred result ---
 		auto forwardPass = StaticPointerCast<ForwardEntitiesRenderPass>(GetRenderPass("ForwardEntitiesRenderPass"));
 		forwardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		forwardPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ForwardEntitiesRenderPass");
+			forwardPass->Execute(renderContext);
+		}
 
 		auto transparentPass = StaticPointerCast<TransparentEntitiesRenderPass>(GetRenderPass("TransparentEntitiesRenderPass"));
 		transparentPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		transparentPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("TransparentEntitiesRenderPass");
+			transparentPass->Execute(renderContext);
+		}
 
 		// --- Editor-only grid ---
 		auto gridPass = StaticPointerCast<EditorGridRenderPass>(GetRenderPass("EditorGridRenderPass"));
 		gridPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		gridPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("EditorGridRenderPass");
+			gridPass->Execute(renderContext);
+		}
 
 		// Particles and billboards
 		auto particlePass = StaticPointerCast<ParticleRenderPass>(GetRenderPass("ParticleRenderPass"));
 		particlePass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		particlePass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ParticleRenderPass");
+			particlePass->Execute(renderContext);
+		}
 
 		auto billboardPass = StaticPointerCast<BillboardsRenderPass>(GetRenderPass("BillboardsRenderPass"));
 		billboardPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		billboardPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("BillboardsRenderPass");
+			billboardPass->Execute(renderContext);
+		}
 
 		// Draw World-Space 2D BEFORE Post-Processing
 		auto worldSpace2DPass = StaticPointerCast<WorldSpace2DRenderPass>(GetRenderPass("WorldSpace2DRenderPass"));
 		worldSpace2DPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		worldSpace2DPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("WorldSpace2DRenderPass");
+			worldSpace2DPass->Execute(renderContext);
+		}
 
 		// Post Processing & Tone Mapping
-		ApplyPostProcessSettings();
+		{
+			EB_PROFILE_SCOPE("RenderSystem::ApplyPostProcessSettings");
+			ApplyPostProcessSettings();
+		}
 		auto postProcessPass = StaticPointerCast<PostProcessRenderPass>(GetRenderPass("PostProcessRenderPass"));
 		postProcessPass->SetFramebufferInput("GBuffer", deferredGeometryPass->GetFramebufferOutput("GBuffer"));
 		postProcessPass->SetFramebufferInput("HDRScene", deferredLightingPass->GetFramebufferOutput("HDRScene"));
-		postProcessPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("PostProcessRenderPass");
+			postProcessPass->Execute(renderContext);
+		}
 
 		// Final Blit to screen
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 
 		auto finalBlitPass = StaticPointerCast<FinalBlitRenderPass>(GetRenderPass("FinalBlitRenderPass"));
 		finalBlitPass->SetTextureInput("FinalScene", postProcessPass->GetTextureOutput("FinalScene"));
-		finalBlitPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("FinalBlitRenderPass");
+			finalBlitPass->Execute(renderContext);
+		}
 
 		// Debug lines
 		if (!isRuntime && m_RenderSceneState.PreDebugDrawCallback)
 			m_RenderSceneState.PreDebugDrawCallback(scene, m_RenderSceneState.SelectedEntity);
 
 		auto debugPass = StaticPointerCast<DebugRenderPass>(GetRenderPass("DebugRenderPass"));
-		debugPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("DebugRenderPass");
+			debugPass->Execute(renderContext);
+		}
 
 		// Draw Screen-Space UI AFTER Final Composite
 		RenderAction::SetFramebuffer(m_RenderSceneState.OutputFramebufferId);
 		auto screenSpace2DPass = StaticPointerCast<ScreenSpace2DRenderPass>(GetRenderPass("ScreenSpace2DRenderPass"));
-		screenSpace2DPass->Execute(renderContext);
+		{
+			EB_PROFILE_SCOPE("ScreenSpace2DRenderPass");
+			screenSpace2DPass->Execute(renderContext);
+		}
 
 		// Reset any modified render state so other systems aren't affected (like the Editor's Gizmo system)
 		ResetRenderState();
@@ -286,6 +342,8 @@ namespace Ember {
 
 	void RenderSystem::BakeColorGradeLUT(ColorGradeSettings& settings, const std::string& savePath /*= ""*/)
 	{
+		EB_PROFILE_FUNCTION();
+
 		// Save the current scissor state, then disable it so we can draw to the whole 256x16 buffer
 		// Prevents issues with ImGui's scissor test interfering with the baking process
 		bool isScissorEnabled = RenderAction::IsScissorTestEnabled();
@@ -345,6 +403,23 @@ namespace Ember {
 		}
 
 		free((void*)bakedData);
+	}
+
+	void RenderSystem::BakeColorGradeLUTIfDirty(ColorGradeSettings& settings)
+	{
+		// Skip the (expensive) full-screen bake if the grade hasn't changed since the last one.
+		// This turns a per-frame GPU pass into a bake-on-change operation for static grades, while
+		// still re-baking automatically when volume blending or editor tweaks alter the settings.
+		if (m_HasBakedColorGradeLUT && settings == m_LastBakedColorGradeSettings)
+			return;
+
+		BakeColorGradeLUT(settings);
+
+		auto colorGradePass = StaticPointerCast<ColorGradePass>(GetPostProcessPass("ColorGradePass"));
+		colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+
+		m_LastBakedColorGradeSettings = settings;
+		m_HasBakedColorGradeLUT = true;
 	}
 
 	void RenderSystem::OnViewportResize(uint32_t width, uint32_t height)
@@ -420,101 +495,11 @@ namespace Ember {
 
 	void RenderSystem::StoreRenderableEntities(Scene* scene)
 	{
-		auto& registry = scene->GetRegistry();
-		std::vector<std::pair<EntityID, AABB>> renderableEntities;
-		renderableEntities.reserve(m_ActiveRenderableEntities.size());
-
-		// NOTE: Render mask filtering is intentionally NOT applied here so that entities
-		// excluded by the camera's render mask still cast shadows in the shadow pass.
-		// The mask is applied later in SortEntitiesByRenderQueue when building the
-		// render queue buckets used by the visible (non-shadow) render passes.
-
-		auto transformLocalBoundsToWorldAABB = [](Vector3f localMin, Vector3f localMax, const Matrix4f& worldMat) -> AABB {
-			Vector3f corners[8] = {
-				{localMin.x, localMin.y, localMin.z},
-				{localMax.x, localMin.y, localMin.z},
-				{localMin.x, localMax.y, localMin.z},
-				{localMax.x, localMax.y, localMin.z},
-				{localMin.x, localMin.y, localMax.z},
-				{localMax.x, localMin.y, localMax.z},
-				{localMin.x, localMax.y, localMax.z},
-				{localMax.x, localMax.y, localMax.z}
-			};
-
-			Vector3f worldMin = Vector3f(std::numeric_limits<float>::max());
-			Vector3f worldMax = Vector3f(std::numeric_limits<float>::lowest());
-			for (int i = 0; i < 8; i++)
-			{
-				Vector3f worldCorner = worldMat * Vector4f(corners[i], 1.0f);
-				worldMin = Math::Min(worldMin, worldCorner);
-				worldMax = Math::Max(worldMax, worldCorner);
-			}
-			return AABB{ worldMin, worldMax };
-		};
-
-		auto padLocalBounds = [](Vector3f& localMin, Vector3f& localMax, float padding) {
-			if (padding == 1.0f)
-				return;
-			Vector3f center = (localMin + localMax) * 0.5f;
-			Vector3f extents = (localMax - localMin) * 0.5f * padding;
-			localMin = center - extents;
-			localMax = center + extents;
-		};
-
-		// Static meshes — cull with the mesh entity's own world transform.
-		for (EntityID entityId : registry.ActiveQuery<StaticMeshComponent, MaterialComponent, TransformComponent>())
-		{
-			Entity entity(entityId, scene);
-			auto& meshComp = entity.GetComponent<StaticMeshComponent>();
-			if (meshComp.MeshHandle == Constants::InvalidUUID)
-				continue;
-
-			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
-			Vector3f localMin = mesh->GetMinBounds();
-			Vector3f localMax = mesh->GetMaxBounds();
-			AABB worldAABB = transformLocalBoundsToWorldAABB(
-				localMin, localMax, entity.GetComponent<TransformComponent>().GetWorldTransform());
-			renderableEntities.push_back(std::make_pair(entity, worldAABB));
-		}
-
-		// Skinned meshes — take the UNION of:
-		//   1) mesh-entity world transform × bind-pose bounds
-		//   2) animator-root world transform × bind-pose bounds (when available)
-		// Mesh bounds are often authored in character/root space while the mesh entity sits
-		// under a scaled/rotated armature (e.g. Mixamo). Either matrix alone can be wrong for
-		// some hierarchies; the union is conservative (may overdraw, rarely false-culls).
-		constexpr float skinnedBoundsPadding = 1.25f;
-		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>())
-		{
-			Entity entity(entityId, scene);
-			auto& meshComp = entity.GetComponent<SkinnedMeshComponent>();
-			if (meshComp.MeshHandle == Constants::InvalidUUID)
-				continue;
-
-			auto mesh = Application::Instance().GetAssetManager().GetAsset<Mesh>(meshComp.MeshHandle);
-			Vector3f localMin = mesh->GetMinBounds();
-			Vector3f localMax = mesh->GetMaxBounds();
-			padLocalBounds(localMin, localMax, skinnedBoundsPadding);
-
-			const Matrix4f& meshWorldMat = entity.GetComponent<TransformComponent>().GetWorldTransform();
-			AABB worldAABB = transformLocalBoundsToWorldAABB(localMin, localMax, meshWorldMat);
-
-			if (meshComp.AnimatorEntityHandle != Constants::InvalidUUID)
-			{
-				Entity animatorEntity = scene->GetEntity(meshComp.AnimatorEntityHandle);
-				if (animatorEntity)
-				{
-					AABB animatorAABB = transformLocalBoundsToWorldAABB(
-						localMin, localMax, animatorEntity.GetComponent<TransformComponent>().GetWorldTransform());
-					worldAABB.WorldMin = Math::Min(worldAABB.WorldMin, animatorAABB.WorldMin);
-					worldAABB.WorldMax = Math::Max(worldAABB.WorldMax, animatorAABB.WorldMax);
-				}
-			}
-
-			renderableEntities.push_back(std::make_pair(entity, worldAABB));
-		}
-
-		m_ActiveRenderableEntities = std::move(renderableEntities);
+		// Shared with VisibilitySystem so the renderable world-AABB math has a single source of truth.
+		// The RenderSystem runs after TransformSystem, so this gathers against the current frame's
+		// transforms for an accurate per-view cull; VisibilitySystem calls the same helper earlier in
+		// the frame for its (deliberately conservative) simulation-relevance cull.
+		VisibilitySystem::GatherRenderableAABBs(scene, m_ActiveRenderableEntities);
 	}
 
 	void RenderSystem::SortEntitiesByRenderQueue(Scene* scene)
@@ -660,9 +645,9 @@ namespace Ember {
 		colorGradePass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.ColorGradeEnabled;
 		if (colorGradePass->Enabled)
 		{
-			// If the color grading settings have changed, we need to re-bake the LUT with the new settings for runtime
-			BakeColorGradeLUT(colorGradePass->Settings);
-			colorGradePass->SetBakedLUT(m_ColorGradeLUTBuffer);
+			// Only re-bake the LUT when the color grading settings actually change (e.g. from volume
+			// blending or editor edits); a static grade bakes once and is reused every subsequent frame.
+			BakeColorGradeLUTIfDirty(colorGradePass->Settings);
 		}
 
 		auto bloomPass = StaticPointerCast<BloomPass>(GetPostProcessPass("BloomPass"));

@@ -68,6 +68,7 @@ namespace Ember {
 		void SortEntitiesByRenderQueue(Scene* scene);
 		void SetFinalPostProcessSettings(Scene* scene);
 		void ApplyPostProcessSettings();
+		void BakeColorGradeLUTIfDirty(ColorGradeSettings& settings);
 
 	private:
 		// TODO: Make this a render graph
@@ -79,6 +80,9 @@ namespace Ember {
 		SharedPtr<UniformBuffer> m_LightUniformBuffer;
 
 		SharedPtr<Framebuffer> m_ColorGradeLUTBuffer;
+		// Settings used for the most recent LUT bake; drives the dirty check in BakeColorGradeLUTIfDirty.
+		ColorGradeSettings m_LastBakedColorGradeSettings;
+		bool m_HasBakedColorGradeLUT = false;
 
 		RenderQueueBuckets m_RenderQueueBuckets;
 

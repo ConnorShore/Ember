@@ -33,6 +33,8 @@
 #include "Ember/Core/Core.h"
 #include "Ember/Math/Math.h"
 
+#include "Ember/Performance/Profiler.h"
+
 #ifdef EB_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif

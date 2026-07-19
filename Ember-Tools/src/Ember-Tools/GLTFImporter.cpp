@@ -103,6 +103,8 @@ namespace Ember {
 	}
 
 	std::optional<ModelCookReport> GLTFImporter::CookModel(const std::string& inputFile, const std::string& outputDirectory) {
+		EB_PROFILE_FUNCTION();
+
 		tinygltf::Model model;
 		tinygltf::TinyGLTF loader;
 		std::string err, warn;
