@@ -55,6 +55,11 @@ namespace Ember {
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifndef EB_DIST
+			// Request a debug context so glDebugMessageCallback (GraphicsContext::Init) reliably
+			// reports GL errors/undefined behavior. Enabled in Debug AND Release, off in shipping Dist.
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 			// Hide the window before creation to prevent the "teleport flicker"
 			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 

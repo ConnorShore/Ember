@@ -42,6 +42,10 @@
 #include "Ember/Render/Pass/EditorGridRenderPass.h"
 #include "Ember/Render/Pass/FinalBlitRenderPass.h"
 
+#include <glad/glad.h>
+#include "stb_image.h"
+#include "stb_image_write.h"
+
 
 namespace Ember {
 
@@ -661,6 +665,85 @@ namespace Ember {
 		auto vignettePass = StaticPointerCast<VignettePass>(GetPostProcessPass("VignettePass"));
 		vignettePass->Settings = m_RenderSceneState.FinalPostProcessVolumeSettings.Vignette;
 		vignettePass->Enabled = m_RenderSceneState.FinalPostProcessVolumeSettings.VignetteEnabled;
+	}
+
+	bool RenderSystem::CaptureBackbufferToPNG(uint32_t width, uint32_t height, const std::string& outPath)
+	{
+		if (width == 0 || height == 0)
+			return false;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glReadBuffer(GL_BACK);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+		std::vector<uint8_t> pixels(static_cast<size_t>(width) * height * 4);
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+		stbi_flip_vertically_on_write(true); // GL back buffer is bottom-left origin; write upright
+		int ok = stbi_write_png(outPath.c_str(), (int)width, (int)height, 4, pixels.data(), (int)width * 4);
+		return ok != 0;
+	}
+
+	bool RenderSystem::CompareBackbufferToReference(uint32_t width, uint32_t height, const std::string& refPath,
+		int channelTolerance, double maxDiffFraction)
+	{
+		if (width == 0 || height == 0)
+			return false;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glReadBuffer(GL_BACK);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+		std::vector<uint8_t> actual(static_cast<size_t>(width) * height * 4);
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, actual.data()); // bottom-left origin
+
+		int rw = 0, rh = 0, rc = 0;
+		stbi_set_flip_vertically_on_load(false); // reference PNG is stored top-left origin
+		unsigned char* ref = stbi_load(refPath.c_str(), &rw, &rh, &rc, 4);
+		if (!ref)
+		{
+			EB_CORE_ERROR("Smoke test: could not load reference image '{}'", refPath);
+			return false;
+		}
+		if (static_cast<uint32_t>(rw) != width || static_cast<uint32_t>(rh) != height)
+		{
+			EB_CORE_ERROR("Smoke test: size mismatch - reference {}x{} vs back buffer {}x{}", rw, rh, width, height);
+			stbi_image_free(ref);
+			return false;
+		}
+
+		size_t diffPixels = 0;
+		const size_t totalPixels = static_cast<size_t>(width) * height;
+		for (uint32_t y = 0; y < height; ++y)
+		{
+			// actual is bottom-left origin, ref is top-left - flip the row index on the actual side
+			const uint8_t* aRow = &actual[static_cast<size_t>(height - 1 - y) * width * 4];
+			const uint8_t* rRow = &ref[static_cast<size_t>(y) * width * 4];
+			for (uint32_t x = 0; x < width; ++x)
+			{
+				for (int c = 0; c < 4; ++c)
+				{
+					int d = static_cast<int>(aRow[x * 4 + c]) - static_cast<int>(rRow[x * 4 + c]);
+					if (d < 0) d = -d;
+					if (d > channelTolerance)
+					{
+						++diffPixels;
+						break;
+					}
+				}
+			}
+		}
+		stbi_image_free(ref);
+
+		const double diffFraction = static_cast<double>(diffPixels) / static_cast<double>(totalPixels);
+		const bool pass = diffFraction <= maxDiffFraction;
+		if (pass)
+			EB_CORE_INFO("Smoke test PASS: {}/{} pixels differ ({:.4f}%), threshold {:.4f}%",
+				diffPixels, totalPixels, diffFraction * 100.0, maxDiffFraction * 100.0);
+		else
+			EB_CORE_ERROR("Smoke test FAIL: {}/{} pixels differ ({:.4f}%), threshold {:.4f}%",
+				diffPixels, totalPixels, diffFraction * 100.0, maxDiffFraction * 100.0);
+		return pass;
 	}
 
 }

@@ -59,6 +59,15 @@ namespace Ember {
 
 		void SetGlobalPostProcessVolumeSettings(const PostProcessVolumeSettings& settings) { m_GlobalVolumeSettings = settings; }
 
+		// --- Golden-image smoke-test helpers (operate on the default framebuffer / back buffer) ---
+		// Writes the current back buffer to a PNG (upright, top-left origin). Returns false on failure.
+		static bool CaptureBackbufferToPNG(uint32_t width, uint32_t height, const std::string& outPath);
+		// Compares the current back buffer against a reference PNG. Passes when the fraction of pixels
+		// whose any channel differs by more than channelTolerance (0-255) is <= maxDiffFraction. Logs
+		// PASS/FAIL with the measured difference.
+		static bool CompareBackbufferToReference(uint32_t width, uint32_t height, const std::string& refPath,
+			int channelTolerance, double maxDiffFraction);
+
 	private:
 		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
 		void InitializeRenderState();
