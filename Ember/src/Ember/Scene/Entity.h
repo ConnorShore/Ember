@@ -61,6 +61,7 @@ namespace Ember {
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
 		UUID GetUUID() const;
 		const std::string& GetName() const;
+		const bool IsValid() const { return m_EntityHandle != Constants::Entities::InvalidEntityID; }
 
 		operator EntityID() { return m_EntityHandle; }
 		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }

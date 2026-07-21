@@ -1,45 +1,47 @@
 #include "ebpch.h"
 #include "ScriptBindComponents.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Script/Bindings/ScriptComponentRef.h"
 
 namespace Ember {
 	void BindAudioComponents(sol::state& state)
 	{
-		state.new_usertype<AudioSourceComponent>("AudioSourceComponent",
-			"AudioClipHandle", &AudioSourceComponent::AudioClipHandle,
+		// Bound as resolving handles (see ScriptComponentRef.h): safe to cache in Lua.
+		state.new_usertype<ComponentRef<AudioSourceComponent>>("AudioSourceComponent",
+			"AudioClipHandle", RefProp(&AudioSourceComponent::AudioClipHandle),
 			"Volume", sol::property(
-				[](AudioSourceComponent& c) { return c.Properties.Volume; },
-				[](AudioSourceComponent& c, float volume) { c.Properties.Volume = volume; }
+				[](ComponentRef<AudioSourceComponent>& r) { return r.Resolve().Properties.Volume; },
+				[](ComponentRef<AudioSourceComponent>& r, float volume) { r.Resolve().Properties.Volume = volume; }
 			),
 			"Pitch", sol::property(
-				[](AudioSourceComponent& c) { return c.Properties.Pitch; },
-				[](AudioSourceComponent& c, float pitch) { c.Properties.Pitch = pitch; }
+				[](ComponentRef<AudioSourceComponent>& r) { return r.Resolve().Properties.Pitch; },
+				[](ComponentRef<AudioSourceComponent>& r, float pitch) { r.Resolve().Properties.Pitch = pitch; }
 			),
 			"Looping", sol::property(
-				[](AudioSourceComponent& c) { return c.Properties.Looping; },
-				[](AudioSourceComponent& c, bool looping) { c.Properties.Looping = looping; }
+				[](ComponentRef<AudioSourceComponent>& r) { return r.Resolve().Properties.Looping; },
+				[](ComponentRef<AudioSourceComponent>& r, bool looping) { r.Resolve().Properties.Looping = looping; }
 			),
 			"Spatialized", sol::property(
-				[](AudioSourceComponent& c) { return c.Properties.Spatialized; },
-				[](AudioSourceComponent& c, bool spatialized) { c.Properties.Spatialized = spatialized; }
+				[](ComponentRef<AudioSourceComponent>& r) { return r.Resolve().Properties.Spatialized; },
+				[](ComponentRef<AudioSourceComponent>& r, bool spatialized) { r.Resolve().Properties.Spatialized = spatialized; }
 			),
 			"Play", sol::as_function(
-				[](AudioSourceComponent& c) { c.Source.Play(); }
+				[](ComponentRef<AudioSourceComponent>& r) { r.Resolve().Source.Play(); }
 			),
 			"PlayDelayed", sol::as_function(
-				[](AudioSourceComponent& c, float delayMs) { c.Source.PlayDelayed(delayMs); }
+				[](ComponentRef<AudioSourceComponent>& r, float delayMs) { r.Resolve().Source.PlayDelayed(delayMs); }
 			),
 			"Stop", sol::as_function(
-				[](AudioSourceComponent& c) { c.Source.Stop(); }
+				[](ComponentRef<AudioSourceComponent>& r) { r.Resolve().Source.Stop(); }
 			),
 			"Restart", sol::as_function(
-				[](AudioSourceComponent& c) { c.Source.Restart(); }
+				[](ComponentRef<AudioSourceComponent>& r) { r.Resolve().Source.Restart(); }
 			)
 		);
 
-		state.new_usertype<AudioListenerComponent>("AudioListenerComponent",
-			"IsActive", &AudioListenerComponent::IsActive,
-			"ListenerIndex", &AudioListenerComponent::ListenerIndex
+		state.new_usertype<ComponentRef<AudioListenerComponent>>("AudioListenerComponent",
+			"IsActive", RefProp(&AudioListenerComponent::IsActive),
+			"ListenerIndex", RefProp(&AudioListenerComponent::ListenerIndex)
 		);
 	}
 }

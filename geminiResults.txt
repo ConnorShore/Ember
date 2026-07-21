@@ -1,0 +1,70 @@
+I can certainly help you analyze your profiling data and pinpoint where you should focus your optimization efforts for your engine, Ember.
+
+Based on the two profiling tables you've provided, here is an analysis of your engine's performance, the impact of game-related scaling, and recommendations for optimization.
+
+Analysis of the Basic AI Scene
+In your basic AI scene, the engine is running very fast, with a total frame time of 4.799 ms, which is easily over 200 FPS.
+
+RenderSystem (35% - 1.68 ms): This taking the largest chunk is expected in a simple scene. Even with low geometry, there is overhead in binding shaders, setting up render targets, and executing draw calls.
+
+ScriptSystem (24% - 1.15 ms): This is relatively high for a basic scene. It suggests that there is a baseline overhead to how scripts are updated or invoked, regardless of script complexity.
+
+CharacterControllerSystem (5.69% - 0.273 ms) & PhysicsSystem (3% - 0.147 ms): These are performing very well. The low cost indicates that the basic collision queries and resolution for a single agent are highly efficient.
+
+TransformSystem (1.52% - 0.073 ms): This is excellent and shows that updating the spatial data of a low number of entities is virtually free.
+
+Analysis of the Complex Zombie FPS Scene
+In your complex scene, the total frame time jumps to 8.78 ms (still a very healthy ~113 FPS). However, the scaling reveals where your engine's architecture might be strained under load.
+
+RenderSystem (25% - 2.21 ms): The render time scaled exceptionally well. Despite moving to a complex scene (presumably with more zombies, bullets, and geometry), the render time only increased by ~0.5 ms. This indicates a solid rendering architecture (likely good batching, culling, or instancing).
+
+ScriptSystem (22.29% - 1.95 ms): This nearly doubled. While 1.95 ms isn't catastrophic, the fact that it scales up so quickly indicates a bottleneck. If you double the zombie count again, you might start missing your frame budget.
+
+TransformSystem (10.86% - 0.953 ms): This is the major red flag. The time spent updating transforms increased by over 1300% (from 0.073 ms to 0.953 ms).
+
+AnimationSystem (9.27% - 0.814 ms): This also saw a massive jump (from 0.034 ms to 0.814 ms), indicating a direct linear cost to having more animated characters on screen.
+
+CharacterControllerSystem (6.92% - 0.608 ms): This scaled up as expected. More zombies mean more capsule sweeps and collision checks.
+
+Is it the Engine or the Game?
+The differences in profiling are primarily engine-related architecture issues, specifically in how your engine handles scaling.
+
+While game scripts do add overhead, the massive scaling in the TransformSystem and AnimationSystem points to foundational engine bottlenecks.
+
+Where to Focus Optimization (The Roadmap)
+Based on the data, here is where you should focus your engine optimizations, ordered by priority:
+
+1. The Transform System (Critical Priority)
+In modern game engines, updating transforms (position, rotation, scale) should be one of the fastest operations. The fact that it takes almost 1 ms in a complex scene suggests a memory architecture issue.
+
+The Problem: You are likely using an Object-Oriented approach where every Entity owns a TransformComponent allocated haphazardly on the heap. When the TransformSystem loops through 1000 zombies to update their matrices, the CPU is forced to cache-miss constantly as it jumps around memory looking for the next transform.
+
+The Solution: Transition your TransformSystem to a Data-Oriented Design (DOD). Use a contiguous array (like a std::vector or a specialized memory pool) to store all transform matrices tightly packed together. When the system updates, it should just stream through this linear array. This cache-friendly approach can reduce your 0.95 ms transform update to less than 0.1 ms.
+
+2. The Script System (High Priority)
+Scripting is inherently slow, but 1.95 ms per frame for logic is high.
+
+The Problem: The overhead usually comes from the "bridge" between C++ and your scripting language (Lua, C#, etc.). If you are calling a script's OnUpdate(delta) function 1000 times per frame from C++, the context-switching overhead dwarfs the actual execution time of the script.
+
+The Solution:
+
+Batching: Instead of calling zombie.OnUpdate() individually, consider a pattern where the script system calls UpdateAllZombies(zombieArray).
+
+Event-Driven Logic: Scripts should rarely use OnUpdate for continuous polling. Move as much logic as possible to event callbacks (e.g., OnTakeDamage, OnPlayerSpotted).
+
+3. The Animation System (Medium Priority)
+Skinning meshes and interpolating keyframes is mathematically heavy.
+
+The Problem: You are likely calculating bone matrices for every zombie every frame on the CPU.
+
+The Solution:
+
+GPU Skinning: Move the actual vertex deformation to the vertex shader. The CPU should only calculate the bone transforms and pass them as a uniform buffer to the GPU.
+
+Animation LOD (Level of Detail): If a zombie is 50 meters away, you do not need to update its animation at 60fps. Update distant animations every 2nd or 3rd frame and interpolate the results.
+
+4. The Render System (Low Priority - Doing Great)
+Your rendering is scaling beautifully. Keep doing what you're doing. As you add more complex shaders or post-processing, keep an eye on it, but right now, your rendering backend is robust.
+
+Conclusion
+Your engine is performing admirably overall! The basic systems (Physics, Visibility, Render) are highly optimized. By refactoring your TransformSystem to be cache-friendly and reducing C++/Script context switches in your ScriptSystem, you will easily claw back 1-2 ms of frame time, giving your zombie game plenty of headroom for more features.

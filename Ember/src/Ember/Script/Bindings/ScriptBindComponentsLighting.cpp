@@ -1,29 +1,31 @@
 #include "ebpch.h"
 #include "ScriptBindComponents.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Script/Bindings/ScriptComponentRef.h"
 
 namespace Ember {
 	void BindLightingAndCameraComponents(sol::state& state)
 	{
-		state.new_usertype<DirectionalLightComponent>("DirectionalLightComponent",
-			"IsActive", &DirectionalLightComponent::Active,
-			"Color", &DirectionalLightComponent::Color,
-			"Intensity", &DirectionalLightComponent::Intensity
+		// Bound as resolving handles (see ScriptComponentRef.h): safe to cache in Lua.
+		state.new_usertype<ComponentRef<DirectionalLightComponent>>("DirectionalLightComponent",
+			"IsActive", RefProp(&DirectionalLightComponent::Active),
+			"Color", RefProp(&DirectionalLightComponent::Color),
+			"Intensity", RefProp(&DirectionalLightComponent::Intensity)
 		);
 
-		state.new_usertype<PointLightComponent>("PointLightComponent",
-			"IsActive", &PointLightComponent::Active,
-			"Color", &PointLightComponent::Color,
-			"Intensity", &PointLightComponent::Intensity,
-			"Radius", &PointLightComponent::Radius
+		state.new_usertype<ComponentRef<PointLightComponent>>("PointLightComponent",
+			"IsActive", RefProp(&PointLightComponent::Active),
+			"Color", RefProp(&PointLightComponent::Color),
+			"Intensity", RefProp(&PointLightComponent::Intensity),
+			"Radius", RefProp(&PointLightComponent::Radius)
 		);
 
-		state.new_usertype<SpotLightComponent>("SpotLightComponent",
-			"IsActive", &SpotLightComponent::Active,
-			"Color", &SpotLightComponent::Color,
-			"Intensity", &SpotLightComponent::Intensity,
-			"CutOffAngle", &SpotLightComponent::CutOffAngle,
-			"OuterCutOffAngle", &SpotLightComponent::CutOffAngle
+		state.new_usertype<ComponentRef<SpotLightComponent>>("SpotLightComponent",
+			"IsActive", RefProp(&SpotLightComponent::Active),
+			"Color", RefProp(&SpotLightComponent::Color),
+			"Intensity", RefProp(&SpotLightComponent::Intensity),
+			"CutOffAngle", RefProp(&SpotLightComponent::CutOffAngle),
+			"OuterCutOffAngle", RefProp(&SpotLightComponent::CutOffAngle)
 		);
 	}
 }

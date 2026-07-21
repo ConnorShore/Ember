@@ -1,32 +1,34 @@
 #include "ebpch.h"
 #include "ScriptBindComponents.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/Script/Bindings/ScriptComponentRef.h"
 
 namespace Ember {
 	void BindMiscComponents(sol::state& state)
 	{
-		state.new_usertype<AnimatorComponent>("AnimatorComponent",
-			"SkeletonHandle", &AnimatorComponent::SkeletonHandle,
-			"ControllerHandle", &AnimatorComponent::ControllerHandle,
-			"PlaybackSpeed", &AnimatorComponent::PlaybackSpeed,
-			"SetFloat", &AnimatorComponent::SetFloat,
-			"SetBool", &AnimatorComponent::SetBool
+		// Bound as a resolving handle (see ScriptComponentRef.h): safe to cache in Lua.
+		state.new_usertype<ComponentRef<AnimatorComponent>>("AnimatorComponent",
+			"SkeletonHandle", RefProp(&AnimatorComponent::SkeletonHandle),
+			"ControllerHandle", RefProp(&AnimatorComponent::ControllerHandle),
+			"PlaybackSpeed", RefProp(&AnimatorComponent::PlaybackSpeed),
+			"SetFloat", RefMethod(&AnimatorComponent::SetFloat),
+			"SetBool", RefMethod(&AnimatorComponent::SetBool)
 		);
 
-		state.new_usertype<BoneSocketComponent>("BoneSocketComponent",
-			"TargetEntityHandle", &BoneSocketComponent::TargetEntityHandle,
-			"BoneName", &BoneSocketComponent::BoneName,
-			"Position", &BoneSocketComponent::Position,
-			"Rotation", &BoneSocketComponent::Rotation,
-			"Scale", &BoneSocketComponent::Scale
+		state.new_usertype<ComponentRef<BoneSocketComponent>>("BoneSocketComponent",
+			"TargetEntityHandle", RefProp(&BoneSocketComponent::TargetEntityHandle),
+			"BoneName", RefProp(&BoneSocketComponent::BoneName),
+			"Position", RefProp(&BoneSocketComponent::Position),
+			"Rotation", RefProp(&BoneSocketComponent::Rotation),
+			"Scale", RefProp(&BoneSocketComponent::Scale)
 		);
 
-		state.new_usertype<LifetimeComponent>("LifetimeComponent",
-			"Lifetime", &LifetimeComponent::Lifetime
+		state.new_usertype<ComponentRef<LifetimeComponent>>("LifetimeComponent",
+			"Lifetime", RefProp(&LifetimeComponent::Lifetime)
 		);
 
-		state.new_usertype<PrefabComponent>("PrefabComponent",
-			"PrefabHandle", &PrefabComponent::PrefabHandle
+		state.new_usertype<ComponentRef<PrefabComponent>>("PrefabComponent",
+			"PrefabHandle", RefProp(&PrefabComponent::PrefabHandle)
 		);
 	}
 }
