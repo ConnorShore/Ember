@@ -18,7 +18,7 @@ namespace Ember {
 		void OnAttach() override;
 		void OnDetach() override;
 		void OnUpdate(TimeStep delta, Scene* scene) override;
-		void UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, Scene* scene);
+		void UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, bool parentChanged, Scene* scene);
 	};
 
 }

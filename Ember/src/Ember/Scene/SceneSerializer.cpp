@@ -1852,6 +1852,7 @@ namespace Ember {
 
 	Entity SceneSerializer::DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs)
 	{
+		EB_PROFILE_FUNCTION();
 		if (!prefab || prefab->YAMLData.empty())
 			return Entity();
 

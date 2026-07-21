@@ -87,7 +87,7 @@ namespace Ember {
 		// This ensures the bullet/entity starts at the correct position with no
 		// leftover momentum from its previous use.
 		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<TransformSystem>()->UpdateTransformTree(entity, Matrix4f(1.0f), m_SceneHandle);
+		systemManager.GetSystem<TransformSystem>()->UpdateTransformTree(entity, Matrix4f(1.0f), true, m_SceneHandle);
 		SyncPhysicsTransforms(entity, m_SceneHandle);
 
 		m_ActiveEntities.push(entity);
@@ -122,7 +122,7 @@ namespace Ember {
 		m_SceneHandle->GetRegistry().GetComponent<TransformComponent>(entity).Position = position;
 
 		auto& systemManager = Application::Instance().GetSystemManager();
-		systemManager.GetSystem<TransformSystem>()->UpdateTransformTree(entity, Matrix4f(1.0f), m_SceneHandle);
+		systemManager.GetSystem<TransformSystem>()->UpdateTransformTree(entity, Matrix4f(1.0f), true, m_SceneHandle);
 		SyncPhysicsTransforms(entity, m_SceneHandle);
 
 		m_ActiveEntities.push(entity);

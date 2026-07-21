@@ -1,0 +1,81 @@
+I'm working on profiling my engine right now to see if my runtime of my different systems are in line with what a game engine should be or if i need to optimize certain systems. I ran a basic level that has an ai agent navigating to a target. Here was the breakdown:
+
+
+
+| system | updates | total_ms | avg_us_per_call | avg_ms_per_call | pct_of_frame |
+
+| --- | --- | --- | --- | --- | --- |
+
+| Frame (total) | 4094 | 19647.684 | 4799.141 | 4.799 | 100 |
+
+| RenderSystem | 4094 | 6882.454 | 1681.107 | 1.681 | 35.03 |
+
+| ScriptSystem | 4094 | 4712.624 | 1151.105 | 1.151 | 23.99 |
+
+| CharacterControllerSystem | 4094 | 1117.723 | 273.014 | 0.273 | 5.69 |
+
+| PhysicsSystem | 4094 | 603.707 | 147.461 | 0.147 | 3.07 |
+
+| VisibilitySystem | 4094 | 442.14 | 107.997 | 0.108 | 2.25 |
+
+| TransformSystem | 4094 | 297.984 | 72.785 | 0.073 | 1.52 |
+
+| ParticleSystem | 4094 | 278.117 | 67.932 | 0.068 | 1.42 |
+
+| AnimationSystem | 4094 | 138.844 | 33.914 | 0.034 | 0.71 |
+
+| AISystem | 4094 | 48.126 | 11.755 | 0.012 | 0.24 |
+
+| AudioSystem | 4094 | 36.588 | 8.936 | 0.009 | 0.19 |
+
+| LifecycleSystem | 4094 | 34.49 | 8.424 | 0.008 | 0.18 |
+
+| UILayoutSystem | 4094 | 30.427 | 7.432 | 0.007 | 0.15 |
+
+| BoneSocketSystem | 4094 | 14.311 | 3.495 | 0.003 | 0.07 |
+
+
+
+Here is the breakdown of me running the zombie fps game I'm working on (is much more complex):
+
+
+
+| system | updates | total_ms | avg_us_per_call | avg_ms_per_call | pct_of_frame |
+
+| --- | --- | --- | --- | --- | --- |
+
+| Frame (total) | 4137 | 36322.678 | 8779.956 | 8.78 | 100 |
+
+| RenderSystem | 4137 | 9181.596 | 2219.385 | 2.219 | 25.28 |
+
+| ScriptSystem | 4137 | 8097.858 | 1957.422 | 1.957 | 22.29 |
+
+| TransformSystem | 4137 | 3944.308 | 953.422 | 0.953 | 10.86 |
+
+| AnimationSystem | 4137 | 3368.273 | 814.182 | 0.814 | 9.27 |
+
+| CharacterControllerSystem | 4137 | 2514.169 | 607.727 | 0.608 | 6.92 |
+
+| PhysicsSystem | 4137 | 1100.952 | 266.123 | 0.266 | 3.03 |
+
+| VisibilitySystem | 4137 | 824.56 | 199.313 | 0.199 | 2.27 |
+
+| ParticleSystem | 4137 | 366.169 | 88.51 | 0.089 | 1.01 |
+
+| UILayoutSystem | 4137 | 129.145 | 31.217 | 0.031 | 0.36 |
+
+| BoneSocketSystem | 4137 | 113.69 | 27.481 | 0.027 | 0.31 |
+
+| LifecycleSystem | 4137 | 58.842 | 14.223 | 0.014 | 0.16 |
+
+| AudioSystem | 4137 | 49.631 | 11.996 | 0.012 | 0.14 |
+
+| AISystem | 4137 | 45.271 | 10.942 | 0.011 | 0.12 |
+
+
+
+I've attached the full profiles of each run as well. Note that these were ran in Debug mode through VS using my runtime (not through the editor)
+
+
+
+Are differences in my profiling due to engine or game related issues? I know my scripting system takes way longer in the game vs the ai test but its hard to tell if its due to inefficiencies with my game scripts or my script engine itself. What analysis can you conclude from my provided info about my engine performance as well as game performance and where should I focus on optimizations for my engine? Is the breakdown good or do certain areas need to be faster?

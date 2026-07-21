@@ -38,11 +38,23 @@ namespace Ember {
 
 	static std::vector<TimeoutRequest> s_Timeouts;
 
+	// Lua 5.4 defaults to incremental GC. The runtime allocates many short-lived Lua
+	// objects every frame (component proxies from GetComponent, temporary Vector3f, etc.),
+	// and under load (lots of AI scripts) the incremental collector's per-frame cost spikes.
+	// Generational GC is designed for exactly this "lots of small, short-lived garbage"
+	// pattern and smooths those spikes. Passing 0,0 keeps Lua's default gen multipliers.
+	static sol::state* CreateConfiguredLuaState()
+	{
+		sol::state* state = new sol::state();
+		state->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+		lua_gc(state->lua_state(), LUA_GCGEN, 0, 0);
+		return state;
+	}
+
     void ScriptEngine::Init()
     {
 		// Create the state immediately so the Editor can parse scripts!
-		s_LuaState = new sol::state();
-		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+		s_LuaState = CreateConfiguredLuaState();
 		ClearTimeouts();
 
 		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
@@ -82,8 +94,7 @@ namespace Ember {
 		// wipe editor state and create fresh one for runtime
 		ClearTimeouts();
 		delete s_LuaState;
-		s_LuaState = new sol::state();
-		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+		s_LuaState = CreateConfiguredLuaState();
 
 		// 3. Bind the Engine API to this fresh runtime state
 		BindAPI(scene);
@@ -111,8 +122,7 @@ namespace Ember {
 		// Wipe runtime state and create fresh one for the editor
 		ClearTimeouts();
 		delete s_LuaState;
-		s_LuaState = new sol::state();
-		s_LuaState->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+		s_LuaState = CreateConfiguredLuaState();
 
 		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
 		BindCore(*s_LuaState);

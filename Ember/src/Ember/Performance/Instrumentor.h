@@ -5,16 +5,21 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
+#include <charconv>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
 #include <thread>
+#include <mutex>
 
 namespace Ember {
 
 	struct ProfileResult
 	{
-		std::string Name;
+		// Name points at a string literal / __FUNCSIG__ with static storage duration
+		// (see InstrumentationTimer), so it is safe to reference as a raw pointer without
+		// copying into a std::string on the hot measurement path.
+		const char* Name;
 		long long Start, End;
 		uint32_t ThreadID;
 	};
@@ -24,22 +29,45 @@ namespace Ember {
 		std::string Name;
 	};
 
+	// Chrome-tracing (chrome://tracing / Perfetto) instrumentor.
+	//
+	// Events are formatted straight into a small reusable text buffer and block-written to
+	// the file as that buffer fills. Two behaviors this deliberately avoids:
+	//
+	//   1. Per-event m_OutputStream.flush() (the original) — a synchronous disk flush on
+	//      every event cost ~15-25us each, so fine-grained scopes measured the profiler
+	//      instead of the code.
+	//   2. Buffering *all* events in memory and draining one huge chunk at once — a run that
+	//      produced ~8M events made that drain format/write ~875MB via iostream in a single
+	//      call, freezing the game for ~22s mid-frame.
+	//
+	// Formatting uses std::to_chars (not iostream operator<<) so per-event cost stays ~tens
+	// of ns, and it happens after the measured scope's timer has already stopped — only
+	// ancestor *inclusive* times see the small cost, self-times remain accurate. Writes hit
+	// the disk in ~1MB blocks spread across the run, so there is no perceptible hitch.
 	class Instrumentor
 	{
 	private:
+		// Flush the text buffer to disk once it grows past this many bytes (~1MB blocks).
+		static constexpr size_t s_FlushChunkBytes = 1u << 20;
+
 		InstrumentationSession* m_CurrentSession;
 		std::ofstream m_OutputStream;
-		int m_ProfileCount;
+		bool m_FirstProfile;
+		std::string m_TextBuffer;
+		std::mutex m_Mutex;
 	public:
 		Instrumentor()
-			: m_CurrentSession(nullptr), m_ProfileCount(0)
+			: m_CurrentSession(nullptr), m_FirstProfile(true)
 		{
 		}
 
 		void BeginSession(const std::string& name, const std::filesystem::path& filepath = "results.json")
 		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+
 			if (m_CurrentSession)
-				EndSession();
+				EndSessionInternal();
 
 			const auto parentDir = filepath.parent_path();
 			if (!parentDir.empty() && !std::filesystem::exists(parentDir))
@@ -61,62 +89,107 @@ namespace Ember {
 				return;
 			}
 
+			m_TextBuffer.clear();
+			m_TextBuffer.reserve(s_FlushChunkBytes + 4096);
+			m_FirstProfile = true;
 			WriteHeader();
 			m_CurrentSession = new InstrumentationSession{ name };
 		}
 
 		void EndSession()
 		{
-			if (!m_CurrentSession)
-				return;
-
-			WriteFooter();
-			m_OutputStream.close();
-			delete m_CurrentSession;
-			m_CurrentSession = nullptr;
-			m_ProfileCount = 0;
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			EndSessionInternal();
 		}
 
 		void WriteProfile(const ProfileResult& result)
 		{
-			if (!m_CurrentSession || !m_OutputStream.is_open())
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			if (!m_CurrentSession)
 				return;
 
-			if (m_ProfileCount++ > 0)
-				m_OutputStream << ",";
+			AppendEvent(result);
 
-			std::string name = result.Name;
-			std::replace(name.begin(), name.end(), '"', '\'');
-
-			m_OutputStream << "{";
-			m_OutputStream << "\"cat\":\"function\",";
-			m_OutputStream << "\"dur\":" << (result.End - result.Start) << ',';
-			m_OutputStream << "\"name\":\"" << name << "\",";
-			m_OutputStream << "\"ph\":\"X\",";
-			m_OutputStream << "\"pid\":0,";
-			m_OutputStream << "\"tid\":" << result.ThreadID << ",";
-			m_OutputStream << "\"ts\":" << result.Start;
-			m_OutputStream << "}";
-
-			m_OutputStream.flush();
-		}
-
-		void WriteHeader()
-		{
-			m_OutputStream << "{\"otherData\": {},\"traceEvents\":[";
-			m_OutputStream.flush();
-		}
-
-		void WriteFooter()
-		{
-			m_OutputStream << "]}";
-			m_OutputStream.flush();
+			if (m_TextBuffer.size() >= s_FlushChunkBytes)
+				FlushTextBuffer();
 		}
 
 		static Instrumentor& Get()
 		{
 			static Instrumentor instance;
 			return instance;
+		}
+
+	private:
+		// The following helpers all assume m_Mutex is already held by the caller.
+
+		void EndSessionInternal()
+		{
+			if (!m_CurrentSession)
+				return;
+
+			if (m_OutputStream.is_open())
+			{
+				FlushTextBuffer();
+				WriteFooter();
+				m_OutputStream.flush();
+				m_OutputStream.close();
+			}
+			m_TextBuffer.clear();
+
+			delete m_CurrentSession;
+			m_CurrentSession = nullptr;
+			m_FirstProfile = true;
+		}
+
+		template<typename T>
+		void AppendInt(T value)
+		{
+			char buf[24];
+			auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), value);
+			m_TextBuffer.append(buf, static_cast<size_t>(ptr - buf));
+		}
+
+		// Formats one event into m_TextBuffer. Reuses the buffer's capacity, so there is no
+		// per-event heap allocation, and uses to_chars rather than iostream for the numbers.
+		void AppendEvent(const ProfileResult& result)
+		{
+			if (!m_FirstProfile)
+				m_TextBuffer += ',';
+			m_FirstProfile = false;
+
+			m_TextBuffer += "{\"cat\":\"function\",\"dur\":";
+			AppendInt(result.End - result.Start);
+			m_TextBuffer += ",\"name\":\"";
+
+			// Escape embedded double-quotes on the fly (matches the previous behavior).
+			for (const char* c = result.Name; c && *c; ++c)
+				m_TextBuffer += (*c == '"' ? '\'' : *c);
+
+			m_TextBuffer += "\",\"ph\":\"X\",\"pid\":0,\"tid\":";
+			AppendInt(result.ThreadID);
+			m_TextBuffer += ",\"ts\":";
+			AppendInt(result.Start);
+			m_TextBuffer += '}';
+		}
+
+		// Block-writes the accumulated text and clears it. No flush() — the OS absorbs the
+		// write and we flush once at EndSession.
+		void FlushTextBuffer()
+		{
+			if (m_OutputStream.is_open() && !m_TextBuffer.empty())
+				m_OutputStream.write(m_TextBuffer.data(), static_cast<std::streamsize>(m_TextBuffer.size()));
+			m_TextBuffer.clear();
+		}
+
+		void WriteHeader()
+		{
+			m_OutputStream << "{\"otherData\": {},\"traceEvents\":[";
+		}
+
+		void WriteFooter()
+		{
+			m_OutputStream << "]}";
 		}
 	};
 

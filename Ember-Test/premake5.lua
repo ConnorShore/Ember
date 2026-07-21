@@ -47,7 +47,7 @@ project "Ember-Test"
       buildoptions { "/w14700", "/w14701", "/w14703", "/we4700", "/we4701", "/we4703" }
 
    filter "configurations:Debug"
-      defines { "EB_DEBUG", "EB_PROFILE" }
+      defines { "EB_DEBUG" }
       symbols "On"
 
    filter "configurations:Release"

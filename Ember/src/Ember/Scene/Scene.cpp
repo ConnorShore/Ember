@@ -1138,6 +1138,7 @@ namespace Ember {
 	// scene-placed instance after CopyScene + OnRuntimeStart (physics, scripts, AI agents).
 	static void FinalizeRuntimePrefabInstance(Scene* scene, Entity root, const Matrix4f& parentWorldTransform)
 	{
+		EB_PROFILE_FUNCTION();
 		auto& systemManager = Application::Instance().GetSystemManager();
 
 		// DeserializePrefab attaches components while physics hooks are live, which can create
@@ -1147,7 +1148,8 @@ namespace Ember {
 		physicsSystem->TeardownHierarchyPhysics(root.GetEntityHandle(), scene);
 
 		auto transformSystem = systemManager.GetSystem<TransformSystem>();
-		transformSystem->UpdateTransformTree(root.GetEntityHandle(), parentWorldTransform, scene);
+		// Force a full recompute of the freshly-instantiated prefab subtree.
+		transformSystem->UpdateTransformTree(root.GetEntityHandle(), parentWorldTransform, true, scene);
 
 		auto animationSystem = systemManager.GetSystem<AnimationSystem>();
 		InitializePrefabAnimationPoseCaches(root.GetEntityHandle(), animationSystem.Ptr(), scene);
@@ -1164,6 +1166,7 @@ namespace Ember {
 
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)
 	{
+		EB_PROFILE_FUNCTION();
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 
@@ -1179,6 +1182,7 @@ namespace Ember {
 
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position)
 	{
+		EB_PROFILE_FUNCTION();
 		SceneSerializer serializer(this);
 		Entity root = serializer.DeserializePrefab(prefabAsset);
 		parent.AddChild(root);

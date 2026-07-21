@@ -7,6 +7,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #endif
 
+#include "Ember/Performance/Profiler.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>

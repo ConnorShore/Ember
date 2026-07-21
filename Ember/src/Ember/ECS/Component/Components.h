@@ -94,9 +94,54 @@ namespace Ember {
 		}
 		TransformComponent(const TransformComponent&) = default;
 
-		Matrix4f GetLocalTransform() const
+		// Returns the cached local (TRS) matrix, rebuilding it only when the
+		// Position/Rotation/Scale fields have actually changed since the last query.
+		// Those fields are public and mutated in-place all over the engine (physics,
+		// scripts, editor, character controller, ...), so changes are detected by value
+		// comparison rather than a settable dirty flag.
+		const Matrix4f& GetLocalTransform() const
 		{
-			return Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Scale);
+			// Not profiled: this is a trivial cached accessor called per-entity-per-frame
+			// from many hot paths; a per-call trace scope adds millions of events for no
+			// signal. Time it via the calling system's coarse scope instead.
+			if (!m_LocalCacheValid
+				|| Position != m_LocalCachePosition
+				|| Rotation != m_LocalCacheRotation
+				|| Scale != m_LocalCacheScale)
+			{
+				m_CachedLocalTransform = Math::Translate(Position) * Math::GetRotationMatrix(Rotation) * Math::Scale(Scale);
+				m_LocalCachePosition = Position;
+				m_LocalCacheRotation = Rotation;
+				m_LocalCacheScale = Scale;
+				m_LocalCacheValid = true;
+			}
+			return m_CachedLocalTransform;
+		}
+
+		// True when the local TRS has changed since WorldTransform was last built from it
+		// (or was never built). Cheap (a few float compares) and side-effect free, so the
+		// transform pass can skip rebuilding world transforms for static entities.
+		//
+		// Note: this is tracked against a snapshot owned solely by the transform pass
+		// (MarkWorldUpdated), NOT the local-matrix cache above, so that other callers of
+		// GetLocalTransform() can never accidentally clear the "world needs rebuild" signal.
+		bool IsLocalDirty() const
+		{
+			return !m_WorldSourceValid
+				|| Position != m_WorldSourcePosition
+				|| Rotation != m_WorldSourceRotation
+				|| Scale != m_WorldSourceScale;
+		}
+
+		// Records the TRS that WorldTransform now reflects. Call immediately after the
+		// transform pass (re)builds WorldTransform so IsLocalDirty() reports false until
+		// the TRS next changes.
+		void MarkWorldUpdated()
+		{
+			m_WorldSourcePosition = Position;
+			m_WorldSourceRotation = Rotation;
+			m_WorldSourceScale = Scale;
+			m_WorldSourceValid = true;
 		}
 
 		const Matrix4f& GetWorldTransform() const
@@ -140,6 +185,27 @@ namespace Ember {
 				WorldTransform[1][2]
 			));
 		}
+
+	private:
+		// Lazy cache for GetLocalTransform(). Mutable so the const accessor can rebuild it;
+		// keyed by the TRS it was last built from. Not serialized — m_LocalCacheValid
+		// defaults to false so the matrix is rebuilt on first access after construction
+		// or deserialization.
+		mutable Matrix4f m_CachedLocalTransform = Matrix4f(1.0f);
+		mutable Vector3f m_LocalCachePosition = Vector3f(0.0f);
+		mutable Vector3f m_LocalCacheRotation = Vector3f(0.0f);
+		mutable Vector3f m_LocalCacheScale = Vector3f(1.0f);
+		mutable bool m_LocalCacheValid = false;
+
+		// Snapshot of the TRS that the current WorldTransform was built from, owned by the
+		// transform pass (see IsLocalDirty / MarkWorldUpdated). Kept separate from the
+		// local-matrix cache above so external GetLocalTransform() calls can't clear the
+		// world-rebuild signal. Not serialized — defaults to invalid so WorldTransform is
+		// rebuilt on the first transform pass after construction/deserialization.
+		Vector3f m_WorldSourcePosition = Vector3f(0.0f);
+		Vector3f m_WorldSourceRotation = Vector3f(0.0f);
+		Vector3f m_WorldSourceScale = Vector3f(1.0f);
+		bool m_WorldSourceValid = false;
 	};
 
 	struct RigidBodyComponent

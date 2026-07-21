@@ -56,7 +56,7 @@ namespace Ember {
 			EB_CORE_ERROR("Attempted to load scene with empty file path!");
 			return;
 		}
-		if (m_ActiveScene->GetFilePath() == filepath)
+		if (m_ActiveScene && m_ActiveScene->GetFilePath() == filepath)
 		{
 			EB_CORE_INFO("Scene {} is already active, skipping load request.", filepath);
 			return;
