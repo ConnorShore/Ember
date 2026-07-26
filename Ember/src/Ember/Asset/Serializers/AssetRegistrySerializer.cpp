@@ -141,9 +141,14 @@ namespace Ember {
 			else if (type == "Mesh")
 				m_AssetManagerHandle->Load<Mesh>(uuid, name, path, false);
 			else if (type == "MaterialInstance" || type == "Material") {
-				auto material = MaterialSerializer::Deserialize(uuid, path, *m_AssetManagerHandle);
+				// Materials load directly (not via AssetManager::Load), so normalize to the source path
+				// here too: recover it from a stale ".bin" and pin the asset's identity to it so the
+				// re-saved registry stays source-based and portable.
+				auto sourcePath = AssetSerializationMode::ResolveSourcePath(path).string();
+				auto material = MaterialSerializer::Deserialize(uuid, sourcePath, *m_AssetManagerHandle);
 				if (material) {
 					material->SetIsEngineAsset(false);
+					material->SetFilePath(sourcePath);
 					m_AssetManagerHandle->Register(material);
 				}
 			}

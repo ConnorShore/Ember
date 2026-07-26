@@ -113,9 +113,14 @@ namespace Ember {
 				return LoadSource(uuid, filePath, macros);
 			case RuntimeAssetLoadTier::ForceCookedBinary:
 			{
+				// The cooked shader is just a copy of the source GLSL under a .bin extension; use it if
+				// it was produced, otherwise fall back to the source so a missing cook still compiles.
 				auto cookedPath = std::filesystem::path(filePath);
 				cookedPath.replace_extension(".bin");
-				return Shader::Create(uuid, cookedPath.string(), macros);
+				std::error_code ec;
+				if (std::filesystem::exists(cookedPath, ec) && !ec)
+					return Shader::Create(uuid, cookedPath.string(), macros);
+				return LoadSource(uuid, filePath, macros);
 			}
 			case RuntimeAssetLoadTier::Auto:
 			default:
@@ -130,9 +135,14 @@ namespace Ember {
 				return LoadSource(uuid, name, filePath, macros);
 			case RuntimeAssetLoadTier::ForceCookedBinary:
 			{
+				// The cooked shader is just a copy of the source GLSL under a .bin extension; use it if
+				// it was produced, otherwise fall back to the source so a missing cook still compiles.
 				auto cookedPath = std::filesystem::path(filePath);
 				cookedPath.replace_extension(".bin");
-				return Shader::Create(uuid, name, cookedPath.string(), macros);
+				std::error_code ec;
+				if (std::filesystem::exists(cookedPath, ec) && !ec)
+					return Shader::Create(uuid, name, cookedPath.string(), macros);
+				return LoadSource(uuid, name, filePath, macros);
 			}
 			case RuntimeAssetLoadTier::Auto:
 			default:

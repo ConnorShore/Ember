@@ -1378,6 +1378,8 @@ namespace Ember {
 			configFolder = "Debug-windows-x86_64";
 #elif defined(EB_RELEASE)
 			configFolder = "Release-windows-x86_64";
+#elif defined (EB_PROFILE)
+			configFolder = "Profile-windows-x86_64";
 #elif defined(EB_DIST)
 			configFolder = "Dist-windows-x86_64";
 #else

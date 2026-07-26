@@ -1801,7 +1801,15 @@ namespace Ember {
 	{
 		auto cookedPath = std::filesystem::path(filepath);
 		cookedPath.replace_extension(".bin");
-		return Deserialize(cookedPath.string());
+
+		// The cooked scene is just the YAML scene under a .bin extension. If it wasn't cooked (e.g.
+		// running against a raw, un-exported project), fall back to the authoring source scene rather
+		// than loading nothing and leaving the runtime with an empty scene.
+		std::error_code ec;
+		if (std::filesystem::exists(cookedPath, ec) && !ec)
+			return Deserialize(cookedPath.string());
+
+		return Deserialize(filepath);
 	}
 
 

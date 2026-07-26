@@ -237,11 +237,16 @@ namespace Ember {
 		case RuntimeAssetLoadTier::ForceSourceYaml:
 			return DeserializeSource(uuid, filepath);
 		case RuntimeAssetLoadTier::ForceCookedBinary:
-			return DeserializeCooked(uuid, GetCookedPath(filepath));
+			if (auto cooked = DeserializeCooked(uuid, GetCookedPath(filepath)))
+				return cooked;
+			return DeserializeSource(uuid, filepath);
 		case RuntimeAssetLoadTier::Auto:
 		default:
 			if (filepath.extension() == ".bin")
-				return DeserializeCooked(uuid, filepath);
+			{
+				if (auto cooked = DeserializeCooked(uuid, filepath))
+					return cooked;
+			}
 			return DeserializeSource(uuid, filepath);
 		}
 	}

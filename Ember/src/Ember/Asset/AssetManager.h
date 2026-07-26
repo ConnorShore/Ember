@@ -10,6 +10,7 @@
 #include "AudioClip.h"
 #include "NavigationMeshData.h"
 
+#include "Serializers/AssetSerializationMode.h"
 #include "Serializers/MeshSerializer.h"
 #include "Serializers/MaterialSerializer.h"
 #include "Serializers/ModelSerializer.h"
@@ -139,8 +140,12 @@ namespace Ember {
 				EB_CORE_INFO("Loading project asset {} ['{}'] from file: {}", (uint64_t)uuid, name, filePath);
 			}
 
-			// De-duplicate by absolute path so the same file isn't loaded twice
-			auto absolutePath = std::filesystem::absolute(filePath).string();
+			// De-duplicate by absolute path so the same file isn't loaded twice. Normalize to the
+			// authoring *source* path (recovering it if the registry stored a stale cooked ".bin"),
+			// so the asset's identity — and therefore the re-serialized registry — is always the
+			// portable source path. Cooked sidecars are derived from this on demand by the loaders.
+			auto absolutePath = AssetSerializationMode::ResolveSourcePath(
+				std::filesystem::absolute(filePath).string()).string();
 
 			// Set path to relative to Assets.eba
 			if (m_AssetPaths.contains(absolutePath))
@@ -201,6 +206,11 @@ namespace Ember {
 
 			newAsset->SetIsEngineAsset(engineAsset);
 
+			// Pin the identity to the source path regardless of which form actually loaded (a cooked
+			// loader may have stamped the ".bin" path onto the asset). This is what keeps the asset
+			// registry from being re-poisoned with cooked paths on the next save.
+			newAsset->SetFilePath(absolutePath);
+
 			m_Assets[newAsset->GetUUID()] = newAsset;
 			m_AssetNames[name] = newAsset->GetUUID();
 			m_AssetPaths[absolutePath] = newAsset->GetUUID();
@@ -219,13 +229,15 @@ namespace Ember {
 		{
 			EB_PROFILE_FUNCTION();
 
-			auto absolutePath = std::filesystem::absolute(filePath).string();
+			auto absolutePath = AssetSerializationMode::ResolveSourcePath(
+				std::filesystem::absolute(filePath).string()).string();
 			if (m_AssetPaths.contains(absolutePath))
 			{
 				return GetAsset<Shader>(m_AssetPaths[absolutePath]);
 			}
 			auto newShader = ShaderImporter::Load(uuid, name, absolutePath, macros);
 
+			newShader->SetFilePath(absolutePath);
 			m_Assets[newShader->GetUUID()] = newShader;
 			m_AssetNames[name] = newShader->GetUUID();
 			m_AssetPaths[absolutePath] = newShader->GetUUID();

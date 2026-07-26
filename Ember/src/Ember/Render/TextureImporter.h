@@ -39,6 +39,13 @@ namespace Ember {
 
 		inline static bool SaveCooked(const SharedPtr<Texture2D>& texture, const std::string& filePath)
 		{
+			// Only LDR RGBA8 textures are cooked. Every texture decoded from an image file is forced to
+			// 4 channels (RGBA8 for LDR, RGBA16F for HDR) — but GetData()/the cooked-data upload path
+			// both hardcode GL_UNSIGNED_BYTE, which silently corrupts float formats. Rather than cook a
+			// broken RGBA16F blob (e.g. HDR skyboxes), skip it and let the runtime decode the source.
+			if (!texture || texture->GetFormat() != TextureFormat::RGBA8)
+				return false;
+
 			auto cookedPath = std::filesystem::path(filePath);
 			cookedPath.replace_extension(".bin");
 
@@ -93,6 +100,11 @@ namespace Ember {
 			if (magic != expectedMagic || version != 1)
 				return nullptr;
 
+			// Only RGBA8 cooks are valid (see SaveCooked). Reject anything else — including stale
+			// pre-fix RGBA16F cooks — so the caller falls back to decoding the authoring source.
+			if (static_cast<TextureFormat>(format) != TextureFormat::RGBA8)
+				return nullptr;
+
 			std::vector<uint8_t> pixels(static_cast<size_t>(dataSize));
 			if (dataSize > 0)
 				stream.read(reinterpret_cast<char*>(pixels.data()), static_cast<std::streamsize>(dataSize));
@@ -141,36 +153,46 @@ namespace Ember {
 
 		inline static SharedPtr<Texture2D> Load(UUID uuid, const std::string& name, const std::string& filePath)
 		{
+			// Resolve to the authoring source path (recovering it if the registry handed us a stale
+			// ".bin"), then derive the cooked sibling from that. Every tier prefers one form but falls
+			// back to the other so a missing/corrupt cook degrades to the source instead of a black
+			// texture or a hard failure.
+			const std::filesystem::path source = AssetSerializationMode::ResolveSourcePath(filePath);
+			const std::filesystem::path cooked = AssetSerializationMode::GetCookedPath(source);
+
+			auto tryCooked = [&]() -> SharedPtr<Texture2D> {
+				if (auto tex = LoadCooked(uuid, name, cooked.string()))
+				{
+					// Keep the asset's identity on the source, never the .bin sidecar, so the registry
+					// records a portable, decodable path.
+					tex->SetFilePath(source.string());
+					return tex;
+				}
+				return nullptr;
+			};
+			auto trySource = [&]() -> SharedPtr<Texture2D> {
+				// stb_image cannot decode a raw ".bin"; only attempt a source decode on a real image.
+				if (source.extension() == ".bin")
+					return nullptr;
+				return LoadSource(uuid, name, source.string());
+			};
+
 			switch (AssetSerializationMode::GetRuntimeLoadTier())
 			{
 			case RuntimeAssetLoadTier::ForceSourceYaml:
-				return LoadSource(uuid, name, filePath);
+				if (auto tex = trySource()) return tex;
+				return tryCooked();
 			case RuntimeAssetLoadTier::ForceCookedBinary:
-			{
-				auto cookedPath = std::filesystem::path(filePath);
-				cookedPath.replace_extension(".bin");
-				return LoadCooked(uuid, name, cookedPath.string());
-			}
+				if (auto tex = tryCooked()) return tex;
+				return trySource();
 			case RuntimeAssetLoadTier::Auto:
 			default:
-			{
-				// The registered path already points at cooked binary data.
-				if (std::filesystem::path(filePath).extension() == ".bin")
-					return LoadCooked(uuid, name, filePath);
-
-				// Source image (e.g. .png/.jpg): prefer a fresh cooked sibling when one exists — reading
-				// raw pixels is far cheaper than decoding a compressed image on the main thread.
-				auto cookedPath = std::filesystem::path(filePath);
-				cookedPath.replace_extension(".bin");
-				if (IsCookedTextureFresh(filePath, cookedPath))
-				{
-					if (auto cooked = LoadCooked(uuid, name, cookedPath.string()))
-						return cooked;
-					// Corrupt/unreadable cook — fall through to decoding the source instead of failing.
-				}
-
-				return LoadSource(uuid, name, filePath);
-			}
+				// Reading raw pixels beats decoding a compressed image on the main thread, so prefer a
+				// fresh cooked sibling; otherwise decode the source.
+				if (IsCookedTextureFresh(source, cooked))
+					if (auto tex = tryCooked()) return tex;
+				if (auto tex = trySource()) return tex;
+				return tryCooked();
 			}
 		}
 	};

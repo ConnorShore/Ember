@@ -628,10 +628,17 @@ namespace Ember {
 			return DeserializeSource(uuid, filepath);
 
 		if (runtimeTier == RuntimeAssetLoadTier::ForceCookedBinary)
-			return DeserializeCooked(uuid, GetCookedPath(filepath));
+		{
+			if (auto cooked = DeserializeCooked(uuid, GetCookedPath(filepath)))
+				return cooked;
+			return DeserializeSource(uuid, filepath);
+		}
 
 		if (IsCookedPath(filepath))
-			return DeserializeCooked(uuid, filepath);
+		{
+			if (auto cooked = DeserializeCooked(uuid, filepath))
+				return cooked;
+		}
 
 		return DeserializeSource(uuid, filepath);
 	}

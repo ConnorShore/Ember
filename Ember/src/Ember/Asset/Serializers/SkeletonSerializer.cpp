@@ -228,7 +228,9 @@ namespace Ember {
 				return DeserializeCooked(uuid, filepath);
 			return DeserializeSource(uuid, filepath);
 		case RuntimeAssetLoadTier::ForceCookedBinary:
-			return DeserializeCooked(uuid, GetCookedPath(filepath));
+			if (auto cooked = DeserializeCooked(uuid, GetCookedPath(filepath)))
+				return cooked;
+			return DeserializeSource(uuid, filepath);
 		case RuntimeAssetLoadTier::Auto:
 		default:
 			if (filepath.extension() == ".bin" || SkeletonFileLooksBinary(filepath))

@@ -429,7 +429,10 @@ namespace Ember {
 			{
 				auto cookedPath = filepath;
 				cookedPath.replace_extension(".bin");
-				return DeserializeCooked(uuid, cookedPath);
+				if (auto cooked = DeserializeCooked(uuid, cookedPath))
+					return cooked;
+				// Cook missing/corrupt — fall back to the YAML source instead of failing.
+				return DeserializeSource(uuid, filepath);
 			}
 			case RuntimeAssetLoadTier::Auto:
 			default:
