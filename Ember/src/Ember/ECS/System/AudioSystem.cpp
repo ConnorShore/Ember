@@ -48,6 +48,9 @@ namespace Ember {
 			auto& audioComp = scene->GetRegistry().GetComponent<AudioSourceComponent>(entity);
 			audioComp.Source.Unload();
 		}
+
+		// Stop all active one shot sounds
+		StopAllOneShotSounds();
 	}
 
 	void AudioSystem::OnDetach()
@@ -248,6 +251,17 @@ namespace Ember {
 				++it;
 			}
 		}
+	}
+
+	void AudioSystem::StopAllOneShotSounds()
+	{
+		for (auto* sound : m_OneShotSounds)
+		{
+			ma_sound_stop(sound);
+			ma_sound_uninit(sound);
+			delete sound;
+		}
+		m_OneShotSounds.clear();
 	}
 
 	void AudioSystem::StartSound(AudioSourceComponent& sourceComp, const Vector3f& position)

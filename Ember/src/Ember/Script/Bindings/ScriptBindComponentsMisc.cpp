@@ -12,6 +12,7 @@ namespace Ember {
 			"ControllerHandle", RefProp(&AnimatorComponent::ControllerHandle),
 			"PlaybackSpeed", RefProp(&AnimatorComponent::PlaybackSpeed),
 			"SetFloat", RefMethod(&AnimatorComponent::SetFloat),
+			"SetInt", RefMethod(&AnimatorComponent::SetInt),
 			"SetBool", RefMethod(&AnimatorComponent::SetBool)
 		);
 

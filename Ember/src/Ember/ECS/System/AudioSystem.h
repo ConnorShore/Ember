@@ -36,6 +36,7 @@ namespace Ember {
 		void UpdateAudioSources(Scene* scene, TimeStep delta);
 		void UpdateAudioListeners(Scene* scene);
 		void CleanupFinishedOneShotSounds();
+		void StopAllOneShotSounds();
 		void StartSound(AudioSourceComponent& sourceComp, const Vector3f& position);
 
 	private:
