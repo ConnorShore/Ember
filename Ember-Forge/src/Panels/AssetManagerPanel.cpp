@@ -1365,7 +1365,38 @@ namespace Ember {
 
 	void AssetManagerPanel::RenderAudioClipOptions(const std::string& filePath)
 	{
+		auto& assetManager = Application::Instance().GetAssetManager();
+		if (!assetManager.ContainsAssetWithPath(filePath))
+			return;
 
+		auto audioClip = assetManager.GetAssetByPath<AudioClip>(filePath);
+		if (!audioClip)
+			return;
+
+		if (ImGui::BeginMenu("Load Mode"))
+		{
+			auto loadModeItem = [&](const char* label, AudioLoadMode mode, const char* tooltip)
+			{
+				if (ImGui::MenuItem(label, nullptr, audioClip->GetLoadMode() == mode))
+				{
+					audioClip->SetLoadMode(mode);
+					if (auto project = ProjectManager::GetActive())
+					{
+						AssetRegistrySerializer serializer(&assetManager);
+						serializer.Serialize(project->GetAssetsFilePath().string());
+					}
+				}
+
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("%s", tooltip);
+			};
+
+			loadModeItem("Auto", AudioLoadMode::Auto, "Stream large files, decode small ones.");
+			loadModeItem("Decode", AudioLoadMode::Decode, "Decode into memory once and keep it cached.\nBest for short, frequently played sound effects.");
+			loadModeItem("Stream", AudioLoadMode::Stream, "Decode on the fly straight off disk.\nBest for music and other long clips.");
+
+			ImGui::EndMenu();
+		}
 	}
 
 	void AssetManagerPanel::RenderFontOptions(const std::string& filePath)

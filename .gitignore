@@ -67,3 +67,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# Temp files in tests
+Ember-Test/tmp/

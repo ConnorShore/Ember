@@ -10,6 +10,7 @@
 #include "Ember/Asset/SkeletonMask.h"
 #include "Ember/Asset/Prefab.h"
 #include "Ember/Asset/Font.h"
+#include "Ember/Asset/AudioClip.h"
 #include "Ember/Asset/NavigationMeshData.h"
 
 #include "Ember/Animation/Animation.h"
@@ -53,6 +54,11 @@ namespace Ember {
 				std::string relativePath = std::filesystem::relative(
 					asset->GetFilePath(), ebaDir).generic_string();
 				assetNode["FilePath"] << relativePath;
+
+				// AudioClips have no sidecar file of their own, so their load mode
+				// (decode vs. stream) rides along on the registry entry.
+				if (auto audioClip = DynamicPointerCast<AudioClip>(asset))
+					assetNode["LoadMode"] << GetAudioLoadModeString(audioClip->GetLoadMode());
 			}
 		};
 
@@ -171,7 +177,15 @@ namespace Ember {
 			else if (type == "Font")
 				m_AssetManagerHandle->Load<Font>(uuid, name, path, false);
 			else if (type == "AudioClip")
-				m_AssetManagerHandle->Load<AudioClip>(uuid, name, path, false);
+			{
+				auto audioClip = m_AssetManagerHandle->Load<AudioClip>(uuid, name, path, false);
+				if (audioClip && assetNode.has_child("LoadMode"))
+				{
+					std::string loadMode;
+					assetNode["LoadMode"] >> loadMode;
+					audioClip->SetLoadMode(GetAudioLoadModeFromString(loadMode));
+				}
+			}
 			else if (type == "Scene")
 				m_AssetManagerHandle->Load<Scene>(uuid, name, path, false);
 			else

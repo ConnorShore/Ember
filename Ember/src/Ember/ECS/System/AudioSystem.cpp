@@ -51,10 +51,17 @@ namespace Ember {
 
 		// Stop all active one shot sounds
 		StopAllOneShotSounds();
+
+		// Release the cached clip data. Must come after the sounds are uninitialized so the
+		// refcounts actually reach zero and the decoded PCM is freed.
+		UnpinDecodedClips();
 	}
 
 	void AudioSystem::OnDetach()
 	{
+		StopAllOneShotSounds();
+		UnpinDecodedClips();
+
 		if (m_AudioEngine != nullptr)
 			ma_engine_uninit(m_AudioEngine.Ptr());
 	}
@@ -80,13 +87,36 @@ namespace Ember {
 			return;
 		}
 
-		ma_sound* oneShotSound = new ma_sound();
 		std::string filePath = clipAsset->GetFilePath();
+		AudioLoadMode loadMode = ResolveLoadMode(*clipAsset);
 
-		// Use MA_SOUND_FLAG_DECODE to force miniaudio to read the file into RAM 
-		// instead of streaming it from your hard drive frame-by-frame.
-		ma_uint32 flags = MA_SOUND_FLAG_DECODE;
+		ma_uint32 flags = 0;
+		if (loadMode == AudioLoadMode::Stream)
+		{
+			// Long clips (music) decode a couple of seconds at a time rather than paying a
+			// full decode into RAM. Streams aren't shared between sounds, so they're never pinned.
+			flags |= MA_SOUND_FLAG_STREAM;
+		}
+		else
+		{
+			// Read the whole file into RAM instead of streaming it frame-by-frame off disk.
+			flags |= MA_SOUND_FLAG_DECODE;
 
+			// Hold a resource-manager reference on the decoded data the first time this clip
+			// plays. Without it, CleanupFinishedOneShotSounds() uninitializing the sound drops
+			// the refcount to zero and evicts the PCM, so every play re-reads and re-decodes.
+			PinDecodedClip(filePath);
+		}
+
+		// Decode on miniaudio's job threads. A clip that isn't cached yet starts a few
+		// milliseconds late instead of stalling the game thread for the length of the file.
+		flags |= MA_SOUND_FLAG_ASYNC;
+
+		// Skip building the spatializer entirely rather than initializing it and turning it off
+		if (!props.Spatialized)
+			flags |= MA_SOUND_FLAG_NO_SPATIALIZATION;
+
+		ma_sound* oneShotSound = new ma_sound();
 		ma_result result = ma_sound_init_from_file(m_AudioEngine.Ptr(), filePath.c_str(), flags, NULL, NULL, oneShotSound);
 		if (result != MA_SUCCESS)
 		{
@@ -98,22 +128,69 @@ namespace Ember {
 		// Configure the channel for a 2D One-Shot
 		ma_sound_set_volume(oneShotSound, props.Volume);
 		ma_sound_set_pitch(oneShotSound, props.Pitch);
+		ma_sound_set_looping(oneShotSound, MA_FALSE);
 
 		if (props.Spatialized)
 		{
-			ma_sound_set_spatialization_enabled(oneShotSound, MA_TRUE);
 			ma_sound_set_position(oneShotSound, position.x, position.y, position.z);
 			ma_sound_set_min_distance(oneShotSound, props.MinDistance);
 			ma_sound_set_max_distance(oneShotSound, props.MaxDistance);
 		}
-		else
-		{
-			ma_sound_set_spatialization_enabled(oneShotSound, MA_FALSE);
-			ma_sound_set_looping(oneShotSound, MA_FALSE);
-		}
 
 		m_OneShotSounds.push_back(oneShotSound);
 		ma_sound_start(oneShotSound);
+	}
+
+	AudioLoadMode AudioSystem::ResolveLoadMode(const AudioClip& clip) const
+	{
+		AudioLoadMode mode = clip.GetLoadMode();
+		if (mode != AudioLoadMode::Auto)
+			return mode;
+
+		// Auto: stream anything big enough that a full decode would cost noticeable memory
+		// (music, long ambiences) and decode everything else.
+		std::error_code error;
+		uintmax_t fileSize = std::filesystem::file_size(clip.GetFilePath(), error);
+		if (error)
+			return AudioLoadMode::Decode;
+
+		return fileSize >= s_AutoStreamFileSizeBytes ? AudioLoadMode::Stream : AudioLoadMode::Decode;
+	}
+
+	void AudioSystem::PinDecodedClip(const std::string& filePath)
+	{
+		if (m_PinnedClipPaths.contains(filePath))
+			return;
+
+		ma_resource_manager* resourceManager = ma_engine_get_resource_manager(m_AudioEngine.Ptr());
+		if (resourceManager == nullptr)
+			return;
+
+		// ASYNC so warming the cache decodes on a job thread rather than blocking this call
+		ma_uint32 flags = MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE | MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_ASYNC;
+		ma_result result = ma_resource_manager_register_file(resourceManager, filePath.c_str(), flags);
+		if (result != MA_SUCCESS)
+		{
+			EB_CORE_WARN("AudioSystem failed to cache sound '{0}'. It will be re-decoded on every play.", filePath);
+			return;
+		}
+
+		m_PinnedClipPaths.insert(filePath);
+	}
+
+	void AudioSystem::UnpinDecodedClips()
+	{
+		ma_resource_manager* resourceManager = m_AudioEngine != nullptr
+			? ma_engine_get_resource_manager(m_AudioEngine.Ptr())
+			: nullptr;
+
+		if (resourceManager != nullptr)
+		{
+			for (const auto& filePath : m_PinnedClipPaths)
+				ma_resource_manager_unregister_file(resourceManager, filePath.c_str());
+		}
+
+		m_PinnedClipPaths.clear();
 	}
 
 	void AudioSystem::PlaySound(Scene* scene, const std::string& soundName, AudioSoundProperties& props, const Vector3f& position /* = Vector3f(0.0f) */)

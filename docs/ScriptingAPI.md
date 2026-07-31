@@ -758,7 +758,28 @@ CollisionFilterManager.GetFilterNameBySlot(slot)
 AudioSystem.PlaySound("ExplosionSfx")                       -- one-shot, default props
 AudioSystem.PlaySound("Music", props)                       -- with custom AudioSoundProperties
 AudioSystem.PlaySound("Footstep", props, position)          -- spatialized at position (Vector3f)
+
+AudioSystem.PlaySoundDelayed("ExplosionSfx", 250.0)         -- same overloads, delayed by milliseconds
+AudioSystem.PlaySoundDelayed("Footstep", 250.0, props, position)
 ```
+
+Every `PlaySound`/`PlaySoundDelayed` overload also accepts a clip `UUID` in place of the name.
+
+`PlayOneShot` is the lightest-weight way to fire a sound — it takes a clip `UUID` only and creates
+no entity, so it can't be stopped or repositioned once started:
+
+```lua
+AudioSystem.PlayOneShot(clipHandle)
+AudioSystem.PlayOneShot(clipHandle, props)
+AudioSystem.PlayOneShot(clipHandle, props, position)
+```
+
+One-shots are cut off when the scene stops, and their audio data is cached after the first play so
+repeat fires don't re-read the file. Loading always happens off the game thread, so a clip that
+isn't cached yet starts a few milliseconds late rather than stalling the frame. Whether a clip is
+decoded into memory or streamed from disk is set per-asset in Ember-Forge (right-click the clip in
+the Asset Manager → **Load Mode**); **Auto** decodes small files and streams large ones, which is
+usually what you want — force **Stream** for music and **Decode** for a short effect fired rapidly.
 
 ### `AudioSoundProperties`
 
