@@ -34,11 +34,9 @@ namespace Ember {
 		}
 	}
 
-	// Recursively combines parent world transform with each entity's local transform.
-	// An entity's world transform is only rebuilt when its own local TRS changed or an
-	// ancestor's world transform changed this frame (parentChanged). Static subtrees then
-	// pay just a few float comparisons instead of a full matrix rebuild — and, for
-	// attachments, an expensive matrix decompose — every frame.
+	// Recursively combines the parent world transform with each entity's local transform. A node is
+	// only rebuilt when its own TRS changed or an ancestor's did, so static subtrees cost a few float
+	// compares instead of a matrix rebuild (and, for attachments, a decompose) every frame.
 	void TransformSystem::UpdateTransformTree(EntityID entity, const Matrix4f& parentWorldTransform, bool parentChanged, Scene* scene)
 	{
 		// Intentionally not profiled per-node: this fires once per entity per frame and,

@@ -38,11 +38,8 @@ namespace Ember {
 
 	static std::vector<TimeoutRequest> s_Timeouts;
 
-	// Lua 5.4 defaults to incremental GC. The runtime allocates many short-lived Lua
-	// objects every frame (component proxies from GetComponent, temporary Vector3f, etc.),
-	// and under load (lots of AI scripts) the incremental collector's per-frame cost spikes.
-	// Generational GC is designed for exactly this "lots of small, short-lived garbage"
-	// pattern and smooths those spikes. Passing 0,0 keeps Lua's default gen multipliers.
+	// Generational GC instead of Lua 5.4's default incremental collector: the runtime allocates many
+	// short-lived Lua objects per frame, which is exactly the pattern generational GC smooths out.
 	static sol::state* CreateConfiguredLuaState()
 	{
 		sol::state* state = new sol::state();
@@ -102,11 +99,8 @@ namespace Ember {
 
 	void ScriptEngine::OnRuntimeStop(Scene* scene)
 	{
-		// Null out all sol::table instances in ScriptComponents before destroying the Lua state.
-		// The runtime scene is still alive at this point; when it is later destroyed its registry
-		// destructs every ScriptComponent, and a sol::table destructor that touches a dead lua_State
-		// causes an access violation inside lua's gettable. Resetting them here is safe because
-		// scripts are no longer running.
+		// Null the sol::table in every ScriptComponent before destroying the Lua state. Otherwise the
+		// scene outlives it and those destructors touch a dead lua_State, faulting inside gettable.
 		if (scene)
 		{
 			auto& registry = scene->GetRegistry();

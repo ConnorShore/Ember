@@ -29,22 +29,10 @@ namespace Ember {
 		std::string Name;
 	};
 
-	// Chrome-tracing (chrome://tracing / Perfetto) instrumentor.
-	//
-	// Events are formatted straight into a small reusable text buffer and block-written to
-	// the file as that buffer fills. Two behaviors this deliberately avoids:
-	//
-	//   1. Per-event m_OutputStream.flush() (the original) — a synchronous disk flush on
-	//      every event cost ~15-25us each, so fine-grained scopes measured the profiler
-	//      instead of the code.
-	//   2. Buffering *all* events in memory and draining one huge chunk at once — a run that
-	//      produced ~8M events made that drain format/write ~875MB via iostream in a single
-	//      call, freezing the game for ~22s mid-frame.
-	//
-	// Formatting uses std::to_chars (not iostream operator<<) so per-event cost stays ~tens
-	// of ns, and it happens after the measured scope's timer has already stopped — only
-	// ancestor *inclusive* times see the small cost, self-times remain accurate. Writes hit
-	// the disk in ~1MB blocks spread across the run, so there is no perceptible hitch.
+	// Chrome-tracing (chrome://tracing / Perfetto) instrumentor. Events are formatted with std::to_chars
+	// into a reusable buffer and block-written as it fills, deliberately avoiding both a per-event flush
+	// (~15-25us each, so fine-grained scopes measured the profiler) and buffering everything for one huge
+	// drain (~875MB in a single call froze the game for ~22s mid-frame).
 	class Instrumentor
 	{
 	private:

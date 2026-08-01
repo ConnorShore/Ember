@@ -1,13 +1,6 @@
-// TRANSFORM SYSTEM TESTS
-// ----------------------
-// TransformSystem turns local TRS values into world matrices, walking the hierarchy from each root.
-// Everything downstream - rendering, physics body placement, bone sockets, UI layout, culling -
-// reads WorldTransform, so an error here is invisible in this system and catastrophic everywhere else.
-//
-// The dirty-flag tests earn their keep twice over: the flag is a pure performance optimisation
-// (static subtrees skip a matrix rebuild, and attachments skip a full decompose), which means a bug
-// in it produces no error - just entities that silently stop moving. There is no natural symptom to
-// catch it any other way.
+// TransformSystem turns local TRS into world matrices, and everything downstream reads WorldTransform.
+// The dirty-flag tests matter because that flag is pure optimisation - when it breaks there is no
+// error, just entities that silently stop moving.
 
 #include <Ember.h>
 
@@ -271,10 +264,8 @@ EB_TEST_CASE(Transform, BasisVectorsStayNormalisedUnderScale, Integration)
 
 EB_TEST_CASE(Transform, RepeatedPassesDoNotDrift, Integration)
 {
-	// The world transform is rebuilt from the LOCAL TRS every time, so running the pass repeatedly
-	// on a static hierarchy must be a fixed point. If it ever accumulated (world = world * local),
-	// idle objects would slowly fly away - and with the dirty flag suppressing most rebuilds, it
-	// would only show up on whichever entities happened to be moving.
+	// The pass must be a fixed point on a static hierarchy. If it ever accumulated (world = world *
+	// local) idle objects would slowly drift away.
 	SceneFixture scene;
 	Entity root = MakeEntityAt(*scene, "Root", Vector3f(1.0f, 2.0f, 3.0f), Vector3f(0.0f, Math::Radians(35.0f), 0.0f), Vector3f(2.0f));
 	Entity child = root.AddChild("Child");

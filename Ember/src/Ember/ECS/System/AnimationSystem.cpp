@@ -12,10 +12,8 @@
 namespace Ember {
 
 	// --- HELPER FUNCTIONS ---
-	// Finds the keyframe index just BEFORE the current time.
-	// Keyframes are sorted ascending by TimeStamp, so we binary-search the containing segment
-	// instead of scanning linearly from the start on every call. This matters because this runs
-	// 3x (position/rotation/scale) per bone, per animator, per frame, and clips can have many keys.
+	// Finds the keyframe index just before the current time. Binary search rather than a linear scan
+	// because this runs 3x (position/rotation/scale) per bone, per animator, per frame.
 	template<typename T>
 	static size_t GetKeyframeIndex(const std::vector<T>& keys, float animationTime)
 	{
@@ -213,12 +211,8 @@ namespace Ember {
 			for (const auto& parameter : animator.Blackboard.Parameters)
 				effectiveParameters[parameter.first] = parameter.second;
 
-			// The per-bone interpolation/hierarchy/skinning-matrix work below is a render-only output —
-			// nothing samples animator.BoneMatrices while the character is off screen. When the
-			// VisibilitySystem reports this animator as not relevant, we still advance its state machine,
-			// clock and events (gameplay stays live) but skip that heavy pose build. The retained
-			// BoneMatrices are rebuilt from the still-advancing clock on the first relevant frame, so
-			// there is no visual pop. Fail-safe: if the system is missing we always build the pose.
+			// The pose build below is render-only output, so off-screen animators skip it while their state
+			// machine, clock and events keep advancing. Fail-safe: if VisibilitySystem is missing, always build.
 			const bool buildPose = !visibilitySystem || visibilitySystem->IsRelevant(entity);
 
 			size_t numLayers = controller->GetLayers().size();
@@ -464,16 +458,9 @@ namespace Ember {
 
 				if (layer.Mode == AnimationLayerMode::Additive)
 				{
-					// Additive blending must operate in local TRS space.
-					// Linear interpolation of raw matrices is invalid for transforms that contain
-					// rotation: the columns become non-orthonormal after lerp, which causes the
-					// translation delta to bleed into wrong axes (e.g. slide moves up instead of back).
-					//
-					// Correct approach:
-					//   delta_pos = animLocalPos - bindLocalPos          (vector addition)
-					//   delta_rot = animLocalRot * inverse(bindLocalRot) (quaternion multiplication)
-					// These are applied to the accumulated local TRS from previous layers, which is
-					// extracted by multiplying out the parent's inverse global.
+					// Additive blending must work in local TRS space: lerping raw matrices that contain rotation
+					// leaves the columns non-orthonormal and bleeds the translation delta into the wrong axes.
+					// Position deltas are added; rotation deltas are multiplied by the inverse bind rotation.
 
 					if (animator.BonePoseMatrices.size() < bones.size())
 						animator.BonePoseMatrices.resize(bones.size(), Matrix4f(1.0f));

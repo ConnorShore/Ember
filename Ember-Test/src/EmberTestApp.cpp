@@ -12,10 +12,7 @@ namespace Ember {
 
 	namespace {
 
-		// Options come from the command line first, then the environment. Command-line flags are far
-		// more convenient from a Visual Studio debug profile or a terminal; the environment variables
-		// are kept because CI pipelines and the older docs use them.
-		//
+		// Command-line flags take precedence over the equivalent environment variables.
 		//   Ember-Test.exe --filter=unit --run=Physics --repeat=3 --xml=Profiles/tests.xml
 		std::string ReadOption(const char* flagPrefix, const char* envName)
 		{
@@ -52,13 +49,8 @@ namespace Ember {
 
 	} // namespace
 
-	// Runs the whole suite on the first frame. By then the window, the GL context, every system and
-	// the default engine assets are fully initialized, so unit, integration, visual AND performance
-	// tests can all run from one place.
-	//
-	// Exits the process with 0 (all passed) or 1 (any failure) so CI can gate on it. std::exit skips
-	// the engine's shutdown path, which is deliberate: a test run has nothing to persist, and it
-	// avoids a teardown crash masking an otherwise-clean result.
+	// Runs the suite on the first frame, once the window, GL context, systems and default assets are up.
+	// Exits 0/1 for CI; std::exit skips engine shutdown so a teardown crash can't mask the result.
 	class TestRunnerLayer : public Layer
 	{
 	public:
@@ -112,16 +104,9 @@ namespace Ember {
 		}
 
 	private:
-		// Ember-Forge and Ember-Runtime always have an active Project by the time anything runs, and
-		// parts of the engine assume it without checking. The sharpest example is
-		// ScriptEngine::BindAPI -> BindPhysics, which reaches straight through
-		// ProjectManager::GetActive() to the collision filter table AT BIND TIME (not lazily inside a
-		// Lua callback), so every scripting test would null-deref without one.
-		//
-		// So the runner stands up a real throwaway project under the gitignored scratch directory,
-		// which also gives the filter tests named collision layers to work with. This is safe to do
-		// before the suite runs: AssetManager::ClearAssets() only drops NON-engine assets, so the
-		// default textures/shaders/meshes the tests depend on survive it untouched.
+		// Parts of the engine assume an active Project without checking - ScriptEngine::BindAPI reaches
+		// through ProjectManager::GetActive() at bind time - so the runner stands up a throwaway one.
+		// Safe to do before the suite runs: ClearAssets() only drops non-engine assets.
 		void PrepareProject()
 		{
 			if (ProjectManager::GetActive())

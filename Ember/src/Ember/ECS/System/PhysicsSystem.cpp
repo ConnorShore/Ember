@@ -402,13 +402,9 @@ namespace Ember {
 				{
 					rbComp.Body->setIsActive(true);
 
-					// WORKAROUND for an ordering bug in the vendored ReactPhysics3D.
-					// RigidBody::setIsActive() calls setIsSleeping(!isActive) BEFORE
-					// Body::setIsActive(isActive), and setIsSleeping() early-outs while the body is
-					// still flagged inactive. Re-activating therefore leaves the body awake-flagged
-					// as SLEEPING, so it never integrates again - a re-enabled object stays frozen
-					// in mid-air forever. Clearing the sleep flag afterwards, when the active flag is
-					// finally set, is what actually wakes it.
+					// WORKAROUND for a vendored ReactPhysics3D ordering bug: RigidBody::setIsActive() calls
+					// setIsSleeping() before setting the active flag, so setIsSleeping() early-outs and the body
+					// stays flagged asleep. Clearing it afterwards is what actually wakes a re-enabled object.
 					rbComp.Body->setIsSleeping(false);
 				}
 			}
@@ -1482,14 +1478,8 @@ namespace Ember {
 		auto& overlapTriggers = m_PhysicsEventListener.GetOverlapData();
 		for (const auto& triggerEvent : overlapTriggers)
 		{
-			// Skip pairs involving an object that belongs to no entity. The camera sensor and the
-			// temporary probe bodies created by overlap queries are all triggers, but none of them is
-			// a gameplay entity. Feeding their InvalidEntityID downstream would index the component
-			// mask out of bounds (EntityManager's arrays are sized MaxEntities).
-			//
-			// This also fixes a real gameplay bug: before entity IDs were biased in the rp3d user
-			// data, an ownerless body decoded to entity 0, so the camera sensor fired spurious
-			// OnOverlapTrigger* callbacks at whichever real entity happened to hold handle 0.
+			// Skip pairs involving an object that belongs to no entity (the camera sensor, overlap probes).
+			// Their InvalidEntityID would index EntityManager's MaxEntities-sized arrays out of bounds.
 			if (triggerEvent.EntityA == Constants::Entities::InvalidEntityID ||
 				triggerEvent.EntityB == Constants::Entities::InvalidEntityID)
 				continue;

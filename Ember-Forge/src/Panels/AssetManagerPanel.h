@@ -67,7 +67,7 @@ namespace Ember {
 		float m_FolderPaneWidth = 220.0f;
 		std::array<char, 128> m_SearchBuffer = {};
 
-		std::array<std::string, 2> m_HiddenFiles = { "Assets.eba", "*.ebproj"};
+		std::array<std::string, 3> m_HiddenFiles = { "Assets.eba", "*.ebproj", "*.bin" };
 
 		// Rename Scene dialog state
 		bool m_ShowRenameScenePopup = false;

@@ -1,19 +1,8 @@
-// ECS TESTS
-// ---------
-// The hand-rolled ECS is the substrate every other system stands on, so a defect here is never
-// local - it shows up as "physics forgot a body" or "an entity stopped rendering" three systems
-// downstream. These tests drive Registry / ComponentManager / EntityManager / View directly
-// (no Scene, no Application state) so a failure points at the ECS itself.
+// Registry / ComponentManager / EntityManager / View driven directly, with no Scene or Application
+// state, so a failure points at the ECS itself. The sparse-set tests matter most: removal is
+// swap-and-pop, and a bad index fix-up silently hands an entity someone else's component.
 //
-// The highest-value tests in this file are the sparse-set ones. ComponentMemoryArray removes with
-// swap-and-pop, which means every removal MOVES an unrelated component into the freed slot and has
-// to fix up that entity's sparse index. Get that wrong and components silently belong to the wrong
-// entity - the kind of bug that is agony to find from a symptom.
-//
-// NOTE ON THE API: Registry::AttachComponent<T>(entity, args...) takes the entity FIRST, unlike
-// Entity::AttachComponent<T>(args...) which infers it. Mixing them up compiles for components whose
-// first constructor parameter is numeric (a float silently converts to EntityID), so keep them
-// straight.
+// NOTE: Registry::AttachComponent<T>(entity, args...) takes the entity first, unlike Entity::AttachComponent<T>.
 
 #include <Ember.h>
 
@@ -107,14 +96,8 @@ EB_TEST_CASE(Ecs, ComponentTypeIdsAreDistinctAndInRange, Unit)
 
 EB_TEST_CASE(Ecs, ComponentTypeIdsAreStableAcrossRegistries, Unit)
 {
-	// Type IDs come from a process-wide counter (a function-local static inside
-	// ComponentManager::GetComponentType<T>), so every registry in the process must agree on them.
-	// Scenes hold one registry each while systems, prefab instantiation and Scene::CopyScene move
-	// components between them; a per-registry numbering would make a component land in the wrong
-	// array the moment two scenes are alive at once.
-	//
-	// (These IDs are deliberately NOT persisted - SceneSerializer writes component order by name -
-	// so their absolute values are free to change between builds.)
+	// Type IDs come from a process-wide counter, so every registry must agree - two live scenes moving
+	// components between them would otherwise land in the wrong array. The values are not persisted.
 	Registry first;
 	Registry second;
 

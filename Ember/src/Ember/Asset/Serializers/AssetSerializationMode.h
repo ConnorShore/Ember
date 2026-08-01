@@ -31,12 +31,9 @@ namespace Ember {
 			return cooked;
 		}
 
-		// The asset registry must always record the *source* authoring path so it stays portable and
-		// so source-loading (e.g. stb_image) is never handed a raw ".bin" blob it can't decode. Older
-		// registries were poisoned with cooked ".bin" paths because cooked loaders used to overwrite
-		// the in-memory FilePath. Given such a stale ".bin" path, recover the real source sibling
-		// (same stem, any non-.bin extension) that sits next to it on disk. Non-.bin paths, and ".bin"
-		// paths with no source sibling, are returned unchanged.
+		// Recovers the source authoring path from a stale cooked ".bin" path (same stem, any other
+		// extension) so the registry stays portable and source loaders never see a raw binary blob.
+		// Non-.bin paths, and ".bin" paths with no source sibling, are returned unchanged.
 		static std::filesystem::path ResolveSourcePath(const std::filesystem::path& path)
 		{
 			if (path.extension() != ".bin")

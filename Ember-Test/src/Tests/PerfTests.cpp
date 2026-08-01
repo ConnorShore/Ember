@@ -1,20 +1,6 @@
-// PERFORMANCE TESTS
-// -----------------
-// Two kinds of check live here, and they are not equally trustworthy:
-//
-//   ABSOLUTE BUDGETS (EB_BENCH_BUDGET) assert a median time against a fixed millisecond figure.
-//   They are hardware- and configuration-dependent, so the budgets are deliberately loose - they
-//   exist to catch an ORDER-OF-MAGNITUDE regression (an accidental O(n^2), a per-frame allocation,
-//   a lost early-out), not to police a few percent. Every budget is multiplied by
-//   EMBER_TEST_PERF_SCALE; a Debug build wants roughly EMBER_TEST_PERF_SCALE=8.
-//
-//   RELATIVE COMPARISONS assert that one path is faster than another. These are far more robust,
-//   because both sides run on the same machine in the same build, and they are the only way to
-//   prove an OPTIMISATION still works - a dirty-flag fast path that silently stops engaging costs
-//   nothing in correctness and everything in frame time.
-//
-// Treat a budget failure as "investigate", not "broken". Run on a quiet machine for real numbers,
-// and set EMBER_TEST_PERF_CSV to track medians over time rather than only pass/fail.
+// Absolute budgets are loose and hardware-dependent - they catch order-of-magnitude regressions, not
+// a few percent, and are scaled by EMBER_TEST_PERF_SCALE. Relative comparisons (X must be cheaper
+// than Y) are the robust ones and the only way to prove an optimisation still engages.
 
 #include <Ember.h>
 

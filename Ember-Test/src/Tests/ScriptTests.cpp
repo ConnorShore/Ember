@@ -1,18 +1,6 @@
-// SCRIPTING TESTS
-// ---------------
-// Gameplay is authored in Lua through sol2, so the C++/Lua boundary is the single widest API surface
-// in the engine and the one most likely to break silently: a renamed binding, a property that stops
-// round-tripping, a lifecycle hook that stops firing. None of that produces a compile error - the
-// game just quietly stops behaving.
-//
-// Test scripts are written to Ember-Test/tmp at run time rather than committed, so the .lua source
-// and the assertions about it live side by side in one file.
-//
-// A note on Lua state: ScriptEngine::Init() (called from the Application constructor) leaves a live
-// sol::state with the core + math bindings already installed, so the pure-binding tests need no
-// setup at all. Tests that need the full API call ScriptEngine::BindAPI(scene), which binds into the
-// EXISTING state. ScriptEngine::OnRuntimeStart() is deliberately avoided here: it destroys and
-// recreates the state, which would invalidate any sol::table held by a scene still alive elsewhere.
+// The C++/Lua boundary: bindings, script lifecycle, exposed properties and timers. Breakage here is
+// silent - no compile error, the game just stops behaving.
+// Test scripts are written to Ember-Test/tmp at run time so the Lua and its assertions live together.
 
 #include <Ember.h>
 

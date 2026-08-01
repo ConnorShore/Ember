@@ -10,14 +10,9 @@
 
 namespace Ember {
 
-	// A stable, cacheable Lua handle to a component.
-	//
-	// It stores the owning Entity (EntityID + Scene*, both stable for the entity's lifetime)
-	// instead of a raw pointer into the packed component array, so scripts may safely keep it
-	// across frames (e.g. cache it once in OnCreate). Component storage is a swap-and-pop
-	// packed vector, so a raw component pointer dangles the moment any entity of that type is
-	// spawned (realloc) or destroyed (swap) — this handle avoids that by re-resolving the live
-	// component through the sparse set (an O(1) lookup) on every access.
+	// A stable, cacheable Lua handle to a component. It stores the owning Entity rather than a raw
+	// pointer into the packed component array - that pointer dangles as soon as any entity of the same
+	// type is spawned or destroyed - and re-resolves through the sparse set on each access.
 	template<typename T>
 	struct ComponentRef
 	{

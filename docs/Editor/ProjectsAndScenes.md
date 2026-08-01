@@ -18,6 +18,10 @@ You can also use the main menu:
 | --- | --- | --- |
 | New project | `File > New Project` | `Ctrl+Shift+N` |
 | Open project | `File > Open Project` | `Ctrl+Shift+O` |
+| Save project | `File > Save Project` | `Ctrl+Shift+S` |
+
+**Save Project** writes everything the project owns in one go: every loaded scene, all materials,
+physics materials and animations, the asset registry, and the project settings file.
 
 ## Project Folder Layout
 
@@ -52,10 +56,13 @@ Use the `File` menu for scene operations:
 | New scene | `File > New Scene` | `Ctrl+N` |
 | Open scene | `File > Open Scene` | `Ctrl+O` |
 | Save scene | `File > Save Scene` | `Ctrl+S` |
-| Save scene as | `File > Save Scene As` | `Ctrl+Shift+S` |
+| Save scene as | `File > Save Scene As` | — |
 
-Save early, especially before playtesting or exporting. The editor also saves the active project
-settings when exporting or launching a standalone runtime session.
+`Save Scene` writes only the scene in the active tab (plus the asset registry). To also flush
+material, physics material and animation edits, use `File > Save Project` (`Ctrl+Shift+S`).
+
+Save early, especially before playtesting or exporting. The editor performs a full project save
+automatically when exporting or launching a standalone runtime session.
 
 ## Scenes in Build
 

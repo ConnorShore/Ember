@@ -1,19 +1,5 @@
-// ASSET MANAGER + SERIALIZATION TESTS
-// -----------------------------------
-// Two related concerns:
-//
-//   1. AssetManager as a store - UUID/name/path lookups staying consistent through create, register,
-//      rename and remove. The lookup tables are three separate maps that must all be kept in step;
-//      the "registry poisoning" class of bug (a stale path key surviving a rename/reload) lives here.
-//
-//   2. Round-trip fidelity - anything written to disk must come back identical. Serialization
-//      failures are uniquely nasty because they are invisible until someone reopens a project, by
-//      which point the authored data is already gone.
-//
-// SAFETY NOTE: AssetManager::GetAsset() asserts (and therefore __debugbreak()s in Debug) when the
-// asset is missing, so these tests always go through Test::TryGetAsset / ContainsAsset first.
-// AssetManager::RemoveAsset() also DELETES THE FILE for non-engine assets, so only ever call it on
-// assets this test created under Ember-Test/tmp.
+// AssetManager lookup-table consistency (UUID/name/path) plus scene, prefab and asset round-trips.
+// GetAsset asserts on a miss and RemoveAsset deletes the file - see the traps section of README.md.
 
 #include <Ember.h>
 
@@ -123,11 +109,8 @@ EB_TEST_CASE(Assets, RenameUpdatesLookupsAndRejectsCollisions, Integration)
 	const std::string newName = "EmberTest_RenameTarget";
 	const std::string occupiedName = "EmberTest_RenameOccupied";
 
-	// ABSOLUTE paths on purpose. AssetManager::Register() stores asset->GetFilePath() into the path
-	// table VERBATIM, while Load(), RenameAsset(), ContainsAssetWithPath() and GetAssetByPath() all
-	// normalise through std::filesystem::absolute() first. Register an asset under a relative path
-	// and it becomes invisible to every path lookup - including RenameAsset's collision check, which
-	// then happily lets two assets claim the same file.
+	// ABSOLUTE paths on purpose: Register() stores the path verbatim while every lookup normalises
+	// through std::filesystem::absolute(), so a relative path is invisible to the collision check.
 	const std::string originalPath = std::filesystem::absolute(TempFile("rename_source.physmat")).string();
 	const std::string newPath = std::filesystem::absolute(TempFile("rename_target.physmat")).string();
 	const std::string occupiedPath = std::filesystem::absolute(TempFile("rename_occupied.physmat")).string();

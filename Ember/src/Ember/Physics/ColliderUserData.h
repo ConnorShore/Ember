@@ -14,17 +14,9 @@ namespace Ember {
 		Filter Filter = FilterPreset::Default;
 	};
 
-	// EntityID <-> rp3d user data (void*)
-	// ----------------------------------
-	// ReactPhysics3D stores an opaque void* per body and per collider, and Ember uses it to carry the
-	// owning EntityID. The obvious encoding - cast the ID straight to a pointer - is BROKEN for
-	// entity 0: it produces a null pointer, which is indistinguishable from "this collider has no
-	// user data at all" (true of the camera sensor and of the temporary probe bodies that overlap
-	// queries create). Every reader null-checks before decoding, so entity 0 was silently dropped
-	// from overlap results and reported as InvalidEntityID by raycasts.
-	//
-	// The ID is therefore stored BIASED BY ONE, so entity 0 encodes as pointer value 1 and null keeps
-	// its "no owner" meaning. Always go through these two helpers - never cast directly.
+	// EntityID is stored in rp3d's per-body/per-collider void* BIASED BY ONE, so entity 0 encodes as
+	// pointer value 1 and null keeps its "no owning entity" meaning. Casting the ID directly made
+	// entity 0 indistinguishable from "no user data" and silently dropped it from every query.
 	inline void* EncodeEntityUserData(EntityID entity)
 	{
 		return reinterpret_cast<void*>(static_cast<uintptr_t>(entity) + 1u);

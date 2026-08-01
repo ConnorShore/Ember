@@ -416,11 +416,8 @@ namespace Ember {
 			return false;
 		}
 
-		// Allocate array that can hold triangle area types.
-		// This is used to store terrain type information and to mark
-		// triangles as unwalkable.
-		// If you have multiple meshes you need to process, allocate
-		// an array which can hold the max number of triangles you need to process.
+		// Per-triangle area types, used to store terrain type and to mark triangles unwalkable. Sized for
+		// the largest mesh we process.
 		state.TriAreas = ScopedPtr<TriAreasResource>::Create(state.NumTris);
 		if (!state.TriAreas || !state.TriAreas->Ptr)
 		{
@@ -452,10 +449,8 @@ namespace Ember {
 	{
 		(void)result;
 
-		// 2.2: Filter walkable surfaces.
-		// Once all geometry is rasterized, we do initial pass of filtering to
-		// remove unwanted overhangs caused by the conservative rasterization
-		// as well as spans where the character cannot possibly stand.
+		// 2.2: Filter the rasterized geometry to remove overhangs produced by conservative rasterization
+		// and spans the character could never stand on.
 		// TODO: Make these configurable
 		bool filterLowHangingObstacles = true;
 		bool filterLedgeSpans = true;
@@ -479,10 +474,8 @@ namespace Ember {
 
 	bool NavigationMeshBuilder::PartitionWalkableSurface(BuildPipelineState& state, BuildResult& result)
 	{
-		// 2.3: Partition walkable surface into simple regions.
-		// Compact the heightfield so that it is faster to work with.
-		// This will result more cache coherent data.  This step will also
-		// generate neighbor connection information between walkable cells.
+		// 2.3: Compact the heightfield into cache-coherent form and generate neighbour connectivity,
+		// then partition the walkable surface into simple regions.
 		state.CompactHeightfield = ScopedPtr<CompactHeightfieldResource>::Create();
 		if (!state.CompactHeightfield || !state.CompactHeightfield->Ptr)
 		{
@@ -531,39 +524,10 @@ namespace Ember {
 		//		*compactHeightfield);
 		//}
 
-		// Partition the heightfield into contiguous regions that will each be
-		// triangulated into navigation polygons.
-		//
-		// There are 3 partitioning methods, each with their own pros and cons:
-		// 1) Watershed partitioning
-		//   - the classic Recast partitioning
-		//   - creates the nicest tessellation
-		//   - usually slowest
-		//   - the are some corner cases where this method creates holes and
-		//     overlaps in the resulting region data.
-		//      - holes may appear when a small obstacle is close to a large open
-		//        area.  This will not cause triangulation to fail.
-		//      - overlaps may occur if you have narrow spiral corridors
-		//        e.g. spiral stairs.  This will cause triangulation to fail.
-		//   * Generally the best choice if you are precompute the navmesh and/or
-		//     there are large open areas in the input geometry.
-		// 2) Monotone partitioning
-		//   - fastest
-		//   - guaranteed to partition the heightfield into regions without holes
-		//     or overlaps
-		//   - Can create long, thin polygons which sometimes cause paths with detours
-		//   * Use this if you want fast navmesh generation
-		// 3) Layer partitioning
-		//   - quite fast
-		//   - partitions the heighfield into non-overlapping regions
-		//   - relies on the triangulation code to cope with holes, which makes
-		//     this slower than monotone partitioning
-		//   - produces better triangles than monotone partitioning
-		//   - does not have the corner cases of watershed partitioning
-		//   - can be slow and create a slightly ugly tessellation (still better
-		//     than monotone) if you have large open areas with small obstacles.
-		//     This is less of a problem if you use a tiled navmesh.
-		//   * A good choice for a tiled navmesh with small to medium-sized tiles
+		// Partition the heightfield into contiguous regions to be triangulated into nav polygons.
+		// Watershed is used here: slowest of Recast's three options but the nicest tessellation, and the
+		// right trade for a precomputed navmesh with large open areas. (Monotone is fastest but produces
+		// long thin polygons; layer is a middle ground better suited to tiled navmeshes.)
 
 		//if (partitionType == SamplePartitionType::WATERSHED)
 		//{

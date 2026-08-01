@@ -13,25 +13,10 @@ namespace Ember {
 
 	class Scene;
 
-	// Computes a coarse, main-camera-relative visibility set for the active scene once per frame,
-	// BEFORE the simulation systems that can use it to skip expensive per-entity CPU work.
-	//
-	// This is deliberately NOT the same thing as the RenderSystem's frustum culling:
-	//   * RenderSystem culls per-view (main viewport, camera preview, and — later — shadow views) at
-	//     draw time using the current frame's transforms. That is inherently per-camera and stays in
-	//     the RenderSystem.
-	//   * VisibilitySystem answers a single question — "is this entity worth simulating this frame?" —
-	//     against the one active gameplay camera. It runs before TransformSystem, so it culls against
-	//     last frame's transforms; to stay a conservative *superset* of what actually ends up on screen
-	//     it dilates the frustum by a world-space margin and keeps a short grace window (hysteresis)
-	//     after an entity leaves view.
-	//
-	// First consumer: AnimationSystem skips the render-only bone/skinning matrix evaluation for
-	// off-screen animators while still advancing their state machines, clocks and events. The API is
-	// intentionally generic so particle/AI/cloth LOD can consult it later.
-	//
-	// Fail-safe by design: if no active camera can be resolved (or the system is disabled) every entity
-	// reports visible, so we never wrongly freeze something that is actually on screen.
+	// Coarse, camera-relative "is this entity worth simulating this frame?" set, computed once per frame
+	// before the systems that consume it - distinct from RenderSystem's per-view draw-time culling.
+	// It runs before TransformSystem, so it dilates the frustum and keeps a short grace window to stay a
+	// conservative superset; with no active camera every entity reports visible (fail-safe).
 	class VisibilitySystem : public System
 	{
 	public:

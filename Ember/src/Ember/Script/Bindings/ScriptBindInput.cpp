@@ -144,6 +144,12 @@ namespace Ember {
 			"Middle", MouseButton::Middle
 		);
 
+		state.new_enum("CursorMode",
+			"Normal", CursorMode::Normal,
+			"Hidden", CursorMode::Hidden,
+			"Locked", CursorMode::Locked
+		);
+
 		auto inputTable = state.create_named_table("Input");
 		inputTable.set_function("IsKeyPressed", &Input::IsKeyPressed);
 		inputTable.set_function("IsKeyHeld", &Input::IsKeyHeld);

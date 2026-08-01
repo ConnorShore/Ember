@@ -1,24 +1,10 @@
 #pragma once
 
-// A deliberately small, dependency-free test framework (no engine, no vendored lib). Everything here
-// is pure C++ so it can be swapped for Catch2/doctest later — the EB_TEST_CASE / EB_CHECK surface is
-// intentionally close to theirs so test bodies port with minimal edits. Engine-typed helpers
-// (Vector3f/Matrix4f comparisons, scene fixtures) live in TestHelpers.h so this header stays clean.
+// Small, dependency-free test framework - no engine, no vendored lib. Engine-typed helpers
+// (Vector3f/Matrix4f comparisons, scene fixtures) live in TestHelpers.h.
 //
-// Usage:
-//   EB_TEST_CASE(Math, LerpMidpoint, Ember::Test::Type::Unit)
-//   {
-//       EB_CHECK_NEAR(Ember::Math::Lerp(0.0f, 10.0f, 0.5f), 5.0f, 1e-5);
-//   }
-//
-// Two flavours of assertion:
-//   EB_CHECK*  - HARD. Throws, aborting the current test. Use when continuing would be meaningless
-//                (a null pointer you're about to dereference, a file that failed to write).
-//   EB_EXPECT* - SOFT. Records the failure and keeps going, so one run reports every broken field
-//                instead of only the first. Use for independent value checks.
-//
-// A test with any hard or soft failure is reported FAILED. RunAll() returns the failed-test count so
-// main() can use it directly as the process exit code.
+// EB_CHECK* throws and aborts the current test; EB_EXPECT* records the failure and continues.
+// RunAll() returns the failed-test count for use as a process exit code. See README.md.
 
 #include <algorithm>
 #include <chrono>
@@ -638,13 +624,8 @@ namespace Ember::Test {
 // Benchmarking
 //////////////////////////////////////////////////////////////////////////
 
-// Times a statement block and soft-fails if the MEDIAN exceeds budgetMs. The budget is multiplied by
-// EMBER_TEST_PERF_SCALE so slower machines don't need source edits. Always emits a note with the full
-// min/median/mean/max spread, and records a row for the perf CSV.
-//
-// The block is taken as __VA_ARGS__ rather than a single parameter so that top-level commas inside it
-// (`Foo<A, B> x;`, a braced initialiser, ...) don't get split into separate macro arguments.
-//
+// Times a block and soft-fails if the median exceeds budgetMs (scaled by EMBER_TEST_PERF_SCALE).
+// Takes the block as __VA_ARGS__ so top-level commas inside it don't split into macro arguments.
 //   EB_BENCH_BUDGET("label", 5.0, 30, { DoWork(); });
 #define EB_BENCH_BUDGET(label, budgetMs, iterations, ...)                                               \
 	do {                                                                                                \

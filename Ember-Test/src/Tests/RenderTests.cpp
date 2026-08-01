@@ -1,12 +1,5 @@
-// RENDERING TESTS (non-pixel)
-// ---------------------------
-// Camera projections, frustum extraction, culling and the visibility system. These assert on the
-// MATHS and the BOOKKEEPING that decide what gets drawn, which is testable without comparing pixels;
-// the golden-image tests in VisualTests.cpp cover the actual output.
-//
-// Culling is a particularly good candidate for automated testing: when it is too aggressive, objects
-// pop out of existence at the edge of the screen - a bug that is intermittent, position-dependent,
-// and almost impossible to reproduce deliberately by hand.
+// Camera projections, frustum extraction, culling and the visibility system - the maths and
+// bookkeeping that decide what gets drawn. Pixel output is covered by VisualTests.cpp.
 
 #include <Ember.h>
 
@@ -71,13 +64,8 @@ namespace {
 
 EB_TEST_CASE(Render, CameraProjectionSwitching, Unit)
 {
-	// CONTRACT: SetPerspective/SetOrthographic only store that projection's PARAMETERS and rebuild
-	// the matrix; they do NOT change which projection is active. Selecting the mode is a separate
-	// call, SetProjectionType(). Camera defaults to Perspective.
-	//
-	// That is a genuine footgun - calling SetOrthographic() alone looks like it should switch the
-	// camera and silently does nothing visible - but it is the engine's actual behaviour, so this
-	// test pins it down rather than asserting what it "ought" to be.
+	// CONTRACT: SetPerspective/SetOrthographic only store that projection's parameters - selecting the
+	// active mode is a separate SetProjectionType() call. A footgun, but it is the actual behaviour.
 	Camera camera;
 	EB_EXPECT_MSG(camera.GetProjectionType() == Camera::ProjectionType::Perspective,
 		"a default-constructed Camera should be perspective");
@@ -390,13 +378,8 @@ EB_TEST_CASE(Render, DisablingVisibilityMakesEverythingVisible, Integration)
 
 EB_TEST_CASE(Render, ViewportResizeIsIdempotentAndSurvivesRepeats, Integration)
 {
-	// Resizing reallocates every deferred render target and every post-process buffer. Doing it
-	// repeatedly - and back to the original size - must leave the pipeline able to draw. This is the
-	// exact path a stale framebuffer texture handle corrupts, and that class of bug only ever
-	// surfaces in optimized builds, so run this test in Release as well as Debug.
-	//
-	// (Note this asserts on SURVIVAL, not on RenderSystem::GetViewportSize(): that getter reports the
-	// active camera's viewport, which is set when a scene renders, not by OnViewportResize.)
+	// Resizing reallocates every deferred and post-process target; repeated resizes must leave the
+	// pipeline able to draw. This is the path a stale framebuffer handle corrupts, Release-only.
 	Ember::Test::RequireDefaultAssets();
 
 	auto renderSystem = Sys<RenderSystem>();

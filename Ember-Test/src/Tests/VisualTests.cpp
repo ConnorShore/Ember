@@ -1,29 +1,6 @@
-// VISUAL / GOLDEN-IMAGE TESTS
-// ---------------------------
-// Render a known scene and assert on the pixels. This is the only category that tests the renderer
-// end to end, and it is the class of test that catches a corrupted frame regardless of root cause -
-// a stale G-buffer texture handle, an uninitialised uniform, a shader that silently failed to
-// compile. Run these in Debug AND Release: the interesting failures are the Release-only ones.
-//
-// Three kinds of check live here, in increasing order of strictness:
-//
-//   1. FRAME SANITY  - "something was drawn": not fully black, not blown out to white, and carrying
-//      real tonal variation. Needs no reference image, so it works from the very first run and on a
-//      machine that has never minted goldens. Catches the catastrophic failures.
-//
-//   2. DETERMINISM   - the same scene rendered twice produces the same pixels. Also needs no
-//      reference image, and it is fully machine-independent, so it can never fail spuriously on a
-//      different GPU. Catches uninitialised state that varies frame to frame.
-//
-//   3. GOLDEN IMAGE  - pixels match a committed reference. The strictest check, but GPU/driver
-//      dependent, so a golden minted on one machine may legitimately differ on another.
-//
-// Golden workflow:
-//   1) Mint the references once, in a KNOWN-GOOD build:  set EMBER_TEST_WRITE_GOLDEN=1 and run.
-//   2) Commit Ember-Test/golden/*.png.
-//   3) Normal runs compare against them; a mismatch fails with the diff percentage.
-// A golden that does not exist yet SKIPS rather than fails, so a fresh clone is not drowned in
-// failures before anyone has had a chance to mint them.
+// Three levels of strictness: frame sanity (something was drawn) and determinism (the same scene twice
+// gives the same pixels) need no reference image and are machine-independent; golden images are the
+// strictest but GPU-dependent. Mint goldens with EMBER_TEST_WRITE_GOLDEN=1; a missing one skips.
 
 #include <Ember.h>
 
@@ -244,11 +221,8 @@ EB_TEST_CASE(Render, EmptySceneIsDarkButDoesNotCrash, Visual)
 
 EB_TEST_CASE(Render, RenderingTheSameSceneTwiceIsIdentical, Visual)
 {
-	// Renders the scene, captures it, rebuilds the scene from scratch, renders again, and compares
-	// the second frame against the first. Because both frames come from the same machine and build,
-	// ANY difference is real - uninitialised memory feeding a uniform, a buffer that is not cleared
-	// between frames, state left behind by the previous pass. This is exactly the shape of the
-	// Release-only rendering bugs that goldens catch only if a golden happens to exist.
+	// Both frames come from the same machine and build, so ANY difference is real - uninitialised
+	// memory, an uncleared buffer, or state left behind by the previous pass.
 	Ember::Test::RequireDefaultAssets();
 
 	const Viewport viewport = WindowViewport();
@@ -320,10 +294,8 @@ EB_TEST_CASE(Render, PointLightSceneGolden, Visual)
 
 EB_TEST_CASE(Render, ShadowCastingSceneGolden, Visual)
 {
-	// A tall block beside a low one, lit at a raking angle, so the shadow map contributes a large
-	// and obvious part of the frame. Shadow regressions (a wrong light matrix, a bad depth bias)
-	// barely move the average colour, so a dedicated scene where shadows dominate is what makes
-	// them detectable at all.
+	// A raking light and a tall block, so shadows dominate the frame. Shadow regressions barely move
+	// the average colour, so they need a scene built around them to be detectable at all.
 	Ember::Test::RequireDefaultAssets();
 
 	SceneFixture scene("VisualShadowScene");

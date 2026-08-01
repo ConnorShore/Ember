@@ -1,13 +1,5 @@
-// ANIMATION TESTS
-// ---------------
-// Covers the animation state machine's DATA layer: the blackboard, condition evaluation, states and
-// transitions, and the controller's layer stack. That is the part that decides *which* animation
-// plays; the sampling/skinning half needs real skeleton + clip assets and is exercised by the visual
-// tests instead.
-//
-// Condition evaluation is worth the attention: it is a small switch over parameter types where a
-// wrong comparison operator or a missing-parameter case produces an animation that simply never
-// transitions - no error, no crash, just a character stuck in idle.
+// The animation state machine's data layer: blackboard, condition evaluation, states/transitions and
+// controller layers. Sampling and skinning need real skeleton assets and are covered by the visual tests.
 
 #include <Ember.h>
 

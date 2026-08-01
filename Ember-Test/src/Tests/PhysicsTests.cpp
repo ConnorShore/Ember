@@ -1,14 +1,6 @@
-// PHYSICS TESTS
-// -------------
-// PhysicsSystem wraps ReactPhysics3D. These tests are less about proving rp3d's solver correct (it
-// is) and much more about the SEAM: rp3d bodies are created from ECS components via lifecycle hooks,
-// world transforms flow one way for kinematic bodies and the other way for dynamic ones, and every
-// component holds raw pointers into a world that gets destroyed and rebuilt whenever a scene attaches.
-// That seam is where the bugs live.
-//
-// FIXTURE ORDER MATTERS. PhysicsSceneFixture::Attach() runs TransformSystem and then
-// PhysicsSystem::OnSceneAttach, in that order, because rigid bodies are spawned from
-// TransformComponent::WorldTransform. Build the scene first, then Attach(). See TestHelpers.h.
+// These target the seam between ECS components and ReactPhysics3D rather than rp3d's solver: bodies
+// are created by lifecycle hooks, and components hold raw pointers into a world that is destroyed and
+// rebuilt on every scene attach. Build the scene first, then Attach() - see TestHelpers.h.
 
 #include <Ember.h>
 
@@ -39,18 +31,9 @@ namespace {
 		return entity.GetComponent<TransformComponent>().GetWorldPosition().y;
 	}
 
-	// THE WORLD ORIGIN IS NOT EMPTY.
-	//
-	// PhysicsSystem::InitCameraSensor() parks a persistent kinematic "camera sensor" - a 0.1-radius
-	// trigger sphere used for post-process volume detection - at the origin of EVERY physics world,
-	// and recreates it on every RestartPhysicsWorld(). It belongs to no entity, so its rp3d user data
-	// is null and queries report it as entity 0, and its category is rp3d's default (0x0001) with a
-	// collide mask of All, so it answers raycasts and overlap tests like anything else.
-	//
-	// A downward ray through the origin therefore hits the sensor at y ~= 0.1 instead of the ground
-	// at y == 0, and an overlap probe at the origin returns one hit more than the test created.
-	// Every query below runs in a "lane" offset away from the origin so the results contain only the
-	// bodies the test actually made. The ground slab is 40x40, so the lane is comfortably on it.
+	// THE WORLD ORIGIN IS NOT EMPTY: PhysicsSystem parks a 0.1-radius camera-sensor trigger there in
+	// every physics world, and it answers raycasts and overlap tests. Queries run in this offset lane
+	// instead, so results contain only the bodies the test created.
 	constexpr float kLaneX = 12.0f;
 	constexpr float kLaneZ = 7.0f;
 
@@ -525,10 +508,8 @@ EB_TEST_CASE(Physics, ReattachingASceneRebuildsEveryBody, Integration)
 	auto* secondBody = box.GetComponent<RigidBodyComponent>().Body;
 	EB_CHECK_MSG(secondBody != nullptr, "re-attaching the scene left the entity without a body");
 
-	// NOTE: deliberately NOT asserting secondBody != firstBody. The old world is destroyed before
-	// the new one is built, so rp3d's allocator frequently hands the fresh body the exact same
-	// address - pointer identity proves nothing either way here. What actually matters is that the
-	// component was re-populated and the rebuilt world simulates, which is what we check.
+	// Deliberately not asserting secondBody != firstBody: the old world is destroyed first, so rp3d's
+	// allocator often reuses the address. What matters is that the rebuilt world still simulates.
 	EB_NOTE(std::string("body pointer ") + (secondBody == firstBody ? "was reused by the allocator" : "changed"));
 
 	// And the rebuilt world still simulates correctly.

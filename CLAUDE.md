@@ -235,6 +235,10 @@ inventing a test that asserts nothing.
 
 ## Conventions
 
+- **Comments**: keep them to 1–2 sentences — a brief note on what the following code does, or why it
+  does it. Favour *why* when the code already says *what*. No multi-paragraph block comments: if
+  something genuinely needs that much context it belongs in a README or `docs/`, not inline. This
+  applies to test files too.
 - **Naming**: `EB_` prefix for engine macros (`EB_CORE_INFO/WARN/ERROR/FATAL` for engine-side
   logging, `EB_INFO/WARN/...` for app-side, `EB_CORE_ASSERT`, `EB_PROFILE_*`). `m_` prefix for member
   variables, `s_` for statics.
@@ -245,6 +249,6 @@ inventing a test that asserts nothing.
 - Build configs gate behavior via defines: `EB_DEBUG`, `EB_RELEASE`, `EB_DIST`, `EB_PROFILE`,
   `EB_EDITOR` (Ember-Forge only), `EB_ENGINE` (Ember only) — check these rather than assuming a given
   feature (asserts, profiling, editor-only code paths) is always compiled in.
-- `TODOs.md` is a maintained, prioritized triage list of in-code `// TODO:` comments across all four
+- `TODOs.md` is a maintained, prioritized triage list of in-code `// TODO:` comments across all five
   projects (P0 blockers through P3 post-MVP). Check it before assuming a rough edge is unknown, and
   update it if you resolve or add a significant TODO.

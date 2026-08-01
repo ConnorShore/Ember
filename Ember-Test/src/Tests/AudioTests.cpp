@@ -1,13 +1,5 @@
-// AUDIO TESTS
-// -----------
-// Audio playback itself is not assertable without a device and a clip, so these tests target the
-// part that actually breaks: AudioSourceComponent's LIFETIME.
-//
-// AudioSourceComponent owns a raw ma_sound* and is deliberately move-only (copying it would double
-// free the sound). That collides head-on with the ECS's sparse-set storage, which relocates
-// components on every removal via move assignment and reallocates the dense array as it grows. A
-// mistake there is a use-after-free or a double free in the audio thread - the worst possible place
-// for one - so it is worth pinning down precisely.
+// AudioSourceComponent is move-only and owns a raw ma_sound*, which collides with the ECS relocating
+// components on growth and removal. These tests pin that interaction down.
 
 #include <Ember.h>
 

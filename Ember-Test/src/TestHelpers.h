@@ -1,22 +1,10 @@
 #pragma once
 
-// Engine-aware test utilities: approximate comparisons for Ember's math types, and RAII fixtures that
-// stand a Scene up (and tear it back down) correctly. TestFramework.h stays engine-free; everything
-// that needs <Ember.h> lives here.
+// Engine-aware test utilities: approximate comparisons for Ember's math types, and RAII scene
+// fixtures. TestFramework.h stays engine-free; everything needing <Ember.h> lives here.
 //
-// WHY THE FIXTURES MATTER
-// -----------------------
-// Several engine systems keep per-scene state that is created on attach and only reset on the *next*
-// attach — physics most of all: PhysicsSystem::OnSceneAttach() destroys the whole rp3d world and
-// rebuilds it from the scene's components. Get the ordering wrong and tests silently measure garbage:
-//
-//   * Rigid bodies are spawned from TransformComponent::WorldTransform, which is only populated by
-//     TransformSystem. Attach physics before running transforms and every body spawns at the origin.
-//   * Bodies created for a previous scene are destroyed when the next scene attaches, so a test that
-//     holds an rp3d pointer across a fixture boundary is reading freed memory.
-//
-// PhysicsSceneFixture encodes the correct order (build -> transform -> attach) so individual tests
-// can't get it wrong.
+// PhysicsSceneFixture encodes the required build -> transform -> attach order: rigid bodies are
+// spawned from WorldTransform, and each scene attach destroys and rebuilds the whole rp3d world.
 
 #include <Ember.h>
 
@@ -172,13 +160,8 @@ namespace Ember::Test {
 			Sys<TransformSystem>()->OnUpdate(delta, m_Scene.Ptr());
 		}
 
-		// A full editor-style frame: transforms, bone sockets, editor physics sync, UI layout, render,
-		// and finally Scene::RemovePendingRemovals().
-		//
-		// Scene::RemoveEntity() only QUEUES a removal; the queue is private and drained exclusively at
-		// the end of OnUpdateEdit / OnUpdateRuntime. So any test that asserts an entity is really gone
-		// has to run a real frame - there is no lighter hook. It renders into the window's back buffer,
-		// which the runner has already sized via RenderSystem::OnViewportResize.
+		// A full editor-style frame, ending in Scene::RemovePendingRemovals(). Scene::RemoveEntity() only
+		// queues a removal, so asserting an entity is really gone requires running a real frame.
 		void TickEdit(TimeStep delta = FixedStep())
 		{
 			const Window& window = Application::Instance().GetWindow();
@@ -200,13 +183,8 @@ namespace Ember::Test {
 		SharedPtr<Scene> m_Scene;
 	};
 
-	// A scene wired into the physics world.
-	//
-	// Build the scene first, then call Attach(). Attaching runs TransformSystem so world transforms
-	// are correct, then PhysicsSystem::OnSceneAttach, whose ConnectAndRetroact hooks spawn an rp3d
-	// body/collider for every component already present. Components attached *after* Attach() still
-	// get bodies (the hooks stay connected) but are spawned from whatever WorldTransform is current,
-	// so call UpdateTransforms() first if you move them.
+	// A scene wired into the physics world. Build the scene FIRST, then Attach(): bodies are spawned
+	// from WorldTransform, so attaching before the transform pass puts every body at the origin.
 	class PhysicsSceneFixture : public SceneFixture
 	{
 	public:
@@ -217,10 +195,8 @@ namespace Ember::Test {
 
 		~PhysicsSceneFixture() override
 		{
-			// Null out every runtime physics pointer before the scene dies. The rp3d objects
-			// themselves are owned by the physics world and are freed the next time a scene attaches
-			// (RestartPhysicsWorld) or at PhysicsSystem::OnDetach; what matters here is that nothing
-			// can dereference a stale Body/Shape afterwards.
+			// Null the runtime physics pointers so nothing can dereference a stale Body/Shape after the
+			// scene dies. The rp3d objects themselves are owned by the physics world.
 			if (m_Attached)
 				m_Scene->ResetAllPhysicsState();
 		}

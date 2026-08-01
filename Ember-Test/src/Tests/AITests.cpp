@@ -1,12 +1,5 @@
-// AI / PATHFINDING TESTS
-// ----------------------
-// A* on the navigation grid. Pathfinding is a good fit for automated testing because it is pure,
-// deterministic, and has crisp correctness properties (a path must be contiguous, must not cross
-// unwalkable nodes, and must not exist at all when the goal is walled off) that are tedious and
-// unreliable to verify by walking an agent around the editor.
-//
-// Grid layout convention, matching NavigationGridComponent::Grid: the outer index is X, the inner
-// index is Z, and NavNode::WorldPosition uses (x, 0, z) - the grid is a horizontal plane.
+// A* pathfinding over the navigation grid: contiguity, obstacle avoidance and corner-cutting rules.
+// Grid indexing matches NavigationGridComponent::Grid - outer index X, inner index Z, world (x, 0, z).
 
 #include <Ember.h>
 
@@ -172,12 +165,8 @@ EB_TEST_CASE(AI, NoPathWhenTheGoalIsWalledOff, Unit)
 
 EB_TEST_CASE(AI, DiagonalsDoNotCutThroughCorners, Unit)
 {
-	// An agent must not squeeze diagonally between two walls that meet at a corner - visually it
-	// would clip straight through the geometry. AStarPath guards this by requiring BOTH orthogonal
-	// neighbours of a diagonal step to be walkable.
-	//
-	// A 3x3 grid with only the main diagonal walkable isolates the rule exactly: the sole candidate
-	// route is (0,0) -> (1,1) -> (2,2), and every step of it is a corner cut.
+	// A diagonal step requires BOTH orthogonal neighbours to be walkable, or agents clip through
+	// corners. A 3x3 grid with only the main diagonal open makes every candidate step a corner cut.
 	{
 		std::vector<std::vector<NavNode>> grid = MakeGrid(3);
 		for (int x = 0; x < 3; ++x)

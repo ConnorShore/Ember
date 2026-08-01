@@ -624,11 +624,14 @@ namespace Ember {
 			{
 				OpenProject();
 			}
+			if (ImGui::MenuItem("Save Project", "Ctrl+Shift+S", false, projectExists))
+			{
+				SaveProject();
+			}
 			if (ImGui::MenuItem("Export Project", "Ctrl+Shift+E", nullptr, projectExists))
 			{
 				// Make sure everything is saved before exporting!
-				SaveProject(false);
-				ProjectManager::SaveActiveProject();
+				SaveProject();
 
 				// Ask the user where they want to save the game
 				std::string exportDir = FileDialog::OpenDirectory();
@@ -669,12 +672,12 @@ namespace Ember {
 				if (editingPrefab)
 					SaveOpenPrefab();
 				else
-					SaveProject(false);
+					SaveScene(false);
 			}
 
-			if (ImGui::MenuItem("Save Scene As", "Ctrl+Shift+S", false, projectExists && !editingPrefab))
+			if (ImGui::MenuItem("Save Scene As", nullptr, false, projectExists && !editingPrefab))
 			{
-				SaveProject(true);
+				SaveScene(true);
 			}
 
 			ImGui::EndMenu();
@@ -1098,8 +1101,7 @@ namespace Ember {
 			case KeyCode::S:
 				if (activeProject && control && shift)
 				{
-					if (!m_Context.IsEditingPrefab)
-						SaveProject(true);
+					SaveProject();
 				}
 				else if (activeProject && control)
 				{
@@ -1111,7 +1113,7 @@ namespace Ember {
 					else if (viewerType == EditorViewportViewer::Type::SkeletonMask)
 						static_cast<SkeletonMaskViewportViewer*>(m_Context.ActiveViewportViewer)->SaveSkeletonMask(this);
 					else
-						SaveProject(false);
+						SaveScene(false);
 				}
 				break;
 
@@ -1368,8 +1370,7 @@ namespace Ember {
 		ImVec4 orangeTint = ImVec4(0.95f, 0.47f, 0.15f, 1.00f);
 		if (ImGui::ImageButton("PlayStandaloneBtn", m_ToolbarProps.PlayButtonTextureID, ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), orangeTint))
 		{
-			SaveProject(false);
-			ProjectManager::SaveActiveProject();
+			SaveProject();
 
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
 
@@ -1651,7 +1652,32 @@ namespace Ember {
 		OpenSceneViewer(sceneFile);
 	}
 
-	void EditorLayer::SaveProject(bool saveAs /* = false */)
+	// Writes a scene to disk, temporarily stripping the editor-only outline components so they
+	// never end up in the serialized file.
+	void EditorLayer::SerializeScene(const SharedPtr<Scene>& scene, const std::string& filePath)
+	{
+		std::vector<Entity> outlinedEntities;
+		for (Entity entity : scene->GetAllEntities())
+		{
+			if (entity.ContainsComponent<OutlineComponent>())
+			{
+				outlinedEntities.push_back(entity);
+				entity.DetachComponent<OutlineComponent>();
+			}
+		}
+
+		SceneSerializer serializer(scene);
+		serializer.Serialize(filePath);
+
+		for (Entity entity : outlinedEntities)
+		{
+			if (entity != Constants::Entities::InvalidEntityID && entity.ContainsComponent<IDComponent>())
+				entity.AttachComponent<OutlineComponent>(m_OutlineEntitySelectedComp);
+		}
+	}
+
+	// Saves only the scene in the active tab. Use SaveProject() to write every scene and asset.
+	void EditorLayer::SaveScene(bool saveAs /* = false */)
 	{
 		if (m_Context.IsEditingPrefab)
 		{
@@ -1667,93 +1693,119 @@ namespace Ember {
 			return;
 		}
 
-		std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
-		std::string sceneName = saveAs
-			? FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs")
-			: activeScene->GetFilePath();
-
-		if (!sceneName.empty())
+		std::string scenePath = activeScene->GetFilePath();
+		if (saveAs)
 		{
-			auto& assetManager = Application::Instance().GetAssetManager();
-
-			// Serialize scenes
-			auto scenes = assetManager.GetAssetsOfType<Scene>();
-			for (auto& scene : scenes)
-			{
-				if (!scene->IsEngineAsset() && !scene->GetFilePath().empty())
-				{
-					std::vector<Entity> outlinedEntities;
-					for (Entity entity : scene->GetAllEntities())
-					{
-						if (entity.ContainsComponent<OutlineComponent>())
-						{
-							outlinedEntities.push_back(entity);
-							entity.DetachComponent<OutlineComponent>();
-						}
-					}
-
-					SceneSerializer ser(scene);
-					ser.Serialize(scene->GetFilePath());
-
-					for (Entity entity : outlinedEntities)
-					{
-						if (entity != Constants::Entities::InvalidEntityID && entity.ContainsComponent<IDComponent>())
-							entity.AttachComponent<OutlineComponent>(m_OutlineEntitySelectedComp);
-					}
-				}
-			}
-
-			// Serialize materials (in case their values changed)
-			auto materials = assetManager.GetAssetsOfType<MaterialInstance>();
-			for (auto& material : materials)
-			{
-				if (!material->IsEngineAsset() && !material->GetFilePath().empty())
-				{
-					MaterialSerializer::Serialize(material->GetFilePath(), material);
-				}
-			}
-
-			// Serialize physics materials as well
-			auto physicsMaterials = assetManager.GetAssetsOfType<PhysicsMaterial>();
-			for (auto& physMat : physicsMaterials)
-			{
-				if (!physMat->IsEngineAsset() && !physMat->GetFilePath().empty())
-				{
-					PhysicsMaterialSerializer::Serialize(physMat->GetFilePath(), physMat);
-				}
-			}
-
-			// Serialize animations
-			auto animations = assetManager.GetAssetsOfType<Animation>();
-			for (auto& anim : animations)
-			{
-				if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
-				{
-					AnimationSerializer::Serialize(anim->GetFilePath(), anim);
-				}
-			}
-
-			// Serialize assets
-			std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
-			AssetRegistrySerializer assetSerializer(&assetManager);
-			assetSerializer.Serialize(assetFilePath.string());
-
-			if (saveAs)
-			{
-				activeScene->SetFilePath(sceneName);
-				if (auto* activeViewer = GetActiveViewer())
-				{
-					activeViewer->SetFilePath(sceneName);
-					activeViewer->SetTitle(EditorViewportTabs::TitleFromPath(sceneName, activeScene->GetName()));
-				}
-			}
-
-			// Save project as well to update any project settings
-			ProjectManager::SaveActiveProject();
-
-			auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(sceneName).filename().string()));
-			m_Context.EventCallback(evt);
+			std::string sceneDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Scene).string();
+			scenePath = FileDialog::SaveFile(sceneDirectory.c_str(), "NewScene.ebs", "Ember Scene (*.ebs)", "*.ebs");
 		}
+
+		if (scenePath.empty())
+		{
+			if (!saveAs)
+			{
+				auto evt = UINotificationEvent("Active scene has no file path to save to.", UINotificationEvent::Severity::Warning);
+				m_Context.EventCallback(evt);
+			}
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Retarget the asset before serializing so the new file is the one that actually gets written.
+		if (saveAs)
+		{
+			std::string sceneName = std::filesystem::path(scenePath).stem().string();
+			if (!assetManager.RenameAsset(activeScene->GetUUID(), sceneName, scenePath))
+				activeScene->SetFilePath(std::filesystem::absolute(scenePath).string());
+
+			if (auto* activeViewer = GetActiveViewer())
+			{
+				activeViewer->SetFilePath(activeScene->GetFilePath());
+				activeViewer->SetTitle(EditorViewportTabs::TitleFromPath(activeScene->GetFilePath(), activeScene->GetName()));
+			}
+
+			scenePath = activeScene->GetFilePath();
+		}
+
+		SerializeScene(activeScene, scenePath);
+
+		// The registry tracks asset paths/UUIDs, so it has to follow any change the scene made.
+		std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
+		AssetRegistrySerializer assetSerializer(&assetManager);
+		assetSerializer.Serialize(assetFilePath.string());
+
+		auto evt = UINotificationEvent(std::format("Scene saved: {}", std::filesystem::path(scenePath).filename().string()));
+		m_Context.EventCallback(evt);
+	}
+
+	// Saves everything the project owns: every open/loaded scene, all editable assets, the asset
+	// registry and the project settings file.
+	void EditorLayer::SaveProject()
+	{
+		if (!ProjectManager::GetActive())
+		{
+			auto evt = UINotificationEvent("No project is open to save.", UINotificationEvent::Severity::Warning);
+			m_Context.EventCallback(evt);
+			return;
+		}
+
+		// A prefab being edited lives in a throwaway scene, so it has to be saved through its own path.
+		if (m_Context.IsEditingPrefab)
+			SaveOpenPrefab();
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		// Serialize scenes
+		auto scenes = assetManager.GetAssetsOfType<Scene>();
+		for (auto& scene : scenes)
+		{
+			if (!scene->IsEngineAsset() && !scene->GetFilePath().empty())
+			{
+				SerializeScene(scene, scene->GetFilePath());
+			}
+		}
+
+		// Serialize materials (in case their values changed)
+		auto materials = assetManager.GetAssetsOfType<MaterialInstance>();
+		for (auto& material : materials)
+		{
+			if (!material->IsEngineAsset() && !material->GetFilePath().empty())
+			{
+				MaterialSerializer::Serialize(material->GetFilePath(), material);
+			}
+		}
+
+		// Serialize physics materials as well
+		auto physicsMaterials = assetManager.GetAssetsOfType<PhysicsMaterial>();
+		for (auto& physMat : physicsMaterials)
+		{
+			if (!physMat->IsEngineAsset() && !physMat->GetFilePath().empty())
+			{
+				PhysicsMaterialSerializer::Serialize(physMat->GetFilePath(), physMat);
+			}
+		}
+
+		// Serialize animations
+		auto animations = assetManager.GetAssetsOfType<Animation>();
+		for (auto& anim : animations)
+		{
+			if (!anim->IsEngineAsset() && !anim->GetFilePath().empty())
+			{
+				AnimationSerializer::Serialize(anim->GetFilePath(), anim);
+			}
+		}
+
+		// Serialize assets
+		std::filesystem::path assetFilePath = ProjectManager::GetActive()->GetAssetsFilePath();
+		AssetRegistrySerializer assetSerializer(&assetManager);
+		assetSerializer.Serialize(assetFilePath.string());
+
+		// Save project as well to update any project settings
+		ProjectManager::SaveActiveProject();
+
+		auto evt = UINotificationEvent(std::format("Project saved: {}", ProjectManager::GetActive()->GetConfig().ProjectName));
+		m_Context.EventCallback(evt);
 	}
 
 	void EditorLayer::OpenPrefab(const std::string& prefabPath)

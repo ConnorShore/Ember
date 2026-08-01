@@ -186,11 +186,8 @@ namespace Ember {
 					data.EventCallback(e);
 				});
 
-			// When the window loses focus (e.g. a native file dialog opens via
-			// Ctrl+Shift+O), GLFW stops receiving key events. Any key released
-			// while unfocused would otherwise stay marked as pressed and appear
-			// "stuck" when the window regains focus. Clear all cached input
-			// state on focus loss to avoid that.
+			// Clear cached input on focus loss. GLFW stops delivering key events while unfocused, so a key
+			// released during that time would otherwise stay "stuck" pressed when focus returns.
 			glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* w, int focused)
 				{
 					if (!focused)

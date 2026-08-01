@@ -908,12 +908,8 @@ namespace Ember {
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 		physicsSystem->InitializeEntity(newEntity.GetEntityHandle(), this);
 
-		// Recurse into children, collecting their new UUIDs in a LOCAL vector.
-		//
-		// They cannot be pushed straight into `newRels`: every recursion calls AddEntity, which
-		// attaches a RelationshipComponent and can reallocate that component type's dense storage -
-		// invalidating `newRels` and any other component reference taken before the loop. Writing
-		// through it afterwards is a use-after-free that silently drops the duplicated children.
+		// Collect the new child UUIDs locally: each recursion calls AddEntity, which attaches a
+		// RelationshipComponent and can reallocate its dense storage, invalidating `newRels`.
 		std::vector<UUID> duplicatedChildUUIDs;
 		duplicatedChildUUIDs.reserve(oldRels.Children.size());
 

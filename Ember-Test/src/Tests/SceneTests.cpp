@@ -1,12 +1,5 @@
-// SCENE / HIERARCHY TESTS
-// -----------------------
-// Scene owns entity identity (UUID <-> EntityID), the parent/child graph, ordering, duplication and
-// deferred removal. Almost every authoring workflow in Ember-Forge routes through these calls, and
-// most of them are graph surgery where a missed edge shows up much later as a dangling UUID.
-//
-// A note on how removal is tested: Scene::RemoveEntity() only QUEUES the entity. The queue drains in
-// Scene::RemovePendingRemovals(), which is private and called only at the tail of a full frame - so
-// the removal tests run SceneFixture::TickEdit() and are tagged Integration rather than Unit.
+// Entity identity, the parent/child graph, ordering, duplication and deferred removal. Removal only
+// drains at the end of a frame, so those tests run SceneFixture::TickEdit() and are tagged Integration.
 
 #include <Ember.h>
 
@@ -248,12 +241,8 @@ EB_TEST_CASE(Scene, SetEntityParentToSameParentIsANoOp, Integration)
 	EB_EXPECT_EQ(parent.GetNumChildren(), (uint32_t)1);
 }
 
-// REGRESSION GUARD: this test caught re-parenting failing to invalidate the child's world
-// transform. Entity::AddChild only rewrites RelationshipComponent, and TransformSystem skips any
-// node that is not dirty and whose parent did not change - so a freshly re-parented child kept the
-// stale world transform it had as a root (the normal child stayed at x=1 instead of being pushed
-// out to x=4 by the parent's scale). In the editor that showed up as "dragging an entity onto a
-// parent leaves it in the wrong place". Fixed by TransformComponent::InvalidateWorld().
+// REGRESSION GUARD: re-parenting used to leave the child's world transform stale, because AddChild
+// only rewrote RelationshipComponent and the transform pass skips clean nodes. Fixed by InvalidateWorld().
 EB_TEST_CASE(Scene, AttachmentChildIgnoresParentScale, Integration)
 {
 	// Attachments (weapons on a bone socket, etc) deliberately inherit position and rotation but
@@ -429,12 +418,9 @@ EB_TEST_CASE(Scene, DuplicateEntityCopiesDataWithNewIdentity, Integration)
 	EB_EXPECT_NEAR(original.GetComponent<PointLightComponent>().Intensity, 42.0f, 1e-4);
 }
 
-// REGRESSION GUARD: this test caught a use-after-free in Scene::DuplicateEntityRecursive, which
-// used to capture `auto& newRels = newEntity.AttachComponent<RelationshipComponent>()` and then
-// write `newRels.Children.push_back(...)` AFTER recursing to duplicate each child. Every recursion
-// calls AddEntity, which attaches another RelationshipComponent and can reallocate that component's
-// dense vector - so the reference dangled and the child UUIDs landed in freed memory, silently
-// losing the duplicated children. The fix collects them locally and re-fetches after the loop.
+// REGRESSION GUARD: DuplicateEntityRecursive used to hold a RelationshipComponent reference across
+// the recursion that duplicates children, which could reallocate it - a use-after-free that silently
+// dropped the copied children.
 EB_TEST_CASE(Scene, DuplicateEntityCopiesChildren, Integration)
 {
 	SceneFixture scene;

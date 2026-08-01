@@ -195,12 +195,9 @@ namespace Ember {
 			outEntities.push_back(std::make_pair(entity, worldAABB));
 		}
 
-		// Skinned meshes — take the UNION of:
-		//   1) mesh-entity world transform x bind-pose bounds
-		//   2) animator-root world transform x bind-pose bounds (when available)
-		// Mesh bounds are often authored in character/root space while the mesh entity sits under a
-		// scaled/rotated armature (e.g. Mixamo). Either matrix alone can be wrong for some hierarchies;
-		// the union is conservative (may overdraw, rarely false-culls).
+		// Skinned meshes take the UNION of the mesh entity's and the animator root's world transform
+		// applied to the bind-pose bounds: bounds are often authored in root space while the mesh sits
+		// under a scaled armature, so either matrix alone can be wrong. The union may overdraw.
 		constexpr float skinnedBoundsPadding = 1.25f;
 		for (EntityID entityId : registry.ActiveQuery<SkinnedMeshComponent, MaterialComponent, TransformComponent>())
 		{

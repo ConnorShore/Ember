@@ -1691,12 +1691,9 @@ namespace Ember {
 
 				ryml::NodeRef skyboxNode = envNode["Skybox"];
 
-				// rapidyaml's operator>> leaves its target UNTOUCHED when the child key is
-				// absent/unreadable, so each read must go into an initialized local guarded by
-				// has_child(). Reading "Intensity" into a bare `float intensity;` previously fed
-				// uninitialized stack garbage into SetIntensity() -> u_EnvironmentIntensity, which
-				// scales the IBL ambient and blew out lit geometry non-deterministically in
-				// optimized builds (Debug stack happened to be stable; Release did not).
+				// rapidyaml's operator>> leaves its target UNTOUCHED when the key is absent, so every read needs
+				// an initialized local guarded by has_child(). Reading into a bare float previously fed
+				// uninitialized stack garbage into the IBL intensity, blowing out lit geometry in Release only.
 				if (skyboxNode.has_child("Enabled"))
 				{
 					bool skyboxEnabled = false;

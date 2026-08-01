@@ -91,7 +91,9 @@ namespace Ember {
 		void NewProject();
 		void OpenProject();
 		void NewScene();
-		void SaveProject(bool saveAs = false);
+		void SaveScene(bool saveAs = false);
+		void SaveProject();
+		void SerializeScene(const SharedPtr<Scene>& scene, const std::string& filePath);
 		bool SaveOpenPrefab();
 		void OpenAnimationState(const std::string& path);
 		void OpenSkeletonMask(const std::string& path);

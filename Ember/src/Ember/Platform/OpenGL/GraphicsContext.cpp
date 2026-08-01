@@ -29,11 +29,9 @@ namespace Ember {
 			EB_CORE_TRACE("Version:  {}", (const char*)glGetString(GL_VERSION));
 			EB_CORE_TRACE("---------------------------------------");
 			
-			// Enable synchronous GL error/UB callbacks in every build except the shipping Dist build.
-			// Crucially this INCLUDES Release: the whole class of "works in Debug, breaks in Release"
-			// GPU bugs only surfaces in optimized builds, so we want GL diagnostics there too.
-			// Suppress NOTIFICATION severity to reduce noise. Relies on the debug context requested in
-			// Windows::Window (GLFW_OPENGL_DEBUG_CONTEXT).
+			// GL debug callbacks in every build except Dist - deliberately including Release, because the
+			// "works in Debug, breaks in Release" class of GPU bug only shows up in optimized builds.
+			// NOTIFICATION severity is suppressed to cut noise.
 #ifndef EB_DIST
 			glEnable(GL_DEBUG_OUTPUT);
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);

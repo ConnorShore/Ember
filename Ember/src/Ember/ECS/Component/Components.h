@@ -94,11 +94,8 @@ namespace Ember {
 		}
 		TransformComponent(const TransformComponent&) = default;
 
-		// Returns the cached local (TRS) matrix, rebuilding it only when the
-		// Position/Rotation/Scale fields have actually changed since the last query.
-		// Those fields are public and mutated in-place all over the engine (physics,
-		// scripts, editor, character controller, ...), so changes are detected by value
-		// comparison rather than a settable dirty flag.
+		// Returns the cached local TRS matrix, rebuilt only when Position/Rotation/Scale actually change.
+		// Those fields are mutated in-place all over the engine, so changes are detected by value compare.
 		const Matrix4f& GetLocalTransform() const
 		{
 			// Not profiled: this is a trivial cached accessor called per-entity-per-frame
@@ -118,13 +115,8 @@ namespace Ember {
 			return m_CachedLocalTransform;
 		}
 
-		// True when the local TRS has changed since WorldTransform was last built from it
-		// (or was never built). Cheap (a few float compares) and side-effect free, so the
-		// transform pass can skip rebuilding world transforms for static entities.
-		//
-		// Note: this is tracked against a snapshot owned solely by the transform pass
-		// (MarkWorldUpdated), NOT the local-matrix cache above, so that other callers of
-		// GetLocalTransform() can never accidentally clear the "world needs rebuild" signal.
+		// True when the local TRS has changed since WorldTransform was last built from it. Tracked against
+		// a snapshot owned by the transform pass, so GetLocalTransform() callers can't clear the signal.
 		bool IsLocalDirty() const
 		{
 			return !m_WorldSourceValid
@@ -144,16 +136,9 @@ namespace Ember {
 			m_WorldSourceValid = true;
 		}
 
-		// Forces the next transform pass to rebuild WorldTransform even though the local TRS is
-		// unchanged.
-		//
-		// IsLocalDirty() only compares the LOCAL values against the snapshot the world matrix was
-		// built from, so it cannot see a change of PARENT: re-parenting leaves Position/Rotation/Scale
-		// identical while completely changing the world matrix they resolve to. Without this, a
-		// re-parented entity keeps the stale world transform it had under its old parent and
-		// visually stays where it was until something else happens to move it.
-		//
-		// Call this whenever RelationshipComponent::ParentHandle or IsAttachment changes.
+		// Forces the next transform pass to rebuild WorldTransform even though the local TRS is unchanged.
+		// Call whenever ParentHandle or IsAttachment changes: IsLocalDirty() only compares local values, so
+		// it cannot see a re-parent, which leaves the TRS identical but the world matrix entirely different.
 		void InvalidateWorld()
 		{
 			m_WorldSourceValid = false;
@@ -212,11 +197,8 @@ namespace Ember {
 		mutable Vector3f m_LocalCacheScale = Vector3f(1.0f);
 		mutable bool m_LocalCacheValid = false;
 
-		// Snapshot of the TRS that the current WorldTransform was built from, owned by the
-		// transform pass (see IsLocalDirty / MarkWorldUpdated). Kept separate from the
-		// local-matrix cache above so external GetLocalTransform() calls can't clear the
-		// world-rebuild signal. Not serialized — defaults to invalid so WorldTransform is
-		// rebuilt on the first transform pass after construction/deserialization.
+		// Snapshot of the TRS that WorldTransform was built from, owned by the transform pass. Kept separate
+		// from the local-matrix cache so GetLocalTransform() callers can't clear the world-rebuild signal.
 		Vector3f m_WorldSourcePosition = Vector3f(0.0f);
 		Vector3f m_WorldSourceRotation = Vector3f(0.0f);
 		Vector3f m_WorldSourceScale = Vector3f(1.0f);

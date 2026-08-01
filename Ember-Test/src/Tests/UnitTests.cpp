@@ -1,9 +1,5 @@
-// UNIT TESTS - math facade and core primitives
-// --------------------------------------------
-// Pure logic: no scene, no systems, no GL. These are the tests you want the most of - fast,
-// deterministic, and runnable anywhere. Everything here backs code that the rest of the engine
-// leans on constantly, so a regression here shows up as "physics is subtly wrong" or "the gizmo
-// drifts" rather than as an obvious crash.
+// Pure logic - no scene, no systems, no GL. Fast, deterministic, and the layer everything else in
+// the engine leans on.
 
 #include <Ember.h>
 

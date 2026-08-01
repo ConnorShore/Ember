@@ -49,11 +49,8 @@ namespace Ember {
 		return Math::Translate(t) * Math::ToMatrix4f(r) * Math::Scale(s);
 	}
 
-	// Builds per-mesh rigid skin bindings by walking node ancestry from the scene root.
-	// Meshes under a bone but without JOINTS_0 can be rigid-skinned to that ancestor bone.
-	// Values in meshRigidBoneMap:
-	//  -1 = no rigid binding
-	//  -2 = conflicting usage (different bones, or mixed bone/non-bone ancestry)
+	// Builds per-mesh rigid skin bindings by walking node ancestry: a mesh under a bone but without
+	// JOINTS_0 can be rigid-skinned to that ancestor. Map values: -1 = none, -2 = conflicting usage.
 	static void CollectRigidMeshBoneMap(
 		int nodeIndex,
 		const tinygltf::Model& model,

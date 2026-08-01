@@ -8,14 +8,7 @@
 namespace Ember {
 	namespace Windows {
 
-		/// <summary>
-		/// Maps GLFW key codes to Ember key codes
-		/// 
-		/// Currently the Ember key codes match the GLFW key codes so no conversion
-		/// is necessary
-		/// </summary>
-		/// <param name="key">GLFW key code</param>
-		/// <returns>Ember key code</returns>
+		// Maps GLFW key codes to Ember key codes. They currently match, so no conversion is needed.
 		KeyCode Input::GlfwKeyCodeToEmberKeyCode(int key)
 		{
 			if (key < 0 || KeyCode::Last < key)
@@ -27,14 +20,7 @@ namespace Ember {
 			return static_cast<KeyCode>(key);
 		}
 
-		/// <summary>
-		/// Maps GLFW mouse button codes to Ember mouse button codes
-		/// 
-		/// Currently the Ember mouse button codes match the GLFW mouse button codes so no conversion
-		/// is necessary
-		/// </summary>
-		/// <param name="key">GLFW mouse button code</param>
-		/// <returns>Ember mouse button code</returns>
+		// Maps GLFW mouse button codes to Ember codes. They currently match, so no conversion is needed.
 		Ember::MouseButton Input::GlfwMouseButtonToEmberMouseButton(int button)
 		{
 			if (MouseButton::Last < button)
