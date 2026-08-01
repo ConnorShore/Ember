@@ -77,6 +77,10 @@ namespace Ember {
 
 		relationship.ParentHandle = Constants::InvalidUUID;
 		relationship.IsAttachment = false;
+
+		// The local TRS is untouched but it now resolves against an identity parent, so the cached
+		// world transform is stale. IsLocalDirty() cannot detect a parent change on its own.
+		GetComponent<TransformComponent>().InvalidateWorld();
 	}
 
 	Entity Entity::AddChild(const std::string& name /*= ""*/)
@@ -100,6 +104,10 @@ namespace Ember {
 
 		auto& childRelationship = entity.GetComponent<RelationshipComponent>();
 		childRelationship.ParentHandle = GetUUID();
+
+		// The child's local TRS is unchanged but now resolves against this parent instead of the
+		// world, so its cached world transform must be rebuilt on the next pass.
+		entity.GetComponent<TransformComponent>().InvalidateWorld();
 
 		return entity;
 	}
@@ -148,6 +156,10 @@ namespace Ember {
 			// For regular children, use full parent transform including scale
 			parentMatrix = parentTransform.WorldTransform;
 		}
+
+		// Whether or not the local TRS was rewritten above, the child now resolves against a new
+		// parent, so its cached world transform must be rebuilt on the next pass.
+		childTransform.InvalidateWorld();
 
 		return entity;
 	}

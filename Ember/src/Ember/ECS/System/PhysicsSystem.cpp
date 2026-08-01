@@ -128,9 +128,10 @@ namespace Ember {
 
 		// Store the entity ID in the user data of the collider for easy retrieval during raycasts and collision events
 		collider.UserData = { entity, collider.Category };
-		// Store a stable raw EntityID value in RP3D user data. Pointers to component-owned
-		// structs can become stale when sparse-set storage relocates components on spawn/despawn.
-		collider.Collider->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
+		// Store a stable EntityID value in RP3D user data. Pointers to component-owned structs can
+		// become stale when sparse-set storage relocates components on spawn/despawn.
+		// Encoded (biased by one) so entity 0 is not indistinguishable from "no user data".
+		collider.Collider->setUserData(EncodeEntityUserData(entity));
 
 		// Set trigger
 		collider.Collider->setIsTrigger(collider.IsTrigger);
@@ -398,7 +399,18 @@ namespace Ember {
 					return;
 				auto& rbComp = registry.GetComponent<RigidBodyComponent>(entity);
 				if (rbComp.Body)
+				{
 					rbComp.Body->setIsActive(true);
+
+					// WORKAROUND for an ordering bug in the vendored ReactPhysics3D.
+					// RigidBody::setIsActive() calls setIsSleeping(!isActive) BEFORE
+					// Body::setIsActive(isActive), and setIsSleeping() early-outs while the body is
+					// still flagged inactive. Re-activating therefore leaves the body awake-flagged
+					// as SLEEPING, so it never integrates again - a re-enabled object stays frozen
+					// in mid-air forever. Clearing the sleep flag afterwards, when the active flag is
+					// finally set, is what actually wakes it.
+					rbComp.Body->setIsSleeping(false);
+				}
 			}
 		);
 	}
@@ -1046,18 +1058,10 @@ namespace Ember {
 			ret.CollisionPoint = { info.worldPoint.x, info.worldPoint.y, info.worldPoint.z };
 			ret.SurfaceNormal = { info.worldNormal.x, info.worldNormal.y, info.worldNormal.z };
 
-			// Extract the Entity IDs
-			EntityID rbID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.body->getUserData()));
-
-			// Extract the collider entity ID from the raw user-data entity value.
-			EntityID collID = Constants::Entities::InvalidEntityID;
-			if (info.collider->getUserData() != nullptr)
-			{
-				collID = static_cast<EntityID>(reinterpret_cast<uintptr_t>(info.collider->getUserData()));
-			}
-
-			ret.RigidBodyEntity = rbID;
-			ret.ColliderEntity = collID;
+			// Extract the Entity IDs. Both decode to InvalidEntityID when the hit object belongs to
+			// no entity (the camera sensor, a temporary query probe).
+			ret.RigidBodyEntity = DecodeEntityUserData(info.body->getUserData());
+			ret.ColliderEntity = DecodeEntityUserData(info.collider->getUserData());
 		}
 
 		return ret;
@@ -1227,7 +1231,7 @@ namespace Ember {
 		rp3d::Quaternion initRot(rotation.x, rotation.y, rotation.z, rotation.w);
 
 		auto rp3dRigidBody = m_PhysicsWorld->createRigidBody(rp3d::Transform(initPos, initRot));
-		rp3dRigidBody->setUserData(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
+		rp3dRigidBody->setUserData(EncodeEntityUserData(entity));
 		rp3dRigidBody->setType(ToRp3dBodyType(rigidBody.Type));
 		rp3dRigidBody->enableGravity(rigidBody.GravityEnabled);
 		rp3dRigidBody->setIsDebugEnabled(m_DebugRenderSettings.Enabled);
@@ -1478,6 +1482,18 @@ namespace Ember {
 		auto& overlapTriggers = m_PhysicsEventListener.GetOverlapData();
 		for (const auto& triggerEvent : overlapTriggers)
 		{
+			// Skip pairs involving an object that belongs to no entity. The camera sensor and the
+			// temporary probe bodies created by overlap queries are all triggers, but none of them is
+			// a gameplay entity. Feeding their InvalidEntityID downstream would index the component
+			// mask out of bounds (EntityManager's arrays are sized MaxEntities).
+			//
+			// This also fixes a real gameplay bug: before entity IDs were biased in the rp3d user
+			// data, an ownerless body decoded to entity 0, so the camera sensor fired spurious
+			// OnOverlapTrigger* callbacks at whichever real entity happened to hold handle 0.
+			if (triggerEvent.EntityA == Constants::Entities::InvalidEntityID ||
+				triggerEvent.EntityB == Constants::Entities::InvalidEntityID)
+				continue;
+
 			// Fire trigger event for both entities
 			ScriptSystem::FireTriggerEvent(triggerEvent.EntityA, triggerEvent.EntityB, triggerEvent.EventType, scene);
 			ScriptSystem::FireTriggerEvent(triggerEvent.EntityB, triggerEvent.EntityA, triggerEvent.EventType, scene);

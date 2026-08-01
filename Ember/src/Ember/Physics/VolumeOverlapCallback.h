@@ -47,7 +47,7 @@ namespace Ember {
 				if ((collider->getCollisionCategoryBits() & m_TargetMask) == 0)
 					continue; // If it's not a VFX volume, ignore it
 
-				if (collider->getUserData() == nullptr && collidedBody->getUserData() == nullptr)
+				if (!HasEntityUserData(collider->getUserData()) && !HasEntityUserData(collidedBody->getUserData()))
 					continue;
 
 				float signedDistance = 0.0f;
@@ -77,9 +77,9 @@ namespace Ember {
 				}
 
 				VolumeOverlapData data;
-				data.CollidedEntity = collider->getUserData() != nullptr
-					? static_cast<EntityID>(reinterpret_cast<uintptr_t>(collider->getUserData()))
-					: static_cast<EntityID>(reinterpret_cast<uintptr_t>(collidedBody->getUserData()));
+				data.CollidedEntity = HasEntityUserData(collider->getUserData())
+					? DecodeEntityUserData(collider->getUserData())
+					: DecodeEntityUserData(collidedBody->getUserData());
 				data.SignedDistanceToEdge = signedDistance;
 
 				m_Overlaps.push_back(data);

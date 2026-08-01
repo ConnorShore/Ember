@@ -144,6 +144,21 @@ namespace Ember {
 			m_WorldSourceValid = true;
 		}
 
+		// Forces the next transform pass to rebuild WorldTransform even though the local TRS is
+		// unchanged.
+		//
+		// IsLocalDirty() only compares the LOCAL values against the snapshot the world matrix was
+		// built from, so it cannot see a change of PARENT: re-parenting leaves Position/Rotation/Scale
+		// identical while completely changing the world matrix they resolve to. Without this, a
+		// re-parented entity keeps the stale world transform it had under its old parent and
+		// visually stays where it was until something else happens to move it.
+		//
+		// Call this whenever RelationshipComponent::ParentHandle or IsAttachment changes.
+		void InvalidateWorld()
+		{
+			m_WorldSourceValid = false;
+		}
+
 		const Matrix4f& GetWorldTransform() const
 		{
 			return WorldTransform;

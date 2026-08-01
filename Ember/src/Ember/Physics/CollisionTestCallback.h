@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ColliderUserData.h"
 #include "Ember/Math/Math.h"
 #include "Ember/ECS/Types.h"
 
@@ -46,8 +47,8 @@ namespace Ember {
 					otherBody = body1;
 
 				EntityID otherBodyEntity = Constants::Entities::InvalidEntityID;
-				if (otherBody && otherBody->getUserData() != nullptr)
-					otherBodyEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(otherBody->getUserData()));
+				if (otherBody)
+					otherBodyEntity = DecodeEntityUserData(otherBody->getUserData());
 
 				reactphysics3d::Collider* otherCollider = nullptr;
 				if (body1 == m_TargetBody)
@@ -56,8 +57,8 @@ namespace Ember {
 					otherCollider = pair.getCollider1();
 
 				EntityID otherColliderEntity = Constants::Entities::InvalidEntityID;
-				if (otherCollider && otherCollider->getUserData() != nullptr)
-					otherColliderEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(otherCollider->getUserData()));
+				if (otherCollider)
+					otherColliderEntity = DecodeEntityUserData(otherCollider->getUserData());
 
 				for (uint32_t c = 0; c < pair.getNbContactPoints(); c++)
 				{

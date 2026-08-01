@@ -26,8 +26,8 @@ namespace Ember {
 				reactphysics3d::OverlapCallback::OverlapPair pair = callbackData.getOverlappingPair(i);
 
 				OverlapTriggerEventData eventData;
-				eventData.EntityA = static_cast<EntityID>(reinterpret_cast<uintptr_t>(pair.getBody1()->getUserData()));
-				eventData.EntityB = static_cast<EntityID>(reinterpret_cast<uintptr_t>(pair.getBody2()->getUserData()));
+				eventData.EntityA = DecodeEntityUserData(pair.getBody1()->getUserData());
+				eventData.EntityB = DecodeEntityUserData(pair.getBody2()->getUserData());
 
 				// Set event type
 				switch (pair.getEventType())

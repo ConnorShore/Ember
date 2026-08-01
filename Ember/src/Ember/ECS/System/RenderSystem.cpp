@@ -746,4 +746,51 @@ namespace Ember {
 		return pass;
 	}
 
+	RenderSystem::BackbufferStats RenderSystem::ComputeBackbufferStats(uint32_t width, uint32_t height)
+	{
+		BackbufferStats stats;
+		if (width == 0 || height == 0)
+			return stats;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glReadBuffer(GL_BACK);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+		std::vector<uint8_t> pixels(static_cast<size_t>(width) * height * 4);
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+		const size_t totalPixels = static_cast<size_t>(width) * height;
+		size_t blackPixels = 0;
+		size_t whitePixels = 0;
+		double luminanceSum = 0.0;
+		double luminanceSquaredSum = 0.0;
+
+		for (size_t i = 0; i < totalPixels; ++i)
+		{
+			const uint8_t r = pixels[i * 4 + 0];
+			const uint8_t g = pixels[i * 4 + 1];
+			const uint8_t b = pixels[i * 4 + 2];
+
+			// Rec. 709 luma, normalized to 0..1.
+			const double luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
+			luminanceSum += luminance;
+			luminanceSquaredSum += luminance * luminance;
+
+			if (r <= 2 && g <= 2 && b <= 2)
+				++blackPixels;
+			else if (r >= 253 && g >= 253 && b >= 253)
+				++whitePixels;
+		}
+
+		const double count = static_cast<double>(totalPixels);
+		stats.Valid = true;
+		stats.MeanLuminance = luminanceSum / count;
+		stats.BlackFraction = static_cast<double>(blackPixels) / count;
+		stats.WhiteFraction = static_cast<double>(whitePixels) / count;
+
+		const double variance = std::max(0.0, (luminanceSquaredSum / count) - (stats.MeanLuminance * stats.MeanLuminance));
+		stats.StdDevLuminance = std::sqrt(variance);
+		return stats;
+	}
+
 }

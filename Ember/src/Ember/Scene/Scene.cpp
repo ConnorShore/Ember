@@ -688,6 +688,12 @@ namespace Ember {
 		childTransform.Position = outPos;
 		childTransform.Rotation = outRot;
 		childTransform.Scale = outScale;
+
+		// Usually the assignments above already make the transform dirty, but not always: re-parenting
+		// under an identity parent can reproduce the exact same local TRS, and IsLocalDirty() would
+		// then report clean while the world matrix is stale. Invalidate explicitly so the rebuild is
+		// driven by the parent change itself rather than by a coincidence in the numbers.
+		childTransform.InvalidateWorld();
 	}
 
 	void Scene::RemoveParent(Entity child)
@@ -706,6 +712,10 @@ namespace Ember {
 			}
 
 			relationship.ParentHandle = Constants::InvalidUUID;
+
+			// The child's local TRS now resolves against an identity parent instead of its old one,
+			// which IsLocalDirty() cannot see - force the world transform to be rebuilt.
+			child.GetComponent<TransformComponent>().InvalidateWorld();
 		}
 	}
 
@@ -890,19 +900,39 @@ namespace Ember {
 			newRels.ParentHandle = newParentId;
 		}
 
+		// The duplicated entity now resolves against whatever parent it was given, so its copied
+		// world transform is stale until the next transform pass rebuilds it.
+		newEntity.GetComponent<TransformComponent>().InvalidateWorld();
+
 		// Create fresh, independent physics objects for this entity
 		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
 		physicsSystem->InitializeEntity(newEntity.GetEntityHandle(), this);
 
-		// Recurse into children and collect their new UUIDs.
+		// Recurse into children, collecting their new UUIDs in a LOCAL vector.
+		//
+		// They cannot be pushed straight into `newRels`: every recursion calls AddEntity, which
+		// attaches a RelationshipComponent and can reallocate that component type's dense storage -
+		// invalidating `newRels` and any other component reference taken before the loop. Writing
+		// through it afterwards is a use-after-free that silently drops the duplicated children.
+		std::vector<UUID> duplicatedChildUUIDs;
+		duplicatedChildUUIDs.reserve(oldRels.Children.size());
+
 		for (UUID childUUID : oldRels.Children)
 		{
 			Entity childEntity = GetEntity(childUUID);
 			if (childEntity != Constants::Entities::InvalidEntityID)
 			{
 				Entity duplicatedChild = DuplicateEntityRecursive(childEntity, newEntity.GetUUID(), false, originalAnimatorUUID, newAnimatorUUID);
-				newRels.Children.push_back(duplicatedChild.GetUUID());
+				duplicatedChildUUIDs.push_back(duplicatedChild.GetUUID());
 			}
+		}
+
+		// Re-fetch after the recursion; see above. `newRels` must not be touched past this point.
+		if (!duplicatedChildUUIDs.empty())
+		{
+			auto& refreshedRelationship = newEntity.GetComponent<RelationshipComponent>();
+			refreshedRelationship.Children.insert(refreshedRelationship.Children.end(),
+				duplicatedChildUUIDs.begin(), duplicatedChildUUIDs.end());
 		}
 
 		return newEntity;

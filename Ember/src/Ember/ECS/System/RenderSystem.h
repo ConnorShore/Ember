@@ -68,6 +68,21 @@ namespace Ember {
 		static bool CompareBackbufferToReference(uint32_t width, uint32_t height, const std::string& refPath,
 			int channelTolerance, double maxDiffFraction);
 
+		// Coarse summary of the current back buffer. Lets a test assert that a frame was actually
+		// drawn - not fully black, not blown out to white, and carrying some tonal variation -
+		// WITHOUT needing a committed reference image. That matters because a golden comparison can
+		// only run once a golden has been minted for the current pipeline, while this catches the
+		// catastrophic cases (nothing rendered, everything saturated) from the very first run.
+		struct BackbufferStats
+		{
+			bool Valid = false;         // false if the read failed (zero-sized viewport)
+			double MeanLuminance = 0.0; // 0..1
+			double BlackFraction = 0.0; // fraction of pixels with RGB all <= 2
+			double WhiteFraction = 0.0; // fraction of pixels with RGB all >= 253
+			double StdDevLuminance = 0.0;
+		};
+		static BackbufferStats ComputeBackbufferStats(uint32_t width, uint32_t height);
+
 	private:
 		void ExecuteRenderPipeline(Scene* scene, bool isRuntime);
 		void InitializeRenderState();

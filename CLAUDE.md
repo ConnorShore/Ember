@@ -32,9 +32,9 @@ asserts still on), **Dist** (final shipping build, no symbols). There is a fourt
 defined in each `premake5.lua` (optimized + profiling + symbols) for performance investigations, but
 it is not currently listed in the top-level `workspace` configurations in `premake5.lua`.
 
-There is no automated test suite (no test framework/target anywhere in the repo). Validate changes by
-building in Visual Studio and exercising the feature in Ember-Forge (or Ember-Runtime for a packaged
-project) — see `docs/Editor/PlaytestingAndExporting.md`.
+Validate changes with the `Ember-Test` suite (see **Testing** below) and, for anything user-facing,
+by exercising the feature in Ember-Forge (or Ember-Runtime for a packaged project) — see
+`docs/Editor/PlaytestingAndExporting.md`.
 
 ### Submodules
 
@@ -45,7 +45,7 @@ empty/untracked directory and premake/MSBuild will fail to find its headers.
 
 ## High-Level Architecture
 
-### The four projects
+### The five projects
 
 | Project | Kind | Depends on | Role |
 |---|---|---|---|
@@ -53,6 +53,7 @@ empty/untracked directory and premake/MSBuild will fail to find its headers.
 | `Ember-Runtime` | — | `Ember` | Minimal player app that loads and runs a packaged project (`RuntimeLayer`). No editor UI. |
 | `Ember-Tools` | — | `Ember` | Offline tooling used by the editor at edit-time — currently glTF import (`GLTFImporter`). |
 | `Ember-Forge` | ConsoleApp | `Ember`, `Ember-Runtime`, `Ember-Tools`, ImGuizmo, imgui-node-editor | The editor. Scene/asset authoring, inspectors, gizmos; embeds the runtime for Play mode. |
+| `Ember-Test` | ConsoleApp | `Ember` | The test suite. Boots a minimal `Application` (window + GL context + default assets + a throwaway `Project`), runs every registered test on frame one, exits 0/1. See Testing below. |
 
 Each project has its own precompiled header (`ebpch`/`efpch`/...) and its own `premake5.lua`; include
 paths reach across projects via relative `%{wks.location}/...` paths rather than a shared public
@@ -166,6 +167,71 @@ describing a Tracy-based design that was **not** what got implemented):
 golden-scene benchmarking, per-system suspect triage for linear per-entity cost) — just substitute
 the actual `EB_PROFILE_SCOPE`/Perfetto stack above wherever it references Tracy or a hypothetical
 `FrameProfiler`/`ScopedTimer` API.
+
+## Testing
+
+`Ember-Test` is the automated suite (213 tests as of this writing). **`Ember-Test/README.md` is the
+reference** — read it before writing tests. It documents the assertion macros, the scene fixtures,
+the golden-image workflow, and a "Traps worth knowing about" list of engine footguns that have
+already produced wrong tests (component references invalidated by attach,
+`static_cast<bool>(entity)` being inverted, the physics camera sensor parked at the world origin,
+and others).
+
+```bat
+scripts\Windows\RunTests.bat                      REM Release, everything
+scripts\Windows\RunTests.bat Debug                REM Debug (auto-sets EMBER_TEST_PERF_SCALE=8)
+scripts\Windows\RunTests.bat --filter=unit        REM one category: unit|integration|visual|performance|stress
+scripts\Windows\RunTests.bat --run=Physics        REM only tests whose Suite::Name contains "Physics"
+```
+
+Exit code is 0 (all passed) or 1 (any failure). `Logs/test-progress.log` records every test with its
+failure messages and notes, flushed **before** each test runs — so if a test hard-crashes the process
+(in Debug an `EB_CORE_ASSERT` is `__debugbreak()`), the last `RUNNING` line names the culprit.
+
+### Run the suite after any large change
+
+After a non-trivial change to the engine — a system, the ECS, serialization, the asset pipeline,
+physics, scripting bindings, rendering — verify it against the suite before calling the work done.
+
+**Claude cannot build this project.** There is no CLI build; it requires Visual Studio. So:
+
+1. Ask the user to rebuild `Ember-Test` (Release, and Debug too if the change could be
+   optimization-sensitive — several bugs here have been Release-only).
+2. Then run `scripts\Windows\RunTests.bat` and read the results.
+3. Report failures honestly, with the assertion text from `Logs/test-progress.log`.
+
+**Never run `RunTests.bat` against a binary that predates your edits** — it will happily pass and
+prove nothing. If you are unsure whether a rebuild has happened since your changes, ask.
+
+When a test fails, work out whether the *test* encodes a wrong assumption or the *engine* has a real
+defect, and say which. Several failures in this suite have been genuine engine bugs (see the
+"Recently fixed (found by Ember-Test)" section of `TODOs.md`); do not "fix" a test by weakening it
+into agreement with buggy behaviour.
+
+### Add tests alongside large changes
+
+When adding a feature or fixing a non-trivial bug, add coverage in the same change:
+
+- **New engine subsystem or system** → a new `Ember-Test/src/Tests/<Area>Tests.cpp`, following the
+  existing per-subsystem layout.
+- **New behaviour in an existing area** → extend that area's file.
+- **Bug fix** → a regression test that fails before the fix and passes after, with a comment naming
+  the defect. `Scene::DuplicateEntityCopiesChildren` and `Scene::AttachmentChildIgnoresParentScale`
+  are the model.
+- **Performance-sensitive work** → a budget in `PerfTests.cpp`. Prefer *relative* assertions (X must
+  be cheaper than Y) over absolute millisecond budgets where possible: they are machine-independent
+  and are the only way to prove an optimisation still engages. `Perf::TransformDirtyFlagActuallySkipsWork`
+  is the model.
+- **Rendering changes** → the frame-sanity and determinism checks in `VisualTests.cpp` need no golden
+  image and catch gross corruption on any machine. Only mint a new golden (`EMBER_TEST_WRITE_GOLDEN=1`)
+  from a build you have verified looks correct.
+
+Adding a test file means re-running `scripts\Windows\GenerateProjects.bat` — premake globs
+`src/**.cpp`, but the generated `.vcxproj` file list is not auto-synced with the filesystem.
+
+Not everything warrants a test: pure editor-UI layout, one-line comment or logging changes, and
+anything needing assets that are not in the repo are reasonable to skip. Say so rather than
+inventing a test that asserts nothing.
 
 ## Conventions
 

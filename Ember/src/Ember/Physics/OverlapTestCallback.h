@@ -51,10 +51,10 @@ namespace Ember {
 					continue;
 
 				reactphysics3d::Collider* collider = collidedBody->getCollider(0);
-				if (collider->getUserData() == nullptr)
+				if (!HasEntityUserData(collider->getUserData()))
 					continue;
 
-				EntityID collidedEntity = static_cast<EntityID>(reinterpret_cast<uintptr_t>(collider->getUserData()));
+				EntityID collidedEntity = DecodeEntityUserData(collider->getUserData());
 				Filter collidedFilter = static_cast<Filter>(collider->getCollisionCategoryBits());
 				m_OverlapData.Hits.push_back({ collidedEntity, collidedFilter });
 			}
