@@ -1,12 +1,12 @@
 Assets:
   - Type: Texture
-    UUID: 2902344313391760329
-    Name: DesertEagle_DesertEagleDiffuse.png
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.png
-  - Type: Texture
     UUID: 3453372035684411145
     Name: RadialGlow
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
+  - Type: Texture
+    UUID: 2902344313391760329
+    Name: DesertEagle_DesertEagleDiffuse.png
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.png
   - Type: Texture
     UUID: 18407398070678811137
     Name: DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
@@ -16,13 +16,13 @@ Assets:
     Name: AssaultRifle_ARMetallic-ARRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.png
   - Type: Texture
-    UUID: 3343954652411117201
-    Name: Crosshair
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.png
-  - Type: Texture
     UUID: 6891481540194389905
     Name: BloodDamageEffect
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/BloodDamageEffect.png
+  - Type: Texture
+    UUID: 3343954652411117201
+    Name: Crosshair
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.png
   - Type: Texture
     UUID: 8231069642100005462
     Name: M4_ARNormal.png
@@ -52,6 +52,10 @@ Assets:
     Name: M4_ARMetallic-ARRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ARMetallic-ARRoughness.png
   - Type: Texture
+    UUID: 15863835653609318779
+    Name: HolographicReticle
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
+  - Type: Texture
     UUID: 13924914312463152501
     Name: M4_ORM_Mat0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_ORM_Mat0.png
@@ -63,10 +67,6 @@ Assets:
     UUID: 12541227798747992686
     Name: DesertEagle_DesertEagleNormal.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleNormal.png
-  - Type: Texture
-    UUID: 15863835653609318779
-    Name: HolographicReticle
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/HolographicReticle.png
   - Type: Texture
     UUID: 9008232455192275898
     Name: AssaultRifle_ARColor.png
@@ -448,9 +448,9 @@ Assets:
     Name: Roboto-Regular
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Fonts/Roboto-Regular.ttf
   - Type: AudioClip
-    UUID: 373352394328918492
-    Name: RoundEnd
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/RoundEnd.mp3
+    UUID: 4006857010690811945
+    Name: Impact_Confirmed
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/Impact_Confirmed.mp3
     LoadMode: Auto
   - Type: AudioClip
     UUID: 10601745296411271244
@@ -468,6 +468,11 @@ Assets:
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/EmptyGun.mp3
     LoadMode: Auto
   - Type: AudioClip
+    UUID: 373352394328918492
+    Name: RoundEnd
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/RoundEnd.mp3
+    LoadMode: Auto
+  - Type: AudioClip
     UUID: 4535810649324835630
     Name: AmmoPickupSFX
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/AmmoPickupSFX.mp3
@@ -481,11 +486,6 @@ Assets:
     UUID: 3462192619930688989
     Name: Hitmarker
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/Hitmarker.mp3
-    LoadMode: Auto
-  - Type: AudioClip
-    UUID: 4006857010690811945
-    Name: Impact_Confirmed
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Audio/Impact_Confirmed.mp3
     LoadMode: Auto
   - Type: AudioClip
     UUID: 5305303780640533429

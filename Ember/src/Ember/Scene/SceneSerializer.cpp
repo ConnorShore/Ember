@@ -1630,6 +1630,10 @@ namespace Ember {
 		fout << tree;
 		fout.close();
 
+		// The file now matches what's in memory, so the scene counts as loaded (this is how a
+		// brand-new scene becomes loaded without ever being read back).
+		m_Scene->SetLoaded(true);
+
 		return true;
 	}
 
@@ -1784,6 +1788,7 @@ namespace Ember {
 			}
 		}
 
+		m_Scene->SetLoaded(true);
 		return true;
 	}
 

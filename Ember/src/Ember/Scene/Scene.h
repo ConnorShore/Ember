@@ -115,6 +115,12 @@ namespace Ember {
 
 		inline bool IsRuntime() const { return m_IsRuntime; }
 
+		// A Scene registered with the AssetManager is only a placeholder (UUID/name/path) until its
+		// file is actually read, so anything that saves every scene must skip the unloaded ones or
+		// it will overwrite their files with an empty scene.
+		inline bool IsLoaded() const { return m_IsLoaded; }
+		inline void SetLoaded(bool loaded) { m_IsLoaded = loaded; }
+
 		void ResetAllPhysicsState();
 
 		inline static AssetType GetStaticType() { return AssetType::Scene; }
@@ -138,6 +144,7 @@ namespace Ember {
 		std::vector<Entity> m_PendingRemovals;
 
 		bool m_IsRuntime = false;
+		bool m_IsLoaded = false;
 	};
 
 }

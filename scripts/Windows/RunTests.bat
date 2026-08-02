@@ -17,21 +17,29 @@ REM ---------------------------------------------------------------------------
 
 setlocal
 
-set CONFIG=Release
-set ARGS=
+REM Resolve the workspace root before anything else touches the arguments.
+set "ROOT=%~dp0..\.."
 
-:parse
-if "%~1"=="" goto run
-if /i "%~1"=="Debug"   ( set CONFIG=Debug   & shift & goto parse )
-if /i "%~1"=="Release" ( set CONFIG=Release & shift & goto parse )
-if /i "%~1"=="Dist"    ( set CONFIG=Dist    & shift & goto parse )
-if /i "%~1"=="Profile" ( set CONFIG=Profile & shift & goto parse )
-set ARGS=%ARGS% %1
-shift
-goto parse
+REM Only the first argument can be a configuration; everything else is passed straight through.
+REM The pass-through set comes from %* rather than being rebuilt token by token, because cmd splits
+REM batch arguments on "=" as well as on spaces - rebuilding turns --run=Physics into --run Physics,
+REM which the executable does not recognise and silently ignores.
+set CONFIG=Release
+set "ARGS=%*"
+set CONFIGGIVEN=
+
+if /i "%~1"=="Debug"   set CONFIGGIVEN=1
+if /i "%~1"=="Release" set CONFIGGIVEN=1
+if /i "%~1"=="Dist"    set CONFIGGIVEN=1
+if /i "%~1"=="Profile" set CONFIGGIVEN=1
+
+if defined CONFIGGIVEN (
+    set "CONFIG=%~1"
+    call set "ARGS=%%ARGS:*%~1=%%"
+)
 
 :run
-pushd "%~dp0..\.."
+pushd "%ROOT%"
 
 set EXE=bin\%CONFIG%-windows-x86_64\Ember-Test\Ember-Test.exe
 
@@ -44,6 +52,7 @@ if not exist "%EXE%" (
     echo.
     popd
     endlocal
+    pause
     exit /b 2
 )
 
@@ -52,10 +61,10 @@ REM Without this the perf tests report the configuration difference rather than 
 if /i "%CONFIG%"=="Debug" if "%EMBER_TEST_PERF_SCALE%"=="" set EMBER_TEST_PERF_SCALE=8
 
 echo.
-echo [Ember-Test] Running %CONFIG% build...%ARGS%
+echo [Ember-Test] Running %CONFIG% build... %ARGS%
 echo.
 
-"%EXE%"%ARGS%
+"%EXE%" %ARGS%
 set RESULT=%ERRORLEVEL%
 
 echo.
@@ -69,4 +78,6 @@ if "%RESULT%"=="0" (
 echo.
 
 popd
-endlocal & exit /b %RESULT%
+endlocal
+pause
+exit /b %RESULT%

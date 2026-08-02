@@ -1756,11 +1756,13 @@ namespace Ember {
 
 		auto& assetManager = Application::Instance().GetAssetManager();
 
-		// Serialize scenes
+		// Serialize scenes. Every scene in the project is registered with the AssetManager, but only
+		// the ones that have been opened hold entities — writing out the untouched placeholders would
+		// replace their files with an empty scene.
 		auto scenes = assetManager.GetAssetsOfType<Scene>();
 		for (auto& scene : scenes)
 		{
-			if (!scene->IsEngineAsset() && !scene->GetFilePath().empty())
+			if (!scene->IsEngineAsset() && !scene->GetFilePath().empty() && scene->IsLoaded())
 			{
 				SerializeScene(scene, scene->GetFilePath());
 			}

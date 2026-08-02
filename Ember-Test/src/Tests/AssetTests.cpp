@@ -460,6 +460,53 @@ EB_TEST_CASE(Serialization, DeserializeMissingFileFailsCleanly, Integration)
 	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
 }
 
+EB_TEST_CASE(Serialization, SavingEverySceneSkipsUnopenedOnes, Integration)
+{
+	// Regression: EditorLayer::SaveProject serialized every Scene in the AssetManager. A scene that
+	// has not been opened is registered as an empty placeholder (AssetManager::Load<Scene> reads no
+	// entities), so saving the project overwrote every unopened scene file with an empty scene.
+	const std::string path = std::filesystem::absolute(TempFile("scene_unopened.ebs")).string();
+	Ember::Test::RemoveTempFile(path);
+
+	{
+		SceneFixture authored("UnopenedScene");
+		authored->AddEntity("KeepMe");
+		authored->AddEntity("KeepMeToo");
+
+		SceneSerializer serializer(authored.Shared());
+		EB_CHECK(serializer.Serialize(path));
+		EB_EXPECT_MSG(authored->IsLoaded(), "a scene whose contents were just written should count as loaded");
+	}
+
+	// This is what opening a project does for every scene named in the asset registry.
+	auto placeholder = Assets().Load<Scene>(path, false);
+	EB_CHECK(placeholder != nullptr);
+	EB_EXPECT_MSG(!placeholder->IsLoaded(), "a registered but unopened scene must not report as loaded");
+	EB_EXPECT_EQ(placeholder->GetAllEntities().size(), (size_t)0);
+
+	// The save-every-scene loop, with the guard SaveProject applies.
+	for (auto& scene : Assets().GetAssetsOfType<Scene>())
+	{
+		if (!scene->IsEngineAsset() && !scene->GetFilePath().empty() && scene->IsLoaded())
+			SceneSerializer(scene).Serialize(scene->GetFilePath());
+	}
+
+	SceneFixture reloaded("Reloaded");
+	SceneSerializer reloadSerializer(reloaded.Shared());
+	EB_CHECK(reloadSerializer.Deserialize(path));
+	EB_EXPECT_MSG(reloaded->GetEntity("KeepMe").IsValid(), "saving the project emptied an unopened scene file");
+	EB_EXPECT_EQ(reloaded->GetAllEntities().size(), (size_t)2);
+
+	// Reading the contents in is what makes the placeholder safe to write back out.
+	SceneSerializer placeholderSerializer(placeholder);
+	EB_CHECK(placeholderSerializer.Deserialize(path));
+	EB_EXPECT_MSG(placeholder->IsLoaded(), "deserializing a scene must mark it loaded");
+	EB_EXPECT_EQ(placeholder->GetAllEntities().size(), (size_t)2);
+
+	Assets().RemoveAsset(placeholder->GetUUID());	// RemoveAsset deletes the file too
+	Ember::Test::RemoveTempFile(path);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Prefabs
 //////////////////////////////////////////////////////////////////////////

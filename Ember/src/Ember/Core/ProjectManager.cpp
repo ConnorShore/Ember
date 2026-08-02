@@ -80,7 +80,21 @@ namespace Ember {
 			});
 
 			CookAssets<Scene>(assetManager, [](const SharedPtr<Scene>& sceneAsset) {
-				SceneSerializer(sceneAsset).SerializeCooked(sceneAsset->GetFilePath());
+				// A scene that was never opened is still an empty placeholder in memory, so cook it
+				// straight from its source file rather than serializing nothing over the top of it.
+				if (sceneAsset->IsLoaded())
+				{
+					SceneSerializer(sceneAsset).SerializeCooked(sceneAsset->GetFilePath());
+					return;
+				}
+
+				auto sourcePath = std::filesystem::path(sceneAsset->GetFilePath());
+				auto cookedPath = std::filesystem::path(sourcePath).replace_extension(".bin");
+
+				std::error_code ec;
+				std::filesystem::copy_file(sourcePath, cookedPath, std::filesystem::copy_options::overwrite_existing, ec);
+				if (ec)
+					EB_CORE_ERROR("Failed to cook unopened scene '{}': {}", sceneAsset->GetName(), ec.message());
 				});
 		}
 	}

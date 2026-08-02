@@ -179,6 +179,8 @@ namespace Ember {
 	SharedPtr<Scene> Scene::CopyScene(SharedPtr<Scene> other)
 	{
 		auto newScene = SharedPtr<Scene>::Create(other->GetName(), other->GetFilePath());
+		newScene->SetLoaded(other->IsLoaded());
+
 		auto entities = other->GetAllEntities();
 		for (Entity srcEntity : entities)
 		{
