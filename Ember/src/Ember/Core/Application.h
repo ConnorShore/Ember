@@ -68,6 +68,7 @@ namespace Ember {
 		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
 		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
 		inline SceneManager& GetSceneManager() { return *m_SceneManager; }
+		inline SaveGameManager& GetSaveGameManager() { return *m_SaveGameManager; }
 		inline const SaveGameManager& GetSaveGameManager() const { return *m_SaveGameManager; }
 
 		inline SystemManager& GetSystemManager() { return *m_SystemManager; }

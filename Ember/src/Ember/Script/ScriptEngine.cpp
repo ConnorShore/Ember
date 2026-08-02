@@ -57,6 +57,8 @@ namespace Ember {
 		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
 		BindCore(*s_LuaState);
 		BindMath(*s_LuaState);
+		// GameData too, so a script that opens a save file at module scope still parses in the editor
+		BindSaveGame(*s_LuaState);
 
 		EB_CORE_INFO("ScriptEngine Initialized (Editor State)");
     }
@@ -121,6 +123,7 @@ namespace Ember {
 		// Bind core/math helpers so scripts using UUID/ref helpers or Vector3f defaults can be parsed
 		BindCore(*s_LuaState);
 		BindMath(*s_LuaState);
+		BindSaveGame(*s_LuaState);
 	}
 
     sol::state& ScriptEngine::GetState()

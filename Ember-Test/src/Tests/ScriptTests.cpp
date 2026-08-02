@@ -545,3 +545,83 @@ EB_TEST_CASE(Script, MissingScriptHandleIsIgnored, Integration)
 
 	EB_EXPECT_FALSE(entity.GetComponent<ScriptComponent>().Initialized);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Save game binding
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Script, SaveFileGettersBindEveryArity, Integration)
+{
+	// Regression: sol2 does not honour C++ default arguments, so every arity has to be bound by
+	// hand. When one is missed the shorter call dies with "expected string, received no value",
+	// and a getter without a fallback is the form gameplay code reaches for most.
+	SceneFixture scene("ScriptSaveGameArityScene");
+	ScriptEngine::BindAPI(scene.Ptr());
+
+	sol::state& lua = ScriptEngine::GetState();
+	const sol::protected_function_result result = lua.script(R"(
+		local file = GameData:Open("EmberTestArity")
+		file:Clear()
+
+		file:SetInt("Round", 4242)
+		file:SetFloat("Ratio", 0.5)
+		file:SetBool("Flag", true)
+		file:SetString("Name", "Ember")
+
+		-- Every getter called WITHOUT the trailing default argument.
+		return file:GetInt("Round"), file:GetFloat("Ratio"), file:GetBool("Flag"), file:GetString("Name")
+	)", sol::script_pass_on_error);
+
+	EB_CHECK_MSG(result.valid(), "a save file getter rejected its shortest arity");
+
+	EB_EXPECT_MSG(result.get<int>(0) == 4242, "GetInt(key) did not return the stored value");
+	EB_EXPECT_NEAR(result.get<float>(1), 0.5f, 1e-6);
+	EB_EXPECT_MSG(result.get<bool>(2), "GetBool(key) did not return the stored value");
+	EB_EXPECT_EQ(result.get<std::string>(3), std::string("Ember"));
+}
+
+EB_TEST_CASE(Script, GameDataHandlesAddressSeparateFiles, Integration)
+{
+	// The point of the handle API: a script can keep a settings file and a score file open at once
+	// and write the same key into both without either clobbering the other.
+	SceneFixture scene("ScriptSaveGameSlotsScene");
+	ScriptEngine::BindAPI(scene.Ptr());
+
+	sol::state& lua = ScriptEngine::GetState();
+	const sol::protected_function_result result = lua.script(R"(
+		GameData:DeleteFromDisk("EmberTestScores")
+		GameData:DeleteFromDisk("EmberTestSettings")
+		GameData:CloseAll()
+
+		local scores   = GameData:Open("EmberTestScores")
+		local settings = GameData:Open("EmberTestSettings")
+
+		scores:SetInt("Value", 10)
+		settings:SetInt("Value", 20)
+		settings:SetBool("Muted", true)
+
+		local saved = GameData:SaveAll()
+		GameData:CloseAll()
+
+		-- Handles cached before CloseAll must report themselves dead rather than resolve.
+		local staleIsValid = scores:IsValid()
+
+		local reopenedScores   = GameData:Open("EmberTestScores")
+		local reopenedSettings = GameData:Open("EmberTestSettings")
+
+		return saved, staleIsValid,
+			reopenedScores:GetInt("Value", -1),
+			reopenedSettings:GetInt("Value", -1),
+			reopenedSettings:GetBool("Muted", false)
+	)", sol::script_pass_on_error);
+
+	EB_CHECK_MSG(result.valid(), "the GameData handle API raised a Lua error");
+
+	if (!result.get<bool>(0))
+		EB_SKIP("SaveGameManager could not use the OS save directory");
+
+	EB_EXPECT_MSG(result.get<bool>(1) == false, "a handle stayed valid after its file was closed");
+	EB_EXPECT_MSG(result.get<int>(2) == 10, "the scores file did not round-trip its own value");
+	EB_EXPECT_MSG(result.get<int>(3) == 20, "the settings file did not round-trip its own value");
+	EB_EXPECT_MSG(result.get<bool>(4), "the settings file lost its bool value");
+}

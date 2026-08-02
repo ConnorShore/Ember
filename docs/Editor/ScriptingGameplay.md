@@ -99,11 +99,22 @@ Use the asset name shown in the Asset Manager, without the file extension.
 
 ## Saving Game Data
 
-`GameData` is a persistent key/value store for simple progress and settings.
+`GameData:Open(name)` returns a persistent key/value file for progress or settings. Any number of
+files can be open at once, each with its own keys, and the value `Open` returns is safe to keep on
+`self`:
 
 ```lua
-GameData:SetInt("Score", GameData:GetInt("Score") + 1)
-GameData:Save()
+function Player:OnCreate(entity)
+    self.progress = GameData:Open("Progress")
+    self.settings = GameData:Open("Settings")
+
+    self.volume = self.settings:GetFloat("Volume", 1.0)
+end
+
+function Player:OnCheckpoint()
+    self.progress:SetInt("Checkpoint", self.progress:GetInt("Checkpoint") + 1)
+    self.progress:Save()
+end
 ```
 
-Use `GameData:Load()` when you need to restore saved values at runtime.
+See [Save Game](../ScriptingAPI.md#save-game) for the full list of methods.

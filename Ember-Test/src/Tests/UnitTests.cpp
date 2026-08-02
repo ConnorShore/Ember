@@ -6,6 +6,8 @@
 #include "TestFramework.h"
 #include "TestHelpers.h"
 
+#include <filesystem>
+#include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -496,24 +498,168 @@ EB_TEST_CASE(Core, SaveGameRoundTrip, Unit)
 {
 	// SaveGameManager writes into %LOCALAPPDATA%\<Project>\SavedGames. A silent regression here
 	// loses player progress, which is exactly the class of bug nobody notices until shipping.
+	const std::string fileName = "EmberTest_SaveRoundTrip";
+
 	SaveGameManager saves;
-	saves.SetInt("Level", 7);
-	saves.SetFloat("Health", 42.5f);
-	saves.SetString("PlayerName", "Ember");
+	saves.DeleteFromDisk(fileName);
+
+	SaveGameFile& file = saves.Open(fileName).Resolve();
+	file.SetInt("Level", 7);
+	file.SetFloat("Health", 42.5f);
+	file.SetBool("Hardcore", true);
+	file.SetString("PlayerName", "Ember");
 
 	// Defaults are returned for keys that were never set.
-	EB_EXPECT_EQ(saves.GetInt("Missing", -1), -1);
-	EB_EXPECT_NEAR(saves.GetFloat("Missing", 1.5f), 1.5f, 1e-6);
-	EB_EXPECT_EQ(saves.GetString("Missing", "fallback"), std::string("fallback"));
+	EB_EXPECT_EQ(file.GetInt("Missing", -1), -1);
+	EB_EXPECT_NEAR(file.GetFloat("Missing", 1.5f), 1.5f, 1e-6);
+	EB_EXPECT_FALSE(file.GetBool("Missing", false));
+	EB_EXPECT_EQ(file.GetString("Missing", "fallback"), std::string("fallback"));
 
-	const std::string fileName = "EmberTest_SaveRoundTrip.sav";
-	if (!saves.SaveToFile(fileName))
+	if (!saves.Save(fileName))
 		EB_SKIP("SaveGameManager could not write to the OS save directory");
 
 	SaveGameManager loaded;
-	EB_CHECK_MSG(loaded.LoadFromFile(fileName), "failed to read back the save file just written");
+	SaveGameFile& reread = loaded.Open(fileName).Resolve();
 
-	EB_EXPECT_EQ(loaded.GetInt("Level", -1), 7);
-	EB_EXPECT_NEAR(loaded.GetFloat("Health", -1.0f), 42.5f, 1e-3);
-	EB_EXPECT_EQ(loaded.GetString("PlayerName", ""), std::string("Ember"));
+	EB_EXPECT_EQ(reread.GetInt("Level", -1), 7);
+	EB_EXPECT_NEAR(reread.GetFloat("Health", -1.0f), 42.5f, 1e-3);
+	EB_EXPECT(reread.GetBool("Hardcore", false));
+	EB_EXPECT_EQ(reread.GetString("PlayerName", ""), std::string("Ember"));
+}
+
+EB_TEST_CASE(Core, SaveGameMultipleFilesAreIndependent, Unit)
+{
+	// Before multi-file support every LoadFromFile cleared the one shared bag, so a game could not
+	// keep a settings file and a high-score file alive at the same time.
+	SaveGameManager saves;
+	saves.DeleteFromDisk("EmberTest_Scores");
+	saves.DeleteFromDisk("EmberTest_Settings");
+
+	SaveFileHandle scores = saves.Open("EmberTest_Scores");
+	SaveFileHandle settings = saves.Open("EmberTest_Settings");
+
+	// Deliberately the same key in both files.
+	scores.Resolve().SetInt("Value", 10);
+	settings.Resolve().SetInt("Value", 20);
+	settings.Resolve().SetBool("Muted", true);
+	settings.Resolve().SetString("Language", "en");
+
+	EB_EXPECT_EQ(scores.Resolve().GetInt("Value", -1), 10);
+	EB_EXPECT_EQ(settings.Resolve().GetInt("Value", -1), 20);
+
+	if (!saves.SaveAll())
+		EB_SKIP("SaveGameManager could not write to the OS save directory");
+
+	SaveGameManager reloaded;
+	EB_EXPECT_EQ(reloaded.Open("EmberTest_Scores").Resolve().GetInt("Value", -1), 10);
+	EB_EXPECT_EQ(reloaded.Open("EmberTest_Settings").Resolve().GetInt("Value", -1), 20);
+	EB_EXPECT(reloaded.Open("EmberTest_Settings").Resolve().GetBool("Muted", false));
+	EB_EXPECT_EQ(reloaded.Open("EmberTest_Settings").Resolve().GetString("Language", ""), std::string("en"));
+
+	// The scores file must not have picked up anything from the settings file.
+	EB_EXPECT_FALSE(reloaded.Open("EmberTest_Scores").Resolve().Has("Muted"));
+}
+
+EB_TEST_CASE(Core, SaveGameHandleTracksSlotLifetime, Unit)
+{
+	// Handles store a slot index plus a generation rather than a pointer, so opening more files
+	// cannot invalidate them but Close() must.
+	SaveGameManager saves;
+	saves.DeleteFromDisk("EmberTest_HandleLifetime");
+
+	SaveFileHandle handle = saves.Open("EmberTest_HandleLifetime");
+	handle.Resolve().SetInt("Round", 3);
+
+	// Opening other files reallocates the slot vector; the handle has to survive that.
+	saves.Open("EmberTest_HandleLifetimeOther1");
+	saves.Open("EmberTest_HandleLifetimeOther2");
+	EB_CHECK_MSG(handle.IsValid(), "handle went stale after other files were opened");
+	EB_EXPECT_EQ(handle.Resolve().GetInt("Round", -1), 3);
+
+	if (!saves.Save("EmberTest_HandleLifetime"))
+		EB_SKIP("SaveGameManager could not write to the OS save directory");
+
+	// Reload discards the in-memory edit but keeps the handle pointing at the same slot.
+	handle.Resolve().SetInt("Round", 99);
+	saves.Reload("EmberTest_HandleLifetime");
+	EB_CHECK_MSG(handle.IsValid(), "handle went stale across Reload");
+	EB_EXPECT_EQ(handle.Resolve().GetInt("Round", -1), 3);
+
+	saves.Close("EmberTest_HandleLifetime");
+	EB_EXPECT_FALSE(handle.IsValid());
+
+	// Reopening the same name reuses the slot index, so the generation bump is the only thing
+	// keeping the old handle from resolving to the new file.
+	SaveFileHandle reopened = saves.Open("EmberTest_HandleLifetime");
+	EB_EXPECT(reopened.IsValid());
+	EB_EXPECT_FALSE(handle.IsValid());
+}
+
+EB_TEST_CASE(Core, SaveGameLoadsLegacyFormat, Unit)
+{
+	// Save files written before the versioned format used three per-type sequences under SaveData.
+	// Players already have those on disk, so the reader has to keep understanding them.
+	SaveGameManager saves;
+	const std::filesystem::path saveDir = saves.GetOSSaveDirectory();
+	if (saveDir.empty())
+		EB_SKIP("SaveGameManager could not resolve the OS save directory");
+
+	const std::filesystem::path filepath = saveDir / "EmberTest_LegacyFormat.sav";
+	{
+		std::ofstream fout(filepath);
+		if (!fout.is_open())
+			EB_SKIP("SaveGameManager could not write to the OS save directory");
+
+		fout <<
+			"SaveData:\n"
+			"  IntData:\n"
+			"    - Key: Level\n"
+			"      Value: 7\n"
+			"  FloatData:\n"
+			"    - Key: Health\n"
+			"      Value: 42.5\n"
+			"  StringData:\n"
+			"    - Key: PlayerName\n"
+			"      Value: Ember\n";
+	}
+
+	SaveFileHandle handle = saves.Open("EmberTest_LegacyFormat");
+	EB_EXPECT_EQ(handle.Resolve().GetInt("Level", -1), 7);
+	EB_EXPECT_NEAR(handle.Resolve().GetFloat("Health", -1.0f), 42.5f, 1e-3);
+	EB_EXPECT_EQ(handle.Resolve().GetString("PlayerName", ""), std::string("Ember"));
+
+	// Saving migrates the file to the versioned format without losing anything.
+	EB_CHECK_MSG(saves.Save("EmberTest_LegacyFormat"), "failed to rewrite the migrated save file");
+
+	SaveGameManager reloaded;
+	SaveFileHandle migrated = reloaded.Open("EmberTest_LegacyFormat");
+	EB_EXPECT_EQ(migrated.Resolve().GetInt("Level", -1), 7);
+	EB_EXPECT_EQ(migrated.Resolve().GetString("PlayerName", ""), std::string("Ember"));
+}
+
+EB_TEST_CASE(Core, SaveGameValuesCoerceBetweenNumericTypes, Unit)
+{
+	// YAML does not reliably preserve 1 vs 1.0, so a value written as one numeric type has to be
+	// readable as the other. Silently returning the caller's default would look like lost progress.
+	SaveGameFile file("EmberTest_Coercion");
+
+	file.SetFloat("Ratio", 2.75f);
+	EB_EXPECT_EQ(file.GetInt("Ratio", -1), 2);
+
+	file.SetInt("Count", 5);
+	EB_EXPECT_NEAR(file.GetFloat("Count", -1.0f), 5.0f, 1e-6);
+
+	file.SetBool("Enabled", true);
+	EB_EXPECT_EQ(file.GetInt("Enabled", -1), 1);
+	EB_EXPECT(file.GetBool("Enabled", false));
+
+	// Strings never coerce into numbers, and a missing key still yields the default.
+	file.SetString("Name", "Ember");
+	EB_EXPECT_EQ(file.GetInt("Name", -1), -1);
+	EB_EXPECT_EQ(file.GetString("Ratio", "fallback"), std::string("fallback"));
+	EB_EXPECT_EQ(file.GetInt("Missing", -7), -7);
+
+	EB_EXPECT(file.Remove("Name"));
+	EB_EXPECT_FALSE(file.Has("Name"));
+	EB_EXPECT_FALSE(file.Remove("Name"));
 }

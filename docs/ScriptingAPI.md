@@ -840,19 +840,144 @@ Particles.Burst(emitter, entity:GetComponent("TransformComponent").WorldPosition
 
 ## Save Game
 
-A persistent key/value store, accessed through the global `GameData`:
+Persistent key/value storage, accessed through the global `GameData`. Each **save file** is an
+independent set of keys stored as one `.sav` under `%LOCALAPPDATA%\<ProjectName>\SavedGames`, and any
+number of them can be open at the same time — a high-score table and a settings file never interfere.
+
+`GameData` has no value accessors of its own. Every read and write goes through a file, so it is
+always explicit which file a value belongs to.
+
+### Opening a file
+
+`GameData:Open(name)` returns the save file, reading `<name>.sav` from disk the first time it is
+opened and starting empty if there is no such file. The `.sav` is optional — `Open("Settings")` and
+`Open("Settings.sav")` are the same file.
 
 ```lua
-GameData:SetInt("Score", 1500)
-GameData:SetFloat("Volume", 0.8)
-GameData:SetString("PlayerName", "Hero")
+local settings = GameData:Open("Settings")
+local scores   = GameData:Open("HighScores")
+```
 
-local score = GameData:GetInt("Score")
-local vol   = GameData:GetFloat("Volume")
-local name  = GameData:GetString("PlayerName")
+The returned value is safe to cache. Open once in `OnCreate`, store it on `self`, and reuse it every
+frame — that is cheaper than re-opening by name, and the value stays usable as other files are
+opened and across `GameData:Reload`.
 
-GameData:Save()      -- writes to disk
-GameData:Load()      -- reads from disk
+### Reading and writing values
+
+A file holds four value types: **int**, **float**, **bool**, and **string**.
+
+```lua
+settings:SetFloat("Volume", 0.8)
+settings:SetBool("Subtitles", true)
+settings:SetString("Language", "en")
+scores:SetInt("Best", 9001)
+
+local volume = settings:GetFloat("Volume", 1.0)   -- 1.0 if "Volume" was never set
+local best   = scores:GetInt("Best")              -- default is 0 / 0.0 / false / "" if omitted
+```
+
+The getters take an optional fallback returned when the key is missing. A key holds one value
+regardless of type — `SetInt("X", 1)` followed by `SetString("X", "a")` leaves a string.
+
+Reading a key as a different type than it was written converts where that is meaningful:
+
+| Stored as | `GetInt` | `GetFloat` | `GetBool` | `GetString` |
+|---|---|---|---|---|
+| Int | value | value | non-zero → `true` | fallback |
+| Float | truncated | value | fallback | fallback |
+| Bool | `1` / `0` | fallback | value | fallback |
+| String | fallback | fallback | fallback | value |
+
+Int and float convert freely because YAML does not reliably distinguish `1` from `1.0` — a value
+written with `SetFloat` still reads correctly through `GetInt` after a round trip through disk.
+
+Full method list on a save file:
+
+| Method | Returns | Notes |
+|---|---|---|
+| `SetInt` / `SetFloat` / `SetBool` / `SetString` `(key, value)` | — | |
+| `GetInt` / `GetFloat` / `GetBool` / `GetString` `(key [, fallback])` | value | `fallback` when the key is missing |
+| `Has(key)` | bool | |
+| `Remove(key)` | bool | `true` if the key existed |
+| `Clear()` | — | drops every key, leaves the file open |
+| `Count()` | int | number of keys held |
+| `GetName()` | string | the file's name, without the `.sav` |
+| `IsValid()` | bool | `false` once the file has been closed |
+| `Save()` | bool | writes this file to disk |
+
+### Saving
+
+Nothing reaches disk until you ask for it. Save the one file you touched, or every open file at once:
+
+```lua
+settings:Save()      -- true on success
+GameData:SaveAll()   -- true only if EVERY open file wrote successfully
+```
+
+### Managing files
+
+| Method | Returns | Notes |
+|---|---|---|
+| `GameData:Open(name)` | save file | opens it, reading from disk on first use |
+| `GameData:Reload(name)` | save file | re-reads from disk, discarding unsaved changes; empties the file if there is nothing on disk |
+| `GameData:SaveAll()` | bool | writes every open file |
+| `GameData:Close(name)` | — | drops it from memory **without** saving |
+| `GameData:CloseAll()` | — | |
+| `GameData:IsOpen(name)` | bool | is it currently in memory |
+| `GameData:ExistsOnDisk(name)` | bool | does `<name>.sav` exist |
+| `GameData:DeleteFromDisk(name)` | bool | deletes the file; does **not** close the in-memory copy |
+
+To wipe a save completely, close it as well as deleting it — otherwise the next `Open` hands back the
+copy still held in memory:
+
+```lua
+GameData:DeleteFromDisk("Progress")
+GameData:Close("Progress")
+```
+
+### Lifetime
+
+Open files live as long as the game process, **not** the scene. Loading another scene keeps them
+open with their values intact, which is how one scene hands progress to the next without touching
+disk. In the editor they also survive leaving and re-entering Play mode, so a second Play session
+sees whatever the first left in memory rather than a fresh read — use `GameData:Reload(name)` when
+you specifically need what is on disk.
+
+Closing a file invalidates every value `Open` returned for it. Calling a method on a closed file
+raises a Lua error, so use `IsValid()` if your own code closed it:
+
+```lua
+GameData:Close("Settings")
+settings:IsValid()          -- false
+settings:GetFloat("Volume") -- error: file is no longer open
+```
+
+### Example
+
+Two files, opened once and cached, with progress written as it changes and saved at a checkpoint:
+
+```lua
+local Player = {}
+
+function Player:OnCreate(entity)
+    self.progress = GameData:Open("Progress")
+    self.settings = GameData:Open("Settings")
+
+    self.volume = self.settings:GetFloat("Volume", 1.0)
+    self.deaths = self.progress:GetInt("Deaths", 0)
+end
+
+function Player:OnDeath()
+    self.deaths = self.deaths + 1
+    self.progress:SetInt("Deaths", self.deaths)
+end
+
+function Player:OnCheckpoint(checkpointName)
+    self.progress:SetString("Checkpoint", checkpointName)
+    self.progress:Save()
+end
+
+return Player
 ```
 
 ---
@@ -899,6 +1024,7 @@ Player.JumpBoost = 1.0
 function Player:OnCreate(entity)
     self.controller = entity:GetComponent("CharacterControllerComponent")
     self.transform  = entity:GetComponent("TransformComponent")
+    self.progress   = GameData:Open("Progress")
 end
 
 function Player:OnUpdate(entity, delta)
@@ -925,7 +1051,7 @@ end
 function Player:OnOverlapTriggerEnter(entity, other)
     if other:GetName() == "Coin" then
         Scene.RemoveEntity(other)
-        GameData:SetInt("Score", GameData:GetInt("Score") + 1)
+        self.progress:SetInt("Score", self.progress:GetInt("Score") + 1)
     end
 end
 
