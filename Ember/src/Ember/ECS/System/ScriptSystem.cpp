@@ -28,7 +28,7 @@ namespace Ember {
 		EB_PROFILE_FUNCTION();
 
 		// Prevents scripts like mouse move from updating if game is paused
-		if (delta.Seconds() <= 0.0f)
+		if (delta.IsZero())
 			return;
 
 		ScriptEngine::UpdateTimeouts(delta);

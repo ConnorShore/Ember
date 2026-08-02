@@ -280,10 +280,6 @@ Assets:
     Name: Zombie_WorldWar_zombie_material
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_WorldWar_zombie_material.ebmat
   - Type: Mesh
-    UUID: 6509623147954976681
-    Name: Zombie_Mesh0_WorldWar_zombie_Prim0
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Mesh0_WorldWar_zombie_Prim0.ebmesh
-  - Type: Mesh
     UUID: 5610316799824380095
     Name: DesertEagle_Mesh2_Cube.007_Prim1
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh2_Cube.007_Prim1.ebmesh
@@ -291,6 +287,10 @@ Assets:
     UUID: 5985712711574680378
     Name: DesertEagle_Mesh1_Cube_Prim0
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Mesh1_Cube_Prim0.ebmesh
+  - Type: Mesh
+    UUID: 6509623147954976681
+    Name: Zombie_Mesh0_WorldWar_zombie_Prim0
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Mesh0_WorldWar_zombie_Prim0.ebmesh
   - Type: Mesh
     UUID: 12443871631894294282
     Name: AmmoPowerup_Cylinder.001_Prim0
@@ -340,10 +340,6 @@ Assets:
     Name: DEagleSlideMask
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/SkeletonMasks/DEagleSlideMask.ebmask
   - Type: Animation
-    UUID: 13210029773156912041
-    Name: DesertEagle_Reload
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Reload.ebanim
-  - Type: Animation
     UUID: 6612716991326083235
     Name: M4_Reload
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4_Anim/M4_Reload.ebanim
@@ -351,6 +347,10 @@ Assets:
     UUID: 9936688561769825438
     Name: Zombie_Zombie Idle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/Zombie/Zombie_Resources/Zombie_Zombie Idle.ebanim
+  - Type: Animation
+    UUID: 13210029773156912041
+    Name: DesertEagle_Reload
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_Reload.ebanim
   - Type: Animation
     UUID: 10171445062614256115
     Name: Zombie_Zombie Attack

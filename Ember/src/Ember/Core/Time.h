@@ -18,6 +18,7 @@ namespace Ember {
 
 		float Seconds() const { return m_Time; }
 		float Milliseconds() const { return m_Time * 1000.0f; }
+		bool IsZero() const { return m_Time == 0.0f; }
 
 		operator float() const { return m_Time; }
 		float operator+=(const TimeStep& other) { m_Time += other.m_Time; return m_Time; }

@@ -249,6 +249,9 @@ namespace Ember {
 	{
 		EB_PROFILE_FUNCTION();
 
+		if (delta.IsZero())
+			return;
+
 		UpdateBoneDrivenEntities(scene);
 
 		auto& registry = scene->GetRegistry();
