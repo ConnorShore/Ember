@@ -168,6 +168,7 @@ namespace Ember {
 		math.set_function("Asin", &Math::Asin);
 		math.set_function("Acos", &Math::Acos);
 		math.set_function("Atan2", &Math::Atan2);
+		math.set_function("Abs", &Math::Abs);
 
 		math.set_function("Radians", &Math::Radians);
 		math.set_function("Degrees", &Math::Degrees);

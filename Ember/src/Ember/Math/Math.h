@@ -443,6 +443,11 @@ namespace Ember {
 			return glm::asin(x);
 		}
 
+		static inline float Abs(float x)
+		{
+			return glm::abs(x);
+		}
+
 	};
 
 }
