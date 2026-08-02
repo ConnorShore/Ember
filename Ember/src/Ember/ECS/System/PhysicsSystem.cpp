@@ -425,6 +425,13 @@ namespace Ember {
 		const float timeStep = 1.0f / m_Settings.UpdateRate;
 		m_TimeAcumulator += delta;
 
+		// Before stepping, so the simulation (and everything reading physics afterwards) sees colliders
+		// wherever their entity has moved to — bone-driven hitboxes, scripted child colliders, etc.
+		{
+			EB_PROFILE_SCOPE("PhysicsSystem::SyncChildColliderTransforms");
+			SyncChildColliderTransforms(scene);
+		}
+
 		// Step the physics simulation
 		{
 			EB_PROFILE_SCOPE("PhysicsSystem::Simulate");
@@ -1420,6 +1427,68 @@ namespace Ember {
 				));
 			}
 		}
+	}
+
+	// A collider is attached to its rigid body with a fixed local transform, so a collider that lives on
+	// a *child* entity stops tracking that entity the moment the child moves relative to the body — which
+	// is exactly what happens to a hitbox parented to an animated bone. Re-push the relative pose whenever
+	// it drifts. (The shape's dimensions are left alone; resizing means rebuilding the shape, which is far
+	// too expensive per frame and animation doesn't change a bone's scale in practice.)
+	void PhysicsSystem::SyncChildColliderTransforms(Scene* scene)
+	{
+		auto& registry = scene->GetRegistry();
+
+		auto isSameTransform = [](const rp3d::Transform& a, const rp3d::Transform& b) {
+			const float epsilon = 1e-5f;
+			const rp3d::Vector3& posA = a.getPosition();
+			const rp3d::Vector3& posB = b.getPosition();
+			const rp3d::Quaternion& rotA = a.getOrientation();
+			const rp3d::Quaternion& rotB = b.getOrientation();
+
+			return std::abs(posA.x - posB.x) <= epsilon && std::abs(posA.y - posB.y) <= epsilon && std::abs(posA.z - posB.z) <= epsilon &&
+				std::abs(rotA.x - rotB.x) <= epsilon && std::abs(rotA.y - rotB.y) <= epsilon &&
+				std::abs(rotA.z - rotB.z) <= epsilon && std::abs(rotA.w - rotB.w) <= epsilon;
+			};
+
+		auto syncCollider = [&](EntityID entity, auto& collider) {
+			if (collider.Collider == nullptr || collider.AttachedBody == nullptr)
+				return;
+
+			// The body's own collider sits at a constant offset from it; only children can drift.
+			if (registry.ContainsComponent<RigidBodyComponent>(entity))
+				return;
+
+			ColliderSetupCtx ctx;
+			if (!ResolveColliderSetup(entity, scene, ctx))
+				return;
+
+			rp3d::Transform localTransform = MakeColliderTransform(ctx.RelPos, ctx.RelRot, collider.Offset);
+			if (isSameTransform(collider.Collider->getLocalToBodyTransform(), localTransform))
+				return;
+
+			collider.Collider->setLocalToBodyTransform(localTransform);
+			collider.CachedWorldTransform = ctx.ChildWorldTransform;
+			};
+
+		auto boxView = registry.ActiveQuery<BoxColliderComponent>();
+		for (EntityID entity : boxView)
+			syncCollider(entity, registry.GetComponent<BoxColliderComponent>(entity));
+
+		auto sphereView = registry.ActiveQuery<SphereColliderComponent>();
+		for (EntityID entity : sphereView)
+			syncCollider(entity, registry.GetComponent<SphereColliderComponent>(entity));
+
+		auto capsuleView = registry.ActiveQuery<CapsuleColliderComponent>();
+		for (EntityID entity : capsuleView)
+			syncCollider(entity, registry.GetComponent<CapsuleColliderComponent>(entity));
+
+		auto convexView = registry.ActiveQuery<ConvexMeshColliderComponent>();
+		for (EntityID entity : convexView)
+			syncCollider(entity, registry.GetComponent<ConvexMeshColliderComponent>(entity));
+
+		auto concaveView = registry.ActiveQuery<ConcaveMeshColliderComponent>();
+		for (EntityID entity : concaveView)
+			syncCollider(entity, registry.GetComponent<ConcaveMeshColliderComponent>(entity));
 	}
 
 	void PhysicsSystem::UpdateAvoidanceCollisions(Scene* scene)

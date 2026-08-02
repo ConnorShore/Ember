@@ -195,7 +195,9 @@ namespace Ember {
 			// TODO: Loop over each layer and apply the animation state machine logic for each layer
 			//	Need to account for layer blending and masking as well
 			auto controller = animator.ControllerHandle != Constants::InvalidUUID ? assetManager.GetAsset<AnimationController>(animator.ControllerHandle) : nullptr;
-			if (controller->GetLayers().empty())
+			// An animator can legitimately have a skeleton but no controller (rig imported, controller
+			// not authored yet); there is simply nothing to evaluate for it.
+			if (!controller || controller->GetLayers().empty())
 				continue;
 
 			// Build the effective parameter set once per animator: controller defaults overlaid with
@@ -203,11 +205,8 @@ namespace Ember {
 			// need to rebuild it per layer. clear()+insert reuses the scratch map's buckets instead of
 			// heap-allocating a brand new map (and copying every controller parameter) every frame.
 			effectiveParameters.clear();
-			if (controller)
-			{
-				for (const auto& [name, param] : controller->GetParameters())
-					effectiveParameters[name] = param;
-			}
+			for (const auto& [name, param] : controller->GetParameters())
+				effectiveParameters[name] = param;
 			for (const auto& parameter : animator.Blackboard.Parameters)
 				effectiveParameters[parameter.first] = parameter.second;
 

@@ -107,6 +107,46 @@ EB_TEST_CASE(Physics, ChildColliderAttachesToTheAncestorBody, Integration)
 	EB_EXPECT_EQ(rigidBody.Body->getNbColliders(), (uint32_t)1);
 }
 
+EB_TEST_CASE(Physics, ChildColliderFollowsItsEntityAtRuntime, Integration)
+{
+	// Regression: a child collider is attached to the ancestor body with a FIXED local transform, so
+	// it used to stay wherever the child entity happened to be when the collider was built. Anything
+	// that moves a child entity during play - an animated bone driving a hitbox, a script sliding an
+	// attachment - left the collider behind at its authored spot, invisible except in debug draw.
+	PhysicsSceneFixture scene;
+
+	Entity parent = MakeEntityAt(*scene, "Body", Lane(0.0f));
+	parent.AttachComponent<RigidBodyComponent>(RigidBodyComponent::BodyType::Static);
+
+	// Static parent, so only the child's own movement can change where the collider ends up.
+	Entity child = parent.AddChild("MovingCollider");
+	child.AttachComponent<BoxColliderComponent>(Vector3f(1.0f));
+
+	scene.Attach();
+	scene.Step();
+
+	auto physics = Sys<PhysicsSystem>();
+	const Vector3f authored = Lane(0.0f);
+	const Vector3f moved = Lane(0.0f) + Vector3f(0.0f, 0.0f, 4.0f);
+
+	const RaycastData atAuthored = physics->CastRay(authored + Vector3f(0.0f, 5.0f, 0.0f), kDown, 10.0f, FilterPreset::All);
+	EB_CHECK_MSG(atAuthored.Hit, "the child collider was not where it was authored to begin with");
+	EB_CHECK_EQ(atAuthored.ColliderEntity, child.GetEntityHandle());
+
+	// Move the child the way a bone pose or a script would.
+	child.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 4.0f);
+	scene.UpdateTransforms();
+	scene.Step(2);
+
+	const RaycastData atMoved = physics->CastRay(moved + Vector3f(0.0f, 5.0f, 0.0f), kDown, 10.0f, FilterPreset::All);
+	EB_EXPECT_MSG(atMoved.Hit, "the child collider did not follow its entity to the new position");
+	if (atMoved.Hit)
+		EB_EXPECT_EQ(atMoved.ColliderEntity, child.GetEntityHandle());
+
+	const RaycastData atOld = physics->CastRay(authored + Vector3f(0.0f, 5.0f, 0.0f), kDown, 10.0f, FilterPreset::All);
+	EB_EXPECT_MSG(!atOld.Hit, "the child collider was left behind at the position it was created at");
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Simulation
 //////////////////////////////////////////////////////////////////////////

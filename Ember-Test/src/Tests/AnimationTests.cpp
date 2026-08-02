@@ -375,3 +375,175 @@ EB_TEST_CASE(Animation, AnimatorBoneCachesAreSizedAndInitialised, Integration)
 	EB_EXPECT_MAT4_NEAR(animator.BoneMatrices[Constants::Renderer::MaxBones - 1], Matrix4f(1.0f), 1e-6f);
 	EB_EXPECT_NEAR(animator.PlaybackSpeed, 1.0f, 1e-6);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Bone-driven entity transforms
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	// A two-bone rig laid out the way an imported model leaves one in the scene: an animator root, an
+	// armature, a skinned mesh, and one entity per bone carrying only its bind-pose TRS. The bones
+	// stack +Y so a pose change is unambiguous.
+	struct RigFixture
+	{
+		SharedPtr<Skeleton> SkeletonAsset;
+		Entity Root;
+		Entity Armature;
+		Entity Mesh;
+		Entity RootBone;
+		Entity ChildBone;
+
+		// Bind pose: Root at origin, Child one unit above it.
+		static constexpr float kChildBoneY = 1.0f;
+	};
+
+	RigFixture MakeRig(Scene& scene, const std::string& prefix)
+	{
+		RigFixture rig;
+
+		std::vector<Bone> bones(2);
+		bones[0].Name = prefix + "RootBone";
+		bones[0].ParentID = static_cast<uint32_t>(-1);
+		bones[0].LocalBindPoseTransform.Translation = Vector3f(0.0f);
+		bones[0].LocalBindPoseTransform.Rotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+		bones[1].Name = prefix + "ChildBone";
+		bones[1].ParentID = 0;
+		bones[1].LocalBindPoseTransform.Translation = Vector3f(0.0f, RigFixture::kChildBoneY, 0.0f);
+		bones[1].LocalBindPoseTransform.Rotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+
+		std::vector<Matrix4f> inverseBinds{ Matrix4f(1.0f), Math::Translate(Vector3f(0.0f, -RigFixture::kChildBoneY, 0.0f)) };
+		rig.SkeletonAsset = Ember::Test::Assets().Create<Skeleton>(UUID(), prefix + "Skeleton", bones, inverseBinds);
+
+		rig.Root = MakeEntityAt(scene, prefix + "Root", Vector3f(0.0f));
+		auto& animator = rig.Root.AttachComponent<AnimatorComponent>();
+		animator.SkeletonHandle = rig.SkeletonAsset->GetUUID();
+		// Seed the bind pose the way AnimationSystem/InitializeAnimationPoseCaches would; the raw
+		// component defaults to identity matrices, which is not any real skeleton's rest pose.
+		animator.BonePoseMatrices[0] = Matrix4f(1.0f);
+		animator.BonePoseMatrices[1] = Math::Translate(Vector3f(0.0f, RigFixture::kChildBoneY, 0.0f));
+
+		rig.Armature = rig.Root.AddChild(prefix + "Armature");
+
+		rig.Mesh = rig.Armature.AddChild(prefix + "Mesh");
+		rig.Mesh.AttachComponent<SkinnedMeshComponent>(Constants::InvalidUUID, rig.Root.GetUUID());
+
+		// Bone entities are siblings of the mesh, exactly as the glTF importer builds them.
+		rig.RootBone = rig.Armature.AddChild(bones[0].Name);
+		rig.ChildBone = rig.RootBone.AddChild(bones[1].Name);
+		rig.ChildBone.GetComponent<TransformComponent>().Position = Vector3f(0.0f, RigFixture::kChildBoneY, 0.0f);
+
+		return rig;
+	}
+
+	// One frame of the runtime order that matters here: transforms, then the bone pass.
+	void TickBonePass(Scene& scene)
+	{
+		Ember::Test::Sys<TransformSystem>()->OnUpdate(Ember::Test::FixedStep(), &scene);
+		Ember::Test::Sys<BoneSocketSystem>()->OnUpdate(Ember::Test::FixedStep(), &scene);
+	}
+
+} // namespace
+
+EB_TEST_CASE(Animation, AnimatorWithoutAControllerIsSkipped, Integration)
+{
+	// Regression: AnimationSystem left `controller` null when ControllerHandle was unset and then
+	// dereferenced it on the very next line, so a rig imported before its controller was authored
+	// took the whole frame down. Nothing to assert but "we got here" - before the guard this test
+	// crashed the process, and Logs/test-progress.log's last RUNNING line named it.
+	SceneFixture scene("AnimatorNoControllerScene");
+	RigFixture rig = MakeRig(*scene, "EmberTest_NoController_");
+
+	auto& animator = rig.Root.GetComponent<AnimatorComponent>();
+	EB_CHECK(animator.ControllerHandle == Constants::InvalidUUID);
+
+	Ember::Test::Sys<AnimationSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	// The seeded bind pose must survive untouched - a skipped animator has no pose to write.
+	EB_EXPECT_MAT4_NEAR(animator.BonePoseMatrices[1],
+		Math::Translate(Vector3f(0.0f, RigFixture::kChildBoneY, 0.0f)), 1e-5f);
+
+	Ember::Test::Assets().RemoveAsset(rig.SkeletonAsset->GetUUID());
+}
+
+EB_TEST_CASE(Animation, BoneEntitiesFollowTheAnimatedPose, Integration)
+{
+	// Regression: an imported model's bone entities only ever carried their bind-pose TRS, so
+	// TransformSystem parked them at the T-pose no matter what the animator evaluated. Anything
+	// parented to a bone - a hitbox, a held weapon - stayed behind with them.
+	SceneFixture scene("BoneDrivenScene");
+	RigFixture rig = MakeRig(*scene, "EmberTest_Follow_");
+
+	Entity hitbox = rig.ChildBone.AddChild("Hitbox");
+	hitbox.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 0.5f);
+
+	TickBonePass(*scene);
+
+	// Bind pose first: the pose-driven result must agree with plain hierarchy composition, or every
+	// rig would visibly snap the moment this pass took over.
+	EB_EXPECT_VEC3_NEAR(rig.ChildBone.GetComponent<TransformComponent>().GetWorldPosition(),
+		Vector3f(0.0f, RigFixture::kChildBoneY, 0.0f), 1e-4f);
+	EB_EXPECT_VEC3_NEAR(hitbox.GetComponent<TransformComponent>().GetWorldPosition(),
+		Vector3f(0.0f, RigFixture::kChildBoneY, 0.5f), 1e-4f);
+
+	// Now bend the rig: the child bone swings 2 units along +X, as an animation would move it.
+	auto& animator = rig.Root.GetComponent<AnimatorComponent>();
+	animator.BonePoseMatrices[1] = Math::Translate(Vector3f(2.0f, RigFixture::kChildBoneY, 0.0f));
+
+	TickBonePass(*scene);
+
+	EB_EXPECT_VEC3_NEAR(rig.ChildBone.GetComponent<TransformComponent>().GetWorldPosition(),
+		Vector3f(2.0f, RigFixture::kChildBoneY, 0.0f), 1e-4f);
+	EB_EXPECT_MSG(Ember::Test::NearlyEqual(hitbox.GetComponent<TransformComponent>().GetWorldPosition(),
+		Vector3f(2.0f, RigFixture::kChildBoneY, 0.5f), 1e-4f),
+		"a child of a posed bone did not follow it - collider debug draw would sit at the T-pose");
+
+	Ember::Test::Assets().RemoveAsset(rig.SkeletonAsset->GetUUID());
+}
+
+EB_TEST_CASE(Animation, BoneEntityPoseIsRelativeToTheSkinnedMesh, Integration)
+{
+	// Bone poses live in skeleton space, which the renderer lifts into world space with the skinned
+	// mesh entity's transform. Bone entities must use the same basis or hitboxes drift off the model
+	// as soon as the character moves or is scaled.
+	SceneFixture scene("BoneDrivenBasisScene");
+	RigFixture rig = MakeRig(*scene, "EmberTest_Basis_");
+
+	rig.Root.GetComponent<TransformComponent>().Position = Vector3f(5.0f, 0.0f, -3.0f);
+	rig.Armature.GetComponent<TransformComponent>().Scale = Vector3f(2.0f);
+
+	auto& animator = rig.Root.GetComponent<AnimatorComponent>();
+	animator.BonePoseMatrices[1] = Math::Translate(Vector3f(0.0f, 3.0f, 0.0f));
+
+	TickBonePass(*scene);
+
+	// Skeleton-space (0, 3, 0), scaled by 2 and offset by the root's position.
+	EB_EXPECT_VEC3_NEAR(rig.ChildBone.GetComponent<TransformComponent>().GetWorldPosition(),
+		Vector3f(5.0f, 6.0f, -3.0f), 1e-4f);
+
+	Ember::Test::Assets().RemoveAsset(rig.SkeletonAsset->GetUUID());
+}
+
+EB_TEST_CASE(Animation, NonBoneEntitiesKeepTheirHierarchyTransform, Integration)
+{
+	// Bones are matched to entities by name, so the pass must leave every other entity in the rig
+	// alone - the animator root that anchors the character, the skinned mesh whose transform is the
+	// skinning basis this pass reads, and props hung off the armature rather than off a bone.
+	SceneFixture scene("BoneDrivenScopeScene");
+	RigFixture rig = MakeRig(*scene, "EmberTest_Scope_");
+
+	Entity prop = rig.Armature.AddChild("EmberTest_Scope_Prop");
+	prop.GetComponent<TransformComponent>().Position = Vector3f(0.0f, 0.0f, 4.0f);
+
+	auto& animator = rig.Root.GetComponent<AnimatorComponent>();
+	animator.BonePoseMatrices[0] = Math::Translate(Vector3f(9.0f, 9.0f, 9.0f));
+	animator.BonePoseMatrices[1] = Math::Translate(Vector3f(9.0f, 9.0f, 9.0f));
+
+	TickBonePass(*scene);
+
+	EB_EXPECT_VEC3_NEAR(prop.GetComponent<TransformComponent>().GetWorldPosition(), Vector3f(0.0f, 0.0f, 4.0f), 1e-4f);
+	EB_EXPECT_VEC3_NEAR(rig.Mesh.GetComponent<TransformComponent>().GetWorldPosition(), Vector3f(0.0f), 1e-4f);
+	EB_EXPECT_VEC3_NEAR(rig.Root.GetComponent<TransformComponent>().GetWorldPosition(), Vector3f(0.0f), 1e-4f);
+
+	Ember::Test::Assets().RemoveAsset(rig.SkeletonAsset->GetUUID());
+}
