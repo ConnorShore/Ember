@@ -228,6 +228,16 @@ const int   ticks = instance["ticks"].get<int>();
 const auto  label = instance["label"].get<std::string>();
 ```
 
+**Indexing an `Entity` from Lua gets fragile as the suite goes on.** The runner keeps one long-lived
+`sol::state`, and every script test binds the API onto it again — `ScriptEngine::BindAPI` → `BindEntity`
+re-runs `state.new_usertype<Entity>` on each call. After enough of those, the `Entity` userdata handed
+to a Lua hook stops being indexable and the hook dies with `attempt to index a sol.Ember::Entity value`.
+The failure is *order-dependent*: the test passes alone and under a narrow `--run=` filter, then fails
+in suite order, which makes it look like the engine change under test. Prefer asserting on the C++ side
+or through Lua globals over calling `entity:GetName()` / `entity:GetComponent(...)` inside a test
+script. The engine never hits this — `BindAPI` is only ever called from `ScriptEngine::OnRuntimeStart`,
+immediately after a fresh `CreateConfiguredLuaState()`.
+
 ## Golden-image workflow
 
 1. Mint the references once, from a **known-good** build:

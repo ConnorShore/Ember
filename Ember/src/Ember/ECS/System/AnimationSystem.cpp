@@ -231,8 +231,6 @@ namespace Ember {
 				AnimationStateMachine* animStateMachine = &layer.StateMachine;
 				const AnimationState* currentState = ResolveCurrentState(animStateMachine, runtime);
 
-				// effectiveParameters was built once per animator above (controller defaults + blackboard).
-
 				// See if we need to make a transition (check all transition conditions for the current state to see if any are met)
 				if (animStateMachine && currentState && animStateMachine->GetTransitions().contains(runtime.CurrentStateId))
 				{
@@ -255,8 +253,6 @@ namespace Ember {
 
 						if (!activateTransition)
 							continue;
-
-						EB_CORE_INFO("Layer: {}; Transitioning from state '{}' to state '{}'!", controller->GetLayers()[0].Name, currentState->Name, ResolveState(animStateMachine, transition.ToStateId)->Name);
 
 						runtime.PreviousStateId = runtime.CurrentStateId;
 						runtime.PreviousTime = runtime.CurrentTime;

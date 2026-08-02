@@ -283,6 +283,50 @@ EB_TEST_CASE(Script, EachEntityGetsItsOwnInstanceTable, Integration)
 	EB_EXPECT_MSG(secondScript.Instance["ticks"].get<int>() == 2, "the two entities share one instance table");
 }
 
+EB_TEST_CASE(Script, OnCreateThatSpawnsAScriptedEntityIsStillMarkedInitialized, Integration)
+{
+	// Regression: InitializeScriptForEntity held a ScriptComponent& across the OnCreate call, so an
+	// OnCreate that spawns a scripted entity (Scene.InstantiatePrefab, DuplicateEntity) relocated the
+	// packed storage and `Initialized = true` landed on the freed buffer. OnCreate then re-ran the
+	// next tick with a fresh instance table, orphaning whatever the first one spawned.
+	auto scriptAsset = LoadScriptAsset("oncreate_spawn_test.lua", R"(
+		local Spawner = {}
+
+		-- Initialized lazily inside OnCreate: InitializeScriptForEntity re-runs the file on every
+		-- init, so a file-scope reset would wipe exactly the evidence this test is looking for.
+		function Spawner:OnCreate(entity)
+		    SpawnerOnCreateTotal = (SpawnerOnCreateTotal or 0) + 1
+		    if not SpawnerHasSpawned then
+		        SpawnerHasSpawned = true
+		        Scene.DuplicateEntity("Spawner")
+		    end
+		end
+
+		return Spawner
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptSpawnDuringOnCreateScene");
+	Entity entity = MakeEntityAt(*scene, "Spawner", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+
+	// One scripted entity means the packed storage has capacity 1, so the duplicate's
+	// ScriptComponent is guaranteed to reallocate it mid-OnCreate.
+	ScriptEngine::BindAPI(scene.Ptr());
+	auto scriptSystem = Sys<ScriptSystem>();
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_CHECK_MSG(entity.GetComponent<ScriptComponent>().Initialized,
+		"Initialized was written through a reference the OnCreate spawn had already invalidated");
+
+	// Second tick initializes the duplicate. Two OnCreate calls total, one per entity - a third
+	// means the original was re-initialized and has spawned an orphan nothing holds a handle to.
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_MSG(ScriptEngine::GetState()["SpawnerOnCreateTotal"].get<int>() == 2,
+		"OnCreate ran more than once per entity");
+}
+
 EB_TEST_CASE(Script, DisabledEntitiesDoNotTick, Integration)
 {
 	// ScriptSystem drives off ActiveQuery, so disabling an entity must stop its script. Otherwise

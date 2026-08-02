@@ -225,8 +225,11 @@ namespace Ember {
 			throw std::runtime_error("ScriptSystem: Invalid ScriptHandle ID");
 		}
 
-		// Mark as initialized unconditionally to prevent error spam on every frame
-		script.Initialized = true;
+		// Re-fetch: OnCreate can attach components (spawning a prefab, duplicating an entity), which
+		// grows the packed ScriptComponent storage and dangles `script`. Marked unconditionally to
+		// prevent error spam on every frame.
+		if (entity.ContainsComponent<ScriptComponent>())
+			entity.GetComponent<ScriptComponent>().Initialized = true;
 	}
 
 }

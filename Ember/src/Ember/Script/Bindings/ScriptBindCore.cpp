@@ -55,16 +55,17 @@ namespace Ember {
 			});
 
 		auto log = state.create_table("Log");
+		log.set_function("Trace", [](const std::string& message) {
+			EB_TRACE("{}", message);
+			});
 		log.set_function("Info", [](const std::string& message) {
-			EB_CORE_INFO("{}", message);
+			EB_INFO("{}", message);
 			});
-
 		log.set_function("Warn", [](const std::string& message) {
-			EB_CORE_WARN("{}", message);
+			EB_WARN("{}", message);
 			});
-
 		log.set_function("Error", [](const std::string& message) {
-			EB_CORE_ERROR("{}", message);
+			EB_ERROR("{}", message);
 			});
 
 		auto window = state.create_table("Window");
