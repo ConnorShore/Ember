@@ -159,11 +159,30 @@ namespace Ember {
 		if (scriptAsset)
 		{
 			std::string filepath = scriptAsset->GetFilePath();
-			sol::protected_function_result result = luaState.script_file(filepath);
-			if (result.valid())
+
+			// Scoped so this stack-based result is released BEFORE any nested script_file call
+			// below. ResolveScriptInheritance and GetScriptProperties both re-enter script_file
+			// once per Base level, and sol2 cleans a result up with lua_remove (which shifts every
+			// slot above it) - holding this one open across that nesting left the stack mis-indexed.
+			sol::table scriptClass;
 			{
-				sol::table scriptClass = result;
+				sol::protected_function_result result = luaState.script_file(filepath);
+				if (!result.valid())
+				{
+					sol::error err = result;
+					EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
+					throw std::runtime_error(err.what());
+				}
+				scriptClass = result.get<sol::table>();
+			}
+
+			{
 				scriptClass["__name"] = scriptAsset->GetName();
+
+				// Chain scriptClass's own metatable to any Base script declared, so methods not
+				// defined on this script fall back to its parent(s) before we build the per-entity
+				// instance below.
+				ScriptEngine::ResolveScriptInheritance(scriptClass, scriptAsset->GetName());
 
 				// Create a per-entity Lua table that inherits from the script class via __index
 				script.Instance = luaState.create_table();
@@ -211,12 +230,6 @@ namespace Ember {
 						throw std::runtime_error(err.what());
 					}
 				}
-			}
-			else
-			{
-				sol::error err = result;
-				EB_CORE_ERROR("Failed to load script '{}': {}", filepath, err.what());
-				throw std::runtime_error(err.what());
 			}
 		}
 		else

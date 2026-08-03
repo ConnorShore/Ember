@@ -4,6 +4,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Script/Bindings/ScriptComponentRef.h"
+#include "Ember/Script/ScriptEngine.h"
 
 namespace Ember {
 
@@ -301,6 +302,25 @@ namespace Ember {
 						if (actualName && actualName.value() == scriptName)
 						{
 							return scriptComp.Instance;
+						}
+
+						// Not the concrete script's own name - check whether it matches something
+						// in the script's Base ancestry instead, so e.g. GetScriptInstance("PurchasableItem")
+						// finds an entity whose attached script is PickupItem (Base = "PurchasableItem").
+						// Indexed access rather than a key/value iterator: __baseChain is always a
+						// dense 1-indexed array we built ourselves, so there's no need for pairs()-style
+						// iteration here.
+						sol::optional<sol::table> baseChain = instanceTable[ScriptEngine::BaseChainFieldName];
+						if (baseChain)
+						{
+							sol::table chain = baseChain.value();
+							size_t chainLength = chain.size();
+							for (size_t i = 1; i <= chainLength; ++i)
+							{
+								sol::optional<std::string> ancestorName = chain[i];
+								if (ancestorName && ancestorName.value() == scriptName)
+									return scriptComp.Instance;
+							}
 						}
 					}
 				}

@@ -13,6 +13,7 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 
 - [Script Structure &amp; Lifecycle](#script-structure--lifecycle)
   - [Enum Properties](#enum-properties)
+  - [Script Inheritance (`Base`)](#script-inheritance-base)
 - [Core Types](#core-types)
   - [`UUID`](#uuid)
   - [`TimeStep`](#timestep)
@@ -94,6 +95,11 @@ return MyScript
 
 ```lua
 local other = entity:GetScriptInstance() -- returns the script table on this entity, or nil
+
+-- Optionally filter by name - matches either the entity's concrete script or any script in its
+-- Base ancestry (see Script Inheritance below), so this also matches an entity whose attached
+-- script is PickupItem if PickupItem.Base = "PurchasableItem":
+local purchasable = entity:GetScriptInstance("PurchasableItem") -- nil if neither matches
 ```
 
 Script instances are created lazily while scripts update. If one script needs another entity's
@@ -127,6 +133,62 @@ The option list is taken from the table at script-load time and the *first optio
 is the default. The editor stores the selected option's integer value on the component, so reading
 `self.Kind` from Lua returns a plain number — compare it against the named entries on the
 original table.
+
+### Script Inheritance (`Base`)
+
+A script can share methods and default properties with other scripts by declaring `Base` as the
+**name** of another script asset (not a path — the same name shown in the Asset Manager):
+
+```lua
+-- PurchasableItem.lua — never attached to an entity directly; other scripts inherit from it.
+local PurchasableItem = {}
+
+PurchasableItem.ItemCost = 0
+
+function PurchasableItem:CanAfford()
+    return PointManager ~= nil and PointManager.Points >= self.ItemCost
+end
+
+return PurchasableItem
+```
+
+```lua
+-- PickupWeapon.lua
+local PickupWeapon = {}
+PickupWeapon.Base = "PurchasableItem"
+
+PickupWeapon.ItemCost = 250 -- overrides the inherited default of 0
+
+function PickupWeapon:OnPickup(entity, otherEntity)
+    if not self:CanAfford() then
+        return
+    end
+    -- ...
+end
+
+return PickupWeapon
+```
+
+Methods and properties not defined on the child fall back to `Base`, then to *its* `Base`, and so
+on — an ordinary prototype chain, so a method the child *does* define always wins over one
+inherited from a parent. Properties work the same way for the Inspector: a field declared only on
+the base (like `ItemCost` above) is still exposed on every script that inherits from it, using the
+base's value as the default; a child that declares its own value for that field overrides the
+default instead of duplicating the base's logic.
+
+A few things worth knowing:
+
+- `Base` is resolved by looking up a script asset with that exact name, so the base script must
+  exist somewhere in the project (it does not need to be attached to any entity).
+- A cycle (`A.Base = "B"`, `B.Base = "A"`) or a `Base` naming a script that doesn't exist is logged
+  as an error and the chain simply stops there — the script itself still loads and runs normally,
+  just without whatever it would have inherited.
+- `Base` itself is a reserved field name, like the lifecycle hooks above — it never shows up as an
+  editable Inspector property.
+- [`entity:GetScriptInstance(name)`](#entity) matches `name` against the whole `Base` chain, not
+  just the script's own concrete name — so `hitEntity:GetScriptInstance("PurchasableItem")` finds
+  the script on an entity whose attached script is actually `PickupWeapon`, letting other scripts
+  treat every kind of purchasable pickup generically without knowing the concrete subclass.
 
 ---
 
@@ -306,6 +368,7 @@ The handle to a world object. Almost all gameplay code goes through `Entity`.
 | `:GetChild(name)`              | Returns the first child matching`name`.                                                |
 | `:AddChild(entity)`            | Re-parents`entity` under this one.                                                     |
 | `:GetScriptInstance()`         | Returns the script's table on this entity, or`nil` if no `ScriptComponent`.          |
+| `:GetScriptInstance(name)`     | Same, but `nil` unless `name` matches the script's own name or one of its `Base` ancestors. |
 
 #### Component type names
 

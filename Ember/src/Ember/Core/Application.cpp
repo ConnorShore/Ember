@@ -47,6 +47,13 @@ namespace Ember {
 		m_AssetManager->SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
 		m_AssetManager->LoadDefaults();
 
+		// Must exist before ScriptEngine::Init(): binding the script API publishes `GameData` as a
+		// pointer to this manager, so creating it afterwards bound a pointer to a not-yet-created
+		// object. That used to be hidden because every BindAPI call re-ran the save-game binder and
+		// overwrote the bad pointer; the bindings are registered once per Lua state now, so the
+		// ordering has to actually be right.
+		m_SaveGameManager = ScopedPtr<SaveGameManager>::Create();
+
 		Random::Init();
 		ScriptEngine::Init();
 
@@ -69,8 +76,6 @@ namespace Ember {
 		m_SystemManager->RegisterSystem(SharedPtr<UILayoutSystem>::Create());
 
 		m_SceneManager = ScopedPtr<SceneManager>::Create();
-
-		m_SaveGameManager = ScopedPtr<SaveGameManager>::Create();
 
 		EB_CORE_INFO("Application created!");
 	}

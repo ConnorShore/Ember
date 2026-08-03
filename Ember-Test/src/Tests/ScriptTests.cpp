@@ -490,6 +490,364 @@ EB_TEST_CASE(Script, UserOverridesBeatScriptDefaults, Integration)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Script inheritance (Base)
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Script, BaseFieldChainsMethodsFromParentScript, Integration)
+{
+	// A child script only has to declare Base; a method it doesn't define itself should still
+	// resolve through the parent via the metatable chain ResolveScriptInheritance sets up on load.
+	auto parentAsset = LoadScriptAsset("inherit_base_parent.lua", R"(
+		local Parent = {}
+
+		function Parent:GetParentValue()
+		    return 42
+		end
+
+		return Parent
+	)");
+	EB_CHECK(parentAsset != nullptr);
+
+	auto childAsset = LoadScriptAsset("inherit_base_child.lua", R"(
+		local Child = {}
+		Child.Base = "inherit_base_parent"
+
+		function Child:OnCreate(entity)
+		    self.inheritedValue = self:GetParentValue()
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptBaseInheritanceScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_CHECK_MSG(component.Initialized, "the child script was never initialized");
+	EB_EXPECT_MSG(component.Instance["inheritedValue"].get<int>() == 42,
+		"a method defined only on the Base script did not resolve on the child instance");
+}
+
+EB_TEST_CASE(Script, ChildScriptMethodOverridesParentMethod, Integration)
+{
+	// The child's own method must win over a same-named parent method - normal OOP override
+	// semantics, not the parent silently shadowing the child's intent.
+	auto parentAsset = LoadScriptAsset("inherit_override_parent.lua", R"(
+		local Parent = {}
+		function Parent:GetValue() return 1 end
+		return Parent
+	)");
+	EB_CHECK(parentAsset != nullptr);
+
+	auto childAsset = LoadScriptAsset("inherit_override_child.lua", R"(
+		local Child = {}
+		Child.Base = "inherit_override_parent"
+
+		function Child:GetValue() return 2 end
+
+		function Child:OnCreate(entity)
+		    self.observedValue = self:GetValue()
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptBaseOverrideScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_EXPECT_MSG(component.Instance["observedValue"].get<int>() == 2,
+		"the child's own override was shadowed by the parent's method");
+}
+
+EB_TEST_CASE(Script, MultiLevelBaseChainResolvesGrandparentMethods, Integration)
+{
+	// Base chains must walk more than one level: Child -> Parent -> Grandparent.
+	auto grandparentAsset = LoadScriptAsset("inherit_multilevel_grandparent.lua", R"(
+		local Grandparent = {}
+		function Grandparent:GetGrandparentValue() return 7 end
+		return Grandparent
+	)");
+	EB_CHECK(grandparentAsset != nullptr);
+
+	auto parentAsset = LoadScriptAsset("inherit_multilevel_parent.lua", R"(
+		local Parent = {}
+		Parent.Base = "inherit_multilevel_grandparent"
+		return Parent
+	)");
+	EB_CHECK(parentAsset != nullptr);
+
+	auto childAsset = LoadScriptAsset("inherit_multilevel_child.lua", R"(
+		local Child = {}
+		Child.Base = "inherit_multilevel_parent"
+
+		function Child:OnCreate(entity)
+		    self.inheritedValue = self:GetGrandparentValue()
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptMultiLevelInheritanceScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_EXPECT_MSG(component.Instance["inheritedValue"].get<int>() == 7,
+		"a method two levels up the Base chain (grandparent) did not resolve on the child instance");
+}
+
+EB_TEST_CASE(Script, BaseCycleIsDetectedAndDoesNotHangOrCrash, Integration)
+{
+	// A.Base = B and B.Base = A must not deadlock ResolveScriptInheritance in an infinite loop. The
+	// cycle should be logged and walking should simply stop, leaving each script usable on its own.
+	auto scriptB = LoadScriptAsset("inherit_cycle_b.lua", R"(
+		local B = {}
+		B.Base = "inherit_cycle_a"
+		function B:GetOwnValue() return 2 end
+		return B
+	)");
+	EB_CHECK(scriptB != nullptr);
+
+	auto scriptA = LoadScriptAsset("inherit_cycle_a.lua", R"(
+		local A = {}
+		A.Base = "inherit_cycle_b"
+
+		function A:GetOwnValue() return 1 end
+
+		function A:OnCreate(entity)
+		    self.ownValue = self:GetOwnValue()
+		end
+
+		return A
+	)");
+	EB_CHECK(scriptA != nullptr);
+
+	SceneFixture scene("ScriptBaseCycleScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptA->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_CHECK_MSG(component.Initialized, "a Base cycle prevented the script from initializing at all");
+	EB_EXPECT_MSG(component.Instance["ownValue"].get<int>() == 1,
+		"the script's own method stopped working once its Base chain turned out to be cyclic");
+}
+
+EB_TEST_CASE(Script, MissingBaseScriptStillInitializesTheChildScript, Integration)
+{
+	// A typo'd or since-deleted Base name must not prevent the script itself from loading - it
+	// should behave like a script with no Base at all, just without the (missing) inherited members.
+	auto childAsset = LoadScriptAsset("inherit_missing_base_child.lua", R"(
+		local Child = {}
+		Child.Base = "ThisScriptDoesNotExist"
+
+		function Child:OnCreate(entity)
+		    self.created = true
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptMissingBaseScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_CHECK_MSG(component.Initialized, "a missing Base script prevented the child from initializing");
+	EB_EXPECT_MSG(component.Instance["created"].get<bool>(), "OnCreate did not run when Base could not be resolved");
+}
+
+EB_TEST_CASE(Script, ExposedPropertiesInheritFromBaseScriptAndChildOverridesWin, Integration)
+{
+	// GetScriptProperties merges the Base chain's fields into the child's exposed-property list so
+	// an inherited field (e.g. ItemCost) shows up in the Inspector without every subclass having to
+	// redeclare it - but the child's own value for a shared field name must still win, and Base
+	// itself must not leak in as a property.
+	auto parentAsset = LoadScriptAsset("inherit_props_parent.lua", R"(
+		local Parent = {}
+		Parent.ItemCost = 10
+		Parent.SharedFlag = true
+		return Parent
+	)");
+	EB_CHECK(parentAsset != nullptr);
+
+	auto childAsset = LoadScriptAsset("inherit_props_child.lua", R"(
+		local Child = {}
+		Child.Base = "inherit_props_parent"
+		Child.ChildOnly = 5
+		Child.SharedFlag = false
+
+		function Child:OnCreate(entity) end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	const std::vector<ScriptProperty> properties = ScriptEngine::GetScriptProperties(childAsset);
+
+	bool sawBase = false, sawChildOnly = false, sawItemCost = false, sawSharedFlag = false;
+	for (const ScriptProperty& property : properties)
+	{
+		if (property.Name == "Base")
+			sawBase = true;
+		else if (property.Name == "ChildOnly")
+		{
+			sawChildOnly = true;
+			EB_EXPECT_MSG(std::get<int>(property.Value) == 5, "ChildOnly should keep the child's own value");
+		}
+		else if (property.Name == "ItemCost")
+		{
+			sawItemCost = true;
+			EB_EXPECT_MSG(std::get<int>(property.Value) == 10, "ItemCost should be inherited from the Base script");
+		}
+		else if (property.Name == "SharedFlag")
+		{
+			sawSharedFlag = true;
+			EB_EXPECT_MSG(std::get<bool>(property.Value) == false,
+				"the child's own SharedFlag value should shadow the Base script's default");
+		}
+	}
+
+	EB_EXPECT_MSG(!sawBase, "the Base field itself leaked into the exposed property list");
+	EB_EXPECT(sawChildOnly);
+	EB_EXPECT(sawItemCost);
+	EB_EXPECT(sawSharedFlag);
+}
+
+EB_TEST_CASE(Script, GetScriptInstanceMatchesAnAncestorBaseScriptName, Integration)
+{
+	// Entity:GetScriptInstance(name) must recognize a name from anywhere in the script's Base
+	// ancestry, not just its own concrete name - otherwise a caller can't treat every PickupItem/
+	// PickupWeapon-like entity generically as "a PurchasableItem" without knowing the concrete type.
+	auto baseAsset = LoadScriptAsset("gsi_ancestor_base.lua", R"(
+		local Base = {}
+		return Base
+	)");
+	EB_CHECK(baseAsset != nullptr);
+
+	// The entity lookups run in OnUpdate, not OnCreate: every stable test in this file touches
+	// `entity` from OnUpdate, and doing it from OnCreate turns out to be order-dependent here.
+	auto childAsset = LoadScriptAsset("gsi_ancestor_child.lua", R"(
+		local Child = {}
+		Child.Base = "gsi_ancestor_base"
+
+		function Child:OnUpdate(entity, delta)
+		    self.matchedOwnName = entity:GetScriptInstance("gsi_ancestor_child") ~= nil
+		    self.matchedBaseName = entity:GetScriptInstance("gsi_ancestor_base") ~= nil
+		    self.matchedUnrelated = entity:GetScriptInstance("SomeUnrelatedScriptName") ~= nil
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptGetInstanceAncestorScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_CHECK(component.Instance.valid());
+	EB_EXPECT_MSG(component.Instance["matchedOwnName"].get<bool>(), "GetScriptInstance did not match the script's own concrete name");
+	EB_EXPECT_MSG(component.Instance["matchedBaseName"].get<bool>(), "GetScriptInstance did not match an ancestor Base name");
+	EB_EXPECT_MSG(!component.Instance["matchedUnrelated"].get<bool>(), "GetScriptInstance matched a name unrelated to the script or its ancestry");
+}
+
+EB_TEST_CASE(Script, GetScriptInstanceMatchesEveryLevelOfAMultiLevelBaseChain, Integration)
+{
+	auto grandparentAsset = LoadScriptAsset("gsi_multilevel_grandparent.lua", R"(
+		local Grandparent = {}
+		function Grandparent:GrandparentMarker() return 1 end
+		return Grandparent
+	)");
+	EB_CHECK(grandparentAsset != nullptr);
+
+	auto parentAsset = LoadScriptAsset("gsi_multilevel_parent.lua", R"(
+		local Parent = {}
+		Parent.Base = "gsi_multilevel_grandparent"
+		function Parent:ParentMarker() return 2 end
+		return Parent
+	)");
+	EB_CHECK(parentAsset != nullptr);
+
+	auto childAsset = LoadScriptAsset("gsi_multilevel_child.lua", R"(
+		local Child = {}
+		Child.Base = "gsi_multilevel_parent"
+
+		function Child:OnUpdate(entity, delta)
+		    self.matchedParent = entity:GetScriptInstance("gsi_multilevel_parent") ~= nil
+		    self.matchedGrandparent = entity:GetScriptInstance("gsi_multilevel_grandparent") ~= nil
+		end
+
+		return Child
+	)");
+	EB_CHECK(childAsset != nullptr);
+
+	SceneFixture scene("ScriptGetInstanceMultiLevelScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(childAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_CHECK(component.Instance.valid());
+	EB_EXPECT_MSG(component.Instance["matchedParent"].get<bool>(), "GetScriptInstance did not match the immediate parent");
+	EB_EXPECT_MSG(component.Instance["matchedGrandparent"].get<bool>(), "GetScriptInstance did not match the grandparent two levels up");
+}
+
+EB_TEST_CASE(Script, GetScriptInstanceStillWorksNormallyForAScriptWithNoBase, Integration)
+{
+	// A script with no Base at all must still only match its own name - confirms the always-stamped
+	// __baseChain (now just [ownName]) doesn't change behavior for the common non-inheriting case.
+	auto scriptAsset = LoadScriptAsset("gsi_no_base.lua", R"(
+		local Standalone = {}
+
+		function Standalone:OnUpdate(entity, delta)
+		    self.matchedOwnName = entity:GetScriptInstance("gsi_no_base") ~= nil
+		    self.matchedUnrelated = entity:GetScriptInstance("SomeUnrelatedScriptName") ~= nil
+		end
+
+		return Standalone
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptGetInstanceNoBaseScene");
+	Entity entity = MakeEntityAt(*scene, "Scripted", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	auto& component = entity.GetComponent<ScriptComponent>();
+	EB_EXPECT_MSG(component.Instance["matchedOwnName"].get<bool>(), "GetScriptInstance did not match its own name");
+	EB_EXPECT_MSG(!component.Instance["matchedUnrelated"].get<bool>(), "GetScriptInstance matched an unrelated name");
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Error handling
 //////////////////////////////////////////////////////////////////////////
 

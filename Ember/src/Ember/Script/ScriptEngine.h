@@ -26,8 +26,20 @@ namespace Ember {
 		static void OnRuntimeStop(Scene* scene);
 
 		static sol::state& GetState();
-		static std::vector<ScriptProperty> GetScriptProperties(const SharedPtr<Script>& scriptAsset);
+
+		// `visitedBaseChain` tracks the UUIDs of scripts already walked while resolving a Base
+		// chain, so a cycle (A.Base = B, B.Base = A) is detected and reported instead of recursing
+		// forever. Callers outside ScriptEngine should never pass it explicitly.
+		static std::vector<ScriptProperty> GetScriptProperties(const SharedPtr<Script>& scriptAsset,
+			std::vector<UUID> visitedBaseChain = {});
+
 		static sol::object ScriptPropertyValueToLua(sol::state& luaState, const ScriptPropertyValue& value);
+
+		// Walks `scriptClass`'s `Base` field (if any), chaining each class table's metatable
+		// __index to its resolved parent so inherited methods/fields resolve through the
+		// instance -> class -> base -> ... lookup chain. `scriptName` is only used for cycle
+		// detection and error messages. No-op if the script has no Base field.
+		static void ResolveScriptInheritance(sol::table scriptClass, const std::string& scriptName);
 
 		// Schedules a Lua callback to run after delaySeconds have elapsed.
 		static void SetTimeout(sol::protected_function callback, float delaySeconds);
@@ -82,6 +94,16 @@ namespace Ember {
 			"OnOverlapTriggerStay",
 			"OnOverlapTriggerExit"
 		};
+
+		// Reserved field name a script table sets to another script asset's name to inherit from
+		// it, e.g. `MyScript.Base = "MyParentScript"`. Excluded from exposed-property enumeration.
+		inline static const std::string BaseFieldName = "Base";
+
+		// Engine-set (not author-set) reserved field holding this script's full ancestry - its own
+		// name followed by each resolved Base in order. Entity:GetScriptInstance(name) checks this
+		// so a name matching any ancestor resolves, not just the concrete script's own name.
+		// Excluded from exposed-property enumeration.
+		inline static const std::string BaseChainFieldName = "__baseChain";
 	};
 
 }
