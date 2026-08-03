@@ -1,12 +1,12 @@
 Assets:
   - Type: Texture
-    UUID: 3453372035684411145
-    Name: RadialGlow
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
-  - Type: Texture
     UUID: 2902344313391760329
     Name: DesertEagle_DesertEagleDiffuse.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/DesertEagle/DesertEagle_Resources/DesertEagle_DesertEagleDiffuse.png
+  - Type: Texture
+    UUID: 3453372035684411145
+    Name: RadialGlow
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Effects/RadialGlow.png
   - Type: Texture
     UUID: 18407398070678811137
     Name: DesertEagle_DesertEagleSpecular-DesertEagleRoughness.png
@@ -16,13 +16,13 @@ Assets:
     Name: AssaultRifle_ARMetallic-ARRoughness.png
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Models/M4/AssaultRifle_ARMetallic-ARRoughness.png
   - Type: Texture
-    UUID: 6891481540194389905
-    Name: BloodDamageEffect
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/BloodDamageEffect.png
-  - Type: Texture
     UUID: 3343954652411117201
     Name: Crosshair
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/Crosshair.png
+  - Type: Texture
+    UUID: 6891481540194389905
+    Name: BloodDamageEffect
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Textures/BloodDamageEffect.png
   - Type: Texture
     UUID: 8231069642100005462
     Name: M4_ARNormal.png
@@ -100,13 +100,17 @@ Assets:
     Name: RoundUIControl
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/RoundUIControl.lua
   - Type: Script
-    UUID: 10853797460557917967
-    Name: DamageSplashController
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/DamageSplashController.lua
-  - Type: Script
     UUID: 15191514471842255900
     Name: PowerUpDrop
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PowerUpDrop.lua
+  - Type: Script
+    UUID: 936314447457138483
+    Name: PlayerController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
+  - Type: Script
+    UUID: 5268583109702214263
+    Name: DamageableProp
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/DamageableProp.lua
   - Type: Script
     UUID: 7371630261308486327
     Name: PointManager
@@ -184,10 +188,6 @@ Assets:
     Name: WeaponController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponController.lua
   - Type: Script
-    UUID: 936314447457138483
-    Name: PlayerController
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Player/PlayerController.lua
-  - Type: Script
     UUID: 803391121824597106
     Name: AIController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/AIController.lua
@@ -200,21 +200,17 @@ Assets:
     Name: WeaponStats
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Weapons/WeaponStats.lua
   - Type: Script
-    UUID: 5268583109702214263
-    Name: DamageableProp
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/DamageableProp.lua
-  - Type: Script
     UUID: 1303867917645546364
     Name: Hitbox
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Hitbox.lua
   - Type: Script
-    UUID: 18266934061772524094
-    Name: ZombieSpawner
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ZombieSpawner.lua
-  - Type: Script
     UUID: 2119190290714536510
     Name: PointUIController
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PointUIController.lua
+  - Type: Script
+    UUID: 18266934061772524094
+    Name: ZombieSpawner
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/ZombieSpawner.lua
   - Type: Script
     UUID: 5515958197491920100
     Name: GlobalSystems
@@ -228,6 +224,10 @@ Assets:
     Name: RoundAudioManager
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/RoundAudioManager.lua
   - Type: Script
+    UUID: 10853797460557917967
+    Name: DamageSplashController
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/DamageSplashController.lua
+  - Type: Script
     UUID: 5831931640429785370
     Name: GameOverManager
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/GameOver/GameOverManager.lua
@@ -239,6 +239,10 @@ Assets:
     UUID: 4079924673265810475
     Name: PurchasableItem
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/Pickups/PurchasableItem.lua
+  - Type: Script
+    UUID: 6171998476316795323
+    Name: PowerUpManager
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Scripts/PowerUpManager.lua
   - Type: Material
     UUID: 782295293902573577
     Name: DesertEagle_Metal
@@ -408,13 +412,13 @@ Assets:
     Name: NavMesh_Default_NavigationSurface
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/NavMeshes/NavMesh_Default_NavigationSurface.ebnav
   - Type: Prefab
-    UUID: 7525331889912364400
-    Name: M4_Pickup
-    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/M4_Pickup.ebprefab
-  - Type: Prefab
     UUID: 1628786810858958427
     Name: DesertEagle
     FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/DesertEagle.ebprefab
+  - Type: Prefab
+    UUID: 7525331889912364400
+    Name: M4_Pickup
+    FilePath: ../../../../Games/ZombieFPS/ZombieFPSGame/GameData/Assets/Prefabs/Weapons/M4_Pickup.ebprefab
   - Type: Prefab
     UUID: 3822534466298593180
     Name: AmmoPowerup

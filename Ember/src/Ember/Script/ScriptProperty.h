@@ -18,7 +18,8 @@ enum class ScriptPropertyType
 	Enum,
 	Vector3f,
 	EntityRef,
-	AssetRef
+	AssetRef,
+	ReferenceArray
 };
 
 enum class ScriptReferenceKind
@@ -78,7 +79,9 @@ inline ScriptReferenceKind ScriptReferenceKindFromString(const std::string& kind
 	return ScriptReferenceKind::None;
 }
 
-using ScriptPropertyValue = std::variant<float, int, bool, std::string, Ember::Vector3f, Ember::UUID>;
+// The vector alternative backs ReferenceArray; append new alternatives rather than inserting.
+using ScriptPropertyValue = std::variant<float, int, bool, std::string, Ember::Vector3f, Ember::UUID,
+	std::vector<Ember::UUID>>;
 
 struct ScriptProperty
 {

@@ -14,6 +14,9 @@ namespace Ember {
 	namespace UI::PropertyGrid {
 		using UUIDNameResolver = std::function<std::string(UUID)>;
 
+		// Loads a dropped asset from the file path its payload carries and returns its UUID.
+		using AssetPathResolver = std::function<UUID(const std::string&)>;
+
 		// Property Grid Layout
 		bool Begin(const std::string& id);
 		void End();
@@ -61,8 +64,9 @@ namespace Ember {
 
 		bool FilterGrid(const std::string& label, Filter& filter, FilterManager& filterManager);
 
-		// Generic dynamically sizing array of UUIDs with Drag & Drop support
-		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver);
+		// Generic dynamically sizing array of UUIDs with Drag & Drop support.
+		// Leave pathResolver null for UUID payloads (scene entities); supply one for asset payloads.
+		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver, AssetPathResolver pathResolver = nullptr);
 		bool DynamicUUIDArrayComboBox(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::vector<UUID>& availableOptions, UUIDNameResolver nameResolver);
 
 		bool ComboBoxWithActions(const std::string& label, const std::string& defaultValue, UICallbackFunc addFunc, UICallbackFunc removeFunc);

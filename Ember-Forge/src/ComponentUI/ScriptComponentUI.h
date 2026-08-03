@@ -208,7 +208,8 @@ namespace Ember {
 						if (p.Name != it->first || p.Type != it->second.Type)
 							return false;
 
-						if (p.Type == ScriptPropertyType::EntityRef || p.Type == ScriptPropertyType::AssetRef)
+						if (p.Type == ScriptPropertyType::EntityRef || p.Type == ScriptPropertyType::AssetRef
+							|| p.Type == ScriptPropertyType::ReferenceArray)
 							return it->second.ReferenceKind == ScriptReferenceKind::None || p.ReferenceKind == it->second.ReferenceKind;
 
 						return true;
@@ -387,6 +388,39 @@ namespace Ember {
 						{
 							UUID assetUUID = LoadDroppedReferenceAsset(referenceKind, droppedPath);
 							ScriptEngine::SetScriptReferencePropertyOverride(component, activeProp.Name, assetUUID, ScriptPropertyType::AssetRef, referenceKind);
+							component.Initialized = false;
+						}
+						break;
+					}
+					case ScriptPropertyType::ReferenceArray:
+					{
+						ScriptReferenceKind referenceKind = defaultProp.ReferenceKind != ScriptReferenceKind::None ? defaultProp.ReferenceKind : activeProp.ReferenceKind;
+						bool isEntityArray = referenceKind == ScriptReferenceKind::Entity;
+
+						std::string payloadType = isEntityArray
+							? DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::SceneEntity)
+							: ReferencePayloadType(referenceKind);
+						if (payloadType.empty())
+							break;
+
+						// Read defensively - an override predating a type change holds the old variant.
+						const std::vector<UUID>* storedValues = std::get_if<std::vector<UUID>>(&activeProp.Value);
+						std::vector<UUID> values = storedValues ? *storedValues : std::vector<UUID>{};
+
+						UI::PropertyGrid::UUIDNameResolver nameResolver = [&](UUID uuid) {
+							return isEntityArray ? ResolveEntityReferenceName(uuid) : ResolveAssetReferenceName(uuid, referenceKind);
+						};
+
+						// Entity payloads already carry a UUID; asset payloads carry a path to load.
+						UI::PropertyGrid::AssetPathResolver pathResolver = isEntityArray ? nullptr
+							: UI::PropertyGrid::AssetPathResolver([&](const std::string& path) {
+								return LoadDroppedReferenceAsset(referenceKind, path);
+							});
+
+						if (UI::PropertyGrid::DynamicUUIDArrayDragDrop(activeProp.Name, ScriptReferenceKindToString(referenceKind),
+							values, payloadType, nameResolver, pathResolver))
+						{
+							ScriptEngine::SetScriptReferenceArrayPropertyOverride(component, activeProp.Name, values, referenceKind);
 							component.Initialized = false;
 						}
 						break;

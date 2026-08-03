@@ -489,6 +489,159 @@ EB_TEST_CASE(Script, UserOverridesBeatScriptDefaults, Integration)
 	EB_EXPECT_EQ(refreshed.Instance["observedLabel"].get<std::string>(), std::string("overridden"));
 }
 
+EB_TEST_CASE(Script, ReferenceArrayPropertyIsParsedWithItsElementKind, Integration)
+{
+	// The parsed element kind picks which drag/drop payload the inspector accepts, so losing it
+	// means the list silently rejects every drop.
+	auto scriptAsset = LoadScriptAsset("ref_array_props.lua", R"(
+		local Arrays = {}
+
+		Arrays.PowerUpPrefabs = PrefabRefArray()
+		Arrays.DeathSounds = AssetRefArray("AudioClip")
+		Arrays.PatrolPoints = EntityRefArray()
+
+		function Arrays:OnCreate(entity) end
+
+		return Arrays
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	const std::vector<ScriptProperty> properties = ScriptEngine::GetScriptProperties(scriptAsset);
+
+	bool sawPrefabs = false, sawSounds = false, sawPoints = false;
+	for (const ScriptProperty& property : properties)
+	{
+		if (property.Name == "PowerUpPrefabs")
+		{
+			sawPrefabs = true;
+			EB_EXPECT_MSG(property.Type == ScriptPropertyType::ReferenceArray, "PowerUpPrefabs should be typed as ReferenceArray");
+			EB_EXPECT_MSG(property.ReferenceKind == ScriptReferenceKind::Prefab, "PowerUpPrefabs lost its Prefab element kind");
+
+			const std::vector<UUID>* values = std::get_if<std::vector<UUID>>(&property.Value);
+			EB_EXPECT_MSG(values != nullptr && values->empty(), "a declared reference array should default to an empty UUID list");
+		}
+		else if (property.Name == "DeathSounds")
+		{
+			sawSounds = true;
+			EB_EXPECT(property.Type == ScriptPropertyType::ReferenceArray);
+			EB_EXPECT_MSG(property.ReferenceKind == ScriptReferenceKind::AudioClip, "AssetRefArray lost its declared element kind");
+		}
+		else if (property.Name == "PatrolPoints")
+		{
+			sawPoints = true;
+			EB_EXPECT(property.Type == ScriptPropertyType::ReferenceArray);
+			EB_EXPECT_MSG(property.ReferenceKind == ScriptReferenceKind::Entity, "EntityRefArray lost its Entity element kind");
+		}
+	}
+
+	EB_EXPECT(sawPrefabs);
+	EB_EXPECT(sawSounds);
+	EB_EXPECT(sawPoints);
+}
+
+EB_TEST_CASE(Script, ReferenceArrayReachesLuaAsAnIndexableTable, Integration)
+{
+	// sol2 turns a std::vector<UUID> into opaque userdata, where # reports nothing and ipairs never
+	// iterates - so every script reading a reference array would silently see an empty list.
+	auto scriptAsset = LoadScriptAsset("ref_array_lua.lua", R"(
+		local Refs = {}
+
+		Refs.Prefabs = PrefabRefArray()
+
+		function Refs:OnCreate(entity)
+		    self.count = #self.Prefabs
+		    self.iterated = 0
+		    for _, prefab in ipairs(self.Prefabs) do
+		        self.iterated = self.iterated + 1
+		    end
+		    self.firstIsValid = self.count > 0 and self.Prefabs[1]:IsValid() or false
+		    self.lastIsValid = self.count > 0 and self.Prefabs[self.count]:IsValid() or false
+		end
+
+		function Refs:OnUpdate(entity, delta) end
+
+		return Refs
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptReferenceArrayScene");
+	Entity populated = MakeEntityAt(*scene, "Populated", Vector3f(0.0f));
+	Entity untouched = MakeEntityAt(*scene, "Untouched", Vector3f(0.0f));
+
+	populated.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+	untouched.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+
+	// A half-filled list is the realistic editor state.
+	const std::vector<UUID> assigned = { UUID(0x1234ABCD), Constants::InvalidUUID };
+
+	// Re-fetch after both attaches - the second one can reallocate the dense component array.
+	auto& populatedScript = populated.GetComponent<ScriptComponent>();
+	ScriptEngine::SetScriptReferenceArrayPropertyOverride(populatedScript, "Prefabs", assigned, ScriptReferenceKind::Prefab);
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	{
+		auto& refreshed = populated.GetComponent<ScriptComponent>();
+		EB_CHECK(refreshed.Instance.valid());
+
+		// If the array arrived as userdata, OnCreate died on `#` and left every field nil.
+		EB_CHECK_MSG(refreshed.Instance["count"].valid(), "OnCreate did not complete - check the engine log for a Lua error");
+
+		EB_EXPECT_MSG(refreshed.Instance["count"].get<int>() == 2, "# did not see both elements of the override list");
+		EB_EXPECT_MSG(refreshed.Instance["iterated"].get<int>() == 2, "ipairs did not walk the override list");
+		EB_EXPECT_MSG(refreshed.Instance["firstIsValid"].get<bool>(), "the assigned UUID did not survive the trip into Lua");
+		EB_EXPECT_MSG(!refreshed.Instance["lastIsValid"].get<bool>(), "an unassigned slot should arrive as an invalid UUID");
+	}
+
+	{
+		// No override: the declared empty array must still be a table, not nil.
+		auto& refreshed = untouched.GetComponent<ScriptComponent>();
+		EB_CHECK(refreshed.Instance.valid());
+		EB_CHECK_MSG(refreshed.Instance["count"].valid(), "OnCreate did not complete on the unpopulated entity");
+		EB_EXPECT_MSG(refreshed.Instance["count"].get<int>() == 0, "an unpopulated reference array should read as empty");
+	}
+}
+
+EB_TEST_CASE(Script, ReferenceArrayOverrideSurvivesSerialization, Integration)
+{
+	// Reference arrays serialize as a sequence, not a scalar - a dropped round trip empties the pool.
+	const std::string scenePath = Ember::Test::TempFile("ref_array_scene.ebs");
+	const UUID scriptUUID(0x5150);
+	const std::vector<UUID> assigned = { UUID(0xAAAA), UUID(0xBBBB), UUID(0xCCCC) };
+
+	{
+		SceneFixture source("RefArraySerializeScene");
+		Entity entity = MakeEntityAt(*source, "Spawner", Vector3f(0.0f));
+		auto& component = entity.AttachComponent<ScriptComponent>(scriptUUID);
+		ScriptEngine::SetScriptReferenceArrayPropertyOverride(component, "Prefabs", assigned, ScriptReferenceKind::Prefab);
+
+		SceneSerializer serializer(source.Shared());
+		serializer.Serialize(scenePath);
+	}
+
+	SceneFixture target("RefArrayDeserializeScene");
+	SceneSerializer serializer(target.Shared());
+	serializer.Deserialize(scenePath);
+
+	Entity restored = target->GetEntity("Spawner");
+	EB_CHECK_MSG(restored.IsValid(), "the scripted entity did not survive the round trip");
+	EB_CHECK_MSG(restored.ContainsComponent<ScriptComponent>(), "the restored entity lost its ScriptComponent");
+
+	auto& restoredScript = restored.GetComponent<ScriptComponent>();
+	auto overrideEntry = restoredScript.UserPropertyOverrides.find("Prefabs");
+	EB_CHECK_MSG(overrideEntry != restoredScript.UserPropertyOverrides.end(), "the reference array override was not written or not read back");
+
+	EB_EXPECT(overrideEntry->second.Type == ScriptPropertyType::ReferenceArray);
+	EB_EXPECT_MSG(overrideEntry->second.ReferenceKind == ScriptReferenceKind::Prefab, "the element kind was lost in serialization");
+
+	const std::vector<UUID>* values = std::get_if<std::vector<UUID>>(&overrideEntry->second.Value);
+	EB_CHECK_MSG(values != nullptr, "the deserialized override does not hold a UUID list");
+	EB_EXPECT_MSG(*values == assigned, "the restored list does not match what was saved, in contents or order");
+
+	Ember::Test::RemoveTempFile(scenePath);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Script inheritance (Base)
 //////////////////////////////////////////////////////////////////////////

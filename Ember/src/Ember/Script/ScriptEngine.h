@@ -87,6 +87,14 @@ namespace Ember {
 			component.UserPropertyOverrides[propertyName] = { propertyName, value, type, referenceKind };
 		}
 
+		// Reference arrays are overridden whole - a script's declared array is only ever empty.
+		static void SetScriptReferenceArrayPropertyOverride(ScriptComponent& component, const std::string& propertyName,
+			std::vector<UUID> values, ScriptReferenceKind referenceKind)
+		{
+			component.UserPropertyOverrides[propertyName] =
+				{ propertyName, std::move(values), ScriptPropertyType::ReferenceArray, referenceKind };
+		}
+
 		inline static std::array<std::string, 5> DefaultEmberFunctions = {
 			"OnCreate",
 			"OnUpdate",

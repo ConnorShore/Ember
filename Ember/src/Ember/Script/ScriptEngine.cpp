@@ -168,7 +168,20 @@ namespace Ember {
 	sol::object ScriptEngine::ScriptPropertyValueToLua(sol::state& luaState, const ScriptPropertyValue& value)
 	{
 		return std::visit([&](const auto& typedValue) -> sol::object {
-			return sol::make_object(luaState, typedValue);
+			using ValueType = std::decay_t<decltype(typedValue)>;
+
+			// sol2 would hand the vector back as opaque userdata, where # and ipairs do nothing.
+			if constexpr (std::same_as<ValueType, std::vector<UUID>>)
+			{
+				sol::table array = luaState.create_table((int)typedValue.size(), 0);
+				for (size_t i = 0; i < typedValue.size(); ++i)
+					array[i + 1] = typedValue[i];
+				return sol::make_object(luaState, array);
+			}
+			else
+			{
+				return sol::make_object(luaState, typedValue);
+			}
 		}, value);
 	}
 
@@ -240,12 +253,24 @@ namespace Ember {
 	// GetScriptProperties helpers
 	//////////////////////////////////////////////////////////////////////////
 
-	// Handles the two supported table-shaped property kinds: an asset/entity reference wrapper
-	// (tagged with __ember_property_type == "Reference") or a string-keyed table of integers, which
-	// is treated as an enum (e.g. `Pickup.Kind = { Ammo = 1, Health = 2 }`).
+	// Handles the three table-shaped property kinds: a "Reference" wrapper, a "ReferenceArray"
+	// wrapper, or a string-keyed table of integers, which is treated as an enum.
 	static std::optional<ScriptProperty> ParseTableScriptProperty(sol::state& luaState, const std::string& name, sol::table tableValue)
 	{
 		sol::optional<std::string> propertyType = tableValue["__ember_property_type"];
+		if (propertyType && propertyType.value() == "ReferenceArray")
+		{
+			sol::optional<std::string> kindName = tableValue["Kind"];
+
+			// The declared default is always empty - contents come from the component's override.
+			ScriptProperty property;
+			property.Name = name;
+			property.Type = ScriptPropertyType::ReferenceArray;
+			property.Value = std::vector<UUID>{};
+			property.ReferenceKind = ScriptReferenceKindFromString(kindName.value_or("Asset"));
+			return property;
+		}
+
 		if (propertyType && propertyType.value() == "Reference")
 		{
 			sol::optional<std::string> kindName = tableValue["Kind"];

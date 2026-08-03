@@ -17,6 +17,16 @@ namespace Ember {
 		return ref;
 	}
 
+	// An empty Lua table carries no type, so array properties need an explicit tag to be classified.
+	static sol::table CreateScriptReferenceArrayDefinition(sol::this_state state, ScriptReferenceKind kind)
+	{
+		sol::state_view lua(state);
+		sol::table ref = lua.create_table();
+		ref["__ember_property_type"] = "ReferenceArray";
+		ref["Kind"] = ScriptReferenceKindToString(kind);
+		return ref;
+	}
+
 	static uint64_t ToRawUUID(const UUID& uuid)
 	{
 		return (uint64_t)uuid;
@@ -105,6 +115,23 @@ namespace Ember {
 			[](sol::this_state state, uint64_t uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::AudioClip, uuid); },
 			[](sol::this_state state, const UUID& uuid) { return CreateScriptReferenceDefinition(state, ScriptReferenceKind::AudioClip, ToRawUUID(uuid)); }
 		));
+
+		// Editor-populated reference lists; these reach scripts as 1-based Lua tables of UUIDs.
+		state.set_function("EntityRefArray", [](sol::this_state state) {
+			return CreateScriptReferenceArrayDefinition(state, ScriptReferenceKind::Entity);
+			});
+
+		state.set_function("AssetRefArray", [](sol::this_state state, const std::string& kind) {
+			return CreateScriptReferenceArrayDefinition(state, ScriptReferenceKindFromString(kind));
+			});
+
+		state.set_function("PrefabRefArray", [](sol::this_state state) {
+			return CreateScriptReferenceArrayDefinition(state, ScriptReferenceKind::Prefab);
+			});
+
+		state.set_function("AudioClipRefArray", [](sol::this_state state) {
+			return CreateScriptReferenceArrayDefinition(state, ScriptReferenceKind::AudioClip);
+			});
 	}
 
 }

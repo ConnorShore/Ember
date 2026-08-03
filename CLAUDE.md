@@ -235,10 +235,11 @@ inventing a test that asserts nothing.
 
 ## Conventions
 
-- **Comments**: keep them to 1–2 sentences — a brief note on what the following code does, or why it
-  does it. Favour *why* when the code already says *what*. No multi-paragraph block comments: if
-  something genuinely needs that much context it belongs in a README or `docs/`, not inline. This
-  applies to test files too.
+- **Comments**: default to a single line and a single sentence — a brief note on what the following
+  code does, or why it does it. Favour *why* when the code already says *what*. Wrap onto a second
+  line only when one sentence genuinely doesn't fit; a second sentence should be rare, and
+  multi-paragraph block comments are never right — if something needs that much context it belongs
+  in a README or `docs/`, not inline. This applies to test files too.
 - **Naming**: `EB_` prefix for engine macros (`EB_CORE_INFO/WARN/ERROR/FATAL` for engine-side
   logging, `EB_INFO/WARN/...` for app-side, `EB_CORE_ASSERT`, `EB_PROFILE_*`). `m_` prefix for member
   variables, `s_` for statics.

@@ -403,6 +403,15 @@ namespace Ember {
 					propNode["Value"] << (uint64_t)std::get<Ember::UUID>(prop.Value);
 					propNode["ReferenceKind"] << ScriptReferenceKindToString(prop.ReferenceKind);
 					break;
+				case ScriptPropertyType::ReferenceArray:
+				{
+					ryml::NodeRef valuesNode = propNode["Value"];
+					valuesNode |= ryml::SEQ;
+					for (const Ember::UUID& element : std::get<std::vector<Ember::UUID>>(prop.Value))
+						valuesNode.append_child() << (uint64_t)element;
+					propNode["ReferenceKind"] << ScriptReferenceKindToString(prop.ReferenceKind);
+					break;
+				}
 				default:
 					break;
 				}
@@ -1076,6 +1085,15 @@ namespace Ember {
 					propNode["Type"] >> typeInt;
 					ScriptPropertyType propType = (ScriptPropertyType)typeInt;
 
+					// Read the kind first - reference arrays need it to decide whether to remap elements.
+					ScriptReferenceKind referenceKind = ScriptReferenceKind::None;
+					if (propNode.has_child("ReferenceKind"))
+					{
+						std::string referenceKindName;
+						propNode["ReferenceKind"] >> referenceKindName;
+						referenceKind = ScriptReferenceKindFromString(referenceKindName);
+					}
+
 					ScriptPropertyValue propValue;
 
 					switch (propType)
@@ -1124,16 +1142,26 @@ namespace Ember {
 						propValue = propType == ScriptPropertyType::EntityRef ? getRemappedScriptEntityRef(val) : UUID(val);
 						break;
 					}
-					default:
+					case ScriptPropertyType::ReferenceArray:
+					{
+						std::vector<UUID> values;
+						if (propNode.has_child("Value"))
+						{
+							ryml::NodeRef valuesNode = propNode["Value"];
+							values.reserve(valuesNode.num_children());
+							for (ryml::NodeRef valueNode : valuesNode.children())
+							{
+								uint64_t val = Constants::InvalidUUID;
+								valueNode >> val;
+								values.push_back(referenceKind == ScriptReferenceKind::Entity
+									? getRemappedScriptEntityRef(val) : UUID(val));
+							}
+						}
+						propValue = std::move(values);
 						break;
 					}
-
-					ScriptReferenceKind referenceKind = ScriptReferenceKind::None;
-					if (propNode.has_child("ReferenceKind"))
-					{
-						std::string referenceKindName;
-						propNode["ReferenceKind"] >> referenceKindName;
-						referenceKind = ScriptReferenceKindFromString(referenceKindName);
+					default:
+						break;
 					}
 
 					scriptUserOverrides[propName] = { propName, propValue, propType, referenceKind };

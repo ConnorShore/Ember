@@ -543,10 +543,13 @@ namespace Ember {
 			return UI::RenderFilterGrid(label, filter, filterManager);
 		}
 
-		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver)
+		bool DynamicUUIDArrayDragDrop(const std::string& listName, const std::string& itemLabelPrefix, std::vector<UUID>& values, const std::string& payloadType, UUIDNameResolver nameResolver, AssetPathResolver pathResolver /* = nullptr */)
 		{
 			bool changed = false;
 			std::string caption = std::to_string(values.size()) + " items";
+
+			// Scope widgets to this list - every list's "+" shares a label, and so would share an ID.
+			ImGui::PushID(listName.c_str());
 
 			// 1. Draw the Header
 			if (HeaderWithActionButton(listName, "+", caption))
@@ -561,7 +564,9 @@ namespace Ember {
 			for (size_t i = 0; i < values.size(); i++)
 			{
 				UUID currentUUID = values[i];
-				std::string label = std::format("{} {}", itemLabelPrefix, i);
+
+				// 1-based to match the Lua-side indices these lists are usually read with
+				std::string label = std::format("{} {}", itemLabelPrefix, (i + 1));
 
 				std::string displayName = "None";
 				if (currentUUID != Constants::InvalidUUID)
@@ -570,14 +575,26 @@ namespace Ember {
 					displayName = nameResolver(currentUUID);
 				}
 
-				UUID droppedUUID = Constants::InvalidUUID;
+				UICallbackFunc removeFunc = [&]() { elementToRemove = (int)i; };
 
-				// Note: We use EntityReference here because it already does exactly what we want: 
-				// A label, a button, an X to clear, and it outputs a dropped UUID.
-				if (EntityReference(label, displayName, payloadType, droppedUUID, [&]() { elementToRemove = (int)i; }))
+				// Both helpers draw the same row and differ only in what the payload contains.
+				if (pathResolver)
 				{
-					values[i] = droppedUUID;
-					changed = true;
+					std::string droppedPath;
+					if (AssetReference(label, displayName, payloadType, droppedPath, nullptr, removeFunc))
+					{
+						values[i] = pathResolver(droppedPath);
+						changed = true;
+					}
+				}
+				else
+				{
+					UUID droppedUUID = Constants::InvalidUUID;
+					if (EntityReference(label, displayName, payloadType, droppedUUID, removeFunc))
+					{
+						values[i] = droppedUUID;
+						changed = true;
+					}
 				}
 			}
 
@@ -588,6 +605,7 @@ namespace Ember {
 				changed = true;
 			}
 
+			ImGui::PopID();
 			return changed;
 		}
 

@@ -13,6 +13,8 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 
 - [Script Structure &amp; Lifecycle](#script-structure--lifecycle)
   - [Enum Properties](#enum-properties)
+  - [Reference Properties](#reference-properties)
+  - [Reference Arrays](#reference-arrays)
   - [Script Inheritance (`Base`)](#script-inheritance-base)
 - [Core Types](#core-types)
   - [`UUID`](#uuid)
@@ -51,9 +53,10 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 ## Script Structure & Lifecycle
 
 Every Ember script is a Lua module that returns a table. Fields on this table that match a
-supported type (`int`, `float`, `string`, `bool`, or an enum table — see
-[Enum Properties](#enum-properties)) are surfaced as **editable properties** in the Inspector.
-Any of the following methods, if present, are invoked by the engine:
+supported type (`int`, `float`, `string`, `bool`, `Vector3f`, an enum table — see
+[Enum Properties](#enum-properties) — or an entity/asset reference — see
+[Reference Properties](#reference-properties)) are surfaced as **editable properties** in the
+Inspector. Any of the following methods, if present, are invoked by the engine:
 
 | Method                                         | When called                                                    | Signature                                   |
 | ---------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------- |
@@ -71,7 +74,7 @@ Any of the following methods, if present, are invoked by the engine:
 ```lua
 local MyScript = {}
 
--- Editor-exposed properties (must be primitive types)
+-- Editor-exposed properties
 MyScript.Speed       = 5.0
 MyScript.Health      = 100
 MyScript.PlayerName  = "Hero"
@@ -133,6 +136,82 @@ The option list is taken from the table at script-load time and the *first optio
 is the default. The editor stores the selected option's integer value on the component, so reading
 `self.Kind` from Lua returns a plain number — compare it against the named entries on the
 original table.
+
+### Reference Properties
+
+A property can hold a reference to a scene entity or to an asset. Declare it with one of the
+reference constructors and assign the actual target in the Inspector — by dragging an entity from
+the Scene Hierarchy or an asset from the Asset Manager onto the property's slot.
+
+```lua
+local Turret = {}
+
+Turret.Target        = EntityRef()               -- an entity in the scene
+Turret.ProjectilePrefab = PrefabRef()            -- a .ebprefab asset
+Turret.FireSound     = AudioClipRef()            -- an audio clip
+Turret.MuzzleFlash   = AssetRef("Texture")       -- any asset kind, by name
+
+return Turret
+```
+
+`AssetRef(kind)` accepts `"Texture"`, `"Mesh"`, `"Model"`, `"Script"`, `"Shader"`, `"Material"`,
+`"PhysicsMaterial"`, `"Prefab"`, `"Font"`, `"AudioClip"` and `"Scene"`. The slot only accepts drops
+of the declared kind.
+
+At runtime the property reads back as a `UUID`, which is what the reference-taking APIs expect:
+
+```lua
+function Turret:Fire()
+    if self.ProjectilePrefab:IsValid() then
+        Scene.InstantiatePrefab(self.ProjectilePrefab, self.SpawnPoint)
+    end
+end
+```
+
+An unassigned reference is an invalid `UUID` — always guard with `:IsValid()` before using one.
+
+### Reference Arrays
+
+To let a designer build a *list* of references without editing the script — a pool of spawnable
+prefabs, a set of patrol points, a bank of hit sounds — declare a reference array. The Inspector
+draws it as a resizable list: **+** adds a slot, **X** removes one, and each slot is a drop target.
+
+```lua
+local PowerUpManager = {}
+
+PowerUpManager.PowerUpPrefabs = PrefabRefArray()
+PowerUpManager.DeathSounds    = AudioClipRefArray()
+PowerUpManager.PatrolPoints   = EntityRefArray()
+PowerUpManager.Decals         = AssetRefArray("Texture")
+
+return PowerUpManager
+```
+
+The declaration is always empty — the contents live on the component, so two entities using the same
+script can each have their own list.
+
+In Lua the property is a plain **1-based table** of `UUID`s, so `#`, `ipairs` and indexing all work:
+
+```lua
+function PowerUpManager:OnCreate(entity)
+    -- Empty Inspector slots come through as invalid UUIDs; filter them out once up front
+    self.Pool = {}
+    for _, prefab in ipairs(self.PowerUpPrefabs) do
+        if prefab:IsValid() then
+            table.insert(self.Pool, prefab)
+        end
+    end
+end
+
+function PowerUpManager:SpawnRandom(position)
+    if #self.Pool == 0 then
+        return
+    end
+
+    local prefab = self.Pool[Math.RandomInt(1, #self.Pool)]
+    return Scene.InstantiatePrefab(prefab, position)
+end
+```
 
 ### Script Inheritance (`Base`)
 
