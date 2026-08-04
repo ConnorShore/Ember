@@ -4,6 +4,7 @@
 #include "Panels/Panel.h"
 #include "EditorContext.h"
 #include "ProjectSettingsDialog.h"
+#include "WelcomeDialog.h"
 #include "Utils/ViewportGizmoController.h"
 #include "Viewers/EditorViewportTabs.h"
 
@@ -66,7 +67,6 @@ namespace Ember {
 		void RenderSceneViewport();
 		void RenderNewProjectPopup();
 		void RenderNewScenePopup();
-		void RenderWelcomePopup();
 		void RenderClosePrefabPrompt();
 
 		bool OnKeyPressed(KeyPressedEvent& e);
@@ -88,8 +88,12 @@ namespace Ember {
 
 		void OutlineEntity(Entity entity);
 
+		// Requests, not completions - NewProject only queues the popup, so neither can report the resulting project
 		void NewProject();
-		void OpenProject();
+		void OpenProject(const std::string& projectFilePath = "");
+
+		// The one point every route converges on once a project is actually active
+		void OnProjectOpened(const std::filesystem::path& projectFilePath);
 		void NewScene();
 		void SaveScene(bool saveAs = false);
 		void SaveProject();
@@ -213,6 +217,7 @@ namespace Ember {
 
 		bool m_ShowProjectSettingsPopup = false;
 		ProjectSettingsDialog m_ProjectSettingsDialog;
+		WelcomeDialog m_WelcomeDialog;
 
 		RenderPassSettings m_EditorRenderPassSettings;
 

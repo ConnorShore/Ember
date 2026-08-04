@@ -126,6 +126,11 @@ namespace Ember {
 		m_ToolbarProps.PauseButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Pause.png")->GetID();
 		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
 
+		// Welcome screen shown until a project is opened
+		m_WelcomeDialog.OnAttach();
+		m_WelcomeDialog.SetNewProjectCallback([this]() { NewProject(); });
+		m_WelcomeDialog.SetOpenProjectCallback([this](const std::string& projectFilePath) { OpenProject(projectFilePath); });
+
 		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
 		Application::Instance().GetSceneManager().SetOnSceneChangedCallback([this](SharedPtr<Scene> newScene)
 		{
@@ -371,12 +376,22 @@ namespace Ember {
 	void EditorLayer::OnImGuiRender(TimeStep delta)
 	{
 		ImGuizmo::BeginFrame();
-		ImGui::DockSpaceOverViewport();
+
+		// The welcome screen paints its own backdrop, so the dockspace is only kept alive (not drawn)
+		// while no project is loaded - otherwise it would cover the backdrop with an empty grey node.
+		const bool hasProject = ProjectManager::GetActive() != nullptr;
+		ImGuiDockNodeFlags dockFlags = hasProject
+			? ImGuiDockNodeFlags_None
+			: ImGuiDockNodeFlags_KeepAliveOnly | ImGuiDockNodeFlags_PassthruCentralNode;
+		ImGui::DockSpaceOverViewport(0, nullptr, dockFlags);
 
 		// Block all editor interaction until the user opens or creates a project
-		if (ProjectManager::GetActive() == nullptr)
+		if (!hasProject)
 		{
-			RenderWelcomePopup();
+			// Hand the screen over to the New Project dialog once it is queued instead of fighting it for focus
+			bool newProjectPending = m_NewProjectSettings.ShowProjectSettingsPopup || ImGui::IsPopupOpen("New Project");
+			m_WelcomeDialog.OnImGuiRender(!newProjectPending);
+
 			RenderNewProjectPopup();
 			return;
 		}
@@ -823,92 +838,6 @@ namespace Ember {
 		ImGui::EndPopup();
 	}
 
-	void EditorLayer::RenderWelcomePopup()
-	{
-		// If the New Project dialog is queued or already open, hand off to it
-		// instead of fighting it for focus as a competing modal.
-		if (m_NewProjectSettings.ShowProjectSettingsPopup || ImGui::IsPopupOpen("New Project"))
-			return;
-
-		// Open the welcome modal exactly once. While it's open the rest of the
-		// editor is short-circuited in OnImGuiRender, so the modal effectively
-		// blocks all interaction until a project is created or opened.
-		const char* popupName = "Welcome to Ember Forge";
-		if (!ImGui::IsPopupOpen(popupName))
-			ImGui::OpenPopup(popupName);
-
-		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-		ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(500, 260), ImGuiCond_Always);
-
-		ImGuiWindowFlags flags =
-			ImGuiWindowFlags_NoSavedSettings |
-			ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoCollapse |
-			ImGuiWindowFlags_NoTitleBar;
-
-		if (ImGui::BeginPopupModal(popupName, nullptr, flags))
-		{
-			const ImVec4 emberOrange = ImVec4(0.89f, 0.25f, 0.07f, 1.0f);
-			const ImVec4 forgeWhite  = ImVec4(0.92f, 0.92f, 0.92f, 1.0f);
-
-			const float titleScale = 2.4f;
-			ImGui::SetWindowFontScale(titleScale);
-
-			ImVec2 emberSize = ImGui::CalcTextSize("Ember ");
-			ImVec2 forgeSize = ImGui::CalcTextSize("Forge");
-			float totalTitleW = emberSize.x + forgeSize.x;
-
-			ImGui::Dummy(ImVec2(0.0f, 8.0f));
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalTitleW) * 0.5f);
-			ImGui::TextColored(emberOrange, "Ember");
-			ImGui::SameLine(0.0f, 0.0f);
-			ImGui::TextColored(forgeWhite, " Forge");
-
-			ImGui::SetWindowFontScale(1.0f);
-
-			ImGui::Spacing();
-
-			const char* subtitle = "Get started by creating a new project or opening an existing one.";
-			ImVec2 subSize = ImGui::CalcTextSize(subtitle);
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - subSize.x) * 0.5f);
-			ImGui::TextUnformatted(subtitle);
-
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			// Center the buttons in the remaining vertical space
-			float buttonW = 180.0f;
-			float buttonH = 48.0f;
-			float spacing = ImGui::GetStyle().ItemSpacing.x;
-			float totalW = buttonW * 2.0f + spacing;
-
-			float availH = ImGui::GetContentRegionAvail().y;
-			if (availH > buttonH)
-				ImGui::Dummy(ImVec2(0.0f, (availH - buttonH) * 0.5f));
-
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalW) * 0.5f);
-
-			if (ImGui::Button("New Project", ImVec2(buttonW, buttonH)))
-			{
-				ImGui::CloseCurrentPopup();
-				NewProject();
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::Button("Open Project", ImVec2(buttonW, buttonH)))
-			{
-				ImGui::CloseCurrentPopup();
-				OpenProject();
-			}
-
-			ImGui::EndPopup();
-		}
-	}
-
 	void EditorLayer::RenderNewProjectPopup()
 	{
 		if (m_NewProjectSettings.ShowProjectSettingsPopup)
@@ -970,6 +899,8 @@ namespace Ember {
 				{
 					assetPanel->UpdateRootDirectory(project->GetAssetDirectory().parent_path());
 				}
+
+				OnProjectOpened(project->GetProjectFilePath());
 
 				ImGui::CloseCurrentPopup();
 			}
@@ -1599,9 +1530,18 @@ namespace Ember {
 		m_NewProjectSettings.ShowProjectSettingsPopup = true;
 	}
 
-	void EditorLayer::OpenProject()
+	void EditorLayer::OnProjectOpened(const std::filesystem::path& projectFilePath)
 	{
-		std::string projectFile = FileDialog::OpenFile("", "Ember Project (*.ebproj)", "*.ebproj");
+		m_WelcomeDialog.UpdateRecentProjectsAndSave({ projectFilePath.stem().string(), projectFilePath.string() });
+	}
+
+	void EditorLayer::OpenProject(const std::string& projectFilePath /* = "" */)
+	{
+		// An empty path means the caller wants to browse for the project file
+		std::string projectFile = projectFilePath.empty()
+			? FileDialog::OpenFile("", "Ember Project (*.ebproj)", "*.ebproj")
+			: projectFilePath;
+
 		if (projectFile.empty())
 			return;
 
@@ -1625,6 +1565,8 @@ namespace Ember {
 
 		// Load the default scene for the project (assets must be ready first)
 		OpenScene(project->GetStartScenePath().string());
+
+		OnProjectOpened(project->GetProjectFilePath());
 	}
 
 	void EditorLayer::NewScene()
@@ -2332,6 +2274,11 @@ namespace Ember {
 		colors[ImGuiCol_PopupBg] = bgDarkest;
 		colors[ImGuiCol_Border] = borderCol;
 		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+		// Defaults for these two are light grey, which washes the editor out whenever a modal
+		// is open or the dockspace has no docked windows
+		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.02f, 0.02f, 0.03f, 0.55f);
+		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
 
 		// Frames (Inputs, Checkboxes)
 		colors[ImGuiCol_FrameBg] = bgLight;
