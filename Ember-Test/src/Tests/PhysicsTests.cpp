@@ -531,6 +531,64 @@ EB_TEST_CASE(Physics, RemovingAnEntityDestroysItsBody, Integration)
 	EB_EXPECT_NEAR(after.CollisionPoint.y, 0.0f, 1e-2);
 }
 
+EB_TEST_CASE(Physics, DestroyingABodyWithAQueuedOverlapExitDoesNotAssert, Integration)
+{
+	// Regression: rp3d queues "lost" overlap pairs from computeBroadPhase(), which also runs OUTSIDE
+	// PhysicsWorld::update() - every testOverlap()/testCollision() snapshot query calls it. The queue is
+	// only drained by the next update(), and each entry names its bodies by rp3d entity, so a body
+	// destroyed in that window was looked up after it stopped existing and tripped
+	// BodyComponents::getBody()'s assert. Shipped games hit it as: walk into a trigger pickup ->
+	// Scene::RemoveEntity -> RemovePendingRemovals -> assert on the next frame's physics step.
+	PhysicsSceneFixture scene("PhysicsLostPairScene");
+
+	Entity mover = MakeEntityAt(*scene, "Mover", Lane() + Vector3f(0.0f, 0.0f, 0.5f));
+	mover.AttachComponent<RigidBodyComponent>(RigidBodyComponent::BodyType::Kinematic, 1.0f, true);
+	mover.AttachComponent<BoxColliderComponent>(Vector3f(2.0f));
+
+	// Dynamic with gravity off (so it stays put) rather than static, to be sure the pair is narrow-phased
+	// and reported at all - it has to be reported once before it can ever be reported as lost.
+	Entity victim = MakeEntityAt(*scene, "Victim", Lane());
+	victim.AttachComponent<RigidBodyComponent>(RigidBodyComponent::BodyType::Dynamic, 1.0f, false);
+	victim.AttachComponent<BoxColliderComponent>(Vector3f(2.0f));
+
+	// Triggers, so the lost pair lands in the trigger report path - the one PhysicsEventListener reads.
+	mover.GetComponent<BoxColliderComponent>().IsTrigger = true;
+	victim.GetComponent<BoxColliderComponent>().IsTrigger = true;
+
+	scene.Attach();
+
+	// Overlapping and reported, which is what sets collidingInPreviousFrame - the precondition for rp3d
+	// queueing a lost pair when the two separate again.
+	scene.Step(2);
+
+	// Kinematic bodies are pushed from the entity transform AFTER update() (PhysicsSystem::UpdateRigidbodies),
+	// so the step that moves the body is not the step that notices the separation. The count matters:
+	// one step leaves WorldTransform stale so the body never moves, three lets update() consume the
+	// lost pair harmlessly before the query below can queue it.
+	mover.GetComponent<TransformComponent>().Position = Lane() + Vector3f(0.0f, 0.0f, 60.0f);
+	scene.Step(2);
+
+	// The out-of-update broadphase run. This is what queues the lost pair naming the victim's body.
+	Sys<PhysicsSystem>()->TestOverlapSphere(Lane(200.0f), 1.0f, Entity(), FilterPreset::All);
+
+	const UUID victimUUID = victim.GetUUID();
+	scene->RemoveEntity(victim);
+	scene.TickEdit(); // drains the removal queue and destroys the body; does NOT step the world
+	EB_CHECK_MSG(!(scene->GetEntity(victimUUID)).IsValid(), "the victim entity was never removed");
+
+	// Before the fix, reporting the queued pair asserted inside rp3d here.
+	scene.Step(1);
+
+	// ...and the world is still coherent: the survivor kept its body and still answers queries.
+	EB_EXPECT_MSG(mover.GetComponent<RigidBodyComponent>().Body != nullptr, "the surviving body was lost");
+
+	const OverlapTestData overlaps = Sys<PhysicsSystem>()->TestOverlapSphere(
+		Lane() + Vector3f(0.0f, 0.0f, 60.0f), 3.0f, Entity(), FilterPreset::All);
+	EB_CHECK_MSG(static_cast<bool>(overlaps), "the surviving collider left the physics world");
+	EB_EXPECT_EQ(overlaps.Hits.size(), (size_t)1);
+	EB_EXPECT_EQ(overlaps.Hits[0].EntityID, mover.GetEntityHandle());
+}
+
 EB_TEST_CASE(Physics, ReattachingASceneRebuildsEveryBody, Integration)
 {
 	// OnSceneAttach destroys the rp3d world and rebuilds it from the components. Every body pointer
