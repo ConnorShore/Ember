@@ -22,6 +22,7 @@ namespace Ember {
 		ApplicationSpecification spec;
 		spec.Name = "Ember Forge";
 		spec.WindowSpecification.Title = "Ember Forge";
+		//spec.WindowSpecification.IconPath = "Ember-Forge/assets/images/EmberIcon.png";
 		spec.WindowSpecification.Width = 1600;
 		spec.WindowSpecification.Height = 900;
 		spec.WindowSpecification.StartMaximized = true;

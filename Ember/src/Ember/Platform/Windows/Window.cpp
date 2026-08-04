@@ -8,6 +8,7 @@
 #include "Ember/Input/Input.h"
 
 #include <glad/glad.h>
+#include <stb_image.h>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
@@ -63,6 +64,7 @@ namespace Ember {
 			// Hide the window before creation to prevent the "teleport flicker"
 			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
+			// Create the GLFW window
 			m_Window = glfwCreateWindow(config.Width, config.Height, config.Title.c_str(), NULL, NULL);
 			if (!m_Window)
 			{
@@ -74,6 +76,27 @@ namespace Ember {
 				EB_CORE_ERROR("Failed to create GLFW window!");
 				throw std::runtime_error("Failed to create GLFW window");
 			}
+
+			// Set the window icon
+			if (!config.IconPath.empty())
+			{
+				GLFWimage icon;
+				icon.pixels = stbi_load(config.IconPath.string().c_str(), &icon.width, &icon.height, 0, 4);
+				if (icon.pixels)
+				{
+					glfwSetWindowIcon(m_Window, 1, &icon);
+					stbi_image_free(icon.pixels);
+				}
+				else
+				{
+					EB_CORE_WARN("Failed to load window icon from path: {}", config.IconPath.string());
+				}
+			}
+
+			// Set dark theme for the window (Windows 10/11)
+			HWND hwnd = glfwGetWin32Window(m_Window);
+			BOOL useDarkMode = TRUE;
+			DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 
 			// Center window on monitor
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -87,16 +110,11 @@ namespace Ember {
 				glfwSetWindowPos(m_Window, xPos, yPos);
 			}
 
-			// Reveal the window now that it is placed
-			glfwShowWindow(m_Window);
-
-			// Set dark theme for the window (Windows 10/11)
-			HWND hwnd = glfwGetWin32Window(m_Window);
-			BOOL useDarkMode = TRUE;
-			DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
-
 			if (config.StartMaximized)
 				glfwMaximizeWindow(m_Window);
+
+			// Reveal the window now that it is placed
+			glfwShowWindow(m_Window);
 
 			// Create graphics context
 			m_GraphicsContext = GraphicsContext::Create(m_Window);
