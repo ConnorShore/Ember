@@ -46,10 +46,13 @@ SolidCompression=yes
 
 ; Authored alongside the other branding assets; Stage.bat also copies it to {app}\EmberProject.ico.
 SetupIconFile=..\Ember-Forge\assets\images\EmberIcon.ico
-; Ember-Forge.exe carries no icon resource, so Apps & Features is pointed at the shipped .ico
-; instead - otherwise the entry would show a blank icon.
 UninstallDisplayIcon={app}\EmberProject.ico
 UninstallDisplayName={#AppName}
+
+; Required for the [Registry] association below to take effect promptly: it makes Setup broadcast
+; SHCNE_ASSOCCHANGED, without which Explorer keeps drawing the previous (generic) .ebproj icon from
+; its cache until the next logon.
+ChangesAssociations=yes
 
 OutputDir=..\build\installer
 OutputBaseFilename=EmberForge-{#AppVersionFull}-Setup
@@ -76,8 +79,8 @@ Name: "associateproject"; Description: "Associate .ebproj project files with {#A
 Source: "..\build\stage\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-; IconFilename points the shortcuts at the shipped .ico because the executable has no icon resource
-; of its own; without it these would show the generic Windows application icon.
+; Ember-Forge.exe carries its own icon resource (Ember-Forge\EmberForge.rc), so IconFilename is only
+; belt-and-braces here - it pins the shortcuts to a known-good .ico regardless of the build.
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\EmberProject.ico"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\EmberProject.ico"; Tasks: desktopicon
 
@@ -85,8 +88,13 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename:
 ; HKA resolves to HKLM for an all-users install and HKCU for a per-user one, matching whichever mode
 ; the user picked. uninsdeletekey removes the association on uninstall.
 Root: HKA; Subkey: "Software\Classes\.ebproj"; ValueType: string; ValueName: ""; ValueData: "Ember.Project"; Flags: uninsdeletevalue uninsdeletekeyifempty; Tasks: associateproject
+; Without this Windows invents its own "ebproj_auto_file" ProgId the first time the user picks an app
+; from Open With, and that one has no DefaultIcon - which is the generic white page icon.
+Root: HKA; Subkey: "Software\Classes\.ebproj\OpenWithProgids"; ValueType: string; ValueName: "Ember.Project"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty; Tasks: associateproject
 Root: HKA; Subkey: "Software\Classes\Ember.Project"; ValueType: string; ValueName: ""; ValueData: "Ember Project"; Flags: uninsdeletekey; Tasks: associateproject
-Root: HKA; Subkey: "Software\Classes\Ember.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EmberProject.ico"; Flags: uninsdeletekey; Tasks: associateproject
+; Quoted because the default install path contains a space; PathParseIconLocation strips the quotes
+; before splitting off an icon index, so an unquoted path with spaces can silently fail to resolve.
+Root: HKA; Subkey: "Software\Classes\Ember.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\EmberProject.ico"""; Flags: uninsdeletekey; Tasks: associateproject
 Root: HKA; Subkey: "Software\Classes\Ember.Project\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: associateproject
 
 ; Lets Windows find the editor by name, e.g. from Start > Run.

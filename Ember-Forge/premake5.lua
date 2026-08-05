@@ -58,6 +58,8 @@
 
    filter "system:windows"
       systemversion "latest"
+      -- Embeds EmberIcon.ico so the executable itself is branded, not just the installer's shortcuts.
+      files { "EmberForge.rc" }
 
    -- Make "uninitialized variable used" a hard build error (C4700 definitely, C4701/C4703
    -- potentially) so the optimizer-exposed UB behind the Debug-vs-Release rendering divergence

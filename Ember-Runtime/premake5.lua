@@ -42,6 +42,8 @@
 
    filter "system:windows"
       systemversion "latest"
+      -- Embeds EmberIcon.ico so exported games carry the brand icon, not the generic Windows one.
+      files { "EmberRuntime.rc" }
 
    -- Make "uninitialized variable used" a hard build error (C4700 definitely, C4701/C4703
    -- potentially) so the optimizer-exposed UB behind the Debug-vs-Release rendering divergence
@@ -72,7 +74,9 @@
       staticruntime "On"
       optimize "On"
       symbols "Off"
-      -- kind "WindowedApp"
-      -- entrypoint "mainCRTStartup"
+      -- No console window for a shipped game; entrypoint is needed because EntryPoint.h defines
+      -- main() rather than WinMain(). Logging still reaches Logs/runtime.txt (see EmberRuntimeApp).
+      kind "WindowedApp"
+      entrypoint "mainCRTStartup"
 
    filter {}

@@ -1,0 +1,9 @@
+// Gives Ember-Runtime.exe its own icon, so exported games are branded rather than showing the
+// generic Windows application icon.
+// Reaches into Ember-Forge's assets deliberately: that .ico is the one canonical brand icon (it is
+// also SetupIconFile and the source of the installed EmberProject.ico), and a second copy here would
+// drift. This is a build-time path only - it creates no dependency on the editor.
+
+#define IDI_EMBER_ICON 101
+
+IDI_EMBER_ICON ICON "..\\Ember-Forge\\assets\\images\\EmberIcon.ico"

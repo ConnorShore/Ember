@@ -1,0 +1,7 @@
+// Gives Ember-Forge.exe its own icon in Explorer, the taskbar and Alt-Tab.
+// The shell uses the lowest-numbered ICON resource, so this must stay the first one.
+// The path is relative to this file's directory, which is also the project directory.
+
+#define IDI_EMBER_ICON 101
+
+IDI_EMBER_ICON ICON "assets\\images\\EmberIcon.ico"
