@@ -76,6 +76,16 @@ two to consume, so the version lives in exactly one place.
 vendored `scripts/vendor/open_trace_in_ui.py`. Requires Python 3. Traces only exist for builds with
 `EB_PROFILE` defined (the Profile configuration).
 
+## Releases from CI
+
+`.github/workflows/release-installer.yml` runs `GenerateProjects.bat`, `Build.bat Dist`,
+`BuildInstaller.bat` and `Package.bat` on a GitHub-hosted runner, then optionally creates a GitHub
+Release. Trigger it manually from the **Actions** tab. It cannot run `RunTests.bat` — hosted runners
+have no GPU driver and the suite needs an OpenGL 4.5 context — so run the tests locally first.
+
+Every script here honours `EMBER_NO_PAUSE`, which is what lets CI call them without hanging on a
+`pause`.
+
 ## Adding a script
 
 Put it in the folder matching its purpose, resolve the repo root with `pushd "%~dp0..\..\.."` (three

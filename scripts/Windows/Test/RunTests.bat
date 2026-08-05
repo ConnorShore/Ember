@@ -53,7 +53,7 @@ if not exist "%EXE%" (
     echo.
     popd
     endlocal
-    pause
+    if not defined EMBER_NO_PAUSE pause
     exit /b 2
 )
 
@@ -80,5 +80,5 @@ echo.
 
 popd
 endlocal
-pause
+if not defined EMBER_NO_PAUSE pause
 exit /b %RESULT%

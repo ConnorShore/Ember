@@ -37,6 +37,11 @@ auto-synced with the filesystem. The three `Package\` scripts do not build eithe
 existing Dist build. See `docs/internal/Distribution.md` for the shipped layout, the payload
 exclusions, and the release checklist.
 
+`.github/workflows/release-installer.yml` runs those same scripts on a GitHub runner to cut a release
+(manual trigger). It cannot run `Ember-Test` — hosted runners have no GPU driver and the suite needs
+an OpenGL 4.5 context — so the suite is still a local step. Every script honours `EMBER_NO_PAUSE`,
+which is what keeps their `pause` calls from hanging CI.
+
 You can also build via Visual Studio 2026 (Desktop development with C++ workload) by opening
 `Ember.slnx`. `Ember-Forge` is the startup project (F5 launches the editor). Three
 configurations: **Debug** (asserts + full debug info), **Release** (optimized, logging/asserts still

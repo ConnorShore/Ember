@@ -108,7 +108,7 @@ if "%OPENED%"=="0" (
 )
 
 popd
-pause
+if not defined EMBER_NO_PAUSE pause
 exit /b %EXIT_CODE%
 
 :OpenOne

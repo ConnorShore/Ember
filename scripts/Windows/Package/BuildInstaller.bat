@@ -11,15 +11,25 @@ pushd "%~dp0..\..\.."
 :: ---------------------------------------------------------------
 :: Locate the Inno Setup compiler
 :: ---------------------------------------------------------------
+:: Version 6 is checked too because that is what Chocolatey installs (and what CI uses); the script
+:: only needs Inno 6.3+ for the x64compatible architecture identifier.
 set ISCC=%INNO_SETUP%
-if not defined ISCC set ISCC=%ProgramFiles(x86)%\Inno Setup 7\ISCC.exe
-if not exist "%ISCC%" set ISCC=%ProgramFiles%\Inno Setup 7\ISCC.exe
+if defined ISCC goto :have_iscc
 
+set "ISCC=%ProgramFiles(x86)%\Inno Setup 7\ISCC.exe"
+if exist "%ISCC%" goto :have_iscc
+set "ISCC=%ProgramFiles%\Inno Setup 7\ISCC.exe"
+if exist "%ISCC%" goto :have_iscc
+set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+if exist "%ISCC%" goto :have_iscc
+set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+
+:have_iscc
 if not exist "%ISCC%" (
     echo ERROR: Could not find ISCC.exe, the Inno Setup command line compiler.
     echo.
-    echo Install Inno Setup 7 from https://jrsoftware.org/isdl.php, or set INNO_SETUP
-    echo to the full path of ISCC.exe if it lives somewhere non-standard.
+    echo Install Inno Setup 6.3 or newer from https://jrsoftware.org/isdl.php, or set
+    echo INNO_SETUP to the full path of ISCC.exe if it lives somewhere non-standard.
     goto :fail
 )
 
@@ -54,5 +64,5 @@ echo Installer build FAILED.
 echo.
 popd
 endlocal
-PAUSE
+if not defined EMBER_NO_PAUSE PAUSE
 exit /b 1

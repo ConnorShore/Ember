@@ -58,8 +58,10 @@ Profiles/
 # payload too (see scripts/Windows/StageExclude.txt), so packaging never depends on local cook state.
 *.bin
 
-# Staging tree, portable zip and installer output (scripts/Windows/Stage.bat)
-build/
+# Staging tree, portable zip and installer output (scripts/Windows/Package/Stage.bat).
+# Leading slash anchors this to the repo root - unanchored "build/" also matches any nested
+# directory named build, which on case-insensitive Windows swallowed scripts/Windows/Build/.
+/build/
 
 # Misc files
 TODOs.md

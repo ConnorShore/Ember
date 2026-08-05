@@ -42,5 +42,5 @@ echo Packaging FAILED.
 echo.
 popd
 endlocal
-PAUSE
+if not defined EMBER_NO_PAUSE PAUSE
 exit /b 1

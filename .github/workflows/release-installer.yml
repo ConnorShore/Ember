@@ -1,0 +1,172 @@
+name: Release Installer
+
+# Manual only: run it from the Actions tab when you want to cut a release.
+# The version comes from Ember/src/Ember/Core/Version.h - bump that first, and commit it.
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Create a GitHub Release (off = just attach build artifacts to this run)"
+        type: boolean
+        default: true
+      draft:
+        description: "Create the release as a draft, so you can review before publishing"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark the release as a pre-release"
+        type: boolean
+        default: true
+
+# Needed by `gh release create`.
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    # windows-2025 carries Visual Studio 2026 since the June 2026 image migration, which is what
+    # Premake's vs2026 action targets. Pinned rather than windows-latest so a future image change
+    # cannot silently alter a release build.
+    runs-on: windows-2025
+    timeout-minutes: 90
+
+    env:
+      # Every script in scripts\Windows ends in a pause; without this the job would hang.
+      EMBER_NO_PAUSE: 1
+
+    steps:
+      - name: Check out with submodules
+        uses: actions/checkout@v4
+        with:
+          # Vendored libraries are submodules; without them premake and MSBuild cannot find headers.
+          submodules: recursive
+          # Full history so `gh release --generate-notes` can diff against the previous tag.
+          fetch-depth: 0
+
+      - name: Verify the toolchain
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found - no Visual Studio on this image." }
+
+          $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+          if (-not $msbuild) { throw "MSBuild not found." }
+
+          $version = & $vswhere -latest -prerelease -products * -property catalog_productDisplayVersion
+          Write-Host "MSBuild: $msbuild"
+          Write-Host "Visual Studio: $version"
+
+          # Premake generates vs2026 projects, which need the VS 18.x (2026) toolset.
+          if ([int]($version -split '\.')[0] -lt 18) {
+            throw "This image has Visual Studio $version, but premake's vs2026 action needs 18.x (VS 2026). Use a newer runner image, or change the premake action in GenerateProjects.bat."
+          }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          # Not preinstalled on windows-2025 (it was on windows-2022). Chocolatey gives Inno 6.x,
+          # which is enough - the .iss needs 6.3+ for the x64compatible identifier.
+          choco install innosetup --no-progress --yes
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*","${env:ProgramFiles}\Inno Setup*" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found after installing Inno Setup." }
+          Write-Host "ISCC: $($iscc.FullName)"
+          "INNO_SETUP=$($iscc.FullName)" >> $env:GITHUB_ENV
+
+      - name: Read version from Version.h
+        id: version
+        shell: pwsh
+        run: |
+          $text = Get-Content -Raw Ember\src\Ember\Core\Version.h
+          $full = [regex]::Match($text, '#define\s+EMBER_VERSION_FULL\s+"([^"]+)"').Groups[1].Value
+          if (-not $full) { throw "Could not read EMBER_VERSION_FULL from Version.h" }
+          Write-Host "Version: $full"
+          "full=$full"    >> $env:GITHUB_OUTPUT
+          "tag=v$full"    >> $env:GITHUB_OUTPUT
+
+      - name: Check the installer icon is committed
+        shell: pwsh
+        run: |
+          # Fails here with a clear message rather than deep inside BuildInstaller.bat.
+          if (-not (Test-Path 'Ember-Forge\assets\images\EmberIcon.ico')) {
+            throw "Ember-Forge/assets/images/EmberIcon.ico is missing. It is required for Setup.exe, the shortcuts and the .ebproj association - commit it."
+          }
+
+      # shell: cmd for the batch scripts - it CALLs them and fails the step on a non-zero exit code,
+      # which is more predictable than invoking them through pwsh.
+      - name: Generate project files
+        shell: cmd
+        run: scripts\Windows\Build\GenerateProjects.bat
+
+      - name: Build Dist
+        shell: cmd
+        run: |
+          call scripts\Windows\Build\Build.bat Dist Ember-Forge || exit /b 1
+          call scripts\Windows\Build\Build.bat Dist Ember-Runtime || exit /b 1
+
+      # No test step: Ember-Test creates a GLFW window and an OpenGL 4.5 context, and hosted runners
+      # have no GPU driver (software GL is 1.1), so the suite cannot start. Run it locally before
+      # triggering this workflow - see scripts\Windows\Test\RunTests.bat.
+
+      - name: Build installer
+        shell: cmd
+        run: scripts\Windows\Package\BuildInstaller.bat
+
+      - name: Build portable zip
+        shell: cmd
+        run: scripts\Windows\Package\Package.bat
+
+      - name: Verify the artifacts exist
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.full }}"
+          $expected = @(
+            "build\installer\EmberForge-$v-Setup.exe",
+            "build\dist\EmberForge-$v.zip"
+          )
+          foreach ($f in $expected) {
+            if (-not (Test-Path $f)) { throw "Expected artifact not produced: $f" }
+            $mb = [math]::Round((Get-Item $f).Length / 1MB, 1)
+            Write-Host "$f  ($mb MB)"
+          }
+
+      - name: Upload artifacts to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmberForge-${{ steps.version.outputs.full }}
+          path: |
+            build/installer/*.exe
+            build/dist/*.zip
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: ${{ inputs.create_release }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.version.outputs.full }}"
+          $tag = "${{ steps.version.outputs.tag }}"
+
+          # Refuse to clobber an existing release - bump Version.h instead. `release list` is used
+          # rather than `release view` because it exits 0 whether or not the tag exists, so there is
+          # no stderr/exit-code juggling under $ErrorActionPreference = 'Stop'.
+          $existing = gh release list --json tagName --jq '.[].tagName'
+          if ($existing -contains $tag) {
+            throw "Release $tag already exists. Bump EMBER_VERSION_* in Version.h and commit before re-running."
+          }
+
+          # One array passed to the native command, so PowerShell expands it to separate arguments
+          # and an empty flag list simply contributes nothing.
+          $ghArgs = @(
+            'release', 'create', $tag,
+            "build\installer\EmberForge-$v-Setup.exe",
+            "build\dist\EmberForge-$v.zip",
+            '--title', "Ember Forge $v",
+            '--generate-notes'
+          )
+          if ("${{ inputs.draft }}"      -eq "true") { $ghArgs += '--draft' }
+          if ("${{ inputs.prerelease }}" -eq "true") { $ghArgs += '--prerelease' }
+
+          & gh $ghArgs
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
+          Write-Host "Created release $tag"
