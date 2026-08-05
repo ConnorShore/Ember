@@ -4,6 +4,7 @@
 #include "Utils/RecentProjectSerializer.h"
 
 #include <Ember/Core/Application.h>
+#include <Ember/Core/Paths.h>
 #include <Ember/Render/Texture2D.h>
 
 #include <cmath>
@@ -54,29 +55,13 @@ namespace Ember {
 
 	WelcomeDialog::WelcomeDialog()
 	{
-		// If on windows, set the recent projects file path to the appdata folder. Otherwise, set it to the home directory.
-#ifdef EB_PLATFORM_WINDOWS
-		char* appDataPath = nullptr;
-		size_t len = 0;
-		errno_t err = _dupenv_s(&appDataPath, &len, "APPDATA");
-		if (err == 0 && appDataPath != nullptr)
-		{
-			m_RecentProjectsFilePath = std::filesystem::path(appDataPath) / "Ember-Forge" / c_RecentProjectsFileName;
-
-			// Create directory if it doesn't exist
-			if (!std::filesystem::exists(m_RecentProjectsFilePath.parent_path()))
-				std::filesystem::create_directories(m_RecentProjectsFilePath.parent_path());
-
-			free(appDataPath);
-		}
-#else
-		EB_CORE_ASSERT("Unsupported platform for recent projects file path.");
-#endif
+		// Roams with the user profile, and survives both an editor update and an uninstall.
+		m_RecentProjectsFilePath = Paths::UserConfigDir() / c_RecentProjectsFileName;
 	}
 
 	void WelcomeDialog::OnAttach()
 	{
-		auto icon = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/images/EmberIcon.png");
+		auto icon = Application::Instance().GetAssetManager().Load<Texture2D>((Paths::EditorAssets() / "images/EmberIcon.png").string());
 		if (icon)
 			m_IconTextureID = (ImTextureID)(intptr_t)icon->GetID();
 

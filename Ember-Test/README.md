@@ -8,14 +8,15 @@ It exists both to test the engine and as **scaffolding**: copy the patterns here
 
 ## Running
 
-Build the `Ember-Test` project in Visual Studio, then:
+Build `Ember-Test` (in Visual Studio, or with `scripts\Windows\Build\Build.bat Release Ember-Test`),
+then:
 
 ```bat
-scripts\Windows\RunTests.bat                      REM Release, everything
-scripts\Windows\RunTests.bat Debug                REM Debug, everything
-scripts\Windows\RunTests.bat --filter=unit        REM only the fast unit tests
-scripts\Windows\RunTests.bat Debug --run=Physics  REM only Physics::* tests
-scripts\Windows\RunTests.bat --list               REM list tests without running them
+scripts\Windows\Test\RunTests.bat                      REM Release, everything
+scripts\Windows\Test\RunTests.bat Debug                REM Debug, everything
+scripts\Windows\Test\RunTests.bat --filter=unit        REM only the fast unit tests
+scripts\Windows\Test\RunTests.bat Debug --run=Physics  REM only Physics::* tests
+scripts\Windows\Test\RunTests.bat --list               REM list tests without running them
 ```
 
 Or run the executable directly — it must be launched **from the workspace root**, since asset paths
@@ -26,7 +27,7 @@ to the workspace root, so F5 from Visual Studio works.
 > builds. `RunTests.bat` sets `EMBER_TEST_PERF_SCALE=8` automatically for Debug so the performance
 > budgets measure regressions rather than the configuration difference.
 
-> **After adding or removing a test file**, re-run `scripts\Windows\GenerateProjects.bat`. Premake
+> **After adding or removing a test file**, re-run `scripts\Windows\Build\GenerateProjects.bat`. Premake
 > globs `src/**.cpp`, but the generated `.vcxproj` file list is not auto-synced with the filesystem.
 
 ### Options
@@ -207,6 +208,19 @@ Ownerless objects now decode to `InvalidEntityID` (see `Physics/ColliderUserData
 distinguishable rather than masquerading as entity `0`.
 
 **Never name a local `near` or `far`** — they are macros from the Windows headers.
+
+**A `std::filesystem::path` read before its initialiser runs looks empty, not corrupt.** Static storage
+is zero-filled before dynamic initialisation, and a zero-filled MSVC `path` is a valid *empty* path —
+so the failure is a silently wrong path, never a crash. `Ember::Paths` originally had each accessor
+own a function-local static whose initialiser called two other accessors' statics
+(`EngineAssets()` → `IsInstalled()` → `ExecutableDir()`), and the chain was first entered from a
+default argument in `WindowConfig.h`. The three accessors with that dependency chain returned empty
+while the four without it were fine; every engine shader then failed to load from `shaders/...`
+instead of `Ember/assets/shaders/...`, which surfaced as six *rendering* failures (flat frames,
+garbage entity-ID picking, golden mismatches) and only four path failures. `Paths` now resolves
+everything into one struct with no interdependencies, and logs the result via `Paths::LogResolved()` —
+if assets ever fail to load, check those four lines at the top of `Logs/test.txt` first. Avoid
+filesystem work in default arguments in widely-included headers for the same reason.
 
 **The runner creates a throwaway `Project`, and some engine code requires one.** Ember-Forge and
 Ember-Runtime always have an active project, and parts of the engine assume that without checking —

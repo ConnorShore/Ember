@@ -16,7 +16,9 @@ namespace Ember {
 		WindowConfig(const std::string& title = "Ember Engine",
 			uint32_t width = 1280,
 			uint32_t height = 720,
-			const std::filesystem::path& iconPath = "Ember/assets/images/EmberIcon.png",
+			// Left empty so this header stays free of filesystem work; Window::Create falls back to the
+			// engine's default icon when nothing is set.
+			const std::filesystem::path& iconPath = {},
 			bool startMaximized = false)
 			: Title(title), Width(width), Height(height), IconPath(iconPath), StartMaximized(startMaximized)
 		{

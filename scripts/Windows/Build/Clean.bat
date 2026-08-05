@@ -1,10 +1,11 @@
 @echo off
 echo Cleaning Visual Studio and Premake generated files...
 
-pushd "%~dp0..\.."
+pushd "%~dp0..\..\.."
 
 echo Removing .sln and .vcxproj files...
 for /r %%F in (*.sln) do (echo %%F | findstr /i /c:"imgui\\examples" >nul || del /q /f "%%F" >nul 2>&1)
+for /r %%F in (*.slnx) do (echo %%F | findstr /i /c:"imgui\\examples" >nul || del /q /f "%%F" >nul 2>&1)
 for /r %%F in (*.vcxproj) do (echo %%F | findstr /i /c:"imgui\\examples" >nul || del /q /f "%%F" >nul 2>&1)
 for /r %%F in (*.vcxproj.user) do (echo %%F | findstr /i /c:"imgui\\examples" >nul || del /q /f "%%F" >nul 2>&1)
 for /r %%F in (*.vcxproj.filters) do (echo %%F | findstr /i /c:"imgui\\examples" >nul || del /q /f "%%F" >nul 2>&1)

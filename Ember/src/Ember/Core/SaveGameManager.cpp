@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "SaveGameManager.h"
+#include "Ember/Core/Paths.h"
 #include "Ember/Core/ProjectManager.h"
 
 #include <ryml.hpp>
@@ -426,22 +427,13 @@ namespace Ember {
 
 	std::filesystem::path SaveGameManager::GetOSSaveDirectory() const
 	{
-		std::filesystem::path saveDir;
+		// Keyed on the project name, not on Ember, so a shipped game owns its own save folder.
+		std::string projectName = "EmberGame";
+		if (ProjectManager::GetActive())
+			projectName = ProjectManager::GetActive()->GetConfig().ProjectName;
 
-#ifdef EB_PLATFORM_WINDOWS
-		// Grab the local AppData folder safely without pulling in heavy Windows headers
-		char* appDataPath = nullptr;
-		size_t size = 0;
-		if (_dupenv_s(&appDataPath, &size, "LOCALAPPDATA") == 0 && appDataPath != nullptr)
-		{
-			std::string projectName = "EmberGame";
-			if (ProjectManager::GetActive())
-				projectName = ProjectManager::GetActive()->GetConfig().ProjectName;
+		std::filesystem::path saveDir = Paths::LocalAppData() / projectName / "SavedGames";
 
-			saveDir = std::filesystem::path(appDataPath) / projectName / "SavedGames";
-			free(appDataPath);
-		}
-#endif
 		// Ensure the directory actually exists before we try to write to it!
 		if (!std::filesystem::exists(saveDir))
 			std::filesystem::create_directories(saveDir);

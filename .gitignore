@@ -42,6 +42,7 @@
 
 # Visual Studio generated files
 *.sln
+*.slnx
 *.vcxproj
 *.vcxproj.user
 *.vcxproj.filters
@@ -53,8 +54,12 @@ Logs/
 # Chrome-tracing profile sessions (Instrumentor)
 Profiles/
 
-# Binary game files
+# Binary game files. Cooked sidecars stay ignored and are deliberately kept out of the shipped
+# payload too (see scripts/Windows/StageExclude.txt), so packaging never depends on local cook state.
 *.bin
+
+# Staging tree, portable zip and installer output (scripts/Windows/Stage.bat)
+build/
 
 # Misc files
 TODOs.md

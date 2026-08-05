@@ -40,7 +40,8 @@ scripting layer so games can be built without recompiling the engine.
 | [Ember-Runtime/](Ember-Runtime) | A minimal player application that loads and runs a packaged project. |
 | [Ember-Tools/](Ember-Tools) | Offline tooling (asset bundling, etc.). |
 | [docs/](docs) | Documentation, including the scripting API reference and editor guide. |
-| [scripts/](scripts) | Helper batch / shell scripts for project generation. |
+| [installer/](installer) | Inno Setup script for the Windows editor installer. |
+| [scripts/](scripts) | Helper batch scripts for project generation, testing, and packaging. |
 
 ---
 
@@ -55,16 +56,24 @@ scripting layer so games can be built without recompiling the engine.
 ### Generate the solution
 
 ```bat
-cd scripts\Windows
-GenerateProjects.bat
+scripts\Windows\Build\GenerateProjects.bat
 ```
 
 This invokes the bundled `vendor/premake/bin/premake5.exe` with the `vs2026` action. The
-generated solution lives in the repository root as `Ember.sln`.
+generated solution lives in the repository root as `Ember.slnx`.
 
 ### Build
 
-Open `Ember.sln` in Visual Studio and build. Three configurations are available:
+Either open `Ember.slnx` in Visual Studio and build, or build from the command line:
+
+```bat
+scripts\Windows\Build\Build.bat                     REM Release, whole solution
+scripts\Windows\Build\Build.bat Debug               REM Debug, whole solution
+scripts\Windows\Build\Build.bat Release Ember-Test  REM one project and its dependencies
+```
+
+`Build.bat` finds MSBuild via `vswhere`, so no developer command prompt is needed. Three
+configurations are available:
 
 | Configuration | Use for |
 | --- | --- |
@@ -72,16 +81,17 @@ Open `Ember.sln` in Visual Studio and build. Three configurations are available:
 | **Release** | Optimized build with logging and asserts still enabled. |
 | **Dist** | Final shipping configuration. |
 
-`Ember-Forge` is the default startup project. F5 launches the editor.
+There is also a **Profile** configuration (optimized, with the Chrome-tracing instrumentor enabled)
+for performance investigations. `Ember-Forge` is the default startup project — F5 launches the editor.
 
 ### Cleaning
 
 ```bat
-cd scripts\Windows
-Clean.bat
+scripts\Windows\Build\Clean.bat
 ```
 
----
+All scripts live under `scripts/Windows`, grouped into `Build/`, `Test/`, `Package/` and `Tools/` —
+see [scripts/Windows/README.md](scripts/Windows/README.md).
 
 ## Quick Start
 

@@ -85,5 +85,9 @@
       staticruntime "On"
       optimize "On"
       symbols "Off"
+      -- No console window for the shipped editor; entrypoint is needed because EntryPoint.h
+      -- defines main() rather than WinMain(). Logging goes to a file instead (see EmberForgeApp).
+      kind "WindowedApp"
+      entrypoint "mainCRTStartup"
 
    filter {}

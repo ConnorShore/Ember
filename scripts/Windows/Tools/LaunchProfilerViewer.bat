@@ -8,10 +8,10 @@ rem
 rem Each file is opened in a new browser tab. The helper serves the trace from
 rem http://127.0.0.1:9001 (required by Perfetto's CSP) until the UI fetches it.
 
-pushd "%~dp0..\.."
+pushd "%~dp0..\..\.."
 
 set "PROFILES_DIR=%CD%\Profiles"
-set "OPEN_TRACE_UI=%~dp0..\vendor\open_trace_in_ui.py"
+set "OPEN_TRACE_UI=%~dp0..\..\vendor\open_trace_in_ui.py"
 
 if not exist "%OPEN_TRACE_UI%" (
     echo Missing helper script: "%OPEN_TRACE_UI%"

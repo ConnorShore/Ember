@@ -15,6 +15,7 @@
 #include "Ember/Render/TextureImporter.h"
 #include "Ember/Render/Shader.h"
 #include "Ember/Core/Application.h"
+#include "Ember/Core/Paths.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Scene/SceneSerializer.h"
 
@@ -214,19 +215,7 @@ namespace Ember {
 		std::filesystem::create_directories(finalExportPath);
 
 		// TODO: account for different architectures and systems
-		std::string configFolder;
-#if defined(EB_DEBUG)
-		configFolder = "Debug-windows-x86_64";
-#elif defined(EB_RELEASE)
-		configFolder = "Release-windows-x86_64";
-#elif defined(EB_DIST)
-		configFolder = "Dist-windows-x86_64";
-#else
-		configFolder = "Debug-windows-x86_64";
-#endif
-
-		// Define our source paths (Assumes Editor working directory is the repo root)
-		std::filesystem::path runtimeExeSrc = "bin/" + configFolder + "/Ember-Runtime/Ember-Runtime.exe";
+		std::filesystem::path runtimeExeSrc = Paths::RuntimeExe();
 		std::filesystem::path engineAssetSrc = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
 		std::filesystem::path projectAssetSrc = s_ActiveProject->GetAssetDirectory();
 		std::filesystem::path projectFileSrc = s_ActiveProject->GetProjectFilePath();

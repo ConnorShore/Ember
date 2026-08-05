@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Application.h"
 #include "FilterManager.h"
+#include "Version.h"
 
 #include "Ember/Scene/Scene.h"
 
@@ -14,7 +15,7 @@ namespace Ember {
 	struct ProjectConfig
 	{
 		std::string ProjectName = "NewProject";
-		std::string EngineVersion = "0.1.0";
+		std::string EngineVersion = EMBER_VERSION_STRING;
 		std::string AssetDirectory = "GameData/Assets";
 		std::string SceneDirectory = "GameData/Scenes";
 		std::string StartScene = "Default.ebs";

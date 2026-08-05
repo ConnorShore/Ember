@@ -1,0 +1,6 @@
+.bin
+\assets\assets.eba
+\textures\skybox.hdr
+\textures\case.jpg
+\scenes\DefaultScene_Old.ebs
+\images\EmberEngineSplashScreen.png

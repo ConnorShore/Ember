@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "Application.h"
 #include "Core.h"
+#include "Paths.h"
 #include "Random.h"
 #include "Ember/Input/Input.h"
 #include "Ember/Render/RenderAction.h"
@@ -57,9 +58,6 @@ namespace Ember {
 		Random::Init();
 		ScriptEngine::Init();
 
-		//AssetRegistrySerializer serializer(m_AssetManager.Ptr());
-		//serializer.Deserialize("Ember/assets/assets.eba");
-
 		m_SystemManager = ScopedPtr<SystemManager>::Create();
 		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
 		m_SystemManager->RegisterSystem(SharedPtr<VisibilitySystem>::Create());
@@ -87,8 +85,10 @@ namespace Ember {
 
 		m_ImGuiLayer->OnDetach();
 
+		// Written per-user rather than into the engine asset directory, which an installed build has
+		// no permission to modify.
 		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
-		serializer.Serialize("Ember/assets/assets.eba");
+		serializer.Serialize((Paths::UserDataDir() / "assets.eba").string());
 
 		//ScriptEngine::Shutdown();
 
