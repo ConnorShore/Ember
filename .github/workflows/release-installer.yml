@@ -61,14 +61,25 @@ jobs:
             throw "This image has Visual Studio $version, but premake's vs2026 action needs 18.x (VS 2026). Use a newer runner image, or change the premake action in GenerateProjects.bat."
           }
 
-      - name: Install Inno Setup
+      - name: Ensure Inno Setup is available
         shell: pwsh
         run: |
-          # Not preinstalled on windows-2025 (it was on windows-2022). Chocolatey gives Inno 6.x,
-          # which is enough - the .iss needs 6.3+ for the x64compatible identifier.
-          choco install innosetup --no-progress --yes
-          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*","${env:ProgramFiles}\Inno Setup*" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $iscc) { throw "ISCC.exe not found after installing Inno Setup." }
+          # windows-2025 currently ships Inno Setup 6.7.1, but it has not always been on this image,
+          # so fall back to Chocolatey rather than depending on it. Inno 6.3+ is required for the
+          # x64compatible architecture identifier the .iss uses.
+          function Find-ISCC {
+            Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*", "${env:ProgramFiles}\Inno Setup*" `
+              -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+
+          $iscc = Find-ISCC
+          if (-not $iscc) {
+            Write-Host "Inno Setup not present, installing with Chocolatey..."
+            choco install innosetup --no-progress --yes
+            $iscc = Find-ISCC
+          }
+          if (-not $iscc) { throw "ISCC.exe not found, and installing Inno Setup did not provide it." }
+
           Write-Host "ISCC: $($iscc.FullName)"
           "INNO_SETUP=$($iscc.FullName)" >> $env:GITHUB_ENV
 

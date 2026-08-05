@@ -34,6 +34,10 @@
 
 # Executables
 *.exe
+
+# ...except the bundled Premake, which is the entry point to generating the solution at all. Without
+# it a fresh clone (and CI) cannot run GenerateProjects.bat.
+!vendor/premake/bin/premake5.exe
 *.out
 *.app
 
