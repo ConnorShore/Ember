@@ -7,6 +7,7 @@
 #include "Panels/AssetManagerPanel.h"
 #include "Panels/EnvironmentPanel.h"
 #include "Panels/NotificationPanel.h"
+#include "Panels/LogPanel.h"
 #include "Panels/AnimationScrubberPanel.h"
 #include "Panels/Inspector/InspectorPanel.h"
 
@@ -88,6 +89,7 @@ namespace Ember {
 		m_Panels.push_back(SharedPtr<EnvironmentPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<InspectorPanel>::Create(&m_Context));
 		m_Panels.push_back(SharedPtr<NotificationPanel>::Create(&m_Context));
+		m_Panels.push_back(SharedPtr<LogPanel>::Create(&m_Context));
 
 		// Default Assets
 		LoadDefaultAssets();
@@ -735,6 +737,10 @@ namespace Ember {
 			if (ImGui::BeginMenu("Tool Windows"))
 			{
 				ImGui::MenuItem("Render Stats", nullptr, &m_ShowStatsWindow);
+
+				if (auto logPanel = GetPanel<LogPanel>())
+					ImGui::MenuItem("Log", nullptr, &logPanel->Open);
+
 				ImGui::EndMenu();
 			}
 

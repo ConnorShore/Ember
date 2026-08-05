@@ -3,6 +3,9 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <chrono>
+#include <vector>
+#include <cstdint>
 
 namespace Ember {
 
@@ -15,6 +18,18 @@ namespace Ember {
 		Fatal
 	};
 
+	static constexpr size_t LogLevelCount = 5;
+
+	// Kept structured rather than pre-formatted so the editor can colour and filter it.
+	struct LogRecord
+	{
+		LogLevel Level = LogLevel::Info;
+		std::string Logger;
+		std::string Message;
+		std::chrono::system_clock::time_point Time;
+		uint64_t Sequence = 0;
+	};
+
 	class Logger
 	{
 	public:
@@ -23,10 +38,16 @@ namespace Ember {
 
 		static void InitFileLogging(const std::string& filepath);
 
+		// Appends every record newer than cursor and then advances it. Non-destructive, so multiple
+		// consumers can each hold their own cursor and a late consumer still sees startup lines.
+		static void DrainRecords(uint64_t& cursor, std::vector<LogRecord>& out);
+
 		template <typename... Args>
 		void Log(LogLevel logLevel, std::format_string<Args...> fmt, Args&&... args)
 		{
 			std::string userMessage = std::format(fmt, std::forward<Args>(args)...);
+
+			Logger::PushRecord(logLevel, m_Name, userMessage);
 
 			// Clean output for the file (No color codes!)
 			std::string cleanOutput = std::format("{}: [{}] {}\n",
@@ -62,6 +83,8 @@ namespace Ember {
 		}
 
 	private:
+		static void PushRecord(LogLevel level, const std::string& loggerName, const std::string& message);
+
 		const char* GetLogLevelString(LogLevel logLevel);
 		const char* GetLogLevelColor(LogLevel logLevel);
 		const char* GetLogLevelResetColor();

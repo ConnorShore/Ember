@@ -1,6 +1,9 @@
 #include "ebpch.h"
 #include "Logger.h"
 
+#include <deque>
+#include <mutex>
+
 #define EB_COLOR_LOG_RESET "\033[0m"
 #define EB_COLOR_LOG_TRACE "\033[1;34m"
 #define EB_COLOR_LOG_INFO  "\033[1;32m"
@@ -20,6 +23,28 @@
 
 namespace Ember {
 
+	namespace {
+
+		struct RecordBuffer
+		{
+			std::mutex Mutex;
+			std::deque<LogRecord> Records;
+			uint64_t NextSequence = 0;
+		};
+
+		// Roughly a megabyte at typical message lengths, and far more than a frame's worth of drain.
+		constexpr size_t s_MaxRecords = 8192;
+
+		// Function-local so a log call from another translation unit's static initialiser still
+		// constructs this in time.
+		RecordBuffer& Buffer()
+		{
+			static RecordBuffer s_Buffer;
+			return s_Buffer;
+		}
+
+	}
+
 	std::ofstream Logger::s_LogFile;
 
 	void Logger::InitFileLogging(const std::string& filepath)
@@ -37,6 +62,45 @@ namespace Ember {
 		{
 			std::cerr << "Failed to open log file: " << filepath << std::endl;
 		}
+	}
+
+	void Logger::PushRecord(LogLevel level, const std::string& loggerName, const std::string& message)
+	{
+		RecordBuffer& buffer = Buffer();
+		std::lock_guard lock(buffer.Mutex);
+
+		// Oldest-out: consumers drain by sequence, so dropping the front only loses lines that a
+		// consumer stalled for 8192 messages would have missed anyway.
+		if (buffer.Records.size() >= s_MaxRecords)
+			buffer.Records.pop_front();
+
+		buffer.Records.push_back(LogRecord{
+			.Level = level,
+			.Logger = loggerName,
+			.Message = message,
+			.Time = std::chrono::system_clock::now(),
+			.Sequence = buffer.NextSequence++
+		});
+	}
+
+	void Logger::DrainRecords(uint64_t& cursor, std::vector<LogRecord>& out)
+	{
+		RecordBuffer& buffer = Buffer();
+		std::lock_guard lock(buffer.Mutex);
+
+		if (buffer.Records.empty() || cursor >= buffer.NextSequence)
+		{
+			cursor = buffer.NextSequence;
+			return;
+		}
+
+		// Sequences only ever increment by one and only the front is dropped, so they stay contiguous
+		// and the cursor converts straight to an index instead of needing a search.
+		const uint64_t oldest = buffer.Records.front().Sequence;
+		const size_t start = cursor > oldest ? static_cast<size_t>(cursor - oldest) : 0;
+
+		out.insert(out.end(), buffer.Records.begin() + start, buffer.Records.end());
+		cursor = buffer.NextSequence;
 	}
 
 	const char* Logger::GetLogLevelString(LogLevel logLevel)
