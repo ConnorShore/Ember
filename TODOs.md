@@ -50,8 +50,8 @@ These are correctness bugs or missing data that will visibly break workflows whi
 ### Project / build pipeline
 
 - [Ember/src/Ember/Core/ProjectManager.cpp](Ember/src/Ember/Core/ProjectManager.cpp#L52) — Copy default engine assets into a new project directory. Without this, every new project starts broken until you manually copy `DefaultSkybox.hdr`, default meshes, etc.
-- [Ember/src/Ember/Core/ProjectManager.cpp](Ember/src/Ember/Core/ProjectManager.cpp#L136) — Account for build types (Debug/Release) and platforms when packaging a runtime build. Required to actually *ship* the game.
-- [Ember/src/Ember/Core/ProjectManager.cpp](Ember/src/Ember/Core/ProjectManager.cpp#L127) — Architecture/system awareness in project paths (paired with the above).
+- ~~Account for build types (Debug/Release) when packaging a runtime build.~~ **Done** — `Paths::RuntimeExe()` (`Ember/src/Ember/Core/Paths.cpp`) owns the config-folder mapping for dev builds and returns `<install>/Ember-Runtime.exe` for an installed one, replacing the two duplicated `#if` chains in `ProjectManager.cpp` and `EditorLayer.cpp`. The old chains also mapped Profile to `Release-windows-x86_64`, since Profile defines `EB_RELEASE` too.
+- [Ember/src/Ember/Core/ProjectManager.cpp](Ember/src/Ember/Core/ProjectManager.cpp#L216) — Architecture/system awareness in project paths. Still x64/Windows-only: `Paths::ConfigFolder()` hardcodes the `-windows-x86_64` suffix.
 
 ---
 

@@ -2,6 +2,7 @@
 #include "Presets.h"
 #include "EditorConstants.h"
 
+#include <Ember/Core/Paths.h>
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Scene/Scene.h>
 
@@ -18,7 +19,7 @@ namespace Ember {
 			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy CharacterMovement.lua to existing scriptsDirectory
-			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/CharacterMovement.lua");
+			std::filesystem::path sourcePath = Paths::EngineAssets() / "scripts/CharacterMovement.lua";
 			std::filesystem::path destPath = scriptsDirectory / "CharacterMovement.lua";
 
 			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
@@ -39,7 +40,7 @@ namespace Ember {
 			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy CharacterMovement.lua to existing scriptsDirectory
-			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/MouseLook.lua");
+			std::filesystem::path sourcePath = Paths::EngineAssets() / "scripts/MouseLook.lua";
 			std::filesystem::path destPath = scriptsDirectory / "MouseLook.lua";
 
 			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
@@ -98,7 +99,7 @@ namespace Ember {
 			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
 			// Copy AIController.lua to existing scriptsDirectory
-			std::filesystem::path sourcePath = std::filesystem::path("Ember/assets/scripts/AIController.lua");
+			std::filesystem::path sourcePath = Paths::EngineAssets() / "scripts/AIController.lua";
 			std::filesystem::path destPath = scriptsDirectory / "AIController.lua";
 
 			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file

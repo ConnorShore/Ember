@@ -16,6 +16,8 @@
 #include "Ember/ImGui/ImGuiLayer.h"
 
 #include "Ember/Core/Logger.h"
+#include "Ember/Core/Paths.h"
+#include "Ember/Core/Version.h"
 #include "Ember/Core/Time.h"
 #include "Ember/Core/Random.h"
 #include "Ember/Core/ScopedPointer.h"

@@ -49,10 +49,11 @@ namespace Ember {
 	constexpr const char* DragDropFile = "File";
 	constexpr const char* DragDropDirectory = "Directory";
 
+	// Left empty until a project opens: EditorLayer calls UpdateRootDirectory then, and the panel is not
+	// rendered before that. It used to default to the editor's own asset folder, which an installed
+	// build has no business browsing.
 	AssetManagerPanel::AssetManagerPanel(EditorContext* context)
-		: Panel("Asset Manager", context), 
-		m_RootDirectory(std::filesystem::path("Ember-Forge/assets")),
-		m_CurrentDirectory(std::filesystem::path("Ember-Forge/assets"))
+		: Panel("Asset Manager", context)
 	{
 	}
 

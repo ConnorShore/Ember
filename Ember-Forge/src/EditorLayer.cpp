@@ -21,6 +21,7 @@
 #include <Ember/Input/Input.h>
 #include <Ember/Input/InputCode.h>
 #include <Ember/Event/UIEvent.h>
+#include <Ember/Core/Paths.h>
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Utils/PlatformUtil.h>
 #include <Ember/Scene/SceneSerializer.h>
@@ -122,14 +123,35 @@ namespace Ember {
 			panel->OnAttach();
 
 		// Load play / pause textures
-		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Play.png")->GetID();
-		m_ToolbarProps.PauseButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Pause.png")->GetID();
-		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Stop.png")->GetID();
+		const std::filesystem::path iconDir = Paths::EditorAssets() / "icons";
+		m_ToolbarProps.PlayButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "Play.png").string())->GetID();
+		m_ToolbarProps.PauseButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "Pause.png").string())->GetID();
+		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "Stop.png").string())->GetID();
 
 		// Welcome screen shown until a project is opened
 		m_WelcomeDialog.OnAttach();
 		m_WelcomeDialog.SetNewProjectCallback([this]() { NewProject(); });
 		m_WelcomeDialog.SetOpenProjectCallback([this](const std::string& projectFilePath) { OpenProject(projectFilePath); });
+
+		// Double-clicking a .ebproj in Explorer hands it to us as an argument. Loading it here also
+		// suppresses the welcome screen, which keys off whether a project is active.
+		auto& app = Application::Instance();
+		for (int i = 1; i < app.GetCommandLineArgsCount(); ++i)
+		{
+			const std::filesystem::path candidate = app.GetCommandLineArg(i);
+
+			// Case-insensitively, because path comparison is not and Explorer may hand us any casing.
+			if (_stricmp(candidate.extension().string().c_str(), ".ebproj") != 0)
+				continue;
+
+			// A stale shortcut or renamed project falls through to the welcome screen rather than failing.
+			if (std::filesystem::exists(candidate))
+				OpenProject(candidate.string());
+			else
+				EB_WARN("Project passed on the command line does not exist: {}", candidate.string());
+
+			break;
+		}
 
 		// Keep m_EditorScene in sync when a deferred scene swap completes (e.g. after CreateScene queues a load)
 		Application::Instance().GetSceneManager().SetOnSceneChangedCallback([this](SharedPtr<Scene> newScene)
@@ -1305,21 +1327,7 @@ namespace Ember {
 
 			std::string activeProjectPath = ProjectManager::GetActive()->GetProjectFilePath().string();
 
-			std::string configFolder;
-#if defined(EB_DEBUG)
-			configFolder = "Debug-windows-x86_64";
-#elif defined(EB_RELEASE)
-			configFolder = "Release-windows-x86_64";
-#elif defined (EB_PROFILE)
-			configFolder = "Profile-windows-x86_64";
-#elif defined(EB_DIST)
-			configFolder = "Dist-windows-x86_64";
-#else
-			configFolder = "Debug-windows-x86_64";
-#endif
-
-			auto runtimeExePath = std::filesystem::path("bin") / configFolder / "Ember-Runtime/Ember-Runtime.exe";
-			auto absoluteRuntimePath = std::filesystem::absolute(runtimeExePath).string();
+			auto absoluteRuntimePath = std::filesystem::absolute(Paths::RuntimeExe()).string();
 			auto engineAssetDir = Application::Instance().GetAssetManager().GetEngineAssetDirectory();
 			auto engineAssetAbsolute = std::filesystem::absolute(engineAssetDir).string();
 			auto projectAssetDir = Application::Instance().GetAssetManager().GetProjectAssetDirectory().string();
@@ -2222,7 +2230,24 @@ namespace Ember {
 	void EditorLayer::SetupImGuiTheme()
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.Fonts->AddFontFromFileTTF("Ember-Forge/assets/fonts/Roboto-Regular.ttf", 16.0f);
+
+		// Keep the docking layout per-user: an installed build cannot write beside its own executable.
+		// ImGui stores the pointer without copying, so the string has to outlive the context. Settings
+		// are only read on the first NewFrame, which is still ahead of us here.
+		static std::string iniPath = (Paths::UserDataDir() / "imgui.ini").string();
+		io.IniFilename = iniPath.c_str();
+
+		// Seed a first run with the layout we ship rather than ImGui's undocked default.
+		const std::filesystem::path defaultLayout = Paths::EditorAssets() / "imgui.ini";
+		if (!std::filesystem::exists(iniPath) && std::filesystem::exists(defaultLayout))
+		{
+			std::error_code error;
+			std::filesystem::copy_file(defaultLayout, iniPath, error);
+			if (error)
+				EB_WARN("Could not seed the default editor layout: {}", error.message());
+		}
+
+		io.Fonts->AddFontFromFileTTF((Paths::EditorAssets() / "fonts/Roboto-Regular.ttf").string().c_str(), 16.0f);
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4* colors = style.Colors;

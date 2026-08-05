@@ -12,25 +12,45 @@ references consumed by game authors (not engine code).
 
 ## Build System
 
-Premake5-generated Visual Studio solution — there is no CMake, no package manager, and no CLI build
-command that doesn't go through Visual Studio.
+Premake5-generated Visual Studio solution — there is no CMake and no package manager. There *is* a
+CLI build: `scripts\Windows\Build\Build.bat` drives MSBuild directly, locating it with `vswhere`, so
+no developer command prompt and no IDE are needed.
+
+Scripts are grouped by purpose under `scripts\Windows`; each resolves the repo root from its own
+location, so it can be run from anywhere. See `scripts\Windows\README.md` for the full guide.
 
 ```bat
-cd scripts\Windows
-GenerateProjects.bat   REM cleans, then runs vendor\premake\bin\premake5.exe vs2026 to (re)generate Ember.sln
-Clean.bat               REM removes generated sln/vcxproj files, .vs/, bin/, bin-int/, and vendor build dirs
-Package.bat              REM zips a Dist build of Ember-Forge + Ember-Runtime for distribution
+Build\GenerateProjects.bat   REM cleans, then runs premake5 vs2026 to (re)generate Ember.slnx
+Build\Build.bat              REM MSBuild from the CLI: [Debug|Release|Dist|Profile] [Project] [rebuild|clean]
+Build\Clean.bat              REM removes generated sln/slnx/vcxproj files, .vs/, bin/, and vendor build dirs
+Test\RunTests.bat            REM runs the Ember-Test suite
+Package\Stage.bat            REM assembles the shipped layout into build\stage (owns that layout)
+Package\Package.bat          REM Stage.bat, then zips it to build\dist (portable distribution)
+Package\BuildInstaller.bat   REM Stage.bat, then runs Inno Setup to build build\installer\...-Setup.exe
+Tools\LaunchProfilerViewer.bat  REM opens Profiles\*.json in the Perfetto UI
 ```
 
-Regenerate projects (`GenerateProjects.bat`) any time a `premake5.lua` file changes or new source
-files/vendor libs are added — `.vcxproj` file lists are not auto-synced with the filesystem.
+`Build.bat` does not regenerate projects first, because `GenerateProjects.bat` calls `Clean.bat` and
+would turn every build into a full rebuild. Run `GenerateProjects.bat` yourself any time a
+`premake5.lua` file changes or source files are added/removed — `.vcxproj` file lists are not
+auto-synced with the filesystem. The three `Package\` scripts do not build either; they require an
+existing Dist build. See `docs/internal/Distribution.md` for the shipped layout, the payload
+exclusions, and the release checklist.
 
-Build via Visual Studio 2026 (Desktop development with C++ workload) by opening `Ember.slnx` /
-`Ember.sln` and building. `Ember-Forge` is the startup project (F5 launches the editor). Three
-configurations: **Debug** (asserts + full debug info + profiling), **Release** (optimized, logging/
-asserts still on), **Dist** (final shipping build, no symbols). There is a fourth "Profile" filter
-defined in each `premake5.lua` (optimized + profiling + symbols) for performance investigations, but
-it is not currently listed in the top-level `workspace` configurations in `premake5.lua`.
+`.github/workflows/release-installer.yml` runs those same scripts on a GitHub runner to cut a release
+(manual trigger). It cannot run `Ember-Test` — hosted runners have no GPU driver and the suite needs
+an OpenGL 4.5 context — so the suite is still a local step. Every script honours `EMBER_NO_PAUSE`,
+which is what keeps their `pause` calls from hanging CI.
+
+You can also build via Visual Studio 2026 (Desktop development with C++ workload) by opening
+`Ember.slnx`. `Ember-Forge` is the startup project (F5 launches the editor). Three
+configurations: **Debug** (asserts + full debug info), **Release** (optimized, logging/asserts still
+on), **Dist** (final shipping build, no symbols, and the only config where Ember-Forge is a
+`WindowedApp` rather than a `ConsoleApp`). There is also a **Profile** configuration (optimized +
+`EB_PROFILE` + symbols) for performance investigations; all four are listed in the top-level
+`workspace` configurations. Note `EB_PROFILE` is defined *only* by the Profile config, and Profile
+also defines `EB_RELEASE` — so any `#if` chain that distinguishes them has to test `EB_PROFILE`
+first.
 
 Validate changes with the `Ember-Test` suite (see **Testing** below) and, for anything user-facing,
 by exercising the feature in Ember-Forge (or Ember-Runtime for a packaged project) — see
@@ -159,7 +179,7 @@ describing a Tracy-based design that was **not** what got implemented):
   Debug and the unused-by-default Profile config). `EntryPoint.h` brackets three sessions per run —
   `Profiles/Startup.json`, `Profiles/Runtime.json`, `Profiles/Shutdown.json` — relative to the
   working directory (`debugdir` is the workspace root).
-- View captured traces with `scripts\Windows\LaunchProfilerViewer.bat`, which opens each
+- View captured traces with `scripts\Windows\Tools\LaunchProfilerViewer.bat`, which opens each
   `Profiles/*.json` in the Perfetto UI (https://ui.perfetto.dev/) via the vendored
   `scripts/vendor/open_trace_in_ui.py` helper (requires Python 3).
 
@@ -178,10 +198,10 @@ already produced wrong tests (component references invalidated by attach,
 and others).
 
 ```bat
-scripts\Windows\RunTests.bat                      REM Release, everything
-scripts\Windows\RunTests.bat Debug                REM Debug (auto-sets EMBER_TEST_PERF_SCALE=8)
-scripts\Windows\RunTests.bat --filter=unit        REM one category: unit|integration|visual|performance|stress
-scripts\Windows\RunTests.bat --run=Physics        REM only tests whose Suite::Name contains "Physics"
+scripts\Windows\Test\RunTests.bat                      REM Release, everything
+scripts\Windows\Test\RunTests.bat Debug                REM Debug (auto-sets EMBER_TEST_PERF_SCALE=8)
+scripts\Windows\Test\RunTests.bat --filter=unit        REM one category: unit|integration|visual|performance|stress
+scripts\Windows\Test\RunTests.bat --run=Physics        REM only tests whose Suite::Name contains "Physics"
 ```
 
 Exit code is 0 (all passed) or 1 (any failure). `Logs/test-progress.log` records every test with its
@@ -193,15 +213,19 @@ failure messages and notes, flushed **before** each test runs — so if a test h
 After a non-trivial change to the engine — a system, the ECS, serialization, the asset pipeline,
 physics, scripting bindings, rendering — verify it against the suite before calling the work done.
 
-**Claude cannot build this project.** There is no CLI build; it requires Visual Studio. So:
+Build it yourself, then run it:
 
-1. Ask the user to rebuild `Ember-Test` (Release, and Debug too if the change could be
-   optimization-sensitive — several bugs here have been Release-only).
-2. Then run `scripts\Windows\RunTests.bat` and read the results.
-3. Report failures honestly, with the assertion text from `Logs/test-progress.log`.
+```bat
+scripts\Windows\Build\Build.bat Release Ember-Test
+scripts\Windows\Test\RunTests.bat
+```
+
+Also build and run Debug when the change could be optimization-sensitive — several bugs here have
+been Release-only. `RunTests.bat` ends in a `pause`, so redirect stdin (`< nul`) when running it
+non-interactively. Report failures honestly, with the assertion text from `Logs/test-progress.log`.
 
 **Never run `RunTests.bat` against a binary that predates your edits** — it will happily pass and
-prove nothing. If you are unsure whether a rebuild has happened since your changes, ask.
+prove nothing. `Build.bat` is cheap when nothing changed, so just rebuild rather than wondering.
 
 When a test fails, work out whether the *test* encodes a wrong assumption or the *engine* has a real
 defect, and say which. Several failures in this suite have been genuine engine bugs (see the
@@ -226,7 +250,7 @@ When adding a feature or fixing a non-trivial bug, add coverage in the same chan
   image and catch gross corruption on any machine. Only mint a new golden (`EMBER_TEST_WRITE_GOLDEN=1`)
   from a build you have verified looks correct.
 
-Adding a test file means re-running `scripts\Windows\GenerateProjects.bat` — premake globs
+Adding a test file means re-running `scripts\Windows\Build\GenerateProjects.bat` — premake globs
 `src/**.cpp`, but the generated `.vcxproj` file list is not auto-synced with the filesystem.
 
 Not everything warrants a test: pure editor-UI layout, one-line comment or logging changes, and

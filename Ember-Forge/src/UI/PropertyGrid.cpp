@@ -7,6 +7,7 @@
 #include "FilterWidget.h"
 
 #include <Ember/Core/Application.h>
+#include <Ember/Core/Paths.h>
 
 #include <format>
 
@@ -453,7 +454,7 @@ namespace Ember {
 
 			auto texture = hasValidTexture
 				? Application::Instance().GetAssetManager().GetAsset<Texture2D>(textureID)
-				: Application::Instance().GetAssetManager().Load<Texture2D>("Ember-Forge/assets/icons/Empty.png");
+				: Application::Instance().GetAssetManager().Load<Texture2D>((Paths::EditorAssets() / "icons/Empty.png").string());
 
 			auto id = (void*)(intptr_t)texture->GetID();
 			ImGui::Image(id, ImVec2(48, 48), ImVec2(0, 1), ImVec2(1, 0));

@@ -1,5 +1,6 @@
 #include <Ember.h>
 #include <Ember/Core/EntryPoint.h>
+#include <Ember/Core/Paths.h>
 
 #include "TestFramework.h"
 
@@ -164,6 +165,7 @@ namespace Ember {
 	{
 		Logger::InitFileLogging("Logs/test.txt");
 		EB_CORE_INFO("Ember-Test starting...");
+		Paths::LogResolved();
 
 		ApplicationSpecification spec;
 		spec.Name = "Ember-Test";
@@ -171,11 +173,14 @@ namespace Ember {
 		spec.WindowSpecification.Height = 720;
 		spec.WindowSpecification.Title = "Ember-Test";
 
-		// debugdir is the workspace root, so the engine's source assets are under Ember/assets. If
-		// the default shaders/textures fail to load, this path is the first thing to check - the
+		// debugdir is the workspace root, so the engine's source assets are under Ember/assets, which is
+		// exactly what Paths::EngineAssets() returns for a non-installed build. If the default
+		// shaders/textures fail to load, this path is the first thing to check - the
 		// Assets::DefaultEngineAssetsAreLoaded test reports exactly that failure.
-		spec.EngineAssetDir = "Ember/assets";
-		spec.ProjectAssetDir = "Ember/assets";
+		spec.EngineAssetDir = Paths::EngineAssets();
+
+		// Tests deliberately treat the engine assets as their project assets too.
+		spec.ProjectAssetDir = Paths::EngineAssets();
 
 		spec.CommandLineArgsCount = argc;
 		spec.CommandLineArgs = argv;

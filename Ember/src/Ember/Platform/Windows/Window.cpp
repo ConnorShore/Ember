@@ -1,6 +1,7 @@
 #include "ebpch.h"
 #include "Window.h"
 #include "Ember/Core/Core.h"
+#include "Ember/Core/Paths.h"
 #include "Input.h"
 #include "Ember/Event/WindowEvent.h"
 #include "Ember/Event/KeyEvent.h"
@@ -77,11 +78,16 @@ namespace Ember {
 				throw std::runtime_error("Failed to create GLFW window");
 			}
 
-			// Set the window icon
-			if (!config.IconPath.empty())
+			// Set the window icon. Resolved here rather than as a WindowConfig default so that merely
+			// declaring an ApplicationSpecification does not probe the filesystem.
+			const std::filesystem::path iconPath = config.IconPath.empty()
+				? Paths::EngineAssets() / "images/EmberIcon.png"
+				: config.IconPath;
+
+			if (!iconPath.empty())
 			{
 				GLFWimage icon;
-				icon.pixels = stbi_load(config.IconPath.string().c_str(), &icon.width, &icon.height, 0, 4);
+				icon.pixels = stbi_load(iconPath.string().c_str(), &icon.width, &icon.height, 0, 4);
 				if (icon.pixels)
 				{
 					glfwSetWindowIcon(m_Window, 1, &icon);
@@ -89,7 +95,7 @@ namespace Ember {
 				}
 				else
 				{
-					EB_CORE_WARN("Failed to load window icon from path: {}", config.IconPath.string());
+					EB_CORE_WARN("Failed to load window icon from path: {}", iconPath.string());
 				}
 			}
 

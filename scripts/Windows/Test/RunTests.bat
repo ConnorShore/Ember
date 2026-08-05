@@ -18,7 +18,7 @@ REM ---------------------------------------------------------------------------
 setlocal
 
 REM Resolve the workspace root before anything else touches the arguments.
-set "ROOT=%~dp0..\.."
+set "ROOT=%~dp0..\..\.."
 
 REM Only the first argument can be a configuration; everything else is passed straight through.
 REM The pass-through set comes from %* rather than being rebuilt token by token, because cmd splits
@@ -47,12 +47,13 @@ if not exist "%EXE%" (
     echo.
     echo [Ember-Test] Could not find "%EXE%"
     echo              Build the Ember-Test project in the %CONFIG% configuration first.
+    echo              Build it with scripts\Windows\Build\Build.bat %CONFIG% Ember-Test
     echo              If you have added or removed test source files, re-run
-    echo              scripts\Windows\GenerateProjects.bat so the .vcxproj picks them up.
+    echo              scripts\Windows\Build\GenerateProjects.bat so the .vcxproj picks them up.
     echo.
     popd
     endlocal
-    pause
+    if not defined EMBER_NO_PAUSE pause
     exit /b 2
 )
 
@@ -79,5 +80,5 @@ echo.
 
 popd
 endlocal
-pause
+if not defined EMBER_NO_PAUSE pause
 exit /b %RESULT%
