@@ -5,7 +5,6 @@
 
 #include "EditorContext.h"
 
-#include <Ember/Asset/Font.h>
 #include <Ember/Core/Application.h>
 #include <Ember/Input/Input.h>
 #include <Ember/Input/InputCode.h>
@@ -199,50 +198,6 @@ namespace Ember {
 		}
 	}
 
-	static bool CalculateTextLocalBounds(const TextComponent& textComponent, Vector2f& outMin, Vector2f& outMax)
-	{
-		if (textComponent.FontHandle == Constants::InvalidUUID || textComponent.Text.empty())
-			return false;
-
-		auto font = Application::Instance().GetAssetManager().GetAsset<Font>(textComponent.FontHandle);
-		if (!font || !font->GetAtlasTexture())
-			return false;
-
-		const stbtt_bakedchar* glyphData = font->GetGlyphData();
-		auto atlasTexture = font->GetAtlasTexture();
-		float cursorX = 0.0f;
-		float cursorY = 0.0f;
-		bool hasGlyph = false;
-
-		outMin = Vector2f(std::numeric_limits<float>::max());
-		outMax = Vector2f(std::numeric_limits<float>::lowest());
-
-		for (char c : textComponent.Text)
-		{
-			if (c < Font::FirstChar || c >= Font::FirstChar + Font::CharCount)
-				continue;
-
-			stbtt_aligned_quad quad;
-			stbtt_GetBakedQuad(glyphData, atlasTexture->GetWidth(), atlasTexture->GetHeight(), c - Font::FirstChar, &cursorX, &cursorY, &quad, 1);
-
-			float quadWidth = quad.x1 - quad.x0;
-			float quadHeight = quad.y1 - quad.y0;
-			float localX = quad.x0 + quadWidth * 0.5f;
-			float localY = -(quad.y0 + quadHeight * 0.5f);
-
-			Vector2f glyphMin = Vector2f(localX - quadWidth * 0.5f, localY - quadHeight * 0.5f);
-			Vector2f glyphMax = Vector2f(localX + quadWidth * 0.5f, localY + quadHeight * 0.5f);
-
-			outMin.x = std::min(outMin.x, glyphMin.x);
-			outMin.y = std::min(outMin.y, glyphMin.y);
-			outMax.x = std::max(outMax.x, glyphMax.x);
-			outMax.y = std::max(outMax.y, glyphMax.y);
-			hasGlyph = true;
-		}
-
-		return hasGlyph && outMax.x > outMin.x && outMax.y > outMin.y;
-	}
-
 	void ViewportGizmoController::DrawSceneDebugGizmos(Scene* scene, EntityID selectedEntity)
 	{
 		if (!scene)
@@ -372,17 +327,10 @@ namespace Ember {
 		auto& rectTransform = context->SelectedEntity.GetComponent<RectTransformComponent>();
 		auto& transform = context->SelectedEntity.GetComponent<TransformComponent>();
 
-		Vector2f localMin = Vector2f(-0.5f);
-		Vector2f localMax = Vector2f(0.5f);
-		if (context->SelectedEntity.ContainsComponent<TextComponent>())
-		{
-			Vector2f textMin, textMax;
-			if (CalculateTextLocalBounds(context->SelectedEntity.GetComponent<TextComponent>(), textMin, textMax))
-			{
-				localMin = textMin;
-				localMax = textMax;
-			}
-		}
+		// The gizmo is the rect itself, for text as much as anything else - text is sized by its own
+		// FontSize now, so fitting the box to the glyphs would no longer match what gets drawn.
+		const Vector2f localMin = Vector2f(-0.5f);
+		const Vector2f localMax = Vector2f(0.5f);
 
 		Vector2f localSize = localMax - localMin;
 		if (localSize.x <= 0.001f || localSize.y <= 0.001f)

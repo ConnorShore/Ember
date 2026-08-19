@@ -697,3 +697,41 @@ EB_TEST_CASE(UI, ArrowKeyAdoptsAFocusWhenNothingIsFocused, Integration)
 
 	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
 }
+
+// The renderer draws a unit quad through WorldTransform while hit-testing unpacks that same matrix,
+// so the two only agree if the matrix translation is exactly the rect centre. A mismatch here shows
+// up as a clickable area offset from the visible sprite.
+EB_TEST_CASE(UI, HitRectMatchesTheRenderedRectForEveryPivot, Integration)
+{
+	const Vector2f pivots[] = {
+		Vector2f(0.5f, 0.5f), Vector2f(0.0f, 0.0f), Vector2f(1.0f, 1.0f), Vector2f(0.0f, 1.0f)
+	};
+
+	for (const Vector2f& pivot : pivots)
+	{
+		// A fresh scene per pivot: RemoveEntity is deferred, so reusing one scene would leave the
+		// previous button in the draw list to catch the just-outside probes.
+		SceneFixture scene;
+		SizeViewport(*scene);
+
+		Entity canvas = MakeCanvas(*scene);
+		Entity button = MakeButton(*scene, canvas, "Button", Vector2f(200.0f, 60.0f), Vector2f(37.0f, -21.0f));
+		button.GetComponent<RectTransformComponent>().Pivot = pivot;
+
+		Layout(*scene);
+
+		auto& rect = button.GetComponent<RectTransformComponent>();
+		auto& transform = button.GetComponent<TransformComponent>();
+		Vector2f matrixCentre(transform.WorldTransform[3][0], transform.WorldTransform[3][1]);
+
+		EB_EXPECT_VEC2_NEAR(matrixCentre, rect.ComputedMin + rect.ComputedSize * 0.5f, 1e-3f);
+
+		// Inset corners hit; points just past each edge do not.
+		EB_EXPECT_EQ(UIInputSystem::RaycastUI(scene.Ptr(), rect.ComputedMin + Vector2f(1.0f, 1.0f)), button.GetEntityHandle());
+		EB_EXPECT_EQ(UIInputSystem::RaycastUI(scene.Ptr(), rect.ComputedMin + rect.ComputedSize - Vector2f(1.0f, 1.0f)), button.GetEntityHandle());
+		EB_EXPECT_EQ(UIInputSystem::RaycastUI(scene.Ptr(), rect.ComputedMin - Vector2f(0.0f, 2.0f)),
+			(EntityID)Constants::Entities::InvalidEntityID);
+		EB_EXPECT_EQ(UIInputSystem::RaycastUI(scene.Ptr(), rect.ComputedMin + rect.ComputedSize + Vector2f(0.0f, 2.0f)),
+			(EntityID)Constants::Entities::InvalidEntityID);
+	}
+}

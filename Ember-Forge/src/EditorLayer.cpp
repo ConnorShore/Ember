@@ -202,8 +202,15 @@ namespace Ember {
 		Vector2f viewportExtent = m_ViewportBounds[1] - m_ViewportBounds[0];
 		if (viewportExtent.x > 0.0f && viewportExtent.y > 0.0f)
 		{
+			// m_ViewportBounds come from ImGui, which reports desktop coordinates while
+			// ImGuiConfigFlags_ViewportsEnable is set, but Input::GetMousePosition is client-relative
+			// to the main window. Rebasing keeps both in the same space - without it every UI hit test
+			// is offset by the window's client origin (its border and title bar).
+			ImVec2 mainViewportPosition = ImGui::GetMainViewport()->Pos;
+			Vector2f viewportMin = m_ViewportBounds[0] - Vector2f(mainViewportPosition.x, mainViewportPosition.y);
+
 			bool inputActive = m_Context.CurrentSceneState == SceneState::Play || m_ViewportHovered;
-			Input::SetViewportRect(m_ViewportBounds[0], viewportExtent, inputActive);
+			Input::SetViewportRect(viewportMin, viewportExtent, inputActive);
 		}
 
 		if (auto activeScene = m_Context.ActiveScene())

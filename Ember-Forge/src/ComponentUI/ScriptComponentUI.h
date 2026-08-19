@@ -3,6 +3,7 @@
 #include "ComponentUI.h"
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
+#include "Utils/ScriptGenerator.h"
 
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/Script/ScriptEngine.h>
@@ -172,19 +173,8 @@ namespace Ember {
 
 		void GenerateScriptTemplate(const std::string& scriptName, const std::string& filepath, ScriptComponent& component)
 		{
-			// Script template
-			std::ofstream newScriptFile(filepath);
-			newScriptFile << "local " << scriptName << " = {}\n\n";
-			newScriptFile << "-- Expose properties to the editor by adding them to this table. For Example:\n";
-			newScriptFile << "-- " <<  scriptName << ".MyExampleVar = 10\n\n";
-			newScriptFile << "function " << scriptName << ":OnCreate(entity)\n\nend\n\n";
-			newScriptFile << "function " << scriptName << ":OnUpdate(entity, delta)\n\nend\n\n";
-			newScriptFile << "return " << scriptName;
-			newScriptFile.close();
-
 			// Load it
-			auto scriptAsset = m_AssetManager.Load<Script>(filepath);
-			scriptAsset->SetIsEngineAsset(false);
+			auto scriptAsset = ScriptGenerator::GenerateStandardScriptTemplate(scriptName, filepath);
 
 			// Update component
 			component.ScriptHandle = scriptAsset->GetUUID();

@@ -9,11 +9,14 @@
 #include "Ember/Asset/Serializers/PhysicsMaterialSerializer.h"
 
 #include <filesystem>
+#include <fstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace Ember;
 using Ember::Test::Type::Integration;
+using Ember::Test::Type::Unit;
 using Ember::Test::Assets;
 using Ember::Test::MakeEntityAt;
 using Ember::Test::SceneFixture;
@@ -563,6 +566,41 @@ EB_TEST_CASE(Serialization, PrefabRoundTripRemapsUuids, Integration)
 	Entity secondChild = secondInstance.GetChildByName("PrefabChild");
 	EB_CHECK(secondChild.IsValid());
 	EB_EXPECT_NE(secondChild.GetUUID(), instanceChild.GetUUID());
+
+	Ember::Test::RemoveTempFile(path);
+}
+
+// Application::GetAssetManager() returns a reference, so binding it with plain `auto` copies the
+// whole registry. Assets loaded through such a copy register into a temporary that dies at end of
+// scope, and the caller is handed a UUID the real manager asserts on. ScriptGenerator shipped that
+// bug; making the type non-copyable turns it into a compile error instead of a runtime assert.
+EB_TEST_CASE(Assets, AssetManagerIsNonCopyable, Unit)
+{
+	EB_EXPECT_FALSE(std::is_copy_constructible_v<AssetManager>);
+	EB_EXPECT_FALSE(std::is_copy_assignable_v<AssetManager>);
+}
+
+EB_TEST_CASE(Assets, GeneratedScriptIsRetrievableByUUID, Integration)
+{
+	Ember::Test::RequireDefaultAssets();
+
+	const std::string path = Ember::Test::TempFile("generated_script.lua");
+	Ember::Test::RemoveTempFile(path);
+
+	{
+		std::ofstream out(path);
+		out << "local Generated = {}\nfunction Generated:OnClick(entity)\nend\nreturn Generated\n";
+	}
+
+	auto& assetManager = Application::Instance().GetAssetManager();
+	auto script = assetManager.Load<Script>(path, false);
+	EB_CHECK_MSG(script, "Load<Script> returned null");
+
+	// The whole point: the UUID handed back must resolve in the manager the rest of the editor
+	// queries, not in a copy that has already been destroyed.
+	EB_CHECK_MSG(assetManager.ContainsAsset(script->GetUUID()),
+		"the loaded script did not register in the live AssetManager");
+	EB_EXPECT_EQ(assetManager.GetAsset<Script>(script->GetUUID())->GetUUID(), script->GetUUID());
 
 	Ember::Test::RemoveTempFile(path);
 }

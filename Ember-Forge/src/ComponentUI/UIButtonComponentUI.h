@@ -16,17 +16,39 @@ namespace Ember {
 	protected:
 		inline void RenderComponentImpl(UIButtonComponent& component) override
 		{
-			if (!UI::PropertyGrid::Begin("UIButtonProps"))
+			bool containsScript = m_Context->SelectedEntity.ContainsComponent<ScriptComponent>();
+			if (!containsScript)
+			{
+				if (ImGui::Button("Generate Button Script"))
+				{
+					GenerateButtonScript(m_Context->SelectedEntity);
+				}
+			}
+			else
+			{
+				ImGui::Text("Button script attached!");
+			}
+		}
+
+	private:
+		// Writes a starter script next to the project's other scripts, attaches it, and opens it.
+		void GenerateButtonScript(Entity entity)
+		{
+			auto scriptDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
+			auto scriptPath = scriptDirectory / std::format("{}.lua", entity.GetName());
+
+			auto scriptAsset = ScriptGenerator::GenerateButtonScriptTemplate(entity.GetName(), scriptPath.string());
+			if (!scriptAsset)
+			{
+				EB_ERROR("Failed to generate a button script at '{}'", scriptPath.string());
 				return;
+			}
 
-			// The button itself carries no authored state; interaction lives on UISelectableComponent
-			// and click handlers are registered from Lua.
-			UI::PropertyGrid::LabelWithValue("Click Handler", "OnClick(entity) in a script, or button:OnClick(fn)");
+			auto& scriptComponent = entity.AttachComponent<ScriptComponent>();
+			scriptComponent.ScriptHandle = scriptAsset->GetUUID();
+			scriptComponent.Initialized = false;
 
-			if (!m_Context->ActiveScene()->GetRegistry().ContainsComponent<UISelectableComponent>(m_Context->SelectedEntity))
-				UI::PropertyGrid::LabelWithValue("Warning", "Requires a UI Selectable Component to respond to input");
-
-			UI::PropertyGrid::End();
+			ScriptEditor::OpenScript(scriptPath.string());
 		}
 	};
 

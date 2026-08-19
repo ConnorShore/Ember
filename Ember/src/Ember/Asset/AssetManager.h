@@ -47,6 +47,13 @@ namespace Ember {
 		AssetManager() = default;
 		~AssetManager() = default;
 
+		// Non-copyable on purpose. Application::GetAssetManager() returns a reference, so binding it
+		// with plain `auto` used to silently copy the whole registry: assets loaded through the copy
+		// were registered into a temporary that died at end of scope, and the real manager then
+		// asserted "asset doesn't exist" on the handle the caller had just been handed.
+		AssetManager(const AssetManager&) = delete;
+		AssetManager& operator=(const AssetManager&) = delete;
+
 		void LoadDefaults();
 		void ClearAssets();
 
