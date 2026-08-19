@@ -1,4 +1,7 @@
 #include "ebpch.h"
+
+#include "Ember/Core/Application.h"
+#include "Ember/ECS/System/UIInputSystem.h"
 #include "ScriptBindInput.h"
 
 #include "Ember/Input/Input.h"
@@ -161,6 +164,25 @@ namespace Ember {
 		
 		inputTable.set_function("SetCursorMode", &Input::SetCursorMode);
 		inputTable.set_function("GetCursorMode", &Input::GetCursorMode);
+
+		// Viewport-local, bottom-left origin - the space UI rects are laid out in. Unlike
+		// GetMousePosition this is correct inside the editor's docked viewport during Play.
+		inputTable.set_function("GetViewportMousePosition", &Input::GetViewportMousePosition);
+
+		auto uiTable = state.create_named_table("UI");
+
+		// Lets gameplay ignore a click that landed on the HUD.
+		uiTable.set_function("IsPointerOverUI", []()
+			{
+				auto uiInputSystem = Application::Instance().GetSystemManager().GetSystem<UIInputSystem>();
+				return uiInputSystem && uiInputSystem->IsPointerOverUI();
+			});
+
+		uiTable.set_function("ClearFocus", []()
+			{
+				if (auto uiInputSystem = Application::Instance().GetSystemManager().GetSystem<UIInputSystem>())
+					uiInputSystem->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+			});
 	}
 
 }

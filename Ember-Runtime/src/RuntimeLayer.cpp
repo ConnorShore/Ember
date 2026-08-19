@@ -34,6 +34,7 @@ namespace Ember {
 		// 3. Size the camera and render passes to the actual OS Window, not an ImGui panel!
 		auto& window = Application::Instance().GetWindow();
 		runtimeScene->OnViewportResize(window.GetWidth(), window.GetHeight());
+		Input::SetViewportRect(Vector2f(0.0f), Vector2f((float)window.GetWidth(), (float)window.GetHeight()));
 
 		// 4. Start the game!
 		runtimeScene->OnRuntimeStart();
@@ -62,6 +63,9 @@ namespace Ember {
 		//    the standalone runtime must do it explicitly against the OS window.
 		auto& window = Application::Instance().GetWindow();
 		RenderAction::SetViewport(0, 0, window.GetWidth(), window.GetHeight());
+
+		// The standalone viewport is the whole window; UI hit-testing needs this published every frame.
+		Input::SetViewportRect(Vector2f(0.0f), Vector2f((float)window.GetWidth(), (float)window.GetHeight()));
 
 		// 3. Step the game loop! 
 		// (This internally handles physics, scripts, AI, and calls your RenderSystem)

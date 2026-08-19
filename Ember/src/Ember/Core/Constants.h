@@ -10,7 +10,7 @@ namespace Ember::Constants {
 
 	namespace Entities {
 		constexpr uint64_t MaxEntities = 1024;
-		constexpr uint64_t MaxComponents = 64;
+		constexpr uint64_t MaxComponents = 128;
 
 		constexpr uint64_t InvalidEntityID = MaxEntities + 1;
 		constexpr uint64_t InvalidComponentID = MaxEntities + 1;

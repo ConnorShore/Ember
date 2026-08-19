@@ -14,6 +14,12 @@ namespace Ember {
 	class Scene;
 	struct ScriptComponent;
 
+	enum class UICallbackKind
+	{
+		Click = 0,
+		ValueChanged
+	};
+
 	class ScriptEngine
 	{
 	public:
@@ -45,6 +51,19 @@ namespace Ember {
 		static void SetTimeout(sol::protected_function callback, float delaySeconds);
 		static void UpdateTimeouts(TimeStep delta);
 		static void ClearTimeouts();
+
+		// UI callbacks registered from Lua at runtime, for dynamically built screens (store rows,
+		// inventory lists) where an editor-authored hook is not enough.
+		//
+		// Deliberately owned here rather than stored on the component: ScriptEngine destroys and
+		// recreates the whole sol::state on runtime start/stop, and the runtime scene outlives that
+		// teardown - a sol handle sitting in a component would destruct against a dead lua_State.
+		// Keyed by UUID because EntityIDs are recycled, so a stale entry here is inert.
+		static void RegisterUICallback(UUID entity, UICallbackKind kind, sol::protected_function callback);
+		static void ClearUICallbacks(UUID entity, UICallbackKind kind);
+		static void ClearAllUICallbacks();
+		static void InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind);
+		static void InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind, bool argument);
 
 		template<typename T>
 		static void SetScriptPropertyOverride(ScriptComponent& component, const std::string& propertyName, T value)
@@ -95,12 +114,17 @@ namespace Ember {
 				{ propertyName, std::move(values), ScriptPropertyType::ReferenceArray, referenceKind };
 		}
 
-		inline static std::array<std::string, 5> DefaultEmberFunctions = {
+		inline static std::array<std::string, 10> DefaultEmberFunctions = {
 			"OnCreate",
 			"OnUpdate",
 			"OnOverlapTriggerEnter",
 			"OnOverlapTriggerStay",
-			"OnOverlapTriggerExit"
+			"OnOverlapTriggerExit",
+			"OnAnimationEvent",
+			"OnClick",
+			"OnValueChanged",
+			"OnHoverEnter",
+			"OnHoverExit"
 		};
 
 		// Reserved field name a script table sets to another script asset's name to inherit from

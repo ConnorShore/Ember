@@ -70,6 +70,8 @@
 #include "Ember/ECS/System/AnimationSystem.h"
 #include "Ember/ECS/System/BoneSocketSystem.h"
 #include "Ember/ECS/System/AudioSystem.h"
+#include "Ember/ECS/System/UILayoutSystem.h"
+#include "Ember/ECS/System/UIInputSystem.h"
 
 #include "Ember/Scene/Entity.h"
 #include "Ember/Scene/Scene.h"

@@ -15,4 +15,5 @@ namespace Ember {
 	void BindAudioComponents(sol::state& state);
 	void BindAIComponents(sol::state& state, Scene* scene);
 	void BindMiscComponents(sol::state& state);
+	void BindUIComponents(sol::state& state);
 }

@@ -30,6 +30,8 @@ namespace Ember {
 		static Entity CreateCanvas(const SharedPtr<Scene>& scene);
 		static Entity CreateUISprite(const SharedPtr<Scene>& scene);
 		static Entity CreateUIText(const SharedPtr<Scene>& scene);
+		static Entity CreateUIButton(const SharedPtr<Scene>& scene);
+		static Entity CreateUIToggle(const SharedPtr<Scene>& scene);
 
 	};
 

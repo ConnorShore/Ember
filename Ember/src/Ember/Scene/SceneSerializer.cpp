@@ -66,7 +66,10 @@ namespace Ember {
 	X(NavigationMeshModifierComponent) \
 	X(LocalAvoidanceComponent) \
 	X(CanvasComponent) \
-	X(RectTransformComponent)
+	X(RectTransformComponent) \
+	X(UISelectableComponent) \
+	X(UIButtonComponent) \
+	X(UIToggleComponent)
 
 	template<typename T>
 	static bool TrySerializeComponentOrderEntry(Entity entity, ComponentType componentType, ryml::NodeRef& componentOrderNode, const char* componentName)
@@ -184,6 +187,7 @@ namespace Ember {
 			}
 			spriteNode["IsBillboard"] << sprite.IsBillboard;
 			spriteNode["LockYAxis"] << sprite.LockYAxis;
+			Util::SerializeVector4f(spriteNode["NineSliceBorder"], sprite.NineSliceBorder);
 		}
 		if (entity.ContainsComponent<RigidBodyComponent>())
 		{
@@ -478,6 +482,9 @@ namespace Ember {
 			textNode |= ryml::MAP;
 			textNode["Text"] << text.Text;
 			textNode["FontHandle"] << (uint64_t)text.FontHandle;
+			textNode["FontSize"] << text.FontSize;
+			textNode["HorizontalAlignment"] << (int)text.HorizontalAlignment;
+			textNode["VerticalAlignment"] << (int)text.VerticalAlignment;
 			Util::SerializeVector4f(textNode["Color"], text.Color);
 		}
 		if (entity.ContainsComponent<DisabledComponent>())
@@ -734,6 +741,51 @@ namespace Ember {
 			Util::SerializeVector2f(rectNode["AnchorMax"], rectTransform.AnchorMax);
 			Util::SerializeVector2f(rectNode["Pivot"], rectTransform.Pivot);
 			rectNode["Rotation"] << rectTransform.Rotation;
+			rectNode["RaycastTarget"] << rectTransform.RaycastTarget;
+		}
+
+		if (entity.ContainsComponent<UISelectableComponent>())
+		{
+			auto& selectable = entity.GetComponent<UISelectableComponent>();
+			ryml::NodeRef selectableNode = entityNode["UISelectableComponent"];
+			selectableNode |= ryml::MAP;
+			selectableNode["Interactable"] << selectable.Interactable;
+			selectableNode["Transition"] << (int)selectable.Transition;
+			selectableNode["TargetGraphicEntity"] << (uint64_t)selectable.TargetGraphicEntity;
+			Util::SerializeVector4f(selectableNode["NormalColor"], selectable.NormalColor);
+			Util::SerializeVector4f(selectableNode["HighlightedColor"], selectable.HighlightedColor);
+			Util::SerializeVector4f(selectableNode["PressedColor"], selectable.PressedColor);
+			Util::SerializeVector4f(selectableNode["SelectedColor"], selectable.SelectedColor);
+			Util::SerializeVector4f(selectableNode["DisabledColor"], selectable.DisabledColor);
+			selectableNode["FadeDuration"] << selectable.FadeDuration;
+			selectableNode["HighlightedTexture"] << (uint64_t)selectable.HighlightedTexture;
+			selectableNode["PressedTexture"] << (uint64_t)selectable.PressedTexture;
+			selectableNode["SelectedTexture"] << (uint64_t)selectable.SelectedTexture;
+			selectableNode["DisabledTexture"] << (uint64_t)selectable.DisabledTexture;
+			selectableNode["Navigation"] << (int)selectable.Navigation;
+			selectableNode["NavigateUp"] << (uint64_t)selectable.NavigateUp;
+			selectableNode["NavigateDown"] << (uint64_t)selectable.NavigateDown;
+			selectableNode["NavigateLeft"] << (uint64_t)selectable.NavigateLeft;
+			selectableNode["NavigateRight"] << (uint64_t)selectable.NavigateRight;
+		}
+
+		if (entity.ContainsComponent<UIButtonComponent>())
+		{
+			// No authored state today, but the node must exist so ComponentOrder round-trips.
+			ryml::NodeRef buttonNode = entityNode["UIButtonComponent"];
+			buttonNode |= ryml::MAP;
+			buttonNode["IsButton"] << true;
+		}
+
+		if (entity.ContainsComponent<UIToggleComponent>())
+		{
+			auto& toggle = entity.GetComponent<UIToggleComponent>();
+			ryml::NodeRef toggleNode = entityNode["UIToggleComponent"];
+			toggleNode |= ryml::MAP;
+			toggleNode["IsOn"] << toggle.IsOn;
+			toggleNode["CheckmarkEntity"] << (uint64_t)toggle.CheckmarkEntity;
+			toggleNode["GroupEntity"] << (uint64_t)toggle.GroupEntity;
+			toggleNode["AllowSwitchOff"] << toggle.AllowSwitchOff;
 		}
 	}
 
@@ -816,6 +868,10 @@ namespace Ember {
 
 			if (spriteNode.has_child("LockYAxis"))
 				spriteNode["LockYAxis"] >> sc.LockYAxis;
+
+			// Guarded: scenes authored before nine-slicing existed have no such key.
+			if (spriteNode.has_child("NineSliceBorder"))
+				Util::DeserializeVector4f(spriteNode["NineSliceBorder"], sc.NineSliceBorder);
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))
@@ -1261,10 +1317,28 @@ namespace Ember {
 		{
 			ryml::NodeRef textNode = entityNode["TextComponent"];
 			auto& tc = deserializedEntity.AttachComponent<TextComponent>();
-			textNode["Text"] >> tc.Text;
-			uint64_t fontId;
-			textNode["FontHandle"] >> fontId;
+			if (textNode.has_child("Text"))
+				textNode["Text"] >> tc.Text;
+
+			// Initialised + guarded: rapidyaml leaves the target untouched when the key is absent.
+			uint64_t fontId = (uint64_t)Constants::InvalidUUID;
+			if (textNode.has_child("FontHandle"))
+				textNode["FontHandle"] >> fontId;
 			tc.FontHandle = (UUID)fontId;
+
+			// Guarded: scenes authored before these fields existed keep the struct defaults.
+			if (textNode.has_child("FontSize"))
+				textNode["FontSize"] >> tc.FontSize;
+
+			int horizontalAlignment = (int)TextAlignment::Center;
+			if (textNode.has_child("HorizontalAlignment"))
+				textNode["HorizontalAlignment"] >> horizontalAlignment;
+			tc.HorizontalAlignment = (TextAlignment)horizontalAlignment;
+
+			int verticalAlignment = (int)TextAlignment::Center;
+			if (textNode.has_child("VerticalAlignment"))
+				textNode["VerticalAlignment"] >> verticalAlignment;
+			tc.VerticalAlignment = (TextAlignment)verticalAlignment;
 			Util::DeserializeVector4f(textNode["Color"], tc.Color);
 		}
 
@@ -1563,7 +1637,98 @@ namespace Ember {
 			Util::DeserializeVector2f(rectNode["Pivot"], rect.Pivot);
 			Util::DeserializeVector2f(rectNode["SizeDelta"], rect.SizeDelta);
 			Util::DeserializeVector2f(rectNode["AnchoredPosition"], rect.AnchoredPosition);
-			rectNode["Rotation"] >> rect.Rotation;
+			if (rectNode.has_child("Rotation"))
+				rectNode["Rotation"] >> rect.Rotation;
+
+			// Guarded: scenes authored before RaycastTarget existed have no such key.
+			if (rectNode.has_child("RaycastTarget"))
+				rectNode["RaycastTarget"] >> rect.RaycastTarget;
+		}
+
+		if (entityNode.has_child("UISelectableComponent"))
+		{
+			ryml::NodeRef selectableNode = entityNode["UISelectableComponent"];
+			auto& selectable = deserializedEntity.AttachComponent<UISelectableComponent>();
+
+			// Entity references must be remapped or a prefab instance wires itself to another instance.
+			auto readEntityRef = [&](const char* key, UUID& target)
+				{
+					if (!selectableNode.has_child(key))
+						return;
+					uint64_t rawID = (uint64_t)Constants::InvalidUUID;
+					selectableNode[key] >> rawID;
+					target = getRemappedUUID(rawID);
+				};
+			auto readAssetRef = [&](const char* key, UUID& target)
+				{
+					if (!selectableNode.has_child(key))
+						return;
+					uint64_t rawID = (uint64_t)Constants::InvalidUUID;
+					selectableNode[key] >> rawID;
+					target = (UUID)rawID;
+				};
+
+			if (selectableNode.has_child("Interactable"))
+				selectableNode["Interactable"] >> selectable.Interactable;
+
+			int transitionValue = (int)UITransitionMode::ColorTint;
+			if (selectableNode.has_child("Transition"))
+				selectableNode["Transition"] >> transitionValue;
+			selectable.Transition = (UITransitionMode)transitionValue;
+
+			readEntityRef("TargetGraphicEntity", selectable.TargetGraphicEntity);
+
+			if (selectableNode.has_child("NormalColor"))
+				Util::DeserializeVector4f(selectableNode["NormalColor"], selectable.NormalColor);
+			if (selectableNode.has_child("HighlightedColor"))
+				Util::DeserializeVector4f(selectableNode["HighlightedColor"], selectable.HighlightedColor);
+			if (selectableNode.has_child("PressedColor"))
+				Util::DeserializeVector4f(selectableNode["PressedColor"], selectable.PressedColor);
+			if (selectableNode.has_child("SelectedColor"))
+				Util::DeserializeVector4f(selectableNode["SelectedColor"], selectable.SelectedColor);
+			if (selectableNode.has_child("DisabledColor"))
+				Util::DeserializeVector4f(selectableNode["DisabledColor"], selectable.DisabledColor);
+			if (selectableNode.has_child("FadeDuration"))
+				selectableNode["FadeDuration"] >> selectable.FadeDuration;
+
+			readAssetRef("HighlightedTexture", selectable.HighlightedTexture);
+			readAssetRef("PressedTexture", selectable.PressedTexture);
+			readAssetRef("SelectedTexture", selectable.SelectedTexture);
+			readAssetRef("DisabledTexture", selectable.DisabledTexture);
+
+			int navigationValue = (int)UINavigationMode::Automatic;
+			if (selectableNode.has_child("Navigation"))
+				selectableNode["Navigation"] >> navigationValue;
+			selectable.Navigation = (UINavigationMode)navigationValue;
+
+			readEntityRef("NavigateUp", selectable.NavigateUp);
+			readEntityRef("NavigateDown", selectable.NavigateDown);
+			readEntityRef("NavigateLeft", selectable.NavigateLeft);
+			readEntityRef("NavigateRight", selectable.NavigateRight);
+		}
+
+		if (entityNode.has_child("UIButtonComponent"))
+			deserializedEntity.AttachComponent<UIButtonComponent>();
+
+		if (entityNode.has_child("UIToggleComponent"))
+		{
+			ryml::NodeRef toggleNode = entityNode["UIToggleComponent"];
+			auto& toggle = deserializedEntity.AttachComponent<UIToggleComponent>();
+
+			if (toggleNode.has_child("IsOn"))
+				toggleNode["IsOn"] >> toggle.IsOn;
+			if (toggleNode.has_child("AllowSwitchOff"))
+				toggleNode["AllowSwitchOff"] >> toggle.AllowSwitchOff;
+
+			uint64_t checkmarkID = (uint64_t)Constants::InvalidUUID;
+			if (toggleNode.has_child("CheckmarkEntity"))
+				toggleNode["CheckmarkEntity"] >> checkmarkID;
+			toggle.CheckmarkEntity = getRemappedUUID(checkmarkID);
+
+			uint64_t groupID = (uint64_t)Constants::InvalidUUID;
+			if (toggleNode.has_child("GroupEntity"))
+				toggleNode["GroupEntity"] >> groupID;
+			toggle.GroupEntity = getRemappedUUID(groupID);
 		}
 
 		DeserializeComponentOrder(entityNode, deserializedEntity);

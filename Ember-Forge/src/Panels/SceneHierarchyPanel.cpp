@@ -227,6 +227,14 @@ namespace Ember {
 				{
 					entity = Presets::CreateUIText(m_Context->ActiveScene());
 				}
+				if (ImGui::MenuItem("Button"))
+				{
+					entity = Presets::CreateUIButton(m_Context->ActiveScene());
+				}
+				if (ImGui::MenuItem("Toggle"))
+				{
+					entity = Presets::CreateUIToggle(m_Context->ActiveScene());
+				}
 				ImGui::EndMenu();
 			}
 

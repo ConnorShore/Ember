@@ -14,7 +14,8 @@ namespace Ember {
 			"Color", RefProp(&SpriteComponent::Color),
 			"TextureHandle", RefProp(&SpriteComponent::TextureHandle),
 			"IsBillboard", RefProp(&SpriteComponent::IsBillboard),
-			"LockYAxis", RefProp(&SpriteComponent::LockYAxis)
+			"LockYAxis", RefProp(&SpriteComponent::LockYAxis),
+			"NineSliceBorder", RefProp(&SpriteComponent::NineSliceBorder)
 		);
 
 		state.new_usertype<ComponentRef<StaticMeshComponent>>("StaticMeshComponent",
@@ -39,7 +40,10 @@ namespace Ember {
 
 		state.new_usertype<ComponentRef<TextComponent>>("TextComponent",
 			"Text", RefProp(&TextComponent::Text),
-			"Color", RefProp(&TextComponent::Color)
+			"Color", RefProp(&TextComponent::Color),
+			"FontSize", RefProp(&TextComponent::FontSize),
+			"HorizontalAlignment", RefProp(&TextComponent::HorizontalAlignment),
+			"VerticalAlignment", RefProp(&TextComponent::VerticalAlignment)
 		);
 
 		state.new_usertype<ComponentRef<ParticleEmitterComponent>>("ParticleEmitterComponent",

@@ -74,6 +74,20 @@ Things that won't *block* you but will repeatedly slow you down while making a g
 - [Ember/src/Ember/ImGui/ImGuiLayer.h](Ember/src/Ember/ImGui/ImGuiLayer.h#L20) — Set up Key/Mouse events through the ImGui layer (needed if you want runtime UI / debug overlays to consume input correctly).
 - [Ember/src/Ember/Event/Event.h](Ember/src/Ember/Event/Event.h#L33) — Mouse enter/exit/focus events. Required for any hover/tooltip UI in-game.
 
+- **Runtime UI interaction** — DONE. `UIInputSystem` (`Ember/src/Ember/ECS/System/UIInputSystem.h`) is a
+  centralized router in the shape of Unity's EventSystem: it CPU-raycasts UI rects, owns hover, pointer
+  capture and focus, and drives `UISelectableComponent` + `UIButtonComponent`/`UIToggleComponent`.
+  In-game hover no longer needs the GLFW enter/exit events above (it is derived by polling), though those
+  are still worth adding for tooltips outside the UI system. Guarded by `Ember-Test/src/Tests/UITests.cpp`;
+  authoring guide in `docs/Editor/BuildingUI.md`.
+
+- **`LayerStack` event ordering** — still open, and now the last piece of the input story.
+  `PushCanvasLayer` appends to the *end* of the stack while `Application::OnEvent` iterates front-to-back,
+  so overlay layers receive events **last** — backwards for an overlay. `Event::Handled()` exists but
+  nothing reads it, so no layer can consume input. `UIInputSystem` sidesteps this with the
+  `UI.IsPointerOverUI()` query instead of event consumption. Separately, `LayerStack::PopLayer` decrements
+  `m_LayerPartitionIndex` even when popping a canvas layer.
+
 ### Animation / audio (gameplay-facing)
 
 - [Ember/src/Ember/ECS/System/AnimationSystem.cpp](Ember/src/Ember/ECS/System/AnimationSystem.cpp#L139) — Playback speed multiplier on animator (slo-mo, hit-stop, speed-ups — all common game effects).

@@ -33,6 +33,9 @@
 #include "ComponentUI/LocalAvoidanceComponentUI.h"
 #include "ComponentUI/SpriteComponentUI.h"
 #include "ComponentUI/CanvasComponentUI.h"
+#include "ComponentUI/UISelectableComponentUI.h"
+#include "ComponentUI/UIButtonComponentUI.h"
+#include "ComponentUI/UIToggleComponentUI.h"
 #include "ComponentUI/RectTransformComponentUI.h"
 #include "ComponentUI/NavigationMeshComponentUI.h"
 #include "ComponentUI/NavigationMeshModifierComponentUI.h"
@@ -121,6 +124,9 @@ namespace Ember {
 
 		// --- UI ---
 		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<CanvasComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<UISelectableComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<UIButtonComponentUI>::Create(m_Context));
+		m_ComponentUIs[Category::UI].emplace_back(ScopedPtr<UIToggleComponentUI>::Create(m_Context));
 	}
 
 	SceneInspectorPanel::~SceneInspectorPanel()

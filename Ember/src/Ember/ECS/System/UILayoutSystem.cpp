@@ -12,14 +12,31 @@ namespace Ember {
 		Vector2f Size = Vector2f(0.0f);
 	};
 
-	static UILayoutRect ResolveRectTransform(const RectTransformComponent& rect, TransformComponent& transform, const UILayoutRect& parentRect)
+	// Unity's ScaleWithScreenSize: authored pixel sizes stay proportional as the viewport changes,
+	// so a 200px button is not 200px at both 720p and 4K.
+	static float ResolveCanvasScale(const CanvasComponent& canvas, const Vector2f& viewportSize)
+	{
+		if (canvas.ReferenceResolution.x <= 0.0f || canvas.ReferenceResolution.y <= 0.0f)
+			return 1.0f;
+
+		float logWidth = std::log2(viewportSize.x / canvas.ReferenceResolution.x);
+		float logHeight = std::log2(viewportSize.y / canvas.ReferenceResolution.y);
+		float match = std::clamp(canvas.MatchWidthOrHeight, 0.0f, 1.0f);
+		return std::pow(2.0f, logWidth + (logHeight - logWidth) * match);
+	}
+
+	static UILayoutRect ResolveRectTransform(RectTransformComponent& rect, TransformComponent& transform, const UILayoutRect& parentRect, float canvasScale)
 	{
 		Vector2f anchorMin = parentRect.Min + parentRect.Size * rect.AnchorMin;
 		Vector2f anchorMax = parentRect.Min + parentRect.Size * rect.AnchorMax;
 		Vector2f anchorSize = anchorMax - anchorMin;
 
-		Vector2f size = anchorSize + rect.SizeDelta;
-		Vector2f pivotPosition = anchorMin + anchorSize * rect.Pivot + rect.AnchoredPosition;
+		// Authored pixel offsets scale with the canvas; anchors and pivot are unitless and do not.
+		Vector2f scaledSizeDelta = rect.SizeDelta * canvasScale;
+		Vector2f scaledAnchoredPosition = rect.AnchoredPosition * canvasScale;
+
+		Vector2f size = anchorSize + scaledSizeDelta;
+		Vector2f pivotPosition = anchorMin + anchorSize * rect.Pivot + scaledAnchoredPosition;
 		Vector2f centerPosition = pivotPosition + (Vector2f(0.5f) - rect.Pivot) * size;
 
 		transform.WorldTransform = Math::Translate(Vector3f(centerPosition, 0.0f))
@@ -29,10 +46,16 @@ namespace Ember {
 		UILayoutRect resolvedRect;
 		resolvedRect.Min = pivotPosition - rect.Pivot * size;
 		resolvedRect.Size = size;
+
+		// Cached so UIInputSystem can hit-test without recomputing the layout.
+		rect.ComputedMin = resolvedRect.Min;
+		rect.ComputedSize = resolvedRect.Size;
+
 		return resolvedRect;
 	}
 
-	static void ResolveChildren(Scene* scene, EntityID parentEntity, const UILayoutRect& parentRect)
+	static void ResolveChildren(Scene* scene, EntityID parentEntity, const UILayoutRect& parentRect, float canvasScale,
+		uint32_t canvasSortOrder, std::vector<UIDrawEntry>& outEntries)
 	{
 		auto& registry = scene->GetRegistry();
 		if (!registry.ContainsComponent<RelationshipComponent>(parentEntity))
@@ -46,6 +69,8 @@ namespace Ember {
 				continue;
 
 			EntityID childEntity = child.GetEntityHandle();
+
+			// Skipping the whole subtree is deliberate: disabling a panel must hide its contents too.
 			if (registry.ContainsComponent<DisabledComponent>(childEntity))
 				continue;
 
@@ -53,10 +78,16 @@ namespace Ember {
 			if (registry.ContainsComponent<RectTransformComponent>(childEntity) && registry.ContainsComponent<TransformComponent>(childEntity))
 			{
 				auto [rect, transform] = registry.GetComponents<RectTransformComponent, TransformComponent>(childEntity);
-				childRect = ResolveRectTransform(rect, transform, parentRect);
+				childRect = ResolveRectTransform(rect, transform, parentRect, canvasScale);
 			}
 
-			ResolveChildren(scene, childEntity, childRect);
+			UIDrawEntry entry;
+			entry.Entity = childEntity;
+			entry.CanvasSortOrder = canvasSortOrder;
+			entry.HierarchyIndex = (uint32_t)outEntries.size();
+			outEntries.push_back(entry);
+
+			ResolveChildren(scene, childEntity, childRect, canvasScale, canvasSortOrder, outEntries);
 		}
 	}
 
@@ -72,6 +103,11 @@ namespace Ember {
 
 	void UILayoutSystem::OnUpdate(TimeStep delta, Scene* scene)
 	{
+		m_SortedEntities.clear();
+
+		// Must match the source ScreenSpace2DRenderPass builds its orthographic projection from,
+		// or layout and rendering disagree. Scene::GetViewportSize proxies the active camera and
+		// is only a fallback.
 		int viewportDims[4] = { 0 };
 		RenderAction::GetViewportDimensions(viewportDims);
 		Vector2f viewportSize = Vector2f((float)viewportDims[2], (float)viewportDims[3]);
@@ -81,17 +117,32 @@ namespace Ember {
 			return;
 
 		auto& registry = scene->GetRegistry();
-		auto view = registry.ActiveQuery<CanvasComponent, TransformComponent>();
-		for (auto entity : view)
+
+		// Visit canvases in SortOrder so the draw list is already layered correctly.
+		std::vector<EntityID> canvases;
+		for (auto entity : registry.ActiveQuery<CanvasComponent, TransformComponent>())
+		{
+			if (registry.GetComponent<CanvasComponent>(entity).RenderMode == CanvasRenderMode::ScreenSpace)
+				canvases.push_back(entity);
+		}
+
+		std::stable_sort(canvases.begin(), canvases.end(), [&registry](EntityID a, EntityID b)
+			{
+				return registry.GetComponent<CanvasComponent>(a).SortOrder < registry.GetComponent<CanvasComponent>(b).SortOrder;
+			});
+
+		for (EntityID entity : canvases)
 		{
 			auto& canvasComp = registry.GetComponent<CanvasComponent>(entity);
-			if (canvasComp.RenderMode != CanvasRenderMode::ScreenSpace)
-				continue;
 
 			UILayoutRect canvasRect;
 			canvasRect.Min = Vector2f(0.0f);
 			canvasRect.Size = viewportSize;
-			ResolveChildren(scene, entity, canvasRect);
+
+			// The canvas entity itself is a pure container - its own WorldTransform is a stale 3D
+			// transform that would render as garbage under the UI's orthographic projection.
+			ResolveChildren(scene, entity, canvasRect, ResolveCanvasScale(canvasComp, viewportSize),
+				canvasComp.SortOrder, m_SortedEntities);
 		}
 	}
 

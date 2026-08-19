@@ -291,4 +291,61 @@ namespace Ember {
 		return newEntity;
 	}
 
+	// A button is a three-part assembly (background + interaction + label), so the preset builds
+	// the whole thing - otherwise every button has to be wired by hand.
+	Entity Presets::CreateUIButton(const SharedPtr<Scene>& scene)
+	{
+		Entity buttonEntity = scene->AddEntity("UIButton");
+
+		auto& rect = buttonEntity.AttachComponent<RectTransformComponent>();
+		rect.SizeDelta = { 200.0f, 60.0f };
+
+		buttonEntity.AttachComponent<SpriteComponent>();
+		buttonEntity.AttachComponent<UISelectableComponent>();
+		buttonEntity.AttachComponent<UIButtonComponent>();
+
+		Entity labelEntity = scene->AddEntity("Label");
+		auto& labelRect = labelEntity.AttachComponent<RectTransformComponent>();
+
+		// Stretch to fill the button so the label stays centred at any button size.
+		labelRect.AnchorMin = { 0.0f, 0.0f };
+		labelRect.AnchorMax = { 1.0f, 1.0f };
+		labelRect.SizeDelta = { 0.0f, 0.0f };
+
+		auto& label = labelEntity.AttachComponent<TextComponent>();
+		label.Text = "Button";
+		label.Color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		scene->SetEntityParent(labelEntity.GetUUID(), buttonEntity);
+		return buttonEntity;
+	}
+
+	Entity Presets::CreateUIToggle(const SharedPtr<Scene>& scene)
+	{
+		Entity toggleEntity = scene->AddEntity("UIToggle");
+
+		auto& rect = toggleEntity.AttachComponent<RectTransformComponent>();
+		rect.SizeDelta = { 40.0f, 40.0f };
+
+		toggleEntity.AttachComponent<SpriteComponent>();
+		toggleEntity.AttachComponent<UISelectableComponent>();
+		auto& toggle = toggleEntity.AttachComponent<UIToggleComponent>();
+
+		Entity checkmarkEntity = scene->AddEntity("Checkmark");
+		auto& checkRect = checkmarkEntity.AttachComponent<RectTransformComponent>();
+		checkRect.AnchorMin = { 0.0f, 0.0f };
+		checkRect.AnchorMax = { 1.0f, 1.0f };
+		checkRect.SizeDelta = { -12.0f, -12.0f };
+
+		auto& checkSprite = checkmarkEntity.AttachComponent<SpriteComponent>();
+		checkSprite.Color = { 0.2f, 0.7f, 0.3f, 1.0f };
+
+		scene->SetEntityParent(checkmarkEntity.GetUUID(), toggleEntity);
+		toggle.CheckmarkEntity = checkmarkEntity.GetUUID();
+
+		// The checkmark must not swallow clicks meant for the toggle behind it.
+		checkmarkEntity.SetActive(toggle.IsOn, true);
+		return toggleEntity;
+	}
+
 }

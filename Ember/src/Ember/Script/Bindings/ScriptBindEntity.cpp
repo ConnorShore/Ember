@@ -56,6 +56,16 @@ namespace Ember {
 			return guardGet(entity.ContainsComponent<CharacterControllerComponent>(), [&]{ return PushComponent<CharacterControllerComponent>(state, entity); });
 		if (componentTypeStr == "TextComponent")
 			return guardGet(entity.ContainsComponent<TextComponent>(), [&] { return PushComponent<TextComponent>(state, entity); });
+		if (componentTypeStr == "CanvasComponent")
+			return guardGet(entity.ContainsComponent<CanvasComponent>(), [&] { return PushComponent<CanvasComponent>(state, entity); });
+		if (componentTypeStr == "RectTransformComponent")
+			return guardGet(entity.ContainsComponent<RectTransformComponent>(), [&] { return PushComponent<RectTransformComponent>(state, entity); });
+		if (componentTypeStr == "UISelectableComponent")
+			return guardGet(entity.ContainsComponent<UISelectableComponent>(), [&] { return PushComponent<UISelectableComponent>(state, entity); });
+		if (componentTypeStr == "UIButtonComponent")
+			return guardGet(entity.ContainsComponent<UIButtonComponent>(), [&] { return PushComponent<UIButtonComponent>(state, entity); });
+		if (componentTypeStr == "UIToggleComponent")
+			return guardGet(entity.ContainsComponent<UIToggleComponent>(), [&] { return PushComponent<UIToggleComponent>(state, entity); });
 		if (componentTypeStr == "AudioSourceComponent")
 			return guardGet(entity.ContainsComponent<AudioSourceComponent>(), [&] { return PushComponent<AudioSourceComponent>(state, entity); });
 		if (componentTypeStr == "WaypointComponent")
@@ -119,6 +129,16 @@ namespace Ember {
 			return sol::make_object(state, entity.ContainsComponent<CharacterControllerComponent>());
 		if (componentTypeStr == "TextComponent")
 			return sol::make_object(state, entity.ContainsComponent<TextComponent>());
+		if (componentTypeStr == "CanvasComponent")
+			return sol::make_object(state, entity.ContainsComponent<CanvasComponent>());
+		if (componentTypeStr == "RectTransformComponent")
+			return sol::make_object(state, entity.ContainsComponent<RectTransformComponent>());
+		if (componentTypeStr == "UISelectableComponent")
+			return sol::make_object(state, entity.ContainsComponent<UISelectableComponent>());
+		if (componentTypeStr == "UIButtonComponent")
+			return sol::make_object(state, entity.ContainsComponent<UIButtonComponent>());
+		if (componentTypeStr == "UIToggleComponent")
+			return sol::make_object(state, entity.ContainsComponent<UIToggleComponent>());
 		if (componentTypeStr == "AudioSourceComponent")
 			return sol::make_object(state, entity.ContainsComponent<AudioSourceComponent>());
 		if (componentTypeStr == "WaypointComponent")
@@ -173,6 +193,11 @@ namespace Ember {
 		if (componentTypeStr == "RigidBodyComponent") return addAndReturn(RigidBodyComponent{});
 		if (componentTypeStr == "SpriteComponent") return addAndReturn(SpriteComponent{});
 		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
+		if (componentTypeStr == "CanvasComponent") return addAndReturn(CanvasComponent{});
+		if (componentTypeStr == "RectTransformComponent") return addAndReturn(RectTransformComponent{});
+		if (componentTypeStr == "UISelectableComponent") return addAndReturn(UISelectableComponent{});
+		if (componentTypeStr == "UIButtonComponent") return addAndReturn(UIButtonComponent{});
+		if (componentTypeStr == "UIToggleComponent") return addAndReturn(UIToggleComponent{});
 		if (componentTypeStr == "CameraComponent") return addAndReturn(CameraComponent{});
 		if (componentTypeStr == "PointLightComponent") return addAndReturn(PointLightComponent{});
 		if (componentTypeStr == "DirectionalLightComponent") return addAndReturn(DirectionalLightComponent{});
@@ -191,6 +216,11 @@ namespace Ember {
 		if (componentTypeStr == "ConcaveMeshColliderComponent") return addAndReturn(ConcaveMeshColliderComponent{});
 		if (componentTypeStr == "ConvexMeshColliderComponent") return addAndReturn(ConvexMeshColliderComponent{});
 		if (componentTypeStr == "TextComponent") return addAndReturn(TextComponent{});
+		if (componentTypeStr == "CanvasComponent") return addAndReturn(CanvasComponent{});
+		if (componentTypeStr == "RectTransformComponent") return addAndReturn(RectTransformComponent{});
+		if (componentTypeStr == "UISelectableComponent") return addAndReturn(UISelectableComponent{});
+		if (componentTypeStr == "UIButtonComponent") return addAndReturn(UIButtonComponent{});
+		if (componentTypeStr == "UIToggleComponent") return addAndReturn(UIToggleComponent{});
 		if (componentTypeStr == "LifetimeComponent") return addAndReturn(LifetimeComponent{});
 		if (componentTypeStr == "ParticleEmitterComponent") return addAndReturn(ParticleEmitterComponent{});
 		if (componentTypeStr == "AudioSourceComponent") return addAndReturn(AudioSourceComponent{});
@@ -220,6 +250,11 @@ namespace Ember {
 		if (componentTypeStr == "RigidBodyComponent") return entity.DetachComponent<RigidBodyComponent>();
 		if (componentTypeStr == "SpriteComponent") return entity.DetachComponent<SpriteComponent>();
 		if (componentTypeStr == "TextComponent") return entity.DetachComponent<TextComponent>();
+		if (componentTypeStr == "CanvasComponent") return entity.DetachComponent<CanvasComponent>();
+		if (componentTypeStr == "RectTransformComponent") return entity.DetachComponent<RectTransformComponent>();
+		if (componentTypeStr == "UISelectableComponent") return entity.DetachComponent<UISelectableComponent>();
+		if (componentTypeStr == "UIButtonComponent") return entity.DetachComponent<UIButtonComponent>();
+		if (componentTypeStr == "UIToggleComponent") return entity.DetachComponent<UIToggleComponent>();
 		if (componentTypeStr == "CameraComponent") return entity.DetachComponent<CameraComponent>();
 		if (componentTypeStr == "PointLightComponent") return entity.DetachComponent<PointLightComponent>();
 		if (componentTypeStr == "DirectionalLightComponent") return entity.DetachComponent<DirectionalLightComponent>();
@@ -238,6 +273,11 @@ namespace Ember {
 		if (componentTypeStr == "ConcaveMeshColliderComponent") return entity.DetachComponent<ConcaveMeshColliderComponent>();
 		if (componentTypeStr == "ConvexMeshColliderComponent") return entity.DetachComponent<ConvexMeshColliderComponent>();
 		if (componentTypeStr == "TextComponent") return entity.DetachComponent<TextComponent>();
+		if (componentTypeStr == "CanvasComponent") return entity.DetachComponent<CanvasComponent>();
+		if (componentTypeStr == "RectTransformComponent") return entity.DetachComponent<RectTransformComponent>();
+		if (componentTypeStr == "UISelectableComponent") return entity.DetachComponent<UISelectableComponent>();
+		if (componentTypeStr == "UIButtonComponent") return entity.DetachComponent<UIButtonComponent>();
+		if (componentTypeStr == "UIToggleComponent") return entity.DetachComponent<UIToggleComponent>();
 		if (componentTypeStr == "LifetimeComponent") return entity.DetachComponent<LifetimeComponent>();
 		if (componentTypeStr == "ScriptComponent") return entity.DetachComponent<ScriptComponent>();
 		if (componentTypeStr == "ParticleEmitterComponent") return entity.DetachComponent<ParticleEmitterComponent>();

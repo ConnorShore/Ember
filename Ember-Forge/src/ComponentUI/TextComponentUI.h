@@ -23,6 +23,28 @@ namespace Ember {
 			{
 				UI::PropertyGrid::InputText("Text", component.Text);
 				UI::PropertyGrid::Color4("Color", component.Color);
+				UI::PropertyGrid::Float("Font Size", component.FontSize, 1.0f, 1.0f, 512.0f);
+
+				static const char* alignmentNames[] = { "Start", "Center", "End" };
+				if (UI::PropertyGrid::BeginComboBox("Horizontal Align", alignmentNames[(int)component.HorizontalAlignment]))
+				{
+					for (int i = 0; i < IM_ARRAYSIZE(alignmentNames); i++)
+					{
+						if (UI::PropertyGrid::ComboBoxItem(alignmentNames[i], (int)component.HorizontalAlignment == i))
+							component.HorizontalAlignment = (TextAlignment)i;
+					}
+					UI::PropertyGrid::EndComboBox();
+				}
+
+				if (UI::PropertyGrid::BeginComboBox("Vertical Align", alignmentNames[(int)component.VerticalAlignment]))
+				{
+					for (int i = 0; i < IM_ARRAYSIZE(alignmentNames); i++)
+					{
+						if (UI::PropertyGrid::ComboBoxItem(alignmentNames[i], (int)component.VerticalAlignment == i))
+							component.VerticalAlignment = (TextAlignment)i;
+					}
+					UI::PropertyGrid::EndComboBox();
+				}
 
 				auto chooseFontFunc = [&]() {
 					ImGui::OpenPopup("ChooseFontPopup");

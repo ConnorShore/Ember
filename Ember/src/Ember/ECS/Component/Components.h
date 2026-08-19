@@ -499,6 +499,10 @@ namespace Ember {
 		bool IsBillboard = false;
 		bool LockYAxis = false;
 
+		// (left, bottom, right, top) in source-texture pixels. Non-zero draws the sprite as nine
+		// slices so corners keep their size while edges stretch - how UI panels and buttons scale.
+		Vector4f NineSliceBorder = Vector4f(0.0f);
+
 		SpriteComponent() = default;
 		SpriteComponent(const Vector4f color) : Color(color) {}
 		SpriteComponent(UUID texId) : TextureHandle(texId) {}
@@ -824,11 +828,26 @@ namespace Ember {
 		LifetimeComponent(const LifetimeComponent&) = default;
 	};
 
+	enum class TextAlignment
+	{
+		Start = 0,	// Left horizontally, Bottom vertically
+		Center,
+		End			// Right horizontally, Top vertically
+	};
+
 	struct TextComponent
 	{
 		std::string Text;
 		Vector4f Color = Vector4f(1.0f);
 		UUID FontHandle = Constants::InvalidUUID;
+
+		// Cap height in pixels for screen-space text. Without this, text inherits the rect's
+		// scale and a label on a default 100x100 rect renders thousands of pixels tall.
+		float FontSize = 24.0f;
+
+		// How the measured text block sits inside its RectTransform (screen-space only)
+		TextAlignment HorizontalAlignment = TextAlignment::Center;
+		TextAlignment VerticalAlignment = TextAlignment::Center;
 
 		TextComponent() = default;
 		TextComponent(const std::string& text, const Vector4f& color, UUID fontHandle)
@@ -1081,8 +1100,109 @@ namespace Ember {
 
 		float Rotation = 0.0f;
 
+		// Makes this rect hit-testable by UIInputSystem without a UISelectableComponent
+		// (invisible click zones, modal blockers). Selectables are always hit-testable.
+		bool RaycastTarget = false;
+
+		// Runtime only (not serialized) - resolved viewport-pixel rect, bottom-left origin, +Y up
+		Vector2f ComputedMin = Vector2f(0.0f);
+		Vector2f ComputedSize = Vector2f(0.0f);
+
 		RectTransformComponent() = default;
 		RectTransformComponent(const RectTransformComponent&) = default;
+	};
+
+	enum class UITransitionMode
+	{
+		None = 0,
+		ColorTint,
+		SpriteSwap
+	};
+
+	enum class UINavigationMode
+	{
+		None = 0,
+		Automatic,
+		Explicit
+	};
+
+	enum class UISelectionState
+	{
+		Normal = 0,
+		Highlighted,
+		Pressed,
+		Selected,
+		Disabled
+	};
+
+	// The shared interaction state machine, equivalent to Unity's Selectable base class.
+	// Role components (Button, Toggle, and later Slider/ScrollRect) require this alongside them.
+	struct UISelectableComponent
+	{
+		bool Interactable = true;
+		UITransitionMode Transition = UITransitionMode::ColorTint;
+
+		// Entity carrying the SpriteComponent the transition drives; invalid means this entity
+		UUID TargetGraphicEntity = Constants::InvalidUUID;
+
+		// Multiplied against the target graphic's authored colour rather than replacing it
+		Vector4f NormalColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		Vector4f HighlightedColor = { 0.96f, 0.96f, 0.96f, 1.0f };
+		Vector4f PressedColor = { 0.78f, 0.78f, 0.78f, 1.0f };
+		Vector4f SelectedColor = { 0.96f, 0.96f, 0.96f, 1.0f };
+		Vector4f DisabledColor = { 0.78f, 0.78f, 0.78f, 0.5f };
+		float FadeDuration = 0.1f;
+
+		// SpriteSwap: an invalid handle leaves the graphic's texture untouched for that state
+		UUID HighlightedTexture = Constants::InvalidUUID;
+		UUID PressedTexture = Constants::InvalidUUID;
+		UUID SelectedTexture = Constants::InvalidUUID;
+		UUID DisabledTexture = Constants::InvalidUUID;
+
+		UINavigationMode Navigation = UINavigationMode::Automatic;
+		UUID NavigateUp = Constants::InvalidUUID;
+		UUID NavigateDown = Constants::InvalidUUID;
+		UUID NavigateLeft = Constants::InvalidUUID;
+		UUID NavigateRight = Constants::InvalidUUID;
+
+		// Runtime only (not serialized)
+		UISelectionState State = UISelectionState::Normal;
+		bool PointerInside = false;
+		bool PointerDown = false;
+		bool BaseCaptured = false;			// the authored colour/texture is captured on first tint
+		Vector4f BaseColor = Vector4f(1.0f);
+		UUID BaseTexture = Constants::InvalidUUID;
+		Vector4f CurrentColor = Vector4f(1.0f);	// fade source for the FadeDuration lerp
+
+		UISelectableComponent() = default;
+		UISelectableComponent(const UISelectableComponent&) = default;
+	};
+
+	// Role marker; activation semantics live in UIInputSystem.
+	struct UIButtonComponent
+	{
+		// Runtime only (not serialized) - true for the single frame a click completes
+		bool WasClickedThisFrame = false;
+
+		UIButtonComponent() = default;
+		UIButtonComponent(const UIButtonComponent&) = default;
+	};
+
+	struct UIToggleComponent
+	{
+		bool IsOn = false;
+		UUID CheckmarkEntity = Constants::InvalidUUID;
+
+		// Any entity used purely as a grouping key; toggles sharing it are mutually exclusive
+		UUID GroupEntity = Constants::InvalidUUID;
+		bool AllowSwitchOff = false;
+
+		// Runtime only (not serialized)
+		bool WasChangedThisFrame = false;
+		bool VisualStateApplied = false;	// forces the checkmark to sync on the first frame
+
+		UIToggleComponent() = default;
+		UIToggleComponent(const UIToggleComponent&) = default;
 	};
 
 }

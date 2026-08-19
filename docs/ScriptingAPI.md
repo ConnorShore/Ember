@@ -65,8 +65,13 @@ Inspector. Any of the following methods, if present, are invoked by the engine:
 | `OnOverlapTriggerEnter(self, entity, other)` | A trigger collider on`entity` started overlapping `other`. | `entity, other: Entity`                   |
 | `OnOverlapTriggerStay(self, entity, other)`  | Continuous overlap with`other`.                              | `entity, other: Entity`                   |
 | `OnOverlapTriggerExit(self, entity, other)`  | The overlap with`other` ended.                               | `entity, other: Entity`                   |
+| `OnAnimationEvent(self, eventName)`          | An animation clip fired a named event.                         | `eventName: string`                       |
+| `OnClick(self, entity)`                      | A UI button on`entity` was activated.                        | `entity: Entity`                          |
+| `OnValueChanged(self, entity, isOn)`         | A UI toggle on`entity` changed state.                        | `entity: Entity, isOn: bool`              |
+| `OnHoverEnter(self, entity)`                 | The pointer entered a UI selectable on`entity`.              | `entity: Entity`                          |
+| `OnHoverExit(self, entity)`                  | The pointer left a UI selectable on`entity`.                 | `entity: Entity`                          |
 
-> The engine treats those five names as reserved lifecycle hooks. Any other field on the returned
+> The engine treats those names as reserved lifecycle hooks. Any other field on the returned
 > table is considered a *property* and is candidate for editor exposure.
 
 ### Minimal script template
@@ -466,6 +471,8 @@ LocalAvoidanceComponent
 BoxColliderComponent     SphereColliderComponent   CapsuleColliderComponent
 ConvexMeshColliderComponent  ConcaveMeshColliderComponent
 LifetimeComponent        ParticleEmitterComponent
+CanvasComponent          RectTransformComponent
+UISelectableComponent    UIButtonComponent         UIToggleComponent
 ```
 
 > `ScriptComponent` and `DisabledComponent` cannot be added/removed/queried from Lua directly.
@@ -565,10 +572,19 @@ Components are obtained via `entity:GetComponent("TypeName")`. Fields are read/w
 
 #### `TextComponent`
 
-| Field     | Type         |
-| --------- | ------------ |
-| `Text`  | `string`   |
-| `Color` | `Vector4f` |
+| Field                    | Type              |
+| ------------------------ | ----------------- |
+| `Text`                 | `string`        |
+| `Color`                | `Vector4f`      |
+| `FontSize`             | `float`         |
+| `HorizontalAlignment`  | `TextAlignment` |
+| `VerticalAlignment`    | `TextAlignment` |
+
+`FontSize` is the pixel height of screen-space text. It is independent of the element's
+`RectTransform` size, so resizing a button does not resize its label.
+
+`TextAlignment` is `Start` / `Center` / `End` (left/bottom, centre, right/top). Alignment
+positions the measured text block inside the element's rect.
 
 #### `ParticleEmitterComponent`
 
@@ -791,6 +807,109 @@ Attaches one entity to a named bone on another animated entity.
 | ------------ | -------------------------------------------------- |
 | `Lifetime` | `float` (seconds remaining before auto-destroy). |
 
+### UI Components
+
+A UI element is a `RectTransformComponent` under a `CanvasComponent`. Interaction is composed:
+`UISelectableComponent` supplies the shared state machine (hover / press / focus / disabled and the
+visual transition), and a role component on the same entity says what activating it *does*.
+
+#### `CanvasComponent`
+
+| Field                   | Type         |
+| ----------------------- | ------------ |
+| `ReferenceResolution` | `Vector2f` |
+| `MatchWidthOrHeight`  | `float`    |
+| `SortOrder`           | `int`      |
+
+Authored sizes are in reference-resolution pixels and scale with the viewport.
+Canvases with a higher `SortOrder` draw on top and win clicks.
+
+#### `RectTransformComponent`
+
+| Field                | Type         |
+| -------------------- | ------------ |
+| `AnchorMin`        | `Vector2f` |
+| `AnchorMax`        | `Vector2f` |
+| `Pivot`            | `Vector2f` |
+| `SizeDelta`        | `Vector2f` |
+| `AnchoredPosition` | `Vector2f` |
+| `Rotation`         | `float` (radians) |
+| `RaycastTarget`    | `bool`     |
+
+`RaycastTarget` makes a plain rect hit-testable without a selectable - useful for invisible click
+zones and modal blockers. It defaults to `false`, and selectables are always hit-testable.
+
+#### `UISelectableComponent`
+
+| Field                                                | Type         |
+| ---------------------------------------------------- | ------------ |
+| `Interactable`                                     | `bool`     |
+| `NormalColor` / `HighlightedColor` / `PressedColor` | `Vector4f` |
+| `SelectedColor` / `DisabledColor`                  | `Vector4f` |
+| `FadeDuration`                                     | `float`    |
+| `IsHovered`                                        | `bool` (read-only) |
+| `IsPressed`                                        | `bool` (read-only) |
+
+State colours are **multiplied** by the target graphic's authored colour, so recolouring a button
+from script still works. A non-interactable selectable still blocks clicks rather than letting
+them fall through.
+
+#### `UIButtonComponent`
+
+| Field / Method            | Description                                            |
+| ------------------------- | ------------------------------------------------------ |
+| `WasClickedThisFrame`   | `bool`, true for the frame a click completes.        |
+| `:OnClick(fn)`          | Registers `fn(entity)`; call repeatedly to add more. |
+| `:ClearOnClick()`       | Drops every handler registered on this entity.         |
+
+#### `UIToggleComponent`
+
+| Field / Method                 | Description                                              |
+| ------------------------------ | -------------------------------------------------------- |
+| `IsOn`                       | `bool` (read/write; writing moves the checkmark).      |
+| `AllowSwitchOff`             | `bool`, lets a grouped toggle be switched off.         |
+| `WasChangedThisFrame`        | `bool`                                                 |
+| `:OnValueChanged(fn)`        | Registers `fn(entity, isOn)`.                          |
+| `:ClearOnValueChanged()`     | Drops every handler registered on this entity.          |
+
+Toggles sharing a `Group` entity are mutually exclusive (radio behaviour).
+
+Handlers registered this way live for one play session and are dropped when play stops, so
+register them from `OnCreate`. For static UI, the `OnClick` / `OnValueChanged` lifecycle hooks on
+the entity's own script need no registration at all.
+
+```lua
+local Menu = {}
+
+function Menu:OnCreate(entity)
+    -- Registered handler: the natural fit for UI built at runtime, e.g. a row per store item.
+    local button = entity:GetChild("BuyButton"):GetComponent("UIButtonComponent")
+    button:OnClick(function(clicked)
+        Log.Info("bought!")
+    end)
+end
+
+-- Lifecycle hook: fires on this entity's own script with no registration.
+function Menu:OnClick(entity)
+    SceneManager.LoadScene("LevelOne")
+end
+
+return Menu
+```
+
+---
+
+## UI
+
+```lua
+UI.IsPointerOverUI()                      -- bool
+UI.ClearFocus()
+```
+
+`IsPointerOverUI` is true when the pointer is over any element that accepts raycasts. Check it
+before acting on a click so shooting, selecting or camera-dragging ignores clicks that landed on
+the HUD.
+
 ---
 
 ## Input
@@ -806,7 +925,19 @@ Input.GetMouseDelta()                     -- Vector2f, since last frame
 
 Input.SetCursorMode(mode)
 Input.GetCursorMode()
+
+Input.GetViewportMousePosition()          -- Vector2f, UI space
 ```
+
+`GetMousePosition` returns raw window coordinates (top-left origin, +Y down).
+`GetViewportMousePosition` returns the pointer in **UI space** - viewport-local, bottom-left
+origin, +Y up - which is the space `RectTransform` rects are laid out in. Use it for any
+screen-space hit testing: inside the editor's docked viewport during Play, the two differ by the
+viewport panel's position.
+
+> A locked cursor (`Input.SetCursorMode(CursorMode.Locked)`) reports unbounded virtual
+> coordinates, so UI is not clickable while locked. Both hosts lock the cursor on start for
+> first-person play; call `Input.SetCursorMode(CursorMode.Normal)` when opening a menu.
 
 ### Enums
 

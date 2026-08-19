@@ -25,6 +25,11 @@ namespace Ember {
 
 		static void FireTriggerEvent(EntityID entityA, EntityID entityB, TriggerEventType eventType, Scene* scene);
 		static void FireAnimationEvent(EntityID entityID, const std::string& eventName, Scene* scene);
+
+		// Dispatches a UI lifecycle hook. Unlike the trigger events this can run before scripts are
+		// initialised, because UIInputSystem ticks ahead of ScriptSystem.
+		static void FireUIEvent(EntityID entityID, const char* functionName, Scene* scene);
+		static void FireUIEvent(EntityID entityID, const char* functionName, Scene* scene, bool argument);
 	};
 
 }

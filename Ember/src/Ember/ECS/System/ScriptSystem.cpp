@@ -143,6 +143,45 @@ namespace Ember {
 		}
 	}
 
+	// Shared body for both FireUIEvent overloads; hasArgument distinguishes OnClick from OnValueChanged.
+	static void FireUIEventInternal(EntityID entityID, const char* functionName, Scene* scene, bool argument, bool hasArgument)
+	{
+		Entity receiver = { entityID, scene };
+		if (!receiver.ContainsComponent<ScriptComponent>())
+			return;
+
+		auto& script = receiver.GetComponent<ScriptComponent>();
+
+		// UIInputSystem runs before ScriptSystem, so the instance may not exist yet on frame one.
+		if (!script.Initialized || !script.Instance.valid())
+			return;
+
+		sol::protected_function uiFunc = script.Instance[functionName];
+		if (!uiFunc.valid())
+			return;
+
+		sol::protected_function_result result = hasArgument
+			? uiFunc(script.Instance, Entity{ receiver }, argument)
+			: uiFunc(script.Instance, Entity{ receiver });
+
+		if (!result.valid())
+		{
+			sol::error err = result;
+			EB_CORE_ERROR("Lua {} Error: {}", functionName, err.what());
+			throw std::runtime_error(err.what());
+		}
+	}
+
+	void ScriptSystem::FireUIEvent(EntityID entityID, const char* functionName, Scene* scene)
+	{
+		FireUIEventInternal(entityID, functionName, scene, false, false);
+	}
+
+	void ScriptSystem::FireUIEvent(EntityID entityID, const char* functionName, Scene* scene, bool argument)
+	{
+		FireUIEventInternal(entityID, functionName, scene, argument, true);
+	}
+
 	void ScriptSystem::InitializeScriptForEntity(Entity entity)
 	{
 		EB_PROFILE_FUNCTION();

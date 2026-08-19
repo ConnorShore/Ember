@@ -74,6 +74,11 @@
    filter { "system:windows", "files:src/**.cpp" }
       buildoptions { "/w14700", "/w14701", "/w14703", "/we4700", "/we4701", "/we4703" }
 
+   -- The script binders instantiate a sol2 usertype per component and blow past the COFF section
+   -- limit in Debug, where every template gets its own section.
+   filter { "system:windows", "files:src/Ember/Script/**.cpp" }
+      buildoptions { "/bigobj" }
+
    filter "configurations:Debug"
       defines { "EB_DEBUG" }
       symbols "On"

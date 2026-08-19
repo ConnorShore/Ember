@@ -19,10 +19,8 @@ namespace Ember {
 		virtual void Shutdown() override;
 
 	private:
-		void RenderSprites(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
-		void RenderText(Scene* scene, bool drawAll, EntityID selectedEntity, float viewportWidth, float viewportHeight);
-
-		Entity FindNearestCanvasAncestor(Scene* scene, Entity entity);
+		void RenderSprite(Scene* scene, EntityID entity);
+		void RenderText(Scene* scene, EntityID entity);
 	};
 
 }

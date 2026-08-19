@@ -21,6 +21,7 @@
 #include "Ember/ECS/System/AudioSystem.h"
 #include "Ember/ECS/System/AISystem.h"
 #include "Ember/ECS/System/UILayoutSystem.h"
+#include "Ember/ECS/System/UIInputSystem.h"
 
 #include "Ember/Script/ScriptEngine.h"
 
@@ -46,6 +47,64 @@ namespace Ember {
 		static void EraseUUID(std::vector<UUID>& uuids, UUID uuid)
 		{
 			uuids.erase(std::remove(uuids.begin(), uuids.end(), uuid), uuids.end());
+		}
+
+		// Depth-first, matching the order DuplicateEntityRecursive creates entities in, so a
+		// parallel walk of the source and the copy pairs them up positionally.
+		static void CollectSubtreeUUIDs(Scene* scene, Entity root, std::vector<UUID>& outUUIDs)
+		{
+			if (root == Constants::Entities::InvalidEntityID || !root.ContainsComponent<IDComponent>())
+				return;
+
+			outUUIDs.push_back(root.GetUUID());
+
+			if (!root.ContainsComponent<RelationshipComponent>())
+				return;
+
+			// Copied by value: recursing calls AddEntity, which can reallocate the dense storage.
+			auto children = root.GetComponent<RelationshipComponent>().Children;
+			for (UUID childUUID : children)
+				CollectSubtreeUUIDs(scene, scene->GetEntity(childUUID), outUUIDs);
+		}
+
+		// Entity references that point inside the duplicated subtree must follow the copy.
+		// Without this a duplicated button still tints the original's graphic and navigates to
+		// the original's siblings. References outside the subtree are intentionally left alone.
+		static void RemapEntityReferences(Scene* scene, Entity root, const std::unordered_map<UUID, UUID>& remap)
+		{
+			std::vector<UUID> subtree;
+			CollectSubtreeUUIDs(scene, root, subtree);
+
+			auto remapOne = [&remap](UUID& handle)
+				{
+					auto it = remap.find(handle);
+					if (it != remap.end())
+						handle = it->second;
+				};
+
+			for (UUID uuid : subtree)
+			{
+				Entity entity = scene->GetEntity(uuid);
+				if (entity == Constants::Entities::InvalidEntityID)
+					continue;
+
+				if (entity.ContainsComponent<UISelectableComponent>())
+				{
+					auto& selectable = entity.GetComponent<UISelectableComponent>();
+					remapOne(selectable.TargetGraphicEntity);
+					remapOne(selectable.NavigateUp);
+					remapOne(selectable.NavigateDown);
+					remapOne(selectable.NavigateLeft);
+					remapOne(selectable.NavigateRight);
+				}
+
+				if (entity.ContainsComponent<UIToggleComponent>())
+				{
+					auto& toggle = entity.GetComponent<UIToggleComponent>();
+					remapOne(toggle.CheckmarkEntity);
+					remapOne(toggle.GroupEntity);
+				}
+			}
 		}
 
 		static void MoveUUIDToBack(std::vector<UUID>& uuids, UUID uuid)
@@ -231,7 +290,10 @@ namespace Ember {
 					AIAgentComponent,
 					LocalAvoidanceComponent,
 					CanvasComponent,
-					RectTransformComponent
+					RectTransformComponent,
+					UISelectableComponent,
+					UIButtonComponent,
+					UIToggleComponent
 			> (srcEntity, destEntity);
 
 			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
@@ -384,6 +446,12 @@ namespace Ember {
 		{
 			EB_PROFILE_SCOPE("LifecycleSystem::OnUpdate");
 			systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
+		}
+		{
+			// Ahead of ScriptSystem so a script polling IsPointerOverUI() reads this frame,
+			// not the last. It hit-tests against the previous frame's rects, as Unity does.
+			EB_PROFILE_SCOPE("UIInputSystem::OnUpdate");
+			systemManager.GetSystem<UIInputSystem>()->OnUpdate(delta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("ScriptSystem::OnUpdate");
@@ -614,7 +682,26 @@ namespace Ember {
 
 	Entity Scene::DuplicateEntity(Entity entity)
 	{
-		return DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
+		std::vector<UUID> originalUUIDs;
+		Utils::CollectSubtreeUUIDs(this, entity, originalUUIDs);
+
+		Entity newEntity = DuplicateEntityRecursive(entity, entity.GetComponent<RelationshipComponent>().ParentHandle, true);
+
+		std::vector<UUID> duplicatedUUIDs;
+		Utils::CollectSubtreeUUIDs(this, newEntity, duplicatedUUIDs);
+
+		// Both walks are depth-first over the same shape, so equal sizes means index i in one
+		// corresponds to index i in the other.
+		if (originalUUIDs.size() == duplicatedUUIDs.size())
+		{
+			std::unordered_map<UUID, UUID> remap;
+			for (size_t i = 0; i < originalUUIDs.size(); i++)
+				remap[originalUUIDs[i]] = duplicatedUUIDs[i];
+
+			Utils::RemapEntityReferences(this, newEntity, remap);
+		}
+
+		return newEntity;
 	}
 
 	SharedPtr<Prefab> Scene::CreatePrefab(Entity entity, const std::string& filepath)
@@ -839,7 +926,10 @@ namespace Ember {
 			AIAgentComponent,
 			LocalAvoidanceComponent,
 			CanvasComponent,
-			RectTransformComponent
+			RectTransformComponent,
+			UISelectableComponent,
+			UIButtonComponent,
+			UIToggleComponent
 		>(entity, newEntity);
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used

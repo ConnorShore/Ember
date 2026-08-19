@@ -33,6 +33,8 @@ namespace Ember {
 				if (UI::PropertyGrid::Float("Rotation", rotationDegrees, 0.1f, -360.0f, 360.0f))
 					component.Rotation = Math::Radians(rotationDegrees);
 
+				UI::PropertyGrid::Checkbox("Raycast Target", component.RaycastTarget);
+
 				UI::PropertyGrid::End();
 			}
 		}

@@ -39,6 +39,14 @@ namespace Ember {
 
 	static std::vector<TimeoutRequest> s_Timeouts;
 
+	struct UICallbackSet
+	{
+		std::vector<sol::protected_function> Click;
+		std::vector<sol::protected_function> ValueChanged;
+	};
+
+	static std::unordered_map<UUID, UICallbackSet> s_UICallbacks;
+
 	// Tracks whether the scene-independent bindings have been registered against the *current*
 	// state. Re-running new_usertype for a type that is already registered on a live state leaves
 	// previously handed-out values unreliable: Entity userdata intermittently comes back with no
@@ -83,6 +91,7 @@ namespace Ember {
 		BindLightingAndCameraComponents(*s_LuaState);
 		BindAudioComponents(*s_LuaState);
 		BindMiscComponents(*s_LuaState);
+		BindUIComponents(*s_LuaState);
 
 		s_StatelessBindingsRegistered = true;
 	}
@@ -92,6 +101,7 @@ namespace Ember {
 		// Create the state immediately so the Editor can parse scripts!
 		s_LuaState = CreateConfiguredLuaState();
 		ClearTimeouts();
+		ClearAllUICallbacks();
 
 		// Everything scene-independent, so a script referencing UUID/ref helpers, Vector3f defaults
 		// or GameData at module scope still parses in the editor. Going through the same guarded
@@ -104,6 +114,7 @@ namespace Ember {
     void ScriptEngine::Shutdown()
 	{
 		ClearTimeouts();
+		ClearAllUICallbacks();
 		delete s_LuaState;
 		s_LuaState = nullptr;
 
@@ -126,6 +137,7 @@ namespace Ember {
 	{
 		// wipe editor state and create fresh one for runtime
 		ClearTimeouts();
+		ClearAllUICallbacks();
 		delete s_LuaState;
 		s_LuaState = CreateConfiguredLuaState();
 
@@ -151,6 +163,7 @@ namespace Ember {
 
 		// Wipe runtime state and create fresh one for the editor
 		ClearTimeouts();
+		ClearAllUICallbacks();
 		delete s_LuaState;
 		s_LuaState = CreateConfiguredLuaState();
 
@@ -575,6 +588,83 @@ namespace Ember {
 				EB_CORE_ERROR("Lua Timer.SetTimeout Error: {}", err.what());
 			}
 		}
+	}
+
+	static std::vector<sol::protected_function>* GetUICallbackList(UUID entity, UICallbackKind kind, bool createIfMissing)
+	{
+		auto it = s_UICallbacks.find(entity);
+		if (it == s_UICallbacks.end())
+		{
+			if (!createIfMissing)
+				return nullptr;
+			it = s_UICallbacks.emplace(entity, UICallbackSet{}).first;
+		}
+
+		return kind == UICallbackKind::Click ? &it->second.Click : &it->second.ValueChanged;
+	}
+
+	void ScriptEngine::RegisterUICallback(UUID entity, UICallbackKind kind, sol::protected_function callback)
+	{
+		if (!callback.valid())
+		{
+			EB_CORE_WARN("UI callback registration ignored an invalid callback.");
+			return;
+		}
+
+		GetUICallbackList(entity, kind, true)->push_back(std::move(callback));
+	}
+
+	void ScriptEngine::ClearUICallbacks(UUID entity, UICallbackKind kind)
+	{
+		if (auto* callbacks = GetUICallbackList(entity, kind, false))
+			callbacks->clear();
+	}
+
+	void ScriptEngine::ClearAllUICallbacks()
+	{
+		s_UICallbacks.clear();
+	}
+
+	static void InvokeUICallbacksInternal(Scene* scene, EntityID entity, UICallbackKind kind, bool argument, bool hasArgument)
+	{
+		if (s_UICallbacks.empty())
+			return;
+
+		Entity target = { entity, scene };
+		if (!target.ContainsComponent<IDComponent>())
+			return;
+
+		auto* callbacks = GetUICallbackList(target.GetUUID(), kind, false);
+		if (!callbacks || callbacks->empty())
+			return;
+
+		// Copied because a handler is free to register or clear callbacks while we iterate.
+		std::vector<sol::protected_function> pending = *callbacks;
+		for (auto& callback : pending)
+		{
+			if (!callback.valid())
+				continue;
+
+			sol::protected_function_result result = hasArgument
+				? callback(Entity{ target }, argument)
+				: callback(Entity{ target });
+
+			if (!result.valid())
+			{
+				sol::error err = result;
+				EB_CORE_ERROR("Lua UI callback Error: {}", err.what());
+			}
+		}
+	}
+
+	void ScriptEngine::InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind)
+	{
+		InvokeUICallbacksInternal(scene, entity, kind, false, false);
+	}
+
+	void ScriptEngine::InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind, bool argument)
+	{
+		InvokeUICallbacksInternal(scene, entity, kind, argument, true);
 	}
 
 	void ScriptEngine::ClearTimeouts()

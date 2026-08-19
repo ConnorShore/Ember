@@ -15,6 +15,7 @@
 #include "UI/PropertyGrid.h"
 #include "Utils/ActiveNavMeshRenderer.h"
 
+#include <Ember/ECS/System/UIInputSystem.h>
 #include <Ember/Render/RenderAction.h>
 #include <Ember/Render/RendererAPI.h>
 #include <Ember/Render/Renderer2D.h>
@@ -193,6 +194,18 @@ namespace Ember {
 
 	void EditorLayer::OnUpdate(TimeStep delta)
 	{
+		// Publish the docked viewport rect so UI hit-testing and scripts get viewport-local mouse coords.
+		// Bounds come from the ImGui pass, so this is one frame behind - the same lag OnMouseClick lives with.
+		//
+		// Play mode sets ImGuiConfigFlags_NoMouse, which makes IsWindowHovered() report false for the
+		// whole session - so m_ViewportHovered is only a meaningful gate while editing.
+		Vector2f viewportExtent = m_ViewportBounds[1] - m_ViewportBounds[0];
+		if (viewportExtent.x > 0.0f && viewportExtent.y > 0.0f)
+		{
+			bool inputActive = m_Context.CurrentSceneState == SceneState::Play || m_ViewportHovered;
+			Input::SetViewportRect(m_ViewportBounds[0], viewportExtent, inputActive);
+		}
+
 		if (auto activeScene = m_Context.ActiveScene())
 		{
 			Entity selectedEntity = ResolveEntityInScene(activeScene, m_Context.SelectedEntity);
@@ -323,7 +336,12 @@ namespace Ember {
 				m_Context.CurrentSceneState = SceneState::Pause;
 			}
 
-			if (m_ViewportHovered && Input::IsMouseButtonPressed(MouseButton::Left))
+			// Clicking a UI element must not grab the cursor - a locked cursor reports unbounded
+			// virtual coordinates, which would make every button in the game unclickable.
+			auto uiInputSystem = Application::Instance().GetSystemManager().GetSystem<UIInputSystem>();
+			bool pointerOverUI = uiInputSystem && uiInputSystem->IsPointerOverUI();
+
+			if (m_ViewportHovered && !pointerOverUI && Input::IsMouseButtonPressed(MouseButton::Left))
 			{
 				Input::SetCursorMode(CursorMode::Locked);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);

@@ -364,6 +364,123 @@ namespace Ember {
 		s_RendererData->QuadIndicesInBatch += 6;
 	}
 
+	void Renderer2D::DrawNineSliceQuad(const Matrix4f& transform, const Vector4f& color,
+		const SharedPtr<Texture2D>& texture, const Vector4f& border, EntityID entity)
+	{
+		if (!texture)
+			return;
+
+		float textureWidth = (float)texture->GetWidth();
+		float textureHeight = (float)texture->GetHeight();
+		if (textureWidth <= 0.0f || textureHeight <= 0.0f)
+			return;
+
+		// The transform maps a unit quad, so its basis lengths are the destination size in pixels.
+		Vector2f rightAxis(transform[0][0], transform[0][1]);
+		Vector2f upAxis(transform[1][0], transform[1][1]);
+		float destWidth = Math::Length(rightAxis);
+		float destHeight = Math::Length(upAxis);
+		if (destWidth <= 0.0f || destHeight <= 0.0f)
+			return;
+
+		float left = std::max(0.0f, border.x);
+		float bottom = std::max(0.0f, border.y);
+		float right = std::max(0.0f, border.z);
+		float top = std::max(0.0f, border.w);
+
+		// Shrink opposing borders together when the element is smaller than they are, so the
+		// corners meet instead of overlapping and inverting the middle slice.
+		if (left + right > destWidth && left + right > 0.0f)
+		{
+			float scale = destWidth / (left + right);
+			left *= scale;
+			right *= scale;
+		}
+		if (bottom + top > destHeight && bottom + top > 0.0f)
+		{
+			float scale = destHeight / (bottom + top);
+			bottom *= scale;
+			top *= scale;
+		}
+
+		// Slice edges in destination pixels and in UV, bottom-left origin in both.
+		const float destX[4] = { 0.0f, left, destWidth - right, destWidth };
+		const float destY[4] = { 0.0f, bottom, destHeight - top, destHeight };
+		const float texU[4] = { 0.0f, border.x / textureWidth, 1.0f - border.z / textureWidth, 1.0f };
+		const float texV[4] = { 0.0f, border.y / textureHeight, 1.0f - border.w / textureHeight, 1.0f };
+
+		for (int row = 0; row < 3; row++)
+		{
+			for (int column = 0; column < 3; column++)
+			{
+				float sliceWidth = destX[column + 1] - destX[column];
+				float sliceHeight = destY[row + 1] - destY[row];
+				if (sliceWidth <= 0.0f || sliceHeight <= 0.0f)
+					continue;
+
+				// Position the slice inside the parent's unit quad, then let the parent transform
+				// place, rotate and size the whole thing.
+				Vector2f sliceCentre(
+					(destX[column] + sliceWidth * 0.5f) / destWidth - 0.5f,
+					(destY[row] + sliceHeight * 0.5f) / destHeight - 0.5f);
+
+				Matrix4f sliceTransform = transform
+					* Math::Translate(Vector3f(sliceCentre, 0.0f))
+					* Math::Scale(Vector3f(sliceWidth / destWidth, sliceHeight / destHeight, 1.0f));
+
+				Vector2f sliceTexCoords[4] = {
+					{ texU[column],     texV[row] },
+					{ texU[column + 1], texV[row] },
+					{ texU[column + 1], texV[row + 1] },
+					{ texU[column],     texV[row + 1] }
+				};
+
+				DrawQuad(sliceTransform, color, texture, sliceTexCoords, entity);
+			}
+		}
+	}
+
+	bool Renderer2D::MeasureString(const std::string& text, const SharedPtr<Font>& font, Vector2f& outMin, Vector2f& outMax)
+	{
+		if (!font || !font->GetAtlasTexture() || text.empty())
+			return false;
+
+		auto atlasTexture = font->GetAtlasTexture();
+		const stbtt_bakedchar* glyphData = font->GetGlyphData();
+
+		float cursorX = 0.0f;
+		float cursorY = 0.0f;
+		bool anyGlyph = false;
+
+		for (char c : text)
+		{
+			if (c < Font::FirstChar || c >= Font::FirstChar + Font::CharCount)
+				continue;
+
+			stbtt_aligned_quad q;
+			stbtt_GetBakedQuad(glyphData, atlasTexture->GetWidth(), atlasTexture->GetHeight(),
+				c - Font::FirstChar, &cursorX, &cursorY, &q, 1);
+
+			// stbtt is Y-down; DrawString negates Y, so mirror that here to stay in the same space.
+			Vector2f quadMin(q.x0, -q.y1);
+			Vector2f quadMax(q.x1, -q.y0);
+
+			if (!anyGlyph)
+			{
+				outMin = quadMin;
+				outMax = quadMax;
+				anyGlyph = true;
+			}
+			else
+			{
+				outMin = Vector2f(std::min(outMin.x, quadMin.x), std::min(outMin.y, quadMin.y));
+				outMax = Vector2f(std::max(outMax.x, quadMax.x), std::max(outMax.y, quadMax.y));
+			}
+		}
+
+		return anyGlyph;
+	}
+
 	void Renderer2D::DrawString(const std::string& text, const Matrix4f& transform, const Vector4f& color, const SharedPtr<Font>& font, EntityID entity, bool isScreenSpace /* = false */)
 	{
 		if (!font || !font->GetAtlasTexture())

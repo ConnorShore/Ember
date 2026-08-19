@@ -26,6 +26,9 @@ namespace Ember {
 				UI::PropertyGrid::Checkbox("Is Billboard", component.IsBillboard);
 				UI::PropertyGrid::Checkbox("Lock Y Axis", component.LockYAxis);
 
+				// (left, bottom, right, top) in texture pixels; all zero draws a single quad.
+				UI::PropertyGrid::Float4("Nine Slice Border", component.NineSliceBorder, 1.0f, 0.0f, 4096.0f);
+
 				// Texture asset selector
 				SharedPtr<Texture2D> currentTexture = nullptr;
 				bool hasTexture = component.TextureHandle != Constants::InvalidUUID;

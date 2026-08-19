@@ -16,6 +16,10 @@ namespace Ember {
 	Vector2f Input::s_ScrollOffset = { 0.0f, 0.0f };
 	Vector2f Input::s_PreviousMousePosition = { 0.0f, 0.0f };
 
+	Vector2f Input::s_ViewportMin = { 0.0f, 0.0f };
+	Vector2f Input::s_ViewportSize = { 0.0f, 0.0f };
+	bool Input::s_ViewportInputActive = true;
+
 	bool Input::IsKeyPressed(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
@@ -132,6 +136,44 @@ namespace Ember {
 	void Input::ResetMouseDelta()
 	{
 		s_PreviousMousePosition = s_MousePosition;
+	}
+
+	void Input::SetViewportRect(const Vector2f& min, const Vector2f& size, bool inputActive)
+	{
+		s_ViewportMin = min;
+		s_ViewportSize = size;
+		s_ViewportInputActive = inputActive;
+	}
+
+	const Vector2f& Input::GetViewportMin()
+	{
+		return s_ViewportMin;
+	}
+
+	const Vector2f& Input::GetViewportSize()
+	{
+		return s_ViewportSize;
+	}
+
+	bool Input::IsViewportInputActive()
+	{
+		return s_ViewportInputActive;
+	}
+
+	bool Input::IsMouseInViewport()
+	{
+		if (s_ViewportSize.x <= 0.0f || s_ViewportSize.y <= 0.0f)
+			return false;
+
+		Vector2f local = s_MousePosition - s_ViewportMin;
+		return local.x >= 0.0f && local.y >= 0.0f && local.x < s_ViewportSize.x && local.y < s_ViewportSize.y;
+	}
+
+	Vector2f Input::GetViewportMousePosition()
+	{
+		// Window coords are top-left origin / +Y down; UI space is bottom-left origin / +Y up.
+		return Vector2f(s_MousePosition.x - s_ViewportMin.x,
+			(s_ViewportMin.y + s_ViewportSize.y) - s_MousePosition.y);
 	}
 
 	int Input::GetKeyRepeatCount(KeyCode key)
