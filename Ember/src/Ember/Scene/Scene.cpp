@@ -31,19 +31,6 @@ namespace Ember {
 
 	namespace Utils {
 
-		// Uses a fold expression to copy each component type from src to dst if present
-		template<typename... Component>
-		static void CopyComponents(Entity src, Entity dst)
-		{
-			([&]()
-				{
-					if (src.ContainsComponent<Component>())
-					{
-						dst.AttachComponent<Component>(src.GetComponent<Component>());
-					}
-				}(), ...);
-		}
-
 		static void EraseUUID(std::vector<UUID>& uuids, UUID uuid)
 		{
 			uuids.erase(std::remove(uuids.begin(), uuids.end(), uuid), uuids.end());
@@ -250,72 +237,10 @@ namespace Ember {
 			// Add UI or Normal entity based on the RectTransformComponent presence
 			Entity destEntity = newScene->AddEntity(id, name);
 
-			// 3. Use your amazing fold expression to copy all the data!
-			// NOTE: Do not copy IDComponent here, we just set it above.
-			Utils::CopyComponents<
-					TransformComponent,
-					StaticMeshComponent,
-					SkinnedMeshComponent,
-					MaterialComponent,
-					SpriteComponent,
-					CameraComponent,
-					ScriptComponent,
-					RigidBodyComponent,
-					BoxColliderComponent,
-					SphereColliderComponent,
-					CapsuleColliderComponent,
-					ConvexMeshColliderComponent,
-					ConcaveMeshColliderComponent,
-					DirectionalLightComponent,
-					SpotLightComponent,
-					PointLightComponent,
-					RelationshipComponent,
-					AnimatorComponent,
-					BoneSocketComponent,
-					PrefabComponent,
-					CharacterControllerComponent,
-					LifetimeComponent,
-					TextComponent,
-					DisabledComponent,
-					PoolComponent,
-					PoolConfigComponent,
-					ParticleEmitterComponent,
-					PostProcessVolumeComponent,
-					AudioListenerComponent,
-					WaypointComponent,
-					AIPathComponent,
-					NavigationGridComponent,
-					NavigationMeshComponent,
-					NavigationMeshModifierComponent,
-					AIAgentComponent,
-					LocalAvoidanceComponent,
-					CanvasComponent,
-					RectTransformComponent,
-					UISelectableComponent,
-					UIButtonComponent,
-					UIToggleComponent
-			> (srcEntity, destEntity);
-
-			// Warn if the source entity is missing CharacterControllerComponent so it's visible at copy time
-			if (srcEntity.ContainsComponent<CharacterControllerComponent>() != destEntity.ContainsComponent<CharacterControllerComponent>())
-				EB_CORE_WARN("CopyScene: CharacterControllerComponent copy mismatch on entity '{}'!", destEntity.GetName());
-			if (!srcEntity.ContainsComponent<CharacterControllerComponent>() && srcEntity.ContainsComponent<ScriptComponent>())
-				EB_CORE_WARN("CopyScene: Entity '{}' has a ScriptComponent but no CharacterControllerComponent in the source scene!", srcEntity.GetName());
-
-			// Special handling for AudioSourceComponent because of the raw ma_sound pointer that must not be copied
-			if (srcEntity.ContainsComponent<AudioSourceComponent>())
-			{
-				auto& srcAudio = srcEntity.GetComponent<AudioSourceComponent>();
-
-				// Attach a fresh, blank component to the duplicated entity
-				AudioSourceComponent newAudioComp;
-				newAudioComp.AudioClipHandle = srcAudio.AudioClipHandle;
-				newAudioComp.PlayOnStart = srcAudio.PlayOnStart;
-				newAudioComp.Properties = srcAudio.Properties;
-
-				// Use std::move to trigger the new R-Value overload!
-				destEntity.AttachComponent<AudioSourceComponent>(std::move(newAudioComp));
-			}
+			// Copy by runtime component type so new component types are picked up automatically.
+			// IDComponent and TagComponent are excluded: AddEntity above already set both.
+			newScene->GetRegistry().CopyComponents(other->GetRegistry(), srcEntity.GetEntityHandle(),
+				destEntity.GetEntityHandle(), Exclude<IDComponent, TagComponent>{});
 
 			// Initialize navigation mesh runtime state for the new scene
 			if (srcEntity.ContainsComponent<NavigationMeshComponent>())
@@ -889,48 +814,11 @@ namespace Ember {
 
 		Entity newEntity = AddEntity(newName);
 
-		Utils::CopyComponents<
-			TransformComponent,
-			StaticMeshComponent, 
-			SkinnedMeshComponent,
-			MaterialComponent,
-			SpriteComponent,
-			CameraComponent,
-			ScriptComponent,
-			RigidBodyComponent,
-			BoxColliderComponent,
-			SphereColliderComponent,
-			CapsuleColliderComponent,
-			ConvexMeshColliderComponent,
-			ConcaveMeshColliderComponent,
-			DirectionalLightComponent,
-			SpotLightComponent,
-			PointLightComponent,
-			AnimatorComponent,
-			BoneSocketComponent,
-			EditorIconComponent,
-			CharacterControllerComponent,
-			LifetimeComponent,
-			TextComponent,
-			DisabledComponent,
-			PoolComponent,
-			PoolConfigComponent,
-			ParticleEmitterComponent,
-			PostProcessVolumeComponent,
-			AudioListenerComponent,
-			WaypointComponent,
-			AIPathComponent,
-			NavigationGridComponent,
-			NavigationMeshComponent,
-			NavigationMeshModifierComponent,
-			AIAgentComponent,
-			LocalAvoidanceComponent,
-			CanvasComponent,
-			RectTransformComponent,
-			UISelectableComponent,
-			UIButtonComponent,
-			UIToggleComponent
-		>(entity, newEntity);
+		// Copy by runtime component type so new component types are picked up automatically, and
+		// in the source's component order so the duplicate keeps its inspector layout. Identity is
+		// owned by AddEntity above and the hierarchy by the parenting fix-up below.
+		m_Registry->CopyComponents(entity.GetEntityHandle(), newEntity.GetEntityHandle(),
+			Exclude<IDComponent, TagComponent, RelationshipComponent>{});
 
 		// Clear runtime cache for skinned mesh component so new skeleton UUID is used
 		if (newEntity.ContainsComponent<SkinnedMeshComponent>())
@@ -951,18 +839,6 @@ namespace Ember {
 			auto& mesh = newEntity.GetComponent<SkinnedMeshComponent>();
 			if (mesh.AnimatorEntityHandle == originalAnimatorUUID)
 				mesh.AnimatorEntityHandle = newAnimatorUUID;
-		}
-
-		if (entity.ContainsComponent<AudioSourceComponent>())
-		{
-			auto& srcAudio = entity.GetComponent<AudioSourceComponent>();
-
-			// Attach a fresh, blank component to the duplicated entity
-			auto& dstAudio = newEntity.AttachComponent<AudioSourceComponent>();
-
-			// Safely transfer the properties without touching the ma_sound pointer!
-			dstAudio.AudioClipHandle = srcAudio.AudioClipHandle;
-			dstAudio.Properties = srcAudio.Properties;
 		}
 
 		// Reset all runtime-only physics state copied from the source entity.

@@ -188,3 +188,31 @@ EB_TEST_CASE(Audio, SystemUpdateToleratesSourcesWithNoClip, Integration)
 	EB_EXPECT(speaker.ContainsComponent<AudioSourceComponent>());
 	EB_EXPECT_FALSE(speaker.GetComponent<AudioSourceComponent>().Source.IsPlaying.load());
 }
+
+// AudioSourceComponent bans copies, so duplication routes through ComponentCopyTraits: the authored
+// fields come across and the copy starts with no ma_sound of its own. The old hand-written path
+// forgot PlayOnStart, which quietly muted every duplicated one-shot at spawn.
+EB_TEST_CASE(Audio, DuplicatedSourceKeepsSettingsAndOwnsNoSound, Integration)
+{
+	SceneFixture scene("AudioDuplicateScene");
+	Entity speaker = MakeEntityAt(*scene, "Speaker", Vector3f(0.0f));
+
+	auto& source = speaker.AttachComponent<AudioSourceComponent>();
+	source.AudioClipHandle = UUID((uint64_t)4242);
+	source.PlayOnStart = true;
+	source.Properties.Volume = 0.25f;
+	source.Properties.Looping = true;
+
+	Entity copy = scene->DuplicateEntity(speaker);
+	EB_CHECK(copy.IsValid());
+	EB_CHECK_MSG(copy.ContainsComponent<AudioSourceComponent>(), "duplicate lost its AudioSourceComponent");
+
+	auto& copied = copy.GetComponent<AudioSourceComponent>();
+	EB_EXPECT_EQ((uint64_t)copied.AudioClipHandle, (uint64_t)4242);
+	EB_EXPECT_MSG(copied.PlayOnStart, "duplicate dropped PlayOnStart");
+	EB_EXPECT_NEAR(copied.Properties.Volume, 0.25f, 1e-4);
+	EB_EXPECT(copied.Properties.Looping);
+
+	// The ma_sound is per-entity; sharing the source's would double-free on teardown.
+	EB_EXPECT_MSG(copied.Source.GetSound() == nullptr, "duplicate aliased the original's ma_sound");
+}

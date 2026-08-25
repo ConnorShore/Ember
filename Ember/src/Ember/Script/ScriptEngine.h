@@ -65,6 +65,14 @@ namespace Ember {
 		static void InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind);
 		static void InvokeUICallbacks(Scene* scene, EntityID entity, UICallbackKind kind, bool argument);
 
+		// Backs the Lua-facing EventManager.Subscribe/Broadcast global (see ScriptBindEvents.cpp).
+		// Owned here rather than in a script table for the same reason as the UI callbacks above:
+		// listeners are sol handles into a sol::state ScriptEngine destroys and recreates on runtime
+		// start/stop, so they must be torn down alongside it rather than living on some entity.
+		static void SubscribeEvent(const std::string& eventName, sol::protected_function callback);
+		static void BroadcastEvent(const std::string& eventName, sol::variadic_args args);
+		static void ClearEventListeners();
+
 		template<typename T>
 		static void SetScriptPropertyOverride(ScriptComponent& component, const std::string& propertyName, T value)
 		{

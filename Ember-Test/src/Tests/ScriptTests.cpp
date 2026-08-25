@@ -180,6 +180,118 @@ EB_TEST_CASE(Script, ClearTimeoutsCancelsPendingCallbacks, Integration)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// EventManager (Subscribe/Broadcast)
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Script, EventManagerBroadcastDeliversArgsToASubscriber, Integration)
+{
+	sol::state& lua = ScriptEngine::GetState();
+	ScriptEngine::ClearEventListeners();
+
+	lua.script(R"(
+		EmberTestEventArgA = nil
+		EmberTestEventArgB = nil
+		EventManager.Subscribe("EmberTestEvent", function(a, b)
+		    EmberTestEventArgA = a
+		    EmberTestEventArgB = b
+		end)
+	)");
+
+	lua.script(R"( EventManager.Broadcast("EmberTestEvent", 7, "hello") )");
+
+	EB_EXPECT_EQ(lua["EmberTestEventArgA"].get<int>(), 7);
+	EB_EXPECT_EQ(lua["EmberTestEventArgB"].get<std::string>(), std::string("hello"));
+
+	ScriptEngine::ClearEventListeners();
+}
+
+EB_TEST_CASE(Script, EventManagerBroadcastCallsEveryListenerForTheSameEvent, Integration)
+{
+	// One event can have several independent subscribers (e.g. UI, audio, and gameplay all reacting
+	// to the same OnPlayerDeath) - broadcast must reach all of them, every time, not just the first.
+	sol::state& lua = ScriptEngine::GetState();
+	ScriptEngine::ClearEventListeners();
+
+	lua.script(R"(
+		EmberTestEventCountA = 0
+		EmberTestEventCountB = 0
+		EventManager.Subscribe("EmberTestMultiEvent", function() EmberTestEventCountA = EmberTestEventCountA + 1 end)
+		EventManager.Subscribe("EmberTestMultiEvent", function() EmberTestEventCountB = EmberTestEventCountB + 1 end)
+	)");
+
+	lua.script(R"( EventManager.Broadcast("EmberTestMultiEvent") )");
+	lua.script(R"( EventManager.Broadcast("EmberTestMultiEvent") )");
+
+	EB_EXPECT_EQ(lua["EmberTestEventCountA"].get<int>(), 2);
+	EB_EXPECT_EQ(lua["EmberTestEventCountB"].get<int>(), 2);
+
+	ScriptEngine::ClearEventListeners();
+}
+
+EB_TEST_CASE(Script, EventManagerBroadcastWithNoListenersIsANoOp, Integration)
+{
+	sol::state& lua = ScriptEngine::GetState();
+	ScriptEngine::ClearEventListeners();
+
+	const sol::protected_function_result result = lua.script(
+		R"( EventManager.Broadcast("EmberTestEventNobodyListensTo", 1, 2, 3) )", sol::script_pass_on_error);
+	EB_EXPECT_MSG(result.valid(), "broadcasting an event with no subscribers should not error");
+}
+
+EB_TEST_CASE(Script, ClearEventListenersRemovesPendingSubscriptions, Integration)
+{
+	// Mirrors ClearTimeoutsCancelsPendingCallbacks: ScriptEngine::OnRuntimeStart/Stop clear listeners
+	// the same way they clear timeouts, so a Play session never fires a callback from the last one.
+	sol::state& lua = ScriptEngine::GetState();
+	ScriptEngine::ClearEventListeners();
+
+	lua.script(R"(
+		EmberTestClearedEventFired = false
+		EventManager.Subscribe("EmberTestClearedEvent", function() EmberTestClearedEventFired = true end)
+	)");
+
+	ScriptEngine::ClearEventListeners();
+	lua.script(R"( EventManager.Broadcast("EmberTestClearedEvent") )");
+
+	EB_EXPECT_FALSE(lua["EmberTestClearedEventFired"].get<bool>());
+}
+
+EB_TEST_CASE(Script, EventManagerIsAvailableFromOnCreateRegardlessOfScriptLoadOrder, Integration)
+{
+	// Regression: EventManager used to be a Lua-defined global set up by whichever entity's script
+	// happened to run first each frame. A script whose own OnCreate called EventManager.Subscribe
+	// before that entity had initialized crashed with "attempt to index a nil value (global
+	// 'EventManager')". Binding it as a real engine global (ScriptBindEvents.cpp) removes the
+	// ordering dependency entirely - it must be usable from the very first OnCreate.
+	auto scriptAsset = LoadScriptAsset("event_manager_oncreate_test.lua", R"(
+		local Sub = {}
+		function Sub:OnCreate(entity)
+		    self.subscribed = false
+		    EventManager.Subscribe("EmberTestOnCreateEvent", function() self.subscribed = true end)
+		end
+		return Sub
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptEventManagerOnCreateScene");
+	Entity entity = MakeEntityAt(*scene, "Subscriber", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	ScriptEngine::ClearEventListeners();
+	Sys<ScriptSystem>()->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_CHECK_MSG(entity.GetComponent<ScriptComponent>().Initialized, "the subscribing script never initialized");
+
+	ScriptEngine::GetState().script(R"( EventManager.Broadcast("EmberTestOnCreateEvent") )");
+
+	EB_EXPECT_MSG(entity.GetComponent<ScriptComponent>().Instance["subscribed"].get<bool>(),
+		"a listener registered from OnCreate did not receive a later broadcast");
+
+	ScriptEngine::ClearEventListeners();
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Script lifecycle on entities
 //////////////////////////////////////////////////////////////////////////
 

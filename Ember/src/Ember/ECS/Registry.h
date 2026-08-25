@@ -7,8 +7,10 @@
 
 #include "Ember/Core/Core.h"
 
+#include <algorithm>
 #include <concepts>
 #include <tuple>
+#include <vector>
 
 namespace Ember {
 
@@ -126,6 +128,66 @@ namespace Ember {
 				attachRegistry->Trigger(entity, ret);
 			}
 			return ret;
+		}
+
+		// Copies one component of a runtime-known type from an entity in `sourceRegistry`, firing
+		// the same attach hooks the templated AttachComponent does.
+		inline bool CopyComponent(Registry& sourceRegistry, EntityID source, EntityID destination, ComponentType type)
+		{
+			if (!sourceRegistry.m_EntityManager->ContainsComponent(source, type))
+				return false;
+
+			if (!m_ComponentManager->CopyComponent(*sourceRegistry.m_ComponentManager, source, destination, type))
+			{
+				EB_CORE_WARN("Component type {} is not copyable - specialize ComponentCopyTraits<T> for it!", type);
+				return false;
+			}
+
+			m_EntityManager->AttachComponent(destination, type);
+
+			auto attachRegistry = m_ComponentAttachRegistry.find(type);
+			if (attachRegistry != m_ComponentAttachRegistry.end())
+				attachRegistry->second->TriggerErased(destination, m_ComponentManager->GetComponentDataErased(destination, type));
+
+			return true;
+		}
+
+		inline bool CopyComponent(EntityID source, EntityID destination, ComponentType type)
+		{
+			return CopyComponent(*this, source, destination, type);
+		}
+
+		// Copies every component the source entity has, then mirrors its component ordering so the
+		// copy keeps the same inspector layout. Excluded types are left untouched on the destination.
+		inline void CopyComponents(Registry& sourceRegistry, EntityID source, EntityID destination, const std::vector<ComponentType>& excluded = {})
+		{
+			// Copied by value: the attach hooks below can attach components to the source entity.
+			const std::vector<ComponentType> order = sourceRegistry.m_EntityManager->GetComponentOrder(source);
+
+			for (ComponentType type : order)
+			{
+				if (std::find(excluded.begin(), excluded.end(), type) == excluded.end())
+					CopyComponent(sourceRegistry, source, destination, type);
+			}
+
+			m_EntityManager->SetComponentOrder(destination, order);
+		}
+
+		inline void CopyComponents(EntityID source, EntityID destination, const std::vector<ComponentType>& excluded = {})
+		{
+			CopyComponents(*this, source, destination, excluded);
+		}
+
+		template<typename... Excluded>
+		inline void CopyComponents(Registry& sourceRegistry, EntityID source, EntityID destination, Exclude<Excluded...>)
+		{
+			CopyComponents(sourceRegistry, source, destination, std::vector<ComponentType>{ GetComponentType<Excluded>()... });
+		}
+
+		template<typename... Excluded>
+		inline void CopyComponents(EntityID source, EntityID destination, Exclude<Excluded...> excluded)
+		{
+			CopyComponents(*this, source, destination, excluded);
 		}
 
 		template<typename T>

@@ -946,6 +946,23 @@ namespace Ember {
 		AudioSourceComponent& operator=(AudioSourceComponent&&) = default;
 	};
 
+	// AudioSource owns a per-entity ma_sound, so a duplicate carries the authored fields across
+	// and starts with no sound of its own for AudioSystem to create.
+	template<>
+	struct ComponentCopyTraits<AudioSourceComponent>
+	{
+		static constexpr bool Copyable = true;
+
+		static AudioSourceComponent Copy(const AudioSourceComponent& source)
+		{
+			AudioSourceComponent copy;
+			copy.Properties = source.Properties;
+			copy.AudioClipHandle = source.AudioClipHandle;
+			copy.PlayOnStart = source.PlayOnStart;
+			return copy;
+		}
+	};
+
 	struct SingleSoundComponent
 	{
 		// Leave empty

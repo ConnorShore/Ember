@@ -20,6 +20,7 @@ namespace Ember {
 		void RenderContextMenu();
 		void RenderEntityTree();
 		void DrawTreeNode(Entity entity);
+		void HandlePrefabDragDrop(Entity entity);
 		void HandleEntityDragDrop(Entity entity);
 		void RenderRootParentDragDropZone();
 

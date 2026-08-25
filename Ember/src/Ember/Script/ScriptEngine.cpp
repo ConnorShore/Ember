@@ -13,6 +13,7 @@
 #include "Bindings/ScriptBindAudio.h"
 #include "Bindings/ScriptBindSaveGame.h"
 #include "Bindings/ScriptBindDebugDraw.h"
+#include "Bindings/ScriptBindEvents.h"
 
 #include "Ember/Core/Core.h"
 #include "Ember/ECS/Component/Components.h"
@@ -46,6 +47,10 @@ namespace Ember {
 	};
 
 	static std::unordered_map<UUID, UICallbackSet> s_UICallbacks;
+
+	// Backs the EventManager Lua global (ScriptBindEvents.cpp). Keyed by event name rather than
+	// entity, so it's cleared wholesale on runtime start/stop like the timeouts/UI callbacks above.
+	static std::unordered_map<std::string, std::vector<sol::protected_function>> s_EventListeners;
 
 	// Tracks whether the scene-independent bindings have been registered against the *current*
 	// state. Re-running new_usertype for a type that is already registered on a live state leaves
@@ -83,6 +88,7 @@ namespace Ember {
 		BindAssets(*s_LuaState);
 		BindSaveGame(*s_LuaState);
 		BindDebugDraw(*s_LuaState);
+		BindEvents(*s_LuaState);
 
 		// Every component binder except the AI one is scene-independent.
 		BindCoreComponents(*s_LuaState);
@@ -102,6 +108,7 @@ namespace Ember {
 		s_LuaState = CreateConfiguredLuaState();
 		ClearTimeouts();
 		ClearAllUICallbacks();
+		ClearEventListeners();
 
 		// Everything scene-independent, so a script referencing UUID/ref helpers, Vector3f defaults
 		// or GameData at module scope still parses in the editor. Going through the same guarded
@@ -115,6 +122,7 @@ namespace Ember {
 	{
 		ClearTimeouts();
 		ClearAllUICallbacks();
+		ClearEventListeners();
 		delete s_LuaState;
 		s_LuaState = nullptr;
 
@@ -138,6 +146,7 @@ namespace Ember {
 		// wipe editor state and create fresh one for runtime
 		ClearTimeouts();
 		ClearAllUICallbacks();
+		ClearEventListeners();
 		delete s_LuaState;
 		s_LuaState = CreateConfiguredLuaState();
 
@@ -164,6 +173,7 @@ namespace Ember {
 		// Wipe runtime state and create fresh one for the editor
 		ClearTimeouts();
 		ClearAllUICallbacks();
+		ClearEventListeners();
 		delete s_LuaState;
 		s_LuaState = CreateConfiguredLuaState();
 
@@ -670,5 +680,43 @@ namespace Ember {
 	void ScriptEngine::ClearTimeouts()
 	{
 		s_Timeouts.clear();
+	}
+
+	void ScriptEngine::SubscribeEvent(const std::string& eventName, sol::protected_function callback)
+	{
+		if (!callback.valid())
+		{
+			EB_CORE_WARN("EventManager.Subscribe ignored an invalid callback for event '{}'.", eventName);
+			return;
+		}
+
+		s_EventListeners[eventName].push_back(std::move(callback));
+	}
+
+	void ScriptEngine::BroadcastEvent(const std::string& eventName, sol::variadic_args args)
+	{
+		auto it = s_EventListeners.find(eventName);
+		if (it == s_EventListeners.end() || it->second.empty())
+			return;
+
+		// Copied because a handler is free to Subscribe/Broadcast while we iterate.
+		std::vector<sol::protected_function> pending = it->second;
+		for (auto& callback : pending)
+		{
+			if (!callback.valid())
+				continue;
+
+			sol::protected_function_result result = callback(sol::as_args(args));
+			if (!result.valid())
+			{
+				sol::error err = result;
+				EB_CORE_ERROR("Lua EventManager listener for '{}' Error: {}", eventName, err.what());
+			}
+		}
+	}
+
+	void ScriptEngine::ClearEventListeners()
+	{
+		s_EventListeners.clear();
 	}
 }

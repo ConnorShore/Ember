@@ -337,6 +337,7 @@ namespace Ember {
 			ImGui::PopStyleColor();
 
 		HandleEntityDragDrop(entity);
+		HandlePrefabDragDrop(entity);
 
 		// Select if click
 		// Right-click selects immediately so the context menu opens on the correct entity
@@ -446,6 +447,28 @@ namespace Ember {
 				}
 				ImGui::TreePop();
 			}
+		}
+	}
+
+	void SceneHierarchyPanel::HandlePrefabDragDrop(Entity entity)
+	{
+		// Instantiate prefab as child of the target entity
+		std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetPrefab);
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
+			{
+				const char* prefabPath = (const char*)payload->Data;
+				auto prefab = Application::Instance().GetAssetManager().GetAssetByPath<Prefab>(prefabPath);
+
+				Vector3f position = Vector3f(0.0f);
+				Entity prefabInstance = m_Context->ActiveScene()->InstantiatePrefab(prefab, entity, &position);
+				if (prefabInstance != Constants::Entities::InvalidEntityID)
+				{
+					SetSelectedEntity(prefabInstance);
+				}
+			}
+			ImGui::EndDragDropTarget();
 		}
 	}
 

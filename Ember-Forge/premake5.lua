@@ -68,6 +68,11 @@
    filter { "system:windows", "files:src/**.cpp" }
       buildoptions { "/w14700", "/w14701", "/w14703", "/we4700", "/we4701", "/we4703" }
 
+   -- The inspector draws every component type, so it instantiates the ECS templates once per
+   -- component and blows past the COFF section limit in Debug - same reason as the script binders.
+   filter { "system:windows", "files:src/Panels/Inspector/**.cpp" }
+      buildoptions { "/bigobj" }
+
    filter "configurations:Debug"
       defines { "EB_DEBUG" }
       symbols "On"

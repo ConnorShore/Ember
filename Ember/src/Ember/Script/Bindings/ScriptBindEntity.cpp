@@ -83,11 +83,11 @@ namespace Ember {
 
 		if (componentTypeStr == "ScriptComponent")
 		{
-			EB_CORE_ASSERT(false, "Cannot get script components from Lua!");
+			EB_CORE_ERROR("Cannot get script components from Lua!");
 			return sol::lua_nil;
 		}
 
-		EB_CORE_ASSERT(false, "Unknown component type: {}", componentTypeStr);
+		EB_CORE_ERROR("Unknown component type: {}", componentTypeStr);
 		return sol::lua_nil;
 	}
 
@@ -156,16 +156,16 @@ namespace Ember {
 
 		if (componentTypeStr == "DisabledComponent")
 		{
-			EB_CORE_ASSERT(false, "Cannot check for script components from Lua. Use SetActive(bool) method!");
+			EB_CORE_ERROR("Cannot check for script components from Lua. Use SetActive(bool) method!");
 			return sol::lua_nil;
 		}
 		if (componentTypeStr == "ScriptComponent")
 		{
-			EB_CORE_ASSERT(false, "Cannot check for script components from Lua!");
+			EB_CORE_ERROR("Cannot check for script components from Lua!");
 			return sol::lua_nil;
 		}
 
-		EB_CORE_ASSERT(false, "Unknown component type: {}", componentTypeStr);
+		EB_CORE_ERROR("Unknown component type: {}", componentTypeStr);
 		return sol::lua_nil;
 	}
 

@@ -461,6 +461,52 @@ EB_TEST_CASE(Scene, DuplicateKeepsTheOriginalsParent, Integration)
 	EB_EXPECT_EQ(parent.GetNumChildren(), (uint32_t)2);
 }
 
+// REGRESSION GUARD: duplication used to copy a hand-written list of component types, so any
+// component missing from it - OutlineComponent and EditorIconComponent both were - was silently
+// dropped from the copy. It now walks the entity's actual component set instead.
+EB_TEST_CASE(Scene, DuplicateCopiesComponentsMissingFromTheOldCopyList, Integration)
+{
+	SceneFixture scene;
+	Entity original = scene->AddEntity("Outlined");
+	original.AttachComponent<OutlineComponent>(Vector3f(0.0f, 1.0f, 0.0f), 3.0f);
+	original.AttachComponent<EditorIconComponent>().Size = 5.0f;
+
+	Entity copy = scene->DuplicateEntity(original);
+	EB_CHECK(copy.IsValid());
+
+	EB_CHECK_MSG(copy.ContainsComponent<OutlineComponent>(), "duplicate lost its OutlineComponent");
+	EB_EXPECT_NEAR(copy.GetComponent<OutlineComponent>().Thickness, 3.0f, 1e-4);
+	EB_EXPECT_VEC3_NEAR(copy.GetComponent<OutlineComponent>().Color, Vector3f(0.0f, 1.0f, 0.0f), 1e-5f);
+
+	EB_CHECK_MSG(copy.ContainsComponent<EditorIconComponent>(), "duplicate lost its EditorIconComponent");
+	EB_EXPECT_NEAR(copy.GetComponent<EditorIconComponent>().Size, 5.0f, 1e-4);
+}
+
+// The inspector draws components in the entity's authored order, so a duplicate that re-attaches
+// them in a fixed order comes out reshuffled even though the data is intact.
+EB_TEST_CASE(Scene, DuplicatePreservesComponentOrder, Integration)
+{
+	SceneFixture scene;
+	Entity original = scene->AddEntity("Ordered");
+	original.AttachComponent<PointLightComponent>();
+	original.AttachComponent<OutlineComponent>();
+
+	// An order the copy cannot reproduce by accident: attach order would put Transform first.
+	original.SetComponentOrder({
+		original.GetComponentType<OutlineComponent>(),
+		original.GetComponentType<PointLightComponent>(),
+		original.GetComponentType<TransformComponent>() });
+
+	Entity copy = scene->DuplicateEntity(original);
+	EB_CHECK(copy.IsValid());
+
+	const std::vector<ComponentType> expected = original.GetComponentOrder();
+	const std::vector<ComponentType> actual = copy.GetComponentOrder();
+	EB_CHECK_MSG(actual.size() == expected.size(), "duplicate has a different number of components");
+	for (size_t i = 0; i < expected.size(); ++i)
+		EB_EXPECT_EQ(actual[i], expected[i]);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Removal (deferred)
 //////////////////////////////////////////////////////////////////////////
@@ -580,4 +626,22 @@ EB_TEST_CASE(Scene, CopySceneKeepsUuidsAndRelationships, Integration)
 	// The copy is independent: editing it must not write through to the source.
 	copiedParent.GetComponent<TransformComponent>().Position = Vector3f(99.0f, 0.0f, 0.0f);
 	EB_EXPECT_NEAR(parent.GetComponent<TransformComponent>().Position.x, 1.0f, 1e-4);
+}
+
+// REGRESSION GUARD: CopyScene had the same hand-written type list as duplication, so a component
+// left out of it vanished the moment the editor entered Play mode.
+EB_TEST_CASE(Scene, CopySceneCarriesComponentsMissingFromTheOldCopyList, Integration)
+{
+	SceneFixture source("OutlineCopyScene");
+	Entity entity = MakeEntityAt(*source, "Outlined", Vector3f(0.0f));
+	entity.AttachComponent<OutlineComponent>(Vector3f(1.0f, 0.0f, 1.0f), 4.0f);
+	source.UpdateTransforms();
+
+	SharedPtr<Scene> copy = Scene::CopyScene(source.Shared());
+	EB_CHECK(copy != nullptr);
+
+	Entity copied = copy->GetEntity(entity.GetUUID());
+	EB_CHECK(copied.IsValid());
+	EB_CHECK_MSG(copied.ContainsComponent<OutlineComponent>(), "OutlineComponent did not survive CopyScene");
+	EB_EXPECT_NEAR(copied.GetComponent<OutlineComponent>().Thickness, 4.0f, 1e-4);
 }

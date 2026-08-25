@@ -20,6 +20,8 @@ namespace Ember {
 		virtual void EntityDestroyed(EntityID entity) = 0;
 		virtual void RemoveComponent(EntityID entity) = 0;
 		virtual void* GetComponentDataErased(EntityID entity) = 0;
+		virtual bool CopyComponentFrom(const void* sourceComponent, EntityID destination) = 0;
+		virtual SharedPtr<ComponentMemoryArraysBase> CreateEmptyArray() const = 0;
 	};
 
 	// Sparse-set storage for a single component type
@@ -73,6 +75,28 @@ namespace Ember {
 				return nullptr;
 			}
 			return &DenseComponentArray[SparseEntityArray[entity]];
+		}
+
+		// sourceComponent is a T that may live in another manager's array, so the copy is
+		// materialised before attaching - AttachComponent can grow this array and invalidate it.
+		virtual bool CopyComponentFrom(const void* sourceComponent, EntityID destination) override
+		{
+			if constexpr (ComponentCopyTraits<T>::Copyable)
+			{
+				T copy = ComponentCopyTraits<T>::Copy(*static_cast<const T*>(sourceComponent));
+				AttachComponent(destination, std::move(copy));
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		// Lets a manager that has never seen T create storage for it without knowing the type.
+		virtual SharedPtr<ComponentMemoryArraysBase> CreateEmptyArray() const override
+		{
+			return SharedPtr<ComponentMemoryArray<T>>::Create();
 		}
 
 		virtual void RemoveComponent(EntityID entity) override
@@ -164,6 +188,27 @@ namespace Ember {
 			EB_CORE_ASSERT(type < m_ComponentArrays.size() && m_ComponentArrays[type] != nullptr, "Component type has never been registered in this scene!");
 			SharedPtr<ComponentMemoryArray<T>> memoryArrays = StaticPointerCast<ComponentMemoryArray<T>>(m_ComponentArrays[type]);
 			return memoryArrays->GetComponent(entity);
+		}
+
+		// Copies one component of a runtime-known type from an entity in `source` onto an entity
+		// here. Component type IDs are process-wide, so the same id means the same T in both.
+		inline bool CopyComponent(ComponentManager& source, EntityID sourceEntity, EntityID destination, ComponentType type)
+		{
+			if (type >= source.m_ComponentArrays.size() || source.m_ComponentArrays[type] == nullptr)
+				return false;
+
+			const void* sourceComponent = source.m_ComponentArrays[type]->GetComponentDataErased(sourceEntity);
+			if (sourceComponent == nullptr)
+				return false;
+
+			if (m_ComponentArrays.empty() || type > m_ComponentArrays.size() - 1)
+				m_ComponentArrays.resize(type + 1);
+
+			// The source array is the only thing here that still knows T.
+			if (m_ComponentArrays[type] == nullptr)
+				m_ComponentArrays[type] = source.m_ComponentArrays[type]->CreateEmptyArray();
+
+			return m_ComponentArrays[type]->CopyComponentFrom(sourceComponent, destination);
 		}
 
 		inline void* GetComponentDataErased(EntityID entity, ComponentType type)
