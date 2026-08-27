@@ -26,6 +26,18 @@ namespace Ember {
 		bool SerializePrefab(Entity prefabRoot, const std::string& filepath);
 		Entity DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs = false);
 
+		// In-memory entity capture, shared with the prefab path and used by the undo system.
+		std::string SerializeEntitiesToString(const std::vector<Entity>& entities, const std::string& label = "Entities");
+
+		// Recreates entities from such a document. With preserveUUIDs, an entity whose UUID already
+		// exists is written into in place so its slot and inbound references survive. `rootOverride`
+		// maps the document's first entity onto an existing one, which is how a prefab instance is
+		// rebuilt without losing the UUID other entities reference it by.
+		std::vector<Entity> DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs, Entity rootOverride = Entity());
+
+		// The root plus every descendant, in the breadth-first order the prefab format expects.
+		std::vector<Entity> GatherSubtree(Entity root);
+
 	private:
 		void SerializeEntityNode(ryml::NodeRef& entityNode, Entity entity);
 		void DeserializeEntityNode(ryml::NodeRef& entityNode, Entity deserializedEntity, const std::unordered_map<uint64_t, UUID>& uuidRemap);

@@ -428,6 +428,12 @@ namespace Ember {
 		{
 			return glm::tan(radians);
 		}
+
+		static inline float Atan(float x)
+		{
+			return glm::atan(x);
+		}
+
 		static inline float Atan2(float y, float x)
 		{
 			return glm::atan(y, x); // GLM's atan(y, x) is actually atan2
@@ -446,6 +452,43 @@ namespace Ember {
 		static inline float Abs(float x)
 		{
 			return glm::abs(x);
+		}
+
+		static inline float Round(float x)
+		{
+			return glm::round(x);
+		}
+
+		static inline float Floor(float x)
+		{
+			return glm::floor(x);
+		}
+
+		static inline float Ceil(float x)
+		{
+			return glm::ceil(x);
+		}
+
+		// Rounds to the nearest multiple of `increment`; a non-positive increment means no snapping.
+		static inline float Snap(float value, float increment)
+		{
+			return increment > 0.0f ? glm::round(value / increment) * increment : value;
+		}
+
+		static inline Vector3f Snap(const Vector3f& value, float increment)
+		{
+			return Vector3f(Snap(value.x, increment), Snap(value.y, increment), Snap(value.z, increment));
+		}
+
+		static inline bool IsNaN(float x)
+		{
+			return std::isnan(x);
+		}
+
+		// False for NaN and for both infinities, so it doubles as the guard on values read from disk.
+		static inline bool IsFinite(float x)
+		{
+			return std::isfinite(x);
 		}
 
 	};

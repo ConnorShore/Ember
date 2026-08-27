@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Panel.h"
+#include "Undo/ScopedEntityEdit.h"
 
 namespace Ember {
 
@@ -30,9 +31,17 @@ namespace Ember {
 		bool IsDescendant(Entity descendant, Entity ancestor);
 
 		void CreateEntity(Entity entity);
+		void PlaceNewEntityAtSpawnPoint(Entity entity);
 		void CreateEmptyEntity();
 		void CreateChildEntity(Entity parentEntity);
+		ScopedEntityEdit BeginHierarchyEdit(const char* label, Entity moved, Entity newParent);
+
 		void DuplicateEntity(Entity entity);
+		void DuplicateSelection();
+		void RemoveSelection();
+		void SelectAllEntities();
+		void SelectRangeTo(Entity entity);
+		std::vector<Entity> SelectionRoots() const;
 		void CreatePrefab(Entity entity);
 		void RenameEntity(Entity entity);
 
@@ -42,6 +51,10 @@ namespace Ember {
 	private:
 		Entity m_PreviouslySelectedEntity;
 		bool m_ExpandToSelectedEntity = true;
+
+		// Flattened draw order from last frame, and where a Shift+click range starts from.
+		std::vector<Entity> m_VisibleOrder;
+		Entity m_SelectionAnchor;
 
 		Entity m_RenamingEntity;
 		char m_RenameBuffer[256] = "";

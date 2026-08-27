@@ -190,7 +190,7 @@ the actual `EB_PROFILE_SCOPE`/Perfetto stack above wherever it references Tracy 
 
 ## Testing
 
-`Ember-Test` is the automated suite (213 tests as of this writing). **`Ember-Test/README.md` is the
+`Ember-Test` is the automated suite (300 tests as of this writing). **`Ember-Test/README.md` is the
 reference** — read it before writing tests. It documents the assertion macros, the scene fixtures,
 the golden-image workflow, and a "Traps worth knowing about" list of engine footguns that have
 already produced wrong tests (component references invalidated by attach,

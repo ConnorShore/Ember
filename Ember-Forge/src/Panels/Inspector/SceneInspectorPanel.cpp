@@ -1,6 +1,8 @@
 #include "efpch.h"
 #include "SceneInspectorPanel.h"
 
+#include "Undo/ScopedEntityEdit.h"
+
 #include "ComponentUI/TransformComponentUI.h"
 #include "ComponentUI/CameraComponentUI.h"
 #include "ComponentUI/DirectionalLightComponentUI.h"
@@ -155,6 +157,11 @@ namespace Ember {
 		// Entity Header
 		DrawEntityHeader(entity);
 
+		// Only the active entity is edited here, so say so rather than letting a multi-selection look
+		// like the properties apply to all of it.
+		if (m_Context->SelectionCount() > 1)
+			ImGui::TextDisabled("%zu selected - editing %s", m_Context->SelectionCount(), entity.GetName().c_str());
+
 		ImGui::Separator();
 
 		// --- SCROLLABLE REGION ---
@@ -184,7 +191,10 @@ namespace Ember {
 						for (auto& comp : comps)
 						{
 							if (ImGui::MenuItem(comp->GetName()))
+							{
+								ScopedEntityEdit edit(*m_Context, "Add Component", { entity.GetUUID() }, false);
 								comp->CreateComponentForEntity(entity);
+							}
 						}
 						ImGui::EndMenu();
 					}

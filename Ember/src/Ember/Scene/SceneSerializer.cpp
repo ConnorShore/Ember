@@ -2,6 +2,7 @@
 #include "SceneSerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/Component/ComponentList.h"
 #include "Ember/Utils/SerializationUtils.h"
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
@@ -21,55 +22,6 @@
 #include <vector>
 
 namespace Ember {
-
-#define EMBER_FOR_EACH_COMPONENT_ORDER_TYPE(X) \
-	X(IDComponent) \
-	X(TagComponent) \
-	X(RelationshipComponent) \
-	X(TransformComponent) \
-	X(RigidBodyComponent) \
-	X(BoxColliderComponent) \
-	X(SphereColliderComponent) \
-	X(CapsuleColliderComponent) \
-	X(ConvexMeshColliderComponent) \
-	X(ConcaveMeshColliderComponent) \
-	X(CharacterControllerComponent) \
-	X(SpriteComponent) \
-	X(StaticMeshComponent) \
-	X(SkinnedMeshComponent) \
-	X(MaterialComponent) \
-	X(CameraComponent) \
-	X(DirectionalLightComponent) \
-	X(SpotLightComponent) \
-	X(PointLightComponent) \
-	X(ScriptComponent) \
-	X(OutlineComponent) \
-	X(EditorIconComponent) \
-	X(AnimatorComponent) \
-	X(BoneSocketComponent) \
-	X(PrefabComponent) \
-	X(LifetimeComponent) \
-	X(TextComponent) \
-	X(DisabledComponent) \
-	X(PoolComponent) \
-	X(PoolConfigComponent) \
-	X(ParticleEmitterComponent) \
-	X(PostProcessVolumeComponent) \
-	X(AudioSourceComponent) \
-	X(SingleSoundComponent) \
-	X(AudioListenerComponent) \
-	X(WaypointComponent) \
-	X(AIAgentComponent) \
-	X(AIPathComponent) \
-	X(NavigationGridComponent) \
-	X(NavigationMeshComponent) \
-	X(NavigationMeshModifierComponent) \
-	X(LocalAvoidanceComponent) \
-	X(CanvasComponent) \
-	X(RectTransformComponent) \
-	X(UISelectableComponent) \
-	X(UIButtonComponent) \
-	X(UIToggleComponent)
 
 	template<typename T>
 	static bool TrySerializeComponentOrderEntry(Entity entity, ComponentType componentType, ryml::NodeRef& componentOrderNode, const char* componentName)
@@ -2011,66 +1963,70 @@ namespace Ember {
 	// =========================================================================
 	// PREFAB SERIALIZATION
 	// =========================================================================
-	bool SceneSerializer::SerializePrefab(Entity prefabRoot, const std::string& filepath)
+	std::vector<Entity> SceneSerializer::GatherSubtree(Entity root)
+	{
+		std::vector<Entity> subtree;
+		if (root == Constants::Entities::InvalidEntityID)
+			return subtree;
+
+		subtree.push_back(root);
+
+		for (size_t i = 0; i < subtree.size(); i++)
+		{
+			Entity current = subtree[i];
+			if (!current.ContainsComponent<RelationshipComponent>())
+				continue;
+
+			for (UUID childUUID : current.GetComponent<RelationshipComponent>().Children)
+			{
+				Entity child = m_Scene->GetEntity(childUUID);
+				if (child != Constants::Entities::InvalidEntityID)
+					subtree.push_back(child);
+			}
+		}
+
+		return subtree;
+	}
+
+	std::string SceneSerializer::SerializeEntitiesToString(const std::vector<Entity>& entities, const std::string& label)
 	{
 		ryml::Tree tree;
 		ryml::NodeRef root = tree.rootref();
 		root |= ryml::MAP;
 
-		root["Prefab"] << prefabRoot.GetName();
+		root["Prefab"] << label;
 		ryml::NodeRef entitiesNode = root["PrefabEntities"];
 		entitiesNode |= ryml::SEQ;
 
-		// 1. Gather the root and all descendants using a BFS queue
-		std::vector<Entity> entitiesToSave;
-		entitiesToSave.push_back(prefabRoot);
-
-		for (size_t i = 0; i < entitiesToSave.size(); i++)
-		{
-			Entity current = entitiesToSave[i];
-			if (current.ContainsComponent<RelationshipComponent>())
-			{
-				for (UUID childUUID : current.GetComponent<RelationshipComponent>().Children)
-				{
-					Entity child = m_Scene->GetEntity(childUUID);
-					if (child != Constants::Entities::InvalidEntityID)
-						entitiesToSave.push_back(child);
-				}
-			}
-		}
-
-		// 2. Write them out using our helper
-		for (Entity e : entitiesToSave)
+		for (Entity entity : entities)
 		{
 			ryml::NodeRef entityNode = entitiesNode.append_child();
-			SerializeEntityNode(entityNode, e);
+			SerializeEntityNode(entityNode, entity);
 		}
 
-		std::ofstream fout(filepath);
-		fout << tree;
-		fout.close();
-
-		return true;
+		std::stringstream out;
+		out << tree;
+		return out.str();
 	}
 
-	Entity SceneSerializer::DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs)
+	std::vector<Entity> SceneSerializer::DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs, Entity rootOverride)
 	{
 		EB_PROFILE_FUNCTION();
-		if (!prefab || prefab->YAMLData.empty())
-			return Entity();
 
-		ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(prefab->YAMLData));
+		std::vector<Entity> newEntities;
+		if (yaml.empty())
+			return newEntities;
+
+		ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(yaml));
 		ryml::NodeRef root = tree.rootref();
 
 		if (!root.has_child("PrefabEntities"))
-			return Entity();
+			return newEntities;
 
 		ryml::NodeRef entitiesNode = root["PrefabEntities"];
-
 		std::unordered_map<uint64_t, UUID> oldToNewUUIDs;
-		std::vector<Entity> newEntities;
 
-		// Create fresh entities and build the Remap Table
+		// Create the entities first so the remap table is complete before any relationship is read.
 		for (ryml::NodeRef entityNode : entitiesNode.children())
 		{
 			uint64_t oldUUIDVal;
@@ -2080,11 +2036,22 @@ namespace Ember {
 			if (entityNode.has_child("TagComponent"))
 				entityNode["TagComponent"]["Tag"] >> name;
 
+			// The first entity can be redirected onto one that already exists, so a prefab instance
+			// keeps the UUID everything else refers to it by.
+			if (newEntities.empty() && rootOverride.IsValid())
+			{
+				oldToNewUUIDs[oldUUIDVal] = rootOverride.GetUUID();
+				newEntities.push_back(rootOverride);
+				continue;
+			}
+
 			UUID newUUID = preserveUUIDs ? UUID(oldUUIDVal) : UUID();
 			oldToNewUUIDs[oldUUIDVal] = newUUID;
 
-			Entity newEntity = m_Scene->AddEntity(newUUID, name);
-			newEntities.push_back(newEntity);
+			// Restoring over an entity that still exists reuses its slot, so anything already
+			// pointing at it stays valid.
+			Entity existing = preserveUUIDs ? m_Scene->GetEntity(newUUID) : Entity();
+			newEntities.push_back(existing.IsValid() ? existing : m_Scene->AddEntity(newUUID, name));
 		}
 
 		// Deserialize components and repair relationships
@@ -2095,7 +2062,26 @@ namespace Ember {
 			i++;
 		}
 
-		// Return the root entity
+		return newEntities;
+	}
+
+	bool SceneSerializer::SerializePrefab(Entity prefabRoot, const std::string& filepath)
+	{
+		std::string yaml = SerializeEntitiesToString(GatherSubtree(prefabRoot), prefabRoot.GetName());
+
+		std::ofstream fout(filepath);
+		fout << yaml;
+		fout.close();
+
+		return true;
+	}
+
+	Entity SceneSerializer::DeserializePrefab(SharedPtr<Prefab> prefab, bool preserveUUIDs)
+	{
+		if (!prefab)
+			return Entity();
+
+		std::vector<Entity> newEntities = DeserializeEntitiesFromString(prefab->YAMLData, preserveUUIDs);
 		return newEntities.empty() ? Entity() : newEntities[0];
 	}
 }

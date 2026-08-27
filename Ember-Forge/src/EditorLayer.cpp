@@ -14,6 +14,10 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 #include "Utils/ActiveNavMeshRenderer.h"
+#include "Undo/ScopedEntityEdit.h"
+#include "Undo/UndoStack.h"
+
+#include <Ember/Scene/EntitySnapshot.h>
 
 #include <Ember/ECS/System/UIInputSystem.h>
 #include <Ember/Render/RenderAction.h>
@@ -34,6 +38,7 @@
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>
+#include <Ember/ECS/System/VisibilitySystem.h>
 #include <Ember/Physics/Raycast.h>
 #include <Ember/Animation/AnimationController.h>
 
@@ -59,6 +64,8 @@ namespace Ember {
 			.EditorCamera = &m_Camera,
 			.SelectedEntity = m_InvalidEntity
 		};
+		m_Context.Preferences = &m_Preferences;
+		m_Context.SpawnPosition = [this]() { return GetSpawnPosition(); };
 
 		m_EditorRenderPassSettings = {
 			.ActiveCamera = &m_Camera,
@@ -80,6 +87,9 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
+		// Missing or unreadable preferences just leave the struct on its defaults.
+		m_Preferences.Load();
+
 		// Setup theme
 		SetupImGuiTheme();
 
@@ -173,7 +183,7 @@ namespace Ember {
 
 	void EditorLayer::OnDetach()
 	{
-
+		m_Preferences.Save();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
@@ -215,14 +225,20 @@ namespace Ember {
 
 		if (auto activeScene = m_Context.ActiveScene())
 		{
-			Entity selectedEntity = ResolveEntityInScene(activeScene, m_Context.SelectedEntity);
-			if (selectedEntity != Constants::Entities::InvalidEntityID)
-				m_Context.SelectedEntity = selectedEntity;
-			else if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			// Re-resolve every selected entity, dropping any that no longer exists in this scene.
+			std::vector<Entity> resolvedSelection;
+			resolvedSelection.reserve(m_Context.SelectedEntities.size());
+			for (Entity selected : m_Context.SelectedEntities)
 			{
-				m_Context.SelectedEntity = Entity();
-				m_PreviousSelectedEntity = Entity();
+				Entity resolved = ResolveEntityInScene(activeScene, selected);
+				if (resolved != Constants::Entities::InvalidEntityID)
+					resolvedSelection.push_back(resolved);
 			}
+
+			if (resolvedSelection.size() != m_Context.SelectedEntities.size())
+				m_PreviousSelectedEntity = Entity();
+
+			m_Context.SetSelection(resolvedSelection);
 
 			Entity previousEntity = ResolveEntityInScene(activeScene, m_PreviousSelectedEntity);
 			if (previousEntity != Constants::Entities::InvalidEntityID)
@@ -297,7 +313,7 @@ namespace Ember {
 
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && ResolveEntityInScene(activeScene, m_Context.SelectedEntity) == Constants::Entities::InvalidEntityID)
 			{
-				m_Context.SelectedEntity = Entity();
+				m_Context.ClearSelection();
 				m_PreviousSelectedEntity = Entity();
 			}
 
@@ -485,10 +501,16 @@ namespace Ember {
 		// Pop up for new project
 		RenderNewScenePopup();
 		RenderNewProjectPopup();
+		RenderPrefabRefreshPrompt();
 
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
 		RemovePendingEntities();
+
+		// Runs after the UI is submitted so it sees this frame's final widget state; it coalesces a
+		// whole drag or typing session into one undo entry.
+		bool gizmoActive = ImGuizmo::IsUsing() || m_ViewportGizmos.IsRectGizmoActive();
+		m_EditTracker.OnFrameEnd(m_Context, gizmoActive);
 	}
 
 	void EditorLayer::LoadDefaultAssets()
@@ -549,8 +571,12 @@ namespace Ember {
 			}
 
 			RemovePendingComponents();
-			m_Context.SelectedEntity = Entity();
+			m_Context.ClearSelection();
 			m_PreviousSelectedEntity = Entity();
+
+			// Play runs on a copy of the editor scene, so nothing captured during it could be
+			// restored onto the scene the user goes back to.
+			m_EditTracker.Reset();
 
 			// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
 			auto runtimeScene = Scene::CopyScene(m_EditorScene);
@@ -562,7 +588,7 @@ namespace Ember {
 			{
 				Entity runtimeEntity = runtimeScene->GetEntity(selectedUUID);
 				if (runtimeEntity != Constants::Entities::InvalidEntityID)
-					m_Context.SelectedEntity = runtimeEntity;
+					m_Context.SetSelection(runtimeEntity);
 			}
 			m_PreviousSelectedEntity = m_Context.SelectedEntity;
 
@@ -599,7 +625,7 @@ namespace Ember {
 		UUID selectedUUID = Constants::InvalidUUID;
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 			selectedUUID = m_Context.SelectedEntity.GetUUID();
-		m_Context.SelectedEntity = Entity();
+		m_Context.ClearSelection();
 		m_PreviousSelectedEntity = Entity();
 
 		// Restore the editor scene as the active scene
@@ -621,7 +647,7 @@ namespace Ember {
 		{
 			Entity editorEntity = m_EditorScene->GetEntity(selectedUUID);
 			if (editorEntity != Constants::Entities::InvalidEntityID)
-				m_Context.SelectedEntity = editorEntity;
+				m_Context.SetSelection(editorEntity);
 		}
 
 		Input::SetCursorMode(CursorMode::Normal);
@@ -747,6 +773,29 @@ namespace Ember {
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Edit"))
+		{
+			UndoStack* undoStack = m_Context.ActiveUndoStack();
+			bool canUndo = undoStack && undoStack->CanUndo() && m_Context.CurrentSceneState == SceneState::Edit;
+			bool canRedo = undoStack && undoStack->CanRedo() && m_Context.CurrentSceneState == SceneState::Edit;
+
+			// Naming the action makes it obvious what is about to be reversed.
+			std::string undoLabel = canUndo ? std::format("Undo {}", undoStack->PeekUndoLabel()) : "Undo";
+			std::string redoLabel = canRedo ? std::format("Redo {}", undoStack->PeekRedoLabel()) : "Redo";
+
+			if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, canUndo))
+			{
+				Undo();
+			}
+
+			if (ImGui::MenuItem(redoLabel.c_str(), "Ctrl+Y", false, canRedo))
+			{
+				Redo();
+			}
+
+			ImGui::EndMenu();
+		}
+
 		if (ImGui::BeginMenu("Project"))
 		{
 			if (ImGui::MenuItem("Project Settings"))
@@ -771,35 +820,7 @@ namespace Ember {
 
 			if (ImGui::BeginMenu("Debug"))
 			{
-				auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
-				if (physicsSystem)
-				{
-					auto& debugSettings = physicsSystem->GetDebugRenderSettings();
-
-					ImGui::MenuItem("Show Physics Colliders", nullptr, &debugSettings.Enabled);
-					if (debugSettings.Enabled)
-					{
-						ImGui::Separator();
-
-						ImGui::MenuItem("Draw Shapes", nullptr, &debugSettings.DrawColliders);
-						ImGui::MenuItem("Draw Contact Points", nullptr, &debugSettings.DrawContactPoints);
-						ImGui::MenuItem("Draw AABBs", nullptr, &debugSettings.DrawColliderAxes);
-					}
-				}
-
-				auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
-				if (aiSystem)
-				{
-					auto& debugSettings = aiSystem->GetDebugRenderSettings();
-					ImGui::MenuItem("Draw AI Paths", nullptr, &debugSettings.Enabled);
-				}
-
-				bool drawSelectedNavMesh = ActiveNavMeshRenderer::GetEnabled();
-				if (ImGui::MenuItem("Draw Selected NavMesh", nullptr, &drawSelectedNavMesh))
-				{
-					ActiveNavMeshRenderer::SetEnabled(drawSelectedNavMesh);
-				}
-
+				DrawDebugDrawToggles();
 				ImGui::EndMenu();
 			}
 
@@ -1069,6 +1090,24 @@ namespace Ember {
 				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
 				break;
 
+			// Frame the selection; Ctrl+F is left free for a future search.
+			case KeyCode::F:
+				if (isEditMode && !control)
+					FocusSelection();
+				break;
+
+			case KeyCode::Z:
+				if (isEditMode && control && shift)
+					Redo();
+				else if (isEditMode && control)
+					Undo();
+				break;
+
+			case KeyCode::Y:
+				if (isEditMode && control)
+					Redo();
+				break;
+
 			// Scene Hot keys
 			case KeyCode::N:
 				if (shift && control)
@@ -1106,8 +1145,8 @@ namespace Ember {
 
 			// Entity Hot keys
 			case KeyCode::Delete:
-				if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-					RemoveEntity(m_Context.SelectedEntity);
+				for (Entity selected : m_Context.SelectedEntities)
+					RemoveEntity(selected);
 				break;
 
 			case KeyCode::Enter:
@@ -1137,30 +1176,104 @@ namespace Ember {
 			if (isGizmoDrawn && (ImGuizmo::IsOver() || m_ViewportGizmos.IsHovered()))
 				return false;
 
-			auto [mx, my] = ImGui::GetMousePos();
-
-			// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
-			mx -= m_ViewportBounds[0].x;
-			my -= m_ViewportBounds[0].y;
-
-			Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-			my = viewportSize.y - my;
-
-			int mouseX = (int)mx;
-			int mouseY = (int)my;
-
-			// Ensure we are inside the image
-			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+			int mouseX = 0;
+			int mouseY = 0;
+			if (TryGetViewportPixel(mouseX, mouseY))
 			{
 				if (auto activeScene = m_Context.ActiveScene())
 				{
 					Entity selected = activeScene->GetEntityAtPixel(mouseX, mouseY);
-					m_Context.SelectedEntity = selected;
+
+					// Ctrl+click adds to or removes from the selection; a plain click replaces it.
+					bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+					if (ctrlHeld && selected.IsValid())
+						m_Context.ToggleSelection(selected);
+					else if (!ctrlHeld)
+						m_Context.SetSelection(selected);
 				}
 			}
 		}
 
 		return false;
+	}
+
+	bool EditorLayer::TryGetViewportPixel(int& outX, int& outY) const
+	{
+		auto [mx, my] = ImGui::GetMousePos();
+
+		// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+
+		Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+		my = viewportSize.y - my;
+
+		outX = (int)mx;
+		outY = (int)my;
+
+		return outX >= 0 && outY >= 0 && outX < (int)viewportSize.x && outY < (int)viewportSize.y;
+	}
+
+	Vector3f EditorLayer::GetSpawnPosition()
+	{
+		Vector3f focalPoint = m_Camera.GetFocalPoint();
+		if (!m_Preferences.SpawnAtCursor)
+			return focalPoint;
+
+		auto activeScene = m_Context.ActiveScene();
+
+		int mouseX = 0;
+		int mouseY = 0;
+		if (activeScene && m_ViewportHovered && TryGetViewportPixel(mouseX, mouseY))
+		{
+			// The G-Buffer holds last frame's render, so this lands on whatever was drawn there.
+			Vector3f surfacePosition;
+			if (activeScene->GetWorldPositionAtPixel(mouseX, mouseY, surfacePosition))
+			{
+				return m_Preferences.SnapEnabled
+					? Math::Snap(surfacePosition, m_Preferences.TranslateSnap)
+					: surfacePosition;
+			}
+		}
+
+		// Nothing under the cursor, so drop it in front of the camera rather than at the origin.
+		return focalPoint;
+	}
+
+	// Applies OutlineComponent as a set difference so any number of entities can be outlined at once;
+	// the render pass already gathers every entity carrying one.
+	void EditorLayer::SyncSelectionOutlines()
+	{
+		std::unordered_set<Entity> desiredOutlines;
+		for (Entity selected : m_Context.SelectedEntities)
+		{
+			if (selected == Constants::Entities::InvalidEntityID)
+				continue;
+
+			desiredOutlines.insert(selected);
+			if (selected.IsRootParent())
+			{
+				for (auto& child : selected.GetAllChildren())
+				{
+					if (child != Constants::Entities::InvalidEntityID)
+						desiredOutlines.insert(child);
+				}
+			}
+		}
+
+		for (Entity previouslyOutlined : m_PreviouslyOutlined)
+		{
+			if (!desiredOutlines.contains(previouslyOutlined) && previouslyOutlined.ContainsComponent<OutlineComponent>())
+				RemoveComponentFromEntity<OutlineComponent>(previouslyOutlined);
+		}
+
+		for (Entity outlined : desiredOutlines)
+		{
+			if (!m_PreviouslyOutlined.contains(outlined))
+				OutlineEntity(outlined);
+		}
+
+		m_PreviouslyOutlined = std::move(desiredOutlines);
 	}
 
 	void EditorLayer::SyncEntitySelectionState()
@@ -1171,38 +1284,18 @@ namespace Ember {
 			return;
 		}
 
+		// Outlining tracks the whole selection, so it has to react to changes that leave the active
+		// entity untouched - Ctrl+clicking a non-last entity out of the set, for example.
+		if (m_Context.SelectedEntities != m_LastOutlinedSelection)
+		{
+			SyncSelectionOutlines();
+			m_LastOutlinedSelection = m_Context.SelectedEntities;
+		}
+
+		// Everything below is keyed to the active entity, and the animation pose reset in particular
+		// must not re-run every frame or it would fight the scrubber.
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
-
-		// Clean up the old selection safely
-		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
-		{
-			RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
-			if (m_PreviousSelectedEntity.IsRootParent())
-			{
-				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<OutlineComponent>())
-						RemoveComponentFromEntity<OutlineComponent>(child);
-				}
-			}
-		}
-
-		// Add outlines to the new selection safely
-		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-		{
-			OutlineEntity(m_Context.SelectedEntity);
-			if (m_Context.SelectedEntity.IsRootParent())
-			{
-				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID)
-					{
-						OutlineEntity(child);
-					}
-				}
-			}
-		}
 
 		// TODO: Move these system debug draw code blocks to own methods
 
@@ -1247,6 +1340,195 @@ namespace Ember {
 		}
 
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
+	}
+
+	void EditorLayer::FocusSelection()
+	{
+		auto activeScene = m_Context.ActiveScene();
+		if (!activeScene || !m_Context.SelectedEntity.IsValid())
+			return;
+
+		AABB merged{ Vector3f(std::numeric_limits<float>::max()), Vector3f(std::numeric_limits<float>::lowest()) };
+		bool hasBounds = false;
+
+		// Walk the whole subtree so framing a model root frames the model, not its empty pivot.
+		std::vector<Entity> pending{ m_Context.SelectedEntity };
+		while (!pending.empty())
+		{
+			Entity entity = pending.back();
+			pending.pop_back();
+
+			for (Entity child : entity.GetAllChildren())
+				pending.push_back(child);
+
+			AABB entityAABB;
+			if (VisibilitySystem::TryGetRenderableAABB(activeScene.Ptr(), entity.GetEntityHandle(), entityAABB))
+			{
+				merged.WorldMin = Math::Min(merged.WorldMin, entityAABB.WorldMin);
+				merged.WorldMax = Math::Max(merged.WorldMax, entityAABB.WorldMax);
+				hasBounds = true;
+			}
+		}
+
+		if (hasBounds)
+		{
+			m_Camera.FocusOn(merged);
+			return;
+		}
+
+		// Lights, cameras and empty pivots draw nothing, so frame a small volume at their origin.
+		if (m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
+		{
+			Vector3f position = Vector3f(m_Context.SelectedEntity.GetComponent<TransformComponent>().WorldTransform[3]);
+			m_Camera.FocusOn(position, 1.0f);
+		}
+	}
+
+	// A snap-increment dropdown offering the common values plus a free-entry field.
+	static bool DrawSnapPresetCombo(const char* id, const char* format, float& value,
+		const float* presets, int presetCount, float minValue, float maxValue)
+	{
+		bool changed = false;
+
+		char label[32];
+		snprintf(label, sizeof(label), format, value);
+
+		ImGui::SetNextItemWidth(80.0f);
+		if (ImGui::BeginCombo(id, label))
+		{
+			for (int i = 0; i < presetCount; ++i)
+			{
+				char presetLabel[32];
+				snprintf(presetLabel, sizeof(presetLabel), format, presets[i]);
+				if (ImGui::Selectable(presetLabel, value == presets[i]))
+				{
+					value = presets[i];
+					changed = true;
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::SetNextItemWidth(100.0f);
+			if (ImGui::DragFloat("##Custom", &value, 0.01f, minValue, maxValue, format))
+				changed = true;
+
+			ImGui::EndCombo();
+		}
+
+		return changed;
+	}
+
+	// Every editor toggle lives behind one dropdown so the toolbar stays readable as more are added.
+	void EditorLayer::DrawGizmoSettingsPopup()
+	{
+		static constexpr float translatePresets[] = { 0.05f, 0.1f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f };
+		static constexpr float rotatePresets[] = { 5.0f, 15.0f, 45.0f, 90.0f };
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2));
+
+		// The label carries the snap state so the common setting is readable without opening it.
+		char buttonLabel[64];
+		if (m_Preferences.SnapEnabled)
+			snprintf(buttonLabel, sizeof(buttonLabel), "Gizmos  %.4g / %.0f\xc2\xb0", m_Preferences.TranslateSnap, m_Preferences.RotateSnap);
+		else
+			snprintf(buttonLabel, sizeof(buttonLabel), "Gizmos  (no snap)");
+
+		if (ImGui::Button(buttonLabel))
+			ImGui::OpenPopup("GizmoSettingsPopup");
+
+		ImGui::PopStyleVar();
+
+		if (!ImGui::BeginPopup("GizmoSettingsPopup"))
+			return;
+
+		bool changed = false;
+
+		ImGui::SeparatorText("Snapping");
+
+		changed |= ImGui::Checkbox("Enable snapping", &m_Preferences.SnapEnabled);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Hold Ctrl while dragging a gizmo to invert this.");
+
+		ImGui::Text("Grid");
+		ImGui::SameLine(90.0f);
+		changed |= DrawSnapPresetCombo("##GridSnap", "%.4g", m_Preferences.TranslateSnap,
+			translatePresets, IM_ARRAYSIZE(translatePresets), 0.001f, 100.0f);
+
+		ImGui::Text("Angle");
+		ImGui::SameLine(90.0f);
+		changed |= DrawSnapPresetCombo("##AngleSnap", "%.0f\xc2\xb0", m_Preferences.RotateSnap,
+			rotatePresets, IM_ARRAYSIZE(rotatePresets), 1.0f, 180.0f);
+
+		ImGui::SeparatorText("Gizmo");
+
+		ImGui::Text("Space");
+		ImGui::SameLine(90.0f);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::BeginCombo("##GizmoSpace", m_Preferences.GizmoLocalSpace ? "Local" : "World"))
+		{
+			if (ImGui::Selectable("World", !m_Preferences.GizmoLocalSpace))
+			{
+				m_Preferences.GizmoLocalSpace = false;
+				changed = true;
+			}
+			if (ImGui::Selectable("Local", m_Preferences.GizmoLocalSpace))
+			{
+				m_Preferences.GizmoLocalSpace = true;
+				changed = true;
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::SeparatorText("Placement");
+
+		changed |= ImGui::Checkbox("Spawn new entities at cursor", &m_Preferences.SpawnAtCursor);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Off places them at the camera focal point instead.");
+
+		ImGui::SeparatorText("Display");
+
+		ImGui::Checkbox("Draw all HUD icons", &m_DrawAllHUD);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Off draws icons only for the selected entity.");
+
+		DrawDebugDrawToggles();
+
+		ImGui::EndPopup();
+
+		// Preferences are small and change rarely, so write them out immediately rather than
+		// relying on a clean shutdown.
+		if (changed)
+			m_Preferences.Save();
+	}
+
+	// Shared by the Gizmos dropdown and the Editor > Debug menu; both drive the same system state.
+	void EditorLayer::DrawDebugDrawToggles()
+	{
+		ImGui::SeparatorText("Debug Draw");
+
+		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+		if (physicsSystem)
+		{
+			auto& debugSettings = physicsSystem->GetDebugRenderSettings();
+			ImGui::Checkbox("Physics Colliders", &debugSettings.Enabled);
+
+			if (debugSettings.Enabled)
+			{
+				ImGui::Indent();
+				ImGui::Checkbox("Shapes", &debugSettings.DrawColliders);
+				ImGui::Checkbox("Contact Points", &debugSettings.DrawContactPoints);
+				ImGui::Checkbox("AABBs", &debugSettings.DrawColliderAxes);
+				ImGui::Unindent();
+			}
+		}
+
+		auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
+		if (aiSystem)
+			ImGui::Checkbox("AI Paths", &aiSystem->GetDebugRenderSettings().Enabled);
+
+		bool drawSelectedNavMesh = ActiveNavMeshRenderer::GetEnabled();
+		if (ImGui::Checkbox("Selected NavMesh", &drawSelectedNavMesh))
+			ActiveNavMeshRenderer::SetEnabled(drawSelectedNavMesh);
 	}
 
 	void EditorLayer::DrawToolbar()
@@ -1294,29 +1576,7 @@ namespace Ember {
 
 		ImGui::SameLine();
 
-		// HUD visibility dropdown
-		ImGui::Text("HUD");
-		ImGui::SameLine();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2));
-		ImGui::SetNextItemWidth(100.0f);
-
-		const char* hudLabel = m_DrawAllHUD ? "All" : "Selected";
-		if (ImGui::BeginCombo("##HUDVisibility", hudLabel))
-		{
-			if (ImGui::Selectable("Draw All HUD", m_DrawAllHUD))
-				m_DrawAllHUD = true;
-			if (m_DrawAllHUD)
-				ImGui::SetItemDefaultFocus();
-
-			if (ImGui::Selectable("Selected Only", !m_DrawAllHUD))
-				m_DrawAllHUD = false;
-			if (!m_DrawAllHUD)
-				ImGui::SetItemDefaultFocus();
-
-			ImGui::EndCombo();
-		}
-		ImGui::PopStyleVar();
+		DrawGizmoSettingsPopup();
 
 		ImGui::SameLine();
 
@@ -1465,10 +1725,51 @@ namespace Ember {
 		return fps;
 	}
 
+	void EditorLayer::Undo()
+	{
+		UndoStack* undoStack = m_Context.ActiveUndoStack();
+		if (!undoStack || !undoStack->CanUndo())
+			return;
+
+		std::string label = undoStack->PeekUndoLabel();
+
+		std::vector<UUID> selection;
+		if (!undoStack->Undo(m_Context.ActiveScene(), selection))
+			return;
+
+		m_Context.SetSelectionFromUUIDs(selection);
+		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
+
+		auto evt = UINotificationEvent(std::format("Undo: {}", label));
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::Redo()
+	{
+		UndoStack* undoStack = m_Context.ActiveUndoStack();
+		if (!undoStack || !undoStack->CanRedo())
+			return;
+
+		std::string label = undoStack->PeekRedoLabel();
+
+		std::vector<UUID> selection;
+		if (!undoStack->Redo(m_Context.ActiveScene(), selection))
+			return;
+
+		m_Context.SetSelectionFromUUIDs(selection);
+		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
+
+		auto evt = UINotificationEvent(std::format("Redo: {}", label));
+		m_Context.EventCallback(evt);
+	}
+
 	void EditorLayer::ClearEntitySelectionState()
 	{
-		m_Context.SelectedEntity = Entity();
+		m_Context.ClearSelection();
 		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
 		m_Context.PendingEntityRemovals.clear();
 		m_Context.PendingComponentRemovals.clear();
 		m_EditorRenderPassSettings.SelectedEntity = Constants::Entities::InvalidEntityID;
@@ -1476,8 +1777,12 @@ namespace Ember {
 	
 	void EditorLayer::CreateEntity()
 	{
+		ScopedEntityEdit edit(m_Context, "Create Entity", {});
+
 		auto entity = m_Context.ActiveScene()->AddEntity("Empty_Entity");
-		m_Context.SelectedEntity = entity;
+		edit.AddCreated(entity.GetUUID());
+
+		m_Context.SetSelection(entity);
 	}
 
 	void EditorLayer::RemoveEntity(Entity entity)
@@ -1497,8 +1802,31 @@ namespace Ember {
 			m_Context.EventCallback(evt);
 		}
 
-		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
-			m_Context.SelectedEntity = Entity();
+		if (m_Context.PendingEntityRemovals.empty())
+			return;
+
+		// Capture before anything is queued so undo can restore the whole subtree, and include each
+		// entity's parent so its child list is repaired too.
+		std::vector<UUID> affected;
+		affected.reserve(m_Context.PendingEntityRemovals.size() * 2);
+		for (Entity pendingRemoval : m_Context.PendingEntityRemovals)
+		{
+			affected.push_back(pendingRemoval.GetUUID());
+
+			if (pendingRemoval.ContainsComponent<RelationshipComponent>())
+			{
+				UUID parentUUID = pendingRemoval.GetComponent<RelationshipComponent>().ParentHandle;
+				if (parentUUID != Constants::InvalidUUID)
+					affected.push_back(parentUUID);
+			}
+		}
+
+		ScopedEntityEdit edit(m_Context, "Delete Entity", affected);
+
+		// Any entity going away must leave the selection; descendants that die with a removed parent
+		// are dropped by the per-frame re-resolve.
+		for (Entity pendingRemoval : m_Context.PendingEntityRemovals)
+			m_Context.RemoveFromSelection(pendingRemoval);
 
 		for (auto entity : m_Context.PendingEntityRemovals) {
 			std::string entityName = entity.GetName();
@@ -1509,10 +1837,23 @@ namespace Ember {
 		}
 
 		m_Context.PendingEntityRemovals.clear();
+
+		// The scene only queues removals, so drain them before the scope captures the "after" state.
+		m_Context.ActiveScene()->FlushPendingRemovals();
 	}
 
 	void EditorLayer::RemovePendingComponents()
 	{
+		if (m_Context.PendingComponentRemovals.empty())
+			return;
+
+		std::vector<UUID> affected;
+		affected.reserve(m_Context.PendingComponentRemovals.size());
+		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
+			affected.push_back(entity.GetUUID());
+
+		ScopedEntityEdit edit(m_Context, "Remove Component", affected, false);
+
 		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
 		{
 			for (ComponentType componentType : components)
@@ -1529,10 +1870,24 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
+		ScopedEntityEdit edit(m_Context, "Place Model", {});
+
 		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
+		if (modelEntity != Constants::Entities::InvalidEntityID)
+			edit.AddCreated(modelEntity.GetUUID());
 		if (m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID && modelEntity != m_Context.PrefabRootEntity)
 			m_Context.ActiveScene()->SetEntityParent(modelEntity.GetUUID(), m_Context.PrefabRootEntity);
-		m_Context.SelectedEntity = modelEntity;
+
+		// InstantiateModel takes no position, so place the root afterwards.
+		if (!m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID
+			&& modelEntity.ContainsComponent<TransformComponent>())
+		{
+			auto& transform = modelEntity.GetComponent<TransformComponent>();
+			transform.Position = GetSpawnPosition();
+			transform.InvalidateWorld();
+		}
+
+		m_Context.SetSelection(modelEntity);
 	}
 
 	void EditorLayer::CreateEntityFromPrefab(const std::string& prefabFilePath)
@@ -1540,14 +1895,18 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto prefabAsset = assetManager.Load<Prefab>(prefabFilePath);
 
-		// Instantiate prefab at origin
-		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
-		// using raycasting
-		Vector3f origin = Vector3f(0.0f);
+		ScopedEntityEdit edit(m_Context, "Place Prefab", {});
+
+		// A prefab edit tab has no level geometry to place against, so those keep landing on the root.
+		Vector3f spawnPosition = m_Context.IsEditingPrefab ? Vector3f(0.0f) : GetSpawnPosition();
 		Entity prefEntity = m_Context.IsEditingPrefab
-			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &origin)
-			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
-		m_Context.SelectedEntity = prefEntity;
+			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &spawnPosition)
+			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &spawnPosition);
+
+		if (prefEntity != Constants::Entities::InvalidEntityID)
+			edit.AddCreated(prefEntity.GetUUID());
+
+		m_Context.SetSelection(prefEntity);
 	}
 
 	void EditorLayer::OutlineEntity(Entity entity)
@@ -1870,9 +2229,144 @@ namespace Ember {
 		AssetRegistrySerializer assetSerializer(&assetManager);
 		assetSerializer.Serialize(assetFilePath.string());
 
-		auto evt = UINotificationEvent(std::format("Prefab saved: {}", std::filesystem::path(m_EditingPrefabPath).filename().string()));
+		std::string prefabName = std::filesystem::path(m_EditingPrefabPath).filename().string();
+		auto evt = UINotificationEvent(std::format("Prefab saved: {}", prefabName));
 		m_Context.EventCallback(evt);
+
+		// Refreshing rebuilds each instance from the prefab, so it is offered rather than done - it
+		// is the user's call whether the placed copies should be overwritten.
+		uint32_t instanceCount = CountPrefabInstancesInOpenScenes(m_EditingPrefab);
+		if (instanceCount > 0)
+		{
+			m_PendingRefreshPrefab = m_EditingPrefab;
+			m_PendingRefreshInstanceCount = instanceCount;
+		}
+
 		return true;
+	}
+
+	uint32_t EditorLayer::CountPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab)
+	{
+		if (!prefab)
+			return 0;
+
+		uint32_t count = 0;
+		std::vector<Scene*> visited;
+
+		for (size_t viewerIndex = 0; viewerIndex < m_ViewportTabs.ViewerCount(); viewerIndex++)
+		{
+			EditorViewportViewer* viewer = m_ViewportTabs.GetViewer(viewerIndex);
+			if (!viewer || viewer->GetType() != EditorViewportViewer::Type::Scene)
+				continue;
+
+			auto scene = viewer->GetScene();
+			if (!scene || std::find(visited.begin(), visited.end(), scene.Ptr()) != visited.end())
+				continue;
+
+			visited.push_back(scene.Ptr());
+			count += scene->CountPrefabInstances(prefab->GetUUID());
+		}
+
+		return count;
+	}
+
+	void EditorLayer::RenderPrefabRefreshPrompt()
+	{
+		if (m_PendingRefreshPrefab && !ImGui::IsPopupOpen("Update Prefab Instances"))
+			ImGui::OpenPopup("Update Prefab Instances");
+
+		if (!ImGui::BeginPopupModal("Update Prefab Instances", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		ImGui::TextWrapped("Update %u placed instance%s of \"%s\"?",
+			m_PendingRefreshInstanceCount,
+			m_PendingRefreshInstanceCount == 1 ? "" : "s",
+			m_PendingRefreshPrefab ? m_PendingRefreshPrefab->GetName().c_str() : "");
+
+		ImGui::Spacing();
+		ImGui::TextDisabled("Each instance keeps its position, name, parent and script property values.");
+		ImGui::TextDisabled("Any other per-instance change - swapped materials or sprites, added");
+		ImGui::TextDisabled("components - is replaced by the prefab. This can be undone.");
+		ImGui::Spacing();
+
+		if (ImGui::Button("Update Instances", ImVec2(140.0f, 0.0f)))
+		{
+			uint32_t refreshed = RefreshPrefabInstancesInOpenScenes(m_PendingRefreshPrefab);
+
+			auto evt = UINotificationEvent(std::format("Updated {} prefab instance{}.", refreshed, refreshed == 1 ? "" : "s"));
+			m_Context.EventCallback(evt);
+
+			m_PendingRefreshPrefab = nullptr;
+			m_PendingRefreshInstanceCount = 0;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Leave Them", ImVec2(140.0f, 0.0f)))
+		{
+			m_PendingRefreshPrefab = nullptr;
+			m_PendingRefreshInstanceCount = 0;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	// Instances live in the scene tabs, not in the prefab tab being edited, so the refresh has to
+	// reach across every open scene - and each scene's undo entry belongs on its own tab's stack,
+	// not on whichever tab happens to be active.
+	uint32_t EditorLayer::RefreshPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab)
+	{
+		if (!prefab)
+			return 0;
+
+		uint32_t refreshed = 0;
+		std::vector<Scene*> visited;
+
+		for (size_t viewerIndex = 0; viewerIndex < m_ViewportTabs.ViewerCount(); viewerIndex++)
+		{
+			EditorViewportViewer* viewer = m_ViewportTabs.GetViewer(viewerIndex);
+			if (!viewer || viewer->GetType() != EditorViewportViewer::Type::Scene)
+				continue;
+
+			auto scene = viewer->GetScene();
+			if (!scene || std::find(visited.begin(), visited.end(), scene.Ptr()) != visited.end())
+				continue;
+
+			visited.push_back(scene.Ptr());
+
+			std::vector<UUID> instanceRoots;
+			for (Entity entity : scene->GetAllEntities())
+			{
+				if (entity.ContainsComponent<PrefabComponent>()
+					&& entity.GetComponent<PrefabComponent>().PrefabHandle == prefab->GetUUID())
+					instanceRoots.push_back(entity.GetUUID());
+			}
+
+			if (instanceRoots.empty())
+				continue;
+
+			EntitySetSnapshot before = EntitySetSnapshot::Capture(scene, instanceRoots, true);
+
+			uint32_t count = scene->RefreshPrefabInstances(prefab);
+			if (count == 0)
+				continue;
+
+			EditAction action;
+			action.Label = "Update Prefab Instances";
+			action.Before = std::move(before);
+			action.After = EntitySetSnapshot::Capture(scene, instanceRoots, true);
+
+			// Selecting the affected instances after an undo or redo makes it obvious what moved.
+			action.SelectionBefore = instanceRoots;
+			action.SelectionAfter = instanceRoots;
+
+			viewer->GetUndoStack().Push(std::move(action));
+			refreshed += count;
+		}
+
+		return refreshed;
 	}
 
 	void EditorLayer::OpenAnimationState(const std::string& path)
@@ -1969,7 +2463,7 @@ namespace Ember {
 		{
 			RemovePendingComponents();
 			RemovePendingEntities();
-			m_ViewportTabs.StoreViewerState(previousViewerIndex, m_Context.SelectedEntity, m_PreviousSelectedEntity);
+			m_ViewportTabs.StoreViewerState(previousViewerIndex, m_Context.SelectedEntities, m_PreviousSelectedEntity);
 		}
 
 		if (m_Context.CurrentSceneState != SceneState::Edit)
@@ -2003,9 +2497,15 @@ namespace Ember {
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
 			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
-		m_Context.SelectedEntity = ResolveEntityInScene(scene, activeViewer.SelectedEntity);
-		if (m_Context.SelectedEntity == Constants::Entities::InvalidEntityID)
-			m_Context.SelectedEntity = Entity();
+		std::vector<Entity> restoredSelection;
+		restoredSelection.reserve(activeViewer.Selection.size());
+		for (Entity stored : activeViewer.Selection)
+		{
+			Entity resolved = ResolveEntityInScene(scene, stored);
+			if (resolved != Constants::Entities::InvalidEntityID)
+				restoredSelection.push_back(resolved);
+		}
+		m_Context.SetSelection(restoredSelection);
 
 		m_PreviousSelectedEntity = ResolveEntityInScene(scene, activeViewer.PreviousSelectedEntity);
 		if (m_PreviousSelectedEntity == Constants::Entities::InvalidEntityID)
@@ -2190,7 +2690,7 @@ namespace Ember {
 		std::string prefabFilePath = prefab->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(prefabPath).string() : prefab->GetFilePath();
 		std::string title = std::format("{} [Prefab]", EditorViewportTabs::TitleFromPath(prefabFilePath, prefab->GetName()));
 		size_t viewerIndex = m_ViewportTabs.AddPrefabViewer(prefabScene, prefab, prefabRoot, prefabFilePath, title);
-		m_ViewportTabs.StoreViewerState(viewerIndex, prefabRoot, Entity());
+		m_ViewportTabs.StoreViewerState(viewerIndex, std::vector<Entity>{ prefabRoot }, Entity());
 		ActivateViewer(viewerIndex);
 
 		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));

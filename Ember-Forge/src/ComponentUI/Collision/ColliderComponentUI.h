@@ -28,6 +28,58 @@ namespace Ember {
 	protected:
 		virtual void RenderComponentProperties(T& component) = 0;
 
+		// Shapes that can be sized from geometry opt in; mesh colliders already use the mesh itself.
+		virtual bool SupportsFitToMesh() const { return false; }
+		virtual void FitColliderToBounds(T& component, const Vector3f& localMin, const Vector3f& localMax) {}
+
+		// Local-space bounds of whatever mesh the entity draws. These are pre-scale, matching how
+		// collider dimensions are stored - the physics system applies world scale separately.
+		bool TryGetLocalMeshBounds(Entity entity, Vector3f& outMin, Vector3f& outMax)
+		{
+			UUID meshHandle = Constants::InvalidUUID;
+			if (entity.ContainsComponent<StaticMeshComponent>())
+				meshHandle = entity.GetComponent<StaticMeshComponent>().MeshHandle;
+			else if (entity.ContainsComponent<SkinnedMeshComponent>())
+				meshHandle = entity.GetComponent<SkinnedMeshComponent>().MeshHandle;
+
+			if (meshHandle == Constants::InvalidUUID)
+				return false;
+
+			auto mesh = this->m_AssetManager.template GetAsset<Mesh>(meshHandle);
+			if (!mesh)
+				return false;
+
+			outMin = mesh->GetMinBounds();
+			outMax = mesh->GetMaxBounds();
+			return true;
+		}
+
+		void RenderFitToMeshButton(T& component)
+		{
+			if (!SupportsFitToMesh())
+				return;
+
+			Entity selected = this->m_Context->SelectedEntity;
+			Vector3f localMin, localMax;
+			bool hasMesh = selected != Constants::Entities::InvalidEntityID
+				&& TryGetLocalMeshBounds(selected, localMin, localMax);
+
+			ImGui::BeginDisabled(!hasMesh);
+			if (ImGui::Button("Fit To Mesh Bounds"))
+			{
+				FitColliderToBounds(component, localMin, localMax);
+				component.NeedsRebuild = true;
+			}
+			ImGui::EndDisabled();
+
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip(hasMesh
+					? "Size this collider to the entity's mesh."
+					: "This entity has no mesh to fit to.");
+			}
+		}
+
 	protected:
 		inline void RenderComponentImpl(T& component) override
 		{
@@ -51,6 +103,7 @@ namespace Ember {
 			}
 
 			RenderComponentProperties(component);
+			RenderFitToMeshButton(component);
 
 			ImGui::PushID(&component);
 

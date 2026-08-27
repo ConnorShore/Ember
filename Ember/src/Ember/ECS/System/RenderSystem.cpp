@@ -459,6 +459,26 @@ namespace Ember {
 		return (EntityID)opaquePixelData;
 	}
 
+	bool RenderSystem::GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition)
+	{
+		// Only the deferred G-Buffer carries world position, so gate on its own entity ID rather
+		// than the forward pass - a transparent surface has no position written here.
+		auto gBuffer = StaticPointerCast<DeferredGeometryRenderPass>(GetRenderPass("DeferredGeometryRenderPass"))->GetFramebufferOutput("GBuffer");
+
+		gBuffer->Bind();
+		int entityId = gBuffer->ReadPixel(4, x, y);
+		Vector4f positionAO = entityId != (int)Constants::Entities::InvalidEntityID
+			? gBuffer->ReadPixelFloat4(2, x, y)
+			: Vector4f(0.0f);
+		gBuffer->Unbind();
+
+		if (entityId == (int)Constants::Entities::InvalidEntityID)
+			return false;
+
+		outPosition = Vector3f(positionAO);
+		return true;
+	}
+
 	void RenderSystem::InitializeRenderState()
 	{
 		RenderAction::SetClearColor(Ember::Vector4f(0.0f, 0.0f, 0.0f, 1.0));

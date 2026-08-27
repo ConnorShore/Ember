@@ -168,6 +168,18 @@ namespace Ember {
 			return pixelData;
 		}
 
+		Vector4f Framebuffer::ReadPixelFloat4(uint32_t attachmentIndex, int x, int y) const
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+
+			// Ask for RGBA floats explicitly and let GL convert, rather than deriving the pair from
+			// the attachment format.
+			Vector4f pixelData(0.0f);
+			glReadPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, &pixelData[0]);
+
+			return pixelData;
+		}
+
 		const void* Framebuffer::ReadPixels(uint32_t attachmentIndex, int x, int y, uint32_t width, uint32_t height) const
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);

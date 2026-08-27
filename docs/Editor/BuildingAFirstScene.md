@@ -20,6 +20,11 @@ hook you can expand.
 5. Add a few more cubes or spheres as props. Move them with the translate gizmo (`W`) and scale them
    with the scale gizmo (`R`).
 
+Models and prefabs dragged into the viewport land on the surface under the cursor, snapped to the
+grid; entities made from the hierarchy menu land at the camera's focal point. `F` frames whatever is
+selected, `Ctrl+Z` undoes, and `Ctrl` + click adds another entity to the selection so the gizmo moves
+several at once. Snap increments live under the toolbar's **Gizmos** dropdown.
+
 For imported meshes, right-click the Asset Manager and choose `Import Asset > Model`, then assign the
 resulting mesh asset to a `Static Mesh Component` or use the imported model's generated assets.
 

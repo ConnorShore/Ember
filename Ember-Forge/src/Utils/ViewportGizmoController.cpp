@@ -242,81 +242,111 @@ namespace Ember {
 		Matrix4f cameraProjection = camera.GetProjectionMatrix();
 		Matrix4f cameraView = camera.GetViewMatrix();
 
-		auto& transformComp = context->SelectedEntity.GetComponent<TransformComponent>();
-		Matrix4f transform = transformComp.WorldTransform;
+		// A child whose ancestor is also selected already moves with that ancestor; transforming it
+		// again would apply the delta twice.
+		std::vector<Entity> targets = FilterOutSelectedDescendants(context);
+		if (targets.empty())
+			return;
 
-		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
-		float snapValue = (gizmoType == ImGuizmo::OPERATION::ROTATE) ? 45.0f : 0.5f;
+		// The active entity is the pivot, which keeps the single-selection path identical to before.
+		Entity pivotEntity = context->SelectedEntity;
+		if (!context->IsSelected(pivotEntity) || !pivotEntity.ContainsComponent<TransformComponent>())
+			pivotEntity = targets.back();
+
+		Matrix4f pivotWorld = pivotEntity.GetComponent<TransformComponent>().WorldTransform;
+		Matrix4f transform = pivotWorld;
+
+		const EditorPreferences& prefs = *context->Preferences;
+
+		// Ctrl inverts the persistent toggle, so it still means "snap" when snapping is switched off.
+		bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool snap = prefs.SnapEnabled != ctrlHeld;
+
+		float snapValue = gizmoType == ImGuizmo::OPERATION::ROTATE ? prefs.RotateSnap
+			: gizmoType == ImGuizmo::OPERATION::SCALE ? prefs.ScaleSnap
+			: prefs.TranslateSnap;
 		float snapValues[3] = { snapValue, snapValue, snapValue };
 
-		bool isLocal = Input::IsKeyPressed(KeyCode::LeftShift);
-		ImGuizmo::MODE currentMode = isLocal ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+		ImGuizmo::MODE currentMode = prefs.GizmoLocalSpace ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
 
 		ImGuizmo::Manipulate(&cameraView[0][0], &cameraProjection[0][0],
 			(ImGuizmo::OPERATION)gizmoType, currentMode, &transform[0][0],
 			nullptr, snap ? snapValues : nullptr);
 
-		if (ImGuizmo::IsUsing())
-		{
-			Matrix4f localTransform = transform;
+		if (!ImGuizmo::IsUsing())
+			return;
 
-			if (context->SelectedEntity.ContainsComponent<RelationshipComponent>())
+		if (targets.size() == 1)
+		{
+			// Single selection keeps the absolute-matrix path: repeated delta multiplication would
+			// accumulate float error over a long drag.
+			ApplyWorldTransform(context, targets.front(), transform, gizmoType);
+			return;
+		}
+
+		// The world transform that carries the pivot from its old pose to its new one. Applying it to
+		// every target moves the group rigidly, so they orbit and scale about the shared pivot.
+		Matrix4f delta = transform * Math::Inverse(pivotWorld);
+
+		for (Entity target : targets)
+		{
+			auto& targetTransform = target.GetComponent<TransformComponent>();
+			ApplyWorldTransform(context, target, delta * targetTransform.WorldTransform, ImGuizmo::OPERATION::UNIVERSAL);
+		}
+	}
+
+	// Writes a world-space matrix back onto an entity as local TRS, honouring its parent.
+	void ViewportGizmoController::ApplyWorldTransform(EditorContext* context, Entity entity, const Matrix4f& worldTransform, int gizmoType)
+	{
+		auto& transformComp = entity.GetComponent<TransformComponent>();
+
+		Matrix4f localTransform = worldTransform;
+		if (entity.ContainsComponent<RelationshipComponent>())
+		{
+			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
+			if (relationshipComp.ParentHandle != Constants::InvalidUUID)
 			{
-				auto& relationshipComp = context->SelectedEntity.GetComponent<RelationshipComponent>();
-				if (relationshipComp.ParentHandle != Constants::InvalidUUID)
+				Entity parent = context->ActiveScene()->GetEntity(relationshipComp.ParentHandle);
+				if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
 				{
-					Entity parent = context->ActiveScene()->GetEntity(relationshipComp.ParentHandle);
-					if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
-					{
-						Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
-						localTransform = Math::Inverse(parentWorld) * transform;
-					}
+					Matrix4f parentWorld = parent.GetComponent<TransformComponent>().WorldTransform;
+					localTransform = Math::Inverse(parentWorld) * worldTransform;
 				}
 			}
-
-			Vector3f translation, rotation, scale;
-			Math::DecomposeTransform(localTransform, translation, rotation, scale);
-
-			switch (gizmoType)
-			{
-			case ImGuizmo::OPERATION::TRANSLATE:
-			{
-				transformComp.Position = translation;
-				break;
-			}
-			case ImGuizmo::OPERATION::ROTATE:
-			{
-				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
-					transformComp.Rotation = rotation;
-				break;
-			}
-			case ImGuizmo::OPERATION::SCALE:
-			{
-				float epsilon = 0.001f;
-				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
-				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
-				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
-
-				transformComp.Scale = scale;
-				break;
-			}
-			case ImGuizmo::OPERATION::UNIVERSAL:
-			{
-				transformComp.Position = translation;
-
-				if (!std::isnan(rotation.x) && !std::isnan(rotation.y) && !std::isnan(rotation.z))
-					transformComp.Rotation = rotation;
-
-				float epsilon = 0.001f;
-				if (std::isnan(scale.x) || abs(scale.x) < epsilon) scale.x = epsilon;
-				if (std::isnan(scale.y) || abs(scale.y) < epsilon) scale.y = epsilon;
-				if (std::isnan(scale.z) || abs(scale.z) < epsilon) scale.z = epsilon;
-
-				transformComp.Scale = scale;
-				break;
-			}
-			}
 		}
+
+		Vector3f translation, rotation, scale;
+		Math::DecomposeTransform(localTransform, translation, rotation, scale);
+
+		bool writePosition = gizmoType == ImGuizmo::OPERATION::TRANSLATE || gizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+		bool writeRotation = gizmoType == ImGuizmo::OPERATION::ROTATE || gizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+		bool writeScale = gizmoType == ImGuizmo::OPERATION::SCALE || gizmoType == ImGuizmo::OPERATION::UNIVERSAL;
+
+		if (writePosition)
+			transformComp.Position = translation;
+
+		if (writeRotation && !Math::IsNaN(rotation.x) && !Math::IsNaN(rotation.y) && !Math::IsNaN(rotation.z))
+			transformComp.Rotation = rotation;
+
+		if (writeScale)
+		{
+			constexpr float epsilon = 0.001f;
+			if (Math::IsNaN(scale.x) || Math::Abs(scale.x) < epsilon) scale.x = epsilon;
+			if (Math::IsNaN(scale.y) || Math::Abs(scale.y) < epsilon) scale.y = epsilon;
+			if (Math::IsNaN(scale.z) || Math::Abs(scale.z) < epsilon) scale.z = epsilon;
+
+			transformComp.Scale = scale;
+		}
+	}
+
+	// Drops any selected entity that has a selected ancestor, since hierarchy propagation already
+	// moves it with that ancestor.
+	std::vector<Entity> ViewportGizmoController::FilterOutSelectedDescendants(EditorContext* context)
+	{
+		std::vector<Entity> roots = context->ActiveScene()->FilterToHierarchyRoots(context->SelectedEntities);
+
+		std::erase_if(roots, [](Entity entity) { return !entity.ContainsComponent<TransformComponent>(); });
+		return roots;
 	}
 
 	void ViewportGizmoController::RenderRectTransformGizmo(EditorContext* context, const Vector2f viewportBounds[2], int gizmoType)

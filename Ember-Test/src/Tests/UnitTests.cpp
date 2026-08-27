@@ -494,6 +494,25 @@ EB_TEST_CASE(Core, EntityCapacityInvariants, Unit)
 	EB_EXPECT_GT(Constants::Entities::MaxComponents, (uint64_t)0);
 }
 
+EB_TEST_CASE(Core, EntityBooleanConversionPicksOperatorBool, Unit)
+{
+	// Entity has both `explicit operator bool() const` and a non-explicit, non-const
+	// `operator EntityID()`. Which one a boolean context selects decides whether `if (entity)` is
+	// safe or is an inverted landmine, so pin the actual behaviour rather than reasoning about it.
+	Ember::Test::SceneFixture scene("EntityBoolScene");
+
+	Entity valid = scene->AddEntity("Valid");
+	Entity invalid;
+
+	EB_EXPECT_MSG(static_cast<bool>(valid), "a live entity must convert to true");
+	EB_EXPECT_MSG(!static_cast<bool>(invalid), "a default-constructed entity must convert to false");
+
+	// The dangerous case: handle 0 is a perfectly valid entity, but reads as false through
+	// operator EntityID(). If this fails, `if (entity)` is selecting the integer conversion.
+	Entity firstSlot(0, scene.Ptr());
+	EB_EXPECT_MSG(static_cast<bool>(firstSlot), "entity handle 0 must not read as false");
+}
+
 EB_TEST_CASE(Core, SaveGameRoundTrip, Unit)
 {
 	// SaveGameManager writes into %LOCALAPPDATA%\<Project>\SavedGames. A silent regression here

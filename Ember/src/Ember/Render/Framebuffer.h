@@ -76,6 +76,10 @@ namespace Ember {
 		virtual void AttachDepthTextureLayer(uint32_t textureId, uint32_t mipLevel, uint32_t layer) = 0;
 
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const = 0;
+
+		// Reads a floating-point attachment, for buffers that store data rather than colour.
+		virtual Vector4f ReadPixelFloat4(uint32_t attachmentIndex, int x, int y) const = 0;
+
 		virtual const void* ReadPixels(uint32_t attachmentIndex, int x, int y, uint32_t width, uint32_t height) const = 0;
 		
 		virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) = 0;

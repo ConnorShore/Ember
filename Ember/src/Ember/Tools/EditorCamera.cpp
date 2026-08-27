@@ -5,6 +5,7 @@
 #include "Ember/Input/KeyCode.h"
 #include "Ember/Input/MouseCode.h"
 #include "Ember/Event/KeyEvent.h"
+#include "Ember/Render/Frustum.h"
 
 namespace Ember {
 
@@ -24,6 +25,36 @@ namespace Ember {
 		Quaternion orientation = GetOrientation();
 		m_ViewMatrix = Math::Translate(m_Position) * Math::ToMatrix4f(orientation);
 		m_ViewMatrix = Math::Inverse(m_ViewMatrix);
+	}
+
+	void EditorCamera::FocusOn(const AABB& bounds, float fillFraction)
+	{
+		Vector3f center = (bounds.WorldMin + bounds.WorldMax) * 0.5f;
+		Vector3f extent = (bounds.WorldMax - bounds.WorldMin) * 0.5f;
+
+		// Frame the bounding sphere so the result does not depend on which way the box is turned.
+		float radius = Math::Length(extent);
+		if (fillFraction > 0.0f)
+			radius /= fillFraction;
+
+		FocusOn(center, radius);
+	}
+
+	void EditorCamera::FocusOn(const Vector3f& point, float radius)
+	{
+		m_FocalPoint = point;
+
+		// A degenerate bound (a light, an empty) still needs a usable viewing distance.
+		radius = Math::Max(radius, 0.1f);
+
+		// Fit against the narrower of the two field of views so a wide viewport never clips the sides.
+		float verticalFov = Math::Radians(GetPerspectiveProps().FieldOfView);
+		float aspectRatio = Math::Max(GetAspectRatio(), 0.01f);
+		float horizontalFov = 2.0f * Math::Atan(Math::Tan(verticalFov * 0.5f) * aspectRatio);
+		float fov = Math::Min(verticalFov, horizontalFov);
+
+		m_Distance = Math::Max(radius / Math::Tan(fov * 0.5f), GetNearClip() * 4.0f);
+		UpdateView();
 	}
 
 	// Pan speed scales with viewport size via a quadratic curve so it feels consistent

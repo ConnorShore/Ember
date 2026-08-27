@@ -78,6 +78,17 @@ namespace Ember {
 		inline std::vector<SharedPtr<T>> GetAssetsOfType();
 
 		std::vector<Entity> GetAllEntities() const;
+
+		// Keeps only the entities whose ancestors are not also in the list. Deleting, duplicating or
+		// transforming a parent already covers its subtree, so acting on both would double up.
+		std::vector<Entity> FilterToHierarchyRoots(const std::vector<Entity>& entities);
+
+		// Strips an entity back to ID/Tag/Transform/Relationship and clears its child list, so a
+		// snapshot can be deserialized onto it without leaving stale components or duplicate children.
+		void ResetEntityToCoreComponents(Entity entity);
+
+		const std::vector<UUID>& GetEntityOrder() const { return m_EntityOrder; }
+		void SetRootEntityIndex(UUID entityUUID, size_t index);
 		void Clear();
 
 		template<typename Driver, typename... Filters>
@@ -95,11 +106,26 @@ namespace Ember {
 
 		void RemoveEntity(Entity entity);
 
+		// Drains queued removals immediately, for callers that must delete and recreate entities
+		// within a single operation rather than waiting for the end of the frame.
+		void FlushPendingRemovals();
+
+		// Rebuilds every instance of a prefab in this scene from the prefab's current definition,
+		// keeping each instance's placement, name, parent and UUID. Anything else edited on an
+		// instance is discarded - the prefab is the source of truth. Returns how many were rebuilt.
+		uint32_t RefreshPrefabInstances(const SharedPtr<Prefab>& prefab);
+
+		// How many entities in this scene are instances of the given prefab.
+		uint32_t CountPrefabInstances(UUID prefabUUID) const;
+
 		Entity InstantiateModel(const std::string& modelFile);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position);
 
 		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
+
+		// World position of the geometry under a viewport pixel; false when nothing was drawn there.
+		bool GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition);
 
 		template<typename T, typename... Args>
 		inline T& AttachComponent(const Entity& entity, Args&&... args);

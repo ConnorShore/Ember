@@ -1,6 +1,10 @@
 #pragma once
 
+#include "Ember/ECS/Types.h"
 #include "Ember/Math/Math.h"
+
+#include <utility>
+#include <vector>
 
 namespace Ember {
 

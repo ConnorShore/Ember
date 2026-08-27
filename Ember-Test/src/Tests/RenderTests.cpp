@@ -221,6 +221,50 @@ EB_TEST_CASE(Render, GetEntitiesInFrustumFiltersTheList, Unit)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Editor camera framing
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Render, EditorCameraFocusFramesTheBounds, Unit)
+{
+	// The whole point of framing a selection is that you can then see it, so the bounds must end up
+	// fully inside the frustum - at any size, and on a wide viewport where the horizontal FOV binds.
+	const Vector3f centers[] = { Vector3f(0.0f), Vector3f(12.0f, -4.0f, 30.0f) };
+	const float radii[] = { 0.25f, 1.0f, 40.0f };
+
+	for (const Vector3f& center : centers)
+	{
+		for (float radius : radii)
+		{
+			EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+			camera.SetViewportSize(1920, 1080);
+
+			const AABB bounds{ center - Vector3f(radius), center + Vector3f(radius) };
+			camera.FocusOn(bounds);
+
+			EB_EXPECT_VEC3_NEAR(camera.GetFocalPoint(), center, 0.001f);
+
+			const Frustum frustum(camera.GetViewProjection());
+			EB_EXPECT_MSG(frustum.IsBoxVisible(bounds.WorldMin, bounds.WorldMax),
+				"bounds of radius " + std::to_string(radius) + " were not framed inside the frustum");
+		}
+	}
+}
+
+EB_TEST_CASE(Render, EditorCameraFocusOnDegenerateBoundsStaysUsable, Unit)
+{
+	// Lights and empty pivots have no size; framing one must still leave a sane viewing distance
+	// rather than putting the camera inside the near plane.
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+
+	const Vector3f point(5.0f, 2.0f, -3.0f);
+	camera.FocusOn(AABB{ point, point });
+
+	EB_EXPECT_VEC3_NEAR(camera.GetFocalPoint(), point, 0.001f);
+	EB_EXPECT_GT(camera.GetDistance(), camera.GetNearClip());
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Renderable bounds
 //////////////////////////////////////////////////////////////////////////
 

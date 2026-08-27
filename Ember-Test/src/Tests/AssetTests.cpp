@@ -570,6 +570,138 @@ EB_TEST_CASE(Serialization, PrefabRoundTripRemapsUuids, Integration)
 	Ember::Test::RemoveTempFile(path);
 }
 
+EB_TEST_CASE(Serialization, RefreshPrefabInstancesPropagatesToPlacedCopies, Integration)
+{
+	// Editing a prefab has to reach the copies already placed in the level, or fixing one wall piece
+	// after stamping out eighty means replacing all eighty by hand.
+	const std::string path = TempFile("refresh.eprefab");
+	Ember::Test::RemoveTempFile(path);
+
+	// Two scenes, mirroring the editor: the prefab is authored in its own tab while the instances
+	// live in the level scene.
+	SceneFixture authoringScene("PrefabAuthoringScene");
+	SceneFixture scene("PrefabRefreshScene");
+
+	Entity source = MakeEntityAt(*authoringScene, "Wall", Vector3f(0.0f));
+	source.AttachComponent<PointLightComponent>(Vector3f(1.0f, 0.0f, 0.0f), 5.0f, 1.0f);
+	source.AddChild("Trim");
+
+	SceneSerializer authoringSerializer(authoringScene.Shared());
+	auto prefab = SharedPtr<Prefab>::Create(UUID(), "EmberTest_RefreshPrefab", path);
+
+	// The root has to carry its PrefabComponent before being serialized, or instances come out with
+	// no link back to the prefab. Scene::CreatePrefab and SaveOpenPrefab both do this.
+	source.AttachComponent<PrefabComponent>().PrefabHandle = prefab->GetUUID();
+	EB_CHECK(authoringSerializer.SerializePrefab(source, path));
+
+	prefab->YAMLData = authoringSerializer.SerializeEntitiesToString(authoringSerializer.GatherSubtree(source), source.GetName());
+	EB_CHECK(!prefab->YAMLData.empty());
+
+	// Two instances, each moved somewhere different and renamed.
+	Entity first = scene->InstantiatePrefab(prefab, nullptr);
+	Entity second = scene->InstantiatePrefab(prefab, nullptr);
+	EB_CHECK(first.IsValid());
+	EB_CHECK(second.IsValid());
+
+	first.GetComponent<TransformComponent>().Position = Vector3f(10.0f, 0.0f, 0.0f);
+	second.GetComponent<TransformComponent>().Position = Vector3f(-10.0f, 0.0f, 0.0f);
+	second.GetComponent<TagComponent>().Tag = "Wall_Renamed";
+
+	const UUID firstUUID = first.GetUUID();
+	const UUID secondUUID = second.GetUUID();
+	EB_CHECK_EQ(scene->CountPrefabInstances(prefab->GetUUID()), (uint32_t)2);
+
+	// Change the prefab: brighten the light and add a second child.
+	source.GetComponent<PointLightComponent>().Intensity = 42.0f;
+	source.AddChild("Bracket");
+	prefab->YAMLData = authoringSerializer.SerializeEntitiesToString(authoringSerializer.GatherSubtree(source), source.GetName());
+
+	EB_EXPECT_EQ(scene->RefreshPrefabInstances(prefab), (uint32_t)2);
+
+	Entity refreshedFirst = scene->GetEntity(firstUUID);
+	Entity refreshedSecond = scene->GetEntity(secondUUID);
+
+	// Identity survives, so anything referencing these instances still resolves.
+	EB_CHECK(refreshedFirst.IsValid());
+	EB_CHECK(refreshedSecond.IsValid());
+
+	// The prefab's change reached both.
+	EB_CHECK(refreshedFirst.ContainsComponent<PointLightComponent>());
+	EB_EXPECT_NEAR(refreshedFirst.GetComponent<PointLightComponent>().Intensity, 42.0f, 1e-3);
+	EB_EXPECT_NEAR(refreshedSecond.GetComponent<PointLightComponent>().Intensity, 42.0f, 1e-3);
+	EB_EXPECT_EQ(refreshedFirst.GetNumChildren(), (uint32_t)2);
+	EB_EXPECT_EQ(refreshedSecond.GetNumChildren(), (uint32_t)2);
+
+	// Placement and name are per-instance and must NOT be overwritten by the prefab.
+	EB_EXPECT_VEC3_NEAR(refreshedFirst.GetComponent<TransformComponent>().Position, Vector3f(10.0f, 0.0f, 0.0f), 1e-4f);
+	EB_EXPECT_VEC3_NEAR(refreshedSecond.GetComponent<TransformComponent>().Position, Vector3f(-10.0f, 0.0f, 0.0f), 1e-4f);
+	EB_EXPECT_EQ(refreshedSecond.GetName(), std::string("Wall_Renamed"));
+
+	// Each instance still owns its own children rather than aliasing the other's.
+	Entity firstTrim = refreshedFirst.GetChildByName("Trim");
+	Entity secondTrim = refreshedSecond.GetChildByName("Trim");
+	EB_CHECK(firstTrim.IsValid());
+	EB_CHECK(secondTrim.IsValid());
+	EB_EXPECT_NE(firstTrim.GetUUID(), secondTrim.GetUUID());
+
+	Ember::Test::RemoveTempFile(path);
+}
+
+EB_TEST_CASE(Serialization, RefreshPrefabInstancesKeepsPerInstanceScriptOverrides, Integration)
+{
+	// Script property values are per-instance by design - a Spawner prefab exists precisely so each
+	// placed copy can point at something different. A refresh must not revert them to the prefab's.
+	const std::string path = TempFile("overrides.eprefab");
+	Ember::Test::RemoveTempFile(path);
+
+	SceneFixture authoringScene("OverrideAuthoringScene");
+	SceneFixture scene("OverrideRefreshScene");
+
+	Entity source = MakeEntityAt(*authoringScene, "Spawner", Vector3f(0.0f));
+	auto& sourceScript = source.AttachComponent<ScriptComponent>();
+	sourceScript.ScriptHandle = UUID();
+	sourceScript.UserPropertyOverrides["SpawnCount"] = ScriptProperty("SpawnCount", 1, ScriptPropertyType::Int);
+
+	SceneSerializer authoringSerializer(authoringScene.Shared());
+	auto prefab = SharedPtr<Prefab>::Create(UUID(), "EmberTest_OverridePrefab", path);
+	source.AttachComponent<PrefabComponent>().PrefabHandle = prefab->GetUUID();
+	prefab->YAMLData = authoringSerializer.SerializeEntitiesToString(authoringSerializer.GatherSubtree(source), source.GetName());
+
+	Entity first = scene->InstantiatePrefab(prefab, nullptr);
+	Entity second = scene->InstantiatePrefab(prefab, nullptr);
+	EB_CHECK(first.IsValid());
+	EB_CHECK(second.IsValid());
+
+	// Each instance is pointed at a different value, the way a real spawner would be.
+	first.GetComponent<ScriptComponent>().UserPropertyOverrides["SpawnCount"] = ScriptProperty("SpawnCount", 7, ScriptPropertyType::Int);
+	second.GetComponent<ScriptComponent>().UserPropertyOverrides["SpawnCount"] = ScriptProperty("SpawnCount", 99, ScriptPropertyType::Int);
+
+	const UUID firstUUID = first.GetUUID();
+	const UUID secondUUID = second.GetUUID();
+
+	// Edit the prefab: bump its own default and add a property the instances have never seen.
+	sourceScript.UserPropertyOverrides["SpawnCount"] = ScriptProperty("SpawnCount", 3, ScriptPropertyType::Int);
+	sourceScript.UserPropertyOverrides["Delay"] = ScriptProperty("Delay", 2.5f, ScriptPropertyType::Float);
+	prefab->YAMLData = authoringSerializer.SerializeEntitiesToString(authoringSerializer.GatherSubtree(source), source.GetName());
+
+	EB_EXPECT_EQ(scene->RefreshPrefabInstances(prefab), (uint32_t)2);
+
+	auto& firstOverrides = (scene->GetEntity(firstUUID)).GetComponent<ScriptComponent>().UserPropertyOverrides;
+	auto& secondOverrides = (scene->GetEntity(secondUUID)).GetComponent<ScriptComponent>().UserPropertyOverrides;
+
+	// The per-instance value wins over the prefab's.
+	EB_CHECK(firstOverrides.contains("SpawnCount"));
+	EB_CHECK(secondOverrides.contains("SpawnCount"));
+	EB_EXPECT_EQ(std::get<int>(firstOverrides["SpawnCount"].Value), 7);
+	EB_EXPECT_EQ(std::get<int>(secondOverrides["SpawnCount"].Value), 99);
+
+	// A property the prefab added since arrives with the prefab's default.
+	EB_CHECK(firstOverrides.contains("Delay"));
+	EB_EXPECT_NEAR(std::get<float>(firstOverrides["Delay"].Value), 2.5f, 1e-4);
+
+	Ember::Test::RemoveTempFile(path);
+}
+
 // Application::GetAssetManager() returns a reference, so binding it with plain `auto` copies the
 // whole registry. Assets loaded through such a copy register into a temporary that dies at end of
 // scope, and the caller is handed a UUID the real manager asserts on. ScriptGenerator shipped that

@@ -7,6 +7,8 @@
 
 namespace Ember {
 
+	struct AABB;
+
 	enum class EditorViewDirection
 	{
 		FreeFly,
@@ -28,6 +30,11 @@ namespace Ember {
 		inline void SetDistance(float distance) { m_Distance = distance; UpdateView(); }
 
 		inline void SetFocalPoint(const Vector3f& focalPoint) { m_FocalPoint = focalPoint; UpdateView(); }
+		inline const Vector3f& GetFocalPoint() const { return m_FocalPoint; }
+
+		// Orbits to look at the given bounds, backing off far enough that they fill the view.
+		void FocusOn(const AABB& bounds, float fillFraction = 0.75f);
+		void FocusOn(const Vector3f& point, float radius);
 
 		const Matrix4f& GetViewMatrix() const { return m_ViewMatrix; }
 		Matrix4f GetViewProjection() const { return GetProjectionMatrix() * m_ViewMatrix; }

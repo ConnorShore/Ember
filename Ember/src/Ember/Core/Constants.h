@@ -9,7 +9,9 @@ namespace Ember::Constants {
 	constexpr uint64_t InvalidUUID = 0;
 
 	namespace Entities {
-		constexpr uint64_t MaxEntities = 1024;
+		// Queries iterate a component's dense array rather than this range, so raising the ceiling
+		// costs memory only: ~325KB per scene plus ~32KB per component type in use.
+		constexpr uint64_t MaxEntities = 8192;
 		constexpr uint64_t MaxComponents = 128;
 
 		constexpr uint64_t InvalidEntityID = MaxEntities + 1;
