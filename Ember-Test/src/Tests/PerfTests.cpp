@@ -27,8 +27,8 @@ using Ember::Test::Sys;
 
 namespace {
 
-	// Comfortably under Constants::Entities::MaxEntities (1024) with headroom for the fixtures'
-	// own entities.
+	// Comfortably under Constants::Entities::MaxEntities with headroom for the fixtures' own
+	// entities; kept at this size so the budgets stay comparable across runs.
 	constexpr int kManyEntities = 900;
 
 } // namespace

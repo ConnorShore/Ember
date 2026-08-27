@@ -50,6 +50,10 @@ namespace Ember {
 		Vector2f* GetViewportBounds() { return m_ViewportBounds; }
 		void SetCameraPreviewViewportSize(const Vector2f& size) { m_CameraPreviewViewportSize = size; }
 
+		// Where a newly created entity should go: the surface under the cursor when there is one, so
+		// nothing silently lands at the world origin underneath the level.
+		Vector3f GetSpawnPosition();
+
 		void CreateEntityFromModel(const std::string& modelFilePath);
 		void CreateEntityFromPrefab(const std::string& prefabFilePath);
 		void OpenPrefab(const std::string& prefabPath = "");
@@ -74,6 +78,16 @@ namespace Ember {
 		void SyncEntitySelectionState();
 
 		void DrawToolbar();
+
+		// One dropdown for every editor toggle, so the toolbar does not grow a control per setting.
+		void DrawGizmoSettingsPopup();
+		void DrawDebugDrawToggles();
+
+		// Orbits the editor camera to frame the selection and everything under it.
+		void FocusSelection();
+
+		// Viewport-local pixel under the cursor, Y flipped for OpenGL; false when outside the image.
+		bool TryGetViewportPixel(int& outX, int& outY) const;
 
 		void RenderStatsOverlay(TimeStep delta);
 		float CalculateFPS(TimeStep delta);
@@ -176,6 +190,7 @@ namespace Ember {
 
 	private:
 		EditorContext m_Context;
+		EditorPreferences m_Preferences;
 		SharedPtr<Scene> m_EditorScene;
 		SharedPtr<Scene> m_PrefabEditScene;
 		SharedPtr<Prefab> m_EditingPrefab;
@@ -207,7 +222,6 @@ namespace Ember {
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-		int m_GizmoMode = ImGuizmo::WORLD;
 		ViewportGizmoController m_ViewportGizmos;
 
 		Entity m_EntityToDelete;

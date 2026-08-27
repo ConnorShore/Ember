@@ -245,12 +245,18 @@ namespace Ember {
 		auto& transformComp = context->SelectedEntity.GetComponent<TransformComponent>();
 		Matrix4f transform = transformComp.WorldTransform;
 
-		bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
-		float snapValue = (gizmoType == ImGuizmo::OPERATION::ROTATE) ? 45.0f : 0.5f;
+		const EditorPreferences& prefs = *context->Preferences;
+
+		// Ctrl inverts the persistent toggle, so it still means "snap" when snapping is switched off.
+		bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool snap = prefs.SnapEnabled != ctrlHeld;
+
+		float snapValue = gizmoType == ImGuizmo::OPERATION::ROTATE ? prefs.RotateSnap
+			: gizmoType == ImGuizmo::OPERATION::SCALE ? prefs.ScaleSnap
+			: prefs.TranslateSnap;
 		float snapValues[3] = { snapValue, snapValue, snapValue };
 
-		bool isLocal = Input::IsKeyPressed(KeyCode::LeftShift);
-		ImGuizmo::MODE currentMode = isLocal ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+		ImGuizmo::MODE currentMode = prefs.GizmoLocalSpace ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
 
 		ImGuizmo::Manipulate(&cameraView[0][0], &cameraProjection[0][0],
 			(ImGuizmo::OPERATION)gizmoType, currentMode, &transform[0][0],

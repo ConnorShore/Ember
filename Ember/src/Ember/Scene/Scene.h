@@ -95,11 +95,18 @@ namespace Ember {
 
 		void RemoveEntity(Entity entity);
 
+		// Drains queued removals immediately, for callers that must delete and recreate entities
+		// within a single operation rather than waiting for the end of the frame.
+		void FlushPendingRemovals();
+
 		Entity InstantiateModel(const std::string& modelFile);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position);
 
 		Entity GetEntityAtPixel(uint32_t x, uint32_t y);
+
+		// World position of the geometry under a viewport pixel; false when nothing was drawn there.
+		bool GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition);
 
 		template<typename T, typename... Args>
 		inline T& AttachComponent(const Entity& entity, Args&&... args);

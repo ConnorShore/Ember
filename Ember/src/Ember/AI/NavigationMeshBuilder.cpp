@@ -81,13 +81,14 @@ namespace Ember {
 			unsigned char* Ptr = nullptr;
 		};
 
-		struct AABB
+		// Deliberately not Ember::AABB - the bake works in its own Min/Max convention.
+		struct NavAABB
 		{
 			Vector3f Min = Vector3f(0.0f);
 			Vector3f Max = Vector3f(0.0f);
 		};
 
-		static AABB BuildNavBoundsAABB(Entity navMeshEntity)
+		static NavAABB BuildNavBoundsAABB(Entity navMeshEntity)
 		{
 			auto& transform = navMeshEntity.GetComponent<TransformComponent>();
 			auto& navComp = navMeshEntity.GetComponent<NavigationMeshComponent>();
@@ -108,13 +109,13 @@ namespace Ember {
 				navComp.BoundsSize.z * worldScale.z
 			) * 0.5f;
 
-			AABB bounds;
+			NavAABB bounds;
 			bounds.Min = centerWorld - halfExtents;
 			bounds.Max = centerWorld + halfExtents;
 			return bounds;
 		}
 
-		static AABB BuildWorldAABBFromLocalBounds(const Matrix4f& worldTransform, const Vector3f& localMin, const Vector3f& localMax)
+		static NavAABB BuildWorldAABBFromLocalBounds(const Matrix4f& worldTransform, const Vector3f& localMin, const Vector3f& localMax)
 		{
 			Vector3f corners[8] = {
 				{ localMin.x, localMin.y, localMin.z },
@@ -127,7 +128,7 @@ namespace Ember {
 				{ localMax.x, localMax.y, localMax.z }
 			};
 
-			AABB worldAabb;
+			NavAABB worldAabb;
 			worldAabb.Min = Vector3f(std::numeric_limits<float>::max());
 			worldAabb.Max = Vector3f(std::numeric_limits<float>::lowest());
 
@@ -141,7 +142,7 @@ namespace Ember {
 			return worldAabb;
 		}
 
-		static bool AABBOverlaps(const AABB& a, const AABB& b)
+		static bool AABBOverlaps(const NavAABB& a, const NavAABB& b)
 		{
 			if (a.Max.x < b.Min.x || a.Min.x > b.Max.x) return false;
 			if (a.Max.y < b.Min.y || a.Min.y > b.Max.y) return false;
@@ -163,7 +164,7 @@ namespace Ember {
 		Entity NavMeshEntity;
 		const NavigationMeshBakeSettings& Settings;
 
-		AABB NavBounds;
+		NavAABB NavBounds;
 		std::vector<float> Vertices;
 		std::vector<int> Triangles;
 
@@ -255,7 +256,7 @@ namespace Ember {
 				continue;
 
 			const Matrix4f& world = transform.GetWorldTransform();
-			const AABB meshWorldAABB = BuildWorldAABBFromLocalBounds(world, mesh->GetMinBounds(), mesh->GetMaxBounds());
+			const NavAABB meshWorldAABB = BuildWorldAABBFromLocalBounds(world, mesh->GetMinBounds(), mesh->GetMaxBounds());
 			if (!AABBOverlaps(meshWorldAABB, state.NavBounds))
 				continue;
 

@@ -53,6 +53,10 @@ namespace Ember {
 		// Fills `outEntities` (cleared first) using whatever world transforms are current at call time.
 		static void GatherRenderableAABBs(Scene* scene, std::vector<std::pair<EntityID, AABB>>& outEntities);
 
+		// The world AABB a single entity would be culled with; false if it draws no geometry. Shared
+		// with the editor so framing a selection uses the same bounds the renderer does.
+		static bool TryGetRenderableAABB(Scene* scene, EntityID entity, AABB& outAABB);
+
 	private:
 		// Stamp `entity` as visible on the current frame.
 		void MarkVisible(EntityID entity);

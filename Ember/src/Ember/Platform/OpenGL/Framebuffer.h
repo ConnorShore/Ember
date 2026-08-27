@@ -22,6 +22,7 @@ namespace Ember {
 			virtual void AttachDepthTextureLayer(uint32_t textureId, uint32_t mipLevel, uint32_t layer) override;
 
 			virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) const override;
+			virtual Vector4f ReadPixelFloat4(uint32_t attachmentIndex, int x, int y) const override;
 			virtual const void* ReadPixels(uint32_t attachmentIndex, int x, int y, uint32_t width, uint32_t height) const override;
 
 			virtual void ClearAttachment(uint32_t attachmentIndex, int& clearValue) override;

@@ -63,7 +63,9 @@ namespace Ember {
 		const std::string& GetName() const;
 		const bool IsValid() const { return m_EntityHandle != Constants::Entities::InvalidEntityID; }
 
-		operator EntityID() { return m_EntityHandle; }
+		// Must stay const: a non-const conversion binds the implicit object argument better than
+		// `operator bool() const`, so a boolean context would silently select this one and invert.
+		operator EntityID() const { return m_EntityHandle; }
 		const bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_SceneHandle == other.m_SceneHandle; }
 		// Returns true if the entity has a valid handle and points to a valid scene
 		explicit operator bool() const { return m_EntityHandle != Constants::Entities::InvalidEntityID && m_SceneHandle != nullptr; }

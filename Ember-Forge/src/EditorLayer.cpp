@@ -34,6 +34,7 @@
 #include <Ember/ECS/System/PhysicsSystem.h>
 #include <Ember/ECS/System/AISystem.h>
 #include <Ember/ECS/System/AnimationSystem.h>
+#include <Ember/ECS/System/VisibilitySystem.h>
 #include <Ember/Physics/Raycast.h>
 #include <Ember/Animation/AnimationController.h>
 
@@ -59,6 +60,8 @@ namespace Ember {
 			.EditorCamera = &m_Camera,
 			.SelectedEntity = m_InvalidEntity
 		};
+		m_Context.Preferences = &m_Preferences;
+		m_Context.SpawnPosition = [this]() { return GetSpawnPosition(); };
 
 		m_EditorRenderPassSettings = {
 			.ActiveCamera = &m_Camera,
@@ -80,6 +83,9 @@ namespace Ember {
 
 	void EditorLayer::OnAttach()
 	{
+		// Missing or unreadable preferences just leave the struct on its defaults.
+		m_Preferences.Load();
+
 		// Setup theme
 		SetupImGuiTheme();
 
@@ -173,7 +179,7 @@ namespace Ember {
 
 	void EditorLayer::OnDetach()
 	{
-
+		m_Preferences.Save();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
@@ -771,35 +777,7 @@ namespace Ember {
 
 			if (ImGui::BeginMenu("Debug"))
 			{
-				auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
-				if (physicsSystem)
-				{
-					auto& debugSettings = physicsSystem->GetDebugRenderSettings();
-
-					ImGui::MenuItem("Show Physics Colliders", nullptr, &debugSettings.Enabled);
-					if (debugSettings.Enabled)
-					{
-						ImGui::Separator();
-
-						ImGui::MenuItem("Draw Shapes", nullptr, &debugSettings.DrawColliders);
-						ImGui::MenuItem("Draw Contact Points", nullptr, &debugSettings.DrawContactPoints);
-						ImGui::MenuItem("Draw AABBs", nullptr, &debugSettings.DrawColliderAxes);
-					}
-				}
-
-				auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
-				if (aiSystem)
-				{
-					auto& debugSettings = aiSystem->GetDebugRenderSettings();
-					ImGui::MenuItem("Draw AI Paths", nullptr, &debugSettings.Enabled);
-				}
-
-				bool drawSelectedNavMesh = ActiveNavMeshRenderer::GetEnabled();
-				if (ImGui::MenuItem("Draw Selected NavMesh", nullptr, &drawSelectedNavMesh))
-				{
-					ActiveNavMeshRenderer::SetEnabled(drawSelectedNavMesh);
-				}
-
+				DrawDebugDrawToggles();
 				ImGui::EndMenu();
 			}
 
@@ -1069,6 +1047,12 @@ namespace Ember {
 				if (isEditMode) m_GizmoType = ImGuizmo::OPERATION::UNIVERSAL;
 				break;
 
+			// Frame the selection; Ctrl+F is left free for a future search.
+			case KeyCode::F:
+				if (isEditMode && !control)
+					FocusSelection();
+				break;
+
 			// Scene Hot keys
 			case KeyCode::N:
 				if (shift && control)
@@ -1137,20 +1121,9 @@ namespace Ember {
 			if (isGizmoDrawn && (ImGuizmo::IsOver() || m_ViewportGizmos.IsHovered()))
 				return false;
 
-			auto [mx, my] = ImGui::GetMousePos();
-
-			// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
-			mx -= m_ViewportBounds[0].x;
-			my -= m_ViewportBounds[0].y;
-
-			Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-			my = viewportSize.y - my;
-
-			int mouseX = (int)mx;
-			int mouseY = (int)my;
-
-			// Ensure we are inside the image
-			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+			int mouseX = 0;
+			int mouseY = 0;
+			if (TryGetViewportPixel(mouseX, mouseY))
 			{
 				if (auto activeScene = m_Context.ActiveScene())
 				{
@@ -1161,6 +1134,49 @@ namespace Ember {
 		}
 
 		return false;
+	}
+
+	bool EditorLayer::TryGetViewportPixel(int& outX, int& outY) const
+	{
+		auto [mx, my] = ImGui::GetMousePos();
+
+		// Convert screen-space mouse coords to viewport-local with Y flipped for OpenGL
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+
+		Vector2f viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+		my = viewportSize.y - my;
+
+		outX = (int)mx;
+		outY = (int)my;
+
+		return outX >= 0 && outY >= 0 && outX < (int)viewportSize.x && outY < (int)viewportSize.y;
+	}
+
+	Vector3f EditorLayer::GetSpawnPosition()
+	{
+		Vector3f focalPoint = m_Camera.GetFocalPoint();
+		if (!m_Preferences.SpawnAtCursor)
+			return focalPoint;
+
+		auto activeScene = m_Context.ActiveScene();
+
+		int mouseX = 0;
+		int mouseY = 0;
+		if (activeScene && m_ViewportHovered && TryGetViewportPixel(mouseX, mouseY))
+		{
+			// The G-Buffer holds last frame's render, so this lands on whatever was drawn there.
+			Vector3f surfacePosition;
+			if (activeScene->GetWorldPositionAtPixel(mouseX, mouseY, surfacePosition))
+			{
+				return m_Preferences.SnapEnabled
+					? Math::Snap(surfacePosition, m_Preferences.TranslateSnap)
+					: surfacePosition;
+			}
+		}
+
+		// Nothing under the cursor, so drop it in front of the camera rather than at the origin.
+		return focalPoint;
 	}
 
 	void EditorLayer::SyncEntitySelectionState()
@@ -1249,6 +1265,195 @@ namespace Ember {
 		m_PreviousSelectedEntity = m_Context.SelectedEntity;
 	}
 
+	void EditorLayer::FocusSelection()
+	{
+		auto activeScene = m_Context.ActiveScene();
+		if (!activeScene || !m_Context.SelectedEntity.IsValid())
+			return;
+
+		AABB merged{ Vector3f(std::numeric_limits<float>::max()), Vector3f(std::numeric_limits<float>::lowest()) };
+		bool hasBounds = false;
+
+		// Walk the whole subtree so framing a model root frames the model, not its empty pivot.
+		std::vector<Entity> pending{ m_Context.SelectedEntity };
+		while (!pending.empty())
+		{
+			Entity entity = pending.back();
+			pending.pop_back();
+
+			for (Entity child : entity.GetAllChildren())
+				pending.push_back(child);
+
+			AABB entityAABB;
+			if (VisibilitySystem::TryGetRenderableAABB(activeScene.Ptr(), entity.GetEntityHandle(), entityAABB))
+			{
+				merged.WorldMin = Math::Min(merged.WorldMin, entityAABB.WorldMin);
+				merged.WorldMax = Math::Max(merged.WorldMax, entityAABB.WorldMax);
+				hasBounds = true;
+			}
+		}
+
+		if (hasBounds)
+		{
+			m_Camera.FocusOn(merged);
+			return;
+		}
+
+		// Lights, cameras and empty pivots draw nothing, so frame a small volume at their origin.
+		if (m_Context.SelectedEntity.ContainsComponent<TransformComponent>())
+		{
+			Vector3f position = Vector3f(m_Context.SelectedEntity.GetComponent<TransformComponent>().WorldTransform[3]);
+			m_Camera.FocusOn(position, 1.0f);
+		}
+	}
+
+	// A snap-increment dropdown offering the common values plus a free-entry field.
+	static bool DrawSnapPresetCombo(const char* id, const char* format, float& value,
+		const float* presets, int presetCount, float minValue, float maxValue)
+	{
+		bool changed = false;
+
+		char label[32];
+		snprintf(label, sizeof(label), format, value);
+
+		ImGui::SetNextItemWidth(80.0f);
+		if (ImGui::BeginCombo(id, label))
+		{
+			for (int i = 0; i < presetCount; ++i)
+			{
+				char presetLabel[32];
+				snprintf(presetLabel, sizeof(presetLabel), format, presets[i]);
+				if (ImGui::Selectable(presetLabel, value == presets[i]))
+				{
+					value = presets[i];
+					changed = true;
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::SetNextItemWidth(100.0f);
+			if (ImGui::DragFloat("##Custom", &value, 0.01f, minValue, maxValue, format))
+				changed = true;
+
+			ImGui::EndCombo();
+		}
+
+		return changed;
+	}
+
+	// Every editor toggle lives behind one dropdown so the toolbar stays readable as more are added.
+	void EditorLayer::DrawGizmoSettingsPopup()
+	{
+		static constexpr float translatePresets[] = { 0.05f, 0.1f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f };
+		static constexpr float rotatePresets[] = { 5.0f, 15.0f, 45.0f, 90.0f };
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2));
+
+		// The label carries the snap state so the common setting is readable without opening it.
+		char buttonLabel[64];
+		if (m_Preferences.SnapEnabled)
+			snprintf(buttonLabel, sizeof(buttonLabel), "Gizmos  %.4g / %.0f\xc2\xb0", m_Preferences.TranslateSnap, m_Preferences.RotateSnap);
+		else
+			snprintf(buttonLabel, sizeof(buttonLabel), "Gizmos  (no snap)");
+
+		if (ImGui::Button(buttonLabel))
+			ImGui::OpenPopup("GizmoSettingsPopup");
+
+		ImGui::PopStyleVar();
+
+		if (!ImGui::BeginPopup("GizmoSettingsPopup"))
+			return;
+
+		bool changed = false;
+
+		ImGui::SeparatorText("Snapping");
+
+		changed |= ImGui::Checkbox("Enable snapping", &m_Preferences.SnapEnabled);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Hold Ctrl while dragging a gizmo to invert this.");
+
+		ImGui::Text("Grid");
+		ImGui::SameLine(90.0f);
+		changed |= DrawSnapPresetCombo("##GridSnap", "%.4g", m_Preferences.TranslateSnap,
+			translatePresets, IM_ARRAYSIZE(translatePresets), 0.001f, 100.0f);
+
+		ImGui::Text("Angle");
+		ImGui::SameLine(90.0f);
+		changed |= DrawSnapPresetCombo("##AngleSnap", "%.0f\xc2\xb0", m_Preferences.RotateSnap,
+			rotatePresets, IM_ARRAYSIZE(rotatePresets), 1.0f, 180.0f);
+
+		ImGui::SeparatorText("Gizmo");
+
+		ImGui::Text("Space");
+		ImGui::SameLine(90.0f);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::BeginCombo("##GizmoSpace", m_Preferences.GizmoLocalSpace ? "Local" : "World"))
+		{
+			if (ImGui::Selectable("World", !m_Preferences.GizmoLocalSpace))
+			{
+				m_Preferences.GizmoLocalSpace = false;
+				changed = true;
+			}
+			if (ImGui::Selectable("Local", m_Preferences.GizmoLocalSpace))
+			{
+				m_Preferences.GizmoLocalSpace = true;
+				changed = true;
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::SeparatorText("Placement");
+
+		changed |= ImGui::Checkbox("Spawn new entities at cursor", &m_Preferences.SpawnAtCursor);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Off places them at the camera focal point instead.");
+
+		ImGui::SeparatorText("Display");
+
+		ImGui::Checkbox("Draw all HUD icons", &m_DrawAllHUD);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Off draws icons only for the selected entity.");
+
+		DrawDebugDrawToggles();
+
+		ImGui::EndPopup();
+
+		// Preferences are small and change rarely, so write them out immediately rather than
+		// relying on a clean shutdown.
+		if (changed)
+			m_Preferences.Save();
+	}
+
+	// Shared by the Gizmos dropdown and the Editor > Debug menu; both drive the same system state.
+	void EditorLayer::DrawDebugDrawToggles()
+	{
+		ImGui::SeparatorText("Debug Draw");
+
+		auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+		if (physicsSystem)
+		{
+			auto& debugSettings = physicsSystem->GetDebugRenderSettings();
+			ImGui::Checkbox("Physics Colliders", &debugSettings.Enabled);
+
+			if (debugSettings.Enabled)
+			{
+				ImGui::Indent();
+				ImGui::Checkbox("Shapes", &debugSettings.DrawColliders);
+				ImGui::Checkbox("Contact Points", &debugSettings.DrawContactPoints);
+				ImGui::Checkbox("AABBs", &debugSettings.DrawColliderAxes);
+				ImGui::Unindent();
+			}
+		}
+
+		auto aiSystem = Application::Instance().GetSystemManager().GetSystem<AISystem>();
+		if (aiSystem)
+			ImGui::Checkbox("AI Paths", &aiSystem->GetDebugRenderSettings().Enabled);
+
+		bool drawSelectedNavMesh = ActiveNavMeshRenderer::GetEnabled();
+		if (ImGui::Checkbox("Selected NavMesh", &drawSelectedNavMesh))
+			ActiveNavMeshRenderer::SetEnabled(drawSelectedNavMesh);
+	}
+
 	void EditorLayer::DrawToolbar()
 	{
 		// Prevent the user from resizing the dock node itself
@@ -1294,29 +1499,7 @@ namespace Ember {
 
 		ImGui::SameLine();
 
-		// HUD visibility dropdown
-		ImGui::Text("HUD");
-		ImGui::SameLine();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 2));
-		ImGui::SetNextItemWidth(100.0f);
-
-		const char* hudLabel = m_DrawAllHUD ? "All" : "Selected";
-		if (ImGui::BeginCombo("##HUDVisibility", hudLabel))
-		{
-			if (ImGui::Selectable("Draw All HUD", m_DrawAllHUD))
-				m_DrawAllHUD = true;
-			if (m_DrawAllHUD)
-				ImGui::SetItemDefaultFocus();
-
-			if (ImGui::Selectable("Selected Only", !m_DrawAllHUD))
-				m_DrawAllHUD = false;
-			if (!m_DrawAllHUD)
-				ImGui::SetItemDefaultFocus();
-
-			ImGui::EndCombo();
-		}
-		ImGui::PopStyleVar();
+		DrawGizmoSettingsPopup();
 
 		ImGui::SameLine();
 
@@ -1532,6 +1715,16 @@ namespace Ember {
 		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
 		if (m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID && modelEntity != m_Context.PrefabRootEntity)
 			m_Context.ActiveScene()->SetEntityParent(modelEntity.GetUUID(), m_Context.PrefabRootEntity);
+
+		// InstantiateModel takes no position, so place the root afterwards.
+		if (!m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID
+			&& modelEntity.ContainsComponent<TransformComponent>())
+		{
+			auto& transform = modelEntity.GetComponent<TransformComponent>();
+			transform.Position = GetSpawnPosition();
+			transform.InvalidateWorld();
+		}
+
 		m_Context.SelectedEntity = modelEntity;
 	}
 
@@ -1540,13 +1733,11 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto prefabAsset = assetManager.Load<Prefab>(prefabFilePath);
 
-		// Instantiate prefab at origin
-		// TODO: Maybe we should spawn it at the mouse position in the viewport instead of always at the origin
-		// using raycasting
-		Vector3f origin = Vector3f(0.0f);
+		// A prefab edit tab has no level geometry to place against, so those keep landing on the root.
+		Vector3f spawnPosition = m_Context.IsEditingPrefab ? Vector3f(0.0f) : GetSpawnPosition();
 		Entity prefEntity = m_Context.IsEditingPrefab
-			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &origin)
-			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &origin);
+			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &spawnPosition)
+			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &spawnPosition);
 		m_Context.SelectedEntity = prefEntity;
 	}
 

@@ -30,6 +30,7 @@ namespace Ember {
 		bool IsDescendant(Entity descendant, Entity ancestor);
 
 		void CreateEntity(Entity entity);
+		void PlaceNewEntityAtSpawnPoint(Entity entity);
 		void CreateEmptyEntity();
 		void CreateChildEntity(Entity parentEntity);
 		void DuplicateEntity(Entity entity);

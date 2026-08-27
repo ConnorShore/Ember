@@ -935,7 +935,17 @@ namespace Ember {
 
 	void Scene::RemoveEntityFromScene(Entity entity)
 	{
-		EB_CORE_ASSERT(m_EntityUUIDMap.find(entity.GetUUID()) != m_EntityUUIDMap.end(), "Scene does not contain entity!");
+		// Removing a parent recurses into its children, so a child queued for removal alongside its
+		// own parent arrives here a second time with its slot already released.
+		EntityID handle = entity.GetEntityHandle();
+		if (handle == Constants::Entities::InvalidEntityID || handle >= Constants::Entities::MaxEntities)
+			return;
+
+		if (!m_Registry->ContainsComponent<IDComponent>(handle))
+			return;
+
+		if (m_EntityUUIDMap.find(entity.GetUUID()) == m_EntityUUIDMap.end())
+			return;
 
 		// Copy child UUIDs first to avoid iterating a component that gets modified during recursion
 		std::vector<UUID> childUUIDs = entity.GetComponent<RelationshipComponent>().Children;
@@ -996,12 +1006,24 @@ namespace Ember {
 		m_PendingRemovals.clear();
 	}
 
+	void Scene::FlushPendingRemovals()
+	{
+		RemovePendingRemovals();
+	}
+
 	Entity Scene::GetEntityAtPixel(uint32_t x, uint32_t y)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();
 		auto renderSystem = systemManager.GetSystem<RenderSystem>();
 		EntityID id = renderSystem->GetEntityIDAtPixel(x, y);
 		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
+	}
+
+	bool Scene::GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition)
+	{
+		auto& systemManager = Application::Instance().GetSystemManager();
+		auto renderSystem = systemManager.GetSystem<RenderSystem>();
+		return renderSystem && renderSystem->GetWorldPositionAtPixel(x, y, outPosition);
 	}
 
 	Entity Scene::InstantiateModel(const std::string& modelFile)

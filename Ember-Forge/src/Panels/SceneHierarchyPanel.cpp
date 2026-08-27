@@ -127,14 +127,10 @@ namespace Ember {
 				if (ImGui::MenuItem("1st Person Character"))
 				{
 					entity = Presets::CreateFirstPersonCharacterController(m_Context->ActiveScene());
-					if (entity == Constants::Entities::InvalidEntityID)
-						return;
 				}
 				if (ImGui::MenuItem("AI Character"))
 				{
 					entity = Presets::CreateAICharacterController(m_Context->ActiveScene());
-					if (entity == Constants::Entities::InvalidEntityID)
-						return;
 				}
 				ImGui::EndMenu();
 			}
@@ -618,8 +614,29 @@ namespace Ember {
 		return false;
 	}
 
+	void SceneHierarchyPanel::PlaceNewEntityAtSpawnPoint(Entity entity)
+	{
+		if (!m_Context->SpawnPosition || entity == Constants::Entities::InvalidEntityID)
+			return;
+
+		// UI entities are laid out by their RectTransform, so a world position means nothing to them.
+		if (!entity.ContainsComponent<TransformComponent>() || entity.ContainsComponent<RectTransformComponent>())
+			return;
+
+		// A parented entity's Position is relative to that parent, so only place roots.
+		if (entity.ContainsComponent<RelationshipComponent>()
+			&& entity.GetComponent<RelationshipComponent>().ParentHandle != Constants::InvalidUUID)
+			return;
+
+		auto& transform = entity.GetComponent<TransformComponent>();
+		transform.Position = m_Context->SpawnPosition();
+		transform.InvalidateWorld();
+	}
+
 	void SceneHierarchyPanel::CreateEntity(Entity entity)
 	{
+		PlaceNewEntityAtSpawnPoint(entity);
+
 		SetSelectedEntity(entity);
 		RenameEntity(entity);
 

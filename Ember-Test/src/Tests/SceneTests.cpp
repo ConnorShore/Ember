@@ -559,6 +559,47 @@ EB_TEST_CASE(Scene, RemovingAParentRemovesItsSubtree, Integration)
 	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
 }
 
+EB_TEST_CASE(Scene, RemovingAParentAndItsOwnChildTogetherIsSafe, Integration)
+{
+	// A multi-selection delete can queue a parent and its own child; the parent removal already
+	// recursed into that child, so the second pass used to assert on a UUID it had just erased.
+	SceneFixture scene("MultiRemovalScene");
+	Entity root = scene->AddEntity("Root");
+	Entity child = root.AddChild("Child");
+	Entity bystander = scene->AddEntity("Bystander");
+
+	const UUID rootUUID = root.GetUUID();
+	const UUID childUUID = child.GetUUID();
+
+	scene->RemoveEntity(root);
+	scene->RemoveEntity(child);
+	scene.TickEdit();
+
+	EB_EXPECT_FALSE((scene->GetEntity(rootUUID)).IsValid());
+	EB_EXPECT_FALSE((scene->GetEntity(childUUID)).IsValid());
+	EB_EXPECT((scene->GetEntity(bystander.GetUUID())).IsValid());
+	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
+}
+
+EB_TEST_CASE(Scene, FlushPendingRemovalsAppliesWithoutTickingTheFrame, Integration)
+{
+	// Undo restores by deleting and recreating within one call, so it cannot wait for the
+	// end-of-frame drain.
+	SceneFixture scene("FlushRemovalScene");
+	Entity keep = scene->AddEntity("Keep");
+	Entity doomed = scene->AddEntity("Doomed");
+	const UUID doomedUUID = doomed.GetUUID();
+
+	scene->RemoveEntity(doomed);
+	EB_EXPECT((scene->GetEntity(doomedUUID)).IsValid());
+
+	scene->FlushPendingRemovals();
+
+	EB_EXPECT_FALSE((scene->GetEntity(doomedUUID)).IsValid());
+	EB_EXPECT((scene->GetEntity(keep.GetUUID())).IsValid());
+	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
+}
+
 EB_TEST_CASE(Scene, RemovingAChildUnlinksItFromItsParent, Integration)
 {
 	SceneFixture scene("ChildRemovalScene");

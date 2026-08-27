@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EditorPreferences.h"
 #include "Viewers/EditorViewportViewer.h"
 
 #include <Ember/Core/Application.h>
@@ -9,6 +10,7 @@
 #include <Ember/Event/Event.h>
 #include <Ember/ECS/Types.h>
 
+#include <functional>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -20,6 +22,10 @@ namespace Ember {
 	struct EditorContext
 	{
 		EditorCamera* EditorCamera;
+
+		// Owned by EditorLayer; handed out here so panels and the gizmo controller can read snap and
+		// placement settings without reaching back into the layer.
+		EditorPreferences* Preferences = nullptr;
 
 		Entity SelectedEntity;
 
@@ -41,6 +47,9 @@ namespace Ember {
 		// actually removed after the frame to avoid invalidating iterators.
 		std::unordered_set<Entity> PendingEntityRemovals;
 		std::unordered_map<Entity, std::vector<ComponentType>> PendingComponentRemovals;
+
+		// Supplied by EditorLayer, which owns the viewport and camera needed to resolve it.
+		std::function<Vector3f()> SpawnPosition;
 
 		void EventCallback(Event& e)
 		{

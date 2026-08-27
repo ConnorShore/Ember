@@ -43,6 +43,9 @@ namespace Ember {
 
 		EntityID GetEntityIDAtPixel(uint32_t x, uint32_t y);
 
+		// World position of the opaque geometry under a pixel; false when nothing was drawn there.
+		bool GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition);
+
 		inline SharedPtr<Skybox> GetSkybox() const { return m_Skybox; }
 
 		inline SharedPtr<PostProcessPass> GetPostProcessPass(const std::string& name) const
