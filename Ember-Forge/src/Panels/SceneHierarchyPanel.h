@@ -34,6 +34,11 @@ namespace Ember {
 		void CreateEmptyEntity();
 		void CreateChildEntity(Entity parentEntity);
 		void DuplicateEntity(Entity entity);
+		void DuplicateSelection();
+		void RemoveSelection();
+		void SelectAllEntities();
+		void SelectRangeTo(Entity entity);
+		std::vector<Entity> SelectionRoots() const;
 		void CreatePrefab(Entity entity);
 		void RenameEntity(Entity entity);
 
@@ -43,6 +48,10 @@ namespace Ember {
 	private:
 		Entity m_PreviouslySelectedEntity;
 		bool m_ExpandToSelectedEntity = true;
+
+		// Flattened draw order from last frame, and where a Shift+click range starts from.
+		std::vector<Entity> m_VisibleOrder;
+		Entity m_SelectionAnchor;
 
 		Entity m_RenamingEntity;
 		char m_RenameBuffer[256] = "";

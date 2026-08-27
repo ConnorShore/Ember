@@ -3,6 +3,7 @@
 #include <Ember/Scene/Entity.h>
 
 #include <string>
+#include <vector>
 
 namespace Ember {
 
@@ -36,6 +37,8 @@ namespace Ember {
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) {}
 		virtual void OnImGuiRender(EditorLayer* editor) = 0;
 
+		// Per-tab selection, restored when the tab is activated again.
+		std::vector<Entity> Selection;
 		Entity SelectedEntity;
 		Entity PreviousSelectedEntity;
 

@@ -76,6 +76,7 @@ namespace Ember {
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
+		void SyncSelectionOutlines();
 
 		void DrawToolbar();
 
@@ -219,6 +220,10 @@ namespace Ember {
 		bool m_DrawAllHUD = false;
 
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
+
+		// Which entities currently carry an OutlineComponent, and the selection that produced them.
+		std::unordered_set<Entity> m_PreviouslyOutlined;
+		std::vector<Entity> m_LastOutlinedSelection;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;

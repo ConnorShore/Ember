@@ -559,6 +559,40 @@ EB_TEST_CASE(Scene, RemovingAParentRemovesItsSubtree, Integration)
 	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
 }
 
+EB_TEST_CASE(Scene, FilterToHierarchyRootsDropsSelectedDescendants, Integration)
+{
+	// A multi-selection gizmo drag must not transform a child whose parent is also selected, or the
+	// delta lands on it twice. The same filter keeps multi-delete and multi-duplicate honest.
+	SceneFixture scene("HierarchyRootsScene");
+	Entity root = scene->AddEntity("Root");
+	Entity child = root.AddChild("Child");
+	Entity grandchild = child.AddChild("Grandchild");
+	Entity loner = scene->AddEntity("Loner");
+
+	// Root plus its own descendants collapses to just the root.
+	std::vector<Entity> roots = scene->FilterToHierarchyRoots({ root, child, grandchild });
+	EB_CHECK_EQ(roots.size(), (size_t)1);
+	EB_EXPECT_EQ(roots[0].GetUUID(), root.GetUUID());
+
+	// An unrelated entity survives alongside it.
+	roots = scene->FilterToHierarchyRoots({ root, grandchild, loner });
+	EB_CHECK_EQ(roots.size(), (size_t)2);
+	EB_EXPECT_EQ(roots[0].GetUUID(), root.GetUUID());
+	EB_EXPECT_EQ(roots[1].GetUUID(), loner.GetUUID());
+
+	// A grandchild whose parent is absent but whose grandparent is present is still dropped, so the
+	// walk must climb the whole chain rather than checking the immediate parent.
+	roots = scene->FilterToHierarchyRoots({ root, grandchild });
+	EB_CHECK_EQ(roots.size(), (size_t)1);
+	EB_EXPECT_EQ(roots[0].GetUUID(), root.GetUUID());
+
+	// Selecting only the deeper entities keeps both, since neither is an ancestor of the other.
+	roots = scene->FilterToHierarchyRoots({ child, loner });
+	EB_EXPECT_EQ(roots.size(), (size_t)2);
+
+	EB_EXPECT(scene->FilterToHierarchyRoots({}).empty());
+}
+
 EB_TEST_CASE(Scene, RemovingAParentAndItsOwnChildTogetherIsSafe, Integration)
 {
 	// A multi-selection delete can queue a parent and its own child; the parent removal already

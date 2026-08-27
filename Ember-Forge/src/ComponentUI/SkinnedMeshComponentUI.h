@@ -142,7 +142,7 @@ namespace Ember {
 			if (ImGui::Button("->"))
 			{
 				if (animatorEntity != Constants::Entities::InvalidEntityID)
-					m_Context->SelectedEntity = animatorEntity;
+					m_Context->SetSelection(animatorEntity);
 			}
 		}
 	};

@@ -90,12 +90,32 @@ namespace Ember {
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
-		m_Context->SelectedEntity = entity;
+		m_Context->SetSelection(entity);
 		m_PreviouslySelectedEntity = entity;
+		m_SelectionAnchor = entity;
 
 		// Expand hierarchy to selected entity
 		if (entity != Constants::Entities::InvalidEntityID)
 			m_ExpandToSelectedEntity = true;
+	}
+
+	// Selects everything drawn between the anchor and `entity`, so Shift+click grabs a contiguous run.
+	void SceneHierarchyPanel::SelectRangeTo(Entity entity)
+	{
+		auto anchorIt = std::find(m_VisibleOrder.begin(), m_VisibleOrder.end(), m_SelectionAnchor);
+		auto targetIt = std::find(m_VisibleOrder.begin(), m_VisibleOrder.end(), entity);
+
+		if (anchorIt == m_VisibleOrder.end() || targetIt == m_VisibleOrder.end())
+		{
+			m_Context->SetSelection(entity);
+			m_SelectionAnchor = entity;
+			return;
+		}
+
+		if (anchorIt > targetIt)
+			std::swap(anchorIt, targetIt);
+
+		m_Context->SetSelection(std::vector<Entity>(anchorIt, targetIt + 1));
 	}
 
 	void SceneHierarchyPanel::RenderContextMenu()
@@ -263,7 +283,10 @@ namespace Ember {
 			m_ExpandToSelectedEntity = true;
 		}
 
-		for (auto& entity : entities) 
+		// Rebuilt as the tree draws so Shift+click can select a run of what is actually on screen.
+		m_VisibleOrder.clear();
+
+		for (auto& entity : entities)
 		{
 			auto& relationshipComp = entity.GetComponent<RelationshipComponent>();
 			// Only draw root-level entities here; children are drawn recursively from DrawTreeNode
@@ -284,7 +307,9 @@ namespace Ember {
 
 	void SceneHierarchyPanel::DrawTreeNode(Entity entity)
 	{
-		ImGuiTreeNodeFlags flags = ((GetSelectedEntity() == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		m_VisibleOrder.push_back(entity);
+
+		ImGuiTreeNodeFlags flags = (m_Context->IsSelected(entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 		flags |= ImGuiTreeNodeFlags_FramePadding;
 
@@ -336,8 +361,9 @@ namespace Ember {
 		HandlePrefabDragDrop(entity);
 
 		// Select if click
-		// Right-click selects immediately so the context menu opens on the correct entity
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+		// Right-click selects immediately so the context menu opens on the correct entity, but it
+		// keeps an existing multi-selection so the menu can act on all of it.
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Right) && !m_Context->IsSelected(entity))
 		{
 			SetSelectedEntity(entity);
 		}
@@ -345,11 +371,25 @@ namespace Ember {
 		// Left-click selects ONLY on mouse release, AND only if the mouse wasn't dragged.
 		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 		{
-			// If the user dragged the mouse (to the inspector or to another entity), 
+			// If the user dragged the mouse (to the inspector or to another entity),
 			// this threshold check prevents the selection from changing!
 			if (!ImGui::IsMouseDragPastThreshold(ImGuiMouseButton_Left))
 			{
-				SetSelectedEntity(entity);
+				if (ImGui::GetIO().KeyShift && m_SelectionAnchor.IsValid())
+				{
+					SelectRangeTo(entity);
+					m_ExpandToSelectedEntity = true;
+				}
+				else if (ImGui::GetIO().KeyCtrl)
+				{
+					m_Context->ToggleSelection(entity);
+					m_PreviouslySelectedEntity = m_Context->SelectedEntity;
+					m_SelectionAnchor = entity;
+				}
+				else
+				{
+					SetSelectedEntity(entity);
+				}
 			}
 		}
 
@@ -690,6 +730,73 @@ namespace Ember {
 		SetSelectedEntity(newEntity);
 	}
 
+	// Duplicates the whole selection and leaves the copies selected, so a run of kit pieces can be
+	// stamped out repeatedly.
+	void SceneHierarchyPanel::DuplicateSelection()
+	{
+		std::vector<Entity> sources = SelectionRoots();
+		if (sources.empty())
+			return;
+
+		std::vector<Entity> copies;
+		copies.reserve(sources.size());
+
+		for (Entity source : sources)
+		{
+			if (m_Context->IsEditingPrefab && source == m_Context->PrefabRootEntity)
+				continue;
+
+			Entity copy = m_Context->ActiveScene()->DuplicateEntity(source);
+			if (copy == Constants::Entities::InvalidEntityID)
+				continue;
+
+			if (m_Context->IsEditingPrefab && copy.GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID)
+				m_Context->ActiveScene()->SetEntityParent(copy.GetUUID(), m_Context->PrefabRootEntity);
+
+			copies.push_back(copy);
+		}
+
+		if (copies.empty())
+			return;
+
+		m_Context->SetSelection(copies);
+		m_PreviouslySelectedEntity = m_Context->SelectedEntity;
+		m_SelectionAnchor = m_Context->SelectedEntity;
+		m_ExpandToSelectedEntity = true;
+	}
+
+	void SceneHierarchyPanel::RemoveSelection()
+	{
+		for (Entity selected : SelectionRoots())
+		{
+			if (m_Context->IsEditingPrefab && selected == m_Context->PrefabRootEntity)
+				continue;
+
+			m_Context->PendingEntityRemovals.insert(selected);
+		}
+	}
+
+	void SceneHierarchyPanel::SelectAllEntities()
+	{
+		if (!m_Context->ActiveScene())
+			return;
+
+		// Only what the tree is actually showing, so a collapsed subtree is not silently included.
+		m_Context->SetSelection(m_VisibleOrder);
+		m_PreviouslySelectedEntity = m_Context->SelectedEntity;
+		m_SelectionAnchor = m_Context->SelectedEntity;
+	}
+
+	// Selected entities whose ancestors are not themselves selected; duplicating or deleting a parent
+	// already covers its subtree.
+	std::vector<Entity> SceneHierarchyPanel::SelectionRoots() const
+	{
+		if (!m_Context->ActiveScene())
+			return {};
+
+		return m_Context->ActiveScene()->FilterToHierarchyRoots(m_Context->SelectedEntities);
+	}
+
 	void SceneHierarchyPanel::CreatePrefab(Entity entity)
 	{
 		std::string filePath = (ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Prefab) / (entity.GetName() + ".ebprefab")).string();
@@ -724,16 +831,19 @@ namespace Ember {
 		KeyCode key = e.GetKeyCode();
 		switch (key)
 		{
+		case KeyCode::A:
+			if (control)
+				SelectAllEntities();
+			break;
 		case KeyCode::D:
-			if (control) DuplicateEntity(m_Context->SelectedEntity);
+			if (control)
+				DuplicateSelection();
 			break;
 		case KeyCode::F2:
 			RenameEntity(m_Context->SelectedEntity);
 			break;
 		case KeyCode::Delete:
-			if (m_Context->SelectedEntity != Constants::Entities::InvalidEntityID
-				&& (!m_Context->IsEditingPrefab || m_Context->SelectedEntity != m_Context->PrefabRootEntity))
-				m_Context->PendingEntityRemovals.insert(m_Context->SelectedEntity);
+			RemoveSelection();
 			break;
 		}
 

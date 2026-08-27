@@ -78,6 +78,10 @@ namespace Ember {
 		inline std::vector<SharedPtr<T>> GetAssetsOfType();
 
 		std::vector<Entity> GetAllEntities() const;
+
+		// Keeps only the entities whose ancestors are not also in the list. Deleting, duplicating or
+		// transforming a parent already covers its subtree, so acting on both would double up.
+		std::vector<Entity> FilterToHierarchyRoots(const std::vector<Entity>& entities);
 		void Clear();
 
 		template<typename Driver, typename... Filters>

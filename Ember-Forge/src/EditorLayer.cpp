@@ -221,14 +221,20 @@ namespace Ember {
 
 		if (auto activeScene = m_Context.ActiveScene())
 		{
-			Entity selectedEntity = ResolveEntityInScene(activeScene, m_Context.SelectedEntity);
-			if (selectedEntity != Constants::Entities::InvalidEntityID)
-				m_Context.SelectedEntity = selectedEntity;
-			else if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
+			// Re-resolve every selected entity, dropping any that no longer exists in this scene.
+			std::vector<Entity> resolvedSelection;
+			resolvedSelection.reserve(m_Context.SelectedEntities.size());
+			for (Entity selected : m_Context.SelectedEntities)
 			{
-				m_Context.SelectedEntity = Entity();
-				m_PreviousSelectedEntity = Entity();
+				Entity resolved = ResolveEntityInScene(activeScene, selected);
+				if (resolved != Constants::Entities::InvalidEntityID)
+					resolvedSelection.push_back(resolved);
 			}
+
+			if (resolvedSelection.size() != m_Context.SelectedEntities.size())
+				m_PreviousSelectedEntity = Entity();
+
+			m_Context.SetSelection(resolvedSelection);
 
 			Entity previousEntity = ResolveEntityInScene(activeScene, m_PreviousSelectedEntity);
 			if (previousEntity != Constants::Entities::InvalidEntityID)
@@ -303,7 +309,7 @@ namespace Ember {
 
 			if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID && ResolveEntityInScene(activeScene, m_Context.SelectedEntity) == Constants::Entities::InvalidEntityID)
 			{
-				m_Context.SelectedEntity = Entity();
+				m_Context.ClearSelection();
 				m_PreviousSelectedEntity = Entity();
 			}
 
@@ -555,7 +561,7 @@ namespace Ember {
 			}
 
 			RemovePendingComponents();
-			m_Context.SelectedEntity = Entity();
+			m_Context.ClearSelection();
 			m_PreviousSelectedEntity = Entity();
 
 			// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
@@ -568,7 +574,7 @@ namespace Ember {
 			{
 				Entity runtimeEntity = runtimeScene->GetEntity(selectedUUID);
 				if (runtimeEntity != Constants::Entities::InvalidEntityID)
-					m_Context.SelectedEntity = runtimeEntity;
+					m_Context.SetSelection(runtimeEntity);
 			}
 			m_PreviousSelectedEntity = m_Context.SelectedEntity;
 
@@ -605,7 +611,7 @@ namespace Ember {
 		UUID selectedUUID = Constants::InvalidUUID;
 		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
 			selectedUUID = m_Context.SelectedEntity.GetUUID();
-		m_Context.SelectedEntity = Entity();
+		m_Context.ClearSelection();
 		m_PreviousSelectedEntity = Entity();
 
 		// Restore the editor scene as the active scene
@@ -627,7 +633,7 @@ namespace Ember {
 		{
 			Entity editorEntity = m_EditorScene->GetEntity(selectedUUID);
 			if (editorEntity != Constants::Entities::InvalidEntityID)
-				m_Context.SelectedEntity = editorEntity;
+				m_Context.SetSelection(editorEntity);
 		}
 
 		Input::SetCursorMode(CursorMode::Normal);
@@ -1090,8 +1096,8 @@ namespace Ember {
 
 			// Entity Hot keys
 			case KeyCode::Delete:
-				if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-					RemoveEntity(m_Context.SelectedEntity);
+				for (Entity selected : m_Context.SelectedEntities)
+					RemoveEntity(selected);
 				break;
 
 			case KeyCode::Enter:
@@ -1128,7 +1134,13 @@ namespace Ember {
 				if (auto activeScene = m_Context.ActiveScene())
 				{
 					Entity selected = activeScene->GetEntityAtPixel(mouseX, mouseY);
-					m_Context.SelectedEntity = selected;
+
+					// Ctrl+click adds to or removes from the selection; a plain click replaces it.
+					bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+					if (ctrlHeld && selected.IsValid())
+						m_Context.ToggleSelection(selected);
+					else if (!ctrlHeld)
+						m_Context.SetSelection(selected);
 				}
 			}
 		}
@@ -1179,6 +1191,42 @@ namespace Ember {
 		return focalPoint;
 	}
 
+	// Applies OutlineComponent as a set difference so any number of entities can be outlined at once;
+	// the render pass already gathers every entity carrying one.
+	void EditorLayer::SyncSelectionOutlines()
+	{
+		std::unordered_set<Entity> desiredOutlines;
+		for (Entity selected : m_Context.SelectedEntities)
+		{
+			if (selected == Constants::Entities::InvalidEntityID)
+				continue;
+
+			desiredOutlines.insert(selected);
+			if (selected.IsRootParent())
+			{
+				for (auto& child : selected.GetAllChildren())
+				{
+					if (child != Constants::Entities::InvalidEntityID)
+						desiredOutlines.insert(child);
+				}
+			}
+		}
+
+		for (Entity previouslyOutlined : m_PreviouslyOutlined)
+		{
+			if (!desiredOutlines.contains(previouslyOutlined) && previouslyOutlined.ContainsComponent<OutlineComponent>())
+				RemoveComponentFromEntity<OutlineComponent>(previouslyOutlined);
+		}
+
+		for (Entity outlined : desiredOutlines)
+		{
+			if (!m_PreviouslyOutlined.contains(outlined))
+				OutlineEntity(outlined);
+		}
+
+		m_PreviouslyOutlined = std::move(desiredOutlines);
+	}
+
 	void EditorLayer::SyncEntitySelectionState()
 	{
 		if (m_Context.CurrentSceneState != SceneState::Edit)
@@ -1187,38 +1235,18 @@ namespace Ember {
 			return;
 		}
 
+		// Outlining tracks the whole selection, so it has to react to changes that leave the active
+		// entity untouched - Ctrl+clicking a non-last entity out of the set, for example.
+		if (m_Context.SelectedEntities != m_LastOutlinedSelection)
+		{
+			SyncSelectionOutlines();
+			m_LastOutlinedSelection = m_Context.SelectedEntities;
+		}
+
+		// Everything below is keyed to the active entity, and the animation pose reset in particular
+		// must not re-run every frame or it would fight the scrubber.
 		if (m_Context.SelectedEntity == m_PreviousSelectedEntity)
 			return;
-
-		// Clean up the old selection safely
-		if (m_PreviousSelectedEntity != Constants::Entities::InvalidEntityID && m_PreviousSelectedEntity.ContainsComponent<OutlineComponent>())
-		{
-			RemoveComponentFromEntity<OutlineComponent>(m_PreviousSelectedEntity);
-			if (m_PreviousSelectedEntity.IsRootParent())
-			{
-				for (auto& child : m_PreviousSelectedEntity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID && child.ContainsComponent<OutlineComponent>())
-						RemoveComponentFromEntity<OutlineComponent>(child);
-				}
-			}
-		}
-
-		// Add outlines to the new selection safely
-		if (m_Context.SelectedEntity != Constants::Entities::InvalidEntityID)
-		{
-			OutlineEntity(m_Context.SelectedEntity);
-			if (m_Context.SelectedEntity.IsRootParent())
-			{
-				for (auto& child : m_Context.SelectedEntity.GetAllChildren())
-				{
-					if (child != Constants::Entities::InvalidEntityID)
-					{
-						OutlineEntity(child);
-					}
-				}
-			}
-		}
 
 		// TODO: Move these system debug draw code blocks to own methods
 
@@ -1650,7 +1678,7 @@ namespace Ember {
 
 	void EditorLayer::ClearEntitySelectionState()
 	{
-		m_Context.SelectedEntity = Entity();
+		m_Context.ClearSelection();
 		m_PreviousSelectedEntity = Entity();
 		m_Context.PendingEntityRemovals.clear();
 		m_Context.PendingComponentRemovals.clear();
@@ -1660,7 +1688,7 @@ namespace Ember {
 	void EditorLayer::CreateEntity()
 	{
 		auto entity = m_Context.ActiveScene()->AddEntity("Empty_Entity");
-		m_Context.SelectedEntity = entity;
+		m_Context.SetSelection(entity);
 	}
 
 	void EditorLayer::RemoveEntity(Entity entity)
@@ -1680,8 +1708,10 @@ namespace Ember {
 			m_Context.EventCallback(evt);
 		}
 
-		if (m_Context.PendingEntityRemovals.contains(m_Context.SelectedEntity))
-			m_Context.SelectedEntity = Entity();
+		// Any entity going away must leave the selection; descendants that die with a removed parent
+		// are dropped by the per-frame re-resolve.
+		for (Entity pendingRemoval : m_Context.PendingEntityRemovals)
+			m_Context.RemoveFromSelection(pendingRemoval);
 
 		for (auto entity : m_Context.PendingEntityRemovals) {
 			std::string entityName = entity.GetName();
@@ -1725,7 +1755,7 @@ namespace Ember {
 			transform.InvalidateWorld();
 		}
 
-		m_Context.SelectedEntity = modelEntity;
+		m_Context.SetSelection(modelEntity);
 	}
 
 	void EditorLayer::CreateEntityFromPrefab(const std::string& prefabFilePath)
@@ -1738,7 +1768,7 @@ namespace Ember {
 		Entity prefEntity = m_Context.IsEditingPrefab
 			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &spawnPosition)
 			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &spawnPosition);
-		m_Context.SelectedEntity = prefEntity;
+		m_Context.SetSelection(prefEntity);
 	}
 
 	void EditorLayer::OutlineEntity(Entity entity)
@@ -2160,7 +2190,7 @@ namespace Ember {
 		{
 			RemovePendingComponents();
 			RemovePendingEntities();
-			m_ViewportTabs.StoreViewerState(previousViewerIndex, m_Context.SelectedEntity, m_PreviousSelectedEntity);
+			m_ViewportTabs.StoreViewerState(previousViewerIndex, m_Context.SelectedEntities, m_PreviousSelectedEntity);
 		}
 
 		if (m_Context.CurrentSceneState != SceneState::Edit)
@@ -2194,9 +2224,15 @@ namespace Ember {
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f)
 			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 
-		m_Context.SelectedEntity = ResolveEntityInScene(scene, activeViewer.SelectedEntity);
-		if (m_Context.SelectedEntity == Constants::Entities::InvalidEntityID)
-			m_Context.SelectedEntity = Entity();
+		std::vector<Entity> restoredSelection;
+		restoredSelection.reserve(activeViewer.Selection.size());
+		for (Entity stored : activeViewer.Selection)
+		{
+			Entity resolved = ResolveEntityInScene(scene, stored);
+			if (resolved != Constants::Entities::InvalidEntityID)
+				restoredSelection.push_back(resolved);
+		}
+		m_Context.SetSelection(restoredSelection);
 
 		m_PreviousSelectedEntity = ResolveEntityInScene(scene, activeViewer.PreviousSelectedEntity);
 		if (m_PreviousSelectedEntity == Constants::Entities::InvalidEntityID)
@@ -2381,7 +2417,7 @@ namespace Ember {
 		std::string prefabFilePath = prefab->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(prefabPath).string() : prefab->GetFilePath();
 		std::string title = std::format("{} [Prefab]", EditorViewportTabs::TitleFromPath(prefabFilePath, prefab->GetName()));
 		size_t viewerIndex = m_ViewportTabs.AddPrefabViewer(prefabScene, prefab, prefabRoot, prefabFilePath, title);
-		m_ViewportTabs.StoreViewerState(viewerIndex, prefabRoot, Entity());
+		m_ViewportTabs.StoreViewerState(viewerIndex, std::vector<Entity>{ prefabRoot }, Entity());
 		ActivateViewer(viewerIndex);
 
 		auto evt = UINotificationEvent(std::format("Opened prefab: {}", prefab->GetName()));

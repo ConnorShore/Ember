@@ -164,16 +164,17 @@ namespace Ember {
 		return -1;
 	}
 
-	void EditorViewportTabs::StoreViewerState(size_t viewerIndex, Entity selectedEntity, Entity previousSelectedEntity) {
+	void EditorViewportTabs::StoreViewerState(size_t viewerIndex, const std::vector<Entity>& selection, Entity previousSelectedEntity) {
 		if (EditorViewportViewer* viewer = GetViewer(viewerIndex)) {
-			viewer->SelectedEntity = selectedEntity;
+			viewer->Selection = selection;
+			viewer->SelectedEntity = selection.empty() ? Entity() : selection.back();
 			viewer->PreviousSelectedEntity = previousSelectedEntity;
 		}
 	}
 
-	void EditorViewportTabs::StoreActiveViewerState(Entity selectedEntity, Entity previousSelectedEntity) {
+	void EditorViewportTabs::StoreActiveViewerState(const std::vector<Entity>& selection, Entity previousSelectedEntity) {
 		if (m_ActiveViewerIndex < 0) return;
-		StoreViewerState(static_cast<size_t>(m_ActiveViewerIndex), selectedEntity, previousSelectedEntity);
+		StoreViewerState(static_cast<size_t>(m_ActiveViewerIndex), selection, previousSelectedEntity);
 	}
 
 	void EditorViewportTabs::ActivateViewer(size_t viewerIndex, const ActivateViewerCallback& activateViewer) {

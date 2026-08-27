@@ -1019,6 +1019,50 @@ namespace Ember {
 		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
 	}
 
+	std::vector<Entity> Scene::FilterToHierarchyRoots(const std::vector<Entity>& entities)
+	{
+		std::unordered_set<UUID> candidates;
+		candidates.reserve(entities.size());
+		for (Entity entity : entities)
+		{
+			if (entity.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				candidates.insert(entity.GetUUID());
+		}
+
+		std::vector<Entity> roots;
+		roots.reserve(entities.size());
+
+		for (Entity entity : entities)
+		{
+			if (entity.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+				continue;
+
+			bool ancestorPresent = false;
+			Entity walker = entity;
+			while (walker.ContainsComponent<RelationshipComponent>())
+			{
+				UUID parentUUID = walker.GetComponent<RelationshipComponent>().ParentHandle;
+				if (parentUUID == Constants::InvalidUUID)
+					break;
+
+				if (candidates.contains(parentUUID))
+				{
+					ancestorPresent = true;
+					break;
+				}
+
+				walker = GetEntity(parentUUID);
+				if (walker.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+					break;
+			}
+
+			if (!ancestorPresent)
+				roots.push_back(entity);
+		}
+
+		return roots;
+	}
+
 	bool Scene::GetWorldPositionAtPixel(uint32_t x, uint32_t y, Vector3f& outPosition)
 	{
 		auto& systemManager = Application::Instance().GetSystemManager();

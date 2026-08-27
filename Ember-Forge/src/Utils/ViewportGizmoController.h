@@ -3,6 +3,9 @@
 #include <Ember/Core/Constants.h>
 #include <Ember/ECS/Types.h>
 #include <Ember/Math/Math.h>
+#include <Ember/Scene/Entity.h>
+
+#include <vector>
 
 namespace Ember {
 
@@ -34,6 +37,8 @@ namespace Ember {
 		};
 
 		void RenderTransformGizmo(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType);
+		static void ApplyWorldTransform(EditorContext* context, Entity entity, const Matrix4f& worldTransform, int gizmoType);
+		static std::vector<Entity> FilterOutSelectedDescendants(EditorContext* context);
 		void RenderRectTransformGizmo(EditorContext* context, const Vector2f viewportBounds[2], int gizmoType);
 
 	private:

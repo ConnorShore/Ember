@@ -155,6 +155,11 @@ namespace Ember {
 		// Entity Header
 		DrawEntityHeader(entity);
 
+		// Only the active entity is edited here, so say so rather than letting a multi-selection look
+		// like the properties apply to all of it.
+		if (m_Context->SelectionCount() > 1)
+			ImGui::TextDisabled("%zu selected - editing %s", m_Context->SelectionCount(), entity.GetName().c_str());
+
 		ImGui::Separator();
 
 		// --- SCROLLABLE REGION ---

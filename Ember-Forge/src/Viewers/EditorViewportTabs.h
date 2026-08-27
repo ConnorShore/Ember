@@ -48,8 +48,8 @@ namespace Ember {
 		bool Empty() const { return m_Viewers.empty(); }
 		int FindViewer(EditorViewportViewer::Type type, const std::string& filePath) const;
 
-		void StoreViewerState(size_t viewerIndex, Entity selectedEntity, Entity previousSelectedEntity);
-		void StoreActiveViewerState(Entity selectedEntity, Entity previousSelectedEntity);
+		void StoreViewerState(size_t viewerIndex, const std::vector<Entity>& selection, Entity previousSelectedEntity);
+		void StoreActiveViewerState(const std::vector<Entity>& selection, Entity previousSelectedEntity);
 
 		void ActivateViewer(size_t viewerIndex, const ActivateViewerCallback& activateViewer);
 		bool CloseViewer(size_t viewerIndex, bool saveBeforeClose, const CloseViewerCallback& closeViewer, const ActivateViewerCallback& activateViewer);
