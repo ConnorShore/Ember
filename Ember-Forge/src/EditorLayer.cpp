@@ -15,6 +15,9 @@
 #include "UI/PropertyGrid.h"
 #include "Utils/ActiveNavMeshRenderer.h"
 #include "Undo/ScopedEntityEdit.h"
+#include "Undo/UndoStack.h"
+
+#include <Ember/Scene/EntitySnapshot.h>
 
 #include <Ember/ECS/System/UIInputSystem.h>
 #include <Ember/Render/RenderAction.h>
@@ -498,6 +501,7 @@ namespace Ember {
 		// Pop up for new project
 		RenderNewScenePopup();
 		RenderNewProjectPopup();
+		RenderPrefabRefreshPrompt();
 
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
@@ -2225,9 +2229,144 @@ namespace Ember {
 		AssetRegistrySerializer assetSerializer(&assetManager);
 		assetSerializer.Serialize(assetFilePath.string());
 
-		auto evt = UINotificationEvent(std::format("Prefab saved: {}", std::filesystem::path(m_EditingPrefabPath).filename().string()));
+		std::string prefabName = std::filesystem::path(m_EditingPrefabPath).filename().string();
+		auto evt = UINotificationEvent(std::format("Prefab saved: {}", prefabName));
 		m_Context.EventCallback(evt);
+
+		// Refreshing rebuilds each instance from the prefab, so it is offered rather than done - it
+		// is the user's call whether the placed copies should be overwritten.
+		uint32_t instanceCount = CountPrefabInstancesInOpenScenes(m_EditingPrefab);
+		if (instanceCount > 0)
+		{
+			m_PendingRefreshPrefab = m_EditingPrefab;
+			m_PendingRefreshInstanceCount = instanceCount;
+		}
+
 		return true;
+	}
+
+	uint32_t EditorLayer::CountPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab)
+	{
+		if (!prefab)
+			return 0;
+
+		uint32_t count = 0;
+		std::vector<Scene*> visited;
+
+		for (size_t viewerIndex = 0; viewerIndex < m_ViewportTabs.ViewerCount(); viewerIndex++)
+		{
+			EditorViewportViewer* viewer = m_ViewportTabs.GetViewer(viewerIndex);
+			if (!viewer || viewer->GetType() != EditorViewportViewer::Type::Scene)
+				continue;
+
+			auto scene = viewer->GetScene();
+			if (!scene || std::find(visited.begin(), visited.end(), scene.Ptr()) != visited.end())
+				continue;
+
+			visited.push_back(scene.Ptr());
+			count += scene->CountPrefabInstances(prefab->GetUUID());
+		}
+
+		return count;
+	}
+
+	void EditorLayer::RenderPrefabRefreshPrompt()
+	{
+		if (m_PendingRefreshPrefab && !ImGui::IsPopupOpen("Update Prefab Instances"))
+			ImGui::OpenPopup("Update Prefab Instances");
+
+		if (!ImGui::BeginPopupModal("Update Prefab Instances", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		ImGui::TextWrapped("Update %u placed instance%s of \"%s\"?",
+			m_PendingRefreshInstanceCount,
+			m_PendingRefreshInstanceCount == 1 ? "" : "s",
+			m_PendingRefreshPrefab ? m_PendingRefreshPrefab->GetName().c_str() : "");
+
+		ImGui::Spacing();
+		ImGui::TextDisabled("Each instance keeps its position, name, parent and script property values.");
+		ImGui::TextDisabled("Any other per-instance change - swapped materials or sprites, added");
+		ImGui::TextDisabled("components - is replaced by the prefab. This can be undone.");
+		ImGui::Spacing();
+
+		if (ImGui::Button("Update Instances", ImVec2(140.0f, 0.0f)))
+		{
+			uint32_t refreshed = RefreshPrefabInstancesInOpenScenes(m_PendingRefreshPrefab);
+
+			auto evt = UINotificationEvent(std::format("Updated {} prefab instance{}.", refreshed, refreshed == 1 ? "" : "s"));
+			m_Context.EventCallback(evt);
+
+			m_PendingRefreshPrefab = nullptr;
+			m_PendingRefreshInstanceCount = 0;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Leave Them", ImVec2(140.0f, 0.0f)))
+		{
+			m_PendingRefreshPrefab = nullptr;
+			m_PendingRefreshInstanceCount = 0;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	// Instances live in the scene tabs, not in the prefab tab being edited, so the refresh has to
+	// reach across every open scene - and each scene's undo entry belongs on its own tab's stack,
+	// not on whichever tab happens to be active.
+	uint32_t EditorLayer::RefreshPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab)
+	{
+		if (!prefab)
+			return 0;
+
+		uint32_t refreshed = 0;
+		std::vector<Scene*> visited;
+
+		for (size_t viewerIndex = 0; viewerIndex < m_ViewportTabs.ViewerCount(); viewerIndex++)
+		{
+			EditorViewportViewer* viewer = m_ViewportTabs.GetViewer(viewerIndex);
+			if (!viewer || viewer->GetType() != EditorViewportViewer::Type::Scene)
+				continue;
+
+			auto scene = viewer->GetScene();
+			if (!scene || std::find(visited.begin(), visited.end(), scene.Ptr()) != visited.end())
+				continue;
+
+			visited.push_back(scene.Ptr());
+
+			std::vector<UUID> instanceRoots;
+			for (Entity entity : scene->GetAllEntities())
+			{
+				if (entity.ContainsComponent<PrefabComponent>()
+					&& entity.GetComponent<PrefabComponent>().PrefabHandle == prefab->GetUUID())
+					instanceRoots.push_back(entity.GetUUID());
+			}
+
+			if (instanceRoots.empty())
+				continue;
+
+			EntitySetSnapshot before = EntitySetSnapshot::Capture(scene, instanceRoots, true);
+
+			uint32_t count = scene->RefreshPrefabInstances(prefab);
+			if (count == 0)
+				continue;
+
+			EditAction action;
+			action.Label = "Update Prefab Instances";
+			action.Before = std::move(before);
+			action.After = EntitySetSnapshot::Capture(scene, instanceRoots, true);
+
+			// Selecting the affected instances after an undo or redo makes it obvious what moved.
+			action.SelectionBefore = instanceRoots;
+			action.SelectionAfter = instanceRoots;
+
+			viewer->GetUndoStack().Push(std::move(action));
+			refreshed += count;
+		}
+
+		return refreshed;
 	}
 
 	void EditorLayer::OpenAnimationState(const std::string& path)

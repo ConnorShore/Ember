@@ -2009,7 +2009,7 @@ namespace Ember {
 		return out.str();
 	}
 
-	std::vector<Entity> SceneSerializer::DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs)
+	std::vector<Entity> SceneSerializer::DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs, Entity rootOverride)
 	{
 		EB_PROFILE_FUNCTION();
 
@@ -2035,6 +2035,15 @@ namespace Ember {
 			std::string name = "PrefabEntity";
 			if (entityNode.has_child("TagComponent"))
 				entityNode["TagComponent"]["Tag"] >> name;
+
+			// The first entity can be redirected onto one that already exists, so a prefab instance
+			// keeps the UUID everything else refers to it by.
+			if (newEntities.empty() && rootOverride.IsValid())
+			{
+				oldToNewUUIDs[oldUUIDVal] = rootOverride.GetUUID();
+				newEntities.push_back(rootOverride);
+				continue;
+			}
 
 			UUID newUUID = preserveUUIDs ? UUID(oldUUIDVal) : UUID();
 			oldToNewUUIDs[oldUUIDVal] = newUUID;

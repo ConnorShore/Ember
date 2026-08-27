@@ -15,6 +15,9 @@ scripting layer so games can be built without recompiling the engine.
   color-grading LUTs, outlines, billboards, particles, infinite grid, and 2D quad batching.
 - **Entity Component System** with a hand-rolled registry, hierarchical transforms, prefabs,
   pooling, and per-component editor UIs.
+- **Level-design tooling** in the editor — undo/redo, multi-select with group transforms, configurable
+  grid and angle snapping, frame-selection, cursor placement, and prefab edits that propagate to
+  placed instances while preserving their per-instance script values.
 - **ReactPhysics3D** integration — rigid bodies, box / sphere / capsule / convex / concave colliders,
   raycasts, overlap queries, configurable collision filters, and a kinematic character controller.
 - **Skeletal animation** with crossfading, animation events, and a full animator component.

@@ -82,6 +82,10 @@ namespace Ember {
 		void Undo();
 		void Redo();
 
+		uint32_t RefreshPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab);
+		uint32_t CountPrefabInstancesInOpenScenes(const SharedPtr<Prefab>& prefab);
+		void RenderPrefabRefreshPrompt();
+
 		void DrawToolbar();
 
 		// One dropdown for every editor toggle, so the toolbar does not grow a control per setting.
@@ -230,6 +234,10 @@ namespace Ember {
 		std::vector<Entity> m_LastOutlinedSelection;
 
 		SelectionEditTracker m_EditTracker;
+
+		// Set when a prefab save finds placed instances; the prompt asks before overwriting them.
+		SharedPtr<Prefab> m_PendingRefreshPrefab;
+		uint32_t m_PendingRefreshInstanceCount = 0;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;

@@ -62,14 +62,14 @@ line in it names the test that died.
 | `src/EmberTestApp.cpp` | The runner — boots the engine and executes the suite on frame one. |
 | `src/Tests/UnitTests.cpp` | Math facade, UUID, `TimeStep`, filters, smart pointers, save games. |
 | `src/Tests/EcsTests.cpp` | `Registry` / `ComponentManager` / `EntityManager` / `View`, lifecycle hooks, sparse-set integrity. |
-| `src/Tests/SceneTests.cpp` | Entity identity, hierarchy, ordering, duplication, deferred removal, `CopyScene`. |
+| `src/Tests/SceneTests.cpp` | Entity identity, hierarchy, ordering, duplication, deferred removal, `CopyScene`, `EntitySetSnapshot` (the undo primitive), hierarchy-root filtering. |
 | `src/Tests/TransformTests.cpp` | `TransformSystem` propagation, dirty-flag behaviour, basis vectors. |
 | `src/Tests/PhysicsTests.cpp` | Body/collider creation, simulation, raycasts, overlaps, runtime-pointer lifetime. |
-| `src/Tests/AssetTests.cpp` | `AssetManager` lookup tables, asset round-trips, scene + prefab serialization. |
+| `src/Tests/AssetTests.cpp` | `AssetManager` lookup tables, asset round-trips, scene + prefab serialization, prefab instance refresh and per-instance override preservation. |
 | `src/Tests/ScriptTests.cpp` | Lua bindings, script lifecycle, exposed properties, timers, error handling. |
 | `src/Tests/AnimationTests.cpp` | Blackboard, condition evaluation, state machine, controller layers. |
 | `src/Tests/AITests.cpp` | A* pathfinding, obstacle avoidance, corner-cutting rules, AI component defaults. |
-| `src/Tests/RenderTests.cpp` | Camera projections, frustum culling, renderable bounds, visibility system, picking. |
+| `src/Tests/RenderTests.cpp` | Camera projections, frustum culling, renderable bounds, visibility system, picking, editor-camera framing. |
 | `src/Tests/AudioTests.cpp` | Move-only `AudioSourceComponent` through the sparse-set storage. |
 | `src/Tests/PerfTests.cpp` | Performance budgets and relative-speed assertions. |
 | `src/Tests/VisualTests.cpp` | Frame sanity, render determinism, golden images. |
@@ -189,15 +189,18 @@ via `SceneFixture::TickEdit()`.
 and `ComponentManager::GetComponent` both assert on a missing item, so guard with `ContainsAsset` /
 `ContainsComponent` or use `Test::TryGetAsset`.
 
-**`MaxEntities` is 1024 and `MaxComponents` is 64** (`Core/Constants.h`). Keep bulk tests under the
-entity limit; `Ecs::ComponentTypeIdsAreDistinctAndInRange` guards the component limit.
+**`MaxEntities` is 8192 and `MaxComponents` is 128** (`Core/Constants.h`). Derive bulk-test sizes from
+the constants rather than hardcoding a number; `Ecs::FillsToCapacityAndRecycles` exercises the entity
+limit and `Ecs::ComponentTypeIdsAreDistinctAndInRange` guards the component limit.
 
-**Never write `if (entity)` or `static_cast<bool>(entity)` — use `entity.IsValid()`.** `Entity` has a
-non-explicit, non-const `operator EntityID()` next to its `explicit operator bool() const`. The
-non-const conversion binds the implicit object argument better, so a bool cast silently calls
-`operator EntityID()` and the result is **inverted in both directions**: a valid entity with handle
-`0` reads as `false`, and an invalid entity (handle `1025`) reads as `true`. This cost 12 tests on
-the first real run.
+**`if (entity)` used to be inverted — it is now safe, but prefer `entity.IsValid()` anyway.** `Entity`
+has a non-explicit `operator EntityID()` next to its `explicit operator bool() const`. While the
+integer conversion was **non-const** it bound the implicit object argument better, so a bool cast
+silently called it and the result was inverted in both directions: a valid entity with handle `0` read
+as `false`, and an invalid entity read as `true`. That cost 12 tests on the first real run. Making
+`operator EntityID()` const broke the tie in favour of `operator bool`, and
+`Core::EntityBooleanConversionPicksOperatorBool` pins the behaviour. `IsValid()` stays the clearer
+spelling, and it does not depend on that tie-break holding.
 
 **The world origin is not empty in physics.** `PhysicsSystem::InitCameraSensor()` parks a persistent
 kinematic 0.1-radius trigger sphere at the origin of *every* physics world, recreated on each

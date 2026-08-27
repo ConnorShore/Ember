@@ -30,8 +30,10 @@ namespace Ember {
 		std::string SerializeEntitiesToString(const std::vector<Entity>& entities, const std::string& label = "Entities");
 
 		// Recreates entities from such a document. With preserveUUIDs, an entity whose UUID already
-		// exists is written into in place so its slot and inbound references survive.
-		std::vector<Entity> DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs);
+		// exists is written into in place so its slot and inbound references survive. `rootOverride`
+		// maps the document's first entity onto an existing one, which is how a prefab instance is
+		// rebuilt without losing the UUID other entities reference it by.
+		std::vector<Entity> DeserializeEntitiesFromString(const std::string& yaml, bool preserveUUIDs, Entity rootOverride = Entity());
 
 		// The root plus every descendant, in the breadth-first order the prefab format expects.
 		std::vector<Entity> GatherSubtree(Entity root);

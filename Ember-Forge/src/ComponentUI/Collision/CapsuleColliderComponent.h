@@ -15,6 +15,18 @@ namespace Ember {
 		inline const char* GetName() const override { return "Capsule Collider"; }
 
 	protected:
+		bool SupportsFitToMesh() const override { return true; }
+
+		void FitColliderToBounds(CapsuleColliderComponent& component, const Vector3f& localMin, const Vector3f& localMax) override
+		{
+			// Capsules stand on Y, so the radius comes from the wider of the two horizontal extents
+			// and Height is the full height including both caps.
+			Vector3f halfExtents = (localMax - localMin) * 0.5f;
+			component.Radius = Math::Max(Math::Max(halfExtents.x, halfExtents.z), 0.01f);
+			component.Height = Math::Max(halfExtents.y * 2.0f, component.Radius * 2.0f);
+			component.Offset.Position = (localMin + localMax) * 0.5f;
+		}
+
 		inline void RenderComponentProperties(CapsuleColliderComponent& component) override
 		{
 			if (UI::PropertyGrid::Begin("CapsuleColliderProps"))

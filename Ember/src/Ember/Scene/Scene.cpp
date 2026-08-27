@@ -653,6 +653,15 @@ namespace Ember {
 		auto& pc = entity.AttachComponent<PrefabComponent>();
 		pc.PrefabHandle = prefab->GetUUID();
 
+		// Re-serialize now that the root carries its PrefabComponent. Without this the saved YAML has
+		// no prefab link, so every instance placed from it is an orphan that a prefab edit can never
+		// find - the asset's UUID is only known after the first save, hence the second pass.
+		if (serializer.SerializePrefab(entity, filepath))
+		{
+			std::ifstream stream(filepath);
+			prefab->YAMLData = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+		}
+
 		return prefab;
 	}
 
@@ -1281,6 +1290,194 @@ namespace Ember {
 			InitializePrefabScripts(root.GetEntityHandle(), systemManager.GetSystem<ScriptSystem>().Ptr(), scene);
 			InitializePrefabAIAgents(root.GetEntityHandle(), systemManager.GetSystem<AISystem>().Ptr(), scene);
 		}
+	}
+
+	namespace {
+
+		// Path of names down from the subtree root ("" is the root, "Trim/Bolt" a grandchild), used to
+		// line entities up across a refresh - their UUIDs are regenerated, so names are the only
+		// stable handle. A prefab with duplicate sibling names resolves to the first match.
+		void GatherByNamePath(Scene* scene, Entity entity, const std::string& prefix,
+			std::unordered_map<std::string, Entity>& outByPath)
+		{
+			outByPath.emplace(prefix, entity);
+
+			if (!entity.ContainsComponent<RelationshipComponent>())
+				return;
+
+			for (UUID childUUID : entity.GetComponent<RelationshipComponent>().Children)
+			{
+				Entity child = scene->GetEntity(childUUID);
+				if (child.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+					continue;
+
+				std::string childPath = prefix.empty() ? child.GetName() : prefix + "/" + child.GetName();
+				GatherByNamePath(scene, child, childPath, outByPath);
+			}
+		}
+
+		// Script property values are the one piece of per-instance data the engine already models as
+		// overrides, so they are carried across a refresh rather than reverting to the prefab.
+		struct SavedScriptOverrides
+		{
+			UUID ScriptHandle = Constants::InvalidUUID;
+			std::unordered_map<std::string, ScriptProperty> Values;
+		};
+
+		std::unordered_map<std::string, SavedScriptOverrides> CaptureScriptOverrides(Scene* scene, Entity instanceRoot)
+		{
+			std::unordered_map<std::string, Entity> byPath;
+			GatherByNamePath(scene, instanceRoot, "", byPath);
+
+			std::unordered_map<std::string, SavedScriptOverrides> saved;
+			for (auto& [path, entity] : byPath)
+			{
+				if (!entity.ContainsComponent<ScriptComponent>())
+					continue;
+
+				auto& script = entity.GetComponent<ScriptComponent>();
+				if (script.UserPropertyOverrides.empty())
+					continue;
+
+				saved[path] = SavedScriptOverrides{ script.ScriptHandle, script.UserPropertyOverrides };
+			}
+
+			return saved;
+		}
+
+		void ReapplyScriptOverrides(Scene* scene, Entity instanceRoot,
+			const std::unordered_map<std::string, SavedScriptOverrides>& saved)
+		{
+			if (saved.empty())
+				return;
+
+			std::unordered_map<std::string, Entity> byPath;
+			GatherByNamePath(scene, instanceRoot, "", byPath);
+
+			for (const auto& [path, savedOverrides] : saved)
+			{
+				auto it = byPath.find(path);
+				if (it == byPath.end() || !it->second.ContainsComponent<ScriptComponent>())
+					continue;
+
+				auto& script = it->second.GetComponent<ScriptComponent>();
+
+				// A different script means the saved values describe properties that no longer exist.
+				if (script.ScriptHandle != savedOverrides.ScriptHandle)
+					continue;
+
+				// The instance's value wins; properties the prefab added since keep their new default.
+				for (const auto& [name, property] : savedOverrides.Values)
+					script.UserPropertyOverrides[name] = property;
+			}
+		}
+
+	}
+
+	uint32_t Scene::CountPrefabInstances(UUID prefabUUID) const
+	{
+		uint32_t count = 0;
+		for (Entity entity : GetAllEntities())
+		{
+			if (entity.ContainsComponent<PrefabComponent>()
+				&& entity.GetComponent<PrefabComponent>().PrefabHandle == prefabUUID)
+				count++;
+		}
+
+		return count;
+	}
+
+	uint32_t Scene::RefreshPrefabInstances(const SharedPtr<Prefab>& prefab)
+	{
+		EB_PROFILE_FUNCTION();
+
+		if (!prefab || prefab->YAMLData.empty())
+			return 0;
+
+		const UUID prefabUUID = prefab->GetUUID();
+
+		// Gathered up front by UUID, because rebuilding one instance invalidates entity handles.
+		std::vector<UUID> instanceRoots;
+		for (Entity entity : GetAllEntities())
+		{
+			if (entity.ContainsComponent<PrefabComponent>()
+				&& entity.GetComponent<PrefabComponent>().PrefabHandle == prefabUUID)
+				instanceRoots.push_back(entity.GetUUID());
+		}
+
+		SceneSerializer serializer(this);
+		uint32_t refreshed = 0;
+
+		for (UUID instanceUUID : instanceRoots)
+		{
+			Entity instance = GetEntity(instanceUUID);
+
+			// A nested instance is rebuilt along with its parent, so it may already be gone.
+			if (instance.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+				continue;
+
+			// Placement, identity, hierarchy position and script overrides survive a refresh.
+			std::unordered_map<std::string, SavedScriptOverrides> savedOverrides = CaptureScriptOverrides(this, instance);
+			std::string name = instance.GetName();
+			TransformComponent savedTransform = instance.GetComponent<TransformComponent>();
+			UUID parentUUID = Constants::InvalidUUID;
+			if (instance.ContainsComponent<RelationshipComponent>())
+				parentUUID = instance.GetComponent<RelationshipComponent>().ParentHandle;
+
+			// The old subtree goes; only the root entity is reused.
+			if (instance.ContainsComponent<RelationshipComponent>())
+			{
+				std::vector<UUID> oldChildren = instance.GetComponent<RelationshipComponent>().Children;
+				for (UUID childUUID : oldChildren)
+				{
+					Entity child = GetEntity(childUUID);
+					if (child.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+						RemoveEntity(child);
+				}
+				FlushPendingRemovals();
+			}
+
+			instance = GetEntity(instanceUUID);
+			if (instance.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+				continue;
+
+			ResetEntityToCoreComponents(instance);
+			serializer.DeserializeEntitiesFromString(prefab->YAMLData, false, instance);
+
+			// The prefab's own transform and name overwrote the instance's, so put them back.
+			auto& transform = instance.GetComponent<TransformComponent>();
+			transform.Position = savedTransform.Position;
+			transform.Rotation = savedTransform.Rotation;
+			transform.Scale = savedTransform.Scale;
+			transform.InvalidateWorld();
+
+			instance.GetComponent<TagComponent>().Tag = name;
+
+			// Re-applied after the subtree exists, since the children are matched by name path.
+			ReapplyScriptOverrides(this, instance, savedOverrides);
+
+			Matrix4f parentWorldTransform = Matrix4f(1.0f);
+			if (parentUUID != Constants::InvalidUUID)
+			{
+				Entity parent = GetEntity(parentUUID);
+				if (parent.GetEntityHandle() != Constants::Entities::InvalidEntityID)
+				{
+					instance.GetComponent<RelationshipComponent>().ParentHandle = parentUUID;
+
+					auto& siblings = parent.GetComponent<RelationshipComponent>().Children;
+					if (std::find(siblings.begin(), siblings.end(), instanceUUID) == siblings.end())
+						siblings.push_back(instanceUUID);
+
+					if (parent.ContainsComponent<TransformComponent>())
+						parentWorldTransform = parent.GetComponent<TransformComponent>().WorldTransform;
+				}
+			}
+
+			FinalizeRuntimePrefabInstance(this, instance, parentWorldTransform);
+			refreshed++;
+		}
+
+		return refreshed;
 	}
 
 	Entity Scene::InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position)

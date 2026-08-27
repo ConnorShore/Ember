@@ -110,6 +110,14 @@ namespace Ember {
 		// within a single operation rather than waiting for the end of the frame.
 		void FlushPendingRemovals();
 
+		// Rebuilds every instance of a prefab in this scene from the prefab's current definition,
+		// keeping each instance's placement, name, parent and UUID. Anything else edited on an
+		// instance is discarded - the prefab is the source of truth. Returns how many were rebuilt.
+		uint32_t RefreshPrefabInstances(const SharedPtr<Prefab>& prefab);
+
+		// How many entities in this scene are instances of the given prefab.
+		uint32_t CountPrefabInstances(UUID prefabUUID) const;
+
 		Entity InstantiateModel(const std::string& modelFile);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, const Vector3f* position);
 		Entity InstantiatePrefab(SharedPtr<Prefab> prefabAsset, Entity parent, const Vector3f* position);
