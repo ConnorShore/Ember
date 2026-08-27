@@ -43,6 +43,44 @@ namespace Ember {
 
 		size_t SelectionCount() const { return SelectedEntities.size(); }
 
+		// UUIDs survive an undo restoring an entity into a different slot, so the undo system stores
+		// selection this way rather than as handles.
+		std::vector<UUID> SelectionUUIDs() const
+		{
+			std::vector<UUID> uuids;
+			uuids.reserve(SelectedEntities.size());
+			for (Entity entity : SelectedEntities)
+			{
+				if (entity.IsValid())
+					uuids.push_back(entity.GetUUID());
+			}
+			return uuids;
+		}
+
+		void SetSelectionFromUUIDs(const std::vector<UUID>& uuids)
+		{
+			auto scene = ActiveScene();
+			if (!scene)
+				return;
+
+			std::vector<Entity> entities;
+			entities.reserve(uuids.size());
+			for (UUID uuid : uuids)
+			{
+				Entity entity = scene->GetEntity(uuid);
+				if (entity.IsValid())
+					entities.push_back(entity);
+			}
+
+			SetSelection(entities);
+		}
+
+		// Undo history belongs to the scene in the active tab, not to the editor as a whole.
+		UndoStack* ActiveUndoStack() const
+		{
+			return ActiveViewportViewer ? &ActiveViewportViewer->GetUndoStack() : nullptr;
+		}
+
 		// Public because EditorContext must stay an aggregate for its designated-initialiser setup.
 		void SyncActiveEntity()
 		{

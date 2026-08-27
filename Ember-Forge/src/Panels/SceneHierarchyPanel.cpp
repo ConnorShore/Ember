@@ -539,12 +539,16 @@ namespace Ember {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 			{
 				payloadUUID = *(const UUID*)payload->Data;
+				Entity dragged = m_Context->ActiveScene()->GetEntity(payloadUUID);
+
 				if (placement == HierarchyDropPlacement::Into)
 				{
+					auto edit = BeginHierarchyEdit("Reparent", dragged, entity);
 					m_Context->ActiveScene()->SetEntityParent(payloadUUID, entity);
 				}
 				else
 				{
+					auto edit = BeginHierarchyEdit("Reorder", dragged, entity.GetParent());
 					m_Context->ActiveScene()->ReorderEntity(payloadUUID, entity.GetUUID(), placement == HierarchyDropPlacement::After);
 				}
 			}
@@ -566,10 +570,18 @@ namespace Ember {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType.c_str()))
 			{
 				UUID payloadUUID = *(const UUID*)payload->Data;
+				Entity dragged = m_Context->ActiveScene()->GetEntity(payloadUUID);
+
 				if (m_Context->IsEditingPrefab && m_Context->PrefabRootEntity != Constants::Entities::InvalidEntityID && payloadUUID != m_Context->PrefabRootEntity.GetUUID())
+				{
+					auto edit = BeginHierarchyEdit("Reparent", dragged, m_Context->PrefabRootEntity);
 					m_Context->ActiveScene()->SetEntityParent(payloadUUID, m_Context->PrefabRootEntity);
+				}
 				else if (!m_Context->IsEditingPrefab)
+				{
+					auto edit = BeginHierarchyEdit("Unparent", dragged, Entity());
 					m_Context->ActiveScene()->MoveEntityToRootEnd(payloadUUID);
+				}
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -675,6 +687,11 @@ namespace Ember {
 
 	void SceneHierarchyPanel::CreateEntity(Entity entity)
 	{
+		// Presets hand the entity over already built, so it is recorded as created and the scope stays
+		// open until placement is done - otherwise the captured state would predate its position.
+		ScopedEntityEdit edit(*m_Context, "Create Entity", {});
+		edit.AddCreated(entity.GetUUID());
+
 		PlaceNewEntityAtSpawnPoint(entity);
 
 		SetSelectedEntity(entity);
@@ -738,6 +755,8 @@ namespace Ember {
 		if (sources.empty())
 			return;
 
+		ScopedEntityEdit edit(*m_Context, "Duplicate", {});
+
 		std::vector<Entity> copies;
 		copies.reserve(sources.size());
 
@@ -753,6 +772,7 @@ namespace Ember {
 			if (m_Context->IsEditingPrefab && copy.GetComponent<RelationshipComponent>().ParentHandle == Constants::InvalidUUID)
 				m_Context->ActiveScene()->SetEntityParent(copy.GetUUID(), m_Context->PrefabRootEntity);
 
+			edit.AddCreated(copy.GetUUID());
 			copies.push_back(copy);
 		}
 
@@ -774,6 +794,26 @@ namespace Ember {
 
 			m_Context->PendingEntityRemovals.insert(selected);
 		}
+	}
+
+	// Reparent and reorder both rewrite child lists, so the moved entity plus both parents have to be
+	// captured for an undo to put the hierarchy back the way it was.
+	ScopedEntityEdit SceneHierarchyPanel::BeginHierarchyEdit(const char* label, Entity moved, Entity newParent)
+	{
+		std::vector<UUID> affected;
+		affected.push_back(moved.GetUUID());
+
+		if (moved.ContainsComponent<RelationshipComponent>())
+		{
+			UUID oldParent = moved.GetComponent<RelationshipComponent>().ParentHandle;
+			if (oldParent != Constants::InvalidUUID)
+				affected.push_back(oldParent);
+		}
+
+		if (newParent != Constants::Entities::InvalidEntityID)
+			affected.push_back(newParent.GetUUID());
+
+		return ScopedEntityEdit(*m_Context, label, affected);
 	}
 
 	void SceneHierarchyPanel::SelectAllEntities()

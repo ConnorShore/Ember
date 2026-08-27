@@ -5,6 +5,7 @@
 #include "Ember/Asset/Serializers/AssetRegistrySerializer.h"
 
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/Component/ComponentList.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Core/ProjectManager.h"
 
@@ -1017,6 +1018,64 @@ namespace Ember {
 		auto renderSystem = systemManager.GetSystem<RenderSystem>();
 		EntityID id = renderSystem->GetEntityIDAtPixel(x, y);
 		return id != Constants::Entities::InvalidEntityID ? Entity(id, this) : Entity();
+	}
+
+	void Scene::ResetEntityToCoreComponents(Entity entity)
+	{
+		if (entity.GetEntityHandle() == Constants::Entities::InvalidEntityID)
+			return;
+
+		// Colliders must come off before the body they were registered with, mirroring the ordering
+		// RemoveEntityFromScene relies on.
+		if (entity.ContainsComponent<RigidBodyComponent>())
+		{
+			if (entity.ContainsComponent<BoxColliderComponent>())
+				entity.DetachComponent<BoxColliderComponent>();
+			if (entity.ContainsComponent<SphereColliderComponent>())
+				entity.DetachComponent<SphereColliderComponent>();
+			if (entity.ContainsComponent<CapsuleColliderComponent>())
+				entity.DetachComponent<CapsuleColliderComponent>();
+			if (entity.ContainsComponent<ConvexMeshColliderComponent>())
+				entity.DetachComponent<ConvexMeshColliderComponent>();
+			if (entity.ContainsComponent<ConcaveMeshColliderComponent>())
+				entity.DetachComponent<ConcaveMeshColliderComponent>();
+
+			auto physicsSystem = Application::Instance().GetSystemManager().GetSystem<PhysicsSystem>();
+			if (physicsSystem)
+				physicsSystem->RemoveRigidBody(entity.GetComponent<RigidBodyComponent>());
+
+			entity.DetachComponent<RigidBodyComponent>();
+		}
+
+		// Everything else comes off generically, so a component added later cannot be forgotten here.
+#define EMBER_DETACH_NON_CORE_COMPONENT(Component) \
+		if constexpr (!std::is_same_v<Component, IDComponent> && !std::is_same_v<Component, TagComponent> \
+			&& !std::is_same_v<Component, TransformComponent> && !std::is_same_v<Component, RelationshipComponent> \
+			&& !std::is_same_v<Component, RigidBodyComponent>) \
+		{ \
+			if (entity.ContainsComponent<Component>()) \
+				entity.DetachComponent<Component>(); \
+		}
+
+		EMBER_FOR_EACH_COMPONENT_ORDER_TYPE(EMBER_DETACH_NON_CORE_COMPONENT)
+#undef EMBER_DETACH_NON_CORE_COMPONENT
+
+		// DeserializeEntityNode appends children rather than assigning them, so a stale list would
+		// double up on restore.
+		if (entity.ContainsComponent<RelationshipComponent>())
+		{
+			auto& relationship = entity.GetComponent<RelationshipComponent>();
+			relationship.Children.clear();
+			relationship.ParentHandle = Constants::InvalidUUID;
+		}
+	}
+
+	void Scene::SetRootEntityIndex(UUID entityUUID, size_t index)
+	{
+		Utils::EraseUUID(m_EntityOrder, entityUUID);
+
+		index = std::min(index, m_EntityOrder.size());
+		m_EntityOrder.insert(m_EntityOrder.begin() + index, entityUUID);
 	}
 
 	std::vector<Entity> Scene::FilterToHierarchyRoots(const std::vector<Entity>& entities)

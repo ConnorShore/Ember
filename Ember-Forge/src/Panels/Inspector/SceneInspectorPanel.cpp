@@ -1,6 +1,8 @@
 #include "efpch.h"
 #include "SceneInspectorPanel.h"
 
+#include "Undo/ScopedEntityEdit.h"
+
 #include "ComponentUI/TransformComponentUI.h"
 #include "ComponentUI/CameraComponentUI.h"
 #include "ComponentUI/DirectionalLightComponentUI.h"
@@ -189,7 +191,10 @@ namespace Ember {
 						for (auto& comp : comps)
 						{
 							if (ImGui::MenuItem(comp->GetName()))
+							{
+								ScopedEntityEdit edit(*m_Context, "Add Component", { entity.GetUUID() }, false);
 								comp->CreateComponentForEntity(entity);
+							}
 						}
 						ImGui::EndMenu();
 					}

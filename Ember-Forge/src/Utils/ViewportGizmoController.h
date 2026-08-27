@@ -20,6 +20,9 @@ namespace Ember {
 		static void DrawSceneDebugGizmos(Scene* scene, EntityID selectedEntity);
 		bool IsHovered() const { return m_RectTransformGizmoHovered; }
 
+		// True while a UI rect handle is being dragged; ImGuizmo::IsUsing covers the 3D gizmo only.
+		bool IsRectGizmoActive() const { return m_RectTransformGizmoActiveHandle != RectTransformGizmoHandle::None; }
+
 	private:
 		enum class RectTransformGizmoHandle
 		{

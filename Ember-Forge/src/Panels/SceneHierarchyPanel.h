@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Panel.h"
+#include "Undo/ScopedEntityEdit.h"
 
 namespace Ember {
 
@@ -33,6 +34,8 @@ namespace Ember {
 		void PlaceNewEntityAtSpawnPoint(Entity entity);
 		void CreateEmptyEntity();
 		void CreateChildEntity(Entity parentEntity);
+		ScopedEntityEdit BeginHierarchyEdit(const char* label, Entity moved, Entity newParent);
+
 		void DuplicateEntity(Entity entity);
 		void DuplicateSelection();
 		void RemoveSelection();

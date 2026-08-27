@@ -82,6 +82,13 @@ namespace Ember {
 		// Keeps only the entities whose ancestors are not also in the list. Deleting, duplicating or
 		// transforming a parent already covers its subtree, so acting on both would double up.
 		std::vector<Entity> FilterToHierarchyRoots(const std::vector<Entity>& entities);
+
+		// Strips an entity back to ID/Tag/Transform/Relationship and clears its child list, so a
+		// snapshot can be deserialized onto it without leaving stale components or duplicate children.
+		void ResetEntityToCoreComponents(Entity entity);
+
+		const std::vector<UUID>& GetEntityOrder() const { return m_EntityOrder; }
+		void SetRootEntityIndex(UUID entityUUID, size_t index);
 		void Clear();
 
 		template<typename Driver, typename... Filters>

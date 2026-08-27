@@ -14,6 +14,7 @@
 #include "UI/DragDropTypes.h"
 #include "UI/PropertyGrid.h"
 #include "Utils/ActiveNavMeshRenderer.h"
+#include "Undo/ScopedEntityEdit.h"
 
 #include <Ember/ECS/System/UIInputSystem.h>
 #include <Ember/Render/RenderAction.h>
@@ -501,6 +502,11 @@ namespace Ember {
 		// Deferred removal - entities/components are queued during iteration and removed at frame end
 		RemovePendingComponents();
 		RemovePendingEntities();
+
+		// Runs after the UI is submitted so it sees this frame's final widget state; it coalesces a
+		// whole drag or typing session into one undo entry.
+		bool gizmoActive = ImGuizmo::IsUsing() || m_ViewportGizmos.IsRectGizmoActive();
+		m_EditTracker.OnFrameEnd(m_Context, gizmoActive);
 	}
 
 	void EditorLayer::LoadDefaultAssets()
@@ -563,6 +569,10 @@ namespace Ember {
 			RemovePendingComponents();
 			m_Context.ClearSelection();
 			m_PreviousSelectedEntity = Entity();
+
+			// Play runs on a copy of the editor scene, so nothing captured during it could be
+			// restored onto the scene the user goes back to.
+			m_EditTracker.Reset();
 
 			// Create a deep copy of the editor scene for runtime so the editor copy is never mutated
 			auto runtimeScene = Scene::CopyScene(m_EditorScene);
@@ -754,6 +764,29 @@ namespace Ember {
 			if (ImGui::MenuItem("Save Scene As", nullptr, false, projectExists && !editingPrefab))
 			{
 				SaveScene(true);
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Edit"))
+		{
+			UndoStack* undoStack = m_Context.ActiveUndoStack();
+			bool canUndo = undoStack && undoStack->CanUndo() && m_Context.CurrentSceneState == SceneState::Edit;
+			bool canRedo = undoStack && undoStack->CanRedo() && m_Context.CurrentSceneState == SceneState::Edit;
+
+			// Naming the action makes it obvious what is about to be reversed.
+			std::string undoLabel = canUndo ? std::format("Undo {}", undoStack->PeekUndoLabel()) : "Undo";
+			std::string redoLabel = canRedo ? std::format("Redo {}", undoStack->PeekRedoLabel()) : "Redo";
+
+			if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, canUndo))
+			{
+				Undo();
+			}
+
+			if (ImGui::MenuItem(redoLabel.c_str(), "Ctrl+Y", false, canRedo))
+			{
+				Redo();
 			}
 
 			ImGui::EndMenu();
@@ -1057,6 +1090,18 @@ namespace Ember {
 			case KeyCode::F:
 				if (isEditMode && !control)
 					FocusSelection();
+				break;
+
+			case KeyCode::Z:
+				if (isEditMode && control && shift)
+					Redo();
+				else if (isEditMode && control)
+					Undo();
+				break;
+
+			case KeyCode::Y:
+				if (isEditMode && control)
+					Redo();
 				break;
 
 			// Scene Hot keys
@@ -1676,10 +1721,51 @@ namespace Ember {
 		return fps;
 	}
 
+	void EditorLayer::Undo()
+	{
+		UndoStack* undoStack = m_Context.ActiveUndoStack();
+		if (!undoStack || !undoStack->CanUndo())
+			return;
+
+		std::string label = undoStack->PeekUndoLabel();
+
+		std::vector<UUID> selection;
+		if (!undoStack->Undo(m_Context.ActiveScene(), selection))
+			return;
+
+		m_Context.SetSelectionFromUUIDs(selection);
+		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
+
+		auto evt = UINotificationEvent(std::format("Undo: {}", label));
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::Redo()
+	{
+		UndoStack* undoStack = m_Context.ActiveUndoStack();
+		if (!undoStack || !undoStack->CanRedo())
+			return;
+
+		std::string label = undoStack->PeekRedoLabel();
+
+		std::vector<UUID> selection;
+		if (!undoStack->Redo(m_Context.ActiveScene(), selection))
+			return;
+
+		m_Context.SetSelectionFromUUIDs(selection);
+		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
+
+		auto evt = UINotificationEvent(std::format("Redo: {}", label));
+		m_Context.EventCallback(evt);
+	}
+
 	void EditorLayer::ClearEntitySelectionState()
 	{
 		m_Context.ClearSelection();
 		m_PreviousSelectedEntity = Entity();
+		m_EditTracker.Reset();
 		m_Context.PendingEntityRemovals.clear();
 		m_Context.PendingComponentRemovals.clear();
 		m_EditorRenderPassSettings.SelectedEntity = Constants::Entities::InvalidEntityID;
@@ -1687,7 +1773,11 @@ namespace Ember {
 	
 	void EditorLayer::CreateEntity()
 	{
+		ScopedEntityEdit edit(m_Context, "Create Entity", {});
+
 		auto entity = m_Context.ActiveScene()->AddEntity("Empty_Entity");
+		edit.AddCreated(entity.GetUUID());
+
 		m_Context.SetSelection(entity);
 	}
 
@@ -1708,6 +1798,27 @@ namespace Ember {
 			m_Context.EventCallback(evt);
 		}
 
+		if (m_Context.PendingEntityRemovals.empty())
+			return;
+
+		// Capture before anything is queued so undo can restore the whole subtree, and include each
+		// entity's parent so its child list is repaired too.
+		std::vector<UUID> affected;
+		affected.reserve(m_Context.PendingEntityRemovals.size() * 2);
+		for (Entity pendingRemoval : m_Context.PendingEntityRemovals)
+		{
+			affected.push_back(pendingRemoval.GetUUID());
+
+			if (pendingRemoval.ContainsComponent<RelationshipComponent>())
+			{
+				UUID parentUUID = pendingRemoval.GetComponent<RelationshipComponent>().ParentHandle;
+				if (parentUUID != Constants::InvalidUUID)
+					affected.push_back(parentUUID);
+			}
+		}
+
+		ScopedEntityEdit edit(m_Context, "Delete Entity", affected);
+
 		// Any entity going away must leave the selection; descendants that die with a removed parent
 		// are dropped by the per-frame re-resolve.
 		for (Entity pendingRemoval : m_Context.PendingEntityRemovals)
@@ -1722,10 +1833,23 @@ namespace Ember {
 		}
 
 		m_Context.PendingEntityRemovals.clear();
+
+		// The scene only queues removals, so drain them before the scope captures the "after" state.
+		m_Context.ActiveScene()->FlushPendingRemovals();
 	}
 
 	void EditorLayer::RemovePendingComponents()
 	{
+		if (m_Context.PendingComponentRemovals.empty())
+			return;
+
+		std::vector<UUID> affected;
+		affected.reserve(m_Context.PendingComponentRemovals.size());
+		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
+			affected.push_back(entity.GetUUID());
+
+		ScopedEntityEdit edit(m_Context, "Remove Component", affected, false);
+
 		for (auto& [entity, components] : m_Context.PendingComponentRemovals)
 		{
 			for (ComponentType componentType : components)
@@ -1742,7 +1866,11 @@ namespace Ember {
 
 	void EditorLayer::CreateEntityFromModel(const std::string& modelFilePath)
 	{
+		ScopedEntityEdit edit(m_Context, "Place Model", {});
+
 		Entity modelEntity = m_Context.ActiveScene()->InstantiateModel(modelFilePath);
+		if (modelEntity != Constants::Entities::InvalidEntityID)
+			edit.AddCreated(modelEntity.GetUUID());
 		if (m_Context.IsEditingPrefab && modelEntity != Constants::Entities::InvalidEntityID && modelEntity != m_Context.PrefabRootEntity)
 			m_Context.ActiveScene()->SetEntityParent(modelEntity.GetUUID(), m_Context.PrefabRootEntity);
 
@@ -1763,11 +1891,17 @@ namespace Ember {
 		auto& assetManager = Application::Instance().GetAssetManager();
 		auto prefabAsset = assetManager.Load<Prefab>(prefabFilePath);
 
+		ScopedEntityEdit edit(m_Context, "Place Prefab", {});
+
 		// A prefab edit tab has no level geometry to place against, so those keep landing on the root.
 		Vector3f spawnPosition = m_Context.IsEditingPrefab ? Vector3f(0.0f) : GetSpawnPosition();
 		Entity prefEntity = m_Context.IsEditingPrefab
 			? m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, m_Context.PrefabRootEntity, &spawnPosition)
 			: m_Context.ActiveScene()->InstantiatePrefab(prefabAsset, &spawnPosition);
+
+		if (prefEntity != Constants::Entities::InvalidEntityID)
+			edit.AddCreated(prefEntity.GetUUID());
+
 		m_Context.SetSelection(prefEntity);
 	}
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Undo/UndoStack.h"
+
 #include <Ember/Scene/Entity.h>
 
 #include <string>
@@ -37,12 +39,18 @@ namespace Ember {
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) {}
 		virtual void OnImGuiRender(EditorLayer* editor) = 0;
 
+		// History is per tab, so a scene and a prefab being edited side by side never share a stack;
+		// closing the tab discards it.
+		UndoStack& GetUndoStack() { return m_UndoStack; }
+
 		// Per-tab selection, restored when the tab is activated again.
 		std::vector<Entity> Selection;
 		Entity SelectedEntity;
 		Entity PreviousSelectedEntity;
 
 	protected:
+		UndoStack m_UndoStack;
+
 		Type m_Type;
 		SharedPtr<Scene> m_Scene;
 		std::string m_FilePath;

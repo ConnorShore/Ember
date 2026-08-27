@@ -3,6 +3,9 @@
 
 #include <Ember.h>
 
+// EntitySnapshot is not re-exported from Ember.h.
+#include "Ember/Scene/EntitySnapshot.h"
+
 #include "TestFramework.h"
 #include "TestHelpers.h"
 
@@ -557,6 +560,154 @@ EB_TEST_CASE(Scene, RemovingAParentRemovesItsSubtree, Integration)
 
 	EB_EXPECT((scene->GetEntity(bystander.GetUUID())).IsValid());
 	EB_EXPECT_EQ(scene->GetAllEntities().size(), (size_t)1);
+}
+
+EB_TEST_CASE(Scene, SnapshotRestoresAnEditedTransform, Integration)
+{
+	// The bread-and-butter undo: change something, put it back.
+	SceneFixture scene("SnapshotTransformScene");
+	Entity entity = scene->AddEntity("Movable");
+	entity.GetComponent<TransformComponent>().Position = Vector3f(1.0f, 2.0f, 3.0f);
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	entity.GetComponent<TransformComponent>().Position = Vector3f(50.0f, 60.0f, 70.0f);
+	before.Restore(scene.Shared());
+
+	Entity restored = scene->GetEntity(entity.GetUUID());
+	EB_CHECK(restored.IsValid());
+	EB_EXPECT_VEC3_NEAR(restored.GetComponent<TransformComponent>().Position, Vector3f(1.0f, 2.0f, 3.0f), 0.001f);
+}
+
+EB_TEST_CASE(Scene, SnapshotRestoresADeletedSubtreeWithItsIdentity, Integration)
+{
+	// Undoing a delete has to bring back the same UUIDs, or every other entity referencing them
+	// (scripts, sockets, agent targets) stays broken.
+	SceneFixture scene("SnapshotDeleteScene");
+	Entity root = scene->AddEntity("Root");
+	Entity child = root.AddChild("Child");
+	Entity grandchild = child.AddChild("Grandchild");
+
+	const UUID rootUUID = root.GetUUID();
+	const UUID childUUID = child.GetUUID();
+	const UUID grandchildUUID = grandchild.GetUUID();
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { rootUUID }, true);
+
+	scene->RemoveEntity(root);
+	scene.TickEdit();
+	EB_CHECK_FALSE((scene->GetEntity(rootUUID)).IsValid());
+
+	before.Restore(scene.Shared());
+
+	Entity restoredRoot = scene->GetEntity(rootUUID);
+	Entity restoredChild = scene->GetEntity(childUUID);
+	Entity restoredGrandchild = scene->GetEntity(grandchildUUID);
+
+	EB_CHECK(restoredRoot.IsValid());
+	EB_CHECK(restoredChild.IsValid());
+	EB_CHECK(restoredGrandchild.IsValid());
+
+	EB_EXPECT_EQ(restoredChild.GetComponent<RelationshipComponent>().ParentHandle, rootUUID);
+	EB_EXPECT_EQ(restoredGrandchild.GetComponent<RelationshipComponent>().ParentHandle, childUUID);
+	EB_EXPECT_EQ(restoredRoot.GetComponent<RelationshipComponent>().Children.size(), (size_t)1);
+	EB_EXPECT_EQ(restoredChild.GetComponent<RelationshipComponent>().Children.size(), (size_t)1);
+}
+
+EB_TEST_CASE(Scene, SnapshotOfAnAbsentEntityRemovesItOnRestore, Integration)
+{
+	// Undoing a create means deleting what the action made, which is recorded as "did not exist".
+	SceneFixture scene("SnapshotCreateScene");
+	Entity keep = scene->AddEntity("Keep");
+
+	Entity created = scene->AddEntity("Created");
+	const UUID createdUUID = created.GetUUID();
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), {}, false);
+	before.MarkAbsent(createdUUID);
+
+	before.Restore(scene.Shared());
+
+	EB_EXPECT_FALSE((scene->GetEntity(createdUUID)).IsValid());
+	EB_EXPECT((scene->GetEntity(keep.GetUUID())).IsValid());
+}
+
+EB_TEST_CASE(Scene, SnapshotRestoreDropsComponentsAddedSince, Integration)
+{
+	// Undoing an "add component" must actually take it off again, which is why the restore resets
+	// the entity before deserializing onto it.
+	SceneFixture scene("SnapshotComponentScene");
+	Entity entity = scene->AddEntity("Prop");
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	entity.AttachComponent<PointLightComponent>();
+	EB_CHECK(entity.ContainsComponent<PointLightComponent>());
+
+	before.Restore(scene.Shared());
+
+	Entity restored = scene->GetEntity(entity.GetUUID());
+	EB_CHECK(restored.IsValid());
+	EB_EXPECT_FALSE(restored.ContainsComponent<PointLightComponent>());
+}
+
+EB_TEST_CASE(Scene, SnapshotEqualsIgnoresAnEditThatEndedWhereItStarted, Integration)
+{
+	// A drag that returns to its origin must not push an undo step.
+	SceneFixture scene("SnapshotEqualityScene");
+	Entity entity = scene->AddEntity("Movable");
+	entity.GetComponent<TransformComponent>().Position = Vector3f(4.0f, 0.0f, 0.0f);
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	entity.GetComponent<TransformComponent>().Position = Vector3f(9.0f, 0.0f, 0.0f);
+	EntitySetSnapshot moved = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+	EB_EXPECT_FALSE(before.Equals(moved));
+
+	entity.GetComponent<TransformComponent>().Position = Vector3f(4.0f, 0.0f, 0.0f);
+	EntitySetSnapshot returned = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+	EB_EXPECT(before.Equals(returned));
+}
+
+EB_TEST_CASE(Scene, SnapshotRoundTripSurvivesRepeatedUndoRedo, Integration)
+{
+	// Undo/redo is applied by restoring alternating snapshots, so both have to stay valid across
+	// repeated flips rather than degrading after the first.
+	SceneFixture scene("SnapshotFlipScene");
+	Entity entity = scene->AddEntity("Movable");
+	entity.GetComponent<TransformComponent>().Position = Vector3f(1.0f, 0.0f, 0.0f);
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	entity.GetComponent<TransformComponent>().Position = Vector3f(8.0f, 0.0f, 0.0f);
+	EntitySetSnapshot after = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	for (int i = 0; i < 3; ++i)
+	{
+		before.Restore(scene.Shared());
+		EB_EXPECT_VEC3_NEAR((scene->GetEntity(entity.GetUUID())).GetComponent<TransformComponent>().Position,
+			Vector3f(1.0f, 0.0f, 0.0f), 0.001f);
+
+		after.Restore(scene.Shared());
+		EB_EXPECT_VEC3_NEAR((scene->GetEntity(entity.GetUUID())).GetComponent<TransformComponent>().Position,
+			Vector3f(8.0f, 0.0f, 0.0f), 0.001f);
+	}
+}
+
+EB_TEST_CASE(Scene, SnapshotRestoreKeepsTheEntitySlotWhenItStillExists, Integration)
+{
+	// Restoring over a live entity must reuse its slot, or every cached handle and every physics
+	// body keyed on that EntityID would be pointing at nothing.
+	SceneFixture scene("SnapshotSlotScene");
+	Entity entity = scene->AddEntity("Movable");
+	const EntityID originalHandle = entity.GetEntityHandle();
+
+	EntitySetSnapshot before = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+
+	entity.GetComponent<TransformComponent>().Position = Vector3f(5.0f, 5.0f, 5.0f);
+	before.Restore(scene.Shared());
+
+	EB_EXPECT_EQ((scene->GetEntity(entity.GetUUID())).GetEntityHandle(), originalHandle);
 }
 
 EB_TEST_CASE(Scene, FilterToHierarchyRootsDropsSelectedDescendants, Integration)

@@ -6,6 +6,7 @@
 #include "ProjectSettingsDialog.h"
 #include "WelcomeDialog.h"
 #include "Utils/ViewportGizmoController.h"
+#include "Undo/SelectionEditTracker.h"
 #include "Viewers/EditorViewportTabs.h"
 
 #include <Ember/Event/KeyEvent.h>
@@ -77,6 +78,9 @@ namespace Ember {
 		bool OnMouseClick(MousePressedEvent& e);
 		void SyncEntitySelectionState();
 		void SyncSelectionOutlines();
+
+		void Undo();
+		void Redo();
 
 		void DrawToolbar();
 
@@ -224,6 +228,8 @@ namespace Ember {
 		// Which entities currently carry an OutlineComponent, and the selection that produced them.
 		std::unordered_set<Entity> m_PreviouslyOutlined;
 		std::vector<Entity> m_LastOutlinedSelection;
+
+		SelectionEditTracker m_EditTracker;
 		OutlineComponent m_OutlineEntitySelectedComp = { Vector3f(0.89f, 0.25f, 0.07f), 2.0f };
 
 		int m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
