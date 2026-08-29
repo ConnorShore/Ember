@@ -818,12 +818,6 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Debug"))
-			{
-				DrawDebugDrawToggles();
-				ImGui::EndMenu();
-			}
-
 			ImGui::EndMenu();
 		}
 
@@ -1166,7 +1160,7 @@ namespace Ember {
 
 	bool EditorLayer::OnMouseClick(MousePressedEvent& e)
 	{
-		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
+		if (e.GetMouseControl() == MouseControl::Left && m_ViewportHovered)
 		{
 			if (m_Context.CurrentSceneState != SceneState::Edit)
 				return false;

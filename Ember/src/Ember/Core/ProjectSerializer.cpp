@@ -95,6 +95,31 @@ namespace Ember {
 			}
 		}
 
+		// Input Settings
+		auto& inputActionManager = Application::Instance().GetInputActionManager();
+		auto inputNode = settingsNode["Input"];
+		inputNode |= ryml::MAP;
+
+		auto actionsNode = inputNode["Actions"];
+		actionsNode |= ryml::MAP;
+		for (const auto& action : inputActionManager.GetActions())
+		{
+			auto actionNode = actionsNode.append_child();
+			actionNode |= ryml::MAP;
+			actionNode["Name"] << action.Name;
+
+			auto triggersNode = actionNode["Triggers"];
+			triggersNode |= ryml::SEQ;
+			for (const auto& trigger : action.Triggers)
+			{
+				auto triggerNode = triggersNode.append_child();
+				triggerNode |= ryml::MAP;
+				triggerNode["Device"] << static_cast<int>(trigger.Device);
+				triggerNode["ControlId"] << static_cast<uint16_t>(trigger);
+				triggerNode["RequiredModifier"] << static_cast<int>(trigger.RequiredModifier);
+			}
+		}
+
 		std::ofstream fout(filePath);
 		fout << tree;
 		fout.close();
@@ -204,6 +229,49 @@ namespace Ember {
 			}
 
 			renderLayerManager.InitWithFilters(renderLayers);
+
+			// Input Settings
+			auto& inputActionManager = Application::Instance().GetInputActionManager();
+			inputActionManager.ClearActions();
+
+			if (settingsNode.has_child("Input"))
+			{
+				auto inputNode = settingsNode["Input"];
+				auto actionsNode = inputNode["Actions"];
+				for (auto actionNode : actionsNode.children())
+				{
+					InputAction action;
+					actionNode["Name"] >> action.Name;
+					auto triggersNode = actionNode["Triggers"];
+					for (auto triggerNode : triggersNode.children())
+					{
+						InputTrigger trigger;
+						int deviceInt;
+						triggerNode["Device"] >> deviceInt;
+						trigger.Device = static_cast<InputDevice>(deviceInt);
+						uint16_t controlId;
+						triggerNode["ControlId"] >> controlId;
+						switch (trigger.Device)
+						{
+						case InputDevice::Keyboard:
+							trigger.ControlId = static_cast<KeyCode>(controlId);
+							break;
+						case InputDevice::Mouse:
+							trigger.ControlId = static_cast<MouseControl>(controlId);
+							break;
+						case InputDevice::Gamepad:
+						default:
+							EB_CORE_ERROR("ProjectSerializer::Deserialize: Unknown input device type: {0}", static_cast<int>(trigger.Device));
+							break;
+						}
+						int modifierInt;
+						triggerNode["RequiredModifier"] >> modifierInt;
+						trigger.RequiredModifier = static_cast<KeyModifierType>(modifierInt);
+						action.Triggers.push_back(trigger);
+					}
+					inputActionManager.AddAction(action);
+				}
+			}
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

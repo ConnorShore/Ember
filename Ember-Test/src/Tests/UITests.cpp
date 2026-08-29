@@ -584,7 +584,7 @@ namespace {
 			viewportMin.x + uiPosition.x,
 			(viewportMin.y + viewportSize.y) - uiPosition.y));
 
-		Input::SetMouseButtonState(MouseButton::Left, mouseDown);
+		Input::SetMouseControlState(MouseControl::Left, mouseDown);
 		Sys<UIInputSystem>()->OnUpdate(Ember::Test::FixedStep(), &scene);
 	}
 

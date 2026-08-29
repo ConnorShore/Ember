@@ -5,12 +5,25 @@
 #include "Ember/Core/Application.h"
 
 #define IN_KEY_RANGE(key) key >= 0 && key < KeyArraySize
-#define IN_MOUSE_BUTTON_RANGE(button) button >= 0 && button < MouseButtonArraySize
+#define IN_MOUSE_CONTROL_RANGE(control) static_cast<size_t>(control) < MouseControlArraySize
 
 namespace Ember {
 
 	std::array<int, static_cast<size_t>(KeyCode::Last)> Input::s_KeyStates = {};
-	std::array<int, static_cast<size_t>(MouseButton::Last)> Input::s_MouseButtonStates = {};
+	std::array<uint8_t, static_cast<size_t>(KeyCode::Last)> Input::s_KeyDownSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(KeyCode::Last)> Input::s_KeyPressedSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(KeyCode::Last)> Input::s_KeyReleasedSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(KeyCode::Last)> Input::s_KeyPressLatch = {};
+	std::array<uint8_t, static_cast<size_t>(KeyCode::Last)> Input::s_KeyReleaseLatch = {};
+
+	std::array<int, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlStates = {};
+	std::array<uint8_t, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlDownSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlPressedSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlReleasedSnapshot = {};
+	std::array<uint8_t, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlPressLatch = {};
+	std::array<uint8_t, static_cast<size_t>(MouseControl::Last)> Input::s_MouseControlReleaseLatch = {};
+
+
 	KeyModifierType Input::s_ActiveModifiers = 0;
 	Vector2f Input::s_MousePosition = { 0.0f, 0.0f };
 	Vector2f Input::s_ScrollOffset = { 0.0f, 0.0f };
@@ -20,23 +33,102 @@ namespace Ember {
 	Vector2f Input::s_ViewportSize = { 0.0f, 0.0f };
 	bool Input::s_ViewportInputActive = true;
 
+	void Input::BeginFrame()
+	{
+		// Update snapshots of key states
+		for (size_t k = 0; k < KeyArraySize; k++)
+		{
+			bool down = s_KeyStates[k] > 0, prev = s_KeyDownSnapshot[k];
+			s_KeyPressedSnapshot[k] = (down && !prev) || s_KeyPressLatch[k] > 0;
+			s_KeyReleasedSnapshot[k] = (!down && prev) || s_KeyReleaseLatch[k] > 0;
+			s_KeyDownSnapshot[k] = down;
+			s_KeyPressLatch[k] = s_KeyReleaseLatch[k] = 0;
+		}
+
+		// Update snapshots of mouse button states
+		for (size_t b = 0; b < MouseControlArraySize; b++)
+		{
+			bool down = s_MouseControlStates[b] > 0, prev = s_MouseControlDownSnapshot[b];
+			s_MouseControlPressedSnapshot[b] = (down && !prev) || s_MouseControlPressLatch[b] > 0;
+			s_MouseControlReleasedSnapshot[b] = (!down && prev) || s_MouseControlReleaseLatch[b] > 0;
+			s_MouseControlDownSnapshot[b] = down;
+			s_MouseControlPressLatch[b] = s_MouseControlReleaseLatch[b] = 0;
+		}
+
+		// Update active modifiers
+		s_ActiveModifiers = 0;
+		if (IsKeyDown(KeyCode::LeftShift) || IsKeyDown(KeyCode::RightShift))
+			s_ActiveModifiers |= KeyModifier::Shift;
+		if (IsKeyDown(KeyCode::LeftControl) || IsKeyDown(KeyCode::RightControl))
+			s_ActiveModifiers |= KeyModifier::Control;
+		if (IsKeyDown(KeyCode::LeftAlt) || IsKeyDown(KeyCode::RightAlt))
+			s_ActiveModifiers |= KeyModifier::Alt;
+		if (IsKeyDown(KeyCode::LeftSuper) || IsKeyDown(KeyCode::RightSuper))
+			s_ActiveModifiers |= KeyModifier::Super;
+	}
+
 	bool Input::IsKeyPressed(KeyCode key)
+	{
+		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
+		return s_KeyPressedSnapshot[static_cast<KeyCodeType>(key)] > 0;
+	}
+
+	bool Input::IsKeyReleased(KeyCode key)
+	{
+		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
+		return s_KeyReleasedSnapshot[static_cast<KeyCodeType>(key)] > 0;
+	}
+
+	bool Input::IsKeyDown(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
 		return s_KeyStates[static_cast<KeyCodeType>(key)] > 0;
 	}
 
-	bool Input::IsKeyHeld(KeyCode key)
+	bool Input::IsKeyRepeating(KeyCode key)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key checked!");
 		// State > 1 means the key has been pressed AND repeated at least once
 		return s_KeyStates[static_cast<KeyCodeType>(key)] > 1;
 	}
 
+	// MouseButton's three values are the first three MouseControls, so these are adapters.
+	bool Input::IsMouseButtonDown(MouseButton button)
+	{
+		return IsMouseControlDown(static_cast<MouseControl>(button));
+	}
+
 	bool Input::IsMouseButtonPressed(MouseButton button)
 	{
-		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button checked!");
-		return s_MouseButtonStates[static_cast<MouseButtonType>(button)] > 0;
+		return IsMouseControlPressed(static_cast<MouseControl>(button));
+	}
+
+	bool Input::IsMouseButtonReleased(MouseButton button)
+	{
+		return IsMouseControlReleased(static_cast<MouseControl>(button));
+	}
+
+	bool Input::IsMouseControlDown(MouseControl control)
+	{
+		EB_CORE_ASSERT(IN_MOUSE_CONTROL_RANGE(control), "Undefined mouse control checked!");
+		return s_MouseControlStates[static_cast<size_t>(control)] > 0;
+	}
+
+	bool Input::IsMouseControlPressed(MouseControl control)
+	{
+		EB_CORE_ASSERT(IN_MOUSE_CONTROL_RANGE(control), "Undefined mouse control checked!");
+		return s_MouseControlPressedSnapshot[static_cast<size_t>(control)] > 0;
+	}
+
+	bool Input::IsMouseControlReleased(MouseControl control)
+	{
+		EB_CORE_ASSERT(IN_MOUSE_CONTROL_RANGE(control), "Undefined mouse control checked!");
+		return s_MouseControlReleasedSnapshot[static_cast<size_t>(control)] > 0;
+	}
+
+	Ember::KeyModifierType Input::GetActiveModifiers()
+	{
+		return s_ActiveModifiers;
 	}
 
 	bool Input::IsModifierActive(KeyModifier modifier)
@@ -47,7 +139,16 @@ namespace Ember {
 	void Input::SetKeyState(KeyCode key, bool pressed)
 	{
 		EB_CORE_ASSERT(IN_KEY_RANGE(key), "Undefined key pressed!");
-		s_KeyStates[static_cast<KeyCodeType>(key)] = pressed ? 1 : 0;
+
+		const size_t index = static_cast<KeyCodeType>(key);
+		s_KeyStates[index] = pressed ? 1 : 0;
+
+		// Latch the transition so a tap delivered entirely inside one glfwPollEvents batch is not
+		// cancelled out before BeginFrame ever samples it.
+		if (pressed)
+			s_KeyPressLatch[index]++;
+		else
+			s_KeyReleaseLatch[index]++;
 	}
 
 	void Input::IncrementKeyRepeat(KeyCode key)
@@ -62,16 +163,34 @@ namespace Ember {
 			state++;
 	}
 
-	void Input::SetMouseButtonState(MouseButton button, bool pressed)
+	void Input::SetMouseControlState(MouseControl control, bool pressed)
 	{
-		EB_CORE_ASSERT(IN_MOUSE_BUTTON_RANGE(button), "Undefined mouse button toggled!");
-		s_MouseButtonStates[static_cast<MouseButtonType>(button)] = pressed;
+		EB_CORE_ASSERT(IN_MOUSE_CONTROL_RANGE(control), "Undefined mouse control toggled!");
+
+		const size_t index = static_cast<size_t>(control);
+		s_MouseControlStates[index] = pressed;
+
+		if (pressed)
+			s_MouseControlPressLatch[index]++;
+		else
+			s_MouseControlReleaseLatch[index]++;
+	}
+
+	void Input::PulseMouseControl(MouseControl control)
+	{
+		EB_CORE_ASSERT(IN_MOUSE_CONTROL_RANGE(control), "Undefined mouse control pulsed!");
+
+		// Both latches, and no level state: the next BeginFrame reports one pressed and one released
+		// edge, and Down is never true. You cannot hold a wheel notch.
+		const size_t index = static_cast<size_t>(control);
+		s_MouseControlPressLatch[index]++;
+		s_MouseControlReleaseLatch[index]++;
 	}
 
 	void Input::ClearAllStates()
 	{
 		s_KeyStates.fill(0);
-		s_MouseButtonStates.fill(0);
+		s_MouseControlStates.fill(0);
 		s_ActiveModifiers = 0;
 	}
 
@@ -99,6 +218,12 @@ namespace Ember {
 	void Input::SetMouseScrollOffset(const Vector2f& offset)
 	{
 		s_ScrollOffset = offset;
+
+		// Derive the wheel controls here so every scroll source feeds them through one choke point.
+		if (offset.y > 0.0f)
+			PulseMouseControl(MouseControl::WheelUp);
+		else if (offset.y < 0.0f)
+			PulseMouseControl(MouseControl::WheelDown);
 	}
 
 	void Input::SetCursorMode(CursorMode mode)

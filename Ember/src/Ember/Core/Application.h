@@ -16,6 +16,8 @@
 
 #include "Ember/ECS/System/SystemManager.h"
 
+#include "Ember/Input/InputActionManager.h"
+
 #include "Ember/Asset/AssetManager.h"
 #include "Ember/Asset/Asset.h"
 
@@ -33,25 +35,25 @@ namespace Ember {
 		template<IsCoreAsset T, typename... Args>
 		SharedPtr<T> CreateAsset(Args&&... args)
 		{
-			return m_AssetManager->Create<T>(std::forward<Args>(args)...);
+			return m_AssetManager.Create<T>(std::forward<Args>(args)...);
 		}
 
 		template<IsCoreAsset T>
 		SharedPtr<T> LoadAsset(const std::string& filePath)
 		{
-			return m_AssetManager->Load<T>(filePath);
+			return m_AssetManager.Load<T>(filePath);
 		}
 
 		template<IsCoreAsset T>
 		SharedPtr<T> LoadAsset(const std::string& name, const std::string& filePath)
 		{
-			return m_AssetManager->Load<T>(name, filePath);
+			return m_AssetManager.Load<T>(name, filePath);
 		}
 
 		template<typename T>
 		SharedPtr<T> GetSystem()
 		{
-			return m_SystemManager->GetSystem<T>();
+			return m_SystemManager.GetSystem<T>();
 		}
 
 		void OnAttach();
@@ -65,14 +67,16 @@ namespace Ember {
 		inline static Application& Instance() { return *s_Instance; }
 
         inline const Window& GetWindow() const { return *m_Window; }
-		inline AssetManager& GetAssetManager() { return *m_AssetManager; }
-		inline const AssetManager& GetAssetManager() const { return *m_AssetManager; }
-		inline SceneManager& GetSceneManager() { return *m_SceneManager; }
-		inline SaveGameManager& GetSaveGameManager() { return *m_SaveGameManager; }
-		inline const SaveGameManager& GetSaveGameManager() const { return *m_SaveGameManager; }
+		inline AssetManager& GetAssetManager() { return m_AssetManager; }
+		inline const AssetManager& GetAssetManager() const { return m_AssetManager; }
+		inline SceneManager& GetSceneManager() { return m_SceneManager; }
+		inline SaveGameManager& GetSaveGameManager() { return m_SaveGameManager; }
+		inline const SaveGameManager& GetSaveGameManager() const { return m_SaveGameManager; }
 
-		inline SystemManager& GetSystemManager() { return *m_SystemManager; }
-		inline const SystemManager& GetSystemManager() const { return *m_SystemManager; }
+		inline SystemManager& GetSystemManager() { return m_SystemManager; }
+		inline InputActionManager& GetInputActionManager() { return m_InputActions; }
+		inline const InputActionManager& GetInputActionManager() const { return m_InputActions; }
+		inline const SystemManager& GetSystemManager() const { return m_SystemManager; }
 
 		inline void SetCursorPosition(float x, float y) { m_Window->SetCursorPosition(x, y); }
 
@@ -106,13 +110,17 @@ namespace Ember {
 		ScopedPtr<Window> m_Window;
 		bool m_Running = true;
 
-		ScopedPtr<SystemManager> m_SystemManager;
-		ScopedPtr<AssetManager> m_AssetManager;
-		ScopedPtr<SceneManager> m_SceneManager;
-		ScopedPtr<SaveGameManager> m_SaveGameManager;
+		SystemManager m_SystemManager;
+		AssetManager m_AssetManager;
+		SceneManager m_SceneManager;
+
+		// Declared before m_InputActions and constructed before the body, so it is guaranteed to
+		// exist by the time ScriptEngine::Init() publishes `GameData` as a pointer to it.
+		SaveGameManager m_SaveGameManager;
+		InputActionManager m_InputActions;
 
 		LayerStack m_LayerStack;
-		ScopedPtr<ImGuiLayer> m_ImGuiLayer;
+		ImGuiLayer m_ImGuiLayer;
 
 		static Application* s_Instance;
 	};

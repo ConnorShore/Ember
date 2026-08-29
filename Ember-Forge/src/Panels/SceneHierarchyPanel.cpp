@@ -892,10 +892,10 @@ namespace Ember {
 
 	bool SceneHierarchyPanel::OnMousePressed(const MousePressedEvent& event)
 	{
-		auto mb = event.GetMouseButton();
+		auto mb = event.GetMouseControl();
 		switch (mb)
 		{
-			case MouseButton::Left:
+			case MouseControl::Left:
 				m_SetRenameFocus = false;
 				break;
 		}

@@ -251,19 +251,21 @@ namespace Ember {
 			glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* w, int button, int action, int mods)
 				{
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
-					MouseButton mouseButton = Input::GlfwMouseButtonToEmberMouseButton(button);
+					MouseControl mouseControl{};
+					if (!Input::GlfwMouseButtonToEmberMouseControl(button, mouseControl))
+						return;
 
 					switch (action)
 					{
 					case GLFW_PRESS:
 					{
-						MousePressedEvent e(mouseButton);
+						MousePressedEvent e(mouseControl);
 						data.EventCallback(e);
 						break;
 					}
 					case GLFW_RELEASE:
 					{
-						MouseReleasedEvent e(mouseButton);
+						MouseReleasedEvent e(mouseControl);
 						data.EventCallback(e);
 						break;
 					}

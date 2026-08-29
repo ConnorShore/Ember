@@ -71,7 +71,7 @@ namespace Ember {
 
 	bool UIInputSystem::ConsumeKeyEdge(KeyCode key)
 	{
-		bool down = Input::IsKeyPressed(key);
+		bool down = Input::IsKeyDown(key);
 		bool wasDown = m_PreviousKeyStates[key];
 		m_PreviousKeyStates[key] = down;
 		return down && !wasDown;
@@ -115,7 +115,7 @@ namespace Ember {
 			hitSelectable = hit;
 		}
 
-		bool mouseDown = Input::IsMouseButtonPressed(MouseButton::Left);
+		bool mouseDown = Input::IsMouseButtonDown(MouseButton::Left);
 		bool mousePressed = mouseDown && !m_PreviousMouseDown;
 		bool mouseReleased = !mouseDown && m_PreviousMouseDown;
 		m_PreviousMouseDown = mouseDown;

@@ -59,6 +59,9 @@ namespace Ember {
 		if (ImGui::Selectable("General", m_SelectedCategory == Category::General))
 			m_SelectedCategory = Category::General;
 
+		if (ImGui::Selectable("Input", m_SelectedCategory == Category::Input))
+			m_SelectedCategory = Category::Input;
+
 		if (ImGui::Selectable("Physics", m_SelectedCategory == Category::Physics))
 			m_SelectedCategory = Category::Physics;
 
@@ -71,6 +74,7 @@ namespace Ember {
 		switch (m_SelectedCategory)
 		{
 		case Category::General: RenderGeneralSettings(); break;
+		case Category::Input: RenderInputSettings(); break;
 		case Category::Physics: RenderPhysicsSettings(); break;
 		case Category::Rendering: RenderRenderingSettings(); break;
 		}
@@ -260,6 +264,26 @@ namespace Ember {
 
 			ImGui::PopID();
 		}
+
+		ImGui::EndChild();
+	}
+
+	void ProjectSettingsDialog::RenderInputSettings()
+	{
+		ImGui::Text("Input");
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		ImGui::TextDisabled("Input Actions");
+
+		ImGui::BeginChild("InputSection", ImVec2(0, 0), true);
+		
+		// TODO: Need to implement a system for managing input actions, including adding, removing, and editing actions.
+		//  1. Need to be able to add/remove action
+		//  2. Action should have column for name
+		//  3. Action should have column for type (Button, Axis, etc.)
+		//  4. Action should have column for the binding (based on the type)
+		//   a. Need way to "Press Key to Set Binding" type of input box
 
 		ImGui::EndChild();
 	}
