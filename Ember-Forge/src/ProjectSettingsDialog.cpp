@@ -566,13 +566,13 @@ namespace Ember {
 		ImGui::SameLine(90.0f);
 		for (const auto& [modifier, label] : s_ModifierToggles)
 		{
-			bool active = (m_PendingTrigger.RequiredModifier & modifier) != 0;
+			bool active = (m_PendingTrigger.RequiredModifiers & modifier) != 0;
 			if (ImGui::Checkbox(label, &active))
 			{
 				if (active)
-					m_PendingTrigger.RequiredModifier |= modifier;
+					m_PendingTrigger.RequiredModifiers |= modifier;
 				else
-					m_PendingTrigger.RequiredModifier = static_cast<KeyModifierType>(m_PendingTrigger.RequiredModifier & ~static_cast<KeyModifierType>(modifier));
+					m_PendingTrigger.RequiredModifiers = static_cast<KeyModifierType>(m_PendingTrigger.RequiredModifiers & ~static_cast<KeyModifierType>(modifier));
 			}
 
 			ImGui::SameLine();

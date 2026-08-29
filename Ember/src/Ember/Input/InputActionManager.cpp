@@ -14,14 +14,16 @@ namespace Ember {
 				if (std::holds_alternative<KeyCode>(trigger.ControlId))
 				{
 					KeyCode key = std::get<KeyCode>(trigger.ControlId);
-					return Input::IsKeyDown(key) && Input::GetActiveModifiers() == trigger.RequiredModifier;
+					bool active = Input::IsKeyDown(key) || Input::IsKeyPressed(key);
+					return active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
 				}
 				break;
 			case InputDevice::Mouse:
 				if (std::holds_alternative<MouseControl>(trigger.ControlId))
 				{
 					MouseControl control = std::get<MouseControl>(trigger.ControlId);
-					return Input::IsMouseControlDown(control) && Input::GetActiveModifiers() == trigger.RequiredModifier;
+					bool active = Input::IsMouseControlDown(control) || Input::IsMouseControlPressed(control);
+					return active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
 				}
 				break;
 			default:
@@ -63,17 +65,38 @@ namespace Ember {
 
 	bool InputActionManager::IsActionDown(std::string_view actionName)
 	{
-		return m_ActionStates[GetActionIndex(actionName)].IsDown;
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+		{
+			EB_CORE_ERROR("InputActionManager::IsActionDown: Action not found: {0}", actionName);
+			return false;
+		}
+
+		return m_ActionStates[actionIndex].IsDown;
 	}
 
 	bool InputActionManager::IsActionPressed(std::string_view actionName)
 	{
-		return m_ActionStates[GetActionIndex(actionName)].JustPressed;
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+		{
+			EB_CORE_ERROR("InputActionManager::IsActionPressed: Action not found: {0}", actionName);
+			return false;
+		}
+
+		return m_ActionStates[actionIndex].JustPressed;
 	}
 
 	bool InputActionManager::IsActionReleased(std::string_view actionName)
 	{
-		return m_ActionStates[GetActionIndex(actionName)].JustReleased;
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+		{
+			EB_CORE_ERROR("InputActionManager::IsActionReleased: Action not found: {0}", actionName);
+			return false;
+		}
+
+		return m_ActionStates[actionIndex].JustReleased;
 	}
 
 	int InputActionManager::GetActionIndex(std::string_view actionName)
@@ -109,18 +132,27 @@ namespace Ember {
 
 	void InputActionManager::RemoveAction(std::string_view actionName)
 	{
-		RemoveAction(GetActionIndex(actionName));
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+			return;
+
+		RemoveAction(actionIndex);
 	}
 
 	void InputActionManager::AddTrigger(int actionIndex, const InputTrigger& trigger)
 	{
+		EB_CORE_ASSERT(actionIndex >= 0 && actionIndex < m_Actions.size(), "InputActionManager::AddTrigger: Action index out of range");
 		m_Actions[actionIndex].Triggers.push_back(trigger);
 		m_ActionStates[actionIndex] = InputActionState(); // Reset state for the action
 	}
 
 	void InputActionManager::AddTrigger(std::string_view actionName, const InputTrigger& trigger)
 	{
-		AddTrigger(GetActionIndex(actionName), trigger);
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+			return;
+
+		AddTrigger(actionIndex, trigger);
 	}
 
 	void InputActionManager::UpdateTrigger(int actionIndex, int triggerIndex, const InputTrigger& trigger)
@@ -135,13 +167,18 @@ namespace Ember {
 	void InputActionManager::RemoveTrigger(int actionIndex, int triggerIndex)
 	{
 		EB_CORE_ASSERT(actionIndex >= 0 && actionIndex < m_Actions.size(), "InputActionManager::RemoveTrigger: Action index out of range");
+		EB_CORE_ASSERT(triggerIndex >= 0 && triggerIndex < m_Actions[actionIndex].Triggers.size(), "InputActionManager::RemoveTrigger: Trigger index out of range");
 		m_Actions[actionIndex].Triggers.erase(m_Actions[actionIndex].Triggers.begin() + triggerIndex);
 		m_ActionStates[actionIndex] = InputActionState(); // Reset state for the action
 	}
 
 	void InputActionManager::RemoveTrigger(std::string_view actionName, int triggerIndex)
 	{
-		RemoveTrigger(GetActionIndex(actionName), triggerIndex);
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+			return;
+
+		RemoveTrigger(actionIndex, triggerIndex);
 	}
 
 	void InputActionManager::ClearActions()

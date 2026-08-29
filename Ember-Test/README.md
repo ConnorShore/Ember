@@ -70,6 +70,7 @@ line in it names the test that died.
 | `src/Tests/AnimationTests.cpp` | Blackboard, condition evaluation, state machine, controller layers. |
 | `src/Tests/AITests.cpp` | A* pathfinding, obstacle avoidance, corner-cutting rules, AI component defaults. |
 | `src/Tests/RenderTests.cpp` | Camera projections, frustum culling, renderable bounds, visibility system, picking, editor-camera framing. |
+| `src/Tests/InputTests.cpp` | Serialized key/control names, trigger-string grammar, raw state edges and latches, input actions, and the Lua `Input` bindings. |
 | `src/Tests/AudioTests.cpp` | Move-only `AudioSourceComponent` through the sparse-set storage. |
 | `src/Tests/PerfTests.cpp` | Performance budgets and relative-speed assertions. |
 | `src/Tests/VisualTests.cpp` | Frame sanity, render determinism, golden images. |

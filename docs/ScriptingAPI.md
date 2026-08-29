@@ -915,9 +915,23 @@ the HUD.
 ## Input
 
 ```lua
-Input.IsKeyPressed(KeyCode.W)             -- bool, this frame
-Input.IsKeyHeld(KeyCode.Space)            -- bool, currently held
-Input.IsMouseButtonPressed(MouseButton.Left)
+Input.IsKeyDown(KeyCode.W)                -- bool, currently held
+Input.IsKeyReleased(KeyCode.Space)        -- bool, released this frame
+Input.IsKeyRepeating(KeyCode.Backspace)   -- bool, OS key-repeat is firing
+
+Input.IsMouseButtonDown(MouseButton.Left)
+Input.IsMouseButtonReleased(MouseButton.Left)
+
+Input.IsMouseControlDown(MouseControl.Button4)
+Input.IsMouseControlPressed(MouseControl.WheelUp)     -- bool, this frame only
+Input.IsMouseControlReleased(MouseControl.Button4)
+
+Input.IsModifierDown(KeyModifier.Shift)   -- bool, modifier currently held
+Input.GetActiveModifiers()                -- int, the whole modifier bitmask
+
+Input.IsActionDown("Jump")                -- bool, any of the action's triggers is active
+Input.IsActionPressed("Jump")             -- bool, went down this frame
+Input.IsActionReleased("Jump")            -- bool, came up this frame
 
 Input.GetMousePosition()                  -- Vector2f
 Input.GetMouseScrollOffset()              -- Vector2f
@@ -928,6 +942,26 @@ Input.GetCursorMode()
 
 Input.GetViewportMousePosition()          -- Vector2f, UI space
 ```
+
+`Input.IsKeyPressed` and `Input.IsMouseButtonPressed` are older spellings that mean **held**, not
+"pressed this frame" — `IsKeyDown` / `IsMouseButtonDown` are the clearer names for the same thing.
+For a genuine one-frame edge on the mouse use `IsMouseControlPressed`, which is also the only way
+to read the scroll wheel as a control: a wheel notch is a one-frame pulse and is never *down*.
+
+`IsModifierDown` tests the argument against the active bitmask, so a multi-bit argument asks
+*any of these*: `Input.IsModifierDown(KeyModifier.Shift | KeyModifier.Control)` is true when either
+is held. For a chord that has to match exactly, compare the mask itself —
+`Input.GetActiveModifiers() == (KeyModifier.Shift | KeyModifier.Control)`.
+`Input.IsModifierActive` is the same function under the C++ spelling.
+
+The `IsAction*` queries read the input actions defined in **Project Settings → Input**, so a game
+can rebind controls without touching script. An unknown action name logs an error and returns
+false rather than failing the call.
+
+> A trigger's required modifiers are a **subset** test: all of them must be held, and anything else
+> held alongside is ignored. So `Key/W` keeps firing while Shift is held (sprint does not cancel
+> movement), but a `Key/Ctrl+S` action does not suppress a plain `Key/S` one — pressing Ctrl+S fires
+> both. Check the modifiers yourself in script if a chord has to win.
 
 `GetMousePosition` returns raw window coordinates (top-left origin, +Y down).
 `GetViewportMousePosition` returns the pointer in **UI space** - viewport-local, bottom-left
@@ -950,10 +984,14 @@ viewport panel's position.
   `NumPadEnter`, `NumPadEqual`, `LeftShift`, `LeftControl`, `LeftAlt`, `LeftSuper`,
   `RightShift`, `RightControl`, `RightAlt`, `RightSuper`, `Menu`, `Last`.
 - **`KeyAction`** — `Release`, `Press`, `Repeat`.
-- **`KeyModifier`** — `None`, `Shift`, `Control`, `Alt`, `Super`.
+- **`KeyModifier`** — `None`, `Shift`, `Control`, `Alt`, `Super`. A bitmask, so values combine
+  with `|`. `None` is zero and therefore never reads as down.
 - **`MouseButton`** — `Left`, `Right`, `Middle`.
-
-`Input.SetCursorMode(mode)` accepts Ember's cursor mode value: `0` normal, `1` hidden, `2` locked.
+- **`MouseControl`** — `Left`, `Right`, `Middle`, `Button4`–`Button15`, `WheelUp`, `WheelDown`.
+  A superset of `MouseButton` (the first three values match), covering the side buttons and the
+  wheel that `MouseButton` cannot name.
+- **`CursorMode`** — `Normal` (`0`), `Hidden` (`1`), `Locked` (`2`). `Input.SetCursorMode` also
+  accepts the raw integer.
 
 ---
 
@@ -1305,10 +1343,10 @@ function Player:OnUpdate(entity, delta)
     local right   = self.transform:GetRight()
 
     local move = Vector3f.new(0, 0, 0)
-    if Input.IsKeyPressed(KeyCode.W) then move = move + forward end
-    if Input.IsKeyPressed(KeyCode.S) then move = move - forward end
-    if Input.IsKeyPressed(KeyCode.D) then move = move + right end
-    if Input.IsKeyPressed(KeyCode.A) then move = move - right end
+    if Input.IsKeyDown(KeyCode.W) then move = move + forward end
+    if Input.IsKeyDown(KeyCode.S) then move = move - forward end
+    if Input.IsKeyDown(KeyCode.D) then move = move + right end
+    if Input.IsKeyDown(KeyCode.A) then move = move - right end
 
     if Math.Length(move) > 0 then
         move = Math.Normalize(move)
@@ -1316,7 +1354,7 @@ function Player:OnUpdate(entity, delta)
 
     self.controller:Move(move * self.Speed * delta)
 
-    if Input.IsKeyPressed(KeyCode.Space) and self.controller.IsGrounded then
+    if Input.IsKeyDown(KeyCode.Space) and self.controller.IsGrounded then
         self.controller:Jump()
     end
 end

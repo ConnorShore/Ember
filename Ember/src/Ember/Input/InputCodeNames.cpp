@@ -199,7 +199,7 @@ namespace Ember {
 		std::string result(device);
 		result += '/';
 
-		AppendModifiers(result, trigger.RequiredModifier, "+");
+		AppendModifiers(result, trigger.RequiredModifiers, "+");
 
 		switch (trigger.Device)
 		{
@@ -283,14 +283,14 @@ namespace Ember {
 			return false;
 		}
 
-		out.RequiredModifier = modifiers;
+		out.RequiredModifiers = modifiers;
 		return true;
 	}
 
 	std::string InputCodeNames::TriggerToDisplayName(const InputTrigger& trigger)
 	{
 		std::string result;
-		AppendModifiers(result, trigger.RequiredModifier, " + ");
+		AppendModifiers(result, trigger.RequiredModifiers, " + ");
 
 		switch (trigger.Device)
 		{

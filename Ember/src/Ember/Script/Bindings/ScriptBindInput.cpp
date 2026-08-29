@@ -54,13 +54,36 @@ namespace Ember {
 		);
 
 		auto inputTable = state.create_named_table("Input");
+		inputTable.set_function("IsKeyDown", &Input::IsKeyDown);
+		inputTable.set_function("IsKeyReleased", &Input::IsKeyReleased);
+		inputTable.set_function("IsKeyRepeating", &Input::IsKeyRepeating);
+
+		inputTable.set_function("IsMouseControlDown", &Input::IsMouseControlDown);
+		inputTable.set_function("IsMouseControlPressed", &Input::IsMouseControlPressed);
+		inputTable.set_function("IsMouseControlReleased", &Input::IsMouseControlReleased);
+
+		inputTable.set_function("IsMouseButtonDown", &Input::IsMouseButtonDown);
+		inputTable.set_function("IsMouseButtonReleased", &Input::IsMouseButtonReleased);
+
+		// Legacy spellings: these two have always meant "held" to game scripts, so they stay wired
+		// to the level state rather than the one-frame edge the C++ names of the same shape return.
 		inputTable.set_function("IsKeyPressed", &Input::IsKeyDown);
-		inputTable.set_function("IsKeyHeld", &Input::IsKeyRepeating);
 		inputTable.set_function("IsMouseButtonPressed", &Input::IsMouseButtonDown);
-		
+
+		// Modifiers are a bitmask, so a multi-bit argument means "any of these", not "all of them".
+		// Compare GetActiveModifiers() yourself when a chord has to match exactly.
+		inputTable.set_function("IsModifierDown", &Input::IsModifierActive);
+		inputTable.set_function("IsModifierActive", &Input::IsModifierActive);
+		inputTable.set_function("GetActiveModifiers", &Input::GetActiveModifiers);
+
 		inputTable.set_function("GetMousePosition", &Input::GetMousePosition);
 		inputTable.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
 		inputTable.set_function("GetMouseDelta", &Input::GetMouseDelta);
+
+		auto& inputActionManager = Application::Instance().GetInputActionManager();
+		inputTable.set_function("IsActionDown", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionDown(actionName); });
+		inputTable.set_function("IsActionPressed", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionPressed(actionName); });
+		inputTable.set_function("IsActionReleased", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionReleased(actionName); });
 		
 		inputTable.set_function("SetCursorMode", &Input::SetCursorMode);
 		inputTable.set_function("GetCursorMode", &Input::GetCursorMode);

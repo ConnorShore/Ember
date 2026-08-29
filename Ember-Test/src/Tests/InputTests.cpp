@@ -7,12 +7,15 @@
 #include <Ember.h>
 
 #include "TestFramework.h"
+#include "TestHelpers.h"
 
+#include "Ember/Input/InputActionManager.h"
 #include "Ember/Input/InputCodeNames.h"
 
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace Ember;
 using Ember::Test::Type::Integration;
@@ -181,6 +184,8 @@ namespace {
 
 		static void Settle()
 		{
+			// A zero offset pulses nothing, so this clears the wheel without leaving an edge behind.
+			Input::SetMouseScrollOffset(Vector2f(0.0f, 0.0f));
 			Input::ClearAllStates();
 			Input::BeginFrame();
 			Input::BeginFrame();
@@ -406,7 +411,7 @@ EB_TEST_CASE(Input, FailedParseResetsTheOutputTrigger, Unit)
 
 	EB_EXPECT_FALSE(InputCodeNames::TriggerFromString("Key/Bogus", trigger));
 	EB_EXPECT(trigger.Device == InputDevice::None);
-	EB_EXPECT_EQ(static_cast<int>(trigger.RequiredModifier), 0);
+	EB_EXPECT_EQ(static_cast<int>(trigger.RequiredModifiers), 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -472,4 +477,610 @@ EB_TEST_CASE(Input, TriggerDisplayNamesAreHumanReadable, Unit)
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Key/Ctrl+Shift+S")), std::string("Ctrl + Shift + S"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Mouse/Left")), std::string("Left Mouse"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Mouse/WheelUp")), std::string("Wheel Up"));
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Raw state: repeats, focus loss, mouse delta
+//////////////////////////////////////////////////////////////////////////
+
+// GLFW does not synthesize a PRESS for keys already held when the window regains focus, so a repeat
+// arriving for a key we never saw pressed must not be able to fake a held key.
+EB_TEST_CASE(Input, KeyRepeatOnlyCountsKeysWeSawPressed, Unit)
+{
+	InputStateGuard guard;
+
+	Input::IncrementKeyRepeat(KeyCode::F);
+	Input::BeginFrame();
+
+	EB_EXPECT_FALSE(Input::IsKeyDown(KeyCode::F));
+	EB_EXPECT_FALSE(Input::IsKeyRepeating(KeyCode::F));
+	EB_EXPECT_EQ(Input::GetKeyRepeatCount(KeyCode::F), 0);
+}
+
+EB_TEST_CASE(Input, KeyRepeatsAccumulateOnlyWhileHeld, Unit)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::F, true);
+	EB_EXPECT_FALSE(Input::IsKeyRepeating(KeyCode::F));   // down, but not yet repeating
+
+	Input::IncrementKeyRepeat(KeyCode::F);
+	EB_EXPECT(Input::IsKeyRepeating(KeyCode::F));
+	EB_EXPECT_EQ(Input::GetKeyRepeatCount(KeyCode::F), 2);
+
+	// Release drops the count outright rather than decaying it.
+	Input::SetKeyState(KeyCode::F, false);
+	EB_EXPECT_EQ(Input::GetKeyRepeatCount(KeyCode::F), 0);
+	EB_EXPECT_FALSE(Input::IsKeyRepeating(KeyCode::F));
+}
+
+// A key released while the window is unfocused delivers no event, so without this the key stays
+// stuck down for the rest of the session.
+EB_TEST_CASE(Input, ClearAllStatesDropsHeldKeysMouseAndModifiers, Unit)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::W, true);
+	Input::SetKeyState(KeyCode::LeftShift, true);
+	Input::SetMouseControlState(MouseControl::Left, true);
+	Input::BeginFrame();
+	EB_CHECK(Input::IsKeyDown(KeyCode::W));
+	EB_CHECK(Input::IsModifierActive(KeyModifier::Shift));
+
+	Input::ClearAllStates();
+
+	EB_EXPECT_FALSE(Input::IsKeyDown(KeyCode::W));
+	EB_EXPECT_FALSE(Input::IsKeyDown(KeyCode::LeftShift));
+	EB_EXPECT_FALSE(Input::IsMouseControlDown(MouseControl::Left));
+	EB_EXPECT_EQ(static_cast<int>(Input::GetActiveModifiers()), 0);
+}
+
+// Sub-pixel jitter from the OS would otherwise drive a look-around camera while the mouse sits still.
+EB_TEST_CASE(Input, MouseDeltaIgnoresMovementInsideTheDeadzone, Unit)
+{
+	const Vector2f savedPosition = Input::GetMousePosition();
+
+	Input::UpdateMousePosition(Vector2f(100.0f, 100.0f));
+	Input::ResetMouseDelta();
+
+	Input::UpdateMousePosition(Vector2f(101.0f, 100.5f));   // both axes inside the 1.5px deadzone
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(0.0f, 0.0f), 1e-4f);
+
+	// Per-axis, not per-vector: x clears the deadzone here and y does not.
+	Input::UpdateMousePosition(Vector2f(110.0f, 101.0f));
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(9.0f, 0.0f), 1e-4f);
+
+	Input::UpdateMousePosition(savedPosition);
+	Input::ResetMouseDelta();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Input actions
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	// Builds a manager with one action, spelled in the same grammar the project file stores.
+	InputActionManager MakeManager(std::string_view actionName, std::string_view triggerText)
+	{
+		InputActionManager manager;
+		manager.AddAction({ std::string(actionName), { ParseTrigger(triggerText) } });
+
+		return manager;
+	}
+
+	// Samples a frame the way Application does: snapshot the raw state, then re-evaluate actions.
+	void StepActions(InputActionManager& manager)
+	{
+		Input::BeginFrame();
+		manager.Evaluate();
+	}
+
+}
+
+EB_TEST_CASE(Input, ActionFollowsItsKeyThroughDownPressedReleased, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Jump"));
+	EB_EXPECT(actions.IsActionPressed("Jump"));
+	EB_EXPECT_FALSE(actions.IsActionReleased("Jump"));
+
+	// Still held, but the press edge is spent.
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Jump"));
+	EB_EXPECT_FALSE(actions.IsActionPressed("Jump"));
+
+	Input::SetKeyState(KeyCode::Space, false);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("Jump"));
+	EB_EXPECT(actions.IsActionReleased("Jump"));
+
+	// The release edge is one frame too.
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionReleased("Jump"));
+}
+
+// Nothing changes until Evaluate runs, which is what keeps an action's edges stable for the whole
+// frame no matter where in the frame a script asks.
+EB_TEST_CASE(Input, ActionStateOnlyChangesOnEvaluate, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	Input::BeginFrame();
+	EB_EXPECT_FALSE(actions.IsActionDown("Jump"));
+
+	actions.Evaluate();
+	EB_EXPECT(actions.IsActionDown("Jump"));
+}
+
+EB_TEST_CASE(Input, ActionFiresForAnyOfItsTriggers, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Fire", "Key/Space");
+	actions.AddTrigger("Fire", ParseTrigger("Mouse/Left"));
+
+	Input::SetMouseControlState(MouseControl::Left, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Fire"));
+	EB_EXPECT(actions.GetActionStates()[0].LastDevice == InputDevice::Mouse);
+
+	// The key trigger is listed first, so it wins the scan and re-stamps the device.
+	Input::SetMouseControlState(MouseControl::Left, false);
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Fire"));
+	EB_EXPECT(actions.GetActionStates()[0].LastDevice == InputDevice::Keyboard);
+}
+
+EB_TEST_CASE(Input, ActionWithNoTriggersIsNeverDown, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions;
+	actions.AddAction({ "Unbound", {} });
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+
+	EB_EXPECT_FALSE(actions.IsActionDown("Unbound"));
+	EB_EXPECT_FALSE(actions.IsActionPressed("Unbound"));
+}
+
+// Regression: IsTriggerActive tested only the held state, and a tap delivered entirely inside one
+// glfwPollEvents batch leaves the level back at zero - so the action never saw the input at all.
+EB_TEST_CASE(Input, ActionCatchesATapInsideOnePoll, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Interact", "Key/E");
+
+	Input::SetKeyState(KeyCode::E, true);
+	Input::SetKeyState(KeyCode::E, false);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionPressed("Interact"));
+
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("Interact"));
+	EB_EXPECT(actions.IsActionReleased("Interact"));
+}
+
+// Regression: the wheel is a one-frame pulse with no held state, so testing only the held state made
+// every wheel binding silently dead - and the editor's trigger picker offers WheelUp/WheelDown.
+EB_TEST_CASE(Input, WheelBoundActionFiresForOneFrame, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("ZoomIn", "Mouse/WheelUp");
+
+	Input::SetMouseScrollOffset(Vector2f(0.0f, 1.0f));
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("ZoomIn"));
+	EB_EXPECT(actions.IsActionPressed("ZoomIn"));
+
+	// One notch is one pulse: the action has to fall again on its own.
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("ZoomIn"));
+	EB_EXPECT(actions.IsActionReleased("ZoomIn"));
+}
+
+// RequiredModifiers is a subset test, not an equality test: every required modifier has to be held,
+// and anything else held alongside them is ignored.
+EB_TEST_CASE(Input, ActionRequiresAllOfItsModifiersAndToleratesOthers, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("QuickSave", "Key/Ctrl+Shift+S");
+
+	// One of the two is not enough.
+	Input::SetKeyState(KeyCode::S, true);
+	Input::SetKeyState(KeyCode::LeftControl, true);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("QuickSave"));
+
+	Input::SetKeyState(KeyCode::LeftShift, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("QuickSave"));
+
+	// A modifier the trigger never asked for does not take the chord back out of range.
+	Input::SetKeyState(KeyCode::LeftAlt, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("QuickSave"));
+}
+
+// The point of the subset test: a plain-key action keeps firing while an unrelated modifier is
+// held, so holding Shift to sprint does not silence a MoveForward bound to Key/W.
+EB_TEST_CASE(Input, PlainKeyActionKeepsFiringWhileAModifierIsHeld, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("MoveForward", "Key/W");
+
+	Input::SetKeyState(KeyCode::W, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("MoveForward"));
+
+	Input::SetKeyState(KeyCode::LeftShift, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("MoveForward"));
+
+	// It also must not re-fire its press edge, since it never went down in between.
+	EB_EXPECT_FALSE(actions.IsActionPressed("MoveForward"));
+}
+
+// The cost of the subset test, and worth knowing before binding an editor-style chord: a trigger
+// with no required modifiers matches unconditionally, so Ctrl+S fires the plain-S action too.
+// Suppressing that needs the chord to win explicitly - the manager has no notion of priority.
+EB_TEST_CASE(Input, ChordDoesNotSuppressThePlainKeyActionBoundToTheSameKey, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("QuickSave", "Key/Ctrl+S");
+	actions.AddAction({ "TypeS", { ParseTrigger("Key/S") } });
+
+	Input::SetKeyState(KeyCode::S, true);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("QuickSave"));
+	EB_EXPECT(actions.IsActionDown("TypeS"));
+
+	Input::SetKeyState(KeyCode::LeftControl, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("QuickSave"));
+	EB_EXPECT(actions.IsActionDown("TypeS"));
+	EB_NOTE("a chord and the plain-key action on the same key both fire; there is no suppression");
+}
+
+// Regression: GetActionIndex returns -1 for an unknown name, and the queries used to feed that
+// straight into m_ActionStates[] - an out-of-bounds read on every typo'd action name in a script.
+EB_TEST_CASE(Input, MissingActionQueriesReturnFalseInsteadOfIndexingOutOfRange, Unit)
+{
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	EB_EXPECT_EQ(actions.GetActionIndex("Nope"), -1);
+	EB_EXPECT_FALSE(actions.IsActionDown("Nope"));
+	EB_EXPECT_FALSE(actions.IsActionPressed("Nope"));
+	EB_EXPECT_FALSE(actions.IsActionReleased("Nope"));
+
+	// An empty manager is the same path with nothing to run off the end of.
+	InputActionManager empty;
+	EB_EXPECT_FALSE(empty.IsActionDown("Jump"));
+}
+
+// The by-name mutators route through the same -1, where an unguarded index is a bad erase or a
+// straight out-of-bounds write rather than a read.
+EB_TEST_CASE(Input, MissingActionMutatorsAreNoOps, Unit)
+{
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	actions.RemoveAction("Nope");
+	actions.AddTrigger("Nope", ParseTrigger("Key/E"));
+	actions.RemoveTrigger("Nope", 0);
+
+	EB_EXPECT_EQ(actions.GetActions().size(), size_t(1));
+	EB_EXPECT_EQ(actions.GetActionStates().size(), size_t(1));
+	EB_EXPECT_EQ(actions.GetActions()[0].Triggers.size(), size_t(1));
+}
+
+// m_Actions and m_ActionStates are parallel vectors indexed in lockstep, so a removal that shrank
+// only one of them would leave every later action reading someone else's state.
+EB_TEST_CASE(Input, RemovingAnActionKeepsNamesAndStatesAligned, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions;
+	actions.AddAction({ "First",  { ParseTrigger("Key/D1") } });
+	actions.AddAction({ "Second", { ParseTrigger("Key/D2") } });
+	actions.AddAction({ "Third",  { ParseTrigger("Key/D3") } });
+
+	Input::SetKeyState(KeyCode::D3, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("Third"));
+
+	actions.RemoveAction("First");
+	StepActions(actions);
+
+	EB_EXPECT_EQ(actions.GetActions().size(), size_t(2));
+	EB_EXPECT_EQ(actions.GetActionStates().size(), size_t(2));
+	EB_EXPECT(actions.IsActionDown("Third"));
+	EB_EXPECT_FALSE(actions.IsActionDown("Second"));
+}
+
+EB_TEST_CASE(Input, EditActionNameRebindsTheLookup, Unit)
+{
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	actions.EditActionName(0, "Leap");
+
+	EB_EXPECT_EQ(actions.GetActionIndex("Leap"), 0);
+	EB_EXPECT_EQ(actions.GetActionIndex("Jump"), -1);
+	EB_EXPECT_EQ(actions.GetActions()[0].Triggers.size(), size_t(1));
+}
+
+// Rebinding mid-play must not leave the action latched down against a trigger it no longer has.
+EB_TEST_CASE(Input, EditingTriggersResetsTheActionState, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Fire", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("Fire"));
+
+	actions.AddTrigger("Fire", ParseTrigger("Mouse/Left"));
+	EB_EXPECT_FALSE(actions.GetActionStates()[0].IsDown);
+
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("Fire"));
+
+	actions.RemoveTrigger("Fire", 0);
+	EB_EXPECT_EQ(actions.GetActions()[0].Triggers.size(), size_t(1));
+	EB_EXPECT_FALSE(actions.GetActionStates()[0].IsDown);
+}
+
+EB_TEST_CASE(Input, ClearActionsEmptiesBothVectors, Unit)
+{
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+	actions.AddAction({ "Fire", { ParseTrigger("Mouse/Left") } });
+
+	actions.ClearActions();
+
+	EB_EXPECT(actions.GetActions().empty());
+	EB_EXPECT(actions.GetActionStates().empty());
+	EB_EXPECT_EQ(actions.GetActionIndex("Jump"), -1);
+}
+
+// ProjectSerializer writes ControlId through InputTrigger's uint16_t conversion and rebuilds the
+// variant from the trigger's device, so a saved binding only survives if the two agree.
+EB_TEST_CASE(Input, TriggerSurvivesTheSerializedControlIdRoundTrip, Unit)
+{
+	const char* triggers[] = { "Key/Space", "Key/Ctrl+Shift+S", "Mouse/Left", "Mouse/Button4", "Mouse/WheelDown" };
+
+	for (const char* text : triggers)
+	{
+		const InputTrigger original = ParseTrigger(text);
+
+		InputTrigger restored;
+		restored.Device = original.Device;
+		restored.RequiredModifiers = original.RequiredModifiers;
+
+		const uint16_t controlId = static_cast<uint16_t>(original);
+		if (restored.Device == InputDevice::Keyboard)
+			restored.ControlId = static_cast<KeyCode>(controlId);
+		else
+			restored.ControlId = static_cast<MouseControl>(controlId);
+
+		EB_EXPECT_MSG(InputCodeNames::TriggerToString(restored) == text,
+			std::string("'") + text + "' did not survive the ControlId round trip");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Lua input bindings
+//////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+	constexpr std::pair<const char*, int> s_KeyModifierList[] =
+	{
+		{ "None",    static_cast<int>(KeyModifier::None)    },
+		{ "Shift",   static_cast<int>(KeyModifier::Shift)   },
+		{ "Control", static_cast<int>(KeyModifier::Control) },
+		{ "Alt",     static_cast<int>(KeyModifier::Alt)     },
+		{ "Super",   static_cast<int>(KeyModifier::Super)   },
+	};
+
+	constexpr std::pair<const char*, int> s_MouseButtonList[] =
+	{
+		{ "Left",   static_cast<int>(MouseButton::Left)   },
+		{ "Right",  static_cast<int>(MouseButton::Right)  },
+		{ "Middle", static_cast<int>(MouseButton::Middle) },
+	};
+
+	// Runs a one-expression snippet against the shared editor state. script_pass_on_error keeps a
+	// broken snippet a reported failure rather than a sol2 exception thrown through the test body.
+	sol::protected_function_result RunLua(const char* source)
+	{
+		sol::protected_function_result result = ScriptEngine::GetState().script(source, sol::script_pass_on_error);
+		EB_CHECK_MSG(result.valid(), std::string("lua failed: ") + source);
+
+		return result;
+	}
+
+	bool LuaBool(const char* source) { return RunLua(source).get<bool>(0); }
+	int LuaInt(const char* source) { return RunLua(source).get<int>(0); }
+
+	// The Lua action queries reach through Application's manager, so a test driving them has to use
+	// that one - and put back whatever the loaded project had in it.
+	struct ScopedGlobalActions
+	{
+		ScopedGlobalActions() : Saved(Manager.GetActions()) { Manager.ClearActions(); }
+
+		~ScopedGlobalActions()
+		{
+			Manager.ClearActions();
+			for (const InputAction& action : Saved)
+				Manager.AddAction(action);
+		}
+
+		InputActionManager& Manager = Application::Instance().GetInputActionManager();
+		std::vector<InputAction> Saved;
+	};
+
+}
+
+EB_TEST_CASE(Input, LuaKeyModifierEnumMatchesTheCppEnum, Integration)
+{
+	CheckLuaEnum("KeyModifier", s_KeyModifierList);
+}
+
+EB_TEST_CASE(Input, LuaMouseButtonAndCursorModeEnumsMatchTheCppEnums, Integration)
+{
+	CheckLuaEnum("MouseButton", s_MouseButtonList);
+
+	sol::state& lua = ScriptEngine::GetState();
+	EB_EXPECT_EQ(lua["CursorMode"]["Normal"].get<int>(), static_cast<int>(CursorMode::Normal));
+	EB_EXPECT_EQ(lua["CursorMode"]["Hidden"].get<int>(), static_cast<int>(CursorMode::Hidden));
+	EB_EXPECT_EQ(lua["CursorMode"]["Locked"].get<int>(), static_cast<int>(CursorMode::Locked));
+}
+
+// A misspelled binding name is silent from Lua: the call site indexes nil and the script dies at
+// runtime, in whichever level happened to use it.
+EB_TEST_CASE(Input, LuaInputTableExposesEveryQuery, Integration)
+{
+	const char* functions[] =
+	{
+		"IsKeyDown", "IsKeyPressed", "IsKeyReleased", "IsKeyRepeating",
+		"IsMouseControlDown", "IsMouseControlPressed", "IsMouseControlReleased",
+		"IsMouseButtonDown", "IsMouseButtonPressed", "IsMouseButtonReleased",
+		"IsModifierDown", "IsModifierActive", "GetActiveModifiers",
+		"IsActionDown", "IsActionPressed", "IsActionReleased",
+		"GetMousePosition", "GetMouseScrollOffset", "GetMouseDelta",
+		"GetViewportMousePosition", "SetCursorMode", "GetCursorMode",
+	};
+
+	sol::state& lua = ScriptEngine::GetState();
+	const sol::optional<sol::table> inputTable = lua["Input"];
+	EB_CHECK_MSG(inputTable.has_value(), "Input is not bound in Lua");
+
+	for (const char* name : functions)
+	{
+		const sol::object bound = (*inputTable)[name];
+		EB_EXPECT_MSG(bound.valid() && bound.get_type() == sol::type::function,
+			std::string("Input.") + name + " is not bound");
+	}
+}
+
+EB_TEST_CASE(Input, LuaKeyAndMouseQueriesFollowTheRawInputState, Integration)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::W, true);
+	Input::SetMouseControlState(MouseControl::Button4, true);
+	Input::BeginFrame();
+
+	EB_EXPECT(LuaBool("return Input.IsKeyDown(KeyCode.W)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsKeyDown(KeyCode.S)"));
+	EB_EXPECT(LuaBool("return Input.IsMouseControlDown(MouseControl.Button4)"));
+	EB_EXPECT(LuaBool("return Input.IsMouseControlPressed(MouseControl.Button4)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsMouseButtonDown(MouseButton.Left)"));
+
+	Input::SetKeyState(KeyCode::W, false);
+	Input::BeginFrame();
+	EB_EXPECT(LuaBool("return Input.IsKeyReleased(KeyCode.W)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsKeyDown(KeyCode.W)"));
+}
+
+// Lua's IsKeyPressed is a legacy alias for the HELD state, not the one-frame edge the C++ function
+// of that name returns. CharacterMovement.lua reads it as "is W down right now", so it stays.
+EB_TEST_CASE(Input, LuaIsKeyPressedIsTheHeldStateNotTheEdge, Integration)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::W, true);
+	Input::BeginFrame();
+	EB_CHECK(LuaBool("return Input.IsKeyPressed(KeyCode.W)"));
+
+	// Second frame: the C++ press edge is spent, but the Lua alias still reports true.
+	Input::BeginFrame();
+	EB_EXPECT_FALSE(Input::IsKeyPressed(KeyCode::W));
+	EB_EXPECT(LuaBool("return Input.IsKeyPressed(KeyCode.W)"));
+}
+
+// Why IsMouseControlPressed has to be the edge query rather than another alias for the held state:
+// the wheel has no held state, so aliasing it made scroll input invisible to scripts.
+EB_TEST_CASE(Input, LuaSeesTheScrollWheelAsAPressedControl, Integration)
+{
+	InputStateGuard guard;
+
+	Input::SetMouseScrollOffset(Vector2f(0.0f, 1.0f));
+	Input::BeginFrame();
+
+	EB_EXPECT(LuaBool("return Input.IsMouseControlPressed(MouseControl.WheelUp)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsMouseControlDown(MouseControl.WheelUp)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsMouseControlPressed(MouseControl.WheelDown)"));
+}
+
+EB_TEST_CASE(Input, LuaModifierQueriesFollowTheRawInputState, Integration)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::LeftShift, true);
+	Input::SetKeyState(KeyCode::RightAlt, true);
+	Input::BeginFrame();
+
+	EB_EXPECT(LuaBool("return Input.IsModifierDown(KeyModifier.Shift)"));
+	EB_EXPECT(LuaBool("return Input.IsModifierActive(KeyModifier.Alt)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsModifierDown(KeyModifier.Control)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsModifierDown(KeyModifier.Super)"));
+
+	// None has no bits set, so it can never read as down.
+	EB_EXPECT_FALSE(LuaBool("return Input.IsModifierDown(KeyModifier.None)"));
+
+	EB_EXPECT_EQ(LuaInt("return Input.GetActiveModifiers()"), static_cast<int>(Input::GetActiveModifiers()));
+}
+
+// The mask is tested with AND, so a multi-bit argument asks "any of these". A chord that has to
+// match exactly is compared against GetActiveModifiers() instead.
+EB_TEST_CASE(Input, LuaMultiBitModifierArgumentMeansAnyOfThem, Integration)
+{
+	InputStateGuard guard;
+
+	Input::SetKeyState(KeyCode::LeftControl, true);
+	Input::BeginFrame();
+
+	EB_EXPECT(LuaBool("return Input.IsModifierDown(KeyModifier.Shift | KeyModifier.Control)"));
+	EB_EXPECT_FALSE(LuaBool("return Input.GetActiveModifiers() == (KeyModifier.Shift | KeyModifier.Control)"));
+	EB_EXPECT(LuaBool("return Input.GetActiveModifiers() == KeyModifier.Control"));
+}
+
+EB_TEST_CASE(Input, LuaActionQueriesFollowTheActionManager, Integration)
+{
+	InputStateGuard guard;
+	ScopedGlobalActions actions;
+
+	actions.Manager.AddAction({ "Jump", { ParseTrigger("Key/Space") } });
+
+	Input::SetKeyState(KeyCode::Space, true);
+	Input::BeginFrame();
+	actions.Manager.Evaluate();
+
+	EB_EXPECT(LuaBool("return Input.IsActionDown('Jump')"));
+	EB_EXPECT(LuaBool("return Input.IsActionPressed('Jump')"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsActionReleased('Jump')"));
+
+	Input::SetKeyState(KeyCode::Space, false);
+	Input::BeginFrame();
+	actions.Manager.Evaluate();
+
+	EB_EXPECT_FALSE(LuaBool("return Input.IsActionDown('Jump')"));
+	EB_EXPECT(LuaBool("return Input.IsActionReleased('Jump')"));
+}
+
+// A typo in a script has to come back false rather than read past the end of the state array.
+EB_TEST_CASE(Input, LuaQueriesForAnUnknownActionReturnFalse, Integration)
+{
+	ScopedGlobalActions actions;
+	actions.Manager.AddAction({ "Jump", { ParseTrigger("Key/Space") } });
+
+	EB_EXPECT_FALSE(LuaBool("return Input.IsActionDown('Jmup')"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsActionPressed('Jmup')"));
+	EB_EXPECT_FALSE(LuaBool("return Input.IsActionReleased('Jmup')"));
 }

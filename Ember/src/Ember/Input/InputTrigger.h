@@ -11,7 +11,7 @@ namespace Ember {
 	{
 		InputDevice Device = InputDevice::None;
 		std::variant<KeyCode, MouseControl> ControlId = KeyCode::Unknown;
-		KeyModifierType RequiredModifier = 0;
+		KeyModifierType RequiredModifiers = 0;
 
 		// uint16_t operator for controlId
 		operator uint16_t() const

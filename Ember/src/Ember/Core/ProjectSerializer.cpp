@@ -116,7 +116,7 @@ namespace Ember {
 				triggerNode |= ryml::MAP;
 				triggerNode["Device"] << static_cast<int>(trigger.Device);
 				triggerNode["ControlId"] << static_cast<uint16_t>(trigger);
-				triggerNode["RequiredModifier"] << static_cast<int>(trigger.RequiredModifier);
+				triggerNode["RequiredModifiers"] << static_cast<int>(trigger.RequiredModifiers);
 			}
 		}
 
@@ -265,8 +265,8 @@ namespace Ember {
 							break;
 						}
 						int modifierInt;
-						triggerNode["RequiredModifier"] >> modifierInt;
-						trigger.RequiredModifier = static_cast<KeyModifierType>(modifierInt);
+						triggerNode["RequiredModifiers"] >> modifierInt;
+						trigger.RequiredModifiers = static_cast<KeyModifierType>(modifierInt);
 						action.Triggers.push_back(trigger);
 					}
 					inputActionManager.AddAction(action);
