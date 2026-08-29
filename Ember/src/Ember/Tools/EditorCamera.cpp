@@ -89,7 +89,7 @@ namespace Ember {
 		// Handle Input Modifiers
 		if (Input::IsMouseButtonDown(MouseButton::Middle))
 		{
-			if (Input::IsKeyDown(KeyCode::LeftShift))
+			if (Input::IsModifierActive(KeyModifier::Shift))
 				MousePan(mouseDelta);
 			else
 				MouseOrbit(mouseDelta);

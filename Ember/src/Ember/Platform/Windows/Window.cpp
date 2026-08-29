@@ -142,18 +142,18 @@ namespace Ember {
 			EB_CORE_INFO("GLFW window destroyed!");
 		}
 
-		void Window::OnUpdate()
+		void Window::PollEvents()
 		{
-			{
-				EB_PROFILE_SCOPE("Window::PollEvents");
-				glfwPollEvents();
-			}
-			{
-				// Blocks here until vsync if enabled — a large/variable duration here usually means
-				// GPU-bound or vsync-bound, not CPU-bound; compare against the "Frame" total.
-				EB_PROFILE_SCOPE("Window::SwapBuffers");
-				m_GraphicsContext->SwapBuffers();
-			}
+			EB_PROFILE_SCOPE("Window::PollEvents");
+			glfwPollEvents();
+		}
+
+		void Window::Present()
+		{
+			// Blocks here until vsync if enabled — a large/variable duration here usually means
+			// GPU-bound or vsync-bound, not CPU-bound; compare against the "Frame" total.
+			EB_PROFILE_SCOPE("Window::SwapBuffers");
+			m_GraphicsContext->SwapBuffers();
 		}
 
 		void Window::SetVSync(bool enabled)

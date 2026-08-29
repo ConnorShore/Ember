@@ -135,6 +135,13 @@ namespace Ember {
 		while (m_Running) {
 			EB_PROFILE_SCOPE("Frame");
 
+			// The delta reset has to stay immediately ahead of the poll that accumulates it.
+			Input::ResetMouseDelta();
+			m_Window->PollEvents();
+
+			if (!m_Running)
+				break;
+
 			TimeStamp currentTime = Timer::Now();
 			TimeStep delta = currentTime - lastTime;
 			lastTime = currentTime;
@@ -158,19 +165,12 @@ namespace Ember {
 				m_ImGuiLayer.EndFrame();
 			}
 
-			Input::ResetMouseDelta();
-
-			{
-				// Includes glfwPollEvents (OS/input) and SwapBuffers (blocks on vsync if enabled) —
-				// see Windows::Window::OnUpdate for the finer-grained split of the two.
-				EB_PROFILE_SCOPE("Window::OnUpdate");
-				m_Window->OnUpdate();
-			}
-
 			{
 				EB_PROFILE_SCOPE("SceneManager::ExecuteSceneSwap");
 				m_SceneManager.ExecuteSceneSwap();
 			}
+
+			m_Window->Present();
 		}
 
 		EB_CORE_INFO("Application stopped running!");

@@ -1061,8 +1061,8 @@ namespace Ember {
 
 		bool isEditMode = m_Context.CurrentSceneState == SceneState::Edit;
 		bool activeProject = ProjectManager::GetActive() != nullptr;
-		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
-		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+		bool control = Input::IsKeyDown(KeyCode::LeftControl) || Input::IsKeyDown(KeyCode::RightControl);
+		bool shift = Input::IsKeyDown(KeyCode::LeftShift) || Input::IsKeyDown(KeyCode::RightShift);
 
 		KeyCode key = e.GetKeyCode();
 		switch (key)
@@ -1179,7 +1179,7 @@ namespace Ember {
 					Entity selected = activeScene->GetEntityAtPixel(mouseX, mouseY);
 
 					// Ctrl+click adds to or removes from the selection; a plain click replaces it.
-					bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+					bool ctrlHeld = Input::IsKeyDown(KeyCode::LeftControl) || Input::IsKeyDown(KeyCode::RightControl);
 					if (ctrlHeld && selected.IsValid())
 						m_Context.ToggleSelection(selected);
 					else if (!ctrlHeld)

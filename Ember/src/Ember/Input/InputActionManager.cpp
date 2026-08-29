@@ -94,6 +94,56 @@ namespace Ember {
 		m_ActionStates.push_back(InputActionState());
 	}
 
+	void InputActionManager::EditActionName(int index, std::string_view newName)
+	{
+		EB_CORE_ASSERT(index >= 0 && index < m_Actions.size(), "InputActionManager::EditActionName: Index out of range");
+		m_Actions[index].Name = newName;
+	}
+
+	void InputActionManager::RemoveAction(int index)
+	{
+		EB_CORE_ASSERT(index >= 0 && index < m_Actions.size(), "InputActionManager::RemoveAction: Index out of range");
+		m_Actions.erase(m_Actions.begin() + index);
+		m_ActionStates.erase(m_ActionStates.begin() + index);
+	}
+
+	void InputActionManager::RemoveAction(std::string_view actionName)
+	{
+		RemoveAction(GetActionIndex(actionName));
+	}
+
+	void InputActionManager::AddTrigger(int actionIndex, const InputTrigger& trigger)
+	{
+		m_Actions[actionIndex].Triggers.push_back(trigger);
+		m_ActionStates[actionIndex] = InputActionState(); // Reset state for the action
+	}
+
+	void InputActionManager::AddTrigger(std::string_view actionName, const InputTrigger& trigger)
+	{
+		AddTrigger(GetActionIndex(actionName), trigger);
+	}
+
+	void InputActionManager::UpdateTrigger(int actionIndex, int triggerIndex, const InputTrigger& trigger)
+	{
+		EB_CORE_ASSERT(actionIndex >= 0 && actionIndex < m_Actions.size(), "InputActionManager::UpdateTrigger: Action index out of range");
+		EB_CORE_ASSERT(triggerIndex >= 0 && triggerIndex < m_Actions[actionIndex].Triggers.size(), "InputActionManager::UpdateTrigger: Trigger index out of range");
+
+		m_Actions[actionIndex].Triggers[triggerIndex] = trigger;
+		m_ActionStates[actionIndex] = InputActionState(); // Reset state for the action
+	}
+
+	void InputActionManager::RemoveTrigger(int actionIndex, int triggerIndex)
+	{
+		EB_CORE_ASSERT(actionIndex >= 0 && actionIndex < m_Actions.size(), "InputActionManager::RemoveTrigger: Action index out of range");
+		m_Actions[actionIndex].Triggers.erase(m_Actions[actionIndex].Triggers.begin() + triggerIndex);
+		m_ActionStates[actionIndex] = InputActionState(); // Reset state for the action
+	}
+
+	void InputActionManager::RemoveTrigger(std::string_view actionName, int triggerIndex)
+	{
+		RemoveTrigger(GetActionIndex(actionName), triggerIndex);
+	}
+
 	void InputActionManager::ClearActions()
 	{
 		m_Actions.clear();

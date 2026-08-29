@@ -4,7 +4,6 @@
 #include "InputActionState.h"
 
 #include <vector>
-#include <string_view>
 
 namespace Ember {
 
@@ -20,6 +19,16 @@ namespace Ember {
 		int GetActionIndex(std::string_view actionName);
 
 		void AddAction(const InputAction& action);
+		void EditActionName(int index, std::string_view newName);
+		void RemoveAction(std::string_view actionName);
+		void RemoveAction(int index);
+
+		void AddTrigger(int actionIndex, const InputTrigger& trigger);
+		void AddTrigger(std::string_view actionName, const InputTrigger& trigger);
+		void UpdateTrigger(int actionIndex, int triggerIndex, const InputTrigger& trigger);
+		void RemoveTrigger(int actionIndex, int triggerIndex);
+		void RemoveTrigger(std::string_view actionName, int triggerIndex);
+
 		void ClearActions();
 		
 		inline const std::vector<InputAction>& GetActions() { return m_Actions; }

@@ -259,7 +259,7 @@ namespace Ember {
 		const EditorPreferences& prefs = *context->Preferences;
 
 		// Ctrl inverts the persistent toggle, so it still means "snap" when snapping is switched off.
-		bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool ctrlHeld = Input::IsModifierActive(KeyModifier::Control);
 		bool snap = prefs.SnapEnabled != ctrlHeld;
 
 		float snapValue = gizmoType == ImGuizmo::OPERATION::ROTATE ? prefs.RotateSnap

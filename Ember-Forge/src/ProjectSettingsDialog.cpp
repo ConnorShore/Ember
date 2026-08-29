@@ -6,16 +6,75 @@
 
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
+#include <Ember/Input/InputAction.h>
+#include <Ember/Input/InputActionManager.h>
+#include <Ember/Input/InputCodeNames.h>
 #include <imgui/imgui.h>
+
+#include <cctype>
 
 namespace Ember {
 
-	ProjectSettingsDialog::ProjectSettingsDialog()
-	{
-	}
+	namespace {
 
-	ProjectSettingsDialog::~ProjectSettingsDialog()
-	{
+		constexpr const char* s_TriggerConfigPopupName = "Configure Trigger";
+		constexpr const char* s_RemoveActionPopupName = "Remove Input Action";
+
+		// Every key the picker offers, generated from the one list in KeyCodes.inl so a new key
+		// shows up here without the editor having to know about it.
+		constexpr KeyCode s_PickerKeys[] =
+		{
+#define EB_KEY(name, value) KeyCode::name,
+#include <Ember/Input/KeyCodes.inl>
+#undef EB_KEY
+		};
+
+		// Same idea for the mouse, read from MouseControls.inl.
+		constexpr MouseControl s_PickerMouseControls[] =
+		{
+#define EB_MOUSE_CONTROL(name, value) MouseControl::name,
+#include <Ember/Input/MouseControls.inl>
+#undef EB_MOUSE_CONTROL
+		};
+
+		constexpr std::pair<KeyModifier, const char*> s_ModifierToggles[] =
+		{
+			{ KeyModifier::Control, "Ctrl" },
+			{ KeyModifier::Shift, "Shift" },
+			{ KeyModifier::Alt, "Alt" },
+			{ KeyModifier::Super, "Super" },
+		};
+
+		// A blank name would make an action nothing can look up, so the UI refuses to add one.
+		bool IsBlank(std::string_view text)
+		{
+			return text.find_first_not_of(" \t") == std::string_view::npos;
+		}
+
+		bool ActionNameExists(const std::vector<InputAction>& actions, std::string_view name)
+		{
+			return std::any_of(actions.begin(), actions.end(), [name](const InputAction& action) { return action.Name == name; });
+		}
+
+		// Case-insensitive substring match so the picker search is forgiving about capitals.
+		bool MatchesSearch(std::string_view name, std::string_view search)
+		{
+			if (search.empty())
+				return true;
+
+			auto equalsIgnoreCase = [](char a, char b) {
+				return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+				};
+
+			return std::search(name.begin(), name.end(), search.begin(), search.end(), equalsIgnoreCase) != name.end();
+		}
+
+		// Moves the cursor so the widgets that follow end flush with the right edge of the row.
+		void RightAlignCursor(float width)
+		{
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::Max(0.0f, ImGui::GetContentRegionAvail().x - width));
+		}
+
 	}
 
 	void ProjectSettingsDialog::OnImGuiRender()
@@ -49,6 +108,10 @@ namespace Ember {
 			ImGui::BeginChild("ContentPane", ImVec2(0, splitHeight), true);
 			RenderRightPane();
 			ImGui::EndChild();
+
+			// Nested modals are drawn out here so they are never parented to a child window
+			RenderTriggerConfigPopup();
+			RenderRemoveActionPopup();
 
 			ImGui::EndPopup();
 		}
@@ -276,16 +339,433 @@ namespace Ember {
 
 		ImGui::TextDisabled("Input Actions");
 
+		RenderAddActionRow();
+
+		ImGui::Spacing();
+
+		const auto& actions = m_InputActionManager.GetActions();
+
 		ImGui::BeginChild("InputSection", ImVec2(0, 0), true);
-		
-		// TODO: Need to implement a system for managing input actions, including adding, removing, and editing actions.
-		//  1. Need to be able to add/remove action
-		//  2. Action should have column for name
-		//  3. Action should have column for type (Button, Axis, etc.)
-		//  4. Action should have column for the binding (based on the type)
-		//   a. Need way to "Press Key to Set Binding" type of input box
+
+		if (actions.empty())
+			ImGui::TextDisabled("No input actions yet - name one above and press Add Action.");
+
+		for (int i = 0; i < static_cast<int>(actions.size()); i++)
+			RenderActionRow(i, actions[i]);
 
 		ImGui::EndChild();
+	}
+
+	void ProjectSettingsDialog::RenderAddActionRow()
+	{
+		const ImGuiStyle& style = ImGui::GetStyle();
+		const auto& actions = m_InputActionManager.GetActions();
+
+		// The button hugs the right edge and the name field takes whatever is left of the row.
+		float buttonWidth = ImGui::CalcTextSize("Add Action").x + style.FramePadding.x * 2.0f;
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - buttonWidth - style.ItemSpacing.x);
+
+		// Keeps the caret in the field after a name is submitted so actions can be typed in a row.
+		if (m_FocusNewActionField)
+		{
+			ImGui::SetKeyboardFocusHere();
+			m_FocusNewActionField = false;
+		}
+
+		bool submitted = ImGui::InputTextWithHint("##NewActionName", "New action name", m_NewActionName, sizeof(m_NewActionName), ImGuiInputTextFlags_EnterReturnsTrue);
+
+		bool isDuplicate = !IsBlank(m_NewActionName) && ActionNameExists(actions, m_NewActionName);
+		bool canAdd = !IsBlank(m_NewActionName) && !isDuplicate;
+
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!canAdd);
+		bool pressed = ImGui::Button("Add Action", ImVec2(buttonWidth, 0.0f));
+		ImGui::EndDisabled();
+
+		if (canAdd && (pressed || submitted))
+		{
+			AddInputAction(m_NewActionName);
+			m_NewActionName[0] = '\0';
+			m_FocusNewActionField = true;
+		}
+
+		// The line is drawn either way so the list below does not jump as the warning appears.
+		if (isDuplicate)
+			ImGui::TextColored(ImVec4(0.90f, 0.65f, 0.20f, 1.0f), "\"%s\" is already an action name.", m_NewActionName);
+		else
+			ImGui::Dummy(ImVec2(0.0f, ImGui::GetTextLineHeight()));
+	}
+
+	void ProjectSettingsDialog::RenderActionRow(int actionIndex, const InputAction& action)
+	{
+		const ImGuiStyle& style = ImGui::GetStyle();
+
+		ImGui::PushID(actionIndex);
+
+		// Square buttons sized to the row so both columns line up all the way down the list.
+		float buttonSize = ImGui::GetFrameHeight();
+		float buttonsWidth = buttonSize * 2.0f + style.ItemSpacing.x;
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
+			ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen;
+
+		// The node spans the row, so the buttons that follow have to be allowed to sit on top of it.
+		ImGui::SetNextItemAllowOverlap();
+		bool isOpen = ImGui::TreeNodeEx("##Action", flags, "%s", action.Name.c_str());
+
+		// Trigger count next to the name, the way Godot summarises an action's events.
+		ImGui::SameLine();
+		ImGui::TextDisabled("(%d)", static_cast<int>(action.Triggers.size()));
+
+		ImGui::SameLine();
+		RightAlignCursor(buttonsWidth);
+
+		if (ImGui::Button("+", ImVec2(buttonSize, buttonSize)))
+			OpenTriggerConfigPopup(actionIndex, -1);
+		ImGui::SetItemTooltip("Add a trigger to this action");
+
+		ImGui::SameLine();
+		if (ImGui::Button("x", ImVec2(buttonSize, buttonSize)))
+		{
+			m_ActionPendingRemoval = actionIndex;
+			m_RemovePopupRequested = true;
+		}
+		ImGui::SetItemTooltip("Remove this action");
+
+		if (isOpen)
+		{
+			if (action.Triggers.empty())
+				ImGui::TextDisabled("No triggers bound - use + to add one.");
+
+			for (int i = 0; i < static_cast<int>(action.Triggers.size()); i++)
+				RenderTriggerRow(actionIndex, i, action.Triggers[i]);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	void ProjectSettingsDialog::RenderTriggerRow(int actionIndex, int triggerIndex, const InputTrigger& trigger)
+	{
+		const ImGuiStyle& style = ImGui::GetStyle();
+
+		ImGui::PushID(triggerIndex);
+
+		float buttonSize = ImGui::GetFrameHeight();
+		float editWidth = ImGui::CalcTextSize("Edit").x + style.FramePadding.x * 2.0f;
+		float buttonsWidth = editWidth + buttonSize + style.ItemSpacing.x;
+
+		// InputCodeNames owns how a binding reads, so "Ctrl + W" looks the same everywhere.
+		std::string displayName = InputCodeNames::TriggerToDisplayName(trigger);
+
+		// Row height matches the buttons, and the label is centred against them.
+		ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
+		bool rowClicked = ImGui::Selectable(displayName.c_str(), false,
+			ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowOverlap, ImVec2(0.0f, buttonSize));
+		ImGui::PopStyleVar();
+
+		// Double-clicking the row is the quick path to the same dialog the Edit button opens.
+		if (rowClicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			OpenTriggerConfigPopup(actionIndex, triggerIndex);
+
+		ImGui::SameLine();
+		RightAlignCursor(buttonsWidth);
+
+		if (ImGui::Button("Edit", ImVec2(editWidth, buttonSize)))
+			OpenTriggerConfigPopup(actionIndex, triggerIndex);
+
+		ImGui::SameLine();
+		if (ImGui::Button("x", ImVec2(buttonSize, buttonSize)))
+			RemoveInputTrigger(actionIndex, triggerIndex);
+		ImGui::SetItemTooltip("Remove this trigger");
+
+		ImGui::PopID();
+	}
+
+	void ProjectSettingsDialog::OpenTriggerConfigPopup(int actionIndex, int triggerIndex)
+	{
+		m_TriggerActionIndex = actionIndex;
+		m_TriggerEditIndex = triggerIndex;
+		m_TriggerSearch[0] = '\0';
+		m_TriggerPopupRequested = true;
+
+		const auto& actions = m_InputActionManager.GetActions();
+
+		// Editing starts from the binding that is already there; adding starts from a blank one.
+		bool isEditing = actionIndex >= 0 && actionIndex < static_cast<int>(actions.size()) &&
+			triggerIndex >= 0 && triggerIndex < static_cast<int>(actions[actionIndex].Triggers.size());
+
+		m_PendingTrigger = isEditing ? actions[actionIndex].Triggers[triggerIndex] : InputTrigger{};
+	}
+
+	void ProjectSettingsDialog::RenderTriggerConfigPopup()
+	{
+		if (m_TriggerPopupRequested)
+		{
+			ImGui::OpenPopup(s_TriggerConfigPopupName);
+			m_TriggerPopupRequested = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(420, 480), ImGuiCond_Appearing);
+
+		if (!ImGui::BeginPopupModal(s_TriggerConfigPopupName, nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize))
+			return;
+
+		const ImGuiStyle& style = ImGui::GetStyle();
+		const auto& actions = m_InputActionManager.GetActions();
+
+		// The action can go away while the popup is up, so never index past the end of the list.
+		if (m_TriggerActionIndex < 0 || m_TriggerActionIndex >= static_cast<int>(actions.size()))
+		{
+			ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+			return;
+		}
+
+		bool isEditing = m_TriggerEditIndex >= 0;
+		ImGui::Text(isEditing ? "Edit trigger for \"%s\"" : "New trigger for \"%s\"", actions[m_TriggerActionIndex].Name.c_str());
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// Live preview of the binding, in the same wording the action list uses.
+		ImGui::TextDisabled("Binding");
+		ImGui::SameLine(90.0f);
+		if (m_PendingTrigger.Device == InputDevice::None)
+			ImGui::TextDisabled("Pick a key or button below");
+		else
+			ImGui::TextUnformatted(InputCodeNames::TriggerToDisplayName(m_PendingTrigger).c_str());
+
+		ImGui::Spacing();
+
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##TriggerSearch", "Search keys and buttons", m_TriggerSearch, sizeof(m_TriggerSearch));
+
+		// The modifiers row and the confirm buttons both sit under the picker, so it has to leave
+		// room for two framed rows and the spacer between them rather than scrolling them away.
+		float footerHeight = ImGui::GetFrameHeightWithSpacing() * 2.0f + style.ItemSpacing.y;
+		ImGui::BeginChild("TriggerPicker", ImVec2(0.0f, -footerHeight), true);
+
+		bool committed = RenderKeyboardSection();
+		committed |= RenderMouseSection();
+
+		// InputTrigger carries no gamepad control type yet, so the section is listed but inert.
+		ImGui::BeginDisabled();
+		ImGui::CollapsingHeader("Gamepad");
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+			ImGui::SetTooltip("Gamepad triggers are not supported yet");
+
+		ImGui::EndChild();
+
+		// Modifiers are part of the trigger for mouse controls too, so they are never device-gated.
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextDisabled("Modifiers");
+		ImGui::SameLine(90.0f);
+		for (const auto& [modifier, label] : s_ModifierToggles)
+		{
+			bool active = (m_PendingTrigger.RequiredModifier & modifier) != 0;
+			if (ImGui::Checkbox(label, &active))
+			{
+				if (active)
+					m_PendingTrigger.RequiredModifier |= modifier;
+				else
+					m_PendingTrigger.RequiredModifier = static_cast<KeyModifierType>(m_PendingTrigger.RequiredModifier & ~static_cast<KeyModifierType>(modifier));
+			}
+
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
+
+		ImGui::Spacing();
+
+		bool hasSelection = m_PendingTrigger.Device != InputDevice::None;
+		float footerButtonWidth = 110.0f;
+		RightAlignCursor(footerButtonWidth * 2.0f + style.ItemSpacing.x);
+
+		ImGui::BeginDisabled(!hasSelection);
+		if (ImGui::Button(isEditing ? "Save Trigger" : "Add Trigger", ImVec2(footerButtonWidth, 0.0f)))
+			committed = true;
+		ImGui::EndDisabled();
+
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(footerButtonWidth, 0.0f)))
+			ImGui::CloseCurrentPopup();
+
+		if (committed && hasSelection)
+		{
+			CommitPendingTrigger();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	bool ProjectSettingsDialog::RenderKeyboardSection()
+	{
+		std::string_view search = m_TriggerSearch;
+
+		// A search should reveal what it matched, so the sections force open while one is typed.
+		if (!search.empty())
+			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+
+		if (!ImGui::CollapsingHeader("Keyboard", ImGuiTreeNodeFlags_DefaultOpen))
+			return false;
+
+		KeyCode selectedKey = KeyCode::Unknown;
+		if (m_PendingTrigger.Device == InputDevice::Keyboard)
+		{
+			if (const KeyCode* pendingKey = std::get_if<KeyCode>(&m_PendingTrigger.ControlId))
+				selectedKey = *pendingKey;
+		}
+
+		bool committed = false;
+		bool anyMatches = false;
+
+		for (KeyCode key : s_PickerKeys)
+		{
+			std::string name(InputCodeNames::KeyCodeDisplayName(key));
+			if (!MatchesSearch(name, search))
+				continue;
+
+			anyMatches = true;
+
+			ImGui::PushID(static_cast<int>(key));
+
+			// Double-clicking a control picks and confirms in one go.
+			if (ImGui::Selectable(name.c_str(), key == selectedKey, ImGuiSelectableFlags_AllowDoubleClick))
+			{
+				m_PendingTrigger.Device = InputDevice::Keyboard;
+				m_PendingTrigger.ControlId = key;
+				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			}
+
+			ImGui::PopID();
+		}
+
+		if (!anyMatches)
+			ImGui::TextDisabled("No keys match the search.");
+
+		return committed;
+	}
+
+	bool ProjectSettingsDialog::RenderMouseSection()
+	{
+		std::string_view search = m_TriggerSearch;
+
+		if (!search.empty())
+			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+
+		if (!ImGui::CollapsingHeader("Mouse"))
+			return false;
+
+		// Last is never a real control, so it stands in for "nothing picked yet".
+		MouseControl selectedControl = MouseControl::Last;
+		if (m_PendingTrigger.Device == InputDevice::Mouse)
+		{
+			if (const MouseControl* pendingControl = std::get_if<MouseControl>(&m_PendingTrigger.ControlId))
+				selectedControl = *pendingControl;
+		}
+
+		bool committed = false;
+		bool anyMatches = false;
+
+		for (MouseControl control : s_PickerMouseControls)
+		{
+			std::string name(InputCodeNames::MouseControlDisplayName(control));
+			if (!MatchesSearch(name, search))
+				continue;
+
+			anyMatches = true;
+
+			ImGui::PushID(static_cast<int>(control));
+
+			if (ImGui::Selectable(name.c_str(), control == selectedControl, ImGuiSelectableFlags_AllowDoubleClick))
+			{
+				m_PendingTrigger.Device = InputDevice::Mouse;
+				m_PendingTrigger.ControlId = control;
+				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			}
+
+			ImGui::PopID();
+		}
+
+		if (!anyMatches)
+			ImGui::TextDisabled("No mouse controls match the search.");
+
+		return committed;
+	}
+
+	void ProjectSettingsDialog::RenderRemoveActionPopup()
+	{
+		if (m_RemovePopupRequested)
+		{
+			ImGui::OpenPopup(s_RemoveActionPopupName);
+			m_RemovePopupRequested = false;
+		}
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+		if (!ImGui::BeginPopupModal(s_RemoveActionPopupName, nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		const auto& actions = m_InputActionManager.GetActions();
+		if (m_ActionPendingRemoval < 0 || m_ActionPendingRemoval >= static_cast<int>(actions.size()))
+		{
+			ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+			return;
+		}
+
+		const InputAction& action = actions[m_ActionPendingRemoval];
+		size_t triggerCount = action.Triggers.size();
+
+		ImGui::Text("Remove \"%s\" and its %d %s?", action.Name.c_str(), static_cast<int>(triggerCount), triggerCount == 1 ? "trigger" : "triggers");
+		ImGui::TextDisabled("Anything looking the action up by name will stop finding it.");
+		ImGui::Spacing();
+
+		if (ImGui::Button("Remove", ImVec2(120, 0)))
+		{
+			RemoveInputAction(m_ActionPendingRemoval);
+			m_ActionPendingRemoval = -1;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+		{
+			m_ActionPendingRemoval = -1;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	void ProjectSettingsDialog::AddInputAction(const std::string& name)
+	{
+		m_InputActionManager.AddAction({ name, {} });
+	}
+
+	void ProjectSettingsDialog::RemoveInputAction(int index)
+	{
+		m_InputActionManager.RemoveAction(index);
+	}
+
+	void ProjectSettingsDialog::CommitPendingTrigger()
+	{
+		bool isUpdate = m_TriggerEditIndex >= 0;
+		if (isUpdate)
+			m_InputActionManager.UpdateTrigger(m_TriggerActionIndex, m_TriggerEditIndex, m_PendingTrigger);
+		else
+			m_InputActionManager.AddTrigger(m_TriggerActionIndex, m_PendingTrigger);
+	}
+
+	void ProjectSettingsDialog::RemoveInputTrigger(int actionIndex, int triggerIndex)
+	{
+		m_InputActionManager.RemoveTrigger(actionIndex, triggerIndex);
 	}
 
 }

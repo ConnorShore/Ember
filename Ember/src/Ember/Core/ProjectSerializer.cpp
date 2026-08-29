@@ -101,7 +101,7 @@ namespace Ember {
 		inputNode |= ryml::MAP;
 
 		auto actionsNode = inputNode["Actions"];
-		actionsNode |= ryml::MAP;
+		actionsNode |= ryml::SEQ;
 		for (const auto& action : inputActionManager.GetActions())
 		{
 			auto actionNode = actionsNode.append_child();
