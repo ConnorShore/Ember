@@ -30,6 +30,73 @@ namespace Ember {
 
 		static bool s_GLFWInitialized = false;
 
+		// Layered over GLFW's built-in table so a pad newer than the vendored SDL_GameControllerDB
+		// snapshot can be enabled without patching the submodule.
+		static std::filesystem::path GamepadMappingsPath()
+		{
+			return Paths::EngineAssets() / "input/gamecontrollerdb.txt";
+		}
+
+		static void LogJoystick(int jid)
+		{
+			const char* guid = glfwGetJoystickGUID(jid);
+			const char* name = glfwGetJoystickName(jid);
+
+			if (glfwJoystickIsGamepad(jid))
+			{
+				const char* mapped = glfwGetGamepadName(jid);
+				EB_CORE_INFO("Gamepad {} connected: '{}' [{}]", jid, mapped ? mapped : "unknown", guid ? guid : "no GUID");
+				return;
+			}
+
+			// PollGamepadStates drops unmapped pads, so name the GUID a mapping line would have to match.
+			EB_CORE_WARN("Joystick {} connected but GLFW has no gamepad mapping for it: '{}' [{}]. Add an "
+				"SDL_GameControllerDB line for that GUID to {} to enable it.",
+				jid, name ? name : "unknown", guid ? guid : "no GUID", GamepadMappingsPath().string());
+		}
+
+		static void JoystickCallback(int jid, int event)
+		{
+			if (event == GLFW_CONNECTED)
+			{
+				LogJoystick(jid);
+				return;
+			}
+
+			EB_CORE_INFO("Joystick {} disconnected.", jid);
+		}
+
+		static void InitGamepadSupport()
+		{
+			const std::filesystem::path mappingsPath = GamepadMappingsPath();
+			if (std::filesystem::exists(mappingsPath))
+			{
+				std::ifstream file(mappingsPath);
+				std::stringstream mappings;
+				mappings << file.rdbuf();
+
+				if (glfwUpdateGamepadMappings(mappings.str().c_str()))
+				{
+					EB_CORE_INFO("Loaded extra gamepad mappings from {}", mappingsPath.string());
+				}
+				else
+				{
+					EB_CORE_WARN("Failed to parse gamepad mappings at {}", mappingsPath.string());
+				}
+			}
+
+			glfwSetJoystickCallback(JoystickCallback);
+
+			// The callback only fires on hotplug, so anything already attached has to be reported here.
+			for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid)
+			{
+				if (glfwJoystickPresent(jid))
+				{
+					LogJoystick(jid);
+				}
+			}
+		}
+
 		Window::Window(const WindowConfig& config)
 			: m_WindowData({ config.Title, config.Width, config.Height })
 		{
@@ -50,6 +117,7 @@ namespace Ember {
 				}
 
 				glfwSetErrorCallback(GLFWErrorCallback);
+				InitGamepadSupport();
 				s_GLFWInitialized = true;
 			}
 
@@ -146,6 +214,7 @@ namespace Ember {
 		{
 			EB_PROFILE_SCOPE("Window::PollEvents");
 			glfwPollEvents();
+			PollGamepadStates();
 		}
 
 		void Window::Present()
@@ -290,5 +359,95 @@ namespace Ember {
 
 		}
 
+		// A stick is deadzoned on its combined magnitude and rescaled so the value still ramps from zero
+		// at the edge of the deadzone; a per-axis floor would notch the diagonals.
+		static void ApplyStickDeadzone(GamepadState& state, GamepadAxis xAxis, GamepadAxis yAxis)
+		{
+			const size_t x = static_cast<size_t>(xAxis);
+			const size_t y = static_cast<size_t>(yAxis);
+
+			const Vector2f stick = { state.Axis[x], state.Axis[y] };
+			const float magnitude = Math::Length(stick);
+			const float deadzone = Ember::Input::GamepadStickDeadzone;
+
+			if (magnitude < deadzone)
+			{
+				state.Axis[x] = 0.0f;
+				state.Axis[y] = 0.0f;
+				return;
+			}
+
+			const float rescaled = Math::Clamp((magnitude - deadzone) / (1.0f - deadzone), 0.0f, 1.0f);
+			state.Axis[x] = stick.x * (rescaled / magnitude);
+			state.Axis[y] = stick.y * (rescaled / magnitude);
+		}
+
+		// GLFW rests a trigger at -1, so remap onto the [0,1] the rest of the engine expects.
+		static void ApplyTriggerRange(GamepadState& state, GamepadAxis axis)
+		{
+			const size_t index = static_cast<size_t>(axis);
+			const float value = (state.Axis[index] + 1.0f) * 0.5f;
+			state.Axis[index] = value < Ember::Input::GamepadTriggerDeadzone ? 0.0f : value;
+		}
+
+		void Window::PollGamepadStates()
+		{
+			for (size_t i = 0; i < Ember::Input::MaxGamepads; ++i)
+			{
+				GamepadState& state = Ember::Input::GetGamepadState(i);
+				const int joystick = static_cast<int>(i);
+
+				state.PreviousDown = state.Down;
+
+				GLFWgamepadstate glfwState;
+				const bool connected = glfwJoystickPresent(joystick)
+					&& glfwJoystickIsGamepad(joystick)
+					&& glfwGetGamepadState(joystick, &glfwState);
+
+				// Clearing on loss matters: a pad unplugged mid-hold would otherwise stay latched down.
+				if (!connected)
+				{
+					state.Connected = false;
+					state.Down = 0;
+					state.Axis.fill(0.0f);
+					continue;
+				}
+
+				state.Connected = true;
+				state.Down = 0;
+
+				// GLFW's _LAST codes name the final control, unlike Ember's one-past-the-end Last sentinels.
+				for (int button = 0; button <= GLFW_GAMEPAD_BUTTON_LAST; ++button)
+				{
+					if (glfwState.buttons[button] != GLFW_PRESS)
+					{
+						continue;
+					}
+
+					GamepadButton control{};
+					if (Input::GlfwGamepadButtonToEmberGamepadControl(button, control))
+					{
+						state.Down |= (1 << static_cast<GamepadButtonType>(control));
+					}
+				}
+
+				for (int axis = 0; axis <= GLFW_GAMEPAD_AXIS_LAST; ++axis)
+				{
+					GamepadAxis control{};
+					if (Input::GlfwGamepadAxisToEmberGamepadControl(axis, control))
+					{
+						state.Axis[static_cast<size_t>(control)] = glfwState.axes[axis];
+					}
+				}
+
+				// Filtering runs after the raw copy because a stick is deadzoned as a pair, not per axis.
+				ApplyStickDeadzone(state, GamepadAxis::LeftX, GamepadAxis::LeftY);
+				ApplyStickDeadzone(state, GamepadAxis::RightX, GamepadAxis::RightY);
+				ApplyTriggerRange(state, GamepadAxis::LeftTrigger);
+				ApplyTriggerRange(state, GamepadAxis::RightTrigger);
+			}
+
+			Ember::Input::PrintActiveGamepadControls();
+		}
 	}
 }

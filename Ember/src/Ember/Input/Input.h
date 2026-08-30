@@ -3,6 +3,7 @@
 #include <array>
 
 #include "InputCode.h"
+#include "GamepadState.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Core/CursorMode.h"
 
@@ -11,7 +12,13 @@ namespace Ember {
 	class Input
 	{
 	public:
-		inline static const float Deadzone = 1.5f;	// 1.5 pixels
+		// Defaults only - these stay writable so they can be driven from user settings later.
+		// Mouse delta floor in pixels; gamepad axes arrive normalized, so they need their own floors.
+		inline static float MouseDeadzone = 1.5f;
+		inline static float GamepadStickDeadzone = 0.15f;
+		inline static float GamepadTriggerDeadzone = 0.05f;
+
+		inline static constexpr size_t MaxGamepads = 4;
 
 	public:
 		static void BeginFrame();
@@ -62,6 +69,16 @@ namespace Ember {
 
 		static void ResetMouseDelta();
 
+		static void SetGamepadControlPressed(size_t index, GamepadButton button);
+		static void SetGamepadControlReleased(size_t index, GamepadButton button);
+		static void SetGamepadAxis(size_t index, GamepadAxis axis, float strength);
+		static GamepadState& GetGamepadState(size_t index);
+		static GamepadButtonMask PressedMask(const GamepadState& s);
+		static GamepadButtonMask ReleasedMask(const GamepadState& s);
+
+		// Logs each connected pad's held buttons and off-centre axes. A debug aid, not a hot path.
+		static void PrintActiveGamepadControls();
+
 		// The game viewport within the window, in window coords (top-left origin, +Y down).
 		// In Ember-Runtime this is the whole window; in Ember-Forge it is the docked viewport panel.
 		static void SetViewportRect(const Vector2f& min, const Vector2f& size, bool inputActive = true);
@@ -76,8 +93,8 @@ namespace Ember {
 		static Vector2f GetViewportMousePosition();
 
 	private:
+		// Key State Tracking
 		static constexpr size_t KeyArraySize = static_cast<size_t>(KeyCode::Last);
-		static constexpr size_t MouseControlArraySize = static_cast<size_t>(MouseControl::Last);
 
 		static std::array<int, KeyArraySize> s_KeyStates;
 		static std::array<uint8_t, KeyArraySize> s_KeyDownSnapshot;
@@ -85,6 +102,10 @@ namespace Ember {
 		static std::array<uint8_t, KeyArraySize> s_KeyReleasedSnapshot;
 		static std::array<uint8_t, KeyArraySize> s_KeyPressLatch;        // presses since BeginFrame
 		static std::array<uint8_t, KeyArraySize> s_KeyReleaseLatch;
+		static KeyModifierType s_ActiveModifiers;
+
+		// Mosue State Tracking
+		static constexpr size_t MouseControlArraySize = static_cast<size_t>(MouseControl::Last);
 
 		static std::array<int, MouseControlArraySize> s_MouseControlStates;
 		static std::array<uint8_t, MouseControlArraySize> s_MouseControlDownSnapshot;
@@ -92,10 +113,12 @@ namespace Ember {
 		static std::array<uint8_t, MouseControlArraySize> s_MouseControlReleasedSnapshot;
 		static std::array<uint8_t, MouseControlArraySize> s_MouseControlPressLatch;        // presses since BeginFrame
 		static std::array<uint8_t, MouseControlArraySize> s_MouseControlReleaseLatch;
-
-		static KeyModifierType s_ActiveModifiers;
 		static Vector2f s_MousePosition, s_ScrollOffset, s_PreviousMousePosition;
 
+		// Gamepad State Tracking
+		static std::array<GamepadState, MaxGamepads> s_GamepadStates;
+
+		// Viewport State Tracking
 		static Vector2f s_ViewportMin, s_ViewportSize;
 		static bool s_ViewportInputActive;
 	};

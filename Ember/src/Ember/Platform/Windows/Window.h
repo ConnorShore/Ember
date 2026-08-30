@@ -35,6 +35,7 @@ namespace Ember {
 
 		private:
 			void RegisterCallbacks();
+			void PollGamepadStates();
 
 		private:
 			GLFWwindow* m_Window;

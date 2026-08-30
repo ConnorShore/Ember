@@ -16,6 +16,8 @@ namespace Ember {
 			// Returns false for a code outside the range, since there is no "unknown" control to
 			// report and defaulting to Left would fake a click.
 			static bool GlfwMouseButtonToEmberMouseControl(int button, MouseControl& out);
+			static bool GlfwGamepadButtonToEmberGamepadControl(int button, GamepadButton& out);
+			static bool GlfwGamepadAxisToEmberGamepadControl(int axis, GamepadAxis& out);
 		};
 
 	}

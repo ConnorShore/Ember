@@ -35,5 +35,30 @@ namespace Ember {
 			return true;
 		}
 
+		// Maps GLFW gamepad button codes to Ember codes. They currently match, so no conversion is needed.
+		bool Input::GlfwGamepadButtonToEmberGamepadControl(int button, GamepadButton& out)
+		{
+			if (button < 0 || button >= static_cast<int>(GamepadButton::Last))
+			{
+				EB_CORE_ASSERT(false, "Undefined gamepad button code: {0}", button);
+				return false;
+			}
+
+			out = static_cast<GamepadButton>(button);
+			return true;
+		}
+
+		bool Input::GlfwGamepadAxisToEmberGamepadControl(int axis, GamepadAxis& out)
+		{
+			if (axis < 0 || axis >= static_cast<int>(GamepadAxis::Last))
+			{
+				EB_CORE_ASSERT(false, "Undefined gamepad axis code: {0}", axis);
+				return false;
+			}
+
+			out = static_cast<GamepadAxis>(axis);
+			return true;
+		}
+
 	}
 }
