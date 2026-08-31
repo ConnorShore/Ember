@@ -37,6 +37,39 @@ namespace Ember {
 #undef EB_MOUSE_CONTROL
 		};
 
+		constexpr GamepadButton s_PickerGamepadButtons[] =
+		{
+#define EB_GAMEPAD_BUTTON(name, value) GamepadButton::name,
+#include <Ember/Input/GamepadButton.inl>
+#undef EB_GAMEPAD_BUTTON
+		};
+
+		struct GamepadAxisEntry
+		{
+			GamepadAxis Axis;
+			AxisDirection Direction;
+		};
+
+		// One row per pickable axis binding, so a new axis needs a row here. A stick can be bound whole
+		// for a signed read or as either half; a trigger only ever moves one way.
+		constexpr GamepadAxisEntry s_PickerGamepadAxes[] =
+		{
+			{ GamepadAxis::LeftX,  AxisDirection::Full },
+			{ GamepadAxis::LeftX,  AxisDirection::Negative },
+			{ GamepadAxis::LeftX,  AxisDirection::Positive },
+			{ GamepadAxis::LeftY,  AxisDirection::Full },
+			{ GamepadAxis::LeftY,  AxisDirection::Negative },
+			{ GamepadAxis::LeftY,  AxisDirection::Positive },
+			{ GamepadAxis::RightX, AxisDirection::Full },
+			{ GamepadAxis::RightX, AxisDirection::Negative },
+			{ GamepadAxis::RightX, AxisDirection::Positive },
+			{ GamepadAxis::RightY, AxisDirection::Full },
+			{ GamepadAxis::RightY, AxisDirection::Negative },
+			{ GamepadAxis::RightY, AxisDirection::Positive },
+			{ GamepadAxis::LeftTrigger,  AxisDirection::Full },
+			{ GamepadAxis::RightTrigger, AxisDirection::Full },
+		};
+
 		constexpr std::pair<KeyModifier, const char*> s_ModifierToggles[] =
 		{
 			{ KeyModifier::Control, "Ctrl" },
@@ -550,13 +583,8 @@ namespace Ember {
 
 		bool committed = RenderKeyboardSection();
 		committed |= RenderMouseSection();
-
-		// InputTrigger carries no gamepad control type yet, so the section is listed but inert.
-		ImGui::BeginDisabled();
-		ImGui::CollapsingHeader("Gamepad");
-		ImGui::EndDisabled();
-		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-			ImGui::SetTooltip("Gamepad triggers are not supported yet");
+		committed |= RenderGamepadButtonSection();
+		committed |= RenderGamepadAxisSection();
 
 		ImGui::EndChild();
 
@@ -611,7 +639,7 @@ namespace Ember {
 		if (!search.empty())
 			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 
-		if (!ImGui::CollapsingHeader("Keyboard", ImGuiTreeNodeFlags_DefaultOpen))
+		if (!ImGui::CollapsingHeader("Keyboard"))
 			return false;
 
 		KeyCode selectedKey = KeyCode::Unknown;
@@ -639,6 +667,7 @@ namespace Ember {
 			{
 				m_PendingTrigger.Device = InputDevice::Keyboard;
 				m_PendingTrigger.ControlId = key;
+				m_PendingTrigger.Direction = AxisDirection::Full;
 				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 			}
 
@@ -686,6 +715,7 @@ namespace Ember {
 			{
 				m_PendingTrigger.Device = InputDevice::Mouse;
 				m_PendingTrigger.ControlId = control;
+				m_PendingTrigger.Direction = AxisDirection::Full;
 				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 			}
 
@@ -694,6 +724,119 @@ namespace Ember {
 
 		if (!anyMatches)
 			ImGui::TextDisabled("No mouse controls match the search.");
+
+		return committed;
+	}
+
+	bool ProjectSettingsDialog::RenderGamepadButtonSection()
+	{
+		std::string_view search = m_TriggerSearch;
+
+		if (!search.empty())
+			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+
+		if (!ImGui::CollapsingHeader("Gamepad Buttons"))
+			return false;
+
+		// Last is never a real control, so it stands in for "nothing picked yet".
+		GamepadButton selectedControl = GamepadButton::Last;
+		if (m_PendingTrigger.Device == InputDevice::Gamepad)
+		{
+			if (const GamepadButton* pendingControl = std::get_if<GamepadButton>(&m_PendingTrigger.ControlId))
+				selectedControl = *pendingControl;
+		}
+
+		bool committed = false;
+		bool anyMatches = false;
+
+		// Control ids restart at zero per device, so each section needs its own ID scope.
+		ImGui::PushID("GamepadButtons");
+
+		for (GamepadButton control : s_PickerGamepadButtons)
+		{
+			std::string name(InputCodeNames::GamepadButtonDisplayName(control));
+			if (!MatchesSearch(name, search))
+				continue;
+
+			anyMatches = true;
+
+			ImGui::PushID(static_cast<int>(control));
+
+			if (ImGui::Selectable(name.c_str(), control == selectedControl, ImGuiSelectableFlags_AllowDoubleClick))
+			{
+				m_PendingTrigger.Device = InputDevice::Gamepad;
+				m_PendingTrigger.ControlId = control;
+				m_PendingTrigger.Direction = AxisDirection::Full;
+				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::PopID();
+
+		if (!anyMatches)
+			ImGui::TextDisabled("No gamepad buttons match the search.");
+
+		return committed;
+	}
+
+	bool ProjectSettingsDialog::RenderGamepadAxisSection()
+	{
+		std::string_view search = m_TriggerSearch;
+
+		if (!search.empty())
+			ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+
+		if (!ImGui::CollapsingHeader("Gamepad Axis"))
+			return false;
+
+		// Last is never a real control, so it stands in for "nothing picked yet".
+		GamepadAxis selectedControl = GamepadAxis::Last;
+		AxisDirection selectedDirection = AxisDirection::Full;
+		if (m_PendingTrigger.Device == InputDevice::Gamepad)
+		{
+			if (const GamepadAxis* pendingControl = std::get_if<GamepadAxis>(&m_PendingTrigger.ControlId))
+			{
+				selectedControl = *pendingControl;
+				selectedDirection = m_PendingTrigger.Direction;
+			}
+		}
+
+		bool committed = false;
+		bool anyMatches = false;
+
+		ImGui::PushID("GamepadAxes");
+
+		for (int i = 0; i < static_cast<int>(std::size(s_PickerGamepadAxes)); i++)
+		{
+			const GamepadAxisEntry& entry = s_PickerGamepadAxes[i];
+
+			std::string name(InputCodeNames::GamepadAxisDisplayName(entry.Axis, entry.Direction));
+			if (!MatchesSearch(name, search))
+				continue;
+
+			anyMatches = true;
+
+			// Indexed by row, since one axis appears under several directions.
+			ImGui::PushID(i);
+
+			const bool selected = entry.Axis == selectedControl && entry.Direction == selectedDirection;
+			if (ImGui::Selectable(name.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick))
+			{
+				m_PendingTrigger.Device = InputDevice::Gamepad;
+				m_PendingTrigger.ControlId = entry.Axis;
+				m_PendingTrigger.Direction = entry.Direction;
+				committed = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::PopID();
+
+		if (!anyMatches)
+			ImGui::TextDisabled("No gamepad axis match the search.");
 
 		return committed;
 	}

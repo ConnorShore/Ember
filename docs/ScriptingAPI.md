@@ -933,6 +933,10 @@ Input.IsActionDown("Jump")                -- bool, any of the action's triggers 
 Input.IsActionPressed("Jump")             -- bool, went down this frame
 Input.IsActionReleased("Jump")            -- bool, came up this frame
 
+Input.GetActionStrength("MoveRight")      -- number, 0..1 (a key is 1, a stick is how far it moved)
+Input.GetAxis("MoveLeft", "MoveRight")    -- number, -1..1 from a pair of actions
+Input.GetAxis2D("MoveLeft", "MoveRight", "MoveBackward", "MoveForward")  -- Vector2f
+
 Input.GetMousePosition()                  -- Vector2f
 Input.GetMouseScrollOffset()              -- Vector2f
 Input.GetMouseDelta()                     -- Vector2f, since last frame
@@ -957,6 +961,13 @@ is held. For a chord that has to match exactly, compare the mask itself —
 The `IsAction*` queries read the input actions defined in **Project Settings → Input**, so a game
 can rebind controls without touching script. An unknown action name logs an error and returns
 false rather than failing the call.
+
+`GetActionStrength` is the analog version of `IsActionDown`: a key or button reports 1, a gamepad
+axis reports how far it actually moved, and the strongest trigger on the action wins. `GetAxis`
+subtracts one action's strength from another's, and `GetAxis2D` pairs two of those into a movement
+vector — so a stick and WASD drive the same code as long as each direction is its own action. In the
+trigger picker a stick axis can be bound whole or as a single half (`Left Stick Left` is the
+negative half of `LeftX`), and a half only reports while the stick is pushed that way.
 
 > A trigger's required modifiers are a **subset** test: all of them must be held, and anything else
 > held alongside is ignored. So `Key/W` keeps firing while Shift is held (sprint does not cancel

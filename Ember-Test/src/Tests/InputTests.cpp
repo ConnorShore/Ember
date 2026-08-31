@@ -170,6 +170,129 @@ EB_TEST_CASE(Input, MouseControlAgreesWithMouseButtonForTheFirstThree, Unit)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Gamepad control names
+//////////////////////////////////////////////////////////////////////////
+
+// The same guard as the key list, for GamepadButton.inl.
+EB_TEST_CASE(Input, GamepadButtonStringRoundTripsForEveryButton, Unit)
+{
+	int checked = 0;
+
+	for (int value = 0; value < static_cast<int>(GamepadButton::Last); value++)
+	{
+		const GamepadButton button = static_cast<GamepadButton>(value);
+		const std::string_view name = InputCodeNames::GamepadButtonToString(button);
+
+		if (name.empty())
+		{
+			EB_EXPECT_MSG(false, "button " + std::to_string(value) + " has no serialized name");
+			continue;
+		}
+
+		GamepadButton parsed{};
+		EB_EXPECT_MSG(InputCodeNames::GamepadButtonFromString(name, parsed) && parsed == button,
+			"'" + std::string(name) + "' did not round-trip");
+		checked++;
+	}
+
+	EB_NOTE("round-tripped " + std::to_string(checked) + " gamepad button names");
+	EB_EXPECT_EQ(checked, 15);
+}
+
+EB_TEST_CASE(Input, GamepadAxisStringRoundTripsForEveryAxis, Unit)
+{
+	int checked = 0;
+
+	for (int value = 0; value < static_cast<int>(GamepadAxis::Last); value++)
+	{
+		const GamepadAxis axis = static_cast<GamepadAxis>(value);
+		const std::string_view name = InputCodeNames::GamepadAxisToString(axis);
+
+		if (name.empty())
+		{
+			EB_EXPECT_MSG(false, "axis " + std::to_string(value) + " has no serialized name");
+			continue;
+		}
+
+		GamepadAxis parsed{};
+		EB_EXPECT_MSG(InputCodeNames::GamepadAxisFromString(name, parsed) && parsed == axis,
+			"'" + std::string(name) + "' did not round-trip");
+		checked++;
+	}
+
+	EB_NOTE("round-tripped " + std::to_string(checked) + " gamepad axis names");
+	EB_EXPECT_EQ(checked, 6);
+}
+
+// The trigger parser picks button-or-axis from the control name alone, so the two name sets have to
+// stay disjoint — an overlap would silently bind one control as the other.
+EB_TEST_CASE(Input, GamepadButtonAndAxisNamesDoNotOverlap, Unit)
+{
+	for (int value = 0; value < static_cast<int>(GamepadButton::Last); value++)
+	{
+		const std::string_view name = InputCodeNames::GamepadButtonToString(static_cast<GamepadButton>(value));
+
+		GamepadAxis axis{};
+		EB_EXPECT_MSG(!InputCodeNames::GamepadAxisFromString(name, axis),
+			"'" + std::string(name) + "' is both a button and an axis name");
+	}
+
+	for (int value = 0; value < static_cast<int>(GamepadAxis::Last); value++)
+	{
+		const std::string_view name = InputCodeNames::GamepadAxisToString(static_cast<GamepadAxis>(value));
+
+		GamepadButton button{};
+		EB_EXPECT_MSG(!InputCodeNames::GamepadButtonFromString(name, button),
+			"'" + std::string(name) + "' is both an axis and a button name");
+	}
+}
+
+EB_TEST_CASE(Input, GamepadNamesFromStringRejectNamesThatAreNotControls, Unit)
+{
+	GamepadButton button{};
+	GamepadAxis axis{};
+
+	EB_EXPECT_FALSE(InputCodeNames::GamepadButtonFromString("Bogus", button));
+	EB_EXPECT_FALSE(InputCodeNames::GamepadButtonFromString("", button));
+	EB_EXPECT_FALSE(InputCodeNames::GamepadAxisFromString("Bogus", axis));
+	EB_EXPECT_FALSE(InputCodeNames::GamepadAxisFromString("", axis));
+
+	// Neither sentinel is a bindable control.
+	EB_EXPECT_FALSE(InputCodeNames::GamepadButtonFromString("Last", button));
+	EB_EXPECT_FALSE(InputCodeNames::GamepadAxisFromString("Last", axis));
+}
+
+// Half-axis names are what a player actually picks in a rebind menu, and GLFW's Y axes are
+// negative-up, which is the easy half to get backwards.
+EB_TEST_CASE(Input, HalfAxisDisplayNamesFollowTheStickDirection, Unit)
+{
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Negative) == "Left Stick Left");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Positive) == "Left Stick Right");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftY, AxisDirection::Negative) == "Left Stick Up");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::RightY, AxisDirection::Positive) == "Right Stick Down");
+
+	// A whole axis, and a trigger that only moves one way, keep the plain name.
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Full) == "Left Stick X");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftTrigger, AxisDirection::Positive) == "Left Trigger");
+}
+
+EB_TEST_CASE(Input, GamepadDisplayNamesAreControllerFacing, Unit)
+{
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::A) == "A Button");
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::LeftBumper) == "Left Bumper");
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::LeftThumb) == "Left Stick Press");
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::DPadUp) == "D-Pad Up");
+
+	// Back, Start and Guide read fine as enumerators and fall through to the serialized name.
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::Back) == "Back");
+	EB_EXPECT(InputCodeNames::GamepadButtonDisplayName(GamepadButton::Start) == "Start");
+
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX) == "Left Stick X");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::RightY) == "Right Stick Y");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftTrigger) == "Left Trigger");
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Raw state: edges, latches, the wheel
 //////////////////////////////////////////////////////////////////////////
 
@@ -335,6 +458,13 @@ EB_TEST_CASE(Input, TriggerStringRoundTrips, Unit)
 		"Mouse/Button4",
 		"Mouse/WheelUp",
 		"Mouse/WheelDown",
+		"Gamepad/A",
+		"Gamepad/LeftBumper",
+		"Gamepad/DPadUp",
+		"Gamepad/LeftX",
+		"Gamepad/LeftX+",
+		"Gamepad/LeftY-",
+		"Gamepad/RightTrigger",
 	};
 
 	for (const char* text : triggers)
@@ -371,7 +501,10 @@ EB_TEST_CASE(Input, TriggerFromStringRejectsMalformedInput, Unit)
 		"Key/Ctrl+",            // modifier with nothing after it
 		"Mouse/Bogus",          // unknown mouse control
 		"Nonsense/W",           // unknown device
-		"Gamepad/ButtonSouth",  // reserved: InputTrigger has no gamepad control type yet
+		"Gamepad/ButtonSouth",  // not one of Ember's gamepad control names
+		"Gamepad/Last",         // the sentinel is not bindable
+		"Gamepad/A+",           // only an axis has halves
+		"Gamepad/+",            // a direction with no control
 	};
 
 	for (const char* text : malformed)
@@ -382,15 +515,33 @@ EB_TEST_CASE(Input, TriggerFromStringRejectsMalformedInput, Unit)
 	}
 }
 
+// The suffix is what lets two actions split one stick axis, so it has to survive the parse rather
+// than being swallowed as a modifier separator.
+EB_TEST_CASE(Input, AxisTriggersCarryTheirDirection, Unit)
+{
+	EB_EXPECT(ParseTrigger("Gamepad/LeftX+").Direction == AxisDirection::Positive);
+	EB_EXPECT(ParseTrigger("Gamepad/LeftY-").Direction == AxisDirection::Negative);
+
+	// No suffix means the whole signed axis.
+	EB_EXPECT(ParseTrigger("Gamepad/LeftX").Direction == AxisDirection::Full);
+
+	// The control is the same either way; only the half differs.
+	EB_EXPECT(std::get<GamepadAxis>(ParseTrigger("Gamepad/LeftX-").ControlId) == GamepadAxis::LeftX);
+
+	// Non-axis triggers are left at Full.
+	EB_EXPECT(ParseTrigger("Gamepad/A").Direction == AxisDirection::Full);
+	EB_EXPECT(ParseTrigger("Key/Ctrl+S").Direction == AxisDirection::Full);
+}
+
 // The parser splits on '+' only when the token before it is a real modifier. Splitting naively would
-// eat the trailing '+' of a half-axis name and mis-parse it once gamepad support lands.
+// eat the trailing '+' of a half-axis name and mis-parse it once half-axis triggers land.
 EB_TEST_CASE(Input, TriggerParserDoesNotEatATrailingPlus, Unit)
 {
 	InputTrigger trigger{};
 
 	EB_EXPECT_FALSE(InputCodeNames::TriggerFromString("Gamepad/LeftStickX+", trigger));
 
-	// It must fail on the device, not by mistaking "LeftStickX" for a modifier.
+	// It must fail on the control name, not by mistaking "LeftStickX" for a modifier.
 	EB_EXPECT(trigger.Device == InputDevice::None);
 }
 
@@ -477,6 +628,11 @@ EB_TEST_CASE(Input, TriggerDisplayNamesAreHumanReadable, Unit)
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Key/Ctrl+Shift+S")), std::string("Ctrl + Shift + S"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Mouse/Left")), std::string("Left Mouse"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Mouse/WheelUp")), std::string("Wheel Up"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/A")), std::string("A Button"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/DPadLeft")), std::string("D-Pad Left"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/RightY")), std::string("Right Stick Y"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/RightY-")), std::string("Right Stick Up"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/LeftX+")), std::string("Left Stick Right"));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -847,28 +1003,131 @@ EB_TEST_CASE(Input, ClearActionsEmptiesBothVectors, Unit)
 	EB_EXPECT_EQ(actions.GetActionIndex("Jump"), -1);
 }
 
-// ProjectSerializer writes ControlId through InputTrigger's uint16_t conversion and rebuilds the
-// variant from the trigger's device, so a saved binding only survives if the two agree.
-EB_TEST_CASE(Input, TriggerSurvivesTheSerializedControlIdRoundTrip, Unit)
+namespace {
+
+	// Gamepad state is global and is only refreshed while a real pad is polled, so a test that pokes
+	// it has to put it back for the next one.
+	struct GamepadStateGuard
+	{
+		GamepadStateGuard() { Clear(); }
+		~GamepadStateGuard() { Clear(); }
+
+		static void Clear()
+		{
+			for (size_t i = 0; i < Input::MaxGamepads; i++)
+			{
+				GamepadState& state = Input::GetGamepadState(i);
+				state.Down = 0;
+				state.PreviousDown = 0;
+				state.Axis.fill(0.0f);
+			}
+		}
+	};
+
+}
+
+// Regression: the button mask was built from the button index instead of a shifted bit, so A (index
+// 0) masked to nothing and could never fire, while B (1) tested A's bit.
+EB_TEST_CASE(Input, GamepadButtonTriggerMatchesOnlyTheButtonItNames, Unit)
 {
-	const char* triggers[] = { "Key/Space", "Key/Ctrl+Shift+S", "Mouse/Left", "Mouse/Button4", "Mouse/WheelDown" };
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("Fire", "Gamepad/A");
+
+	Input::SetGamepadControlPressed(0, GamepadButton::A);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Fire"));
+	EB_EXPECT(actions.IsActionPressed("Fire"));
+
+	Input::SetGamepadControlReleased(0, GamepadButton::A);
+	Input::SetGamepadControlPressed(0, GamepadButton::B);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("Fire"));
+	EB_EXPECT(actions.IsActionReleased("Fire"));
+}
+
+// The point of half-axis triggers: on one axis without a direction both actions would report the
+// same value and GetAxis would cancel to zero no matter where the stick was.
+EB_TEST_CASE(Input, HalfAxisTriggersSplitOneAxisIntoTwoActions, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("MoveLeft", "Gamepad/LeftX-");
+	actions.AddAction({ "MoveRight", { ParseTrigger("Gamepad/LeftX+") } });
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, -0.5f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("MoveLeft"));
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveRight"));
+	EB_EXPECT_NEAR(actions.GetActionStrength("MoveLeft"), 0.5f, 0.0001f);
+	EB_EXPECT_NEAR(actions.GetAxis("MoveLeft", "MoveRight"), -0.5f, 0.0001f);
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 1.0f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("MoveRight"));
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveLeft"));
+	EB_EXPECT_NEAR(actions.GetAxis("MoveLeft", "MoveRight"), 1.0f, 0.0001f);
+}
+
+// A whole-axis trigger keeps the sign, so an action bound to one reads as a signed axis on its own.
+EB_TEST_CASE(Input, FullAxisTriggerReportsTheSignedValue, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("Turn", "Gamepad/RightX");
+
+	Input::SetGamepadAxis(0, GamepadAxis::RightX, -0.75f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("Turn"));
+	EB_EXPECT_NEAR(actions.GetActionStrength("Turn"), -0.75f, 0.0001f);
+}
+
+EB_TEST_CASE(Input, StrongestTriggerSetsTheActionStrength, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("MoveRight", "Key/D");
+	actions.AddTrigger("MoveRight", ParseTrigger("Gamepad/LeftX+"));
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.4f);
+	Input::SetKeyState(KeyCode::D, true);
+	StepActions(actions);
+
+	// The key is all the way down, so a half-pushed stick must not drag the strength back to 0.4.
+	EB_EXPECT_NEAR(actions.GetActionStrength("MoveRight"), 1.0f, 0.0001f);
+}
+
+// ProjectSerializer stores each binding as its trigger string, so a saved action only survives if a
+// trigger serializes and parses back to the same control - variant alternative included.
+EB_TEST_CASE(Input, TriggerSurvivesTheSerializedRoundTrip, Unit)
+{
+	const char* triggers[] =
+	{
+		"Key/Space", "Key/Ctrl+Shift+S", "Mouse/Left", "Mouse/Button4", "Mouse/WheelDown",
+		"Gamepad/A", "Gamepad/DPadLeft", "Gamepad/LeftY", "Gamepad/LeftY-", "Gamepad/LeftTrigger",
+	};
 
 	for (const char* text : triggers)
 	{
 		const InputTrigger original = ParseTrigger(text);
 
-		InputTrigger restored;
-		restored.Device = original.Device;
-		restored.RequiredModifiers = original.RequiredModifiers;
+		InputTrigger restored{};
+		EB_EXPECT_MSG(InputCodeNames::TriggerFromString(InputCodeNames::TriggerToString(original), restored),
+			std::string("'") + text + "' did not parse back");
 
-		const uint16_t controlId = static_cast<uint16_t>(original);
-		if (restored.Device == InputDevice::Keyboard)
-			restored.ControlId = static_cast<KeyCode>(controlId);
-		else
-			restored.ControlId = static_cast<MouseControl>(controlId);
-
-		EB_EXPECT_MSG(InputCodeNames::TriggerToString(restored) == text,
-			std::string("'") + text + "' did not survive the ControlId round trip");
+		EB_EXPECT_MSG(restored.Device == original.Device, std::string("'") + text + "' changed device");
+		EB_EXPECT_MSG(restored.ControlId == original.ControlId, std::string("'") + text + "' changed control");
+		EB_EXPECT_MSG(restored.RequiredModifiers == original.RequiredModifiers,
+			std::string("'") + text + "' changed modifiers");
+		EB_EXPECT_MSG(restored.Direction == original.Direction,
+			std::string("'") + text + "' changed axis direction");
 	}
 }
 

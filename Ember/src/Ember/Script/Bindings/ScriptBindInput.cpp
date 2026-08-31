@@ -84,6 +84,10 @@ namespace Ember {
 		inputTable.set_function("IsActionDown", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionDown(actionName); });
 		inputTable.set_function("IsActionPressed", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionPressed(actionName); });
 		inputTable.set_function("IsActionReleased", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionReleased(actionName); });
+		inputTable.set_function("GetActionStrength", [&inputActionManager](std::string_view actionName) { return inputActionManager.GetActionStrength(actionName); });
+
+		inputTable.set_function("GetAxis", [&inputActionManager](std::string_view negative, std::string_view positive) { return inputActionManager.GetAxis(negative, positive); });
+		inputTable.set_function("GetAxis2D", [&inputActionManager](std::string_view left, std::string_view right, std::string_view down, std::string_view up) { return inputActionManager.GetAxis2D(left, right, down, up); });
 		
 		inputTable.set_function("SetCursorMode", &Input::SetCursorMode);
 		inputTable.set_function("GetCursorMode", &Input::GetCursorMode);

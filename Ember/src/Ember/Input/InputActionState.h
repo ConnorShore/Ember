@@ -9,6 +9,7 @@ namespace Ember {
 		bool IsDown = false;
 		bool JustPressed = false;
 		bool JustReleased = false;
+		float Strength = 0.0f;
 
 		InputDevice LastDevice = InputDevice::None;
 	};

@@ -6,7 +6,20 @@ namespace Ember {
 
 	namespace {
 
-		bool IsTriggerActive(const InputTrigger& trigger)
+		// A half-axis trigger reports 0..1 within its own half and nothing at all outside it, so a pair
+		// of actions can drive one axis in opposite directions.
+		float DirectionalStrength(float value, AxisDirection direction)
+		{
+			switch (direction)
+			{
+			case AxisDirection::Positive: return Math::Max(value, 0.0f);
+			case AxisDirection::Negative: return Math::Max(-value, 0.0f);
+			default:                      return value;
+			}
+		}
+
+		// Zero when the trigger's control is not engaged; signed only for a Full-direction axis.
+		float GetTriggerStrength(const InputTrigger& trigger)
 		{
 			switch (trigger.Device)
 			{
@@ -15,7 +28,8 @@ namespace Ember {
 				{
 					KeyCode key = std::get<KeyCode>(trigger.ControlId);
 					bool active = Input::IsKeyDown(key) || Input::IsKeyPressed(key);
-					return active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
+					active = active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
+					return active ? 1.0f : 0.0f;
 				}
 				break;
 			case InputDevice::Mouse:
@@ -23,16 +37,43 @@ namespace Ember {
 				{
 					MouseControl control = std::get<MouseControl>(trigger.ControlId);
 					bool active = Input::IsMouseControlDown(control) || Input::IsMouseControlPressed(control);
-					return active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
+					active = active && ((Input::GetActiveModifiers() & trigger.RequiredModifiers) == trigger.RequiredModifiers);
+					return active ? 1.0f : 0.0f;
+				}
+				break;
+			case InputDevice::Gamepad:
+				if (std::holds_alternative<GamepadButton>(trigger.ControlId))
+				{
+					GamepadButton button = std::get<GamepadButton>(trigger.ControlId);
+					const GamepadButtonMask mask = static_cast<GamepadButtonMask>(1 << static_cast<GamepadButtonType>(button));
+					for (size_t i = 0; i < Input::MaxGamepads; ++i)
+					{
+						const GamepadState& state = Input::GetGamepadState(i);
+						if ((state.Down & mask) != 0)
+							return 1.0f;
+					}
+				}
+				else if (std::holds_alternative<GamepadAxis>(trigger.ControlId))
+				{
+					GamepadAxis axis = std::get<GamepadAxis>(trigger.ControlId);
+					for (size_t i = 0; i < Input::MaxGamepads; ++i)
+					{
+						// Window::PollGamepadStates has already deadzoned and rescaled the axis, so
+						// anything non-zero here is real movement.
+						const GamepadState& state = Input::GetGamepadState(i);
+						float strength = DirectionalStrength(state.Axis[static_cast<size_t>(axis)], trigger.Direction);
+						if (strength != 0.0f)
+							return strength;
+					}
 				}
 				break;
 			default:
-				EB_CORE_ERROR("InputActionManager::Evaluate: Unknown input device type: {0}", static_cast<int>(trigger.Device));
+				EB_CORE_ERROR("InputActionManager::GetTriggerStrength: Unknown input device type: {0}", static_cast<int>(trigger.Device));
 				break;
 			}
-			return false;
-		}
 
+			return 0.0f;
+		}
 	}
 
 	void InputActionManager::Evaluate()
@@ -45,18 +86,26 @@ namespace Ember {
 			state.IsDown = false;
 			state.JustPressed = false;
 			state.JustReleased = false;
+			state.Strength = 0.0f;
 
 			for (const InputTrigger& trigger : action.Triggers)
 			{
-				if (IsTriggerActive(trigger))
-				{
-					state.IsDown = true;
-					state.LastDevice = trigger.Device;
-					if (!wasDown)
-						state.JustPressed = true;
-					break;
-				}
+				const float strength = GetTriggerStrength(trigger);
+				if (strength == 0.0f)
+					continue;
+
+				// The strongest trigger wins, so a stick and a key bound to the same action do not
+				// fight over which one gets reported.
+				if (state.IsDown && Math::Abs(strength) <= Math::Abs(state.Strength))
+					continue;
+
+				state.IsDown = true;
+				state.Strength = strength;
+				state.LastDevice = trigger.Device;
 			}
+
+			if (state.IsDown && !wasDown)
+				state.JustPressed = true;
 
 			if (wasDown && !state.IsDown)
 				state.JustReleased = true;
@@ -97,6 +146,27 @@ namespace Ember {
 		}
 
 		return m_ActionStates[actionIndex].JustReleased;
+	}
+
+	float InputActionManager::GetActionStrength(std::string_view actionName)
+	{
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+		{
+			EB_CORE_ERROR("InputActionManager::GetActionStrength: Action not found: {0}", actionName);
+			return 0.0f;
+		}
+		return m_ActionStates[actionIndex].Strength;
+	}
+
+	float InputActionManager::GetAxis(std::string_view negative, std::string_view positive)
+	{
+		return GetActionStrength(positive) - GetActionStrength(negative);
+	}
+
+	Vector2f InputActionManager::GetAxis2D(std::string_view left, std::string_view right, std::string_view down, std::string_view up)
+	{
+		return Vector2f(GetAxis(left, right), GetAxis(down, up));
 	}
 
 	int InputActionManager::GetActionIndex(std::string_view actionName)

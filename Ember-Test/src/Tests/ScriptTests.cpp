@@ -116,6 +116,28 @@ EB_TEST_CASE(Script, NormalizeAndCrossMatchCpp, Unit)
 		Math::Cross(Vector3f(1.0f, 0.0f, 0.0f), Vector3f(0.0f, 1.0f, 0.0f)), 1e-5f);
 }
 
+// Regression: Math.Length was registered twice, and the second registration - Vector3f only -
+// replaced the pair that included Vector2f, so Math.Length(Vector2f) failed to resolve from Lua.
+EB_TEST_CASE(Script, MathTableAcceptsVector2f, Unit)
+{
+	sol::state& lua = ScriptEngine::GetState();
+
+	const sol::protected_function_result result = lua.script(R"(
+		local v = Vector2f.new(3, 4)
+		local n = Math.Normalize(v)
+		local c = Math.Clamp(v, Vector2f.new(0, 0), Vector2f.new(1, 1))
+		return Math.Length(v), Math.Dot(v, Vector2f.new(1, 0)), n.x, c.x, c.y
+	)", sol::script_pass_on_error);
+
+	EB_CHECK_MSG(result.valid(), "Vector2f math script failed to run");
+
+	EB_EXPECT_NEAR(result.get<float>(0), 5.0f, 1e-4);   // Math.Length
+	EB_EXPECT_NEAR(result.get<float>(1), 3.0f, 1e-5);   // Math.Dot
+	EB_EXPECT_NEAR(result.get<float>(2), 0.6f, 1e-5);   // Math.Normalize keeps the 3-4-5 ratio
+	EB_EXPECT_NEAR(result.get<float>(3), 1.0f, 1e-5);   // Math.Clamp, per component
+	EB_EXPECT_NEAR(result.get<float>(4), 1.0f, 1e-5);
+}
+
 EB_TEST_CASE(Script, LuaSyntaxErrorsAreReportedNotSwallowed, Unit)
 {
 	// sol2's protected_function_result must come back invalid on a bad script. If this ever

@@ -50,6 +50,8 @@ namespace Ember {
 		// One device section of the trigger picker; returns true when a control was double-clicked
 		bool RenderKeyboardSection();
 		bool RenderMouseSection();
+		bool RenderGamepadButtonSection();
+		bool RenderGamepadAxisSection();
 
 		// The only four places the input UI touches the backend - everything else just reads
 		void AddInputAction(const std::string& name);

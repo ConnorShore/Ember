@@ -255,6 +255,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Vector2f Normalize(const Vector2f& vector)
+		{
+			return glm::normalize(vector);
+		}
+
 		static inline Quaternion Normalize(const Quaternion& quat)
 		{
 			return glm::normalize(quat);

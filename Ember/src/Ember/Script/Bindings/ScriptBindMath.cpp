@@ -192,16 +192,14 @@ namespace Ember {
 		));
 
 		math.set_function("Normalize", sol::overload(
+			[](const Vector2f& v) { return Math::Normalize(v); },
 			[](const Vector3f& v) { return Math::Normalize(v); },
 			[](const Quaternion& q) { return Math::Normalize(q); }
 		));
 
-		math.set_function("Length", sol::overload(
-			[](const Vector3f& v) { return Math::Length(v); }
-		));
-
 		math.set_function("Clamp", sol::overload(
 			[](float value, float min, float max) { return Math::Clamp(value, min, max); },
+			[](const Vector2f& value, const Vector2f& min, const Vector2f& max) { return Math::Clamp(value, min, max); },
 			[](const Vector3f& value, const Vector3f& min, const Vector3f& max) { return Math::Clamp(value, min, max); }
 		));
 

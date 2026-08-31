@@ -16,6 +16,11 @@ namespace Ember {
 		bool IsActionPressed(std::string_view actionName);
 		bool IsActionReleased(std::string_view actionName);
 
+		float GetActionStrength(std::string_view actionName);
+
+		float GetAxis(std::string_view negative, std::string_view positive);
+		Vector2f GetAxis2D(std::string_view left, std::string_view right, std::string_view down, std::string_view up);
+
 		int GetActionIndex(std::string_view actionName);
 
 		void AddAction(const InputAction& action);

@@ -3,6 +3,7 @@
 
 #include "Ember/Utils/SerializationUtils.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
+#include "Ember/Input/InputCodeNames.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -112,11 +113,18 @@ namespace Ember {
 			triggersNode |= ryml::SEQ;
 			for (const auto& trigger : action.Triggers)
 			{
+				// The trigger string carries the device, the control type and the modifiers together;
+				// a bare control id cannot, since a gamepad button and axis share the same integers.
+				const std::string triggerText = InputCodeNames::TriggerToString(trigger);
+				if (triggerText.empty())
+				{
+					EB_CORE_WARN("ProjectSerializer::Serialize: Dropping unserializable trigger on action '{0}'", action.Name);
+					continue;
+				}
+
 				auto triggerNode = triggersNode.append_child();
 				triggerNode |= ryml::MAP;
-				triggerNode["Device"] << static_cast<int>(trigger.Device);
-				triggerNode["ControlId"] << static_cast<uint16_t>(trigger);
-				triggerNode["RequiredModifiers"] << static_cast<int>(trigger.RequiredModifiers);
+				triggerNode["Trigger"] << triggerText;
 			}
 		}
 
@@ -245,28 +253,18 @@ namespace Ember {
 					auto triggersNode = actionNode["Triggers"];
 					for (auto triggerNode : triggersNode.children())
 					{
+						std::string triggerText;
+						triggerNode["Trigger"] >> triggerText;
+
+						// A binding that no longer names a real control is dropped rather than kept as
+						// an unbound trigger, which would silently fire on nothing.
 						InputTrigger trigger;
-						int deviceInt;
-						triggerNode["Device"] >> deviceInt;
-						trigger.Device = static_cast<InputDevice>(deviceInt);
-						uint16_t controlId;
-						triggerNode["ControlId"] >> controlId;
-						switch (trigger.Device)
+						if (!InputCodeNames::TriggerFromString(triggerText, trigger))
 						{
-						case InputDevice::Keyboard:
-							trigger.ControlId = static_cast<KeyCode>(controlId);
-							break;
-						case InputDevice::Mouse:
-							trigger.ControlId = static_cast<MouseControl>(controlId);
-							break;
-						case InputDevice::Gamepad:
-						default:
-							EB_CORE_ERROR("ProjectSerializer::Deserialize: Unknown input device type: {0}", static_cast<int>(trigger.Device));
-							break;
+							EB_CORE_ERROR("ProjectSerializer::Deserialize: Unrecognized trigger '{0}' on action '{1}'", triggerText, action.Name);
+							continue;
 						}
-						int modifierInt;
-						triggerNode["RequiredModifiers"] >> modifierInt;
-						trigger.RequiredModifiers = static_cast<KeyModifierType>(modifierInt);
+
 						action.Triggers.push_back(trigger);
 					}
 					inputActionManager.AddAction(action);

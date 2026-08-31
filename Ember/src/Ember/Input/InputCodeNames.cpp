@@ -66,6 +66,81 @@ namespace Ember {
 			{ MouseControl::WheelDown, "Wheel Down" },
 		};
 
+		// Serialized gamepad button names, generated from the one list in GamepadButton.inl. Last is
+		// not in that list, so the sentinel can never be parsed back out of a project file.
+		constexpr std::pair<std::string_view, GamepadButton> s_GamepadButtonNames[] =
+		{
+#define EB_GAMEPAD_BUTTON(name, value) { #name, GamepadButton::name },
+#include "GamepadButton.inl"
+#undef EB_GAMEPAD_BUTTON
+		};
+
+		// The enumerators are GLFW's Xbox-style names, which read as bare letters next to a keyboard
+		// binding, so a rebind menu gets the controller-facing wording instead.
+		constexpr std::pair<GamepadButton, std::string_view> s_GamepadButtonDisplayOverrides[] =
+		{
+			{ GamepadButton::A, "A Button" }, { GamepadButton::B, "B Button" },
+			{ GamepadButton::X, "X Button" }, { GamepadButton::Y, "Y Button" },
+
+			{ GamepadButton::LeftBumper,  "Left Bumper" },
+			{ GamepadButton::RightBumper, "Right Bumper" },
+			{ GamepadButton::LeftThumb,   "Left Stick Press" },
+			{ GamepadButton::RightThumb,  "Right Stick Press" },
+
+			{ GamepadButton::DPadUp,   "D-Pad Up" },   { GamepadButton::DPadRight, "D-Pad Right" },
+			{ GamepadButton::DPadDown, "D-Pad Down" }, { GamepadButton::DPadLeft,  "D-Pad Left" },
+		};
+
+		// Serialized gamepad axis names, generated from the one list in GamepadAxis.inl.
+		constexpr std::pair<std::string_view, GamepadAxis> s_GamepadAxisNames[] =
+		{
+#define EB_GAMEPAD_AXIS(name, value) { #name, GamepadAxis::name },
+#include "GamepadAxis.inl"
+#undef EB_GAMEPAD_AXIS
+		};
+
+		// Every axis name is overridden: "LeftX" says nothing about which stick it moves.
+		constexpr std::pair<GamepadAxis, std::string_view> s_GamepadAxisDisplayOverrides[] =
+		{
+			{ GamepadAxis::LeftX,  "Left Stick X" },  { GamepadAxis::LeftY,  "Left Stick Y" },
+			{ GamepadAxis::RightX, "Right Stick X" }, { GamepadAxis::RightY, "Right Stick Y" },
+
+			{ GamepadAxis::LeftTrigger,  "Left Trigger" },
+			{ GamepadAxis::RightTrigger, "Right Trigger" },
+		};
+
+		struct GamepadHalfAxisName
+		{
+			GamepadAxis Axis;
+			AxisDirection Direction;
+			std::string_view Display;
+		};
+
+		// A player thinks in directions, not signs. GLFW's Y axes are negative-up, which is the half
+		// of this table worth double-checking against.
+		constexpr GamepadHalfAxisName s_GamepadHalfAxisNames[] =
+		{
+			{ GamepadAxis::LeftX,  AxisDirection::Negative, "Left Stick Left" },
+			{ GamepadAxis::LeftX,  AxisDirection::Positive, "Left Stick Right" },
+			{ GamepadAxis::LeftY,  AxisDirection::Negative, "Left Stick Up" },
+			{ GamepadAxis::LeftY,  AxisDirection::Positive, "Left Stick Down" },
+			{ GamepadAxis::RightX, AxisDirection::Negative, "Right Stick Left" },
+			{ GamepadAxis::RightX, AxisDirection::Positive, "Right Stick Right" },
+			{ GamepadAxis::RightY, AxisDirection::Negative, "Right Stick Up" },
+			{ GamepadAxis::RightY, AxisDirection::Positive, "Right Stick Down" },
+		};
+
+		// Serialized suffix naming the half of an axis a trigger watches.
+		constexpr std::string_view AxisDirectionSuffix(AxisDirection direction)
+		{
+			switch (direction)
+			{
+			case AxisDirection::Positive: return "+";
+			case AxisDirection::Negative: return "-";
+			default:                      return {};
+			}
+		}
+
 		constexpr std::string_view DeviceKeyboard = "Key";
 		constexpr std::string_view DeviceMouse    = "Mouse";
 		constexpr std::string_view DeviceGamepad  = "Gamepad";
@@ -190,6 +265,90 @@ namespace Ember {
 		return MouseControlToString(control);
 	}
 
+	std::string_view InputCodeNames::GamepadButtonToString(GamepadButton button)
+	{
+		for (const auto& [name, value] : s_GamepadButtonNames)
+		{
+			if (value == button)
+				return name;
+		}
+
+		return {};
+	}
+
+	bool InputCodeNames::GamepadButtonFromString(std::string_view str, GamepadButton& out)
+	{
+		for (const auto& [name, value] : s_GamepadButtonNames)
+		{
+			if (name == str)
+			{
+				out = value;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	std::string_view InputCodeNames::GamepadButtonDisplayName(GamepadButton button)
+	{
+		for (const auto& [value, display] : s_GamepadButtonDisplayOverrides)
+		{
+			if (value == button)
+				return display;
+		}
+
+		return GamepadButtonToString(button);
+	}
+
+	std::string_view InputCodeNames::GamepadAxisToString(GamepadAxis axis)
+	{
+		for (const auto& [name, value] : s_GamepadAxisNames)
+		{
+			if (value == axis)
+				return name;
+		}
+
+		return {};
+	}
+
+	bool InputCodeNames::GamepadAxisFromString(std::string_view str, GamepadAxis& out)
+	{
+		for (const auto& [name, value] : s_GamepadAxisNames)
+		{
+			if (name == str)
+			{
+				out = value;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	std::string_view InputCodeNames::GamepadAxisDisplayName(GamepadAxis axis)
+	{
+		for (const auto& [value, display] : s_GamepadAxisDisplayOverrides)
+		{
+			if (value == axis)
+				return display;
+		}
+
+		return GamepadAxisToString(axis);
+	}
+
+	std::string_view InputCodeNames::GamepadAxisDisplayName(GamepadAxis axis, AxisDirection direction)
+	{
+		for (const auto& half : s_GamepadHalfAxisNames)
+		{
+			if (half.Axis == axis && half.Direction == direction)
+				return half.Display;
+		}
+
+		// A trigger only moves one way, so its halves are just the axis itself.
+		return GamepadAxisDisplayName(axis);
+	}
+
 	std::string InputCodeNames::TriggerToString(const InputTrigger& trigger)
 	{
 		const std::string_view device = DeviceToString(trigger.Device);
@@ -223,8 +382,29 @@ namespace Ember {
 			}
 			return {};
 
+		case InputDevice::Gamepad:
+			if (const GamepadButton* button = std::get_if<GamepadButton>(&trigger.ControlId))
+			{
+				const std::string_view name = GamepadButtonToString(*button);
+				if (name.empty())
+					return {};
+
+				result += name;
+				return result;
+			}
+			if (const GamepadAxis* axis = std::get_if<GamepadAxis>(&trigger.ControlId))
+			{
+				const std::string_view name = GamepadAxisToString(*axis);
+				if (name.empty())
+					return {};
+
+				result += name;
+				result += AxisDirectionSuffix(trigger.Direction);
+				return result;
+			}
+			return {};
+
 		default:
-			// Gamepad has no control type in InputTrigger::ControlId yet.
 			return {};
 		}
 	}
@@ -277,9 +457,43 @@ namespace Ember {
 			out.Device = InputDevice::Mouse;
 			out.ControlId = control;
 		}
+		else if (device == DeviceGamepad)
+		{
+			// A trailing '+' or '-' names the half of an axis to watch; only axes may carry one.
+			AxisDirection direction = AxisDirection::Full;
+			if (remainder.back() == '+')
+				direction = AxisDirection::Positive;
+			else if (remainder.back() == '-')
+				direction = AxisDirection::Negative;
+
+			if (direction != AxisDirection::Full)
+				remainder.remove_suffix(1);
+
+			if (remainder.empty())
+				return false;
+
+			// No button name is also an axis name, so the control name alone picks the variant type.
+			GamepadButton button{};
+			GamepadAxis axis{};
+
+			if (direction == AxisDirection::Full && GamepadButtonFromString(remainder, button))
+			{
+				out.ControlId = button;
+			}
+			else if (GamepadAxisFromString(remainder, axis))
+			{
+				out.ControlId = axis;
+			}
+			else
+			{
+				return false;
+			}
+
+			out.Device = InputDevice::Gamepad;
+			out.Direction = direction;
+		}
 		else
 		{
-			// Unknown device, or Gamepad before it is implemented.
 			return false;
 		}
 
@@ -306,6 +520,19 @@ namespace Ember {
 			if (const MouseControl* control = std::get_if<MouseControl>(&trigger.ControlId))
 			{
 				result += MouseControlDisplayName(*control);
+				return result;
+			}
+			break;
+
+		case InputDevice::Gamepad:
+			if (const GamepadButton* button = std::get_if<GamepadButton>(&trigger.ControlId))
+			{
+				result += GamepadButtonDisplayName(*button);
+				return result;
+			}
+			if (const GamepadAxis* axis = std::get_if<GamepadAxis>(&trigger.ControlId))
+			{
+				result += GamepadAxisDisplayName(*axis, trigger.Direction);
 				return result;
 			}
 			break;
