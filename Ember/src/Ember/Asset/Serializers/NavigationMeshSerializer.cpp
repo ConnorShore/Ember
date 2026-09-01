@@ -2,6 +2,7 @@
 
 #include "NavigationMeshSerializer.h"
 #include "AssetSerializationMode.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -113,12 +114,12 @@ namespace Ember {
 		if (root.has_child("BakeSettings"))
 		{
 			auto settingsNode = root["BakeSettings"];
-			if (settingsNode.has_child("CellSize")) settingsNode["CellSize"] >> settings.CellSize;
-			if (settingsNode.has_child("CellHeight")) settingsNode["CellHeight"] >> settings.CellHeight;
-			if (settingsNode.has_child("AgentHeight")) settingsNode["AgentHeight"] >> settings.AgentHeight;
-			if (settingsNode.has_child("AgentRadius")) settingsNode["AgentRadius"] >> settings.AgentRadius;
-			if (settingsNode.has_child("AgentMaxClimb")) settingsNode["AgentMaxClimb"] >> settings.AgentMaxClimb;
-			if (settingsNode.has_child("AgentMaxSlope")) settingsNode["AgentMaxSlope"] >> settings.AgentMaxSlope;
+			Util::ReadField(settingsNode, "CellSize", settings.CellSize);
+			Util::ReadField(settingsNode, "CellHeight", settings.CellHeight);
+			Util::ReadField(settingsNode, "AgentHeight", settings.AgentHeight);
+			Util::ReadField(settingsNode, "AgentRadius", settings.AgentRadius);
+			Util::ReadField(settingsNode, "AgentMaxClimb", settings.AgentMaxClimb);
+			Util::ReadField(settingsNode, "AgentMaxSlope", settings.AgentMaxSlope);
 		}
 
 		std::filesystem::path blobPath = GetBlobPath(filepath);

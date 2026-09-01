@@ -79,9 +79,12 @@ The first entry in **Scenes In Build** becomes the project's start scene.
 
 ## Project Settings
 
-The Project Settings dialog has three categories:
+The Project Settings dialog has four categories:
 
 - **General** - project name and Scenes In Build.
+- **Input** - named input actions and the keys, mouse controls and gamepad bindings that trigger
+  them, plus a **Devices** section for per-stick and per-trigger deadzone, saturation, response
+  curve, actuation and inversion.
 - **Physics** - gravity, solver iteration counts, and collision category names.
 - **Rendering** - render layer names.
 

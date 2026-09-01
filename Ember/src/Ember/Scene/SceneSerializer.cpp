@@ -783,8 +783,7 @@ namespace Ember {
 				}
 			}
 
-			if (rcNode.has_child("IsAttachment"))
-				rcNode["IsAttachment"] >> rc.IsAttachment;
+			Util::ReadField(rcNode, "IsAttachment", rc.IsAttachment);
 		}
 
 		if (entityNode.has_child("TransformComponent"))
@@ -796,8 +795,7 @@ namespace Ember {
 			Util::DeserializeVector3f(tcNode["Rotation"], tc.Rotation);
 			Util::DeserializeVector3f(tcNode["Scale"], tc.Scale);
 
-			if (tcNode.has_child("WorldTransform"))
-				Util::DeserializeMatrix4f(tcNode["WorldTransform"], tc.WorldTransform);
+			Util::ReadMatrix4f(tcNode, "WorldTransform", tc.WorldTransform);
 		}
 
 		if (entityNode.has_child("SpriteComponent"))
@@ -815,15 +813,12 @@ namespace Ember {
 				sc.TextureHandle = (UUID)texId;
 			}
 
-			if (spriteNode.has_child("IsBillboard"))
-				spriteNode["IsBillboard"] >> sc.IsBillboard;
+			Util::ReadField(spriteNode, "IsBillboard", sc.IsBillboard);
 
-			if (spriteNode.has_child("LockYAxis"))
-				spriteNode["LockYAxis"] >> sc.LockYAxis;
+			Util::ReadField(spriteNode, "LockYAxis", sc.LockYAxis);
 
 			// Guarded: scenes authored before nine-slicing existed have no such key.
-			if (spriteNode.has_child("NineSliceBorder"))
-				Util::DeserializeVector4f(spriteNode["NineSliceBorder"], sc.NineSliceBorder);
+			Util::ReadVector4f(spriteNode, "NineSliceBorder", sc.NineSliceBorder);
 		}
 
 		if (entityNode.has_child("RigidBodyComponent"))
@@ -851,13 +846,11 @@ namespace Ember {
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], bcc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
 				Util::DeserializeVector3f(colliderNode["Offset"], bcc.Offset.Position);
-			if (colliderNode.has_child("OffsetRotation"))
-				Util::DeserializeVector3f(colliderNode["OffsetRotation"], bcc.Offset.Rotation);
+			Util::ReadVector3f(colliderNode, "OffsetRotation", bcc.Offset.Rotation);
 			colliderNode["Category"] >> bcc.Category;
 			colliderNode["CollisionMask"] >> bcc.CollisionMask;
 			colliderNode["IsTrigger"] >> bcc.IsTrigger;
-			if (colliderNode.has_child("PreviewCollider"))
-				colliderNode["PreviewCollider"] >> bcc.PreviewCollider;
+			Util::ReadField(colliderNode, "PreviewCollider", bcc.PreviewCollider);
 			uint64_t bccPhysMatId;
 			colliderNode["PhysicsMaterialUUID"] >> bccPhysMatId;
 			bcc.PhysicsMaterialHandle = (UUID)bccPhysMatId;
@@ -869,14 +862,12 @@ namespace Ember {
 			auto& scc = deserializedEntity.AttachComponent<SphereColliderComponent>();
 			colliderNode["Radius"] >> scc.Radius;
 			colliderNode["IsTrigger"] >> scc.IsTrigger;
-			if (colliderNode.has_child("PreviewCollider"))
-				colliderNode["PreviewCollider"] >> scc.PreviewCollider;
+			Util::ReadField(colliderNode, "PreviewCollider", scc.PreviewCollider);
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], scc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
 				Util::DeserializeVector3f(colliderNode["Offset"], scc.Offset.Position);
-			if (colliderNode.has_child("OffsetRotation"))
-				Util::DeserializeVector3f(colliderNode["OffsetRotation"], scc.Offset.Rotation);
+			Util::ReadVector3f(colliderNode, "OffsetRotation", scc.Offset.Rotation);
 			colliderNode["Category"] >> scc.Category;
 			colliderNode["CollisionMask"] >> scc.CollisionMask;
 			uint64_t sccPhysMatId;
@@ -891,14 +882,12 @@ namespace Ember {
 			colliderNode["Radius"] >> ccc.Radius;
 			colliderNode["Height"] >> ccc.Height;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
-			if (colliderNode.has_child("PreviewCollider"))
-				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
+			Util::ReadField(colliderNode, "PreviewCollider", ccc.PreviewCollider);
 			if (colliderNode.has_child("OffsetPosition"))
 				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
 			else if (colliderNode.has_child("Offset"))
 				Util::DeserializeVector3f(colliderNode["Offset"], ccc.Offset.Position);
-			if (colliderNode.has_child("OffsetRotation"))
-				Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
+			Util::ReadVector3f(colliderNode, "OffsetRotation", ccc.Offset.Rotation);
 			colliderNode["Category"] >> ccc.Category;
 			colliderNode["CollisionMask"] >> ccc.CollisionMask;
 			uint64_t cccPhysMatId;
@@ -916,12 +905,9 @@ namespace Ember {
 			auto& ccc = deserializedEntity.AttachComponent<ConvexMeshColliderComponent>();
 			ccc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> ccc.IsTrigger;
-			if (colliderNode.has_child("PreviewCollider"))
-				colliderNode["PreviewCollider"] >> ccc.PreviewCollider;
-			if (colliderNode.has_child("OffsetPosition"))
-				Util::DeserializeVector3f(colliderNode["OffsetPosition"], ccc.Offset.Position);
-			if (colliderNode.has_child("OffsetRotation"))
-				Util::DeserializeVector3f(colliderNode["OffsetRotation"], ccc.Offset.Rotation);
+			Util::ReadField(colliderNode, "PreviewCollider", ccc.PreviewCollider);
+			Util::ReadVector3f(colliderNode, "OffsetPosition", ccc.Offset.Position);
+			Util::ReadVector3f(colliderNode, "OffsetRotation", ccc.Offset.Rotation);
 			colliderNode["Category"] >> ccc.Category;
 			colliderNode["CollisionMask"] >> ccc.CollisionMask;
 			uint64_t convexPhysMatId;
@@ -939,12 +925,9 @@ namespace Ember {
 			auto& cmcc = deserializedEntity.AttachComponent<ConcaveMeshColliderComponent>();
 			cmcc.MeshHandle = meshUUID;
 			colliderNode["IsTrigger"] >> cmcc.IsTrigger;
-			if (colliderNode.has_child("PreviewCollider"))
-				colliderNode["PreviewCollider"] >> cmcc.PreviewCollider;
-			if (colliderNode.has_child("OffsetPosition"))
-				Util::DeserializeVector3f(colliderNode["OffsetPosition"], cmcc.Offset.Position);
-			if (colliderNode.has_child("OffsetRotation"))
-				Util::DeserializeVector3f(colliderNode["OffsetRotation"], cmcc.Offset.Rotation);
+			Util::ReadField(colliderNode, "PreviewCollider", cmcc.PreviewCollider);
+			Util::ReadVector3f(colliderNode, "OffsetPosition", cmcc.Offset.Position);
+			Util::ReadVector3f(colliderNode, "OffsetRotation", cmcc.Offset.Rotation);
 			colliderNode["Category"] >> cmcc.Category;
 			colliderNode["CollisionMask"] >> cmcc.CollisionMask;
 			uint64_t concavePhysMatId;
@@ -1039,8 +1022,7 @@ namespace Ember {
 		{
 			ryml::NodeRef lightNode = entityNode["DirectionalLightComponent"];
 			auto& dlc = deserializedEntity.AttachComponent<DirectionalLightComponent>();
-			if (lightNode.has_child("Active"))
-				lightNode["Active"] >> dlc.Active;
+			Util::ReadField(lightNode, "Active", dlc.Active);
 			Util::DeserializeVector3f(lightNode["Color"], dlc.Color);
 			lightNode["Intensity"] >> dlc.Intensity;
 		}
@@ -1050,8 +1032,7 @@ namespace Ember {
 			ryml::NodeRef lightNode = entityNode["SpotLightComponent"];
 
 			auto& slc = deserializedEntity.AttachComponent<SpotLightComponent>();
-			if (lightNode.has_child("Active"))
-				lightNode["Active"] >> slc.Active;
+			Util::ReadField(lightNode, "Active", slc.Active);
 
 			Util::DeserializeVector3f(lightNode["Color"], slc.Color);
 			lightNode["Intensity"] >> slc.Intensity;
@@ -1067,8 +1048,7 @@ namespace Ember {
 		{
 			ryml::NodeRef lightNode = entityNode["PointLightComponent"];
 			auto& plc = deserializedEntity.AttachComponent<PointLightComponent>();
-			if (lightNode.has_child("Active"))
-				lightNode["Active"] >> plc.Active;
+			Util::ReadField(lightNode, "Active", plc.Active);
 			Util::DeserializeVector3f(lightNode["Color"], plc.Color);
 			lightNode["Intensity"] >> plc.Intensity;
 			lightNode["Radius"] >> plc.Radius;
@@ -1195,12 +1175,10 @@ namespace Ember {
 			auto& ac = deserializedEntity.AttachComponent<AnimatorComponent>();
 
 			uint64_t skelHandle = Constants::InvalidUUID;
-			if (animatorNode.has_child("SkeletonHandle"))
-				animatorNode["SkeletonHandle"] >> skelHandle;
+			Util::ReadField(animatorNode, "SkeletonHandle", skelHandle);
 
 			uint64_t controllerHandle = Constants::InvalidUUID;
-			if (animatorNode.has_child("ControllerHandle"))
-				animatorNode["ControllerHandle"] >> controllerHandle;
+			Util::ReadField(animatorNode, "ControllerHandle", controllerHandle);
 
 			ac.SkeletonHandle = (UUID)skelHandle;
 			ac.ControllerHandle = (UUID)controllerHandle;
@@ -1218,18 +1196,13 @@ namespace Ember {
 			auto& socket = deserializedEntity.AttachComponent<BoneSocketComponent>();
 
 			uint64_t targetEntity = Constants::InvalidUUID;
-			if (socketNode.has_child("TargetEntity"))
-				socketNode["TargetEntity"] >> targetEntity;
+			Util::ReadField(socketNode, "TargetEntity", targetEntity);
 
 			socket.TargetEntityHandle = getRemappedUUID(targetEntity);
-			if (socketNode.has_child("BoneName"))
-				socketNode["BoneName"] >> socket.BoneName;
-			if (socketNode.has_child("Position"))
-				Util::DeserializeVector3f(socketNode["Position"], socket.Position);
-			if (socketNode.has_child("Rotation"))
-				Util::DeserializeVector3f(socketNode["Rotation"], socket.Rotation);
-			if (socketNode.has_child("Scale"))
-				Util::DeserializeVector3f(socketNode["Scale"], socket.Scale);
+			Util::ReadField(socketNode, "BoneName", socket.BoneName);
+			Util::ReadVector3f(socketNode, "Position", socket.Position);
+			Util::ReadVector3f(socketNode, "Rotation", socket.Rotation);
+			Util::ReadVector3f(socketNode, "Scale", socket.Scale);
 		}
 
 		if (entityNode.has_child("PrefabComponent"))
@@ -1269,27 +1242,22 @@ namespace Ember {
 		{
 			ryml::NodeRef textNode = entityNode["TextComponent"];
 			auto& tc = deserializedEntity.AttachComponent<TextComponent>();
-			if (textNode.has_child("Text"))
-				textNode["Text"] >> tc.Text;
+			Util::ReadField(textNode, "Text", tc.Text);
 
 			// Initialised + guarded: rapidyaml leaves the target untouched when the key is absent.
 			uint64_t fontId = (uint64_t)Constants::InvalidUUID;
-			if (textNode.has_child("FontHandle"))
-				textNode["FontHandle"] >> fontId;
+			Util::ReadField(textNode, "FontHandle", fontId);
 			tc.FontHandle = (UUID)fontId;
 
 			// Guarded: scenes authored before these fields existed keep the struct defaults.
-			if (textNode.has_child("FontSize"))
-				textNode["FontSize"] >> tc.FontSize;
+			Util::ReadField(textNode, "FontSize", tc.FontSize);
 
 			int horizontalAlignment = (int)TextAlignment::Center;
-			if (textNode.has_child("HorizontalAlignment"))
-				textNode["HorizontalAlignment"] >> horizontalAlignment;
+			Util::ReadField(textNode, "HorizontalAlignment", horizontalAlignment);
 			tc.HorizontalAlignment = (TextAlignment)horizontalAlignment;
 
 			int verticalAlignment = (int)TextAlignment::Center;
-			if (textNode.has_child("VerticalAlignment"))
-				textNode["VerticalAlignment"] >> verticalAlignment;
+			Util::ReadField(textNode, "VerticalAlignment", verticalAlignment);
 			tc.VerticalAlignment = (TextAlignment)verticalAlignment;
 			Util::DeserializeVector4f(textNode["Color"], tc.Color);
 		}
@@ -1589,12 +1557,10 @@ namespace Ember {
 			Util::DeserializeVector2f(rectNode["Pivot"], rect.Pivot);
 			Util::DeserializeVector2f(rectNode["SizeDelta"], rect.SizeDelta);
 			Util::DeserializeVector2f(rectNode["AnchoredPosition"], rect.AnchoredPosition);
-			if (rectNode.has_child("Rotation"))
-				rectNode["Rotation"] >> rect.Rotation;
+			Util::ReadField(rectNode, "Rotation", rect.Rotation);
 
 			// Guarded: scenes authored before RaycastTarget existed have no such key.
-			if (rectNode.has_child("RaycastTarget"))
-				rectNode["RaycastTarget"] >> rect.RaycastTarget;
+			Util::ReadField(rectNode, "RaycastTarget", rect.RaycastTarget);
 		}
 
 		if (entityNode.has_child("UISelectableComponent"))
@@ -1620,28 +1586,20 @@ namespace Ember {
 					target = (UUID)rawID;
 				};
 
-			if (selectableNode.has_child("Interactable"))
-				selectableNode["Interactable"] >> selectable.Interactable;
+			Util::ReadField(selectableNode, "Interactable", selectable.Interactable);
 
 			int transitionValue = (int)UITransitionMode::ColorTint;
-			if (selectableNode.has_child("Transition"))
-				selectableNode["Transition"] >> transitionValue;
+			Util::ReadField(selectableNode, "Transition", transitionValue);
 			selectable.Transition = (UITransitionMode)transitionValue;
 
 			readEntityRef("TargetGraphicEntity", selectable.TargetGraphicEntity);
 
-			if (selectableNode.has_child("NormalColor"))
-				Util::DeserializeVector4f(selectableNode["NormalColor"], selectable.NormalColor);
-			if (selectableNode.has_child("HighlightedColor"))
-				Util::DeserializeVector4f(selectableNode["HighlightedColor"], selectable.HighlightedColor);
-			if (selectableNode.has_child("PressedColor"))
-				Util::DeserializeVector4f(selectableNode["PressedColor"], selectable.PressedColor);
-			if (selectableNode.has_child("SelectedColor"))
-				Util::DeserializeVector4f(selectableNode["SelectedColor"], selectable.SelectedColor);
-			if (selectableNode.has_child("DisabledColor"))
-				Util::DeserializeVector4f(selectableNode["DisabledColor"], selectable.DisabledColor);
-			if (selectableNode.has_child("FadeDuration"))
-				selectableNode["FadeDuration"] >> selectable.FadeDuration;
+			Util::ReadVector4f(selectableNode, "NormalColor", selectable.NormalColor);
+			Util::ReadVector4f(selectableNode, "HighlightedColor", selectable.HighlightedColor);
+			Util::ReadVector4f(selectableNode, "PressedColor", selectable.PressedColor);
+			Util::ReadVector4f(selectableNode, "SelectedColor", selectable.SelectedColor);
+			Util::ReadVector4f(selectableNode, "DisabledColor", selectable.DisabledColor);
+			Util::ReadField(selectableNode, "FadeDuration", selectable.FadeDuration);
 
 			readAssetRef("HighlightedTexture", selectable.HighlightedTexture);
 			readAssetRef("PressedTexture", selectable.PressedTexture);
@@ -1649,8 +1607,7 @@ namespace Ember {
 			readAssetRef("DisabledTexture", selectable.DisabledTexture);
 
 			int navigationValue = (int)UINavigationMode::Automatic;
-			if (selectableNode.has_child("Navigation"))
-				selectableNode["Navigation"] >> navigationValue;
+			Util::ReadField(selectableNode, "Navigation", navigationValue);
 			selectable.Navigation = (UINavigationMode)navigationValue;
 
 			readEntityRef("NavigateUp", selectable.NavigateUp);
@@ -1667,19 +1624,15 @@ namespace Ember {
 			ryml::NodeRef toggleNode = entityNode["UIToggleComponent"];
 			auto& toggle = deserializedEntity.AttachComponent<UIToggleComponent>();
 
-			if (toggleNode.has_child("IsOn"))
-				toggleNode["IsOn"] >> toggle.IsOn;
-			if (toggleNode.has_child("AllowSwitchOff"))
-				toggleNode["AllowSwitchOff"] >> toggle.AllowSwitchOff;
+			Util::ReadField(toggleNode, "IsOn", toggle.IsOn);
+			Util::ReadField(toggleNode, "AllowSwitchOff", toggle.AllowSwitchOff);
 
 			uint64_t checkmarkID = (uint64_t)Constants::InvalidUUID;
-			if (toggleNode.has_child("CheckmarkEntity"))
-				toggleNode["CheckmarkEntity"] >> checkmarkID;
+			Util::ReadField(toggleNode, "CheckmarkEntity", checkmarkID);
 			toggle.CheckmarkEntity = getRemappedUUID(checkmarkID);
 
 			uint64_t groupID = (uint64_t)Constants::InvalidUUID;
-			if (toggleNode.has_child("GroupEntity"))
-				toggleNode["GroupEntity"] >> groupID;
+			Util::ReadField(toggleNode, "GroupEntity", groupID);
 			toggle.GroupEntity = getRemappedUUID(groupID);
 		}
 

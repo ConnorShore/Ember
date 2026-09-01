@@ -266,8 +266,7 @@ namespace Ember {
 				filterNode["Name"] >> filterName;
 
 				uint32_t slotIndex = fallbackIndex;
-				if (filterNode.has_child("Index"))
-					filterNode["Index"] >> slotIndex;
+				Util::ReadField(filterNode, "Index", slotIndex);
 
 				if (slotIndex < FilterManager::MaxSlots)
 					filters[slotIndex] = filterName;
@@ -292,8 +291,7 @@ namespace Ember {
 					renderLayerNode["Name"] >> layerName;
 
 					uint32_t slotIndex = fallbackIndex;
-					if (renderLayerNode.has_child("Index"))
-						renderLayerNode["Index"] >> slotIndex;
+					Util::ReadField(renderLayerNode, "Index", slotIndex);
 
 					if (slotIndex < FilterManager::MaxSlots)
 						renderLayers[slotIndex] = layerName;

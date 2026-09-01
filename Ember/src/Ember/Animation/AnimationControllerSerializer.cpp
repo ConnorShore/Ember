@@ -1,6 +1,7 @@
 #include "ebpch.h"
 
 #include "AnimationControllerSerializer.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 #include "Ember/Core/Application.h"
 
@@ -148,10 +149,8 @@ namespace Ember {
 				stateMachine.SetDefaultState(UUID(defaultState));
 			}
 
-			if (node.has_child("EntryNodePositionSet"))
-				node["EntryNodePositionSet"] >> stateMachine.EntryNodePositionSet;
-			if (node.has_child("ExitNodePositionSet"))
-				node["ExitNodePositionSet"] >> stateMachine.ExitNodePositionSet;
+			Util::ReadField(node, "EntryNodePositionSet", stateMachine.EntryNodePositionSet);
+			Util::ReadField(node, "ExitNodePositionSet", stateMachine.ExitNodePositionSet);
 			if (node.has_child("EntryNodePosition"))
 				DeserializeVector2f(node["EntryNodePosition"], stateMachine.EntryNodePosition);
 			if (node.has_child("ExitNodePosition"))
@@ -167,12 +166,9 @@ namespace Ember {
 					stateNode["Id"] >> id;
 					stateNode["Name"] >> state.Name;
 					stateNode["AnimationHandle"] >> animationHandle;
-					if (stateNode.has_child("Looping"))
-						stateNode["Looping"] >> state.Looping;
-					if (stateNode.has_child("BasePlaybackSpeed"))
-						stateNode["BasePlaybackSpeed"] >> state.BasePlaybackSpeed;
-					if (stateNode.has_child("PositionSet"))
-						stateNode["PositionSet"] >> state.PositionSet;
+					Util::ReadField(stateNode, "Looping", state.Looping);
+					Util::ReadField(stateNode, "BasePlaybackSpeed", state.BasePlaybackSpeed);
+					Util::ReadField(stateNode, "PositionSet", state.PositionSet);
 					if (stateNode.has_child("NodePosition"))
 						DeserializeVector2f(stateNode["NodePosition"], state.NodePosition);
 
@@ -193,8 +189,7 @@ namespace Ember {
 					transitionNode["Id"] >> transitionId;
 					transitionNode["FromStateId"] >> fromStateId;
 					transitionNode["ToStateId"] >> toStateId;
-					if (transitionNode.has_child("BlendDuration"))
-						transitionNode["BlendDuration"] >> transition.BlendDuration;
+					Util::ReadField(transitionNode, "BlendDuration", transition.BlendDuration);
 
 					transition.Id = UUID(transitionId);
 					transition.FromStateId = UUID(fromStateId);
@@ -209,16 +204,11 @@ namespace Ember {
 							uint32_t op = static_cast<uint32_t>(AnimationConditionOperator::Equal);
 
 							conditionNode["ParameterName"] >> condition.ParameterName;
-							if (conditionNode.has_child("Type"))
-								conditionNode["Type"] >> type;
-							if (conditionNode.has_child("Operator"))
-								conditionNode["Operator"] >> op;
-							if (conditionNode.has_child("FloatValue"))
-								conditionNode["FloatValue"] >> condition.FloatValue;
-							if (conditionNode.has_child("BoolValue"))
-								conditionNode["BoolValue"] >> condition.BoolValue;
-							if (conditionNode.has_child("IntValue"))
-								conditionNode["IntValue"] >> condition.IntValue;
+							Util::ReadField(conditionNode, "Type", type);
+							Util::ReadField(conditionNode, "Operator", op);
+							Util::ReadField(conditionNode, "FloatValue", condition.FloatValue);
+							Util::ReadField(conditionNode, "BoolValue", condition.BoolValue);
+							Util::ReadField(conditionNode, "IntValue", condition.IntValue);
 
 							condition.Type = static_cast<AnimationParameterType>(type);
 							condition.Operator = static_cast<AnimationConditionOperator>(op);
@@ -321,14 +311,10 @@ namespace Ember {
 				AnimationParameter parameter;
 
 				parameterNode["Name"] >> name;
-				if (parameterNode.has_child("Type"))
-					parameterNode["Type"] >> type;
-				if (parameterNode.has_child("FloatValue"))
-					parameterNode["FloatValue"] >> parameter.FloatValue;
-				if (parameterNode.has_child("BoolValue"))
-					parameterNode["BoolValue"] >> parameter.BoolValue;
-				if (parameterNode.has_child("IntValue"))
-					parameterNode["IntValue"] >> parameter.IntValue;
+				Util::ReadField(parameterNode, "Type", type);
+				Util::ReadField(parameterNode, "FloatValue", parameter.FloatValue);
+				Util::ReadField(parameterNode, "BoolValue", parameter.BoolValue);
+				Util::ReadField(parameterNode, "IntValue", parameter.IntValue);
 
 				parameter.Type = static_cast<AnimationParameterType>(type);
 				parameters[name] = parameter;
@@ -343,12 +329,9 @@ namespace Ember {
 				AnimationLayer layer;
 				uint64_t maskHandle = Constants::InvalidUUID;
 
-				if (layerNode.has_child("Name"))
-					layerNode["Name"] >> layer.Name;
-				if (layerNode.has_child("Weight"))
-					layerNode["Weight"] >> layer.Weight;
-				if (layerNode.has_child("MaskHandle"))
-					layerNode["MaskHandle"] >> maskHandle;
+				Util::ReadField(layerNode, "Name", layer.Name);
+				Util::ReadField(layerNode, "Weight", layer.Weight);
+				Util::ReadField(layerNode, "MaskHandle", maskHandle);
 				if (layerNode.has_child("Mode"))
 				{
 					uint32_t mode = 0;

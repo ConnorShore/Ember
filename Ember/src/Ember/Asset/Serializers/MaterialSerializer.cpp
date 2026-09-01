@@ -158,8 +158,7 @@ namespace Ember {
 		root["Material"] >> name;
 
 		int renderQueue = 0;
-		if (root.has_child("RenderQueue"))
-			root["RenderQueue"] >> renderQueue;
+		Util::ReadField(root, "RenderQueue", renderQueue);
 
 		std::string instancedStr = "false";
 		if (root.has_child("Instanced"))
@@ -197,8 +196,7 @@ namespace Ember {
 		else
 		{
 			uint64_t shaderUUID = Constants::InvalidUUID;
-			if (root.has_child("Shader"))
-				root["Shader"] >> shaderUUID;
+			Util::ReadField(root, "Shader", shaderUUID);
 
 			SharedPtr<Shader> shader = nullptr;
 			if (shaderUUID != Constants::InvalidUUID)

@@ -1,6 +1,7 @@
 #include "ebpch.h"
 
 #include "AnimationSerializer.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -158,8 +159,7 @@ namespace Ember {
 		auto root = tree.rootref();
 
 		float duration = 0.0f;
-		if (root.has_child("Duration"))
-			root["Duration"] >> duration;
+		Util::ReadField(root, "Duration", duration);
 
 		std::vector<BoneAnimationTrack> tracks;
 		if (root.has_child("Tracks"))
@@ -167,8 +167,7 @@ namespace Ember {
 			for (auto trackNode : root["Tracks"].children())
 			{
 				BoneAnimationTrack track;
-				if (trackNode.has_child("BoneID"))
-					trackNode["BoneID"] >> track.BoneID;
+				Util::ReadField(trackNode, "BoneID", track.BoneID);
 
 				if (trackNode.has_child("PositionKeys"))
 				{
@@ -176,8 +175,7 @@ namespace Ember {
 					{
 						PositionKeyframe key;
 						float time = 0.0f;
-						if (keyNode.has_child("Time"))
-							keyNode["Time"] >> time;
+						Util::ReadField(keyNode, "Time", time);
 						key.TimeStamp = TimeStep(time);
 
 						auto valueNode = keyNode["Value"];
@@ -198,8 +196,7 @@ namespace Ember {
 					{
 						RotationKeyframe key;
 						float time = 0.0f;
-						if (keyNode.has_child("Time"))
-							keyNode["Time"] >> time;
+						Util::ReadField(keyNode, "Time", time);
 						key.TimeStamp = TimeStep(time);
 
 						auto valueNode = keyNode["Value"];
@@ -221,8 +218,7 @@ namespace Ember {
 					{
 						ScaleKeyframe key;
 						float time = 0.0f;
-						if (keyNode.has_child("Time"))
-							keyNode["Time"] >> time;
+						Util::ReadField(keyNode, "Time", time);
 						key.TimeStamp = TimeStep(time);
 
 						auto valueNode = keyNode["Value"];
@@ -247,10 +243,8 @@ namespace Ember {
 			for (auto eventNode : root["Events"].children())
 			{
 				AnimationEvent evt;
-				if (eventNode.has_child("Name"))
-					eventNode["Name"] >> evt.Name;
-				if (eventNode.has_child("Timestamp"))
-					eventNode["Timestamp"] >> evt.Timestamp;
+				Util::ReadField(eventNode, "Name", evt.Name);
+				Util::ReadField(eventNode, "Timestamp", evt.Timestamp);
 				events.push_back(std::move(evt));
 			}
 		}
