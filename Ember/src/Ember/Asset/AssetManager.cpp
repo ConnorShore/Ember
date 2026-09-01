@@ -116,7 +116,7 @@ namespace Ember {
 
 		// Scripts
 		//auto characterMovementScript = Load<Script>(Constants::Assets::CharacterMovementScriptUUID, Constants::Assets::CharacterMovementScript, "Ember/assets/scripts/CharacterMovement.lua");
-		//auto mouseLookScript = Load<Script>(Constants::Assets::MouseLookScriptUUID, Constants::Assets::MouseLookScript, "Ember/assets/scripts/MouseLook.lua");
+		//auto freeLookScript = Load<Script>(Constants::Assets::FreeLookScriptUUID, Constants::Assets::FreeLookScript, "Ember/assets/scripts/FreeLook.lua");
 	}
 	
 	void AssetManager::ClearAssets()

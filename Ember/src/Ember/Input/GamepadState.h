@@ -14,7 +14,13 @@ namespace Ember {
 	{
 		GamepadButtonMask Down = 0;
 		GamepadButtonMask PreviousDown = 0;
+
+		// Deadzoned, curved and inverted by Input::ProcessGamepads - what everything reads.
 		std::array<float, GamepadAxisArraySize> Axis = {};
+
+		// What the OS reported, kept so conditioning never shapes its own output a second time.
+		std::array<float, GamepadAxisArraySize> RawAxis = {};
+
 		bool Connected = false;
 	};
 

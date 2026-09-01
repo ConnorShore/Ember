@@ -255,6 +255,13 @@ namespace Ember {
 				break;
 			case CursorMode::Locked:
 				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+				// Bypasses the OS pointer-acceleration curve so a slow drag and a fast flick keep the
+				// same counts-per-degree. GLFW only honours it while the cursor is disabled.
+				if (glfwRawMouseMotionSupported())
+				{
+					glfwSetInputMode(m_Window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+				}
 				break;
 			}
 		}
@@ -367,42 +374,8 @@ namespace Ember {
 
 		}
 
-		// A stick is deadzoned on its combined magnitude and rescaled so the value still ramps from zero
-		// at the edge of the deadzone; a per-axis floor would notch the diagonals.
-		static bool ApplyStickDeadzone(GamepadState& state, GamepadAxis xAxis, GamepadAxis yAxis)
-		{
-			const size_t x = static_cast<size_t>(xAxis);
-			const size_t y = static_cast<size_t>(yAxis);
-
-			const Vector2f stick = { state.Axis[x], state.Axis[y] };
-			const float magnitude = Math::Length(stick);
-			const float deadzone = Ember::Input::GamepadStickDeadzone;
-
-			if (magnitude < deadzone)
-			{
-				state.Axis[x] = 0.0f;
-				state.Axis[y] = 0.0f;
-				return false;
-			}
-
-			const float rescaled = Math::Clamp((magnitude - deadzone) / (1.0f - deadzone), 0.0f, 1.0f);
-			state.Axis[x] = stick.x * (rescaled / magnitude);
-			state.Axis[y] = stick.y * (rescaled / magnitude);
-			return true;
-		}
-
-		// GLFW rests a trigger at -1, so remap onto the [0,1] the rest of the engine expects.
-		static bool ApplyTriggerRange(GamepadState& state, GamepadAxis axis)
-		{
-			const size_t index = static_cast<size_t>(axis);
-			const float value = (state.Axis[index] + 1.0f) * 0.5f;
-			state.Axis[index] = value < Ember::Input::GamepadTriggerDeadzone ? 0.0f : value;
-			return value >= Ember::Input::GamepadTriggerDeadzone;
-		}
-
 		void Window::PollGamepadStates()
 		{
-			bool anyUsed = false;
 			for (size_t i = 0; i < Ember::Input::MaxGamepads; ++i)
 			{
 				GamepadState& state = Ember::Input::GetGamepadState(i);
@@ -421,6 +394,7 @@ namespace Ember {
 					state.Connected = false;
 					state.Down = 0;
 					state.Axis.fill(0.0f);
+					state.RawAxis.fill(0.0f);
 					continue;
 				}
 
@@ -440,8 +414,6 @@ namespace Ember {
 					{
 						state.Down |= (1 << static_cast<GamepadButtonType>(control));
 					}
-
-					anyUsed = true;
 				}
 
 				for (int axis = 0; axis <= GLFW_GAMEPAD_AXIS_LAST; ++axis)
@@ -449,19 +421,10 @@ namespace Ember {
 					GamepadAxis control{};
 					if (Input::GlfwGamepadAxisToEmberGamepadControl(axis, control))
 					{
-						state.Axis[static_cast<size_t>(control)] = glfwState.axes[axis];
+						state.RawAxis[static_cast<size_t>(control)] = glfwState.axes[axis];
 					}
 				}
-
-				// Filtering runs after the raw copy because a stick is deadzoned as a pair, not per axis.
-				anyUsed |= ApplyStickDeadzone(state, GamepadAxis::LeftX, GamepadAxis::LeftY);
-				anyUsed |= ApplyStickDeadzone(state, GamepadAxis::RightX, GamepadAxis::RightY);
-				anyUsed |= ApplyTriggerRange(state, GamepadAxis::LeftTrigger);
-				anyUsed |= ApplyTriggerRange(state, GamepadAxis::RightTrigger);
 			}
-
-			if (anyUsed)
-				Ember::Input::SetLastUsedInputDevice(InputDevice::Gamepad);
 		}
 	}
 }

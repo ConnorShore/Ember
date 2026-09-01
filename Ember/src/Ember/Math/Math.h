@@ -459,6 +459,12 @@ namespace Ember {
 			return glm::abs(x);
 		}
 
+		// Undefined in GLM for a negative base, so callers shape a magnitude and reapply the sign.
+		static inline float Pow(float base, float exponent)
+		{
+			return glm::pow(base, exponent);
+		}
+
 		static inline float Round(float x)
 		{
 			return glm::round(x);

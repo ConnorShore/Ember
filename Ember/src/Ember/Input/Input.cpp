@@ -25,6 +25,8 @@ namespace Ember {
 
 	std::array<Ember::GamepadState, Ember::Input::MaxGamepads> Input::s_GamepadStates = {};
 
+	InputSettings Input::s_Settings = {};
+
 	KeyModifierType Input::s_ActiveModifiers = 0;
 	Vector2f Input::s_MousePosition = { 0.0f, 0.0f };
 	Vector2f Input::s_ScrollOffset = { 0.0f, 0.0f };
@@ -39,6 +41,9 @@ namespace Ember {
 
 	void Input::BeginFrame()
 	{
+		// Ahead of the key/mouse snapshots so every reader this frame sees conditioned axes.
+		ProcessGamepads();
+
 		// Update snapshots of key states
 		for (size_t k = 0; k < KeyArraySize; k++)
 		{
@@ -215,7 +220,8 @@ namespace Ember {
 
 	void Input::UpdateMousePosition(const Vector2f& position)
 	{
-		s_PreviousMousePosition = s_MousePosition;
+		// Leaves the frame baseline ResetMouseDelta set alone: GLFW delivers a callback per mouse
+		// report, so rebaselining on each one would leave only the last hop of the frame.
 		s_MousePosition = position;
 	}
 
@@ -250,21 +256,26 @@ namespace Ember {
 		return s_ScrollOffset;
 	}
 
+	Vector2f Input::GetRawMouseDelta()
+	{
+		return s_MousePosition - s_PreviousMousePosition;
+	}
+
 	Vector2f Input::GetMouseDelta()
 	{
-		Vector2f ret = s_MousePosition - s_PreviousMousePosition;
+		Vector2f delta = GetRawMouseDelta();
 
-		if (Math::Abs(ret.x) < Input::MouseDeadzone)
+		if (s_Settings.Mouse.InvertX)
 		{
-			ret.x = 0.0f;
+			delta.x = -delta.x;
 		}
 
-		if (Math::Abs(ret.y) < Input::MouseDeadzone)
+		if (s_Settings.Mouse.InvertY)
 		{
-			ret.y = 0.0f;
+			delta.y = -delta.y;
 		}
 
-		return ret;
+		return delta;
 	}
 
 	void Input::ResetMouseDelta()
@@ -316,7 +327,11 @@ namespace Ember {
 
 	void Input::SetGamepadAxis(size_t index, GamepadAxis axis, float strength)
 	{
-		s_GamepadStates[index].Axis[static_cast<GamepadButtonType>(axis)] = strength;
+		// Writes both sides: callers are injecting a stick position, and the conditioned read has to
+		// answer immediately rather than only after the next BeginFrame.
+		GamepadState& state = s_GamepadStates[index];
+		state.RawAxis[static_cast<GamepadButtonType>(axis)] = strength;
+		state.Axis[static_cast<GamepadButtonType>(axis)] = strength;
 	}
 
 	GamepadState& Input::GetGamepadState(size_t index)
@@ -332,6 +347,137 @@ namespace Ember {
 	GamepadButtonMask Input::ReleasedMask(const GamepadState& s)
 	{
 		return ~s.Down & s.PreviousDown;
+	}
+
+	InputSettings& Input::GetSettings()
+	{
+		return s_Settings;
+	}
+
+	StickSettings& Input::GetStickSettings(GamepadStick stick)
+	{
+		return s_Settings.Sticks[static_cast<size_t>(stick)];
+	}
+
+	TriggerSettings& Input::GetTriggerSettings(GamepadTrigger trigger)
+	{
+		return s_Settings.Triggers[static_cast<size_t>(trigger)];
+	}
+
+	MouseSettings& Input::GetMouseSettings()
+	{
+		return s_Settings.Mouse;
+	}
+
+	bool Input::IsTriggerAxis(GamepadAxis axis)
+	{
+		return axis == GamepadAxis::LeftTrigger || axis == GamepadAxis::RightTrigger;
+	}
+
+	GamepadStick Input::StickForAxis(GamepadAxis axis)
+	{
+		return (axis == GamepadAxis::RightX || axis == GamepadAxis::RightY)
+			? GamepadStick::Right
+			: GamepadStick::Left;
+	}
+
+	GamepadTrigger Input::TriggerForAxis(GamepadAxis axis)
+	{
+		return axis == GamepadAxis::RightTrigger ? GamepadTrigger::Right : GamepadTrigger::Left;
+	}
+
+	float Input::ShapeMagnitude(float magnitude, float deadzone, float saturation, float exponent)
+	{
+		if (magnitude < deadzone)
+		{
+			return 0.0f;
+		}
+
+		// Saturation can be dialled below the deadzone by a careless edit; Epsilon keeps the divide
+		// finite rather than handing back an infinity that would latch the control on.
+		const float span = Math::Max(saturation - deadzone, Math::Epsilon);
+		const float normalized = Math::Clamp((magnitude - deadzone) / span, 0.0f, 1.0f);
+
+		return Math::Pow(normalized, exponent);
+	}
+
+	float Input::ActuationThreshold(GamepadStick stick)
+	{
+		const StickSettings& settings = GetStickSettings(stick);
+		return ShapeMagnitude(settings.Actuation, settings.Deadzone, settings.Saturation, settings.Exponent);
+	}
+
+	float Input::ActuationThreshold(GamepadTrigger trigger)
+	{
+		const TriggerSettings& settings = GetTriggerSettings(trigger);
+		return ShapeMagnitude(settings.Actuation, settings.Deadzone, settings.Saturation, settings.Exponent);
+	}
+
+	bool Input::ProcessStick(GamepadState& state, GamepadStick stick, GamepadAxis xAxis, GamepadAxis yAxis)
+	{
+		const StickSettings& settings = GetStickSettings(stick);
+		const size_t x = static_cast<size_t>(xAxis);
+		const size_t y = static_cast<size_t>(yAxis);
+
+		// Always from RawAxis, never from Axis - conditioning has to be idempotent, since BeginFrame
+		// can legitimately run more than once between polls.
+		const Vector2f raw = { state.RawAxis[x], state.RawAxis[y] };
+		const float magnitude = Math::Length(raw);
+		const float shaped = ShapeMagnitude(magnitude, settings.Deadzone, settings.Saturation, settings.Exponent);
+
+		if (shaped == 0.0f)
+		{
+			state.Axis[x] = 0.0f;
+			state.Axis[y] = 0.0f;
+			return false;
+		}
+
+		// Shaped on the magnitude and re-projected, rather than per axis: a per-axis curve bends a
+		// diagonal off its true angle and makes a circular sweep of the stick come out lumpy.
+		const float scale = shaped / magnitude;
+		state.Axis[x] = raw.x * scale * (settings.InvertX ? -1.0f : 1.0f);
+		state.Axis[y] = raw.y * scale * (settings.InvertY ? -1.0f : 1.0f);
+
+		return true;
+	}
+
+	bool Input::ProcessTrigger(GamepadState& state, GamepadTrigger trigger, GamepadAxis axis)
+	{
+		const TriggerSettings& settings = GetTriggerSettings(trigger);
+		const size_t index = static_cast<size_t>(axis);
+
+		// A trigger rests at -1 and bottoms out at +1, so it is remapped before anything else.
+		const float travel = (state.RawAxis[index] + 1.0f) * 0.5f;
+		state.Axis[index] = ShapeMagnitude(travel, settings.Deadzone, settings.Saturation, settings.Exponent);
+
+		return state.Axis[index] != 0.0f;
+	}
+
+	void Input::ProcessGamepads()
+	{
+		bool anyUsed = false;
+
+		for (size_t i = 0; i < MaxGamepads; ++i)
+		{
+			GamepadState& state = s_GamepadStates[i];
+			if (!state.Connected)
+			{
+				continue;
+			}
+
+			anyUsed |= ProcessStick(state, GamepadStick::Left, GamepadAxis::LeftX, GamepadAxis::LeftY);
+			anyUsed |= ProcessStick(state, GamepadStick::Right, GamepadAxis::RightX, GamepadAxis::RightY);
+			anyUsed |= ProcessTrigger(state, GamepadTrigger::Left, GamepadAxis::LeftTrigger);
+			anyUsed |= ProcessTrigger(state, GamepadTrigger::Right, GamepadAxis::RightTrigger);
+			anyUsed |= state.Down != 0;
+		}
+
+		// Device tracking lives here rather than in the platform poll because a stick resting inside
+		// its deadzone is noise, not the player reaching for the pad.
+		if (anyUsed)
+		{
+			SetLastUsedInputDevice(InputDevice::Gamepad);
+		}
 	}
 
 	void Input::SetViewportRect(const Vector2f& min, const Vector2f& size, bool inputActive)

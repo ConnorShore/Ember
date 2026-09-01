@@ -26,8 +26,9 @@ namespace Ember {
 				return 1.0f;
 
 			GamepadAxis axis = std::get<GamepadAxis>(trigger.ControlId);
-			bool isTrigger = axis == GamepadAxis::LeftTrigger || axis == GamepadAxis::RightTrigger;
-			return isTrigger ? Input::GamepadTriggerActuation : Input::GamepadStickActuation;
+			return Input::IsTriggerAxis(axis)
+				? Input::ActuationThreshold(Input::TriggerForAxis(axis))
+				: Input::ActuationThreshold(Input::StickForAxis(axis));
 		}
 
 		// Zero when the trigger's control is not engaged; signed only for a Full-direction axis.
@@ -70,8 +71,8 @@ namespace Ember {
 					GamepadAxis axis = std::get<GamepadAxis>(trigger.ControlId);
 					for (size_t i = 0; i < Input::MaxGamepads; ++i)
 					{
-						// Window::PollGamepadStates has already deadzoned and rescaled the axis, so
-						// anything non-zero here is real movement.
+						// Input::ProcessGamepads has already conditioned the axis, so anything
+						// non-zero here is real movement.
 						const GamepadState& state = Input::GetGamepadState(i);
 						float strength = DirectionalStrength(state.Axis[static_cast<size_t>(axis)], trigger.Direction);
 						if (strength != 0.0f)
@@ -94,7 +95,7 @@ namespace Ember {
 		{
 			InputActionState& state = m_ActionStates[i];
 			const InputAction& action = m_Actions[i];
-			bool wasDown = state.IsDown;
+			bool wasDown = state.RawIsDown;
 			state.IsDown = false;
 			state.JustPressed = false;
 			state.JustReleased = false;
@@ -119,13 +120,42 @@ namespace Ember {
 
 			// Strength stays analog for whoever wants it; only the digital read is thresholded, so a
 			// stick can report a gentle 0.2 lean without every direction claiming to be held down.
-			state.IsDown = state.Strength != 0.0f && Math::Abs(state.Strength) >= actuation;
+			state.RawIsDown = state.Strength != 0.0f && Math::Abs(state.Strength) >= actuation;
 
-			if (state.IsDown && !wasDown)
-				state.JustPressed = true;
+			// A consumed press stays swallowed until the control is physically released, and the
+			// release goes with it - gameplay never saw the press, so the matching release is a phantom.
+			if (state.Consumed)
+			{
+				state.Consumed = state.RawIsDown;
+				state.Strength = 0.0f;
+				continue;
+			}
 
-			if (wasDown && !state.IsDown)
-				state.JustReleased = true;
+			state.IsDown = state.RawIsDown;
+			state.JustPressed = state.IsDown && !wasDown;
+			state.JustReleased = wasDown && !state.IsDown;
+		}
+	}
+
+	void InputActionManager::ConsumeControl(InputDevice device, const InputControlId& control)
+	{
+		for (size_t i = 0; i < m_Actions.size(); ++i)
+		{
+			const InputAction& action = m_Actions[i];
+
+			bool bound = std::any_of(action.Triggers.begin(), action.Triggers.end(),
+				[&](const InputTrigger& trigger) { return trigger.Device == device && trigger.ControlId == control; });
+
+			if (!bound)
+				continue;
+
+			// Evaluate already ran this frame, so this frame's reads are cleared here rather than there.
+			InputActionState& state = m_ActionStates[i];
+			state.Consumed = true;
+			state.IsDown = false;
+			state.JustPressed = false;
+			state.JustReleased = false;
+			state.Strength = 0.0f;
 		}
 	}
 

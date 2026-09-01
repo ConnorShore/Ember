@@ -2,6 +2,7 @@
 
 #include <Ember/Core/Application.h>
 #include <Ember/Input/InputTrigger.h>
+#include <Ember/Input/InputSettings.h>
 
 #include <string>
 
@@ -34,6 +35,15 @@ namespace Ember {
 		void RenderPhysicsSettings();
 		void RenderRenderingSettings();
 		void RenderInputSettings();
+
+		// Device conditioning, above the action list
+		void RenderInputDeviceSettings();
+		void RenderStickSettings(const char* label, GamepadStick stick, GamepadAxis xAxis, GamepadAxis yAxis);
+		void RenderTriggerSettings(const char* label, GamepadTrigger trigger, GamepadAxis axis);
+
+		// An exponent is not tunable without seeing it, so each stick draws its curve and where the
+		// pad is sitting on it right now
+		void RenderResponsePreview(const StickSettings& settings, GamepadAxis xAxis, GamepadAxis yAxis);
 
 		// Input action list
 		void RenderAddActionRow();

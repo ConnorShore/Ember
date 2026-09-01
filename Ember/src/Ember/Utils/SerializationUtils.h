@@ -11,6 +11,15 @@
 
 namespace Ember {
 	namespace Util {
+		// Leaves `out` alone when the key is absent, so the caller's existing value stands in as the
+		// default for a file written before that field existed.
+		template<typename NodeType, typename T>
+		inline static void ReadField(const NodeType& node, const char* key, T& out)
+		{
+			if (node.has_child(ryml::to_csubstr(key)))
+				node[ryml::to_csubstr(key)] >> out;
+		}
+
 		inline static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)
 		{
 			node |= ryml::SEQ | ryml::FLOW_SL;
@@ -183,16 +192,14 @@ namespace Ember {
 			node["RenderQueue"] >> renderQueue;
 
 			std::string instancedStr = "false";
-			if (node.has_child("Instanced"))
-				node["Instanced"] >> instancedStr;
+			ReadField(node, "Instanced", instancedStr);
 
 			SharedPtr<MaterialBase> material;
 
 			if (instancedStr == "true")
 			{
 				uint64_t baseMaterialUUID = 0;
-				if (node.has_child("BaseMaterialUUID"))
-					node["BaseMaterialUUID"] >> baseMaterialUUID;
+				ReadField(node, "BaseMaterialUUID", baseMaterialUUID);
 
 				SharedPtr<Material> baseMaterial = assetManager->GetAsset<Material>(baseMaterialUUID);
 

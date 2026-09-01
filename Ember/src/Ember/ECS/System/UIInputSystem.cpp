@@ -5,6 +5,7 @@
 #include "ScriptSystem.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Input/Input.h"
+#include "Ember/Input/InputActionManager.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Script/ScriptEngine.h"
 
@@ -21,6 +22,15 @@ namespace Ember {
 			GamepadButton Button;
 			GamepadAxis Axis;
 			bool AxisPositive;
+		};
+
+		// One control that can submit, paired with whether it fired, so the press can be handed back
+		// to InputActionManager as consumed.
+		struct SubmitEdge
+		{
+			InputDevice Device;
+			InputControlId Control;
+			bool Fired;
 		};
 
 		const NavBinding NavBindings[] = {
@@ -121,9 +131,10 @@ namespace Ember {
 
 	bool UIInputSystem::ConsumeGamepadAxisEdge(GamepadAxis axis, bool positive)
 	{
-		constexpr float threshold = 0.5f;
+		// Shared with gameplay so both agree on how far the stick counts as pushed.
+		const float threshold = Input::ActuationThreshold(Input::StickForAxis(axis));
 
-		bool down = AnyActiveGamepad([axis, positive](size_t pad)
+		bool down = AnyActiveGamepad([axis, positive, threshold](size_t pad)
 		{
 			float value = Input::GetGamepadAxis(pad, axis);
 			return positive ? value > threshold : value < -threshold;
@@ -244,14 +255,24 @@ namespace Ember {
 			m_Pressed = InvalidEntity;
 		}
 
-		// Every Consume call has to run, so these accumulate with |= rather than short-circuiting -
-		// a skipped call leaves that control's latch stale.
-		bool submitPressed = ConsumeKeyEdge(KeyCode::Enter);
-		submitPressed |= ConsumeKeyEdge(KeyCode::Space);
-		submitPressed |= ConsumeGamepadButtonEdge(GamepadButton::A);
+		// Every Consume call has to run, so each control gets its own slot rather than short-circuiting
+		// into one bool - a skipped call leaves that control's latch stale. Which control fired is
+		// kept because only the one that actually submitted may be taken away from gameplay.
+		const SubmitEdge submitEdges[] = {
+			{ InputDevice::Keyboard, KeyCode::Enter,   ConsumeKeyEdge(KeyCode::Enter) },
+			{ InputDevice::Keyboard, KeyCode::Space,   ConsumeKeyEdge(KeyCode::Space) },
+			{ InputDevice::Gamepad,  GamepadButton::A, ConsumeGamepadButtonEdge(GamepadButton::A) }
+		};
+
+		bool submitPressed = std::any_of(std::begin(submitEdges), std::end(submitEdges),
+			[](const SubmitEdge& edge) { return edge.Fired; });
 
 		bool cancelPressed = ConsumeKeyEdge(KeyCode::Escape);
 		cancelPressed |= ConsumeGamepadButtonEdge(GamepadButton::B);
+
+		// A hidden or destroyed menu must not keep the focus, or submit would activate a button that
+		// is not on screen - and would take the press away from gameplay to do it.
+		DropFocusIfUnusable(scene);
 
 		for (const NavBinding& binding : NavBindings)
 		{
@@ -264,7 +285,19 @@ namespace Ember {
 		}
 
 		if (submitPressed && m_Focused != InvalidEntity)
+		{
 			Activate(scene, m_Focused);
+
+			// Gameplay polls input actions from ScriptSystem onwards, all of which run after this
+			// system, so an unconsumed press both activates the widget and reaches the player - the
+			// A that closes a menu would jump on the same frame.
+			auto& inputActions = Application::Instance().GetInputActionManager();
+			for (const SubmitEdge& edge : submitEdges)
+			{
+				if (edge.Fired)
+					inputActions.ConsumeControl(edge.Device, edge.Control);
+			}
+		}
 
 		if (cancelPressed)
 			m_Focused = InvalidEntity;
@@ -422,6 +455,24 @@ namespace Ember {
 
 			toggle.VisualStateApplied = true;
 		}
+	}
+
+	bool UIInputSystem::CanReceiveFocus(Scene* scene, EntityID entity) const
+	{
+		if (entity == InvalidEntity)
+			return false;
+
+		auto& registry = scene->GetRegistry();
+		if (!registry.ContainsComponent<UISelectableComponent>(entity) || registry.ContainsComponent<DisabledComponent>(entity))
+			return false;
+
+		return registry.GetComponent<UISelectableComponent>(entity).Interactable;
+	}
+
+	void UIInputSystem::DropFocusIfUnusable(Scene* scene)
+	{
+		if (m_Focused != InvalidEntity && !CanReceiveFocus(scene, m_Focused))
+			m_Focused = InvalidEntity;
 	}
 
 	EntityID UIInputSystem::FindFirstSelectable(Scene* scene) const

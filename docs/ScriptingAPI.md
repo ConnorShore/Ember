@@ -849,10 +849,16 @@ zones and modal blockers. It defaults to `false`, and selectables are always hit
 | `FadeDuration`                                     | `float`    |
 | `IsHovered`                                        | `bool` (read-only) |
 | `IsPressed`                                        | `bool` (read-only) |
+| `:Select()`                                        | Makes this the focused selectable. |
 
 State colours are **multiplied** by the target graphic's authored colour, so recolouring a button
 from script still works. A non-interactable selectable still blocks clicks rather than letting
 them fall through.
+
+`:Select()` is what a menu calls when it opens on a gamepad, so the first press of A activates
+something instead of just adopting a selectable. It gives the selectable focus - the same focus
+keyboard/gamepad navigation moves and `UI.ClearFocus()` drops - which is what drives the
+`SelectedColor` tint. On a non-interactable selectable it does nothing.
 
 #### `UIButtonComponent`
 
@@ -910,6 +916,16 @@ UI.ClearFocus()
 before acting on a click so shooting, selecting or camera-dragging ignores clicks that landed on
 the HUD.
 
+Submit (Enter / Space / gamepad A) is handled for you: when it activates a focused widget, that
+press is consumed, and any input action bound to the same control reads as inactive until the
+control is released. So closing a menu with A does not also fire the jump bound to A on the same
+frame - no `IsPointerOverUI`-style guard needed for it. Navigation and cancel are *not* consumed,
+so a game binding its own action to Escape or B still sees those presses.
+
+A focused selectable that gets hidden or made non-interactable loses the focus on the next frame,
+so hiding a menu is enough to stop submit reaching it. `UI.ClearFocus()` is still worth calling
+when you want the focus gone immediately.
+
 ---
 
 ## Input
@@ -939,7 +955,12 @@ Input.GetAxis2D("MoveLeft", "MoveRight", "MoveBackward", "MoveForward")  -- Vect
 
 Input.GetMousePosition()                  -- Vector2f
 Input.GetMouseScrollOffset()              -- Vector2f
-Input.GetMouseDelta()                     -- Vector2f, since last frame
+Input.GetMouseDelta()                     -- Vector2f, this frame's travel, inversion applied
+Input.GetRawMouseDelta()                  -- Vector2f, the same travel in true pixels
+
+Input.GetStickSettings(GamepadStick.Right)     -- StickSettings, writable
+Input.GetTriggerSettings(GamepadTrigger.Left)  -- TriggerSettings, writable
+Input.GetMouseSettings()                       -- MouseSettings, writable
 
 Input.IsAnyGamepadActive()                -- bool, is any pad connected
 Input.IsGamepadActive(0)                  -- bool, is this pad connected
@@ -984,10 +1005,41 @@ rebindable, and they already handle the keyboard. The raw reads are for the case
 express - a specific physical button on a specific pad, or a stick you want unfiltered by an action
 mapping. The pad index is **0-based**, so player one is `0`, and up to four pads are polled.
 
-`GetGamepadAxis` returns the deadzoned, rescaled value: a stick reads -1..1 with a radial deadzone
+`GetGamepadAxis` returns the **conditioned** value: a stick reads -1..1 with a radial deadzone
 applied to the pair (so pushing one axis fully never leaves the other exactly zero), and a trigger
 reads 0..1 rather than the -1..1 the OS reports. `IsGamepadButtonReleased` means "not held right
 now", not "came up this frame".
+
+### Conditioning
+
+The engine corrects what the hardware gets wrong, because every reader of a control wants the same
+correction. Each stick and trigger has its own **deadzone** (deflection that reads as centred),
+**saturation** (deflection that already counts as fully pushed), **exponent** (the response curve)
+and **actuation** (physical travel before a digital read calls it pressed), plus per-axis
+inversion. Defaults live in **Project Settings → Input → Devices** and are saved to the `.ebproj`;
+`GetStickSettings` and friends let a settings menu change them at runtime.
+
+```lua
+local look = Input.GetStickSettings(GamepadStick.Right)
+look.Exponent = 2.0   -- finer control near centre, still full rate at full deflection
+look.InvertY = true
+```
+
+The exponent shapes the stick's **magnitude**, not each axis on its own, so a diagonal keeps its
+angle and a circular sweep of the stick stays circular. `1.0` is linear. Above `1.0` gives finer
+control near centre, which is what first-person look wants; below `1.0` makes it twitchier.
+
+What the signal *means* stays in the game: degrees-per-second turn rates, pitch clamping, ADS
+multipliers and aim assist all belong in your look script. Mouse sensitivity is deliberately not an
+engine setting - the mouse delta has several readers (look, weapon sway, UI dragging) and only each
+one knows its own scale.
+
+> Set inversion on the stick that actually drives the camera. The **left** stick also drives menu
+> navigation, so inverting it flips the menus too.
+
+`GetMouseDelta` is the whole frame's travel with the player's inversion applied - it is an angle
+already, so do **not** scale it by delta time. A stick is a position held over time, so it *is* a
+rate and does need delta time. `GetRawMouseDelta` skips inversion for callers that want true pixels.
 
 `GetLastUsedInputDevice` reports whichever device produced the most recent input - use it to switch
 button prompts between key glyphs and pad glyphs without polling every control yourself. It updates
@@ -995,11 +1047,12 @@ on key, mouse and pad activity; `SetLastUsedInputDevice` lets a game force it, e
 prompts to one device in a settings menu.
 
 > A digital read of an analog control needs the control to travel past an **actuation point**
-> before it counts as pressed: half a stick's throw, or a light pull on a trigger
-> (`Input::GamepadStickActuation` / `GamepadTriggerActuation` in C++). Without it a stick pushed
-> "straight" forward - which always leaves a few percent on the other axis - would hold the
-> perpendicular direction down too and movement could only ever come out diagonal. `GetActionStrength`
-> is unaffected and still reports the full analog value.
+> before it counts as pressed: half a stick's throw by default, or a light pull on a trigger.
+> Without it a stick pushed "straight" forward - which always leaves a few percent on the other
+> axis - would hold the perpendicular direction down too and movement could only ever come out
+> diagonal. The actuation point is physical travel, so it runs through the same response curve the
+> axis does and a curve never moves it. `GetActionStrength` is unaffected and still reports the
+> full analog value.
 
 > A trigger's required modifiers are a **subset** test: all of them must be held, and anything else
 > held alongside is ignored. So `Key/W` keeps firing while Shift is held (sprint does not cancel
@@ -1040,6 +1093,8 @@ viewport panel's position.
   Xbox layout, which is the layout GLFW maps every pad onto — on a PlayStation pad `A` is Cross and
   `B` is Circle.
 - **`GamepadAxis`** — `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`, `Last`.
+- **`GamepadStick`** — `Left`, `Right`. Which stick `GetStickSettings` conditions.
+- **`GamepadTrigger`** — `Left`, `Right`. Which trigger `GetTriggerSettings` conditions.
 - **`InputDevice`** — `None`, `Keyboard`, `Mouse`, `Gamepad`. What `GetLastUsedInputDevice` returns.
 
 ---

@@ -12,6 +12,11 @@ namespace Ember {
 	public:
 		void Evaluate();
 
+		// Swallows a press the UI has already acted on, so it cannot also drive gameplay. Every
+		// system that polls actions runs after UIInputSystem, and Evaluate happens once at the top
+		// of the frame, so without this one button press is consumed twice in the same frame.
+		void ConsumeControl(InputDevice device, const InputControlId& control);
+
 		bool IsActionDown(std::string_view actionName);
 		bool IsActionPressed(std::string_view actionName);
 		bool IsActionReleased(std::string_view actionName);

@@ -1,6 +1,8 @@
 #include "ebpch.h"
 #include "ScriptBindComponents.h"
+#include "Ember/Core/Application.h"
 #include "Ember/ECS/Component/Components.h"
+#include "Ember/ECS/System/UIInputSystem.h"
 #include "Ember/Script/Bindings/ScriptComponentRef.h"
 #include "Ember/Script/ScriptEngine.h"
 
@@ -25,6 +27,14 @@ namespace Ember {
 			"RaycastTarget", RefProp(&RectTransformComponent::RaycastTarget)
 		);
 
+		state.new_enum<UISelectionState>("UISelectionState", {
+			{ "Normal", UISelectionState::Normal },
+			{ "Highlighted", UISelectionState::Highlighted },
+			{ "Pressed", UISelectionState::Pressed },
+			{ "Selected", UISelectionState::Selected },
+			{ "Disabled", UISelectionState::Disabled }
+		});
+
 		state.new_usertype<ComponentRef<UISelectableComponent>>("UISelectableComponent",
 			"Interactable", RefProp(&UISelectableComponent::Interactable),
 			"NormalColor", RefProp(&UISelectableComponent::NormalColor),
@@ -34,7 +44,16 @@ namespace Ember {
 			"DisabledColor", RefProp(&UISelectableComponent::DisabledColor),
 			"FadeDuration", RefProp(&UISelectableComponent::FadeDuration),
 			"IsHovered", sol::property([](ComponentRef<UISelectableComponent>& ref) { return ref.Resolve().PointerInside; }),
-			"IsPressed", sol::property([](ComponentRef<UISelectableComponent>& ref) { return ref.Resolve().PointerDown; })
+			"IsPressed", sol::property([](ComponentRef<UISelectableComponent>& ref) { return ref.Resolve().PointerDown; }),
+			"Select", sol::as_function([](ComponentRef<UISelectableComponent>& ref)
+				{
+					auto& selectable = ref.Resolve();
+					if (!selectable.Interactable)
+						return;
+
+					if (auto uiInputSystem = Application::Instance().GetSystemManager().GetSystem<UIInputSystem>())
+						uiInputSystem->SetFocusedEntity(ref.Owner.GetEntityHandle());
+				})
 		);
 
 		// Handlers live in ScriptEngine keyed by UUID, not on the component: the sol::state is

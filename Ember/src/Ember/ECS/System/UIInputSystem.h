@@ -48,6 +48,11 @@ namespace Ember {
 
 		EntityID FindFirstSelectable(Scene* scene) const;
 
+		// A menu is usually closed by hiding it, which leaves the focus pointing at a selectable that
+		// is no longer on screen - and submit would still activate it.
+		bool CanReceiveFocus(Scene* scene, EntityID entity) const;
+		void DropFocusIfUnusable(Scene* scene);
+
 		EntityID m_Hovered = (EntityID)Constants::Entities::InvalidEntityID;
 		EntityID m_Pressed = (EntityID)Constants::Entities::InvalidEntityID;
 		EntityID m_Focused = (EntityID)Constants::Entities::InvalidEntityID;

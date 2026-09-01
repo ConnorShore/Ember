@@ -691,21 +691,64 @@ EB_TEST_CASE(Input, ClearAllStatesDropsHeldKeysMouseAndModifiers, Unit)
 	EB_EXPECT_EQ(static_cast<int>(Input::GetActiveModifiers()), 0);
 }
 
-// Sub-pixel jitter from the OS would otherwise drive a look-around camera while the mouse sits still.
-EB_TEST_CASE(Input, MouseDeltaIgnoresMovementInsideTheDeadzone, Unit)
+// Regression: UpdateMousePosition rebaselined on every call, so only the last of a frame's cursor
+// callbacks survived - a 1000Hz mouse at 60fps threw away about fifteen sixteenths of every look.
+EB_TEST_CASE(Input, MouseDeltaAccumulatesEveryCallbackInTheFrame, Unit)
 {
 	const Vector2f savedPosition = Input::GetMousePosition();
 
 	Input::UpdateMousePosition(Vector2f(100.0f, 100.0f));
 	Input::ResetMouseDelta();
 
-	Input::UpdateMousePosition(Vector2f(101.0f, 100.5f));   // both axes inside the 1.5px deadzone
-	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(0.0f, 0.0f), 1e-4f);
+	// One frame's worth of reports, delivered as separate callbacks the way GLFW sends them.
+	Input::UpdateMousePosition(Vector2f(103.0f, 100.0f));
+	Input::UpdateMousePosition(Vector2f(107.0f, 102.0f));
+	Input::UpdateMousePosition(Vector2f(110.0f, 105.0f));
 
-	// Per-axis, not per-vector: x clears the deadzone here and y does not.
-	Input::UpdateMousePosition(Vector2f(110.0f, 101.0f));
-	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(9.0f, 0.0f), 1e-4f);
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(10.0f, 5.0f), 1e-4f);
 
+	// The next frame starts from where this one ended, not from the last hop.
+	Input::ResetMouseDelta();
+	Input::UpdateMousePosition(Vector2f(112.0f, 105.0f));
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(2.0f, 0.0f), 1e-4f);
+
+	Input::UpdateMousePosition(savedPosition);
+	Input::ResetMouseDelta();
+}
+
+// Regression: a 1.5px per-axis floor used to zero small movements, which is exactly the slow travel
+// fine aim is made of, and it bent a slow diagonal onto whichever axis cleared the floor first.
+EB_TEST_CASE(Input, MouseDeltaKeepsSlowMovement, Unit)
+{
+	const Vector2f savedPosition = Input::GetMousePosition();
+
+	Input::UpdateMousePosition(Vector2f(100.0f, 100.0f));
+	Input::ResetMouseDelta();
+
+	Input::UpdateMousePosition(Vector2f(101.0f, 100.5f));
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(1.0f, 0.5f), 1e-4f);
+
+	Input::UpdateMousePosition(savedPosition);
+	Input::ResetMouseDelta();
+}
+
+// Inversion is a device setting so every reader of the conditioned delta agrees, but the raw read
+// stays true pixels for UI dragging and editor tooling.
+EB_TEST_CASE(Input, MouseInversionAppliesToTheConditionedDeltaOnly, Unit)
+{
+	const Vector2f savedPosition = Input::GetMousePosition();
+	const MouseSettings savedSettings = Input::GetMouseSettings();
+
+	Input::GetMouseSettings().InvertY = true;
+
+	Input::UpdateMousePosition(Vector2f(100.0f, 100.0f));
+	Input::ResetMouseDelta();
+	Input::UpdateMousePosition(Vector2f(110.0f, 120.0f));
+
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(10.0f, -20.0f), 1e-4f);
+	EB_EXPECT_VEC2_NEAR(Input::GetRawMouseDelta(), Vector2f(10.0f, 20.0f), 1e-4f);
+
+	Input::GetMouseSettings() = savedSettings;
 	Input::UpdateMousePosition(savedPosition);
 	Input::ResetMouseDelta();
 }
@@ -1003,6 +1046,56 @@ EB_TEST_CASE(Input, ClearActionsEmptiesBothVectors, Unit)
 	EB_EXPECT_EQ(actions.GetActionIndex("Jump"), -1);
 }
 
+// Regression: the UI acts on a press mid-frame, but Evaluate runs once at the top of it, so gameplay
+// polling later in the same frame read the very same edge and one button press fired twice.
+EB_TEST_CASE(Input, ConsumedActionStaysSilentUntilTheControlIsReleased, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionPressed("Jump"));
+
+	actions.ConsumeControl(InputDevice::Keyboard, KeyCode::Space);
+	EB_EXPECT_FALSE(actions.IsActionPressed("Jump"));
+	EB_EXPECT_FALSE(actions.IsActionDown("Jump"));
+
+	// Still held. Suppressing only the one frame would let the next Evaluate see a down that was
+	// last recorded as up and call it a brand new press.
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionPressed("Jump"));
+	EB_EXPECT_FALSE(actions.IsActionDown("Jump"));
+
+	// The release goes with it: gameplay never saw the press, so a release would be a phantom.
+	Input::SetKeyState(KeyCode::Space, false);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionReleased("Jump"));
+
+	// Consumption ends there - the next press is an ordinary one.
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionPressed("Jump"));
+	EB_EXPECT(actions.IsActionDown("Jump"));
+}
+
+EB_TEST_CASE(Input, ConsumeOnlyTouchesActionsBoundToThatControl, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions;
+	actions.AddAction({ "Jump", { ParseTrigger("Key/Space") } });
+	actions.AddAction({ "Fire", { ParseTrigger("Mouse/Left") } });
+
+	Input::SetKeyState(KeyCode::Space, true);
+	Input::SetMouseControlState(MouseControl::Left, true);
+	StepActions(actions);
+
+	actions.ConsumeControl(InputDevice::Keyboard, KeyCode::Space);
+
+	EB_EXPECT_FALSE(actions.IsActionPressed("Jump"));
+	EB_EXPECT_MSG(actions.IsActionPressed("Fire"), "consuming one control silenced an unrelated action");
+}
+
 namespace {
 
 	// Gamepad state is global and is only refreshed while a real pad is polled, so a test that pokes
@@ -1020,9 +1113,25 @@ namespace {
 				state.Down = 0;
 				state.PreviousDown = 0;
 				state.Axis.fill(0.0f);
+				state.RawAxis.fill(0.0f);
+				state.Connected = false;
+
+				// A trigger rests at -1, not 0, so a zeroed array would read as half-pulled once a
+				// test connects the pad and conditioning starts running.
+				state.RawAxis[static_cast<size_t>(GamepadAxis::LeftTrigger)] = -1.0f;
+				state.RawAxis[static_cast<size_t>(GamepadAxis::RightTrigger)] = -1.0f;
 			}
+
+			Input::GetSettings() = InputSettings{};
 		}
 	};
+
+	// Conditioning only runs for a pad the platform layer says is plugged in, so a test that wants
+	// the deadzone and curve applied has to claim one is.
+	void ConnectPad(size_t index = 0)
+	{
+		Input::GetGamepadState(index).Connected = true;
+	}
 
 }
 
@@ -1145,6 +1254,166 @@ EB_TEST_CASE(Input, TriggerPressesWellBeforeTheStickActuationPoint, Unit)
 
 	EB_EXPECT(actions.IsActionDown("Shoot"));
 	EB_EXPECT_NEAR(actions.GetActionStrength("Shoot"), 0.3f, 0.0001f);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Gamepad conditioning
+//////////////////////////////////////////////////////////////////////////
+
+// The defaults have to be the behaviour that existed before conditioning was configurable, or every
+// project silently retunes itself on upgrade.
+EB_TEST_CASE(Input, DefaultSettingsReproduceTheOriginalDeadzoneCurve, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	const StickSettings& settings = Input::GetStickSettings(GamepadStick::Left);
+	EB_EXPECT_NEAR(settings.Exponent, 1.0f, 1e-6f);
+	EB_EXPECT_NEAR(settings.Saturation, 1.0f, 1e-6f);
+
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.5f;
+	Input::BeginFrame();
+
+	// The original rescale: (0.5 - 0.15) / (1 - 0.15).
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::LeftX), 0.35f / 0.85f, 1e-5f);
+
+	// Inside the deadzone still reads as centred.
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.1f;
+	Input::BeginFrame();
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::LeftX), 0.0f, 1e-6f);
+}
+
+// The whole point of shaping the magnitude instead of each axis: a per-axis Pow pulls a diagonal off
+// its true angle, which is what makes a circular sweep of the stick feel lumpy.
+EB_TEST_CASE(Input, StickCurveShapesMagnitudeWithoutBendingDirection, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	Input::GetStickSettings(GamepadStick::Right).Exponent = 2.0f;
+	Input::GetStickSettings(GamepadStick::Right).Deadzone = 0.0f;
+
+	GamepadState& pad = Input::GetGamepadState(0);
+	const float diagonal = 0.5f;
+	pad.RawAxis[static_cast<size_t>(GamepadAxis::RightX)] = diagonal;
+	pad.RawAxis[static_cast<size_t>(GamepadAxis::RightY)] = diagonal;
+	Input::BeginFrame();
+
+	const float x = Input::GetGamepadAxis(0, GamepadAxis::RightX);
+	const float y = Input::GetGamepadAxis(0, GamepadAxis::RightY);
+
+	EB_EXPECT_NEAR(x, y, 1e-5f);
+
+	// Magnitude is squared; the 45 degree angle is untouched.
+	const float rawMagnitude = Math::Length(Vector2f(diagonal, diagonal));
+	EB_EXPECT_NEAR(Math::Length(Vector2f(x, y)), rawMagnitude * rawMagnitude, 1e-5f);
+}
+
+// BeginFrame legitimately runs more than once between polls, so conditioning reads RawAxis rather
+// than shaping its own output a second time.
+EB_TEST_CASE(Input, ConditioningIsIdempotentAcrossRepeatedFrames, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	Input::GetStickSettings(GamepadStick::Right).Exponent = 2.0f;
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::RightX)] = 0.8f;
+
+	Input::BeginFrame();
+	const float once = Input::GetGamepadAxis(0, GamepadAxis::RightX);
+
+	Input::BeginFrame();
+	Input::BeginFrame();
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::RightX), once, 1e-6f);
+}
+
+// Inversion is per stick because UIInputSystem navigates menus with the left one - a global invert
+// would flip menu navigation along with the camera.
+EB_TEST_CASE(Input, StickInversionAppliesToOneAxisOfOneStick, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	Input::GetStickSettings(GamepadStick::Right).InvertY = true;
+
+	GamepadState& pad = Input::GetGamepadState(0);
+	pad.RawAxis[static_cast<size_t>(GamepadAxis::RightX)] = 0.6f;
+	pad.RawAxis[static_cast<size_t>(GamepadAxis::RightY)] = 0.6f;
+	pad.RawAxis[static_cast<size_t>(GamepadAxis::LeftY)] = 0.6f;
+	Input::BeginFrame();
+
+	EB_EXPECT(Input::GetGamepadAxis(0, GamepadAxis::RightY) < 0.0f);
+	EB_EXPECT(Input::GetGamepadAxis(0, GamepadAxis::RightX) > 0.0f);
+	EB_EXPECT(Input::GetGamepadAxis(0, GamepadAxis::LeftY) > 0.0f);
+}
+
+// Actuation means physical travel, so it runs through the same curve the axis did. Without that, an
+// exponent of 2 would quietly move every digital read on the stick from half throw to 0.71.
+EB_TEST_CASE(Input, ActuationTracksPhysicalTravelThroughTheCurve, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	StickSettings& settings = Input::GetStickSettings(GamepadStick::Left);
+	settings.Deadzone = 0.0f;
+	settings.Actuation = 0.5f;
+
+	InputActionManager actions = MakeManager("MoveRight", "Gamepad/LeftX+");
+
+	// Linear first: just short of half throw is not pressed, just past it is.
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.49f;
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveRight"));
+
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.51f;
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("MoveRight"));
+
+	// Same physical travel still actuates once the stick is curved.
+	settings.Exponent = 2.0f;
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.49f;
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveRight"));
+
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::LeftX)] = 0.51f;
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("MoveRight"));
+}
+
+// A trigger reports -1..1 and has to come out 0..1, so a released trigger must read as exactly zero
+// rather than the half pull a naive remap of a zeroed axis would give.
+EB_TEST_CASE(Input, TriggerRemapsRestingPositionToZero, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	Input::BeginFrame();
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::RightTrigger), 0.0f, 1e-6f);
+
+	// Fully pulled is +1 raw, and the deadzone rescale still has to land on 1.
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::RightTrigger)] = 1.0f;
+	Input::BeginFrame();
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::RightTrigger), 1.0f, 1e-5f);
+}
+
+// A stick that cannot physically reach 1 would otherwise never drive anything at full rate.
+EB_TEST_CASE(Input, SaturationReachesFullDeflectionEarly, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	Input::GetStickSettings(GamepadStick::Right).Saturation = 0.9f;
+	Input::GetGamepadState(0).RawAxis[static_cast<size_t>(GamepadAxis::RightX)] = 0.9f;
+	Input::BeginFrame();
+
+	EB_EXPECT_NEAR(Input::GetGamepadAxis(0, GamepadAxis::RightX), 1.0f, 1e-5f);
 }
 
 // ProjectSerializer stores each binding as its trigger string, so a saved action only survives if a

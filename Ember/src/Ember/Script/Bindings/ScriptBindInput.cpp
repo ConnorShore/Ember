@@ -76,6 +76,37 @@ namespace Ember {
 			, "Last", GamepadAxis::Last
 		);
 
+		state.new_enum("GamepadStick",
+			"Left", GamepadStick::Left,
+			"Right", GamepadStick::Right
+		);
+
+		state.new_enum("GamepadTrigger",
+			"Left", GamepadTrigger::Left,
+			"Right", GamepadTrigger::Right
+		);
+
+		state.new_usertype<StickSettings>("StickSettings",
+			"Deadzone", &StickSettings::Deadzone,
+			"Saturation", &StickSettings::Saturation,
+			"Exponent", &StickSettings::Exponent,
+			"Actuation", &StickSettings::Actuation,
+			"InvertX", &StickSettings::InvertX,
+			"InvertY", &StickSettings::InvertY
+		);
+
+		state.new_usertype<TriggerSettings>("TriggerSettings",
+			"Deadzone", &TriggerSettings::Deadzone,
+			"Saturation", &TriggerSettings::Saturation,
+			"Exponent", &TriggerSettings::Exponent,
+			"Actuation", &TriggerSettings::Actuation
+		);
+
+		state.new_usertype<MouseSettings>("MouseSettings",
+			"InvertX", &MouseSettings::InvertX,
+			"InvertY", &MouseSettings::InvertY
+		);
+
 		auto inputTable = state.create_named_table("Input");
 		inputTable.set_function("IsKeyDown", &Input::IsKeyDown);
 		inputTable.set_function("IsKeyReleased", &Input::IsKeyReleased);
@@ -102,6 +133,13 @@ namespace Ember {
 		inputTable.set_function("GetMousePosition", &Input::GetMousePosition);
 		inputTable.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
 		inputTable.set_function("GetMouseDelta", &Input::GetMouseDelta);
+		inputTable.set_function("GetRawMouseDelta", &Input::GetRawMouseDelta);
+
+		// Pointers, not references: sol2 copies a returned reference, which would make a script's
+		// write land on a temporary and silently do nothing.
+		inputTable.set_function("GetStickSettings", [](GamepadStick stick) { return &Input::GetStickSettings(stick); });
+		inputTable.set_function("GetTriggerSettings", [](GamepadTrigger trigger) { return &Input::GetTriggerSettings(trigger); });
+		inputTable.set_function("GetMouseSettings", []() { return &Input::GetMouseSettings(); });
 
 		auto& inputActionManager = Application::Instance().GetInputActionManager();
 		inputTable.set_function("IsActionDown", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionDown(actionName); });

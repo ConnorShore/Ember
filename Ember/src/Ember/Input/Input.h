@@ -5,6 +5,7 @@
 #include "InputDevice.h"
 #include "InputCode.h"
 #include "GamepadState.h"
+#include "InputSettings.h"
 #include "Ember/Math/Math.h"
 #include "Ember/Core/CursorMode.h"
 
@@ -13,22 +14,31 @@ namespace Ember {
 	class Input
 	{
 	public:
-		// Defaults only - these stay writable so they can be driven from user settings later.
-		// Mouse delta floor in pixels; gamepad axes arrive normalized, so they need their own floors.
-		inline static float MouseDeadzone = 1.5f;
-		inline static float GamepadStickDeadzone = 0.15f;
-		inline static float GamepadTriggerDeadzone = 0.05f;
-
-		// How far an analog control must travel before a digital read (IsActionDown and friends)
-		// calls it pressed. A stick needs a high bar because pushing it straight up still leaves a
-		// little X on the other axis, which would otherwise hold that direction down permanently.
-		inline static float GamepadStickActuation = 0.5f;
-		inline static float GamepadTriggerActuation = 0.15f;
-
 		inline static constexpr size_t MaxGamepads = 4;
 
 	public:
 		static void BeginFrame();
+
+		// How each device is conditioned before anything reads it - defaults from the .ebproj, and
+		// writable at runtime by a settings menu.
+		static InputSettings& GetSettings();
+		static StickSettings& GetStickSettings(GamepadStick stick);
+		static TriggerSettings& GetTriggerSettings(GamepadTrigger trigger);
+		static MouseSettings& GetMouseSettings();
+
+		// The actuation point put through the same conditioning, so a response curve cannot silently
+		// move every digital threshold on that control.
+		static float ActuationThreshold(GamepadStick stick);
+		static float ActuationThreshold(GamepadTrigger trigger);
+
+		// Deadzone, saturation and curve on a 0..1 deflection. Public so the editor can plot the same
+		// curve the sticks, the triggers and the actuation thresholds all run through.
+		static float ShapeMagnitude(float magnitude, float deadzone, float saturation, float exponent);
+
+		// Which settings block an axis belongs to.
+		static GamepadStick StickForAxis(GamepadAxis axis);
+		static GamepadTrigger TriggerForAxis(GamepadAxis axis);
+		static bool IsTriggerAxis(GamepadAxis axis);
 
 		static bool IsKeyPressed(KeyCode key);
 		static bool IsKeyReleased(KeyCode key);
@@ -72,7 +82,13 @@ namespace Ember {
 		static int GetKeyRepeatCount(KeyCode key);
 		static const Vector2f& GetMousePosition();
 		static const Vector2f& GetMouseScrollOffset();
+
+		// The whole frame's movement, with the player's inversion preference applied.
 		static Vector2f GetMouseDelta();
+
+		// True pixels, ignoring inversion - for UI dragging and editor tooling, which want the
+		// pointer's actual travel rather than a look preference.
+		static Vector2f GetRawMouseDelta();
 
 		static void ResetMouseDelta();
 
@@ -109,6 +125,12 @@ namespace Ember {
 		inline static void SetLastUsedInputDevice(InputDevice device) { s_LastUsedDevice = device; }
 
 	private:
+		// Raw to conditioned for every connected pad, at the top of BeginFrame - after the platform
+		// layer has polled and before actions are evaluated.
+		static void ProcessGamepads();
+		static bool ProcessStick(GamepadState& state, GamepadStick stick, GamepadAxis xAxis, GamepadAxis yAxis);
+		static bool ProcessTrigger(GamepadState& state, GamepadTrigger trigger, GamepadAxis axis);
+
 		// Key State Tracking
 		static constexpr size_t KeyArraySize = static_cast<size_t>(KeyCode::Last);
 
@@ -133,6 +155,8 @@ namespace Ember {
 
 		// Gamepad State Tracking
 		static std::array<GamepadState, MaxGamepads> s_GamepadStates;
+
+		static InputSettings s_Settings;
 
 		// Viewport State Tracking
 		static Vector2f s_ViewportMin, s_ViewportSize;

@@ -799,3 +799,153 @@ EB_TEST_CASE(UI, GamepadNavigationRepeatsAcrossPresses, Integration)
 	pad.Connected = wasConnected;
 	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
 }
+
+// Regression: UISelectableComponent:Select() wrote State directly, but ResolveSelectionStates
+// rebuilds State from the focus every frame, so the scripted selection was gone before it drew.
+EB_TEST_CASE(UI, ScriptSelectTakesFocusAndSurvivesTheNextTick, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+	Input::SetViewportRect(Vector2f(0.0f), Vector2f(ViewportWidth, ViewportHeight));
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity button = MakeButton(*scene, canvas, "ScriptSelectTarget", Vector2f(120.0f, 40.0f), Vector2f(0.0f, 100.0f));
+	Entity other = MakeButton(*scene, canvas, "ScriptSelectOther", Vector2f(120.0f, 40.0f), Vector2f(0.0f, -100.0f));
+
+	Layout(*scene);
+	ScriptEngine::BindAPI(scene.Ptr());
+
+	auto uiInput = Sys<UIInputSystem>();
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+
+	// Pointer parked away from both buttons so hover cannot supply the focus, and one tick first so
+	// the scene-change reset does not clear what Select is about to set.
+	Vector2f away = Vector2f(20.0f, 20.0f);
+	TickInput(*scene, away);
+
+	const sol::protected_function_result result = ScriptEngine::GetState().script(R"(
+		Scene.GetEntityByName("ScriptSelectTarget"):GetComponent("UISelectableComponent"):Select()
+	)", sol::script_pass_on_error);
+
+	EB_CHECK_MSG(result.valid(), "the Select() binding script failed to run");
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), button.GetEntityHandle());
+
+	// The tick is the point: this is where a direct State write used to be overwritten with Normal.
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(button.GetComponent<UISelectableComponent>().State, UISelectionState::Selected);
+	EB_EXPECT_EQ(other.GetComponent<UISelectableComponent>().State, UISelectionState::Normal);
+
+	// Focus is what submit acts on, so a gamepad's first A press activates instead of just adopting.
+	Input::SetKeyState(KeyCode::Enter, true);
+	TickInput(*scene, away);
+	EB_EXPECT_MSG(button.GetComponent<UIButtonComponent>().WasClickedThisFrame,
+		"submit did not activate the selectable that Select() focused");
+	Input::SetKeyState(KeyCode::Enter, false);
+
+	// A non-interactable selectable cannot be focused, matching what navigation already skips.
+	other.GetComponent<UISelectableComponent>().Interactable = false;
+	ScriptEngine::GetState().script(R"(
+		Scene.GetEntityByName("ScriptSelectOther"):GetComponent("UISelectableComponent"):Select()
+	)", sol::script_pass_on_error);
+
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), button.GetEntityHandle());
+
+	TickInput(*scene, away);
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+}
+
+// Regression: UIInputSystem runs before every system that polls input actions, and Evaluate happens
+// once at the top of the frame - so the press that activated a button was still sitting there as a
+// live edge when gameplay read it, and closing a menu with A also jumped.
+EB_TEST_CASE(UI, SubmitDoesNotAlsoReachGameplayThatFrame, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+	Input::SetViewportRect(Vector2f(0.0f), Vector2f(ViewportWidth, ViewportHeight));
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity button = MakeButton(*scene, canvas, "SubmitTarget", Vector2f(120.0f, 40.0f), Vector2f(0.0f));
+
+	Layout(*scene);
+
+	auto& actions = Application::Instance().GetInputActionManager();
+	actions.AddAction({ "EmberTestUIJump", { InputTrigger{ InputDevice::Keyboard, KeyCode::Enter } } });
+
+	// Pointer parked off the button so hover plays no part, and one tick so the scene-change reset
+	// does not clear the focus set below.
+	Vector2f away = Vector2f(20.0f, 20.0f);
+	TickInput(*scene, away);
+
+	auto uiInput = Sys<UIInputSystem>();
+	uiInput->SetFocusedEntity(button.GetEntityHandle());
+
+	// One frame assembled the way Application::Run does: sample input, evaluate actions, then run the
+	// UI. Gameplay's turn comes after that, which is the window this test stands in.
+	Input::SetKeyState(KeyCode::Enter, true);
+	Input::BeginFrame();
+	actions.Evaluate();
+
+	EB_CHECK_MSG(actions.IsActionPressed("EmberTestUIJump"), "the action never saw the press at all");
+
+	uiInput->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_MSG(button.GetComponent<UIButtonComponent>().WasClickedThisFrame, "submit did not activate the button");
+	EB_EXPECT_MSG(!actions.IsActionPressed("EmberTestUIJump"),
+		"the press that activated the button also reached gameplay in the same frame");
+
+	// Held into the next frame, it must not resurface as a fresh edge either.
+	Input::BeginFrame();
+	actions.Evaluate();
+	EB_EXPECT_MSG(!actions.IsActionPressed("EmberTestUIJump"), "the consumed press came back one frame later");
+
+	Input::SetKeyState(KeyCode::Enter, false);
+	Input::BeginFrame();
+	actions.RemoveAction("EmberTestUIJump");
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+}
+
+// Regression: closing a menu by hiding it left the focus on a button that was no longer on screen,
+// so the next submit re-fired that button's OnClick - and took the press from gameplay to do it.
+EB_TEST_CASE(UI, HidingAMenuDropsTheFocusItHeld, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+	Input::SetViewportRect(Vector2f(0.0f), Vector2f(ViewportWidth, ViewportHeight));
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity panel = MakeRect(*scene, canvas, "Panel", Vector2f(400.0f, 300.0f), Vector2f(0.0f));
+	Entity button = MakeButton(*scene, panel, "MenuButton", Vector2f(200.0f, 100.0f), Vector2f(0.0f));
+
+	Layout(*scene);
+
+	Vector2f away = Vector2f(20.0f, 20.0f);
+	TickInput(*scene, away);
+
+	auto uiInput = Sys<UIInputSystem>();
+	uiInput->SetFocusedEntity(button.GetEntityHandle());
+
+	panel.SetActive(false, true);
+	Layout(*scene);
+	TickInput(*scene, away);
+
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), (EntityID)Constants::Entities::InvalidEntityID);
+
+	// And submit finds nothing to activate rather than firing the hidden button.
+	Input::SetKeyState(KeyCode::Enter, true);
+	TickInput(*scene, away);
+	EB_EXPECT_FALSE(button.GetComponent<UIButtonComponent>().WasClickedThisFrame);
+
+	Input::SetKeyState(KeyCode::Enter, false);
+	TickInput(*scene, away);
+
+	// A non-interactable selectable is just as unusable, so it cannot keep the focus either.
+	panel.SetActive(true, true);
+	Layout(*scene);
+	uiInput->SetFocusedEntity(button.GetEntityHandle());
+	button.GetComponent<UISelectableComponent>().Interactable = false;
+
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), (EntityID)Constants::Entities::InvalidEntityID);
+
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+}

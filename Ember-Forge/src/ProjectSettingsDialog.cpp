@@ -6,6 +6,7 @@
 
 #include <Ember/Core/ProjectManager.h>
 #include <Ember/ECS/System/PhysicsSystem.h>
+#include <Ember/Input/Input.h>
 #include <Ember/Input/InputAction.h>
 #include <Ember/Input/InputActionManager.h>
 #include <Ember/Input/InputCodeNames.h>
@@ -370,7 +371,14 @@ namespace Ember {
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		ImGui::TextDisabled("Input Actions");
+		RenderInputDeviceSettings();
+
+		ImGui::Spacing();
+
+		// Open by default, unlike Devices - the action list is what this page is mostly for.
+		ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
+		if (!ImGui::CollapsingHeader("Actions"))
+			return;
 
 		RenderAddActionRow();
 
@@ -387,6 +395,119 @@ namespace Ember {
 			RenderActionRow(i, actions[i]);
 
 		ImGui::EndChild();
+	}
+
+	void ProjectSettingsDialog::RenderInputDeviceSettings()
+	{
+		if (!ImGui::CollapsingHeader("Devices"))
+			return;
+
+		ImGui::TextDisabled("Applied to every read of the control, before actions are evaluated.");
+		ImGui::Spacing();
+
+		RenderStickSettings("Left Stick", GamepadStick::Left, GamepadAxis::LeftX, GamepadAxis::LeftY);
+		RenderStickSettings("Right Stick", GamepadStick::Right, GamepadAxis::RightX, GamepadAxis::RightY);
+		RenderTriggerSettings("Left Trigger", GamepadTrigger::Left, GamepadAxis::LeftTrigger);
+		RenderTriggerSettings("Right Trigger", GamepadTrigger::Right, GamepadAxis::RightTrigger);
+
+		if (ImGui::TreeNodeEx("Mouse", ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			MouseSettings& settings = Input::GetMouseSettings();
+			ImGui::Checkbox("Invert X##Mouse", &settings.InvertX);
+			ImGui::Checkbox("Invert Y##Mouse", &settings.InvertY);
+			ImGui::TextDisabled("Sensitivity belongs to the game - the mouse delta has several readers.");
+			ImGui::TreePop();
+		}
+	}
+
+	void ProjectSettingsDialog::RenderStickSettings(const char* label, GamepadStick stick, GamepadAxis xAxis, GamepadAxis yAxis)
+	{
+		ImGui::PushID(label);
+
+		if (ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			StickSettings& settings = Input::GetStickSettings(stick);
+
+			// Clamped on typed input too: a negative deadzone or a saturation under the deadzone
+			// would collapse the span the curve is normalised against.
+			ImGui::DragFloat("Deadzone", &settings.Deadzone, 0.005f, 0.0f, 0.9f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::SetItemTooltip("Deflection below this reads as centred, measured on the pair rather than per axis.");
+
+			ImGui::DragFloat("Saturation", &settings.Saturation, 0.005f, 0.1f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::SetItemTooltip("Deflection that already counts as fully pushed - lower it for a stick that cannot reach 1.");
+
+			ImGui::DragFloat("Exponent", &settings.Exponent, 0.01f, 0.25f, 4.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::SetItemTooltip("1 is linear. Above 1 gives finer control near centre, which is what FPS look wants.");
+
+			ImGui::DragFloat("Actuation", &settings.Actuation, 0.005f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::SetItemTooltip("How far the stick must physically travel before a digital read calls it pressed.");
+
+			ImGui::Checkbox("Invert X", &settings.InvertX);
+			ImGui::SameLine();
+			ImGui::Checkbox("Invert Y", &settings.InvertY);
+
+			RenderResponsePreview(settings, xAxis, yAxis);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	void ProjectSettingsDialog::RenderTriggerSettings(const char* label, GamepadTrigger trigger, GamepadAxis axis)
+	{
+		ImGui::PushID(label);
+
+		if (ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			TriggerSettings& settings = Input::GetTriggerSettings(trigger);
+
+			ImGui::DragFloat("Deadzone", &settings.Deadzone, 0.005f, 0.0f, 0.9f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("Saturation", &settings.Saturation, 0.005f, 0.1f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("Exponent", &settings.Exponent, 0.01f, 0.25f, 4.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("Actuation", &settings.Actuation, 0.005f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			ImGui::Text("Pull: %.3f", Input::GetGamepadAxis(0, axis));
+
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	void ProjectSettingsDialog::RenderResponsePreview(const StickSettings& settings, GamepadAxis xAxis, GamepadAxis yAxis)
+	{
+		constexpr int sampleCount = 64;
+		float curve[sampleCount];
+		for (int i = 0; i < sampleCount; i++)
+		{
+			const float deflection = static_cast<float>(i) / static_cast<float>(sampleCount - 1);
+			curve[i] = Input::ShapeMagnitude(deflection, settings.Deadzone, settings.Saturation, settings.Exponent);
+		}
+
+		const float previewSize = ImGui::GetFontSize() * 6.0f;
+		ImGui::PlotLines("##Curve", curve, sampleCount, 0, "Response", 0.0f, 1.0f, ImVec2(previewSize, previewSize));
+
+		ImGui::SameLine();
+
+		// The dots make the radial shaping legible: a circular sweep of the stick has to stay
+		// circular, which a per-axis curve would not manage.
+		const GamepadState& pad = Input::GetGamepadState(0);
+		const Vector2f raw = { pad.RawAxis[static_cast<size_t>(xAxis)], pad.RawAxis[static_cast<size_t>(yAxis)] };
+		const Vector2f conditioned = { pad.Axis[static_cast<size_t>(xAxis)], pad.Axis[static_cast<size_t>(yAxis)] };
+
+		const ImVec2 origin = ImGui::GetCursorScreenPos();
+		const float radius = previewSize * 0.5f;
+		const ImVec2 centre(origin.x + radius, origin.y + radius);
+
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		drawList->AddRect(origin, ImVec2(origin.x + previewSize, origin.y + previewSize), IM_COL32(120, 120, 120, 255));
+		drawList->AddCircle(centre, radius * settings.Deadzone, IM_COL32(120, 120, 120, 160));
+		drawList->AddCircleFilled(ImVec2(centre.x + raw.x * radius, centre.y + raw.y * radius), 3.0f, IM_COL32(150, 150, 150, 255));
+		drawList->AddCircleFilled(ImVec2(centre.x + conditioned.x * radius, centre.y + conditioned.y * radius), 3.0f, IM_COL32(255, 170, 60, 255));
+
+		ImGui::Dummy(ImVec2(previewSize, previewSize));
+		ImGui::TextDisabled("Grey is raw, orange is conditioned.");
 	}
 
 	void ProjectSettingsDialog::RenderAddActionRow()

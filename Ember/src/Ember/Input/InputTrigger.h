@@ -16,10 +16,13 @@ namespace Ember {
 		Negative
 	};
 
+	// The physical control a trigger listens to, whichever device it belongs to.
+	using InputControlId = std::variant<KeyCode, MouseControl, GamepadButton, GamepadAxis>;
+
 	struct InputTrigger
 	{
 		InputDevice Device = InputDevice::None;
-		std::variant<KeyCode, MouseControl, GamepadButton, GamepadAxis> ControlId = KeyCode::Unknown;
+		InputControlId ControlId = KeyCode::Unknown;
 		KeyModifierType RequiredModifiers = 0;
 		AxisDirection Direction = AxisDirection::Full;
 
