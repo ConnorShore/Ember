@@ -7,7 +7,7 @@
 #define EMBER_VERSION_PATCH  2
 
 // Numeric form for anything that needs a comparable x.y.z
-#define EMBER_VERSION_STRING "0.2.2"
+#define EMBER_VERSION_STRING "0.3.0"
 
 // Display form, which may carry a pre-release suffix.
-#define EMBER_VERSION_FULL   "0.2.2-alpha"
+#define EMBER_VERSION_FULL   "0.3.0-alpha"
