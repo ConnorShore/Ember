@@ -147,6 +147,10 @@ namespace Ember {
 		inputTable.set_function("IsActionReleased", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionReleased(actionName); });
 		inputTable.set_function("GetActionStrength", [&inputActionManager](std::string_view actionName) { return inputActionManager.GetActionStrength(actionName); });
 
+		// For a script that has acted on a press and does not want the rest of the frame acting on it
+		// too - every action sharing that physical button goes quiet until it is released.
+		inputTable.set_function("ConsumeAction", [&inputActionManager](std::string_view actionName) { inputActionManager.ConsumeAction(actionName); });
+
 		inputTable.set_function("GetAxis", [&inputActionManager](std::string_view negative, std::string_view positive) { return inputActionManager.GetAxis(negative, positive); });
 		inputTable.set_function("GetAxis2D", [&inputActionManager](std::string_view left, std::string_view right, std::string_view down, std::string_view up) { return inputActionManager.GetAxis2D(left, right, down, up); });
 		

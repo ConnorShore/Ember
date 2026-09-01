@@ -118,6 +118,11 @@ namespace Ember {
 		static bool IsViewportInputActive();
 		static bool IsMouseInViewport();
 
+		// Set while the editor has taken input back from a running game. Distinct from the cursor
+		// mode, which a game is free to change for its own menus while it still wants input.
+		static void SetGameplayInputSuppressed(bool suppressed);
+		static bool IsGameplayInputSuppressed();
+
 		// Mouse in UI space: viewport-local, bottom-left origin, +Y up, matching UILayoutSystem rects.
 		static Vector2f GetViewportMousePosition();
 
@@ -161,6 +166,7 @@ namespace Ember {
 		// Viewport State Tracking
 		static Vector2f s_ViewportMin, s_ViewportSize;
 		static bool s_ViewportInputActive;
+		static bool s_GameplayInputSuppressed;
 
 		static InputDevice s_LastUsedDevice;
 	};

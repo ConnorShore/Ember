@@ -36,6 +36,7 @@ namespace Ember {
 	Vector2f Input::s_ViewportSize = { 0.0f, 0.0f };
 
 	bool Input::s_ViewportInputActive = true;
+	bool Input::s_GameplayInputSuppressed = false;
 
 	InputDevice Input::s_LastUsedDevice = InputDevice::None;
 
@@ -258,6 +259,11 @@ namespace Ember {
 
 	Vector2f Input::GetRawMouseDelta()
 	{
+		// Zero rather than frozen: a look script reads the delta unconditionally, so anything else
+		// here would keep steering the camera while the editor owns the pointer.
+		if (s_GameplayInputSuppressed)
+			return Vector2f(0.0f);
+
 		return s_MousePosition - s_PreviousMousePosition;
 	}
 
@@ -500,6 +506,16 @@ namespace Ember {
 	bool Input::IsViewportInputActive()
 	{
 		return s_ViewportInputActive;
+	}
+
+	void Input::SetGameplayInputSuppressed(bool suppressed)
+	{
+		s_GameplayInputSuppressed = suppressed;
+	}
+
+	bool Input::IsGameplayInputSuppressed()
+	{
+		return s_GameplayInputSuppressed;
 	}
 
 	bool Input::IsMouseInViewport()

@@ -91,6 +91,8 @@ namespace Ember {
 
 	void InputActionManager::Evaluate()
 	{
+		const bool suppressed = Input::IsGameplayInputSuppressed();
+
 		for (int i = 0; i < m_Actions.size(); ++i)
 		{
 			InputActionState& state = m_ActionStates[i];
@@ -115,6 +117,7 @@ namespace Ember {
 
 				state.Strength = strength;
 				state.LastDevice = trigger.Device;
+				state.LastControl = trigger.ControlId;
 				actuation = GetTriggerActuation(trigger);
 			}
 
@@ -127,6 +130,14 @@ namespace Ember {
 			if (state.Consumed)
 			{
 				state.Consumed = state.RawIsDown;
+				state.Strength = 0.0f;
+				continue;
+			}
+
+			// The editor has taken input back, so gameplay reads nothing. RawIsDown still tracks the
+			// real control, so a key held across the handover comes back down rather than as a press.
+			if (suppressed)
+			{
 				state.Strength = 0.0f;
 				continue;
 			}
@@ -157,6 +168,20 @@ namespace Ember {
 			state.JustReleased = false;
 			state.Strength = 0.0f;
 		}
+	}
+
+	void InputActionManager::ConsumeAction(std::string_view actionName)
+	{
+		int actionIndex = GetActionIndex(actionName);
+		if (actionIndex == -1)
+			return;
+
+		// Read the raw state, not IsDown: an already-consumed action is still physically held.
+		const InputActionState& state = m_ActionStates[actionIndex];
+		if (!state.RawIsDown)
+			return;
+
+		ConsumeControl(state.LastDevice, state.LastControl);
 	}
 
 	bool InputActionManager::IsActionDown(std::string_view actionName)

@@ -380,9 +380,9 @@ namespace Ember {
 		if (!ImGui::CollapsingHeader("Actions"))
 			return;
 
-		RenderAddActionRow();
-
 		ImGui::Spacing();
+
+		RenderAddActionRow();
 
 		const auto& actions = m_InputActionManager.GetActions();
 
@@ -561,7 +561,7 @@ namespace Ember {
 		float buttonsWidth = buttonSize * 2.0f + style.ItemSpacing.x;
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-			ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen;
+			ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding;
 
 		// The node spans the row, so the buttons that follow have to be allowed to sit on top of it.
 		ImGui::SetNextItemAllowOverlap();

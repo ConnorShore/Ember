@@ -15,6 +15,17 @@ The center toolbar controls editor runtime state:
 
 `Ctrl+Enter` starts Play mode from Edit mode and stops it from Play mode.
 
+Play mode captures the cursor and the input for the game. **`Shift+F1`** hands both back to the
+editor without pausing, so you can inspect panels while the game keeps running; clicking the viewport
+takes them back. While the editor holds input the game keeps ticking but reads nothing — mouse look
+does not follow the pointer across the editor, and typing in a panel does not drive the player. A key
+still held when you click back in reads as held, not as a fresh press.
+
+The chord is deliberately not `Escape`, so games keep `Escape` for their own menus: the editor never
+sees that press, and the game never sees `Shift+F1`. Releasing input is separate from the cursor
+mode, so a script calling `Input.SetCursorMode(CursorMode.Normal)` for its own menu gets the editor's
+mouse back without losing gameplay input.
+
 When Play mode starts, Ember creates a runtime scene copy and fresh Lua state. When you stop, the
 editor returns to the edit scene. Make structural scene edits in Edit mode, then press Play again to
 test them.

@@ -74,14 +74,6 @@ namespace Ember {
 		// 3. Step the game loop! 
 		// (This internally handles physics, scripts, AI, and calls your RenderSystem)
 		Application::Instance().GetSceneManager().GetActiveScene()->OnUpdateRuntime(delta);
-
-		// 3. Handle exiting the game
-		// In a real game you'd probably open a pause menu here, but for now we just quit.
-		if (Input::IsKeyPressed(KeyCode::Escape))
-		{
-			// Assuming your Application has a Close() or Quit() method to break the while loop
-			Input::SetCursorMode(CursorMode::Normal);
-		}
 	}
 
 	bool RuntimeLayer::OnWindowResize(WindowResizeEvent& e)

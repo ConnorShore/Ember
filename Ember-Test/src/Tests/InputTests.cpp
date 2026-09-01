@@ -309,6 +309,7 @@ namespace {
 		{
 			// A zero offset pulses nothing, so this clears the wheel without leaving an edge behind.
 			Input::SetMouseScrollOffset(Vector2f(0.0f, 0.0f));
+			Input::SetGameplayInputSuppressed(false);
 			Input::ClearAllStates();
 			Input::BeginFrame();
 			Input::BeginFrame();
@@ -1096,6 +1097,185 @@ EB_TEST_CASE(Input, ConsumeOnlyTouchesActionsBoundToThatControl, Unit)
 	EB_EXPECT_MSG(actions.IsActionPressed("Fire"), "consuming one control silenced an unrelated action");
 }
 
+// The point of consuming by action: two actions on one physical control, where acting on the first
+// must not leave the second free to act on the very same press.
+EB_TEST_CASE(Input, ConsumeActionSilencesEveryActionOnTheControlThatFired, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions;
+	actions.AddAction({ "Interact", { ParseTrigger("Key/E"), ParseTrigger("Mouse/Left") } });
+	actions.AddAction({ "NavBack",  { ParseTrigger("Mouse/Left") } });
+
+	Input::SetMouseControlState(MouseControl::Left, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionPressed("Interact"));
+	EB_CHECK(actions.IsActionPressed("NavBack"));
+
+	actions.ConsumeAction("Interact");
+	EB_EXPECT_FALSE(actions.IsActionPressed("Interact"));
+	EB_EXPECT_MSG(!actions.IsActionPressed("NavBack"), "the other action on that control kept the press");
+
+	// Still held, so the latch has to outlive the frame rather than handing the press over late.
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionPressed("NavBack"));
+}
+
+// Only the control that actually fired is taken away, so the action's other bindings keep working.
+EB_TEST_CASE(Input, ConsumeActionLeavesTheTriggersThatDidNotFireAlone, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions;
+	actions.AddAction({ "Interact", { ParseTrigger("Key/E"), ParseTrigger("Mouse/Left") } });
+	actions.AddAction({ "TypeE",    { ParseTrigger("Key/E") } });
+
+	Input::SetMouseControlState(MouseControl::Left, true);
+	StepActions(actions);
+	actions.ConsumeAction("Interact");
+
+	// E never fired, so consuming the click must not have silenced the key-bound action too.
+	Input::SetKeyState(KeyCode::E, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionPressed("TypeE"));
+}
+
+// LastControl still names whatever fired last, so consuming an idle action would silence a control
+// the player is not touching.
+EB_TEST_CASE(Input, ConsumeActionDoesNothingWhileTheActionIsIdle, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Interact", "Key/E");
+
+	Input::SetKeyState(KeyCode::E, true);
+	StepActions(actions);
+	Input::SetKeyState(KeyCode::E, false);
+	StepActions(actions);
+	EB_CHECK_FALSE(actions.IsActionDown("Interact"));
+
+	actions.ConsumeAction("Interact");
+
+	Input::SetKeyState(KeyCode::E, true);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionPressed("Interact"));
+}
+
+EB_TEST_CASE(Input, ConsumeActionIgnoresAnUnknownName, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Interact", "Key/E");
+
+	Input::SetKeyState(KeyCode::E, true);
+	StepActions(actions);
+
+	actions.ConsumeAction("Nope");
+	EB_EXPECT(actions.IsActionPressed("Interact"));
+}
+
+// Regression: releasing the cursor to the editor left the game reading mouse travel, so the camera
+// kept turning as the pointer crossed the editor UI.
+EB_TEST_CASE(Input, SuppressedGameplayInputZeroesTheMouseDelta, Unit)
+{
+	InputStateGuard guard;
+	const Vector2f savedPosition = Input::GetMousePosition();
+
+	Input::UpdateMousePosition(Vector2f(100.0f, 100.0f));
+	Input::ResetMouseDelta();
+
+	Input::SetGameplayInputSuppressed(true);
+	Input::UpdateMousePosition(Vector2f(140.0f, 130.0f));
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(0.0f, 0.0f), 1e-4f);
+	EB_EXPECT_VEC2_NEAR(Input::GetRawMouseDelta(), Vector2f(0.0f, 0.0f), 1e-4f);
+
+	// Travel that happened while the editor held the pointer must not arrive when it hands back.
+	Input::ResetMouseDelta();
+	Input::SetGameplayInputSuppressed(false);
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(0.0f, 0.0f), 1e-4f);
+
+	Input::UpdateMousePosition(Vector2f(145.0f, 130.0f));
+	EB_EXPECT_VEC2_NEAR(Input::GetMouseDelta(), Vector2f(5.0f, 0.0f), 1e-4f);
+
+	Input::UpdateMousePosition(savedPosition);
+	Input::ResetMouseDelta();
+}
+
+EB_TEST_CASE(Input, SuppressedGameplayInputLeavesActionsIdle, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("MoveForward", "Key/W");
+
+	Input::SetKeyState(KeyCode::W, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("MoveForward"));
+
+	Input::SetGameplayInputSuppressed(true);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveForward"));
+	EB_EXPECT_FALSE(actions.IsActionPressed("MoveForward"));
+	EB_EXPECT_NEAR(actions.GetActionStrength("MoveForward"), 0.0f, 0.0001f);
+}
+
+// A key held across the handover comes back held, not as a new press - otherwise clicking into the
+// viewport with a key down would fire whatever that key triggers.
+EB_TEST_CASE(Input, InputHandedBackIsHeldRatherThanAFreshPress, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionPressed("Jump"));
+
+	Input::SetGameplayInputSuppressed(true);
+	StepActions(actions);
+	StepActions(actions);
+	EB_CHECK_FALSE(actions.IsActionDown("Jump"));
+
+	Input::SetGameplayInputSuppressed(false);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("Jump"));
+	EB_EXPECT_MSG(!actions.IsActionPressed("Jump"), "a key held across the handover fired a fresh press");
+}
+
+// The mirror image: a key let go while the editor held input must not deliver its release late.
+EB_TEST_CASE(Input, ReleaseDuringSuppressionIsNotDeliveredLate, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Fire", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionDown("Fire"));
+
+	Input::SetGameplayInputSuppressed(true);
+	StepActions(actions);
+	Input::SetKeyState(KeyCode::Space, false);
+	StepActions(actions);
+
+	Input::SetGameplayInputSuppressed(false);
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionDown("Fire"));
+	EB_EXPECT_MSG(!actions.IsActionReleased("Fire"), "a release from during the handover arrived late");
+}
+
+// Suppression is a separate gate from consumption, so it must not clear a latch that is still owed.
+EB_TEST_CASE(Input, SuppressionDoesNotCancelAConsumedLatch, Unit)
+{
+	InputStateGuard guard;
+	InputActionManager actions = MakeManager("Jump", "Key/Space");
+
+	Input::SetKeyState(KeyCode::Space, true);
+	StepActions(actions);
+	actions.ConsumeAction("Jump");
+
+	Input::SetGameplayInputSuppressed(true);
+	StepActions(actions);
+	Input::SetGameplayInputSuppressed(false);
+	StepActions(actions);
+
+	// Space never came up, so the consumed press is still owed and must stay swallowed.
+	EB_EXPECT_FALSE(actions.IsActionDown("Jump"));
+	EB_EXPECT_FALSE(actions.IsActionPressed("Jump"));
+}
+
 namespace {
 
 	// Gamepad state is global and is only refreshed while a real pad is polled, so a test that pokes
@@ -1154,6 +1334,36 @@ EB_TEST_CASE(Input, GamepadButtonTriggerMatchesOnlyTheButtonItNames, Unit)
 	StepActions(actions);
 	EB_EXPECT_FALSE(actions.IsActionDown("Fire"));
 	EB_EXPECT(actions.IsActionReleased("Fire"));
+}
+
+// Regression: Interact and NavBack shared Gamepad/B, so the press that opened a menu was still
+// readable as a close by the menu's own check later in the same frame, and it never stayed open.
+EB_TEST_CASE(Input, ConsumingASharedGamepadButtonStopsTheOpenAndCloseInOneFrame, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions;
+	actions.AddAction({ "Interact", { ParseTrigger("Key/E"), ParseTrigger("Gamepad/B") } });
+	actions.AddAction({ "NavBack",  { ParseTrigger("Gamepad/B") } });
+
+	Input::SetGamepadButtonPressed(0, GamepadButton::B);
+	StepActions(actions);
+	EB_CHECK(actions.IsActionPressed("Interact"));
+
+	// What the interaction script does the moment it dispatches the interact.
+	actions.ConsumeAction("Interact");
+	EB_EXPECT_MSG(!actions.IsActionPressed("NavBack"), "the interact press also read as a NavBack press");
+
+	StepActions(actions);
+	EB_EXPECT_FALSE(actions.IsActionPressed("NavBack"));
+
+	// A fresh press is the player asking to close, and has to get through.
+	Input::SetGamepadButtonReleased(0, GamepadButton::B);
+	StepActions(actions);
+	Input::SetGamepadButtonPressed(0, GamepadButton::B);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionPressed("NavBack"));
 }
 
 // The point of half-axis triggers: on one axis without a direction both actions would report the
@@ -1522,7 +1732,7 @@ EB_TEST_CASE(Input, LuaInputTableExposesEveryQuery, Integration)
 		"IsMouseControlDown", "IsMouseControlPressed", "IsMouseControlReleased",
 		"IsMouseButtonDown", "IsMouseButtonPressed", "IsMouseButtonReleased",
 		"IsModifierDown", "IsModifierActive", "GetActiveModifiers",
-		"IsActionDown", "IsActionPressed", "IsActionReleased",
+		"IsActionDown", "IsActionPressed", "IsActionReleased", "ConsumeAction",
 		"GetMousePosition", "GetMouseScrollOffset", "GetMouseDelta",
 		"GetViewportMousePosition", "SetCursorMode", "GetCursorMode",
 	};
@@ -1643,6 +1853,27 @@ EB_TEST_CASE(Input, LuaActionQueriesFollowTheActionManager, Integration)
 
 	EB_EXPECT_FALSE(LuaBool("return Input.IsActionDown('Jump')"));
 	EB_EXPECT(LuaBool("return Input.IsActionReleased('Jump')"));
+}
+
+// The script-facing half of the shared-button fix: a script acts on the press, consumes it, and the
+// action a different script polls on the same button stops seeing it.
+EB_TEST_CASE(Input, LuaConsumeActionSilencesTheSharedControl, Integration)
+{
+	InputStateGuard guard;
+	ScopedGlobalActions actions;
+
+	actions.Manager.AddAction({ "Interact", { ParseTrigger("Key/E") } });
+	actions.Manager.AddAction({ "NavBack",  { ParseTrigger("Key/E") } });
+
+	Input::SetKeyState(KeyCode::E, true);
+	Input::BeginFrame();
+	actions.Manager.Evaluate();
+	EB_CHECK(LuaBool("return Input.IsActionPressed('Interact')"));
+
+	EB_EXPECT(LuaBool("Input.ConsumeAction('Interact') return not Input.IsActionPressed('NavBack')"));
+
+	// A name no action has must not throw its way out of the binding.
+	EB_EXPECT(LuaBool("Input.ConsumeAction('Nope') return true"));
 }
 
 // A typo in a script has to come back false rather than read past the end of the state array.

@@ -948,6 +948,7 @@ Input.GetActiveModifiers()                -- int, the whole modifier bitmask
 Input.IsActionDown("Jump")                -- bool, any of the action's triggers is active
 Input.IsActionPressed("Jump")             -- bool, went down this frame
 Input.IsActionReleased("Jump")            -- bool, came up this frame
+Input.ConsumeAction("Interact")           -- swallow the press you just acted on
 
 Input.GetActionStrength("MoveRight")      -- number, 0..1 (a key is 1, a stick is how far it moved)
 Input.GetAxis("MoveLeft", "MoveRight")    -- number, -1..1 from a pair of actions
@@ -992,6 +993,23 @@ is held. For a chord that has to match exactly, compare the mask itself —
 The `IsAction*` queries read the input actions defined in **Project Settings → Input**, so a game
 can rebind controls without touching script. An unknown action name logs an error and returns
 false rather than failing the call.
+
+Reading an action never spends it. `IsActionPressed` is one flag per action for the whole frame, so
+every script that asks during that frame gets the same answer — two actions sharing one physical
+button both report the press, and a script that opens a menu mid-frame will have that menu's own
+close check read the very same press further down the frame. `Input.ConsumeAction` is the way out:
+call it right after acting on a press, and whichever control is actuating that action goes quiet for
+every action bound to it until the player physically releases it. It does nothing if the action is
+not actuating, so it is safe to call unconditionally.
+
+```lua
+if Input.IsActionPressed("Interact") then
+    interactable:OnInteract(interactableEntity, entity)
+
+    -- Interact and NavBack share a button, so this stops the menu we just opened seeing the press.
+    Input.ConsumeAction("Interact")
+end
+```
 
 `GetActionStrength` is the analog version of `IsActionDown`: a key or button reports 1, a gamepad
 axis reports how far it actually moved, and the strongest trigger on the action wins. `GetAxis`

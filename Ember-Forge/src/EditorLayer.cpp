@@ -212,8 +212,8 @@ namespace Ember {
 		// Publish the docked viewport rect so UI hit-testing and scripts get viewport-local mouse coords.
 		// Bounds come from the ImGui pass, so this is one frame behind - the same lag OnMouseClick lives with.
 		//
-		// Play mode sets ImGuiConfigFlags_NoMouse, which makes IsWindowHovered() report false for the
-		// whole session - so m_ViewportHovered is only a meaningful gate while editing.
+		// ImGuiConfigFlags_NoMouse makes IsWindowHovered() report false, so m_ViewportHovered is only a
+		// meaningful gate while editing or once Play has handed the cursor back.
 		Vector2f viewportExtent = m_ViewportBounds[1] - m_ViewportBounds[0];
 		if (viewportExtent.x > 0.0f && viewportExtent.y > 0.0f)
 		{
@@ -356,12 +356,19 @@ namespace Ember {
 		// Set cursor locking
 		if (m_Context.CurrentSceneState == SceneState::Play)
 		{
-			if (Input::IsKeyPressed(KeyCode::Escape))
+			// A chord no game binds, so Escape stays gameplay's - and releasing the cursor is not a
+			// pause, since watching a game keep running is the reason to want the mouse back.
+			if (Input::IsKeyPressed(KeyCode::F1) && Input::IsModifierActive(KeyModifier::Shift))
 			{
 				Input::SetCursorMode(CursorMode::Normal);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
-				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
-				m_Context.CurrentSceneState = SceneState::Pause;
+
+				// The game keeps running, but its input is the editor's now - otherwise the camera
+				// keeps turning as the pointer crosses the editor, and typing still drives the player.
+				Input::SetGameplayInputSuppressed(true);
+
+				// Gameplay polls actions after this layer, so an unconsumed F1 would reach the game too.
+				Application::Instance().GetInputActionManager().ConsumeControl(InputDevice::Keyboard, KeyCode::F1);
 			}
 
 			// Clicking a UI element must not grab the cursor - a locked cursor reports unbounded
@@ -373,9 +380,22 @@ namespace Ember {
 			{
 				Input::SetCursorMode(CursorMode::Locked);
 				Input::SetMousePosition(m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f);
-				ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+
+				// Recentring just moved the pointer a long way; without dropping that, the first frame
+				// back would hand the camera the whole trip across the editor as one look delta.
+				Input::ResetMouseDelta();
+				Input::SetGameplayInputSuppressed(false);
 			}
 		}
+
+		// ImGui ignores the mouse exactly while the game holds the cursor. Derived from the live
+		// cursor mode rather than stamped at each transition, so a script that releases it for its
+		// own menu hands the editor its mouse back too.
+		bool gameHoldsCursor = m_Context.CurrentSceneState == SceneState::Play && Input::GetCursorMode() == CursorMode::Locked;
+		if (gameHoldsCursor)
+			ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		else
+			ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
 
 		RenderAction::SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
 		RenderAction::Clear(RendererAPI::RenderBit::Color);
@@ -601,7 +621,12 @@ namespace Ember {
 
 			Input::SetCursorMode(CursorMode::Locked);
 			Input::SetMousePosition({ m_ViewportBounds[0].x + m_ViewportSize.x / 2.0f, m_ViewportBounds[0].y + m_ViewportSize.y / 2.0f });
-			ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+			Input::ResetMouseDelta();
+			Input::SetGameplayInputSuppressed(false);
+
+			// The cursor is captured from here on, and the chord that frees it is not guessable.
+			auto hint = UINotificationEvent("Play mode - press Shift+F1 to release the cursor.", UINotificationEvent::Severity::Info);
+			m_Context.EventCallback(hint);
 
 			ProjectManager::GetActive()->ResetSceneIndex();
 		}
@@ -656,7 +681,7 @@ namespace Ember {
 		}
 
 		Input::SetCursorMode(CursorMode::Normal);
-		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+		Input::SetGameplayInputSuppressed(false);
 	}
 
 	void EditorLayer::StopRuntimeAfterError(const std::string& message)
@@ -684,7 +709,7 @@ namespace Ember {
 				m_Context.CurrentSceneState = SceneState::Edit;
 				Application::Instance().GetSceneManager().SetActiveScene(m_EditorScene);
 				Input::SetCursorMode(CursorMode::Normal);
-				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+				Input::SetGameplayInputSuppressed(false);
 			}
 			catch (...)
 			{
@@ -692,14 +717,14 @@ namespace Ember {
 				m_Context.CurrentSceneState = SceneState::Edit;
 				Application::Instance().GetSceneManager().SetActiveScene(m_EditorScene);
 				Input::SetCursorMode(CursorMode::Normal);
-				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+				Input::SetGameplayInputSuppressed(false);
 			}
 		}
 		else
 		{
 			m_Context.CurrentSceneState = SceneState::Edit;
 			Input::SetCursorMode(CursorMode::Normal);
-			ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+			Input::SetGameplayInputSuppressed(false);
 		}
 	}
 

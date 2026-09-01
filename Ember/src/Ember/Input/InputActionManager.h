@@ -17,6 +17,10 @@ namespace Ember {
 		// of the frame, so without this one button press is consumed twice in the same frame.
 		void ConsumeControl(InputDevice device, const InputControlId& control);
 
+		// The same swallow by action name, silencing whichever control is actuating it right now - so
+		// every other action bound to that same button goes quiet with it.
+		void ConsumeAction(std::string_view actionName);
+
 		bool IsActionDown(std::string_view actionName);
 		bool IsActionPressed(std::string_view actionName);
 		bool IsActionReleased(std::string_view actionName);
