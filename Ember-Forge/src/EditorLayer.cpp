@@ -204,6 +204,11 @@ namespace Ember {
 
 	void EditorLayer::OnUpdate(TimeStep delta)
 	{
+		// While the game is playing its input belongs to the game, so ImGui's keyboard/gamepad
+		// navigation is off - otherwise arrow keys walk the editor's tabs and widgets mid-game.
+		// Derived every frame rather than at each transition so every path in and out of Play agrees.
+		Application::Instance().GetImGuiLayer().SetNavigationEnabled(m_Context.CurrentSceneState != SceneState::Play);
+
 		// Publish the docked viewport rect so UI hit-testing and scripts get viewport-local mouse coords.
 		// Bounds come from the ImGui pass, so this is one frame behind - the same lag OnMouseClick lives with.
 		//

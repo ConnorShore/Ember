@@ -18,6 +18,18 @@ namespace Ember {
 			}
 		}
 
+		// How hard a control has to be pushed before a digital read counts it as pressed. Anything
+		// that is already on/off reports 1.0, so only the analog gamepad axes really need this.
+		float GetTriggerActuation(const InputTrigger& trigger)
+		{
+			if (trigger.Device != InputDevice::Gamepad || !std::holds_alternative<GamepadAxis>(trigger.ControlId))
+				return 1.0f;
+
+			GamepadAxis axis = std::get<GamepadAxis>(trigger.ControlId);
+			bool isTrigger = axis == GamepadAxis::LeftTrigger || axis == GamepadAxis::RightTrigger;
+			return isTrigger ? Input::GamepadTriggerActuation : Input::GamepadStickActuation;
+		}
+
 		// Zero when the trigger's control is not engaged; signed only for a Full-direction axis.
 		float GetTriggerStrength(const InputTrigger& trigger)
 		{
@@ -88,6 +100,7 @@ namespace Ember {
 			state.JustReleased = false;
 			state.Strength = 0.0f;
 
+			float actuation = 1.0f;
 			for (const InputTrigger& trigger : action.Triggers)
 			{
 				const float strength = GetTriggerStrength(trigger);
@@ -96,13 +109,17 @@ namespace Ember {
 
 				// The strongest trigger wins, so a stick and a key bound to the same action do not
 				// fight over which one gets reported.
-				if (state.IsDown && Math::Abs(strength) <= Math::Abs(state.Strength))
+				if (Math::Abs(strength) <= Math::Abs(state.Strength))
 					continue;
 
-				state.IsDown = true;
 				state.Strength = strength;
 				state.LastDevice = trigger.Device;
+				actuation = GetTriggerActuation(trigger);
 			}
+
+			// Strength stays analog for whoever wants it; only the digital read is thresholded, so a
+			// stick can report a gentle 0.2 lean without every direction claiming to be held down.
+			state.IsDown = state.Strength != 0.0f && Math::Abs(state.Strength) >= actuation;
 
 			if (state.IsDown && !wasDown)
 				state.JustPressed = true;

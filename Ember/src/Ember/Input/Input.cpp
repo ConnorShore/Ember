@@ -35,6 +35,8 @@ namespace Ember {
 
 	bool Input::s_ViewportInputActive = true;
 
+	InputDevice Input::s_LastUsedDevice = InputDevice::None;
+
 	void Input::BeginFrame()
 	{
 		// Update snapshots of key states
@@ -270,12 +272,44 @@ namespace Ember {
 		s_PreviousMousePosition = s_MousePosition;
 	}
 
-	void Input::SetGamepadControlPressed(size_t index, GamepadButton button)
+	bool Input::IsAnyGamepadActive()
+	{
+		return std::any_of(s_GamepadStates.begin(), s_GamepadStates.end(),
+			[](const GamepadState& state) { return state.Connected; });
+	}
+	
+	bool Input::IsGamepadActive(size_t index)
+	{
+		return s_GamepadStates[index].Connected;
+	}
+
+	bool Input::IsGamepadButtonPressed(size_t index, GamepadButton button)
+	{
+		return s_GamepadStates[index].Down & (1 << static_cast<GamepadButtonType>(button)) 
+			&& !(s_GamepadStates[index].PreviousDown & (1 << static_cast<GamepadButtonType>(button)));
+	}
+
+	bool Input::IsGamepadButtonReleased(size_t index, GamepadButton button)
+	{
+		return !(s_GamepadStates[index].Down & (1 << static_cast<GamepadButtonType>(button)));
+	}
+
+	bool Input::IsGamepadButtonDown(size_t index, GamepadButton button)
+	{
+		return s_GamepadStates[index].Down & (1 << static_cast<GamepadButtonType>(button));
+	}
+
+	float Input::GetGamepadAxis(size_t index, GamepadAxis axis)
+	{
+		return s_GamepadStates[index].Axis[static_cast<GamepadButtonType>(axis)];
+	}
+
+	void Input::SetGamepadButtonPressed(size_t index, GamepadButton button)
 	{
 		s_GamepadStates[index].Down |= (1 << static_cast<GamepadButtonType>(button));
 	}
 
-	void Input::SetGamepadControlReleased(size_t index, GamepadButton button)
+	void Input::SetGamepadButtonReleased(size_t index, GamepadButton button)
 	{
 		s_GamepadStates[index].Down &= ~(1 << static_cast<GamepadButtonType>(button));
 	}
@@ -298,73 +332,6 @@ namespace Ember {
 	GamepadButtonMask Input::ReleasedMask(const GamepadState& s)
 	{
 		return ~s.Down & s.PreviousDown;
-	}
-
-	void Input::PrintActiveGamepadControls()
-	{
-		// A resting stick rarely reads exactly zero, so the print needs its own floor.
-		constexpr float axisPrintThreshold = 0.01f;
-
-		bool anyActive = false;
-		size_t connectedCount = 0;
-
-		for (size_t index = 0; index < MaxGamepads; index++)
-		{
-			const GamepadState& state = s_GamepadStates[index];
-			if (!state.Connected)
-			{
-				continue;
-			}
-
-			connectedCount++;
-
-			const GamepadButtonMask pressed = PressedMask(state);
-			std::string controls;
-
-			for (GamepadButtonType button = 0; button < static_cast<GamepadButtonType>(GamepadButton::Last); button++)
-			{
-				const GamepadButtonMask bit = static_cast<GamepadButtonMask>(1 << button);
-				if (!(state.Down & bit))
-				{
-					continue;
-				}
-
-				controls += std::format("\n    {} ({})",
-					GamepadButtonToString(static_cast<GamepadButton>(button)),
-					(pressed & bit) ? "pressed" : "held");
-			}
-
-			for (size_t axis = 0; axis < GamepadAxisArraySize; axis++)
-			{
-				if (Math::Abs(state.Axis[axis]) < axisPrintThreshold)
-				{
-					continue;
-				}
-
-				controls += std::format("\n    {} ({:.3f})",
-					GamepadAxisToString(static_cast<GamepadAxis>(axis)),
-					state.Axis[axis]);
-			}
-
-			if (controls.empty())
-			{
-				continue;
-			}
-
-			anyActive = true;
-			EB_CORE_INFO("Gamepad {} active controls:{}", index, controls);
-		}
-
-		// Distinguished deliberately: "nothing plugged in" and "plugged in but idle" are the two
-		// answers you need when a pad appears to do nothing, and they are not the same problem.
-		if (connectedCount == 0)
-		{
-			EB_CORE_INFO("No gamepads connected.");
-		}
-		else if (!anyActive)
-		{
-			EB_CORE_INFO("{} gamepad(s) connected, no controls active.", connectedCount);
-		}
 	}
 
 	void Input::SetViewportRect(const Vector2f& min, const Vector2f& size, bool inputActive)

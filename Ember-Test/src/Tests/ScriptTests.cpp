@@ -1270,3 +1270,42 @@ EB_TEST_CASE(Script, GameDataHandlesAddressSeparateFiles, Integration)
 	EB_EXPECT_MSG(result.get<int>(3) == 20, "the settings file did not round-trip its own value");
 	EB_EXPECT_MSG(result.get<bool>(4), "the settings file lost its bool value");
 }
+
+// The gamepad reads are only usable from Lua if their enums are bound alongside them - an unbound
+// enum turns every call into a type error rather than a missing-name one, so both are checked here.
+EB_TEST_CASE(Script, GamepadBindingsReadInjectedPadState, Unit)
+{
+	GamepadState& pad = Input::GetGamepadState(0);
+	const bool wasConnected = pad.Connected;
+	const InputDevice previousDevice = Input::GetLastUsedInputDevice();
+
+	pad.Connected = true;
+	Input::SetGamepadButtonPressed(0, GamepadButton::A);
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.75f);
+	Input::SetLastUsedInputDevice(InputDevice::Gamepad);
+
+	sol::state& lua = ScriptEngine::GetState();
+	const sol::protected_function_result result = lua.script(R"(
+		return Input.IsAnyGamepadActive(),
+			Input.IsGamepadActive(0),
+			Input.IsGamepadButtonDown(0, GamepadButton.A),
+			Input.IsGamepadButtonDown(0, GamepadButton.B),
+			Input.GetGamepadAxis(0, GamepadAxis.LeftX),
+			Input.GetLastUsedInputDevice() == InputDevice.Gamepad
+	)", sol::script_pass_on_error);
+
+	pad.Down = 0;
+	pad.PreviousDown = 0;
+	pad.Axis.fill(0.0f);
+	pad.Connected = wasConnected;
+	Input::SetLastUsedInputDevice(previousDevice);
+
+	EB_CHECK_MSG(result.valid(), "the gamepad bindings raised a Lua error");
+
+	EB_EXPECT(result.get<bool>(0));
+	EB_EXPECT(result.get<bool>(1));
+	EB_EXPECT(result.get<bool>(2));
+	EB_EXPECT_FALSE(result.get<bool>(3));
+	EB_EXPECT_NEAR(result.get<float>(4), 0.75f, 1e-5);
+	EB_EXPECT(result.get<bool>(5));
+}

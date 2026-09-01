@@ -41,7 +41,10 @@ namespace Ember {
 		void Activate(Scene* scene, EntityID entity);
 		void SyncToggleVisuals(Scene* scene);
 		EntityID FindSelectableInDirection(Scene* scene, EntityID from, const Vector2f& direction) const;
+		void Navigate(Scene* scene, const Vector2f& direction);
 		bool ConsumeKeyEdge(KeyCode key);
+		bool ConsumeGamepadButtonEdge(GamepadButton button);
+		bool ConsumeGamepadAxisEdge(GamepadAxis axis, bool positive);
 
 		EntityID FindFirstSelectable(Scene* scene) const;
 
@@ -58,6 +61,12 @@ namespace Ember {
 
 		// Input exposes level state only, so edges are derived here rather than widening its API.
 		std::unordered_map<KeyCode, bool> m_PreviousKeyStates;
+		std::unordered_map<GamepadButton, bool> m_PreviousGamepadStates;
+
+		// A stick's two directions need separate latches, or flicking from one to the other reads
+		// as "still held" and the second direction never fires.
+		std::unordered_map<GamepadAxis, bool> m_PreviousGamepadAxesPositive;
+		std::unordered_map<GamepadAxis, bool> m_PreviousGamepadAxesNegative;
 	};
 
 }

@@ -941,6 +941,16 @@ Input.GetMousePosition()                  -- Vector2f
 Input.GetMouseScrollOffset()              -- Vector2f
 Input.GetMouseDelta()                     -- Vector2f, since last frame
 
+Input.IsAnyGamepadActive()                -- bool, is any pad connected
+Input.IsGamepadActive(0)                  -- bool, is this pad connected
+Input.IsGamepadButtonDown(0, GamepadButton.A)      -- bool, currently held
+Input.IsGamepadButtonPressed(0, GamepadButton.A)   -- bool, went down this frame
+Input.IsGamepadButtonReleased(0, GamepadButton.A)  -- bool, not held
+Input.GetGamepadAxis(0, GamepadAxis.LeftX)         -- number, -1..1 (triggers are 0..1)
+
+Input.GetLastUsedInputDevice()            -- InputDevice, what the player touched last
+Input.SetLastUsedInputDevice(InputDevice.Gamepad)
+
 Input.SetCursorMode(mode)
 Input.GetCursorMode()
 
@@ -968,6 +978,28 @@ subtracts one action's strength from another's, and `GetAxis2D` pairs two of tho
 vector — so a stick and WASD drive the same code as long as each direction is its own action. In the
 trigger picker a stick axis can be bound whole or as a single half (`Left Stick Left` is the
 negative half of `LeftX`), and a half only reports while the stick is pushed that way.
+
+Prefer the `IsAction*` / `GetAxis*` calls over the raw `Input.IsGamepad*` reads: they are
+rebindable, and they already handle the keyboard. The raw reads are for the cases actions cannot
+express - a specific physical button on a specific pad, or a stick you want unfiltered by an action
+mapping. The pad index is **0-based**, so player one is `0`, and up to four pads are polled.
+
+`GetGamepadAxis` returns the deadzoned, rescaled value: a stick reads -1..1 with a radial deadzone
+applied to the pair (so pushing one axis fully never leaves the other exactly zero), and a trigger
+reads 0..1 rather than the -1..1 the OS reports. `IsGamepadButtonReleased` means "not held right
+now", not "came up this frame".
+
+`GetLastUsedInputDevice` reports whichever device produced the most recent input - use it to switch
+button prompts between key glyphs and pad glyphs without polling every control yourself. It updates
+on key, mouse and pad activity; `SetLastUsedInputDevice` lets a game force it, e.g. to pin the
+prompts to one device in a settings menu.
+
+> A digital read of an analog control needs the control to travel past an **actuation point**
+> before it counts as pressed: half a stick's throw, or a light pull on a trigger
+> (`Input::GamepadStickActuation` / `GamepadTriggerActuation` in C++). Without it a stick pushed
+> "straight" forward - which always leaves a few percent on the other axis - would hold the
+> perpendicular direction down too and movement could only ever come out diagonal. `GetActionStrength`
+> is unaffected and still reports the full analog value.
 
 > A trigger's required modifiers are a **subset** test: all of them must be held, and anything else
 > held alongside is ignored. So `Key/W` keeps firing while Shift is held (sprint does not cancel
@@ -1003,6 +1035,12 @@ viewport panel's position.
   wheel that `MouseButton` cannot name.
 - **`CursorMode`** — `Normal` (`0`), `Hidden` (`1`), `Locked` (`2`). `Input.SetCursorMode` also
   accepts the raw integer.
+- **`GamepadButton`** — `A`, `B`, `X`, `Y`, `LeftBumper`, `RightBumper`, `Back`, `Start`, `Guide`,
+  `LeftThumb`, `RightThumb`, `DPadUp`, `DPadRight`, `DPadDown`, `DPadLeft`, `Last`. Named after the
+  Xbox layout, which is the layout GLFW maps every pad onto — on a PlayStation pad `A` is Cross and
+  `B` is Circle.
+- **`GamepadAxis`** — `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`, `Last`.
+- **`InputDevice`** — `None`, `Keyboard`, `Mouse`, `Gamepad`. What `GetLastUsedInputDevice` returns.
 
 ---
 

@@ -53,6 +53,29 @@ namespace Ember {
 			"Locked", CursorMode::Locked
 		);
 
+		state.new_enum("InputDevice",
+			"None", InputDevice::None,
+			"Keyboard", InputDevice::Keyboard,
+			"Mouse", InputDevice::Mouse,
+			"Gamepad", InputDevice::Gamepad
+		);
+
+		// Gamepad controls come from GamepadButton.inl / GamepadAxis.inl, same as the key list, and
+		// use the leading-comma form because neither table has a sentinel to close the pack with.
+		state.new_enum("GamepadButton"
+#define EB_GAMEPAD_BUTTON(name, value) , #name, GamepadButton::name
+#include "Ember/Input/GamepadButton.inl"
+#undef EB_GAMEPAD_BUTTON
+			, "Last", GamepadButton::Last
+		);
+
+		state.new_enum("GamepadAxis"
+#define EB_GAMEPAD_AXIS(name, value) , #name, GamepadAxis::name
+#include "Ember/Input/GamepadAxis.inl"
+#undef EB_GAMEPAD_AXIS
+			, "Last", GamepadAxis::Last
+		);
+
 		auto inputTable = state.create_named_table("Input");
 		inputTable.set_function("IsKeyDown", &Input::IsKeyDown);
 		inputTable.set_function("IsKeyReleased", &Input::IsKeyReleased);
@@ -95,6 +118,18 @@ namespace Ember {
 		// Viewport-local, bottom-left origin - the space UI rects are laid out in. Unlike
 		// GetMousePosition this is correct inside the editor's docked viewport during Play.
 		inputTable.set_function("GetViewportMousePosition", &Input::GetViewportMousePosition);
+
+		// Pad index is 0-based, so player one is 0.
+		inputTable.set_function("IsAnyGamepadActive", &Input::IsAnyGamepadActive);
+		inputTable.set_function("IsGamepadActive", &Input::IsGamepadActive);
+		inputTable.set_function("IsGamepadButtonDown", &Input::IsGamepadButtonDown);
+		inputTable.set_function("IsGamepadButtonPressed", &Input::IsGamepadButtonPressed);
+		inputTable.set_function("IsGamepadButtonReleased", &Input::IsGamepadButtonReleased);
+		inputTable.set_function("GetGamepadAxis", &Input::GetGamepadAxis);
+
+		// What the player touched last, so prompts can switch between key and button glyphs.
+		inputTable.set_function("GetLastUsedInputDevice", &Input::GetLastUsedInputDevice);
+		inputTable.set_function("SetLastUsedInputDevice", &Input::SetLastUsedInputDevice);
 
 		auto uiTable = state.create_named_table("UI");
 

@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "InputDevice.h"
 #include "InputCode.h"
 #include "GamepadState.h"
 #include "Ember/Math/Math.h"
@@ -17,6 +18,12 @@ namespace Ember {
 		inline static float MouseDeadzone = 1.5f;
 		inline static float GamepadStickDeadzone = 0.15f;
 		inline static float GamepadTriggerDeadzone = 0.05f;
+
+		// How far an analog control must travel before a digital read (IsActionDown and friends)
+		// calls it pressed. A stick needs a high bar because pushing it straight up still leaves a
+		// little X on the other axis, which would otherwise hold that direction down permanently.
+		inline static float GamepadStickActuation = 0.5f;
+		inline static float GamepadTriggerActuation = 0.15f;
 
 		inline static constexpr size_t MaxGamepads = 4;
 
@@ -69,15 +76,21 @@ namespace Ember {
 
 		static void ResetMouseDelta();
 
-		static void SetGamepadControlPressed(size_t index, GamepadButton button);
-		static void SetGamepadControlReleased(size_t index, GamepadButton button);
+		static bool IsAnyGamepadActive();
+		static bool IsGamepadActive(size_t index);
+
+		static bool IsGamepadButtonPressed(size_t index, GamepadButton button);
+		static bool IsGamepadButtonReleased(size_t index, GamepadButton button);
+		static bool IsGamepadButtonDown(size_t index, GamepadButton button);
+		static float GetGamepadAxis(size_t index, GamepadAxis axis);
+
+		static void SetGamepadButtonPressed(size_t index, GamepadButton button);
+		static void SetGamepadButtonReleased(size_t index, GamepadButton button);
 		static void SetGamepadAxis(size_t index, GamepadAxis axis, float strength);
+
 		static GamepadState& GetGamepadState(size_t index);
 		static GamepadButtonMask PressedMask(const GamepadState& s);
 		static GamepadButtonMask ReleasedMask(const GamepadState& s);
-
-		// Logs each connected pad's held buttons and off-centre axes. A debug aid, not a hot path.
-		static void PrintActiveGamepadControls();
 
 		// The game viewport within the window, in window coords (top-left origin, +Y down).
 		// In Ember-Runtime this is the whole window; in Ember-Forge it is the docked viewport panel.
@@ -91,6 +104,9 @@ namespace Ember {
 
 		// Mouse in UI space: viewport-local, bottom-left origin, +Y up, matching UILayoutSystem rects.
 		static Vector2f GetViewportMousePosition();
+
+		inline static InputDevice GetLastUsedInputDevice() { return s_LastUsedDevice; }
+		inline static void SetLastUsedInputDevice(InputDevice device) { s_LastUsedDevice = device; }
 
 	private:
 		// Key State Tracking
@@ -121,5 +137,7 @@ namespace Ember {
 		// Viewport State Tracking
 		static Vector2f s_ViewportMin, s_ViewportSize;
 		static bool s_ViewportInputActive;
+
+		static InputDevice s_LastUsedDevice;
 	};
 }

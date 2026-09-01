@@ -12,6 +12,45 @@ namespace Ember {
 
 	static constexpr EntityID InvalidEntity = (EntityID)Constants::Entities::InvalidEntityID;
 
+	namespace {
+
+		struct NavBinding
+		{
+			Vector2f Direction;
+			KeyCode Key;
+			GamepadButton Button;
+			GamepadAxis Axis;
+			bool AxisPositive;
+		};
+
+		const NavBinding NavBindings[] = {
+			{ Vector2f( 0.0f,  1.0f), KeyCode::Up,    GamepadButton::DPadUp,    GamepadAxis::LeftY, true  },
+			{ Vector2f( 0.0f, -1.0f), KeyCode::Down,  GamepadButton::DPadDown,  GamepadAxis::LeftY, false },
+			{ Vector2f(-1.0f,  0.0f), KeyCode::Left,  GamepadButton::DPadLeft,  GamepadAxis::LeftX, false },
+			{ Vector2f( 1.0f,  0.0f), KeyCode::Right, GamepadButton::DPadRight, GamepadAxis::LeftX, true  }
+		};
+
+		bool ConsumeEdge(bool down, bool& previousDown)
+		{
+			bool wasDown = previousDown;
+			previousDown = down;
+			return down && !wasDown;
+		}
+
+		template<typename IsDownFn>
+		bool AnyActiveGamepad(IsDownFn&& isDown)
+		{
+			for (size_t pad = 0; pad < Input::MaxGamepads; pad++)
+			{
+				if (Input::IsGamepadActive(pad) && isDown(pad))
+					return true;
+			}
+
+			return false;
+		}
+
+	}
+
 	bool UIInputSystem::IsPointInsideRect(const Matrix4f& worldTransform, const Vector2f& point)
 	{
 		// UILayoutSystem bakes Translate(centre) * RotateZ * Scale(size), so the basis vectors
@@ -71,10 +110,43 @@ namespace Ember {
 
 	bool UIInputSystem::ConsumeKeyEdge(KeyCode key)
 	{
-		bool down = Input::IsKeyDown(key);
-		bool wasDown = m_PreviousKeyStates[key];
-		m_PreviousKeyStates[key] = down;
-		return down && !wasDown;
+		return ConsumeEdge(Input::IsKeyDown(key), m_PreviousKeyStates[key]);
+	}
+
+	bool UIInputSystem::ConsumeGamepadButtonEdge(GamepadButton button)
+	{
+		bool down = AnyActiveGamepad([button](size_t pad) { return Input::IsGamepadButtonDown(pad, button); });
+		return ConsumeEdge(down, m_PreviousGamepadStates[button]);
+	}
+
+	bool UIInputSystem::ConsumeGamepadAxisEdge(GamepadAxis axis, bool positive)
+	{
+		constexpr float threshold = 0.5f;
+
+		bool down = AnyActiveGamepad([axis, positive](size_t pad)
+		{
+			float value = Input::GetGamepadAxis(pad, axis);
+			return positive ? value > threshold : value < -threshold;
+		});
+
+		auto& previousAxes = positive ? m_PreviousGamepadAxesPositive : m_PreviousGamepadAxesNegative;
+		return ConsumeEdge(down, previousAxes[axis]);
+	}
+
+	void UIInputSystem::Navigate(Scene* scene, const Vector2f& direction)
+	{
+		// With nothing focused there is nothing to navigate *from*, so the first press adopts a
+		// selectable instead of doing nothing. Equivalent to Unity's firstSelectedGameObject, but
+		// without making every scene author wire one up.
+		if (m_Focused == InvalidEntity)
+		{
+			m_Focused = FindFirstSelectable(scene);
+			return;
+		}
+
+		EntityID next = FindSelectableInDirection(scene, m_Focused, direction);
+		if (next != InvalidEntity)
+			m_Focused = next;
 	}
 
 	void UIInputSystem::OnUpdate(TimeStep delta, Scene* scene)
@@ -90,6 +162,9 @@ namespace Ember {
 			m_Focused = InvalidEntity;
 			m_PreviousMouseDown = false;
 			m_PreviousKeyStates.clear();
+			m_PreviousGamepadStates.clear();
+			m_PreviousGamepadAxesPositive.clear();
+			m_PreviousGamepadAxesNegative.clear();
 			m_LastScene = scene;
 		}
 
@@ -169,35 +244,23 @@ namespace Ember {
 			m_Pressed = InvalidEntity;
 		}
 
-		bool submitPressed = ConsumeKeyEdge(KeyCode::Enter) || ConsumeKeyEdge(KeyCode::Space);
+		// Every Consume call has to run, so these accumulate with |= rather than short-circuiting -
+		// a skipped call leaves that control's latch stale.
+		bool submitPressed = ConsumeKeyEdge(KeyCode::Enter);
+		submitPressed |= ConsumeKeyEdge(KeyCode::Space);
+		submitPressed |= ConsumeGamepadButtonEdge(GamepadButton::A);
+
 		bool cancelPressed = ConsumeKeyEdge(KeyCode::Escape);
+		cancelPressed |= ConsumeGamepadButtonEdge(GamepadButton::B);
 
-		// Every navigation read funnels through here so a gamepad source is a one-function change.
-		struct NavBinding { KeyCode Key; Vector2f Direction; };
-		const NavBinding navBindings[] = {
-			{ KeyCode::Up,    Vector2f(0.0f,  1.0f) },
-			{ KeyCode::Down,  Vector2f(0.0f, -1.0f) },
-			{ KeyCode::Left,  Vector2f(-1.0f, 0.0f) },
-			{ KeyCode::Right, Vector2f(1.0f,  0.0f) }
-		};
-
-		for (const NavBinding& binding : navBindings)
+		for (const NavBinding& binding : NavBindings)
 		{
-			if (!ConsumeKeyEdge(binding.Key))
-				continue;
+			bool navPressed = ConsumeKeyEdge(binding.Key);
+			navPressed |= ConsumeGamepadButtonEdge(binding.Button);
+			navPressed |= ConsumeGamepadAxisEdge(binding.Axis, binding.AxisPositive);
 
-			// With nothing focused there is nothing to navigate *from*, so the first press adopts
-			// a selectable instead of doing nothing. Equivalent to Unity's firstSelectedGameObject,
-			// but without making every scene author wire one up.
-			if (m_Focused == InvalidEntity)
-			{
-				m_Focused = FindFirstSelectable(scene);
-				continue;
-			}
-
-			EntityID next = FindSelectableInDirection(scene, m_Focused, binding.Direction);
-			if (next != InvalidEntity)
-				m_Focused = next;
+			if (navPressed)
+				Navigate(scene, binding.Direction);
 		}
 
 		if (submitPressed && m_Focused != InvalidEntity)

@@ -73,6 +73,8 @@ namespace Ember {
 		inline SaveGameManager& GetSaveGameManager() { return m_SaveGameManager; }
 		inline const SaveGameManager& GetSaveGameManager() const { return m_SaveGameManager; }
 
+		inline ImGuiLayer& GetImGuiLayer() { return m_ImGuiLayer; }
+
 		inline SystemManager& GetSystemManager() { return m_SystemManager; }
 		inline InputActionManager& GetInputActionManager() { return m_InputActions; }
 		inline const InputActionManager& GetInputActionManager() const { return m_InputActions; }

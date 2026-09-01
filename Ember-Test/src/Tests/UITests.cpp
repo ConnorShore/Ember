@@ -735,3 +735,67 @@ EB_TEST_CASE(UI, HitRectMatchesTheRenderedRectForEveryPivot, Integration)
 			(EntityID)Constants::Entities::InvalidEntityID);
 	}
 }
+
+// Regression: the gamepad edge helpers only ever latched a control as held and never cleared it on
+// release (and fell off the end of the function when no pad was connected), so a d-pad direction
+// navigated exactly once per session and stale returns could hijack the focus.
+EB_TEST_CASE(UI, GamepadNavigationRepeatsAcrossPresses, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+	Input::SetViewportRect(Vector2f(0.0f), Vector2f(ViewportWidth, ViewportHeight));
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity first = MakeButton(*scene, canvas, "First", Vector2f(120.0f, 40.0f), Vector2f(0.0f, 100.0f));
+	Entity second = MakeButton(*scene, canvas, "Second", Vector2f(120.0f, 40.0f), Vector2f(0.0f, -100.0f));
+
+	Layout(*scene);
+
+	auto uiInput = Sys<UIInputSystem>();
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+
+	// Pointer parked away from both buttons so hover cannot supply the focus.
+	Vector2f away = Vector2f(20.0f, 20.0f);
+
+	GamepadState& pad = Input::GetGamepadState(0);
+	bool wasConnected = pad.Connected;
+	pad.Connected = true;
+
+	// A press with nothing focused adopts a selectable, the same bootstrap the arrow keys get.
+	Input::SetGamepadButtonPressed(0, GamepadButton::DPadDown);
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), first.GetEntityHandle());
+
+	Input::SetGamepadButtonReleased(0, GamepadButton::DPadDown);
+	TickInput(*scene, away);
+
+	// The second press is the one the stuck latch used to swallow entirely.
+	Input::SetGamepadButtonPressed(0, GamepadButton::DPadDown);
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), second.GetEntityHandle());
+
+	// Holding is not a repeat: the direction only fires on the edge.
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), second.GetEntityHandle());
+
+	Input::SetGamepadButtonReleased(0, GamepadButton::DPadDown);
+	TickInput(*scene, away);
+
+	// Flicking the stick one way then the other must fire both directions, so each needs its own latch.
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, 1.0f);
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), first.GetEntityHandle());
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, -1.0f);
+	TickInput(*scene, away);
+	EB_EXPECT_EQ(uiInput->GetFocusedEntity(), second.GetEntityHandle());
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, 0.0f);
+	TickInput(*scene, away);
+
+	pad.Down = 0;
+	pad.PreviousDown = 0;
+	pad.Axis.fill(0.0f);
+	pad.Connected = wasConnected;
+	uiInput->SetFocusedEntity((EntityID)Constants::Entities::InvalidEntityID);
+}

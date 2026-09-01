@@ -1035,13 +1035,13 @@ EB_TEST_CASE(Input, GamepadButtonTriggerMatchesOnlyTheButtonItNames, Unit)
 
 	InputActionManager actions = MakeManager("Fire", "Gamepad/A");
 
-	Input::SetGamepadControlPressed(0, GamepadButton::A);
+	Input::SetGamepadButtonPressed(0, GamepadButton::A);
 	StepActions(actions);
 	EB_EXPECT(actions.IsActionDown("Fire"));
 	EB_EXPECT(actions.IsActionPressed("Fire"));
 
-	Input::SetGamepadControlReleased(0, GamepadButton::A);
-	Input::SetGamepadControlPressed(0, GamepadButton::B);
+	Input::SetGamepadButtonReleased(0, GamepadButton::A);
+	Input::SetGamepadButtonPressed(0, GamepadButton::B);
 	StepActions(actions);
 	EB_EXPECT_FALSE(actions.IsActionDown("Fire"));
 	EB_EXPECT(actions.IsActionReleased("Fire"));
@@ -1102,6 +1102,49 @@ EB_TEST_CASE(Input, StrongestTriggerSetsTheActionStrength, Unit)
 
 	// The key is all the way down, so a half-pushed stick must not drag the strength back to 0.4.
 	EB_EXPECT_NEAR(actions.GetActionStrength("MoveRight"), 1.0f, 0.0001f);
+}
+
+// Regression: a digital read of an axis fired on any non-zero value, so a stick pushed "straight"
+// forward - which still leaves a few percent on the other axis - also held a strafe direction down,
+// and a game reading IsActionDown could only ever move on 45 degree diagonals.
+EB_TEST_CASE(Input, StickBleedIntoThePerpendicularAxisIsNotAPress, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("MoveForward", "Gamepad/LeftY-");
+	actions.AddAction({ "MoveRight", { ParseTrigger("Gamepad/LeftX+") } });
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, -0.97f);
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.04f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("MoveForward"));
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveRight"));
+
+	// The lean is still reported in full, so an analog reader keeps all 360 degrees of the stick.
+	EB_EXPECT_NEAR(actions.GetActionStrength("MoveRight"), 0.04f, 0.0001f);
+
+	// Past the actuation point it is a press like any other.
+	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.6f);
+	StepActions(actions);
+	EB_EXPECT(actions.IsActionDown("MoveRight"));
+}
+
+// A trigger has no cross-axis bleed to reject, so it must not inherit the stick's high bar - a light
+// pull on the shoot trigger has to fire.
+EB_TEST_CASE(Input, TriggerPressesWellBeforeTheStickActuationPoint, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+
+	InputActionManager actions = MakeManager("Shoot", "Gamepad/RightTrigger");
+
+	Input::SetGamepadAxis(0, GamepadAxis::RightTrigger, 0.3f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("Shoot"));
+	EB_EXPECT_NEAR(actions.GetActionStrength("Shoot"), 0.3f, 0.0001f);
 }
 
 // ProjectSerializer stores each binding as its trigger string, so a saved action only survives if a
