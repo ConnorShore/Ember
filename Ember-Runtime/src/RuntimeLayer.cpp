@@ -42,6 +42,10 @@ namespace Ember {
 		// 5. Lock the cursor immediately for a First-Person game
 		Input::SetCursorMode(CursorMode::Locked);
 
+		// The standalone player is always "playing", so ImGui never gets to consume the arrow keys
+		// or gamepad as UI navigation.
+		app.GetImGuiLayer().SetNavigationEnabled(false);
+
 		// Ensure active scene starts at 0
 		ProjectManager::GetActive()->ResetSceneIndex();
 	}

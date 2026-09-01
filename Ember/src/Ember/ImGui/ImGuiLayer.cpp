@@ -35,6 +35,10 @@ namespace Ember {
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
+		// Remember which nav flags were asked for so SetNavigationEnabled can restore exactly those.
+		m_NavigationFlags = io.ConfigFlags & (ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad);
+		m_NavigationEnabled = true;
+
 		ImGui::StyleColorsDark();
 
 #if GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 3
@@ -63,6 +67,29 @@ namespace Ember {
 		ImGui_ImplGlfw_Shutdown();
 
 		ImGui::DestroyContext();
+	}
+
+	void ImGuiLayer::SetNavigationEnabled(bool enabled)
+	{
+		if (m_NavigationEnabled == enabled)
+			return;
+
+		m_NavigationEnabled = enabled;
+
+		ImGuiIO& io = ImGui::GetIO();
+		if (enabled)
+		{
+			io.ConfigFlags |= m_NavigationFlags;
+		}
+		else
+		{
+			io.ConfigFlags &= ~(ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad);
+
+			// Drop the nav highlight and any active nav item so the last-focused widget doesn't
+			// stay lit up (or keep swallowing keys) for the whole play session.
+			ImGui::SetNavCursorVisible(false);
+			ImGui::FocusWindow(nullptr);
+		}
 	}
 
 	void ImGuiLayer::BeginFrame()

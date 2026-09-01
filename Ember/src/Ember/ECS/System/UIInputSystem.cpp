@@ -5,12 +5,61 @@
 #include "ScriptSystem.h"
 #include "Ember/Core/Application.h"
 #include "Ember/Input/Input.h"
+#include "Ember/Input/InputActionManager.h"
 #include "Ember/Scene/Scene.h"
 #include "Ember/Script/ScriptEngine.h"
 
 namespace Ember {
 
 	static constexpr EntityID InvalidEntity = (EntityID)Constants::Entities::InvalidEntityID;
+
+	namespace {
+
+		struct NavBinding
+		{
+			Vector2f Direction;
+			KeyCode Key;
+			GamepadButton Button;
+			GamepadAxis Axis;
+			bool AxisPositive;
+		};
+
+		// One control that can submit, paired with whether it fired, so the press can be handed back
+		// to InputActionManager as consumed.
+		struct SubmitEdge
+		{
+			InputDevice Device;
+			InputControlId Control;
+			bool Fired;
+		};
+
+		const NavBinding NavBindings[] = {
+			{ Vector2f( 0.0f,  1.0f), KeyCode::Up,    GamepadButton::DPadUp,    GamepadAxis::LeftY, true  },
+			{ Vector2f( 0.0f, -1.0f), KeyCode::Down,  GamepadButton::DPadDown,  GamepadAxis::LeftY, false },
+			{ Vector2f(-1.0f,  0.0f), KeyCode::Left,  GamepadButton::DPadLeft,  GamepadAxis::LeftX, false },
+			{ Vector2f( 1.0f,  0.0f), KeyCode::Right, GamepadButton::DPadRight, GamepadAxis::LeftX, true  }
+		};
+
+		bool ConsumeEdge(bool down, bool& previousDown)
+		{
+			bool wasDown = previousDown;
+			previousDown = down;
+			return down && !wasDown;
+		}
+
+		template<typename IsDownFn>
+		bool AnyActiveGamepad(IsDownFn&& isDown)
+		{
+			for (size_t pad = 0; pad < Input::MaxGamepads; pad++)
+			{
+				if (Input::IsGamepadActive(pad) && isDown(pad))
+					return true;
+			}
+
+			return false;
+		}
+
+	}
 
 	bool UIInputSystem::IsPointInsideRect(const Matrix4f& worldTransform, const Vector2f& point)
 	{
@@ -71,10 +120,44 @@ namespace Ember {
 
 	bool UIInputSystem::ConsumeKeyEdge(KeyCode key)
 	{
-		bool down = Input::IsKeyPressed(key);
-		bool wasDown = m_PreviousKeyStates[key];
-		m_PreviousKeyStates[key] = down;
-		return down && !wasDown;
+		return ConsumeEdge(Input::IsKeyDown(key), m_PreviousKeyStates[key]);
+	}
+
+	bool UIInputSystem::ConsumeGamepadButtonEdge(GamepadButton button)
+	{
+		bool down = AnyActiveGamepad([button](size_t pad) { return Input::IsGamepadButtonDown(pad, button); });
+		return ConsumeEdge(down, m_PreviousGamepadStates[button]);
+	}
+
+	bool UIInputSystem::ConsumeGamepadAxisEdge(GamepadAxis axis, bool positive)
+	{
+		// Shared with gameplay so both agree on how far the stick counts as pushed.
+		const float threshold = Input::ActuationThreshold(Input::StickForAxis(axis));
+
+		bool down = AnyActiveGamepad([axis, positive, threshold](size_t pad)
+		{
+			float value = Input::GetGamepadAxis(pad, axis);
+			return positive ? value > threshold : value < -threshold;
+		});
+
+		auto& previousAxes = positive ? m_PreviousGamepadAxesPositive : m_PreviousGamepadAxesNegative;
+		return ConsumeEdge(down, previousAxes[axis]);
+	}
+
+	void UIInputSystem::Navigate(Scene* scene, const Vector2f& direction)
+	{
+		// With nothing focused there is nothing to navigate *from*, so the first press adopts a
+		// selectable instead of doing nothing. Equivalent to Unity's firstSelectedGameObject, but
+		// without making every scene author wire one up.
+		if (m_Focused == InvalidEntity)
+		{
+			m_Focused = FindFirstSelectable(scene);
+			return;
+		}
+
+		EntityID next = FindSelectableInDirection(scene, m_Focused, direction);
+		if (next != InvalidEntity)
+			m_Focused = next;
 	}
 
 	void UIInputSystem::OnUpdate(TimeStep delta, Scene* scene)
@@ -90,6 +173,9 @@ namespace Ember {
 			m_Focused = InvalidEntity;
 			m_PreviousMouseDown = false;
 			m_PreviousKeyStates.clear();
+			m_PreviousGamepadStates.clear();
+			m_PreviousGamepadAxesPositive.clear();
+			m_PreviousGamepadAxesNegative.clear();
 			m_LastScene = scene;
 		}
 
@@ -115,7 +201,7 @@ namespace Ember {
 			hitSelectable = hit;
 		}
 
-		bool mouseDown = Input::IsMouseButtonPressed(MouseButton::Left);
+		bool mouseDown = Input::IsMouseButtonDown(MouseButton::Left);
 		bool mousePressed = mouseDown && !m_PreviousMouseDown;
 		bool mouseReleased = !mouseDown && m_PreviousMouseDown;
 		m_PreviousMouseDown = mouseDown;
@@ -169,39 +255,49 @@ namespace Ember {
 			m_Pressed = InvalidEntity;
 		}
 
-		bool submitPressed = ConsumeKeyEdge(KeyCode::Enter) || ConsumeKeyEdge(KeyCode::Space);
-		bool cancelPressed = ConsumeKeyEdge(KeyCode::Escape);
-
-		// Every navigation read funnels through here so a gamepad source is a one-function change.
-		struct NavBinding { KeyCode Key; Vector2f Direction; };
-		const NavBinding navBindings[] = {
-			{ KeyCode::Up,    Vector2f(0.0f,  1.0f) },
-			{ KeyCode::Down,  Vector2f(0.0f, -1.0f) },
-			{ KeyCode::Left,  Vector2f(-1.0f, 0.0f) },
-			{ KeyCode::Right, Vector2f(1.0f,  0.0f) }
+		// Every Consume call has to run, so each control gets its own slot rather than short-circuiting
+		// into one bool - a skipped call leaves that control's latch stale. Which control fired is
+		// kept because only the one that actually submitted may be taken away from gameplay.
+		const SubmitEdge submitEdges[] = {
+			{ InputDevice::Keyboard, KeyCode::Enter,   ConsumeKeyEdge(KeyCode::Enter) },
+			{ InputDevice::Keyboard, KeyCode::Space,   ConsumeKeyEdge(KeyCode::Space) },
+			{ InputDevice::Gamepad,  GamepadButton::A, ConsumeGamepadButtonEdge(GamepadButton::A) }
 		};
 
-		for (const NavBinding& binding : navBindings)
+		bool submitPressed = std::any_of(std::begin(submitEdges), std::end(submitEdges),
+			[](const SubmitEdge& edge) { return edge.Fired; });
+
+		bool cancelPressed = ConsumeKeyEdge(KeyCode::Escape);
+		cancelPressed |= ConsumeGamepadButtonEdge(GamepadButton::B);
+
+		// A hidden or destroyed menu must not keep the focus, or submit would activate a button that
+		// is not on screen - and would take the press away from gameplay to do it.
+		DropFocusIfUnusable(scene);
+
+		for (const NavBinding& binding : NavBindings)
 		{
-			if (!ConsumeKeyEdge(binding.Key))
-				continue;
+			bool navPressed = ConsumeKeyEdge(binding.Key);
+			navPressed |= ConsumeGamepadButtonEdge(binding.Button);
+			navPressed |= ConsumeGamepadAxisEdge(binding.Axis, binding.AxisPositive);
 
-			// With nothing focused there is nothing to navigate *from*, so the first press adopts
-			// a selectable instead of doing nothing. Equivalent to Unity's firstSelectedGameObject,
-			// but without making every scene author wire one up.
-			if (m_Focused == InvalidEntity)
-			{
-				m_Focused = FindFirstSelectable(scene);
-				continue;
-			}
-
-			EntityID next = FindSelectableInDirection(scene, m_Focused, binding.Direction);
-			if (next != InvalidEntity)
-				m_Focused = next;
+			if (navPressed)
+				Navigate(scene, binding.Direction);
 		}
 
 		if (submitPressed && m_Focused != InvalidEntity)
+		{
 			Activate(scene, m_Focused);
+
+			// Gameplay polls input actions from ScriptSystem onwards, all of which run after this
+			// system, so an unconsumed press both activates the widget and reaches the player - the
+			// A that closes a menu would jump on the same frame.
+			auto& inputActions = Application::Instance().GetInputActionManager();
+			for (const SubmitEdge& edge : submitEdges)
+			{
+				if (edge.Fired)
+					inputActions.ConsumeControl(edge.Device, edge.Control);
+			}
+		}
 
 		if (cancelPressed)
 			m_Focused = InvalidEntity;
@@ -359,6 +455,24 @@ namespace Ember {
 
 			toggle.VisualStateApplied = true;
 		}
+	}
+
+	bool UIInputSystem::CanReceiveFocus(Scene* scene, EntityID entity) const
+	{
+		if (entity == InvalidEntity)
+			return false;
+
+		auto& registry = scene->GetRegistry();
+		if (!registry.ContainsComponent<UISelectableComponent>(entity) || registry.ContainsComponent<DisabledComponent>(entity))
+			return false;
+
+		return registry.GetComponent<UISelectableComponent>(entity).Interactable;
+	}
+
+	void UIInputSystem::DropFocusIfUnusable(Scene* scene)
+	{
+		if (m_Focused != InvalidEntity && !CanReceiveFocus(scene, m_Focused))
+			m_Focused = InvalidEntity;
 	}
 
 	EntityID UIInputSystem::FindFirstSelectable(Scene* scene) const

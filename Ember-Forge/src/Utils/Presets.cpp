@@ -34,26 +34,26 @@ namespace Ember {
 		else
 			characterMovementUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("CharacterMovement")->GetFilePath(), false)->GetUUID();
 
-		UUID mouseLookUUID = Constants::InvalidUUID;
-		if (!assetManager.ContainsAssetWithName("MouseLook"))
+		UUID freeLookUUID = Constants::InvalidUUID;
+		if (!assetManager.ContainsAssetWithName("FreeLook"))
 		{
 			auto scriptsDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Script);
 
-			// Copy CharacterMovement.lua to existing scriptsDirectory
-			std::filesystem::path sourcePath = Paths::EngineAssets() / "scripts/MouseLook.lua";
-			std::filesystem::path destPath = scriptsDirectory / "MouseLook.lua";
+			// Copy FreeLook.lua to existing scriptsDirectory
+			std::filesystem::path sourcePath = Paths::EngineAssets() / "scripts/FreeLook.lua";
+			std::filesystem::path destPath = scriptsDirectory / "FreeLook.lua";
 
 			// Copy file if it doesn't exist, and throw error if copy fails. If it already exists, just load the asset file
 			if (!std::filesystem::exists(destPath) && !std::filesystem::copy_file(sourcePath, destPath))
 			{
-				EB_CORE_ERROR("Failed to copy MouseLook.lua to project assets directory! Aborting controller creation!");
+				EB_CORE_ERROR("Failed to copy FreeLook.lua to project assets directory! Aborting controller creation!");
 				return {};
 			}
 
-			mouseLookUUID = assetManager.Load<Script>(destPath.string(), false)->GetUUID();
+			freeLookUUID = assetManager.Load<Script>(destPath.string(), false)->GetUUID();
 		}
 		else
-			mouseLookUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("MouseLook")->GetFilePath(), false)->GetUUID();
+			freeLookUUID = assetManager.Load<Script>(assetManager.GetAsset<Script>("FreeLook")->GetFilePath(), false)->GetUUID();
 
 		// Build the entity with all the necessary components for a basic character controller
 		// No mesh/material by default until render masks are implemented
@@ -70,7 +70,7 @@ namespace Ember {
 		auto& movementScript = newEntity.AttachComponent<ScriptComponent>();
 		movementScript.ScriptHandle = characterMovementUUID;
 
-		// Head pivot (empty) child entity for mouse look
+		// Head pivot (empty) child entity for free look
 		Entity headPivot = newEntity.AddChild("HeadPivot");
 		auto& headTransform = headPivot.GetComponent<TransformComponent>();
 		headTransform.Position.y = 0.8f;
@@ -84,7 +84,7 @@ namespace Ember {
 
 		// Add camera script
 		auto& camScript = cameraEntity.AttachComponent<ScriptComponent>();
-		camScript.ScriptHandle = mouseLookUUID;
+		camScript.ScriptHandle = freeLookUUID;
 
 		return newEntity;
 	}

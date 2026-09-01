@@ -849,10 +849,16 @@ zones and modal blockers. It defaults to `false`, and selectables are always hit
 | `FadeDuration`                                     | `float`    |
 | `IsHovered`                                        | `bool` (read-only) |
 | `IsPressed`                                        | `bool` (read-only) |
+| `:Select()`                                        | Makes this the focused selectable. |
 
 State colours are **multiplied** by the target graphic's authored colour, so recolouring a button
 from script still works. A non-interactable selectable still blocks clicks rather than letting
 them fall through.
+
+`:Select()` is what a menu calls when it opens on a gamepad, so the first press of A activates
+something instead of just adopting a selectable. It gives the selectable focus - the same focus
+keyboard/gamepad navigation moves and `UI.ClearFocus()` drops - which is what drives the
+`SelectedColor` tint. On a non-interactable selectable it does nothing.
 
 #### `UIButtonComponent`
 
@@ -910,24 +916,148 @@ UI.ClearFocus()
 before acting on a click so shooting, selecting or camera-dragging ignores clicks that landed on
 the HUD.
 
+Submit (Enter / Space / gamepad A) is handled for you: when it activates a focused widget, that
+press is consumed, and any input action bound to the same control reads as inactive until the
+control is released. So closing a menu with A does not also fire the jump bound to A on the same
+frame - no `IsPointerOverUI`-style guard needed for it. Navigation and cancel are *not* consumed,
+so a game binding its own action to Escape or B still sees those presses.
+
+A focused selectable that gets hidden or made non-interactable loses the focus on the next frame,
+so hiding a menu is enough to stop submit reaching it. `UI.ClearFocus()` is still worth calling
+when you want the focus gone immediately.
+
 ---
 
 ## Input
 
 ```lua
-Input.IsKeyPressed(KeyCode.W)             -- bool, this frame
-Input.IsKeyHeld(KeyCode.Space)            -- bool, currently held
-Input.IsMouseButtonPressed(MouseButton.Left)
+Input.IsKeyDown(KeyCode.W)                -- bool, currently held
+Input.IsKeyReleased(KeyCode.Space)        -- bool, released this frame
+Input.IsKeyRepeating(KeyCode.Backspace)   -- bool, OS key-repeat is firing
+
+Input.IsMouseButtonDown(MouseButton.Left)
+Input.IsMouseButtonReleased(MouseButton.Left)
+
+Input.IsMouseControlDown(MouseControl.Button4)
+Input.IsMouseControlPressed(MouseControl.WheelUp)     -- bool, this frame only
+Input.IsMouseControlReleased(MouseControl.Button4)
+
+Input.IsModifierDown(KeyModifier.Shift)   -- bool, modifier currently held
+Input.GetActiveModifiers()                -- int, the whole modifier bitmask
+
+Input.IsActionDown("Jump")                -- bool, any of the action's triggers is active
+Input.IsActionPressed("Jump")             -- bool, went down this frame
+Input.IsActionReleased("Jump")            -- bool, came up this frame
+
+Input.GetActionStrength("MoveRight")      -- number, 0..1 (a key is 1, a stick is how far it moved)
+Input.GetAxis("MoveLeft", "MoveRight")    -- number, -1..1 from a pair of actions
+Input.GetAxis2D("MoveLeft", "MoveRight", "MoveBackward", "MoveForward")  -- Vector2f
 
 Input.GetMousePosition()                  -- Vector2f
 Input.GetMouseScrollOffset()              -- Vector2f
-Input.GetMouseDelta()                     -- Vector2f, since last frame
+Input.GetMouseDelta()                     -- Vector2f, this frame's travel, inversion applied
+Input.GetRawMouseDelta()                  -- Vector2f, the same travel in true pixels
+
+Input.GetStickSettings(GamepadStick.Right)     -- StickSettings, writable
+Input.GetTriggerSettings(GamepadTrigger.Left)  -- TriggerSettings, writable
+Input.GetMouseSettings()                       -- MouseSettings, writable
+
+Input.IsAnyGamepadActive()                -- bool, is any pad connected
+Input.IsGamepadActive(0)                  -- bool, is this pad connected
+Input.IsGamepadButtonDown(0, GamepadButton.A)      -- bool, currently held
+Input.IsGamepadButtonPressed(0, GamepadButton.A)   -- bool, went down this frame
+Input.IsGamepadButtonReleased(0, GamepadButton.A)  -- bool, not held
+Input.GetGamepadAxis(0, GamepadAxis.LeftX)         -- number, -1..1 (triggers are 0..1)
+
+Input.GetLastUsedInputDevice()            -- InputDevice, what the player touched last
+Input.SetLastUsedInputDevice(InputDevice.Gamepad)
 
 Input.SetCursorMode(mode)
 Input.GetCursorMode()
 
 Input.GetViewportMousePosition()          -- Vector2f, UI space
 ```
+
+`Input.IsKeyPressed` and `Input.IsMouseButtonPressed` are older spellings that mean **held**, not
+"pressed this frame" — `IsKeyDown` / `IsMouseButtonDown` are the clearer names for the same thing.
+For a genuine one-frame edge on the mouse use `IsMouseControlPressed`, which is also the only way
+to read the scroll wheel as a control: a wheel notch is a one-frame pulse and is never *down*.
+
+`IsModifierDown` tests the argument against the active bitmask, so a multi-bit argument asks
+*any of these*: `Input.IsModifierDown(KeyModifier.Shift | KeyModifier.Control)` is true when either
+is held. For a chord that has to match exactly, compare the mask itself —
+`Input.GetActiveModifiers() == (KeyModifier.Shift | KeyModifier.Control)`.
+`Input.IsModifierActive` is the same function under the C++ spelling.
+
+The `IsAction*` queries read the input actions defined in **Project Settings → Input**, so a game
+can rebind controls without touching script. An unknown action name logs an error and returns
+false rather than failing the call.
+
+`GetActionStrength` is the analog version of `IsActionDown`: a key or button reports 1, a gamepad
+axis reports how far it actually moved, and the strongest trigger on the action wins. `GetAxis`
+subtracts one action's strength from another's, and `GetAxis2D` pairs two of those into a movement
+vector — so a stick and WASD drive the same code as long as each direction is its own action. In the
+trigger picker a stick axis can be bound whole or as a single half (`Left Stick Left` is the
+negative half of `LeftX`), and a half only reports while the stick is pushed that way.
+
+Prefer the `IsAction*` / `GetAxis*` calls over the raw `Input.IsGamepad*` reads: they are
+rebindable, and they already handle the keyboard. The raw reads are for the cases actions cannot
+express - a specific physical button on a specific pad, or a stick you want unfiltered by an action
+mapping. The pad index is **0-based**, so player one is `0`, and up to four pads are polled.
+
+`GetGamepadAxis` returns the **conditioned** value: a stick reads -1..1 with a radial deadzone
+applied to the pair (so pushing one axis fully never leaves the other exactly zero), and a trigger
+reads 0..1 rather than the -1..1 the OS reports. `IsGamepadButtonReleased` means "not held right
+now", not "came up this frame".
+
+### Conditioning
+
+The engine corrects what the hardware gets wrong, because every reader of a control wants the same
+correction. Each stick and trigger has its own **deadzone** (deflection that reads as centred),
+**saturation** (deflection that already counts as fully pushed), **exponent** (the response curve)
+and **actuation** (physical travel before a digital read calls it pressed), plus per-axis
+inversion. Defaults live in **Project Settings → Input → Devices** and are saved to the `.ebproj`;
+`GetStickSettings` and friends let a settings menu change them at runtime.
+
+```lua
+local look = Input.GetStickSettings(GamepadStick.Right)
+look.Exponent = 2.0   -- finer control near centre, still full rate at full deflection
+look.InvertY = true
+```
+
+The exponent shapes the stick's **magnitude**, not each axis on its own, so a diagonal keeps its
+angle and a circular sweep of the stick stays circular. `1.0` is linear. Above `1.0` gives finer
+control near centre, which is what first-person look wants; below `1.0` makes it twitchier.
+
+What the signal *means* stays in the game: degrees-per-second turn rates, pitch clamping, ADS
+multipliers and aim assist all belong in your look script. Mouse sensitivity is deliberately not an
+engine setting - the mouse delta has several readers (look, weapon sway, UI dragging) and only each
+one knows its own scale.
+
+> Set inversion on the stick that actually drives the camera. The **left** stick also drives menu
+> navigation, so inverting it flips the menus too.
+
+`GetMouseDelta` is the whole frame's travel with the player's inversion applied - it is an angle
+already, so do **not** scale it by delta time. A stick is a position held over time, so it *is* a
+rate and does need delta time. `GetRawMouseDelta` skips inversion for callers that want true pixels.
+
+`GetLastUsedInputDevice` reports whichever device produced the most recent input - use it to switch
+button prompts between key glyphs and pad glyphs without polling every control yourself. It updates
+on key, mouse and pad activity; `SetLastUsedInputDevice` lets a game force it, e.g. to pin the
+prompts to one device in a settings menu.
+
+> A digital read of an analog control needs the control to travel past an **actuation point**
+> before it counts as pressed: half a stick's throw by default, or a light pull on a trigger.
+> Without it a stick pushed "straight" forward - which always leaves a few percent on the other
+> axis - would hold the perpendicular direction down too and movement could only ever come out
+> diagonal. The actuation point is physical travel, so it runs through the same response curve the
+> axis does and a curve never moves it. `GetActionStrength` is unaffected and still reports the
+> full analog value.
+
+> A trigger's required modifiers are a **subset** test: all of them must be held, and anything else
+> held alongside is ignored. So `Key/W` keeps firing while Shift is held (sprint does not cancel
+> movement), but a `Key/Ctrl+S` action does not suppress a plain `Key/S` one — pressing Ctrl+S fires
+> both. Check the modifiers yourself in script if a chord has to win.
 
 `GetMousePosition` returns raw window coordinates (top-left origin, +Y down).
 `GetViewportMousePosition` returns the pointer in **UI space** - viewport-local, bottom-left
@@ -950,10 +1080,22 @@ viewport panel's position.
   `NumPadEnter`, `NumPadEqual`, `LeftShift`, `LeftControl`, `LeftAlt`, `LeftSuper`,
   `RightShift`, `RightControl`, `RightAlt`, `RightSuper`, `Menu`, `Last`.
 - **`KeyAction`** — `Release`, `Press`, `Repeat`.
-- **`KeyModifier`** — `None`, `Shift`, `Control`, `Alt`, `Super`.
+- **`KeyModifier`** — `None`, `Shift`, `Control`, `Alt`, `Super`. A bitmask, so values combine
+  with `|`. `None` is zero and therefore never reads as down.
 - **`MouseButton`** — `Left`, `Right`, `Middle`.
-
-`Input.SetCursorMode(mode)` accepts Ember's cursor mode value: `0` normal, `1` hidden, `2` locked.
+- **`MouseControl`** — `Left`, `Right`, `Middle`, `Button4`–`Button15`, `WheelUp`, `WheelDown`.
+  A superset of `MouseButton` (the first three values match), covering the side buttons and the
+  wheel that `MouseButton` cannot name.
+- **`CursorMode`** — `Normal` (`0`), `Hidden` (`1`), `Locked` (`2`). `Input.SetCursorMode` also
+  accepts the raw integer.
+- **`GamepadButton`** — `A`, `B`, `X`, `Y`, `LeftBumper`, `RightBumper`, `Back`, `Start`, `Guide`,
+  `LeftThumb`, `RightThumb`, `DPadUp`, `DPadRight`, `DPadDown`, `DPadLeft`, `Last`. Named after the
+  Xbox layout, which is the layout GLFW maps every pad onto — on a PlayStation pad `A` is Cross and
+  `B` is Circle.
+- **`GamepadAxis`** — `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`, `Last`.
+- **`GamepadStick`** — `Left`, `Right`. Which stick `GetStickSettings` conditions.
+- **`GamepadTrigger`** — `Left`, `Right`. Which trigger `GetTriggerSettings` conditions.
+- **`InputDevice`** — `None`, `Keyboard`, `Mouse`, `Gamepad`. What `GetLastUsedInputDevice` returns.
 
 ---
 
@@ -1305,10 +1447,10 @@ function Player:OnUpdate(entity, delta)
     local right   = self.transform:GetRight()
 
     local move = Vector3f.new(0, 0, 0)
-    if Input.IsKeyPressed(KeyCode.W) then move = move + forward end
-    if Input.IsKeyPressed(KeyCode.S) then move = move - forward end
-    if Input.IsKeyPressed(KeyCode.D) then move = move + right end
-    if Input.IsKeyPressed(KeyCode.A) then move = move - right end
+    if Input.IsKeyDown(KeyCode.W) then move = move + forward end
+    if Input.IsKeyDown(KeyCode.S) then move = move - forward end
+    if Input.IsKeyDown(KeyCode.D) then move = move + right end
+    if Input.IsKeyDown(KeyCode.A) then move = move - right end
 
     if Math.Length(move) > 0 then
         move = Math.Normalize(move)
@@ -1316,7 +1458,7 @@ function Player:OnUpdate(entity, delta)
 
     self.controller:Move(move * self.Speed * delta)
 
-    if Input.IsKeyPressed(KeyCode.Space) and self.controller.IsGrounded then
+    if Input.IsKeyDown(KeyCode.Space) and self.controller.IsGrounded then
         self.controller:Jump()
     end
 end

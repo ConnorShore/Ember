@@ -87,27 +87,27 @@ namespace Ember {
 		m_InitialMousePosition = mousePos;
 
 		// Handle Input Modifiers
-		if (Input::IsMouseButtonPressed(MouseButton::Middle))
+		if (Input::IsMouseButtonDown(MouseButton::Middle))
 		{
-			if (Input::IsKeyPressed(KeyCode::LeftShift))
+			if (Input::IsModifierActive(KeyModifier::Shift))
 				MousePan(mouseDelta);
 			else
 				MouseOrbit(mouseDelta);
 		}
-		else if (Input::IsMouseButtonPressed(MouseButton::Right))
+		else if (Input::IsMouseButtonDown(MouseButton::Right))
 		{
 			// Fly Camera: Rotate while holding RMB
 			MouseRotate(mouseDelta);
 
 			// Fly Camera: Move Focal Point with WASD
 			float moveSpeed = m_Distance * m_MoveSpeedFactor * delta.Seconds();
-			if (Input::IsKeyPressed(KeyCode::W))
+			if (Input::IsKeyDown(KeyCode::W))
 				m_FocalPoint += GetForwardDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::S))
+			if (Input::IsKeyDown(KeyCode::S))
 				m_FocalPoint -= GetForwardDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::A))
+			if (Input::IsKeyDown(KeyCode::A))
 				m_FocalPoint -= GetRightDirection() * moveSpeed;
-			if (Input::IsKeyPressed(KeyCode::D))
+			if (Input::IsKeyDown(KeyCode::D))
 				m_FocalPoint += GetRightDirection() * moveSpeed;
 		}
 

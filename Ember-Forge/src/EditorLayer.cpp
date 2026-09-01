@@ -204,6 +204,11 @@ namespace Ember {
 
 	void EditorLayer::OnUpdate(TimeStep delta)
 	{
+		// While the game is playing its input belongs to the game, so ImGui's keyboard/gamepad
+		// navigation is off - otherwise arrow keys walk the editor's tabs and widgets mid-game.
+		// Derived every frame rather than at each transition so every path in and out of Play agrees.
+		Application::Instance().GetImGuiLayer().SetNavigationEnabled(m_Context.CurrentSceneState != SceneState::Play);
+
 		// Publish the docked viewport rect so UI hit-testing and scripts get viewport-local mouse coords.
 		// Bounds come from the ImGui pass, so this is one frame behind - the same lag OnMouseClick lives with.
 		//
@@ -818,12 +823,6 @@ namespace Ember {
 				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Debug"))
-			{
-				DrawDebugDrawToggles();
-				ImGui::EndMenu();
-			}
-
 			ImGui::EndMenu();
 		}
 
@@ -1067,8 +1066,8 @@ namespace Ember {
 
 		bool isEditMode = m_Context.CurrentSceneState == SceneState::Edit;
 		bool activeProject = ProjectManager::GetActive() != nullptr;
-		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
-		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+		bool control = Input::IsKeyDown(KeyCode::LeftControl) || Input::IsKeyDown(KeyCode::RightControl);
+		bool shift = Input::IsKeyDown(KeyCode::LeftShift) || Input::IsKeyDown(KeyCode::RightShift);
 
 		KeyCode key = e.GetKeyCode();
 		switch (key)
@@ -1166,7 +1165,7 @@ namespace Ember {
 
 	bool EditorLayer::OnMouseClick(MousePressedEvent& e)
 	{
-		if (e.GetMouseButton() == MouseButton::Left && m_ViewportHovered)
+		if (e.GetMouseControl() == MouseControl::Left && m_ViewportHovered)
 		{
 			if (m_Context.CurrentSceneState != SceneState::Edit)
 				return false;
@@ -1185,7 +1184,7 @@ namespace Ember {
 					Entity selected = activeScene->GetEntityAtPixel(mouseX, mouseY);
 
 					// Ctrl+click adds to or removes from the selection; a plain click replaces it.
-					bool ctrlHeld = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+					bool ctrlHeld = Input::IsKeyDown(KeyCode::LeftControl) || Input::IsKeyDown(KeyCode::RightControl);
 					if (ctrlHeld && selected.IsValid())
 						m_Context.ToggleSelection(selected);
 					else if (!ctrlHeld)

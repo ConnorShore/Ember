@@ -5,6 +5,7 @@
 #include "Ember/Asset/MeshHeader.h"
 #include "Ember/Render/StaticMesh.h"
 #include "Ember/Render/SkinnedMesh.h"
+#include "Ember/Utils/YamlUtils.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -190,8 +191,7 @@ namespace Ember {
 			auto root = tree.rootref();
 
 			bool isSkinned = false;
-			if (root.has_child("IsSkinned"))
-				root["IsSkinned"] >> isSkinned;
+			Util::ReadField(root, "IsSkinned", isSkinned);
 
 			std::vector<uint32_t> indices;
 			if (root.has_child("Indices"))

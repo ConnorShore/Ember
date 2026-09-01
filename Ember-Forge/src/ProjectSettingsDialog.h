@@ -1,19 +1,27 @@
 #pragma once
+
+#include <Ember/Core/Application.h>
+#include <Ember/Input/InputTrigger.h>
+#include <Ember/Input/InputSettings.h>
+
 #include <string>
 
 namespace Ember {
+
+	struct InputAction;
 
 	class ProjectSettingsDialog
 	{
 	public:
 		enum class Category {
 			General,
+			Input,
 			Physics,
 			Rendering
 		};
 
-		ProjectSettingsDialog();
-		~ProjectSettingsDialog();
+		ProjectSettingsDialog() = default;
+		~ProjectSettingsDialog() = default;
 
 		void OnImGuiRender();
 
@@ -26,9 +34,61 @@ namespace Ember {
 		void RenderGeneralSettings();
 		void RenderPhysicsSettings();
 		void RenderRenderingSettings();
+		void RenderInputSettings();
 
+		// Device conditioning, above the action list
+		void RenderInputDeviceSettings();
+		void RenderStickSettings(const char* label, GamepadStick stick, GamepadAxis xAxis, GamepadAxis yAxis);
+		void RenderTriggerSettings(const char* label, GamepadTrigger trigger, GamepadAxis axis);
+
+		// An exponent is not tunable without seeing it, so each stick draws its curve and where the
+		// pad is sitting on it right now
+		void RenderResponsePreview(const StickSettings& settings, GamepadAxis xAxis, GamepadAxis yAxis);
+
+		// Input action list
+		void RenderAddActionRow();
+		void RenderActionRow(int actionIndex, const InputAction& action);
+		void RenderTriggerRow(int actionIndex, int triggerIndex, const InputTrigger& trigger);
+
+		// Called from OnImGuiRender so the nested modals are never parented to a child window
+		void RenderTriggerConfigPopup();
+		void RenderRemoveActionPopup();
+
+		// Queues the trigger popup; a triggerIndex of -1 means a new trigger rather than an edit
+		void OpenTriggerConfigPopup(int actionIndex, int triggerIndex);
+
+		// One device section of the trigger picker; returns true when a control was double-clicked
+		bool RenderKeyboardSection();
+		bool RenderMouseSection();
+		bool RenderGamepadButtonSection();
+		bool RenderGamepadAxisSection();
+
+		// The only four places the input UI touches the backend - everything else just reads
+		void AddInputAction(const std::string& name);
+		void RemoveInputAction(int index);
+		void CommitPendingTrigger();
+		void RemoveInputTrigger(int actionIndex, int triggerIndex);
+
+	private:
 		std::string m_PopupName = "Project Settings";
 		Category m_SelectedCategory = Category::General; // Default tab
+
+		// Input action authoring state
+		char m_NewActionName[64] = "";
+		bool m_FocusNewActionField = false;
+
+		// Action queued for the remove confirmation, and the request that opens that popup
+		int m_ActionPendingRemoval = -1;
+		bool m_RemovePopupRequested = false;
+
+		InputActionManager& m_InputActionManager = Application::Instance().GetInputActionManager();
+
+		// Trigger the config popup is building, and where it gets written back
+		InputTrigger m_PendingTrigger;
+		int m_TriggerActionIndex = -1;
+		int m_TriggerEditIndex = -1;    // -1 while adding rather than editing an existing trigger
+		char m_TriggerSearch[64] = "";
+		bool m_TriggerPopupRequested = false;
 	};
 
 }

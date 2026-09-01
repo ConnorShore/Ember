@@ -41,41 +41,32 @@ namespace Ember {
 		m_Window = Window::Create(applicationSpes.WindowSpecification);
 		m_Window->SetEventCallback(EB_EVENT_FUNCTION(OnEvent(e)));
 
-		m_ImGuiLayer = ScopedPtr<ImGuiLayer>::Create();
-		m_ImGuiLayer->OnAttach();
+		m_ImGuiLayer.OnAttach();
 
-		m_AssetManager = ScopedPtr<AssetManager>::Create();
-		m_AssetManager->SetEngineAssetDirectory(applicationSpes.EngineAssetDir);
-		m_AssetManager->SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
-		m_AssetManager->LoadDefaults();
+		m_AssetManager.SetEngineAssetDirectory(applicationSpes.EngineAssetDir);
+		m_AssetManager.SetProjectAssetDirectory(applicationSpes.ProjectAssetDir);
+		m_AssetManager.LoadDefaults();
 
-		// Must exist before ScriptEngine::Init(): binding the script API publishes `GameData` as a
-		// pointer to this manager, so creating it afterwards bound a pointer to a not-yet-created
-		// object. That used to be hidden because every BindAPI call re-ran the save-game binder and
-		// overwrote the bad pointer; the bindings are registered once per Lua state now, so the
-		// ordering has to actually be right.
-		m_SaveGameManager = ScopedPtr<SaveGameManager>::Create();
-
+		// m_SaveGameManager and m_InputActions are members by value, so both already exist here -
+		// which matters, because binding the script API publishes `GameData` as a pointer to the
+		// save-game manager. See the note on their declarations in Application.h.
 		Random::Init();
 		ScriptEngine::Init();
 
-		m_SystemManager = ScopedPtr<SystemManager>::Create();
-		m_SystemManager->RegisterSystem(SharedPtr<ScriptSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<VisibilitySystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<AnimationSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<PhysicsSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<TransformSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<BoneSocketSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<ParticleSystem>::Create(Constants::Renderer::MaxParticles));
-		m_SystemManager->RegisterSystem(SharedPtr<RenderSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<CharacterControllerSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<LifecycleSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<AudioSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<AISystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<UILayoutSystem>::Create());
-		m_SystemManager->RegisterSystem(SharedPtr<UIInputSystem>::Create());
-
-		m_SceneManager = ScopedPtr<SceneManager>::Create();
+		m_SystemManager.RegisterSystem(SharedPtr<ScriptSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<VisibilitySystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<AnimationSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<PhysicsSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<TransformSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<BoneSocketSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<ParticleSystem>::Create(Constants::Renderer::MaxParticles));
+		m_SystemManager.RegisterSystem(SharedPtr<RenderSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<CharacterControllerSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<LifecycleSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<AudioSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<AISystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<UILayoutSystem>::Create());
+		m_SystemManager.RegisterSystem(SharedPtr<UIInputSystem>::Create());
 
 		EB_CORE_INFO("Application created!");
 	}
@@ -85,11 +76,11 @@ namespace Ember {
 		for (auto& layer : m_LayerStack)
 			layer->OnDetach();
 
-		m_ImGuiLayer->OnDetach();
+		m_ImGuiLayer.OnDetach();
 
 		// Written per-user rather than into the engine asset directory, which an installed build has
 		// no permission to modify.
-		AssetRegistrySerializer serializer(m_AssetManager.Ptr());
+		AssetRegistrySerializer serializer(&m_AssetManager);
 		serializer.Serialize((Paths::UserDataDir() / "assets.eba").string());
 
 		//ScriptEngine::Shutdown();
@@ -99,13 +90,13 @@ namespace Ember {
 
 	void Application::PushLayer(ScopedPtr<Layer> layer)
 	{
-		layer->SetAssetManagerHandle(m_AssetManager.Ptr());
+		layer->SetAssetManagerHandle(&m_AssetManager);
 		m_LayerStack.PushLayer(std::move(layer));
 	}
 
 	void Application::PushCanvasLayer(ScopedPtr<Layer> canvas)
 	{
-		canvas->SetAssetManagerHandle(m_AssetManager.Ptr());
+		canvas->SetAssetManagerHandle(&m_AssetManager);
 		m_LayerStack.PushCanvasLayer(std::move(canvas));
 	}
 
@@ -144,9 +135,19 @@ namespace Ember {
 		while (m_Running) {
 			EB_PROFILE_SCOPE("Frame");
 
+			// The delta reset has to stay immediately ahead of the poll that accumulates it.
+			Input::ResetMouseDelta();
+			m_Window->PollEvents();
+
+			if (!m_Running)
+				break;
+
 			TimeStamp currentTime = Timer::Now();
 			TimeStep delta = currentTime - lastTime;
 			lastTime = currentTime;
+
+			Input::BeginFrame();
+			m_InputActions.Evaluate();
 
 			{
 				EB_PROFILE_SCOPE("LayerStack::OnUpdate");
@@ -156,27 +157,20 @@ namespace Ember {
 
 			{
 				EB_PROFILE_SCOPE("ImGuiLayer::Frame");
-				m_ImGuiLayer->BeginFrame();
+				m_ImGuiLayer.BeginFrame();
 
 				for (auto& layer : m_LayerStack)
 					layer->OnImGuiRender(delta);
 
-				m_ImGuiLayer->EndFrame();
-			}
-
-			Input::ResetMouseDelta();
-
-			{
-				// Includes glfwPollEvents (OS/input) and SwapBuffers (blocks on vsync if enabled) —
-				// see Windows::Window::OnUpdate for the finer-grained split of the two.
-				EB_PROFILE_SCOPE("Window::OnUpdate");
-				m_Window->OnUpdate();
+				m_ImGuiLayer.EndFrame();
 			}
 
 			{
 				EB_PROFILE_SCOPE("SceneManager::ExecuteSceneSwap");
-				m_SceneManager->ExecuteSceneSwap();
+				m_SceneManager.ExecuteSceneSwap();
 			}
+
+			m_Window->Present();
 		}
 
 		EB_CORE_INFO("Application stopped running!");
@@ -220,13 +214,13 @@ namespace Ember {
 
 	bool Application::OnMousePressed(MousePressedEvent& e)
 	{
-		Input::SetMouseButtonState(e.GetMouseButton(), true);
+		Input::SetMouseControlState(e.GetMouseControl(), true);
 		return false;
 	}
 
 	bool Application::OnMouseReleased(MouseReleasedEvent& e)
 	{
-		Input::SetMouseButtonState(e.GetMouseButton(), false);
+		Input::SetMouseControlState(e.GetMouseControl(), false);
 		return false;
 	}
 

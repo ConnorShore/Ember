@@ -8,87 +8,10 @@
 #include "Ember/Render/Texture2D.h"
 #include "Ember/Asset/AssetManager.h"
 #include "Ember/Math/Math.h"
+#include "Ember/Utils/YamlUtils.h"
 
 namespace Ember {
 	namespace Util {
-		inline static void SerializeVector2f(ryml::NodeRef node, const Vector2f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-		}
-		inline static void SerializeVector3f(ryml::NodeRef node, const Vector3f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-			node.append_child() << vec.z;
-		}
-		inline static void SerializeVector4f(ryml::NodeRef node, const Vector4f& vec)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			node.append_child() << vec.x;
-			node.append_child() << vec.y;
-			node.append_child() << vec.z;
-			node.append_child() << vec.w;
-		}
-
-		inline static void SerializeMatrix4f(ryml::NodeRef node, const Matrix4f& mat)
-		{
-			node |= ryml::SEQ | ryml::FLOW_SL;
-			for (int i = 0; i < 4; i++)
-			{
-				for (int j = 0; j < 4; j++)
-				{
-					node.append_child() << mat[i][j];
-				}
-			}
-		}
-
-		inline static void DeserializeVector2f(ryml::NodeRef node, Vector2f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 2)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-			}
-		}
-
-		inline static void DeserializeVector3f(ryml::NodeRef node, Vector3f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 3)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-				node[2] >> vec.z;
-			}
-		}
-
-		inline static void DeserializeVector4f(ryml::NodeRef node, Vector4f& vec)
-		{
-			if (node.is_seq() && node.num_children() == 4)
-			{
-				node[0] >> vec.x;
-				node[1] >> vec.y;
-				node[2] >> vec.z;
-				node[3] >> vec.w;
-			}
-		}
-
-		inline static void DeserializeMatrix4f(ryml::NodeRef node, Matrix4f& mat)
-		{
-			if (node.is_seq() && node.num_children() == 16)
-			{
-				for (int i = 0; i < 4; i++)
-				{
-					for (int j = 0; j < 4; j++)
-					{
-						node[i * 4 + j] >> mat[i][j];
-					}
-				}
-			}
-		}
-
 		inline static void SerializeGeneralAsset(ryml::NodeRef node, const SharedPtr<Asset>& asset)
 		{
 			node |= ryml::MAP;
@@ -183,16 +106,14 @@ namespace Ember {
 			node["RenderQueue"] >> renderQueue;
 
 			std::string instancedStr = "false";
-			if (node.has_child("Instanced"))
-				node["Instanced"] >> instancedStr;
+			ReadField(node, "Instanced", instancedStr);
 
 			SharedPtr<MaterialBase> material;
 
 			if (instancedStr == "true")
 			{
 				uint64_t baseMaterialUUID = 0;
-				if (node.has_child("BaseMaterialUUID"))
-					node["BaseMaterialUUID"] >> baseMaterialUUID;
+				ReadField(node, "BaseMaterialUUID", baseMaterialUUID);
 
 				SharedPtr<Material> baseMaterial = assetManager->GetAsset<Material>(baseMaterialUUID);
 

@@ -3,6 +3,8 @@
 
 #include "Ember/Utils/SerializationUtils.h"
 #include "Ember/ECS/System/PhysicsSystem.h"
+#include "Ember/Input/InputCodeNames.h"
+#include "Ember/Input/Input.h"
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -12,6 +14,61 @@
 #include <sstream>
 
 namespace Ember {
+
+	namespace {
+
+		void WriteStickSettings(ryml::NodeRef parent, const char* key, const StickSettings& settings)
+		{
+			auto node = parent[ryml::to_csubstr(key)];
+			node |= ryml::MAP;
+			node["Deadzone"] << settings.Deadzone;
+			node["Saturation"] << settings.Saturation;
+			node["Exponent"] << settings.Exponent;
+			node["Actuation"] << settings.Actuation;
+			node["InvertX"] << settings.InvertX;
+			node["InvertY"] << settings.InvertY;
+		}
+
+		void WriteTriggerSettings(ryml::NodeRef parent, const char* key, const TriggerSettings& settings)
+		{
+			auto node = parent[ryml::to_csubstr(key)];
+			node |= ryml::MAP;
+			node["Deadzone"] << settings.Deadzone;
+			node["Saturation"] << settings.Saturation;
+			node["Exponent"] << settings.Exponent;
+			node["Actuation"] << settings.Actuation;
+		}
+
+		// A missing block keeps the struct defaults, which are the neutral pre-conditioning values.
+		template<typename NodeType>
+		void ReadStickSettings(const NodeType& parent, const char* key, StickSettings& settings)
+		{
+			if (!parent.has_child(ryml::to_csubstr(key)))
+				return;
+
+			auto node = parent[ryml::to_csubstr(key)];
+			Util::ReadField(node, "Deadzone", settings.Deadzone);
+			Util::ReadField(node, "Saturation", settings.Saturation);
+			Util::ReadField(node, "Exponent", settings.Exponent);
+			Util::ReadField(node, "Actuation", settings.Actuation);
+			Util::ReadField(node, "InvertX", settings.InvertX);
+			Util::ReadField(node, "InvertY", settings.InvertY);
+		}
+
+		template<typename NodeType>
+		void ReadTriggerSettings(const NodeType& parent, const char* key, TriggerSettings& settings)
+		{
+			if (!parent.has_child(ryml::to_csubstr(key)))
+				return;
+
+			auto node = parent[ryml::to_csubstr(key)];
+			Util::ReadField(node, "Deadzone", settings.Deadzone);
+			Util::ReadField(node, "Saturation", settings.Saturation);
+			Util::ReadField(node, "Exponent", settings.Exponent);
+			Util::ReadField(node, "Actuation", settings.Actuation);
+		}
+
+	}
 
 	bool ProjectSerializer::Serialize(const std::string& filePath)
 	{
@@ -95,6 +152,48 @@ namespace Ember {
 			}
 		}
 
+		// Input Settings
+		auto& inputActionManager = Application::Instance().GetInputActionManager();
+		auto inputNode = settingsNode["Input"];
+		inputNode |= ryml::MAP;
+
+		WriteStickSettings(inputNode, "LeftStick", Input::GetStickSettings(GamepadStick::Left));
+		WriteStickSettings(inputNode, "RightStick", Input::GetStickSettings(GamepadStick::Right));
+		WriteTriggerSettings(inputNode, "LeftTrigger", Input::GetTriggerSettings(GamepadTrigger::Left));
+		WriteTriggerSettings(inputNode, "RightTrigger", Input::GetTriggerSettings(GamepadTrigger::Right));
+
+		auto mouseNode = inputNode["Mouse"];
+		mouseNode |= ryml::MAP;
+		mouseNode["InvertX"] << Input::GetMouseSettings().InvertX;
+		mouseNode["InvertY"] << Input::GetMouseSettings().InvertY;
+
+		auto actionsNode = inputNode["Actions"];
+		actionsNode |= ryml::SEQ;
+		for (const auto& action : inputActionManager.GetActions())
+		{
+			auto actionNode = actionsNode.append_child();
+			actionNode |= ryml::MAP;
+			actionNode["Name"] << action.Name;
+
+			auto triggersNode = actionNode["Triggers"];
+			triggersNode |= ryml::SEQ;
+			for (const auto& trigger : action.Triggers)
+			{
+				// The trigger string carries the device, the control type and the modifiers together;
+				// a bare control id cannot, since a gamepad button and axis share the same integers.
+				const std::string triggerText = InputCodeNames::TriggerToString(trigger);
+				if (triggerText.empty())
+				{
+					EB_CORE_WARN("ProjectSerializer::Serialize: Dropping unserializable trigger on action '{0}'", action.Name);
+					continue;
+				}
+
+				auto triggerNode = triggersNode.append_child();
+				triggerNode |= ryml::MAP;
+				triggerNode["Trigger"] << triggerText;
+			}
+		}
+
 		std::ofstream fout(filePath);
 		fout << tree;
 		fout.close();
@@ -167,8 +266,7 @@ namespace Ember {
 				filterNode["Name"] >> filterName;
 
 				uint32_t slotIndex = fallbackIndex;
-				if (filterNode.has_child("Index"))
-					filterNode["Index"] >> slotIndex;
+				Util::ReadField(filterNode, "Index", slotIndex);
 
 				if (slotIndex < FilterManager::MaxSlots)
 					filters[slotIndex] = filterName;
@@ -193,8 +291,7 @@ namespace Ember {
 					renderLayerNode["Name"] >> layerName;
 
 					uint32_t slotIndex = fallbackIndex;
-					if (renderLayerNode.has_child("Index"))
-						renderLayerNode["Index"] >> slotIndex;
+					Util::ReadField(renderLayerNode, "Index", slotIndex);
 
 					if (slotIndex < FilterManager::MaxSlots)
 						renderLayers[slotIndex] = layerName;
@@ -204,6 +301,59 @@ namespace Ember {
 			}
 
 			renderLayerManager.InitWithFilters(renderLayers);
+
+			// Input Settings
+			auto& inputActionManager = Application::Instance().GetInputActionManager();
+			inputActionManager.ClearActions();
+
+			// Reset first so a project that omits a block gets the defaults rather than whatever the
+			// previously opened project left behind.
+			Input::GetSettings() = InputSettings{};
+
+			if (settingsNode.has_child("Input"))
+			{
+				auto inputNode = settingsNode["Input"];
+
+				ReadStickSettings(inputNode, "LeftStick", Input::GetStickSettings(GamepadStick::Left));
+				ReadStickSettings(inputNode, "RightStick", Input::GetStickSettings(GamepadStick::Right));
+				ReadTriggerSettings(inputNode, "LeftTrigger", Input::GetTriggerSettings(GamepadTrigger::Left));
+				ReadTriggerSettings(inputNode, "RightTrigger", Input::GetTriggerSettings(GamepadTrigger::Right));
+
+				if (inputNode.has_child("Mouse"))
+				{
+					auto mouseNode = inputNode["Mouse"];
+					Util::ReadField(mouseNode, "InvertX", Input::GetMouseSettings().InvertX);
+					Util::ReadField(mouseNode, "InvertY", Input::GetMouseSettings().InvertY);
+				}
+
+				if (inputNode.has_child("Actions"))
+				{
+					auto actionsNode = inputNode["Actions"];
+					for (auto actionNode : actionsNode.children())
+					{
+						InputAction action;
+						actionNode["Name"] >> action.Name;
+						auto triggersNode = actionNode["Triggers"];
+						for (auto triggerNode : triggersNode.children())
+						{
+							std::string triggerText;
+							triggerNode["Trigger"] >> triggerText;
+
+							// A binding that no longer names a real control is dropped rather than kept as
+							// an unbound trigger, which would silently fire on nothing.
+							InputTrigger trigger;
+							if (!InputCodeNames::TriggerFromString(triggerText, trigger))
+							{
+								EB_CORE_ERROR("ProjectSerializer::Deserialize: Unrecognized trigger '{0}' on action '{1}'", triggerText, action.Name);
+								continue;
+							}
+
+							action.Triggers.push_back(trigger);
+						}
+						inputActionManager.AddAction(action);
+					}
+				}
+			}
 		}
 
 		m_Project->m_ProjectDirectory = std::filesystem::path(filePath).parent_path();

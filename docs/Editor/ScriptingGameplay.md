@@ -70,10 +70,10 @@ end
 function Mover:OnUpdate(entity, delta)
     local move = Vector3f.new(0, 0, 0)
 
-    if Input.IsKeyPressed(KeyCode.W) then move.z = move.z - 1 end
-    if Input.IsKeyPressed(KeyCode.S) then move.z = move.z + 1 end
-    if Input.IsKeyPressed(KeyCode.A) then move.x = move.x - 1 end
-    if Input.IsKeyPressed(KeyCode.D) then move.x = move.x + 1 end
+    if Input.IsKeyDown(KeyCode.W) then move.z = move.z - 1 end
+    if Input.IsKeyDown(KeyCode.S) then move.z = move.z + 1 end
+    if Input.IsKeyDown(KeyCode.A) then move.x = move.x - 1 end
+    if Input.IsKeyDown(KeyCode.D) then move.x = move.x + 1 end
 
     if Math.Length(move) > 0 then
         move = Math.Normalize(move)

@@ -23,6 +23,9 @@ scripting layer so games can be built without recompiling the engine.
 - **Skeletal animation** with crossfading, animation events, and a full animator component.
 - **Spatial audio** powered by [miniaudio](https://github.com/mackron/miniaudio).
 - **AI** — waypoint paths, pathfinding agents, and local avoidance.
+- **Rebindable input** — named actions bound to keys, mouse controls or gamepad axes, authored in
+  Project Settings and stored with the project. Gamepads are mapped through SDL_GameControllerDB
+  (PlayStation pads included), with per-stick deadzone, saturation, response curve and inversion.
 - **Lua scripting** via [sol2](https://github.com/ThePhD/sol2) — hot-reloadable per-entity behaviours
   with editor-exposed properties. See [docs/ScriptingAPI.md](docs/ScriptingAPI.md).
 - **Beginner editor documentation** for Ember-Forge projects, scenes, assets, components, scripting,

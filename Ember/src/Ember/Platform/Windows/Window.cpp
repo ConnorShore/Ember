@@ -30,6 +30,73 @@ namespace Ember {
 
 		static bool s_GLFWInitialized = false;
 
+		// Layered over GLFW's built-in table so a pad newer than the vendored SDL_GameControllerDB
+		// snapshot can be enabled without patching the submodule.
+		static std::filesystem::path GamepadMappingsPath()
+		{
+			return Paths::EngineAssets() / "input/gamecontrollerdb.txt";
+		}
+
+		static void LogJoystick(int jid)
+		{
+			const char* guid = glfwGetJoystickGUID(jid);
+			const char* name = glfwGetJoystickName(jid);
+
+			if (glfwJoystickIsGamepad(jid))
+			{
+				const char* mapped = glfwGetGamepadName(jid);
+				EB_CORE_INFO("Gamepad {} connected: '{}' [{}]", jid, mapped ? mapped : "unknown", guid ? guid : "no GUID");
+				return;
+			}
+
+			// PollGamepadStates drops unmapped pads, so name the GUID a mapping line would have to match.
+			EB_CORE_WARN("Joystick {} connected but GLFW has no gamepad mapping for it: '{}' [{}]. Add an "
+				"SDL_GameControllerDB line for that GUID to {} to enable it.",
+				jid, name ? name : "unknown", guid ? guid : "no GUID", GamepadMappingsPath().string());
+		}
+
+		static void JoystickCallback(int jid, int event)
+		{
+			if (event == GLFW_CONNECTED)
+			{
+				LogJoystick(jid);
+				return;
+			}
+
+			EB_CORE_INFO("Joystick {} disconnected.", jid);
+		}
+
+		static void InitGamepadSupport()
+		{
+			const std::filesystem::path mappingsPath = GamepadMappingsPath();
+			if (std::filesystem::exists(mappingsPath))
+			{
+				std::ifstream file(mappingsPath);
+				std::stringstream mappings;
+				mappings << file.rdbuf();
+
+				if (glfwUpdateGamepadMappings(mappings.str().c_str()))
+				{
+					EB_CORE_INFO("Loaded extra gamepad mappings from {}", mappingsPath.string());
+				}
+				else
+				{
+					EB_CORE_WARN("Failed to parse gamepad mappings at {}", mappingsPath.string());
+				}
+			}
+
+			glfwSetJoystickCallback(JoystickCallback);
+
+			// The callback only fires on hotplug, so anything already attached has to be reported here.
+			for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid)
+			{
+				if (glfwJoystickPresent(jid))
+				{
+					LogJoystick(jid);
+				}
+			}
+		}
+
 		Window::Window(const WindowConfig& config)
 			: m_WindowData({ config.Title, config.Width, config.Height })
 		{
@@ -50,6 +117,7 @@ namespace Ember {
 				}
 
 				glfwSetErrorCallback(GLFWErrorCallback);
+				InitGamepadSupport();
 				s_GLFWInitialized = true;
 			}
 
@@ -142,18 +210,19 @@ namespace Ember {
 			EB_CORE_INFO("GLFW window destroyed!");
 		}
 
-		void Window::OnUpdate()
+		void Window::PollEvents()
 		{
-			{
-				EB_PROFILE_SCOPE("Window::PollEvents");
-				glfwPollEvents();
-			}
-			{
-				// Blocks here until vsync if enabled — a large/variable duration here usually means
-				// GPU-bound or vsync-bound, not CPU-bound; compare against the "Frame" total.
-				EB_PROFILE_SCOPE("Window::SwapBuffers");
-				m_GraphicsContext->SwapBuffers();
-			}
+			EB_PROFILE_SCOPE("Window::PollEvents");
+			glfwPollEvents();
+			PollGamepadStates();
+		}
+
+		void Window::Present()
+		{
+			// Blocks here until vsync if enabled — a large/variable duration here usually means
+			// GPU-bound or vsync-bound, not CPU-bound; compare against the "Frame" total.
+			EB_PROFILE_SCOPE("Window::SwapBuffers");
+			m_GraphicsContext->SwapBuffers();
 		}
 
 		void Window::SetVSync(bool enabled)
@@ -186,6 +255,13 @@ namespace Ember {
 				break;
 			case CursorMode::Locked:
 				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+				// Bypasses the OS pointer-acceleration curve so a slow drag and a fast flick keep the
+				// same counts-per-degree. GLFW only honours it while the cursor is disabled.
+				if (glfwRawMouseMotionSupported())
+				{
+					glfwSetInputMode(m_Window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+				}
 				break;
 			}
 		}
@@ -245,29 +321,35 @@ namespace Ember {
 						break;
 					}
 					}
+
+					Ember::Input::SetLastUsedInputDevice(InputDevice::Keyboard);
 				});
 
 			// Mouse Callbacks
 			glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* w, int button, int action, int mods)
 				{
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
-					MouseButton mouseButton = Input::GlfwMouseButtonToEmberMouseButton(button);
+					MouseControl mouseControl{};
+					if (!Input::GlfwMouseButtonToEmberMouseControl(button, mouseControl))
+						return;
 
 					switch (action)
 					{
 					case GLFW_PRESS:
 					{
-						MousePressedEvent e(mouseButton);
+						MousePressedEvent e(mouseControl);
 						data.EventCallback(e);
 						break;
 					}
 					case GLFW_RELEASE:
 					{
-						MouseReleasedEvent e(mouseButton);
+						MouseReleasedEvent e(mouseControl);
 						data.EventCallback(e);
 						break;
 					}
 					}
+
+					Ember::Input::SetLastUsedInputDevice(InputDevice::Mouse);
 				});
 
 			// Mouse Move callback
@@ -276,6 +358,8 @@ namespace Ember {
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
 					MouseMovedEvent e(Vector2f((float)xpos, (float)ypos));
 					data.EventCallback(e);
+
+					Ember::Input::SetLastUsedInputDevice(InputDevice::Mouse);
 				});
 
 			// Mouse Scroll callback
@@ -284,9 +368,63 @@ namespace Ember {
 					WindowData& data = *(WindowData*)glfwGetWindowUserPointer(w);
 					MouseScrolledEvent e(Vector2f((float)xoffset, (float)yoffset));
 					data.EventCallback(e);
+
+					Ember::Input::SetLastUsedInputDevice(InputDevice::Mouse);
 				});
 
 		}
 
+		void Window::PollGamepadStates()
+		{
+			for (size_t i = 0; i < Ember::Input::MaxGamepads; ++i)
+			{
+				GamepadState& state = Ember::Input::GetGamepadState(i);
+				const int joystick = static_cast<int>(i);
+
+				state.PreviousDown = state.Down;
+
+				GLFWgamepadstate glfwState;
+				const bool connected = glfwJoystickPresent(joystick)
+					&& glfwJoystickIsGamepad(joystick)
+					&& glfwGetGamepadState(joystick, &glfwState);
+
+				// Clearing on loss matters: a pad unplugged mid-hold would otherwise stay latched down.
+				if (!connected)
+				{
+					state.Connected = false;
+					state.Down = 0;
+					state.Axis.fill(0.0f);
+					state.RawAxis.fill(0.0f);
+					continue;
+				}
+
+				state.Connected = true;
+				state.Down = 0;
+
+				// GLFW's _LAST codes name the final control, unlike Ember's one-past-the-end Last sentinels.
+				for (int button = 0; button <= GLFW_GAMEPAD_BUTTON_LAST; ++button)
+				{
+					if (glfwState.buttons[button] != GLFW_PRESS)
+					{
+						continue;
+					}
+
+					GamepadButton control{};
+					if (Input::GlfwGamepadButtonToEmberGamepadControl(button, control))
+					{
+						state.Down |= (1 << static_cast<GamepadButtonType>(control));
+					}
+				}
+
+				for (int axis = 0; axis <= GLFW_GAMEPAD_AXIS_LAST; ++axis)
+				{
+					GamepadAxis control{};
+					if (Input::GlfwGamepadAxisToEmberGamepadControl(axis, control))
+					{
+						state.RawAxis[static_cast<size_t>(control)] = glfwState.axes[axis];
+					}
+				}
+			}
+		}
 	}
 }

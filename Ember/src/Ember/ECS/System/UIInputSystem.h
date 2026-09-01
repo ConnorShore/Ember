@@ -41,9 +41,17 @@ namespace Ember {
 		void Activate(Scene* scene, EntityID entity);
 		void SyncToggleVisuals(Scene* scene);
 		EntityID FindSelectableInDirection(Scene* scene, EntityID from, const Vector2f& direction) const;
+		void Navigate(Scene* scene, const Vector2f& direction);
 		bool ConsumeKeyEdge(KeyCode key);
+		bool ConsumeGamepadButtonEdge(GamepadButton button);
+		bool ConsumeGamepadAxisEdge(GamepadAxis axis, bool positive);
 
 		EntityID FindFirstSelectable(Scene* scene) const;
+
+		// A menu is usually closed by hiding it, which leaves the focus pointing at a selectable that
+		// is no longer on screen - and submit would still activate it.
+		bool CanReceiveFocus(Scene* scene, EntityID entity) const;
+		void DropFocusIfUnusable(Scene* scene);
 
 		EntityID m_Hovered = (EntityID)Constants::Entities::InvalidEntityID;
 		EntityID m_Pressed = (EntityID)Constants::Entities::InvalidEntityID;
@@ -58,6 +66,12 @@ namespace Ember {
 
 		// Input exposes level state only, so edges are derived here rather than widening its API.
 		std::unordered_map<KeyCode, bool> m_PreviousKeyStates;
+		std::unordered_map<GamepadButton, bool> m_PreviousGamepadStates;
+
+		// A stick's two directions need separate latches, or flicking from one to the other reads
+		// as "still held" and the second direction never fires.
+		std::unordered_map<GamepadAxis, bool> m_PreviousGamepadAxesPositive;
+		std::unordered_map<GamepadAxis, bool> m_PreviousGamepadAxesNegative;
 	};
 
 }

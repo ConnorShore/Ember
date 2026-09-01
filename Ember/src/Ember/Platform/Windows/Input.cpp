@@ -11,7 +11,8 @@ namespace Ember {
 		// Maps GLFW key codes to Ember key codes. They currently match, so no conversion is needed.
 		KeyCode Input::GlfwKeyCodeToEmberKeyCode(int key)
 		{
-			if (key < 0 || KeyCode::Last < key)
+			// Last is the array size rather than a key, so it is out of range, not the upper bound.
+			if (key < 0 || key >= static_cast<int>(KeyCode::Last))
 			{
 				EB_CORE_ASSERT(false, "Undefined key code: {}", key);
 				return KeyCode::Unknown;
@@ -21,15 +22,42 @@ namespace Ember {
 		}
 
 		// Maps GLFW mouse button codes to Ember codes. They currently match, so no conversion is needed.
-		Ember::MouseButton Input::GlfwMouseButtonToEmberMouseButton(int button)
+		bool Input::GlfwMouseButtonToEmberMouseControl(int button, MouseControl& out)
 		{
-			if (MouseButton::Last < button)
+			// GLFW_MOUSE_BUTTON_1..8 land on Left, Right, Middle and Button4..Button8.
+			if (button < 0 || button >= static_cast<int>(MouseControl::Last))
 			{
 				EB_CORE_ASSERT(false, "Undefined mouse button code: {0}", button);
-				return MouseButton::Unknown;
+				return false;
 			}
 
-			return static_cast<MouseButton>(button);
+			out = static_cast<MouseControl>(button);
+			return true;
+		}
+
+		// Maps GLFW gamepad button codes to Ember codes. They currently match, so no conversion is needed.
+		bool Input::GlfwGamepadButtonToEmberGamepadControl(int button, GamepadButton& out)
+		{
+			if (button < 0 || button >= static_cast<int>(GamepadButton::Last))
+			{
+				EB_CORE_ASSERT(false, "Undefined gamepad button code: {0}", button);
+				return false;
+			}
+
+			out = static_cast<GamepadButton>(button);
+			return true;
+		}
+
+		bool Input::GlfwGamepadAxisToEmberGamepadControl(int axis, GamepadAxis& out)
+		{
+			if (axis < 0 || axis >= static_cast<int>(GamepadAxis::Last))
+			{
+				EB_CORE_ASSERT(false, "Undefined gamepad axis code: {0}", axis);
+				return false;
+			}
+
+			out = static_cast<GamepadAxis>(axis);
+			return true;
 		}
 
 	}

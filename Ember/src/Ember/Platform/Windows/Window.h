@@ -17,7 +17,8 @@ namespace Ember {
 			Window(const WindowConfig& config);
 			virtual ~Window();
 
-			virtual void OnUpdate() override;
+			virtual void PollEvents() override;
+			virtual void Present() override;
 
 			virtual void SetVSync(bool enabled) override;
 			virtual bool IsVSync() const override;
@@ -34,6 +35,7 @@ namespace Ember {
 
 		private:
 			void RegisterCallbacks();
+			void PollGamepadStates();
 
 		private:
 			GLFWwindow* m_Window;

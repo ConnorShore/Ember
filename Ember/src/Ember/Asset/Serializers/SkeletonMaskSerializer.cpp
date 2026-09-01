@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "SkeletonMaskSerializer.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 #include "Ember/Core/Application.h"
 
@@ -125,8 +126,8 @@ namespace Ember {
 			{
 				std::string boneName;
 				float weight = 0.0f;
-				if (weightNode.has_child("Bone")) weightNode["Bone"] >> boneName;
-				if (weightNode.has_child("Weight")) weightNode["Weight"] >> weight;
+				Util::ReadField(weightNode, "Bone", boneName);
+				Util::ReadField(weightNode, "Weight", weight);
 				if (!boneName.empty())
 					skeletonMask->SetBoneWeight(boneName, weight);
 			}

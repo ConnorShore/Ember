@@ -13,16 +13,16 @@ namespace Ember {
 	class MousePressedEvent : public Event
 	{
 	public:
-		MousePressedEvent(MouseButton button)
-			: m_Button(button) { }
+		MousePressedEvent(MouseControl control)
+			: m_Control(control) { }
 
-		const MouseButton GetMouseButton() const { return m_Button; }
+		const MouseControl GetMouseControl() const { return m_Control; }
 
 		EB_EVENT_TYPE_INITIALIZER(MouseButtonPressed);
 		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryInput | EventCategoryMouse | EventCategoryMouseButton);
 
 	private:
-		MouseButton m_Button;
+		MouseControl m_Control;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -32,17 +32,17 @@ namespace Ember {
 	class MouseReleasedEvent : public Event
 	{
 	public:
-		MouseReleasedEvent(MouseButton button)
-			: m_Button(button) {
+		MouseReleasedEvent(MouseControl control)
+			: m_Control(control) {
 		}
 
-		const MouseButton GetMouseButton() const { return m_Button; }
+		const MouseControl GetMouseControl() const { return m_Control; }
 
 		EB_EVENT_TYPE_INITIALIZER(MouseButtonReleased);
 		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryInput | EventCategoryMouse | EventCategoryMouseButton);
 
 	private:
-		MouseButton m_Button;
+		MouseControl m_Control;
 	};
 
 	//////////////////////////////////////////////////////////////////////////

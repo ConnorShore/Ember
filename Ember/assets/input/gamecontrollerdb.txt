@@ -1,0 +1,20 @@
+# Extra gamepad mappings, loaded over GLFW's built-in table at startup (Window.cpp / InitGamepadSupport).
+#
+# GLFW only reports a joystick as a gamepad when it has a mapping for that device's GUID. Pads released
+# after the vendored GLFW's SDL_GameControllerDB snapshot are therefore invisible to Input until a line
+# for them is added here - which is preferable to patching the GLFW submodule.
+#
+# Any line not starting with a hex digit is ignored, so these comments are safe. An entry whose GUID
+# matches a built-in mapping replaces it.
+#
+# When a pad is not recognised, the engine logs a warning naming its exact GUID - paste that GUID into
+# a line below. Verified mappings for most devices can be copied from:
+#   https://github.com/mdqinc/SDL_GameControllerDB
+
+# Sony DualSense Edge (VID 054C, PID 0DF2). Absent from the vendored GLFW 3.5.0 table entirely.
+#
+# The GUID is confirmed against GLFW's Win32 DirectInput construction, which packs guidProduct.Data1
+# as (PID << 16) | VID. The control layout is copied from the stock DualSense (PID 0CE6): the Edge
+# reports the same base HID layout, with its rear levers remapped on-device onto existing buttons.
+# That layout was verified on a real DualSense Edge over USB-C and reports correctly.
+030000004c050000f20d000000000000,PS5 Controller,a:b1,b:b2,back:b8,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b12,leftshoulder:b4,leftstick:b10,lefttrigger:a3,leftx:a0,lefty:a1,misc1:b13,rightshoulder:b5,rightstick:b11,righttrigger:a4,rightx:a2,righty:a5,start:b9,x:b0,y:b3,platform:Windows,

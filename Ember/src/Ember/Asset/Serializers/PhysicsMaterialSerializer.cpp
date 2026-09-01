@@ -1,5 +1,6 @@
 #include "ebpch.h"
 #include "PhysicsMaterialSerializer.h"
+#include "Ember/Utils/SerializationUtils.h"
 
 namespace {
 	template<typename T>
@@ -76,12 +77,10 @@ namespace Ember {
 		ryml::NodeRef propertiesNode = root["Properties"];
 		
 		float friction = 0.5f;
-		if (propertiesNode.has_child("Friction"))
-			propertiesNode["Friction"] >> friction;
+		Util::ReadField(propertiesNode, "Friction", friction);
 
 		float bounciness = 0.0f;
-		if (propertiesNode.has_child("Bounciness"))
-			propertiesNode["Bounciness"] >> bounciness;
+		Util::ReadField(propertiesNode, "Bounciness", bounciness);
 
 		auto material = SharedPtr<PhysicsMaterial>::Create(uuid, name, filepath.string());
 		material->Friction = friction;

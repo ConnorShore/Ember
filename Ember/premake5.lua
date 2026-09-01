@@ -34,6 +34,7 @@
    files 
    { 
       "src/**.h",
+      "src/**.inl",
       "src/**.cpp",
       "vendor/stb/**.h",
       "vendor/stb/**.cpp",

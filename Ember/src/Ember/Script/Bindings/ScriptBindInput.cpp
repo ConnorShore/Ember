@@ -10,120 +10,12 @@ namespace Ember {
 
 	void BindInput(sol::state& state)
 	{
-		// Key bindings
+		// Key bindings - enumerators come from KeyCodes.inl so the Lua enum cannot drift from the C++ one.
 		state.new_enum("KeyCode",
 			"Unknown", KeyCode::Unknown,
-			"Space", KeyCode::Space,
-			"Apostrophe", KeyCode::Apostrophe,
-			"Comma", KeyCode::Comma,
-			"Minus", KeyCode::Minus,
-			"Period", KeyCode::Period,
-			"Slash", KeyCode::Slash,
-			"D0", KeyCode::D0,
-			"D1", KeyCode::D1,
-			"D2", KeyCode::D2,
-			"D3", KeyCode::D3,
-			"D4", KeyCode::D4,
-			"D5", KeyCode::D5,
-			"D6", KeyCode::D6,
-			"D7", KeyCode::D7,
-			"D8", KeyCode::D8,
-			"D9", KeyCode::D9,
-			"Semicolon", KeyCode::Semicolon,
-			"Equal", KeyCode::Equal,
-			"A", KeyCode::A,
-			"B", KeyCode::B,
-			"C", KeyCode::C,
-			"D", KeyCode::D,
-			"E", KeyCode::E,
-			"F", KeyCode::F,
-			"G", KeyCode::G,
-			"H", KeyCode::H,
-			"I", KeyCode::I,
-			"J", KeyCode::J,
-			"K", KeyCode::K,
-			"L", KeyCode::L,
-			"M", KeyCode::M,
-			"N", KeyCode::N,
-			"O", KeyCode::O,
-			"P", KeyCode::P,
-			"Q", KeyCode::Q,
-			"R", KeyCode::R,
-			"S", KeyCode::S,
-			"T", KeyCode::T,
-			"U", KeyCode::U,
-			"V", KeyCode::V,
-			"W", KeyCode::W,
-			"X", KeyCode::X,
-			"Y", KeyCode::Y,
-			"Z", KeyCode::Z,
-			"LeftBracket", KeyCode::LeftBracket,
-			"Backslash", KeyCode::Backslash,
-			"RightBracket", KeyCode::RightBracket,
-			"GraveAccent", KeyCode::GraveAccent,
-
-			// Function keys
-			"Escape", KeyCode::Escape,
-			"Enter", KeyCode::Enter,
-			"Tab", KeyCode::Tab,
-			"Backspace", KeyCode::Backspace,
-			"Insert", KeyCode::Insert,
-			"Delete", KeyCode::Delete,
-			"Right", KeyCode::Right,
-			"Left", KeyCode::Left,
-			"Down", KeyCode::Down,
-			"Up", KeyCode::Up,
-			"PageUp", KeyCode::PageUp,
-			"PageDown", KeyCode::PageDown,
-			"Home", KeyCode::Home,
-			"End", KeyCode::End,
-			"CapsLock", KeyCode::CapsLock,
-			"ScrollLock", KeyCode::ScrollLock,
-			"NumLock", KeyCode::NumLock,
-			"PrintScreen", KeyCode::PrintScreen,
-			"Pause", KeyCode::Pause,
-			"F1", KeyCode::F1,
-			"F2", KeyCode::F2,
-			"F3", KeyCode::F3,
-			"F4", KeyCode::F4,
-			"F5", KeyCode::F5,
-			"F6", KeyCode::F6,
-			"F7", KeyCode::F7,
-			"F8", KeyCode::F8,
-			"F9", KeyCode::F9,
-			"F10", KeyCode::F10,
-			"F11", KeyCode::F11,
-			"F12", KeyCode::F12,
-
-			// NumPad
-			"NumPad0", KeyCode::NumPad0,
-			"NumPad1", KeyCode::NumPad1,
-			"NumPad2", KeyCode::NumPad2,
-			"NumPad3", KeyCode::NumPad3,
-			"NumPad4", KeyCode::NumPad4,
-			"NumPad5", KeyCode::NumPad5,
-			"NumPad6", KeyCode::NumPad6,
-			"NumPad7", KeyCode::NumPad7,
-			"NumPad8", KeyCode::NumPad8,
-			"NumPad9", KeyCode::NumPad9,
-			"NumPadDecimal", KeyCode::NumPadDecimal,
-			"NumPadDivide", KeyCode::NumPadDivide,
-			"NumPadMultiply", KeyCode::NumPadMultiply,
-			"NumPadSubtract", KeyCode::NumPadSubtract,
-			"NumPadAdd", KeyCode::NumPadAdd,
-			"NumPadEnter", KeyCode::NumPadEnter,
-			"NumPadEqual", KeyCode::NumPadEqual,
-
-			// Modifier keys
-			"LeftShift", KeyCode::LeftShift,
-			"LeftControl", KeyCode::LeftControl,
-			"LeftAlt", KeyCode::LeftAlt,
-			"LeftSuper", KeyCode::LeftSuper,
-			"RightShift", KeyCode::RightShift,
-			"RightControl", KeyCode::RightControl,
-			"RightAlt", KeyCode::RightAlt,
-			"RightSuper", KeyCode::RightSuper,
-			"Menu", KeyCode::Menu,
+#define EB_KEY(name, value) #name, KeyCode::name,
+#include "Ember/Input/KeyCodes.inl"
+#undef EB_KEY
 			"Last", KeyCode::Last
 		);
 
@@ -147,20 +39,116 @@ namespace Ember {
 			"Middle", MouseButton::Middle
 		);
 
+		// Every bindable mouse control, from MouseControls.inl. The macro emits a leading comma
+		// because the list has no trailing sentinel to close the argument pack with.
+		state.new_enum("MouseControl"
+#define EB_MOUSE_CONTROL(name, value) , #name, MouseControl::name
+#include "Ember/Input/MouseControls.inl"
+#undef EB_MOUSE_CONTROL
+		);
+
 		state.new_enum("CursorMode",
 			"Normal", CursorMode::Normal,
 			"Hidden", CursorMode::Hidden,
 			"Locked", CursorMode::Locked
 		);
 
+		state.new_enum("InputDevice",
+			"None", InputDevice::None,
+			"Keyboard", InputDevice::Keyboard,
+			"Mouse", InputDevice::Mouse,
+			"Gamepad", InputDevice::Gamepad
+		);
+
+		// Gamepad controls come from GamepadButton.inl / GamepadAxis.inl, same as the key list, and
+		// use the leading-comma form because neither table has a sentinel to close the pack with.
+		state.new_enum("GamepadButton"
+#define EB_GAMEPAD_BUTTON(name, value) , #name, GamepadButton::name
+#include "Ember/Input/GamepadButton.inl"
+#undef EB_GAMEPAD_BUTTON
+			, "Last", GamepadButton::Last
+		);
+
+		state.new_enum("GamepadAxis"
+#define EB_GAMEPAD_AXIS(name, value) , #name, GamepadAxis::name
+#include "Ember/Input/GamepadAxis.inl"
+#undef EB_GAMEPAD_AXIS
+			, "Last", GamepadAxis::Last
+		);
+
+		state.new_enum("GamepadStick",
+			"Left", GamepadStick::Left,
+			"Right", GamepadStick::Right
+		);
+
+		state.new_enum("GamepadTrigger",
+			"Left", GamepadTrigger::Left,
+			"Right", GamepadTrigger::Right
+		);
+
+		state.new_usertype<StickSettings>("StickSettings",
+			"Deadzone", &StickSettings::Deadzone,
+			"Saturation", &StickSettings::Saturation,
+			"Exponent", &StickSettings::Exponent,
+			"Actuation", &StickSettings::Actuation,
+			"InvertX", &StickSettings::InvertX,
+			"InvertY", &StickSettings::InvertY
+		);
+
+		state.new_usertype<TriggerSettings>("TriggerSettings",
+			"Deadzone", &TriggerSettings::Deadzone,
+			"Saturation", &TriggerSettings::Saturation,
+			"Exponent", &TriggerSettings::Exponent,
+			"Actuation", &TriggerSettings::Actuation
+		);
+
+		state.new_usertype<MouseSettings>("MouseSettings",
+			"InvertX", &MouseSettings::InvertX,
+			"InvertY", &MouseSettings::InvertY
+		);
+
 		auto inputTable = state.create_named_table("Input");
-		inputTable.set_function("IsKeyPressed", &Input::IsKeyPressed);
-		inputTable.set_function("IsKeyHeld", &Input::IsKeyHeld);
-		inputTable.set_function("IsMouseButtonPressed", &Input::IsMouseButtonPressed);
-		
+		inputTable.set_function("IsKeyDown", &Input::IsKeyDown);
+		inputTable.set_function("IsKeyReleased", &Input::IsKeyReleased);
+		inputTable.set_function("IsKeyRepeating", &Input::IsKeyRepeating);
+
+		inputTable.set_function("IsMouseControlDown", &Input::IsMouseControlDown);
+		inputTable.set_function("IsMouseControlPressed", &Input::IsMouseControlPressed);
+		inputTable.set_function("IsMouseControlReleased", &Input::IsMouseControlReleased);
+
+		inputTable.set_function("IsMouseButtonDown", &Input::IsMouseButtonDown);
+		inputTable.set_function("IsMouseButtonReleased", &Input::IsMouseButtonReleased);
+
+		// Legacy spellings: these two have always meant "held" to game scripts, so they stay wired
+		// to the level state rather than the one-frame edge the C++ names of the same shape return.
+		inputTable.set_function("IsKeyPressed", &Input::IsKeyDown);
+		inputTable.set_function("IsMouseButtonPressed", &Input::IsMouseButtonDown);
+
+		// Modifiers are a bitmask, so a multi-bit argument means "any of these", not "all of them".
+		// Compare GetActiveModifiers() yourself when a chord has to match exactly.
+		inputTable.set_function("IsModifierDown", &Input::IsModifierActive);
+		inputTable.set_function("IsModifierActive", &Input::IsModifierActive);
+		inputTable.set_function("GetActiveModifiers", &Input::GetActiveModifiers);
+
 		inputTable.set_function("GetMousePosition", &Input::GetMousePosition);
 		inputTable.set_function("GetMouseScrollOffset", &Input::GetMouseScrollOffset);
 		inputTable.set_function("GetMouseDelta", &Input::GetMouseDelta);
+		inputTable.set_function("GetRawMouseDelta", &Input::GetRawMouseDelta);
+
+		// Pointers, not references: sol2 copies a returned reference, which would make a script's
+		// write land on a temporary and silently do nothing.
+		inputTable.set_function("GetStickSettings", [](GamepadStick stick) { return &Input::GetStickSettings(stick); });
+		inputTable.set_function("GetTriggerSettings", [](GamepadTrigger trigger) { return &Input::GetTriggerSettings(trigger); });
+		inputTable.set_function("GetMouseSettings", []() { return &Input::GetMouseSettings(); });
+
+		auto& inputActionManager = Application::Instance().GetInputActionManager();
+		inputTable.set_function("IsActionDown", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionDown(actionName); });
+		inputTable.set_function("IsActionPressed", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionPressed(actionName); });
+		inputTable.set_function("IsActionReleased", [&inputActionManager](std::string_view actionName) { return inputActionManager.IsActionReleased(actionName); });
+		inputTable.set_function("GetActionStrength", [&inputActionManager](std::string_view actionName) { return inputActionManager.GetActionStrength(actionName); });
+
+		inputTable.set_function("GetAxis", [&inputActionManager](std::string_view negative, std::string_view positive) { return inputActionManager.GetAxis(negative, positive); });
+		inputTable.set_function("GetAxis2D", [&inputActionManager](std::string_view left, std::string_view right, std::string_view down, std::string_view up) { return inputActionManager.GetAxis2D(left, right, down, up); });
 		
 		inputTable.set_function("SetCursorMode", &Input::SetCursorMode);
 		inputTable.set_function("GetCursorMode", &Input::GetCursorMode);
@@ -168,6 +156,18 @@ namespace Ember {
 		// Viewport-local, bottom-left origin - the space UI rects are laid out in. Unlike
 		// GetMousePosition this is correct inside the editor's docked viewport during Play.
 		inputTable.set_function("GetViewportMousePosition", &Input::GetViewportMousePosition);
+
+		// Pad index is 0-based, so player one is 0.
+		inputTable.set_function("IsAnyGamepadActive", &Input::IsAnyGamepadActive);
+		inputTable.set_function("IsGamepadActive", &Input::IsGamepadActive);
+		inputTable.set_function("IsGamepadButtonDown", &Input::IsGamepadButtonDown);
+		inputTable.set_function("IsGamepadButtonPressed", &Input::IsGamepadButtonPressed);
+		inputTable.set_function("IsGamepadButtonReleased", &Input::IsGamepadButtonReleased);
+		inputTable.set_function("GetGamepadAxis", &Input::GetGamepadAxis);
+
+		// What the player touched last, so prompts can switch between key and button glyphs.
+		inputTable.set_function("GetLastUsedInputDevice", &Input::GetLastUsedInputDevice);
+		inputTable.set_function("SetLastUsedInputDevice", &Input::SetLastUsedInputDevice);
 
 		auto uiTable = state.create_named_table("UI");
 

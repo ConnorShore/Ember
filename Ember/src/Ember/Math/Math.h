@@ -255,6 +255,11 @@ namespace Ember {
 			return glm::normalize(vector);
 		}
 
+		static inline Vector2f Normalize(const Vector2f& vector)
+		{
+			return glm::normalize(vector);
+		}
+
 		static inline Quaternion Normalize(const Quaternion& quat)
 		{
 			return glm::normalize(quat);
@@ -452,6 +457,12 @@ namespace Ember {
 		static inline float Abs(float x)
 		{
 			return glm::abs(x);
+		}
+
+		// Undefined in GLM for a negative base, so callers shape a magnitude and reapply the sign.
+		static inline float Pow(float base, float exponent)
+		{
+			return glm::pow(base, exponent);
 		}
 
 		static inline float Round(float x)

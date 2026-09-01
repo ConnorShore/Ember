@@ -48,7 +48,7 @@ For a free camera view:
 For a quick playable controller:
 
 1. In the hierarchy context menu, choose `Create Controller > 1st Person Character`.
-2. Ember copies the built-in `CharacterMovement.lua` and `MouseLook.lua` scripts into
+2. Ember copies the built-in `CharacterMovement.lua` and `FreeLook.lua` scripts into
    `GameData/Assets/Scripts` if they are not already present.
 3. The preset creates a character entity with a character controller, kinematic rigid body, capsule
    collider, child head pivot, camera, and movement scripts.

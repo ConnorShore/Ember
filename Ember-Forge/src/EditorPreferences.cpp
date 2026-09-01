@@ -3,6 +3,7 @@
 
 #include <Ember/Core/Paths.h>
 #include <Ember/Math/Math.h>
+#include <Ember/Utils/SerializationUtils.h>
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -82,10 +83,11 @@ namespace Ember {
 		{
 			auto snapNode = root["Snap"];
 			int enabled = SnapEnabled ? 1 : 0;
-			if (snapNode.has_child("Enabled")) { snapNode["Enabled"] >> enabled; SnapEnabled = enabled != 0; }
-			if (snapNode.has_child("Translate")) snapNode["Translate"] >> TranslateSnap;
-			if (snapNode.has_child("Rotate")) snapNode["Rotate"] >> RotateSnap;
-			if (snapNode.has_child("Scale")) snapNode["Scale"] >> ScaleSnap;
+			Util::ReadField(snapNode, "Enabled", enabled);
+			SnapEnabled = enabled != 0;
+			Util::ReadField(snapNode, "Translate", TranslateSnap);
+			Util::ReadField(snapNode, "Rotate", RotateSnap);
+			Util::ReadField(snapNode, "Scale", ScaleSnap);
 		}
 
 		if (root.has_child("Gizmo"))
@@ -93,8 +95,9 @@ namespace Ember {
 			auto gizmoNode = root["Gizmo"];
 			int localSpace = GizmoLocalSpace ? 1 : 0;
 			int pivotMode = static_cast<int>(PivotMode);
-			if (gizmoNode.has_child("LocalSpace")) { gizmoNode["LocalSpace"] >> localSpace; GizmoLocalSpace = localSpace != 0; }
-			if (gizmoNode.has_child("PivotMode")) gizmoNode["PivotMode"] >> pivotMode;
+			Util::ReadField(gizmoNode, "LocalSpace", localSpace);
+			GizmoLocalSpace = localSpace != 0;
+			Util::ReadField(gizmoNode, "PivotMode", pivotMode);
 			PivotMode = pivotMode == static_cast<int>(GizmoPivotMode::SelectionCenter)
 				? GizmoPivotMode::SelectionCenter
 				: GizmoPivotMode::ActiveEntity;
@@ -104,7 +107,8 @@ namespace Ember {
 		{
 			auto placementNode = root["Placement"];
 			int spawnAtCursor = SpawnAtCursor ? 1 : 0;
-			if (placementNode.has_child("SpawnAtCursor")) { placementNode["SpawnAtCursor"] >> spawnAtCursor; SpawnAtCursor = spawnAtCursor != 0; }
+			Util::ReadField(placementNode, "SpawnAtCursor", spawnAtCursor);
+			SpawnAtCursor = spawnAtCursor != 0;
 		}
 
 		TranslateSnap = SanitizeSnap(TranslateSnap, 1.0f);

@@ -43,6 +43,17 @@ namespace Ember {
 	template<std::integral T>
 	inline bool operator>=(T a, MouseButton b) { return a >= static_cast<T>(b); }
 
+	// The control list lives in MouseControls.inl so the enum and the name tables read from one place.
+	enum class MouseControl : uint16_t
+	{
+#define EB_MOUSE_CONTROL(name, value) name = value,
+#include "MouseControls.inl"
+#undef EB_MOUSE_CONTROL
+
+		/* Last identifier for array sizing; not a control, so it stays out of the list above. */
+		Last = 18
+	};
+
 }
 
 template <>
