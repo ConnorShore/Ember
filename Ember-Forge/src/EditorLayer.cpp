@@ -141,6 +141,9 @@ namespace Ember {
 		m_ToolbarProps.PauseButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "Pause.png").string())->GetID();
 		m_ToolbarProps.StopButtonTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "Stop.png").string())->GetID();
 
+		m_ViewportOverlayProps.PerspectiveTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "PerspectiveGrid.png").string())->GetID();
+		m_ViewportOverlayProps.OrthographicTextureID = Application::Instance().GetAssetManager().Load<Texture2D>((iconDir / "OrthographicGrid.png").string())->GetID();
+
 		// Welcome screen shown until a project is opened
 		m_WelcomeDialog.OnAttach();
 		m_WelcomeDialog.SetNewProjectCallback([this]() { NewProject(); });
@@ -512,8 +515,11 @@ namespace Ember {
 		m_ProjectSettingsDialog.OnImGuiRender();
 
 		// Render stats overlay
+		m_ViewportOverlayOffsetY = 0.0f;
 		if (m_ShowStatsWindow)
 			RenderStatsOverlay(delta);
+
+		RenderViewportControlsOverlay();
 
 		// Render Panels
 		for (auto& panel : m_Panels)
@@ -1766,6 +1772,44 @@ namespace Ember {
 		ImGui::PopStyleVar(2);
 	}
 
+	// Floats inside the viewport rather than the toolbar, since it changes what you are looking at.
+	void EditorLayer::RenderViewportControlsOverlay()
+	{
+		// The editor camera only drives the view in Edit mode; Play belongs to the scene camera.
+		if (m_Context.CurrentSceneState != SceneState::Edit || !m_Context.ActiveViewportViewer)
+			return;
+
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoMove;
+
+		// Top-right of the image, stacked under the stats overlay when that is showing.
+		ImVec2 windowPos = ImVec2(m_ViewportBounds[1].x - 10.0f, ViewportImageTop() + 10.0f + m_ViewportOverlayOffsetY);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+
+		ImGui::SetNextWindowBgAlpha(0.35f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
+
+		if (ImGui::Begin("Viewport Controls", nullptr, windowFlags))
+		{
+			bool isOrthographic = m_Camera.IsOrthographic();
+			uint32_t icon = isOrthographic
+				? m_ViewportOverlayProps.OrthographicTextureID
+				: m_ViewportOverlayProps.PerspectiveTextureID;
+
+			// Textures are flipped on load, so the UVs put the icon back upright.
+			if (ImGui::ImageButton("ProjectionToggle", icon, ImVec2(22.0f, 22.0f), ImVec2(0, 1), ImVec2(1, 0)))
+				m_Camera.ToggleProjectionMode();
+
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip(isOrthographic ? "Orthographic - click for perspective" : "Perspective - click for orthographic");
+		}
+
+		ImGui::End();
+		ImGui::PopStyleVar();
+	}
+
 	void EditorLayer::RenderStatsOverlay(TimeStep delta)
 	{
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
@@ -1773,8 +1817,8 @@ namespace Ember {
 			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
 			ImGuiWindowFlags_NoMove;
 
-		ImVec2 windowPos = ImVec2(m_ViewportBounds[1].x - 10.0f, m_ViewportBounds[0].y + 10.0f);
-		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));	// Pin to top-right corner of the viewport with right alignment
+		ImVec2 windowPos = ImVec2(m_ViewportBounds[1].x - 10.0f, ViewportImageTop() + 10.0f);
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));	// Pin to top-right corner of the viewport image with right alignment
 
 		ImGui::SetNextWindowBgAlpha(0.35f);
 
@@ -1788,6 +1832,8 @@ namespace Ember {
 			else
 				ImGui::Text("Entities: 0");
 		}
+
+		m_ViewportOverlayOffsetY = ImGui::GetWindowSize().y + 8.0f;
 		ImGui::End();
 	}
 

@@ -25,6 +25,40 @@ namespace Ember {
 		Quaternion orientation = GetOrientation();
 		m_ViewMatrix = Math::Translate(m_Position) * Math::ToMatrix4f(orientation);
 		m_ViewMatrix = Math::Inverse(m_ViewMatrix);
+
+		// Zoom is m_Distance in both projections, so the ortho box follows it.
+		if (IsOrthographic())
+			SyncOrthographicSize();
+	}
+
+	// The view height the perspective frustum spans at the focal point.
+	float EditorCamera::OrthographicSizeForDistance() const
+	{
+		return 2.0f * m_Distance * Math::Tan(Math::Radians(GetPerspectiveProps().FieldOfView) * 0.5f);
+	}
+
+	// Derived from the orbit, so zoom, pan and focus need no separate ortho path.
+	void EditorCamera::SyncOrthographicSize()
+	{
+		// Centre the depth slab on the focal point so orbiting cannot clip what is behind it.
+		float depth = GetPerspectiveProps().FarClip;
+		SetOrthographic(OrthographicSizeForDistance(), -depth, depth);
+	}
+
+	void EditorCamera::SetProjectionMode(Camera::ProjectionType type)
+	{
+		if (GetProjectionType() == type)
+			return;
+
+		// Perspective rebuilds from its own props; ortho has to be derived.
+		SetProjectionType(type);
+		if (IsOrthographic())
+			SyncOrthographicSize();
+	}
+
+	void EditorCamera::ToggleProjectionMode()
+	{
+		SetProjectionMode(IsOrthographic() ? Camera::ProjectionType::Perspective : Camera::ProjectionType::Orthographic);
 	}
 
 	void EditorCamera::FocusOn(const AABB& bounds, float fillFraction)
@@ -53,7 +87,10 @@ namespace Ember {
 		float horizontalFov = 2.0f * Math::Atan(Math::Tan(verticalFov * 0.5f) * aspectRatio);
 		float fov = Math::Min(verticalFov, horizontalFov);
 
-		m_Distance = Math::Max(radius / Math::Tan(fov * 0.5f), GetNearClip() * 4.0f);
+		// Only perspective has a near plane to stay clear of.
+		float minimumDistance = IsOrthographic() ? 0.01f : GetPerspectiveProps().NearClip * 4.0f;
+
+		m_Distance = Math::Max(radius / Math::Tan(fov * 0.5f), minimumDistance);
 		UpdateView();
 	}
 
@@ -120,33 +157,34 @@ namespace Ember {
 		EB_DISPATCH_EVENT(MouseScrolledEvent, OnMouseScroll);
 	}
 
+	// Yaw is measured from -Z and positive pitch looks downward, matching the euler order GetOrientation() uses
 	void EditorCamera::SnapToAxis(EditorViewDirection direction)
 	{
 		switch (direction)
 		{
 		case EditorViewDirection::Top:
-			m_Pitch = Math::Radians(-89.9f); // Look straight down (almost)
-			m_Yaw = Math::Radians(-90.0f);   // Keep top pointed towards -Z
+			m_Pitch = Math::Radians(89.9f);  // Look straight down (almost, to stay clear of gimbal lock)
+			m_Yaw = 0.0f;                    // Keep screen-up pointed towards -Z
 			break;
 		case EditorViewDirection::Bottom:
-			m_Pitch = Math::Radians(89.9f);  // Look straight up
-			m_Yaw = Math::Radians(-90.0f);
+			m_Pitch = Math::Radians(-89.9f); // Look straight up
+			m_Yaw = 0.0f;                    // Screen-up lands on +Z, mirroring Top
 			break;
 		case EditorViewDirection::Right:  // Looking down -X
 			m_Pitch = 0.0f;
-			m_Yaw = Math::Radians(180.0f);
+			m_Yaw = Math::Radians(-90.0f);
 			break;
 		case EditorViewDirection::Left:   // Looking down +X
 			m_Pitch = 0.0f;
-			m_Yaw = 0.0f;
-			break;
-		case EditorViewDirection::Front:  // Looking down -Z
-			m_Pitch = 0.0f;
-			m_Yaw = Math::Radians(-90.0f);
-			break;
-		case EditorViewDirection::Back:   // Looking down +Z
-			m_Pitch = 0.0f;
 			m_Yaw = Math::Radians(90.0f);
+			break;
+		case EditorViewDirection::Front:  // Looking down +Z, so an entity facing -Z shows its front
+			m_Pitch = 0.0f;
+			m_Yaw = Math::Radians(180.0f);
+			break;
+		case EditorViewDirection::Back:   // Looking down -Z
+			m_Pitch = 0.0f;
+			m_Yaw = 0.0f;
 			break;
 		case EditorViewDirection::FreeFly:
 			// Do nothing to rotation, just return to normal flight
@@ -202,6 +240,14 @@ namespace Ember {
 			return;
 
 		m_Distance -= delta * ZoomSpeed();
+
+		// Ortho just shrinks the box, so it never needs the focal point nudged along.
+		if (IsOrthographic())
+		{
+			m_Distance = Math::Max(m_Distance, 0.01f);
+			return;
+		}
+
 		if (m_Distance < 1.0f)
 		{
 			// Push focal point forward instead of allowing negative distance

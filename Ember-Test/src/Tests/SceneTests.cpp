@@ -696,6 +696,41 @@ EB_TEST_CASE(Scene, SnapshotRoundTripSurvivesRepeatedUndoRedo, Integration)
 	}
 }
 
+EB_TEST_CASE(Scene, SnapshotRoundTripRebuildsCameraProjection, Integration)
+{
+	// The projection matrix is derived rather than serialized, so the type has to be applied after
+	// the props it is rebuilt from - reading it first leaves the matrix on the defaults.
+	SceneFixture scene("CameraProjectionScene");
+	Entity entity = scene->AddEntity("Camera");
+
+	entity.AttachComponent<CameraComponent>();
+	Camera& camera = entity.GetComponent<CameraComponent>().Camera;
+
+	// Viewport size is not serialized, so leave it default on both sides of the trip.
+	camera.SetOrthographic(24.0f, -50.0f, 50.0f);
+	camera.SetProjectionType(Camera::ProjectionType::Orthographic);
+	const Matrix4f expected = camera.GetProjectionMatrix();
+
+	EntitySetSnapshot snapshot = EntitySetSnapshot::Capture(scene.Shared(), { entity.GetUUID() }, false);
+	snapshot.Restore(scene.Shared());
+
+	Entity restored = scene->GetEntity(entity.GetUUID());
+	EB_CHECK(restored.IsValid());
+	EB_CHECK(restored.ContainsComponent<CameraComponent>());
+
+	Camera& restoredCamera = restored.GetComponent<CameraComponent>().Camera;
+	EB_EXPECT(restoredCamera.GetProjectionType() == Camera::ProjectionType::Orthographic);
+	EB_EXPECT_NEAR(restoredCamera.GetOrthographicProps().Size, 24.0f, 0.001f);
+
+	const Vector4f probe(6.0f, 3.0f, -10.0f, 1.0f);
+	const Vector4f expectedClip = expected * probe;
+	const Vector4f actualClip = restoredCamera.GetProjectionMatrix() * probe;
+
+	EB_EXPECT_NEAR(actualClip.x, expectedClip.x, 0.0001f);
+	EB_EXPECT_NEAR(actualClip.y, expectedClip.y, 0.0001f);
+	EB_EXPECT_NEAR(actualClip.z, expectedClip.z, 0.0001f);
+}
+
 EB_TEST_CASE(Scene, SnapshotRestoreKeepsTheEntitySlotWhenItStillExists, Integration)
 {
 	// Restoring over a live entity must reuse its slot, or every cached handle and every physics

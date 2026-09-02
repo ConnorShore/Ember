@@ -235,7 +235,8 @@ namespace Ember {
 
 	void ViewportGizmoController::RenderTransformGizmo(EditorContext* context, EditorCamera& camera, const Vector2f viewportBounds[2], int gizmoType)
 	{
-		ImGuizmo::SetOrthographic(false);
+		// ImGuizmo scales its handles by projection type.
+		ImGuizmo::SetOrthographic(camera.IsOrthographic());
 		ImGuizmo::SetDrawlist();
 		ImGuizmo::SetRect(viewportBounds[0].x, viewportBounds[0].y, viewportBounds[1].x - viewportBounds[0].x, viewportBounds[1].y - viewportBounds[0].y);
 

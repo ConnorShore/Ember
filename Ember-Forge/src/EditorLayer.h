@@ -101,8 +101,13 @@ namespace Ember {
 		bool TryGetViewportPixel(int& outX, int& outY) const;
 
 		void RenderStatsOverlay(TimeStep delta);
+		void RenderViewportControlsOverlay();
 		float CalculateFPS(TimeStep delta);
 		void ClearEntitySelectionState();
+
+		// Top edge of the rendered image, which starts below the viewport tab bar rather than at
+		// m_ViewportBounds[0] - the image is anchored to the bottom of the content region.
+		float ViewportImageTop() const { return m_ViewportBounds[1].y - m_ViewportSize.y; }
 
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
@@ -227,6 +232,9 @@ namespace Ember {
 		bool m_SavePrefabsWithoutPrompt = false;
 		int m_PendingPrefabCloseViewerIndex = -1;
 
+		// Height already taken by overlays above, so viewport overlays stack instead of overlapping.
+		float m_ViewportOverlayOffsetY = 0.0f;
+
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 
 		// Which entities currently carry an OutlineComponent, and the selection that produced them.
@@ -267,5 +275,11 @@ namespace Ember {
 			uint32_t PauseButtonTextureID;
 			uint32_t StopButtonTextureID;
 		} m_ToolbarProps;
+
+		struct ViewportOverlayProps
+		{
+			uint32_t PerspectiveTextureID;
+			uint32_t OrthographicTextureID;
+		} m_ViewportOverlayProps;
 	};
 }

@@ -269,7 +269,7 @@ namespace Ember {
 			auto& camera = cameraComp.Camera;
 			ryml::NodeRef cameraNode = entityNode["CameraComponent"];
 			cameraNode |= ryml::MAP;
-			Util::SerializeMatrix4f(cameraNode["Projection"], camera.GetProjectionMatrix());
+			// The projection matrix is derived from the type, props and aspect ratio, so it is not stored.
 			cameraNode["Type"] << (int)camera.GetProjectionType();
 			cameraNode["IsActive"] << cameraComp.IsActive;
 			cameraNode["RenderMask"] << cameraComp.RenderMask;
@@ -985,23 +985,6 @@ namespace Ember {
 			ryml::NodeRef cameraNode = entityNode["CameraComponent"];
 			auto& cc = deserializedEntity.AttachComponent<CameraComponent>();
 
-			if (cameraNode.has_child("Projection")) {
-				Matrix4f proj;
-				Util::DeserializeMatrix4f(cameraNode["Projection"], proj);
-				cc.Camera.SetProjectionMatrix(proj);
-			}
-
-			int typeVal;
-			cameraNode["Type"] >> typeVal;
-			cc.Camera.SetProjectionType((Camera::ProjectionType)typeVal);
-
-			bool isActive;
-			cameraNode["IsActive"] >> isActive;
-			cc.IsActive = isActive;
-
-			cameraNode["RenderMask"] >> cc.RenderMask;
-			cameraNode["VolumeMask"] >> cc.VolumeMask;
-
 			if (cameraNode.has_child("OrthographicProperties"))
 			{
 				ryml::NodeRef orthoNode = cameraNode["OrthographicProperties"];
@@ -1017,6 +1000,18 @@ namespace Ember {
 				perspNode["NearClip"] >> cc.Camera.GetPerspectiveProps().NearClip;
 				perspNode["FarClip"] >> cc.Camera.GetPerspectiveProps().FarClip;
 			}
+
+			// Props first - selecting the type is what rebuilds the projection matrix from them.
+			int typeVal;
+			cameraNode["Type"] >> typeVal;
+			cc.Camera.SetProjectionType((Camera::ProjectionType)typeVal);
+
+			bool isActive;
+			cameraNode["IsActive"] >> isActive;
+			cc.IsActive = isActive;
+
+			cameraNode["RenderMask"] >> cc.RenderMask;
+			cameraNode["VolumeMask"] >> cc.VolumeMask;
 		}
 
 		if (entityNode.has_child("DirectionalLightComponent"))

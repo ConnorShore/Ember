@@ -1,5 +1,5 @@
 ---
-name: release-notes
+name: generate-release-notes
 description: Generates end-user-facing release notes in Markdown from the git history, returned as a copy-pasteable block. Use when the user asks for release notes, a changelog, or "what's new" for an upcoming Ember release.
 tools: Bash, PowerShell, Read, Grep, Glob
 model: sonnet

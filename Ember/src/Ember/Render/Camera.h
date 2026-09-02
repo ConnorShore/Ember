@@ -35,7 +35,8 @@ namespace Ember {
 		void SetViewportSize(uint32_t width, uint32_t height);
 		void DrawFrustum(const Matrix4f& cameraTransform, bool isSelected) const;
 
-		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; }
+		// Rebuilds the matrix, so switching type alone is enough
+		inline void SetProjectionType(ProjectionType type) { m_ProjectionType = type; CalculateProjectionMatrix(); }
 
 		inline const Matrix4f GetProjectionMatrix() const { return m_ProjectionMatrix; }
 		inline void SetProjectionMatrix(const Matrix4f& matrix) { m_ProjectionMatrix = matrix; }
@@ -43,8 +44,12 @@ namespace Ember {
 		inline const Vector2f& GetViewportSize() const { return m_ViewportSize; }
 
 		inline ProjectionType GetProjectionType() const { return m_ProjectionType; }
+		inline bool IsOrthographic() const { return m_ProjectionType == ProjectionType::Orthographic; }
+
 		inline OrthographicProps& GetOrthographicProps() { return m_OrthographicProps; }
+		inline const OrthographicProps& GetOrthographicProps() const { return m_OrthographicProps; }
 		inline PerspectiveProps& GetPerspectiveProps() { return m_PerspectiveProps; }
+		inline const PerspectiveProps& GetPerspectiveProps() const { return m_PerspectiveProps; }
 
 		inline float GetNearClip() const
 		{

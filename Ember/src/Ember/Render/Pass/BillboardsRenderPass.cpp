@@ -82,7 +82,18 @@ namespace Ember {
 		float distanceScale = billboard.Size;
 		if (billboard.StaticSize)
 		{
-			float distance = Math::Length(worldPos - Vector3f(context.CameraTransform[3]));
+			float distance;
+			if (context.ActiveCamera->IsOrthographic())
+			{
+				// Ortho size, not depth, decides on-screen size.
+				float halfFovTangent = Math::Tan(Math::Radians(context.ActiveCamera->GetPerspectiveProps().FieldOfView) * 0.5f);
+				distance = (context.ActiveCamera->GetOrthographicProps().Size * 0.5f) / Math::Max(halfFovTangent, 0.0001f);
+			}
+			else
+			{
+				distance = Math::Length(worldPos - Vector3f(context.CameraTransform[3]));
+			}
+
 			distanceScale = distance / 10.0f;
 		}
 

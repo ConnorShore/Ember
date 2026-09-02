@@ -37,6 +37,13 @@ namespace {
 		return AABB{ centre - Vector3f(halfExtent), centre + Vector3f(halfExtent) };
 	}
 
+	// Where a world point lands on screen, in normalised device coordinates.
+	Vector2f ProjectToNdc(const EditorCamera& camera, const Vector3f& worldPoint)
+	{
+		Vector4f clip = camera.GetViewProjection() * Vector4f(worldPoint, 1.0f);
+		return Vector2f(clip.x / clip.w, clip.y / clip.w);
+	}
+
 	// A cube entity the visibility/render systems will consider renderable.
 	Entity MakeRenderableCube(Scene& scene, const std::string& name, const Vector3f& position)
 	{
@@ -65,7 +72,7 @@ namespace {
 EB_TEST_CASE(Render, CameraProjectionSwitching, Unit)
 {
 	// CONTRACT: SetPerspective/SetOrthographic only store that projection's parameters - selecting the
-	// active mode is a separate SetProjectionType() call. A footgun, but it is the actual behaviour.
+	// active mode is a separate SetProjectionType() call, which is what rebuilds the matrix.
 	Camera camera;
 	EB_EXPECT_MSG(camera.GetProjectionType() == Camera::ProjectionType::Perspective,
 		"a default-constructed Camera should be perspective");
@@ -262,6 +269,166 @@ EB_TEST_CASE(Render, EditorCameraFocusOnDegenerateBoundsStaysUsable, Unit)
 
 	EB_EXPECT_VEC3_NEAR(camera.GetFocalPoint(), point, 0.001f);
 	EB_EXPECT_GT(camera.GetDistance(), camera.GetNearClip());
+}
+
+// Regression: SnapToAxis was written for a yaw-from-+X convention, so every preset pointed 90
+// degrees off in yaw and inverted in pitch - Top looked up, Front looked down -X.
+EB_TEST_CASE(Render, EditorCameraViewPresetsFaceTheirAxis, Unit)
+{
+	struct Preset
+	{
+		EditorViewDirection Direction;
+		const char* Name;
+		Vector3f Forward;
+	};
+
+	const Preset presets[] = {
+		{ EditorViewDirection::Top,    "Top",    Vector3f(0.0f, -1.0f, 0.0f) },
+		{ EditorViewDirection::Bottom, "Bottom", Vector3f(0.0f, 1.0f, 0.0f) },
+		{ EditorViewDirection::Left,   "Left",   Vector3f(1.0f, 0.0f, 0.0f) },
+		{ EditorViewDirection::Right,  "Right",  Vector3f(-1.0f, 0.0f, 0.0f) },
+		// Each preset views the matching side of an entity, which faces -Z, so Front looks down +Z.
+		{ EditorViewDirection::Front,  "Front",  Vector3f(0.0f, 0.0f, 1.0f) },
+		{ EditorViewDirection::Back,   "Back",   Vector3f(0.0f, 0.0f, -1.0f) },
+	};
+
+	const Vector3f focalPoint(3.0f, -2.0f, 7.0f);
+
+	for (const Preset& preset : presets)
+	{
+		EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+		camera.SetViewportSize(1920, 1080);
+		camera.SetFocalPoint(focalPoint);
+		camera.SetDistance(10.0f);
+		camera.SnapToAxis(preset.Direction);
+
+		// Top and Bottom stop just shy of vertical, so allow a degree of slack.
+		EB_EXPECT_MSG(Math::Length(camera.GetForwardDirection() - preset.Forward) < 0.01f,
+			std::string(preset.Name) + " view is not looking along its axis");
+
+		// Snapping only re-aims the orbit, so the camera must back off along the axis it looks down.
+		EB_EXPECT_VEC3_NEAR(camera.GetPosition(), focalPoint - preset.Forward * 10.0f, 0.05f);
+	}
+}
+
+EB_TEST_CASE(Render, EditorCameraTopAndBottomViewsAreMirrored, Unit)
+{
+	// Top puts -Z at the top of the screen and Bottom puts +Z there, the usual orthographic pairing.
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+
+	camera.SnapToAxis(EditorViewDirection::Top);
+	EB_EXPECT_VEC3_NEAR(camera.GetUpDirection(), Vector3f(0.0f, 0.0f, -1.0f), 0.01f);
+
+	camera.SnapToAxis(EditorViewDirection::Bottom);
+	EB_EXPECT_VEC3_NEAR(camera.GetUpDirection(), Vector3f(0.0f, 0.0f, 1.0f), 0.01f);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Editor camera projection switching
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Render, EditorCameraProjectionSwitchKeepsFocalPlaneSize, Unit)
+{
+	// The whole point of deriving ortho size from the orbit: anything on the focal plane has to
+	// stay put on screen, otherwise the view jumps every time you switch.
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+	camera.SetFocalPoint(Vector3f(2.0f, 1.0f, -4.0f));
+	camera.SetDistance(12.0f);
+
+	const Vector3f onFocalPlane = camera.GetFocalPoint()
+		+ camera.GetUpDirection() * 1.5f
+		+ camera.GetRightDirection() * 0.75f;
+
+	const Vector2f perspective = ProjectToNdc(camera, onFocalPlane);
+
+	camera.SetProjectionMode(Camera::ProjectionType::Orthographic);
+	const Vector2f orthographic = ProjectToNdc(camera, onFocalPlane);
+
+	EB_EXPECT_NEAR(orthographic.x, perspective.x, 0.001f);
+	EB_EXPECT_NEAR(orthographic.y, perspective.y, 0.001f);
+}
+
+EB_TEST_CASE(Render, EditorCameraProjectionRoundTripIsLossless, Unit)
+{
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+	camera.SetFocalPoint(Vector3f(-3.0f, 2.0f, 8.0f));
+	camera.SetDistance(7.5f);
+
+	// Off the focal plane, where the two projections genuinely disagree.
+	const Vector3f probe = camera.GetFocalPoint()
+		+ camera.GetUpDirection() * 2.0f
+		+ camera.GetForwardDirection() * 5.0f;
+	const Vector2f before = ProjectToNdc(camera, probe);
+
+	camera.ToggleProjectionMode();
+	EB_EXPECT(camera.IsOrthographic());
+
+	camera.ToggleProjectionMode();
+	EB_EXPECT_FALSE(camera.IsOrthographic());
+
+	const Vector2f after = ProjectToNdc(camera, probe);
+	EB_EXPECT_NEAR(after.x, before.x, 0.0001f);
+	EB_EXPECT_NEAR(after.y, before.y, 0.0001f);
+	EB_EXPECT_NEAR(camera.GetDistance(), 7.5f, 0.0001f);
+}
+
+EB_TEST_CASE(Render, EditorCameraOrthographicSizeTracksZoom, Unit)
+{
+	// Zoom only ever moves m_Distance, so the ortho box has to be recomputed from it.
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+	camera.SetProjectionMode(Camera::ProjectionType::Orthographic);
+
+	const float halfFovTangent = Math::Tan(Math::Radians(65.0f) * 0.5f);
+
+	camera.SetDistance(4.0f);
+	EB_EXPECT_NEAR(camera.GetOrthographicProps().Size, 2.0f * 4.0f * halfFovTangent, 0.001f);
+
+	camera.SetDistance(20.0f);
+	EB_EXPECT_NEAR(camera.GetOrthographicProps().Size, 2.0f * 20.0f * halfFovTangent, 0.001f);
+}
+
+EB_TEST_CASE(Render, EditorCameraOrthographicKeepsGeometryBehindThePivot, Unit)
+{
+	// A positive near clip would cull everything past the focal point as soon as you orbit.
+	EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+	camera.SetViewportSize(1920, 1080);
+	camera.SetFocalPoint(Vector3f(0.0f));
+	camera.SetDistance(10.0f);
+	camera.SnapToAxis(EditorViewDirection::Front);
+	camera.SetProjectionMode(Camera::ProjectionType::Orthographic);
+
+	const Frustum frustum(camera.GetViewProjection());
+
+	const AABB atPivot = MakeBox(camera.GetFocalPoint());
+	EB_EXPECT_MSG(frustum.IsBoxVisible(atPivot.WorldMin, atPivot.WorldMax), "the pivot itself was culled");
+
+	const AABB behindPivot = MakeBox(camera.GetFocalPoint() + camera.GetForwardDirection() * 25.0f);
+	EB_EXPECT_MSG(frustum.IsBoxVisible(behindPivot.WorldMin, behindPivot.WorldMax),
+		"geometry behind the pivot was culled by the ortho slab");
+}
+
+EB_TEST_CASE(Render, EditorCameraFocusFramesTheBoundsInOrthographic, Unit)
+{
+	// Framing has to survive the switch too - it sizes the orbit, which ortho then derives from.
+	const float radii[] = { 0.25f, 1.0f, 40.0f };
+
+	for (float radius : radii)
+	{
+		EditorCamera camera(65.0f, 16.0f / 9.0f, 0.3f, 1000.0f);
+		camera.SetViewportSize(1920, 1080);
+		camera.SetProjectionMode(Camera::ProjectionType::Orthographic);
+
+		const AABB bounds{ Vector3f(-radius), Vector3f(radius) };
+		camera.FocusOn(bounds);
+
+		const Frustum frustum(camera.GetViewProjection());
+		EB_EXPECT_MSG(frustum.IsBoxVisible(bounds.WorldMin, bounds.WorldMax),
+			"bounds of radius " + std::to_string(radius) + " were not framed in orthographic");
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

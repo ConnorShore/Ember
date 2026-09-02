@@ -26,6 +26,10 @@ namespace Ember {
 
 		void SnapToAxis(EditorViewDirection direction);
 
+		// Switches projection, keeping anything on the focal plane at the same on-screen size.
+		void SetProjectionMode(Camera::ProjectionType type);
+		void ToggleProjectionMode();
+
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; UpdateView(); }
 
@@ -66,6 +70,9 @@ namespace Ember {
 
 	private:
 		void UpdateView();
+
+		float OrthographicSizeForDistance() const;
+		void SyncOrthographicSize();
 
 		bool OnMouseScroll(MouseScrolledEvent& e);
 
