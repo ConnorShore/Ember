@@ -50,6 +50,10 @@ namespace Ember {
 		placementNode |= ryml::MAP;
 		placementNode["SpawnAtCursor"] << (SpawnAtCursor ? 1 : 0);
 
+		auto displayNode = root["Display"];
+		displayNode |= ryml::MAP;
+		displayNode["ScreenSpaceMode"] << static_cast<uint32_t>(ScreenSpaceMode);
+
 		std::ofstream fout(FilePath());
 		if (!fout.is_open())
 		{
@@ -109,6 +113,17 @@ namespace Ember {
 			int spawnAtCursor = SpawnAtCursor ? 1 : 0;
 			Util::ReadField(placementNode, "SpawnAtCursor", spawnAtCursor);
 			SpawnAtCursor = spawnAtCursor != 0;
+		}
+
+		if (root.has_child("Display"))
+		{
+			auto displayNode = root["Display"];
+			uint32_t screenSpaceMode = static_cast<uint32_t>(ScreenSpaceMode);
+			Util::ReadField(displayNode, "ScreenSpaceMode", screenSpaceMode);
+
+			// Masked so a bit written by a newer build cannot leave the editor in a state its
+			// checkboxes are unable to clear.
+			ScreenSpaceMode = static_cast<ScreenSpaceRenderMode>(screenSpaceMode) & ScreenSpaceRenderMode::All;
 		}
 
 		TranslateSnap = SanitizeSnap(TranslateSnap, 1.0f);

@@ -52,6 +52,9 @@
 *.vcxproj.filters
 .vs/
 
+**/bin/*
+**/bin-int/*
+
 # Logs directory
 Logs/
 

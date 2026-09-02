@@ -153,7 +153,7 @@ namespace Ember {
 		renderContext.ShadowUniformBuffer = m_ShadowUniformBuffer;
 		renderContext.ViewportDimensions = m_RenderSceneState.ViewportDimensions;
 		renderContext.IsRuntime = isRuntime;
-		renderContext.DrawHUD = m_RenderSceneState.DrawHUD;
+		renderContext.ScreenSpaceMode = m_RenderSceneState.ScreenSpaceMode;
 		renderContext.SelectedEntity = m_RenderSceneState.SelectedEntity;
 
 		// Blend and set final post processing settings based on volume overrides in the scene
@@ -333,7 +333,7 @@ namespace Ember {
 		m_RenderSceneState.CameraTransform = settings.CameraTransform;
 		m_RenderSceneState.CameraViewProjection = m_RenderSceneState.ActiveCamera.GetProjectionMatrix() * Math::Inverse(m_RenderSceneState.CameraTransform);
 		m_RenderSceneState.IsCameraFound = true;
-		m_RenderSceneState.DrawHUD = settings.DrawHUD;
+		m_RenderSceneState.ScreenSpaceMode = settings.ScreenSpaceMode;
 		m_RenderSceneState.SelectedEntity = settings.SelectedEntity;
 		m_RenderSceneState.PreDebugDrawCallback = settings.PreDebugDrawCallback;
 

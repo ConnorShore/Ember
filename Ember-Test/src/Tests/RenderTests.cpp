@@ -484,7 +484,7 @@ EB_TEST_CASE(Render, EntityIdPassIdentifiesThePixelUnderTheCursor, Integration)
 	settings.ActiveCamera = &camera;
 	settings.CameraTransform = Math::Inverse(
 		Math::LookAt(Vector3f(0.0f, 0.0f, 5.0f), Vector3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f)));
-	settings.DrawHUD = false;
+	settings.ScreenSpaceMode = ScreenSpaceRenderMode::None;
 
 	RenderAction::SetViewport(0, 0, width, height);
 	// Two passes so any first-frame state has settled before the readback.

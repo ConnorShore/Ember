@@ -91,6 +91,7 @@ namespace Ember {
 
 		// One dropdown for every editor toggle, so the toolbar does not grow a control per setting.
 		void DrawGizmoSettingsPopup();
+		bool DrawScreenSpaceUIToggles();
 		void DrawDebugDrawToggles();
 
 		// Orbits the editor camera to frame the selection and everything under it.
@@ -225,8 +226,6 @@ namespace Ember {
 		bool m_ShowClosePrefabPrompt = false;
 		bool m_SavePrefabsWithoutPrompt = false;
 		int m_PendingPrefabCloseViewerIndex = -1;
-
-		bool m_DrawAllHUD = false;
 
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 

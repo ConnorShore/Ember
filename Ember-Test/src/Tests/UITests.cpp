@@ -288,6 +288,102 @@ EB_TEST_CASE(UI, HigherCanvasSortOrderDrawsLater, Integration)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Editor draw mode
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(UI, EveryScreenSpaceFlagOwnsADisjointGroup, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+
+	Entity canvasA = MakeCanvas(*scene);
+	Entity panel = MakeRect(*scene, canvasA, "Panel", Vector2f(400.0f, 200.0f), Vector2f(0.0f));
+	Entity button = MakeRect(*scene, panel, "Button", Vector2f(120.0f, 40.0f), Vector2f(0.0f));
+	Entity label = MakeRect(*scene, button, "Label", Vector2f(100.0f, 20.0f), Vector2f(0.0f));
+	Entity sibling = MakeRect(*scene, panel, "Sibling", Vector2f(120.0f, 40.0f), Vector2f(0.0f, 60.0f));
+
+	Entity canvasB = MakeCanvas(*scene);
+	Entity widget = MakeRect(*scene, canvasB, "Widget", Vector2f(80.0f, 80.0f), Vector2f(0.0f));
+
+	// Each bit must claim exactly one group, so a checkbox can be ticked without side effects.
+	auto onlyRenders = [&](ScreenSpaceRenderMode flag, Entity expected)
+		{
+			ScreenSpaceVisibility visibility(scene.Ptr(), flag, button.GetEntityHandle());
+			for (Entity entity : { button, label, panel, sibling, widget })
+				EB_EXPECT_EQ(visibility.ShouldRender(entity.GetEntityHandle()), entity == expected);
+		};
+
+	onlyRenders(ScreenSpaceRenderMode::Selected, button);
+	onlyRenders(ScreenSpaceRenderMode::Children, label);
+	onlyRenders(ScreenSpaceRenderMode::Parents, panel);
+	onlyRenders(ScreenSpaceRenderMode::OtherCanvases, widget);
+
+	// Canvas is the one group with two members: everything left in the selection's canvas.
+	ScreenSpaceVisibility canvasOnly(scene.Ptr(), ScreenSpaceRenderMode::Canvas, button.GetEntityHandle());
+	EB_EXPECT(canvasOnly.ShouldRender(sibling.GetEntityHandle()));
+	EB_EXPECT_FALSE(canvasOnly.ShouldRender(button.GetEntityHandle()));
+	EB_EXPECT_FALSE(canvasOnly.ShouldRender(panel.GetEntityHandle()));
+	EB_EXPECT_FALSE(canvasOnly.ShouldRender(label.GetEntityHandle()));
+	EB_EXPECT_FALSE(canvasOnly.ShouldRender(widget.GetEntityHandle()));
+}
+
+EB_TEST_CASE(UI, ScreenSpaceAllAndNoneCoverEveryElement, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity panel = MakeRect(*scene, canvas, "Panel", Vector2f(400.0f, 200.0f), Vector2f(0.0f));
+	Entity button = MakeRect(*scene, panel, "Button", Vector2f(120.0f, 40.0f), Vector2f(0.0f));
+
+	// All is the union of the five bits, so nothing may fall outside it.
+	ScreenSpaceVisibility all(scene.Ptr(), ScreenSpaceRenderMode::All, button.GetEntityHandle());
+	EB_EXPECT(all.ShouldRender(panel.GetEntityHandle()));
+	EB_EXPECT(all.ShouldRender(button.GetEntityHandle()));
+
+	ScreenSpaceVisibility none(scene.Ptr(), ScreenSpaceRenderMode::None, button.GetEntityHandle());
+	EB_EXPECT_FALSE(none.ShouldRender(panel.GetEntityHandle()));
+	EB_EXPECT_FALSE(none.ShouldRender(button.GetEntityHandle()));
+}
+
+EB_TEST_CASE(UI, ScreenSpaceWithoutASelectionFallsToOtherCanvases, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+
+	Entity canvas = MakeCanvas(*scene);
+	Entity panel = MakeRect(*scene, canvas, "Panel", Vector2f(400.0f, 200.0f), Vector2f(0.0f));
+
+	// Deselecting must not blank the viewport while All is set: with no selection to be relative
+	// to, every canvas is one the selection does not belong to.
+	ScreenSpaceVisibility all(scene.Ptr(), ScreenSpaceRenderMode::All, (EntityID)Constants::Entities::InvalidEntityID);
+	EB_EXPECT(all.ShouldRender(panel.GetEntityHandle()));
+
+	ScreenSpaceVisibility selectedOnly(scene.Ptr(), ScreenSpaceRenderMode::Selected, (EntityID)Constants::Entities::InvalidEntityID);
+	EB_EXPECT_FALSE(selectedOnly.ShouldRender(panel.GetEntityHandle()));
+}
+
+EB_TEST_CASE(UI, ScreenSpaceCanvasIsFoundThroughANonCanvasRoot, Integration)
+{
+	SceneFixture scene;
+	SizeViewport(*scene);
+
+	// A canvas parented under an organisational entity must still be the boundary, otherwise the
+	// walk runs to the scene root and every canvas looks like the selection's own.
+	Entity uiRoot = scene->AddEntity("UI");
+	Entity canvas = MakeCanvas(*scene);
+	scene->SetEntityParent(canvas.GetUUID(), uiRoot);
+
+	Entity panel = MakeRect(*scene, canvas, "Panel", Vector2f(400.0f, 200.0f), Vector2f(0.0f));
+	Entity button = MakeRect(*scene, panel, "Button", Vector2f(120.0f, 40.0f), Vector2f(0.0f));
+
+	ScreenSpaceVisibility visibility(scene.Ptr(), ScreenSpaceRenderMode::Parents, button.GetEntityHandle());
+	EB_EXPECT_EQ(visibility.GetSelectedCanvas(), canvas.GetEntityHandle());
+	EB_EXPECT(visibility.ShouldRender(panel.GetEntityHandle()));
+	EB_EXPECT_FALSE(visibility.ShouldRender(uiRoot.GetEntityHandle()));
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Navigation
 //////////////////////////////////////////////////////////////////////////
 

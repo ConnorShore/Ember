@@ -287,7 +287,7 @@ namespace Ember {
 
 					m_Camera.OnUpdate(delta);
 					m_EditorRenderPassSettings.CameraTransform = Math::Inverse(m_Camera.GetViewMatrix());
-					m_EditorRenderPassSettings.DrawHUD = m_DrawAllHUD;
+					m_EditorRenderPassSettings.ScreenSpaceMode = m_Preferences.ScreenSpaceMode;
 					m_EditorRenderPassSettings.SelectedEntity = m_Context.SelectedEntity.GetEntityHandle();
 					activeScene->OnUpdateEdit(delta, m_EditorRenderPassSettings);
 					break;
@@ -1523,11 +1523,9 @@ namespace Ember {
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Off places them at the camera focal point instead.");
 
-		ImGui::SeparatorText("Display");
+		ImGui::SeparatorText("Screen-Space UI");
 
-		ImGui::Checkbox("Draw all HUD icons", &m_DrawAllHUD);
-		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("Off draws icons only for the selected entity.");
+		changed |= DrawScreenSpaceUIToggles();
 
 		DrawDebugDrawToggles();
 
@@ -1537,6 +1535,57 @@ namespace Ember {
 		// relying on a clean shutdown.
 		if (changed)
 			m_Preferences.Save();
+	}
+
+	// One checkbox per screen-space draw flag, plus the two whole-mask shortcuts. The flags cover
+	// disjoint groups of the UI, so a row can be toggled without disturbing any of the others.
+	bool EditorLayer::DrawScreenSpaceUIToggles()
+	{
+		bool changed = false;
+
+		if (ImGui::SmallButton("All##ScreenSpaceUI"))
+		{
+			m_Preferences.ScreenSpaceMode = ScreenSpaceRenderMode::All;
+			changed = true;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::SmallButton("None##ScreenSpaceUI"))
+		{
+			m_Preferences.ScreenSpaceMode = ScreenSpaceRenderMode::None;
+			changed = true;
+		}
+
+		auto flagCheckbox = [this](const char* label, ScreenSpaceRenderMode flag, const char* tooltip)
+			{
+				bool enabled = HasFlag(m_Preferences.ScreenSpaceMode, flag);
+				bool toggled = ImGui::Checkbox(label, &enabled);
+				if (toggled)
+				{
+					m_Preferences.ScreenSpaceMode = enabled
+						? m_Preferences.ScreenSpaceMode | flag
+						: m_Preferences.ScreenSpaceMode & ~flag;
+				}
+
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("%s", tooltip);
+
+				return toggled;
+			};
+
+		changed |= flagCheckbox("Selected", ScreenSpaceRenderMode::Selected,
+			"The selected entity itself.");
+		changed |= flagCheckbox("Children", ScreenSpaceRenderMode::Children,
+			"Everything parented below the selection.");
+		changed |= flagCheckbox("Parents", ScreenSpaceRenderMode::Parents,
+			"The selection's ancestors, up to its canvas.");
+		changed |= flagCheckbox("Canvas", ScreenSpaceRenderMode::Canvas,
+			"The rest of the canvas the selection belongs to.");
+		changed |= flagCheckbox("Other canvases", ScreenSpaceRenderMode::OtherCanvases,
+			"Every canvas the selection is not in.\nThe only flag that applies while nothing is selected.");
+
+		return changed;
 	}
 
 	// Shared by the Gizmos dropdown and the Editor > Debug menu; both drive the same system state.

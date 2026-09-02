@@ -174,7 +174,7 @@ namespace Ember::Test {
 			settings.ActiveCamera = &camera;
 			settings.CameraTransform = Math::Inverse(
 				Math::LookAt(Vector3f(0.0f, 4.0f, 12.0f), Vector3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f)));
-			settings.DrawHUD = false;
+			settings.ScreenSpaceMode = ScreenSpaceRenderMode::None;
 
 			m_Scene->OnUpdateEdit(delta, settings);
 		}

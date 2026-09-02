@@ -133,7 +133,7 @@ namespace Ember {
 
 			PostProcessVolumeSettings FinalPostProcessVolumeSettings;
 
-			bool DrawHUD = true;
+			ScreenSpaceRenderMode ScreenSpaceMode = ScreenSpaceRenderMode::All;
 			EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 			std::function<void(Scene*, EntityID)> PreDebugDrawCallback = nullptr;
 
@@ -146,7 +146,7 @@ namespace Ember {
 				IsCameraFound = false;
 				ViewportDimensions = Vector4<int>(0);
 				OutputFramebufferId = -1;
-				DrawHUD = true;
+				ScreenSpaceMode = ScreenSpaceRenderMode::All;
 				SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 				PreDebugDrawCallback = nullptr;
 			}

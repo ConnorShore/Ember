@@ -54,7 +54,7 @@ namespace {
 		RenderPassSettings settings;
 		settings.ActiveCamera = &camera;
 		settings.CameraTransform = Math::Inverse(Math::LookAt(eye, target, Vector3f(0.0f, 1.0f, 0.0f)));
-		settings.DrawHUD = false;
+		settings.ScreenSpaceMode = ScreenSpaceRenderMode::None;
 
 		RenderAction::SetViewport(0, 0, viewport.Width, viewport.Height);
 		for (int i = 0; i < passes; ++i)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "ScreenSpaceRenderMode.h"
 #include "Ember/Core/Filter.h"
 #include "Ember/Core/Constants.h"
 #include "Ember/ECS/Types.h"
@@ -18,7 +19,7 @@ namespace Ember {
 		Matrix4f CameraTransform = Matrix4f(1.0f);
 		Filter RenderMask = FilterPreset::All;
 		Filter VolumeMask = FilterPreset::All;
-		bool DrawHUD = true;
+		ScreenSpaceRenderMode ScreenSpaceMode = ScreenSpaceRenderMode::All;
 		EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 		std::function<void(Scene*, EntityID)> PreDebugDrawCallback = nullptr;
 	};

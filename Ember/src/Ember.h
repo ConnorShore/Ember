@@ -47,6 +47,7 @@
 #include "Ember/Render/UniformBuffer.h"
 #include "Ember/Render/Particle.h"
 #include "Ember/Render/ParticleManager.h"
+#include "Ember/Render/ScreenSpaceVisibility.h"
 
 #include "Ember/Render/VFX/PostProcessPass.h"
 #include "Ember/Render/VFX/BloomPass.h"

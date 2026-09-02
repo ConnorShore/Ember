@@ -5,6 +5,7 @@
 #include "UniformBufferTypes.h"
 #include "UniformBuffer.h"
 #include "RenderQueueBuckets.h"
+#include "ScreenSpaceRenderMode.h"
 #include "Frustum.h"
 
 namespace Ember {
@@ -33,7 +34,7 @@ namespace Ember {
 		std::vector<std::pair<EntityID, AABB>>* ActiveEntities;
 
 		bool IsRuntime;
-		bool DrawHUD = true;
+		ScreenSpaceRenderMode ScreenSpaceMode = ScreenSpaceRenderMode::All;
 		EntityID SelectedEntity = (EntityID)Constants::Entities::InvalidEntityID;
 	};
 

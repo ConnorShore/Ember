@@ -6,41 +6,9 @@
 #include "Ember/Scene/Scene.h"
 #include "Ember/Render/RenderAction.h"
 #include "Ember/Render/Renderer2D.h"
+#include "Ember/Render/ScreenSpaceVisibility.h"
 
 namespace Ember {
-
-	static bool ShouldRenderScreenSpaceEntity(Scene* scene, EntityID entity, bool drawAll, EntityID selectedEntity)
-	{
-		if (drawAll)
-			return true;
-
-		if (selectedEntity == Constants::Entities::InvalidEntityID)
-			return false;
-
-		if (entity == selectedEntity)
-			return true;
-
-		Entity selected(selectedEntity, scene);
-		if (!selected || !selected.ContainsComponent<IDComponent>())
-			return false;
-
-		UUID selectedUUID = selected.GetUUID();
-		Entity current(entity, scene);
-		while (current && current.ContainsComponent<RelationshipComponent>())
-		{
-			auto& relationship = current.GetComponent<RelationshipComponent>();
-			if (relationship.ParentHandle == Constants::InvalidUUID)
-				break;
-
-			if (relationship.ParentHandle == selectedUUID)
-				return true;
-
-			current = scene->GetEntity(relationship.ParentHandle);
-		}
-
-		return false;
-	}
-
 
 	void ScreenSpace2DRenderPass::Init()
 	{
@@ -48,6 +16,10 @@ namespace Ember {
 
 	void ScreenSpace2DRenderPass::Execute(RenderContext& context)
 	{
+		// Bail before touching any state: with no UI to draw the camera UBO never needs swapping.
+		if (context.ScreenSpaceMode == ScreenSpaceRenderMode::None)
+			return;
+
 		// UI ignores the 3D world completely
 		RenderAction::UseDepthTest(false);
 		RenderAction::UseDepthMask(false);
@@ -70,9 +42,11 @@ namespace Ember {
 		if (uiLayoutSystem)
 		{
 			auto& registry = context.ActiveScene->GetRegistry();
+			ScreenSpaceVisibility visibility(context.ActiveScene, context.ScreenSpaceMode, context.SelectedEntity);
+
 			for (const UIDrawEntry& entry : uiLayoutSystem->GetSortedScreenSpaceEntities())
 			{
-				if (!ShouldRenderScreenSpaceEntity(context.ActiveScene, entry.Entity, context.DrawHUD, context.SelectedEntity))
+				if (!visibility.ShouldRender(entry.Entity))
 					continue;
 
 				// Sprite before text on the same entity: a button's background must sit under its label.

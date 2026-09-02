@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Ember/Render/ScreenSpaceRenderMode.h>
+
 #include <filesystem>
 
 namespace Ember {
@@ -24,6 +26,9 @@ namespace Ember {
 		bool GizmoLocalSpace = false;
 		GizmoPivotMode PivotMode = GizmoPivotMode::ActiveEntity;
 		bool SpawnAtCursor = true;
+
+		// Defaults to All so a fresh install matches what the packaged game shows.
+		ScreenSpaceRenderMode ScreenSpaceMode = ScreenSpaceRenderMode::All;
 
 		static std::filesystem::path FilePath();
 
