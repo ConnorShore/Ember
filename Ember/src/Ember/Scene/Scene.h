@@ -50,6 +50,7 @@ namespace Ember {
 		void OnEvent(Event& event);
 
 		void SetActiveCamera(Entity cameraEntity);
+		bool HasActiveCamera();
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 		Vector2f GetViewportSize() const;
@@ -102,6 +103,19 @@ namespace Ember {
 			entities.reserve(m_Registry->GetActiveEntities<Driver>().size());
 
 			auto view = m_Registry->Query<Driver, Filters...>();
+			for (EntityID entity : view)
+				entities.emplace_back(entity, const_cast<Scene*>(this));
+
+			return entities;
+		}
+
+		template<typename Driver, typename... Filters>
+		std::vector<Entity> GetActiveEntitiesWithComponents()
+		{
+			std::vector<Entity> entities;
+			entities.reserve(m_Registry->GetActiveEntities<Driver>().size());
+
+			auto view = m_Registry->ActiveQuery<Driver, Filters...>();
 			for (EntityID entity : view)
 				entities.emplace_back(entity, const_cast<Scene*>(this));
 

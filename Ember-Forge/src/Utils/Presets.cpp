@@ -241,7 +241,8 @@ namespace Ember {
 		transform.Position = position;
 		transform.Rotation = Math::ToEulerAngles(orientation);
 
-		newEntity.AttachComponent<CameraComponent>();
+		auto& camComp = newEntity.AttachComponent<CameraComponent>();
+		camComp.IsActive = !scene->HasActiveCamera();
 
 		return newEntity;
 	}

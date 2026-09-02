@@ -504,6 +504,18 @@ namespace Ember {
 		}
 	}
 
+	bool Scene::HasActiveCamera()
+	{
+		auto view = m_Registry->ActiveQuery<CameraComponent>();
+		for (auto entity : view)
+		{
+			if (m_Registry->GetComponent<CameraComponent>(entity).IsActive)
+				return true;
+		}
+
+		return false;
+	}
+
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		if (width == 0 || height == 0)
