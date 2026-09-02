@@ -685,6 +685,9 @@ namespace Ember {
 		sol::table Instance;
 		bool Initialized = false;
 
+		// Keeps OnUpdate ticking while the scene is paused, for pause menus and the input that closes them.
+		bool RunWhenPaused = false;
+
 		// Cache user property overrides
 		std::unordered_map<std::string, ScriptProperty> UserPropertyOverrides;
 

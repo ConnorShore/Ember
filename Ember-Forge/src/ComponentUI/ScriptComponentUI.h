@@ -86,6 +86,10 @@ namespace Ember {
 					UI::PropertyGrid::ActionRow("Actions", "Create New", createFunc);
 				}
 
+				UI::PropertyGrid::Checkbox("Run When Paused", component.RunWhenPaused);
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Keep calling OnUpdate while the scene is paused, for pause menus and the input that closes them.");
+
 				UI::PropertyGrid::End();
 			}
 		}

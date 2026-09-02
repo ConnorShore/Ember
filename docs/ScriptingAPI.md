@@ -22,6 +22,7 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
   - [`Time` / `Timer`](#time--timer)
     - [`Log`](#log)
   - [`Window` / `Renderer`](#window--renderer)
+  - [`Application`](#application)
 - [Math](#math)
   - [Vectors &amp; Matrices](#vectors--matrices)
   - [`Quaternion`](#quaternion)
@@ -29,6 +30,7 @@ mirrors the bindings registered in [`Ember/src/Ember/Script/Bindings/`](../Ember
 - [Entity &amp; Scene](#entity--scene)
   - [`Entity`](#entity)
   - [`Scene`](#scene)
+  - [Pausing the game](#pausing-the-game)
   - [`SceneManager`](#scenemanager)
 - [Components](#components)
   - [`TransformComponent`](#transformcomponent)
@@ -332,6 +334,27 @@ local h = Window.GetHeight()          -- number (pixels)
 local viewport = Renderer.GetViewportSize()  -- Vector2f { x = width, y = height }
 ```
 
+### `Application`
+
+Controls the process itself.
+
+```lua
+Application.Quit()  -- ends the game after the current frame finishes
+```
+
+`Quit` never tears down mid-frame; it requests a shutdown that runs once the frame completes, so it
+is safe to call from any callback. Playing inside Ember-Forge, it stops Play mode and returns to the
+editor instead of closing the editor — no editor-only branch is needed in your script.
+
+Save anything you care about before calling it:
+
+```lua
+function ExitButton:OnClick(entity)
+    GameData:SaveAll()
+    Application.Quit()
+end
+```
+
 ---
 
 ## Math
@@ -494,12 +517,41 @@ Scene.InstantiatePrefab(prefabAssetName, parentEntity, position)
 
 Scene.SetActiveCamera(entityName)         -- sets which entity drives the runtime camera
 
+Scene.SetPaused(true)                     -- freezes the simulation (see Pausing the game)
+Scene.IsPaused()                          -- bool
+
 -- Object pools (efficient prefab spawning)
 Scene.CreatePool(poolID, prefabAssetName, initialSize)
 Scene.CreatePool(poolID, prefabAssetName, initialSize, loopEntities)
 Scene.RetrieveFromPool(poolID)            -- returns an inactive Entity from the pool
 Scene.RetrieveFromPool(poolID, position)  -- returns one positioned at `position`
 ```
+
+### Pausing the game
+
+`Scene.SetPaused(true)` freezes physics, animation, AI, particles, character controllers and entity
+lifetimes. UI, rendering and audio keep running on real time, so menus still animate and music keeps
+playing over a frozen world.
+
+Scripts freeze too — otherwise a paused game would still be reading movement input. A script that has
+to survive the pause (the pause menu, and whatever listens for the key that reopens it) needs **Run
+When Paused** ticked on its Script Component in the inspector. Its `OnUpdate` then receives real,
+unpaused delta time.
+
+`Timer.SetTimeout` callbacks are gameplay timers: they stop counting down while paused and resume on
+unpause. UI `OnClick` handlers always fire, paused or not, so buttons work without opting in.
+
+```lua
+-- On an entity whose Script Component has "Run When Paused" ticked
+function PauseController:OnUpdate(entity, delta)
+    if Input.IsActionPressed("Pause") then
+        Scene.SetPaused(not Scene.IsPaused())
+        Input.ConsumeAction("Pause")
+    end
+end
+```
+
+Pause state is per-session: starting or stopping Play mode always clears it.
 
 ### `SceneManager`
 
@@ -1028,6 +1080,12 @@ applied to the pair (so pushing one axis fully never leaves the other exactly ze
 reads 0..1 rather than the -1..1 the OS reports. `IsGamepadButtonReleased` means "not held right
 now", not "came up this frame".
 
+> Stick Y is **+Y forward**: pushed away from the player, `LeftY` and `RightY` read **positive**.
+> GLFW reports that half negative, so Ember flips it once at the platform layer and nothing below
+> compensates again — `Gamepad/LeftY+` is forward, and `Left Stick Up` is the positive half. A mouse
+> delta runs the other way (window coordinates are +Y down), which is why a look script summing both
+> negates its mouse term and not its stick term.
+
 ### Conditioning
 
 The engine corrects what the hardware gets wrong, because every reader of a control wants the same
@@ -1111,6 +1169,7 @@ viewport panel's position.
   Xbox layout, which is the layout GLFW maps every pad onto — on a PlayStation pad `A` is Cross and
   `B` is Circle.
 - **`GamepadAxis`** — `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`, `Last`.
+  The Y axes are +Y forward, so a stick pushed away from the player reads positive.
 - **`GamepadStick`** — `Left`, `Right`. Which stick `GetStickSettings` conditions.
 - **`GamepadTrigger`** — `Left`, `Right`. Which trigger `GetTriggerSettings` conditions.
 - **`InputDevice`** — `None`, `Keyboard`, `Mouse`, `Gamepad`. What `GetLastUsedInputDevice` returns.

@@ -93,6 +93,14 @@ namespace Ember {
 			}
 		));
 
+		// Pause - only scripts marked RunWhenPaused keep ticking once this is set
+		sceneTable.set_function("SetPaused", [scene](bool paused) {
+			scene->SetPaused(paused);
+		});
+		sceneTable.set_function("IsPaused", [scene]() {
+			return scene->IsPaused();
+		});
+
 		// Camera
 		sceneTable.set_function("SetActiveCamera", [scene](const std::string& entityName) {
 			Entity cameraEntity = scene->GetEntity(entityName);

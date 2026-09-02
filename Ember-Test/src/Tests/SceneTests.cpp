@@ -15,8 +15,10 @@
 
 using namespace Ember;
 using Ember::Test::Type::Integration;
-using Ember::Test::SceneFixture;
+using Ember::Test::MakeDynamicBox;
 using Ember::Test::MakeEntityAt;
+using Ember::Test::PhysicsSceneFixture;
+using Ember::Test::SceneFixture;
 
 namespace {
 
@@ -870,4 +872,55 @@ EB_TEST_CASE(Scene, CopySceneCarriesComponentsMissingFromTheOldCopyList, Integra
 	EB_CHECK(copied.IsValid());
 	EB_CHECK_MSG(copied.ContainsComponent<OutlineComponent>(), "OutlineComponent did not survive CopyScene");
 	EB_EXPECT_NEAR(copied.GetComponent<OutlineComponent>().Thickness, 4.0f, 1e-4);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Pause
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Scene, PauseFreezesPhysicsAndUnpauseResumesIt, Integration)
+{
+	// Pausing is a delta split inside OnUpdateRuntime, so it has to be driven through the real
+	// runtime tick - stepping PhysicsSystem directly would bypass the very thing under test.
+	PhysicsSceneFixture scene("ScenePausePhysicsScene");
+	Entity box = MakeDynamicBox(*scene, "Falling", Vector3f(12.0f, 20.0f, 7.0f));
+	scene.Attach();
+
+	const float startY = box.GetComponent<TransformComponent>().GetWorldPosition().y;
+
+	scene->SetPaused(true);
+	for (int frame = 0; frame < 20; ++frame)
+		scene->OnUpdateRuntime(Ember::Test::FixedStep());
+
+	EB_EXPECT_MSG(Ember::Test::NearlyEqual(box.GetComponent<TransformComponent>().GetWorldPosition().y, startY, 1e-3f),
+		"gravity kept pulling on a paused scene");
+
+	scene->SetPaused(false);
+	for (int frame = 0; frame < 20; ++frame)
+		scene->OnUpdateRuntime(Ember::Test::FixedStep());
+
+	EB_EXPECT_MSG(box.GetComponent<TransformComponent>().GetWorldPosition().y < startY - 0.05f,
+		"physics did not resume after unpausing");
+}
+
+EB_TEST_CASE(Scene, PauseSuspendsEntityLifetimes, Integration)
+{
+	// LifetimeComponent counts down in LifecycleSystem, on the frozen side of the split. Pooled
+	// bullets and hit effects must not expire out from under a player sitting in a pause menu.
+	SceneFixture scene("ScenePauseLifetimeScene");
+	Entity temporary = MakeEntityAt(*scene, "Temporary", Vector3f(0.0f));
+	temporary.AttachComponent<LifetimeComponent>(0.1f);
+	const UUID temporaryUUID = temporary.GetUUID();
+
+	scene->SetPaused(true);
+	for (int frame = 0; frame < 30; ++frame)
+		scene->OnUpdateRuntime(Ember::Test::FixedStep());
+
+	EB_EXPECT_MSG(scene->GetEntity(temporaryUUID).IsValid(), "a paused scene expired a LifetimeComponent");
+
+	scene->SetPaused(false);
+	for (int frame = 0; frame < 30; ++frame)
+		scene->OnUpdateRuntime(Ember::Test::FixedStep());
+
+	EB_EXPECT_MSG(!scene->GetEntity(temporaryUUID).IsValid(), "entity lifetimes did not resume after unpausing");
 }

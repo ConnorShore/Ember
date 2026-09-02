@@ -41,6 +41,10 @@ namespace Ember {
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
+		// Freezes the simulation while UI, rendering and audio keep running on unscaled time.
+		inline void SetPaused(bool paused) { m_Paused = paused; }
+		inline bool IsPaused() const { return m_Paused; }
+
 		void OnUpdateRuntime(TimeStep delta);
 		void OnUpdateEdit(TimeStep delta, const RenderPassSettings& settings);
 		void OnEvent(Event& event);
@@ -171,6 +175,7 @@ namespace Ember {
 
 		bool m_IsRuntime = false;
 		bool m_IsLoaded = false;
+		bool m_Paused = false;
 	};
 
 }

@@ -27,11 +27,15 @@ namespace Ember {
 	{
 		EB_PROFILE_FUNCTION();
 
-		// Prevents scripts like mouse move from updating if game is paused
+		// The editor's freeze-frame pause hands down a zero delta, and nothing runs under it.
 		if (delta.IsZero())
 			return;
 
-		ScriptEngine::UpdateTimeouts(delta);
+		// A game pause is softer: scripts that opted in keep ticking on unscaled time, so a pause menu
+		// can still read the input that closes it. Gameplay timers belong to the frozen half.
+		const bool scenePaused = scene->IsPaused();
+		if (!scenePaused)
+			ScriptEngine::UpdateTimeouts(delta);
 
 		auto view = scene->GetRegistry().ActiveQuery<ScriptComponent>();
 
@@ -56,6 +60,9 @@ namespace Ember {
 			auto& script = entity.GetComponent<ScriptComponent>();
 
 			if (script.ScriptHandle == Constants::InvalidUUID)
+				continue;
+
+			if (scenePaused && !script.RunWhenPaused)
 				continue;
 
 			// First frame: load the Lua file, create an instance table, and call OnCreate

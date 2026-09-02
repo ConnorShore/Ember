@@ -496,8 +496,8 @@ EB_TEST_CASE(Script, DisabledEntitiesDoNotTick, Integration)
 
 EB_TEST_CASE(Script, ZeroDeltaSkipsTheTick, Integration)
 {
-	// ScriptSystem early-outs on a non-positive delta, which is how Pause is implemented. If that
-	// check regressed, paused games would keep simulating.
+	// A zero delta is the editor's freeze-frame pause, and nothing runs under it - not even a script
+	// that opted into the game's own pause. See PausedSceneFreezesScriptsUnlessTheyOptIn for that one.
 	auto scriptAsset = LoadScriptAsset("paused_test.lua", R"(
 		local Ticker = {}
 		function Ticker:OnCreate(entity) self.ticks = 0 end
@@ -519,6 +519,120 @@ EB_TEST_CASE(Script, ZeroDeltaSkipsTheTick, Integration)
 
 	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
 	EB_EXPECT(entity.GetComponent<ScriptComponent>().Initialized);
+}
+
+EB_TEST_CASE(Script, PausedSceneFreezesScriptsUnlessTheyOptIn, Integration)
+{
+	// A pause menu and the input that closes it have to outlive the pause that opened them, while
+	// gameplay freezes. Without the opt-in a paused game would keep reading movement input.
+	auto scriptAsset = LoadScriptAsset("pause_optin_test.lua", R"(
+		local Ticker = {}
+		function Ticker:OnCreate(entity) self.ticks = 0 end
+		function Ticker:OnUpdate(entity, delta) self.ticks = self.ticks + 1 end
+		return Ticker
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptPauseOptInScene");
+	Entity gameplay = MakeEntityAt(*scene, "Gameplay", Vector3f(0.0f));
+	gameplay.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+
+	Entity menu = MakeEntityAt(*scene, "PauseMenu", Vector3f(0.0f));
+	menu.AttachComponent<ScriptComponent>(scriptAsset->GetUUID()).RunWhenPaused = true;
+
+	ScriptEngine::BindAPI(scene.Ptr());
+	auto scriptSystem = Sys<ScriptSystem>();
+
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+	EB_CHECK_EQ(gameplay.GetComponent<ScriptComponent>().Instance["ticks"].get<int>(), 1);
+	EB_CHECK_EQ(menu.GetComponent<ScriptComponent>().Instance["ticks"].get<int>(), 1);
+
+	scene->SetPaused(true);
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_MSG(gameplay.GetComponent<ScriptComponent>().Instance["ticks"].get<int>() == 1,
+		"a gameplay script kept ticking while the scene was paused");
+	EB_EXPECT_MSG(menu.GetComponent<ScriptComponent>().Instance["ticks"].get<int>() == 3,
+		"a RunWhenPaused script stopped ticking while the scene was paused");
+
+	scene->SetPaused(false);
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+	EB_EXPECT_MSG(gameplay.GetComponent<ScriptComponent>().Instance["ticks"].get<int>() == 2,
+		"gameplay scripts did not resume after unpausing");
+}
+
+EB_TEST_CASE(Script, PausedSceneDoesNotInitializeFrozenScripts, Integration)
+{
+	// Spawning into a paused scene must not run OnCreate either - a script that starts mid-pause
+	// would otherwise see the world in a state its first frame never expects.
+	auto scriptAsset = LoadScriptAsset("pause_oncreate_test.lua", R"(
+		local Ticker = {}
+		function Ticker:OnCreate(entity) self.ticks = 0 end
+		function Ticker:OnUpdate(entity, delta) self.ticks = self.ticks + 1 end
+		return Ticker
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	SceneFixture scene("ScriptPauseOnCreateScene");
+	Entity entity = MakeEntityAt(*scene, "Spawned", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptAsset->GetUUID());
+	ScriptEngine::BindAPI(scene.Ptr());
+
+	auto scriptSystem = Sys<ScriptSystem>();
+	scene->SetPaused(true);
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_FALSE(entity.GetComponent<ScriptComponent>().Initialized);
+
+	scene->SetPaused(false);
+	scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+	EB_EXPECT(entity.GetComponent<ScriptComponent>().Initialized);
+}
+
+EB_TEST_CASE(Script, PausedSceneHoldsTimeoutsButNotForOptedInScripts, Integration)
+{
+	// Timer.SetTimeout is a gameplay timer: a grenade fuse must not burn down inside a pause menu.
+	auto scriptAsset = LoadScriptAsset("pause_timeout_test.lua", R"(
+		local Noop = {}
+		function Noop:OnUpdate(entity, delta) end
+		return Noop
+	)");
+	EB_CHECK(scriptAsset != nullptr);
+
+	sol::state& lua = ScriptEngine::GetState();
+	ScriptEngine::ClearTimeouts();
+
+	SceneFixture scene("ScriptPauseTimeoutScene");
+	Entity entity = MakeEntityAt(*scene, "Ticker", Vector3f(0.0f));
+	entity.AttachComponent<ScriptComponent>(scriptAsset->GetUUID()).RunWhenPaused = true;
+	ScriptEngine::BindAPI(scene.Ptr());
+
+	lua.script(R"(
+		EmberTestPausedTimeoutFired = false
+		function EmberTestPausedTimeoutCallback() EmberTestPausedTimeoutFired = true end
+	)");
+
+	sol::protected_function callback = lua["EmberTestPausedTimeoutCallback"];
+	EB_CHECK(callback.valid());
+	ScriptEngine::SetTimeout(callback, 0.1f);
+
+	auto scriptSystem = Sys<ScriptSystem>();
+	scene->SetPaused(true);
+	for (int frame = 0; frame < 30; ++frame)
+		scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_MSG(!lua["EmberTestPausedTimeoutFired"].get<bool>(),
+		"a timeout fired while the scene was paused");
+
+	scene->SetPaused(false);
+	for (int frame = 0; frame < 30; ++frame)
+		scriptSystem->OnUpdate(Ember::Test::FixedStep(), scene.Ptr());
+
+	EB_EXPECT_MSG(lua["EmberTestPausedTimeoutFired"].get<bool>(),
+		"the held timeout never fired after unpausing");
+
+	ScriptEngine::ClearTimeouts();
 }
 
 //////////////////////////////////////////////////////////////////////////

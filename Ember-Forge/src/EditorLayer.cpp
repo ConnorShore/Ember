@@ -192,6 +192,7 @@ namespace Ember {
 		EB_CREATE_DISPATCHER(event);
 		EB_DISPATCH_EVENT(KeyPressedEvent, OnKeyPressed);
 		EB_DISPATCH_EVENT(MousePressedEvent, OnMouseClick);
+		EB_DISPATCH_EVENT(QuitRequestedEvent, OnQuitRequested);
 
 		// Update camera
 		if (m_Context.CurrentSceneState == SceneState::Edit)
@@ -682,6 +683,19 @@ namespace Ember {
 
 		Input::SetCursorMode(CursorMode::Normal);
 		Input::SetGameplayInputSuppressed(false);
+	}
+
+	bool EditorLayer::OnQuitRequested(QuitRequestedEvent& e)
+	{
+		// Application.Quit() from a game script ends the play session rather than closing the editor.
+		if (m_Context.CurrentSceneState == SceneState::Edit)
+			return false;
+
+		OnRuntimeStop();
+
+		auto notice = UINotificationEvent("Application.Quit() - stopped Play mode.", UINotificationEvent::Severity::Info);
+		m_Context.EventCallback(notice);
+		return true;
 	}
 
 	void EditorLayer::StopRuntimeAfterError(const std::string& message)

@@ -421,7 +421,9 @@ namespace Ember {
 					GamepadAxis control{};
 					if (Input::GlfwGamepadAxisToEmberGamepadControl(axis, control))
 					{
-						state.RawAxis[static_cast<size_t>(control)] = glfwState.axes[axis];
+						// GLFW reports its stick Y axes negative-up, while Ember's convention is +Y forward.
+						const bool flipY = control == GamepadAxis::LeftY || control == GamepadAxis::RightY;
+						state.RawAxis[static_cast<size_t>(control)] = flipY ? -glfwState.axes[axis] : glfwState.axes[axis];
 					}
 				}
 			}

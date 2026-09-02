@@ -64,6 +64,9 @@ namespace Ember {
 		void Close();
 		bool IsRunning() const { return m_Running; }
 
+		// Queues a QuitRequestedEvent for the end of the frame; unhandled, it closes the application.
+		void RequestQuit();
+
 		inline static Application& Instance() { return *s_Instance; }
 
         inline const Window& GetWindow() const { return *m_Window; }
@@ -96,6 +99,8 @@ namespace Ember {
 		}
 
 	private:
+		void ProcessQuitRequest();
+
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
 		bool OnKeyPressed(KeyPressedEvent& e);
@@ -111,6 +116,7 @@ namespace Ember {
 
 		ScopedPtr<Window> m_Window;
 		bool m_Running = true;
+		bool m_QuitRequested = false;
 
 		SystemManager m_SystemManager;
 		AssetManager m_AssetManager;

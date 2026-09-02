@@ -165,6 +165,8 @@ namespace Ember {
 				m_ImGuiLayer.EndFrame();
 			}
 
+			ProcessQuitRequest();
+
 			{
 				EB_PROFILE_SCOPE("SceneManager::ExecuteSceneSwap");
 				m_SceneManager.ExecuteSceneSwap();
@@ -179,6 +181,26 @@ namespace Ember {
 	void Application::Close()
 	{
 		m_Running = false;
+	}
+
+	void Application::RequestQuit()
+	{
+		m_QuitRequested = true;
+	}
+
+	void Application::ProcessQuitRequest()
+	{
+		if (!m_QuitRequested)
+			return;
+
+		m_QuitRequested = false;
+
+		// The editor claims this to end Play mode instead, so a game script cannot close the editor.
+		QuitRequestedEvent quitEvent;
+		OnEvent(quitEvent);
+
+		if (!quitEvent.Handled())
+			Close();
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)

@@ -262,14 +262,14 @@ EB_TEST_CASE(Input, GamepadNamesFromStringRejectNamesThatAreNotControls, Unit)
 	EB_EXPECT_FALSE(InputCodeNames::GamepadAxisFromString("Last", axis));
 }
 
-// Half-axis names are what a player actually picks in a rebind menu, and GLFW's Y axes are
-// negative-up, which is the easy half to get backwards.
+// Half-axis names are what a player actually picks in a rebind menu, and Y is the easy half to get
+// backwards now that Window::PollGamepadStates flips GLFW's negative-up axes to Ember's +Y forward.
 EB_TEST_CASE(Input, HalfAxisDisplayNamesFollowTheStickDirection, Unit)
 {
 	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Negative) == "Left Stick Left");
 	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Positive) == "Left Stick Right");
-	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftY, AxisDirection::Negative) == "Left Stick Up");
-	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::RightY, AxisDirection::Positive) == "Right Stick Down");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftY, AxisDirection::Positive) == "Left Stick Up");
+	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::RightY, AxisDirection::Negative) == "Right Stick Down");
 
 	// A whole axis, and a trigger that only moves one way, keep the plain name.
 	EB_EXPECT(InputCodeNames::GamepadAxisDisplayName(GamepadAxis::LeftX, AxisDirection::Full) == "Left Stick X");
@@ -632,7 +632,7 @@ EB_TEST_CASE(Input, TriggerDisplayNamesAreHumanReadable, Unit)
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/A")), std::string("A Button"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/DPadLeft")), std::string("D-Pad Left"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/RightY")), std::string("Right Stick Y"));
-	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/RightY-")), std::string("Right Stick Up"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/RightY+")), std::string("Right Stick Up"));
 	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/LeftX+")), std::string("Left Stick Right"));
 }
 
@@ -1431,10 +1431,10 @@ EB_TEST_CASE(Input, StickBleedIntoThePerpendicularAxisIsNotAPress, Unit)
 	InputStateGuard inputGuard;
 	GamepadStateGuard gamepadGuard;
 
-	InputActionManager actions = MakeManager("MoveForward", "Gamepad/LeftY-");
+	InputActionManager actions = MakeManager("MoveForward", "Gamepad/LeftY+");
 	actions.AddAction({ "MoveRight", { ParseTrigger("Gamepad/LeftX+") } });
 
-	Input::SetGamepadAxis(0, GamepadAxis::LeftY, -0.97f);
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, 0.97f);
 	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.04f);
 	StepActions(actions);
 
@@ -1448,6 +1448,35 @@ EB_TEST_CASE(Input, StickBleedIntoThePerpendicularAxisIsNotAPress, Unit)
 	Input::SetGamepadAxis(0, GamepadAxis::LeftX, 0.6f);
 	StepActions(actions);
 	EB_EXPECT(actions.IsActionDown("MoveRight"));
+}
+
+// Window::PollGamepadStates flips GLFW's negative-up Y axes so the engine convention is +Y forward.
+// Nothing below the platform layer compensates again, so a forward stick has to reach an action
+// bound to the positive half - and that half has to be the one a rebind menu calls "Up".
+EB_TEST_CASE(Input, StickForwardIsThePositiveYHalfEverywhere, Unit)
+{
+	InputStateGuard inputGuard;
+	GamepadStateGuard gamepadGuard;
+	ConnectPad();
+
+	InputActionManager actions = MakeManager("MoveForward", "Gamepad/LeftY+");
+	actions.AddAction({ "MoveBackward", { ParseTrigger("Gamepad/LeftY-") } });
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, 1.0f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("MoveForward"));
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveBackward"));
+
+	Input::SetGamepadAxis(0, GamepadAxis::LeftY, -1.0f);
+	StepActions(actions);
+
+	EB_EXPECT(actions.IsActionDown("MoveBackward"));
+	EB_EXPECT_FALSE(actions.IsActionDown("MoveForward"));
+
+	// The rebind menu has to name the same half the binding fires on, or a remap silently inverts.
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/LeftY+")), std::string("Left Stick Up"));
+	EB_EXPECT_EQ(InputCodeNames::TriggerToDisplayName(ParseTrigger("Gamepad/LeftY-")), std::string("Left Stick Down"));
 }
 
 // A trigger has no cross-axis bleed to reject, so it must not inherit the stick's high bar - a light

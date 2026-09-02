@@ -78,6 +78,11 @@ namespace Ember {
 			EB_ERROR("{}", message);
 			});
 
+		auto app = state.create_table("Application");
+		app.set_function("Quit", []() {
+			Application::Instance().RequestQuit();
+			});
+
 		auto window = state.create_table("Window");
 		window.set_function("GetWidth", []() {
 			return Application::Instance().GetWindow().GetWidth();

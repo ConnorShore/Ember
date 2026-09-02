@@ -19,6 +19,7 @@ namespace Ember {
 		None = 0,
 		WindowClose,
 		WindowResize,
+		QuitRequested,
 		WindowFocus,
 		WindowLostFocus,
 		WindowMoved,

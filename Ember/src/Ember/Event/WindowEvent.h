@@ -16,6 +16,9 @@ namespace Ember {
 		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryApplication);
 	};
 
+	//////////////////////////////////////////////////////////////////////////
+	// Window Resize Event
+	//////////////////////////////////////////////////////////////////////////
 	class WindowResizeEvent : public Event
 	{
 	public:
@@ -30,5 +33,17 @@ namespace Ember {
 
 	private:
 		uint32_t m_Width, m_Height;
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	// Quit Requested Event
+	//////////////////////////////////////////////////////////////////////////
+	class QuitRequestedEvent : public Event
+	{
+	public:
+		QuitRequestedEvent() = default;
+
+		EB_EVENT_TYPE_INITIALIZER(QuitRequested);
+		EB_EVENT_CATEGORY_INITIALIZER(EventCategoryApplication);
 	};
 }

@@ -116,18 +116,18 @@ namespace Ember {
 			std::string_view Display;
 		};
 
-		// A player thinks in directions, not signs. GLFW's Y axes are negative-up, which is the half
-		// of this table worth double-checking against.
+		// A player thinks in directions, not signs. Window::PollGamepadStates already flips GLFW's
+		// negative-up Y axes, so "Up" is the positive half here.
 		constexpr GamepadHalfAxisName s_GamepadHalfAxisNames[] =
 		{
 			{ GamepadAxis::LeftX,  AxisDirection::Negative, "Left Stick Left" },
 			{ GamepadAxis::LeftX,  AxisDirection::Positive, "Left Stick Right" },
-			{ GamepadAxis::LeftY,  AxisDirection::Negative, "Left Stick Up" },
-			{ GamepadAxis::LeftY,  AxisDirection::Positive, "Left Stick Down" },
+			{ GamepadAxis::LeftY,  AxisDirection::Positive, "Left Stick Up" },
+			{ GamepadAxis::LeftY,  AxisDirection::Negative, "Left Stick Down" },
 			{ GamepadAxis::RightX, AxisDirection::Negative, "Right Stick Left" },
 			{ GamepadAxis::RightX, AxisDirection::Positive, "Right Stick Right" },
-			{ GamepadAxis::RightY, AxisDirection::Negative, "Right Stick Up" },
-			{ GamepadAxis::RightY, AxisDirection::Positive, "Right Stick Down" },
+			{ GamepadAxis::RightY, AxisDirection::Positive, "Right Stick Up" },
+			{ GamepadAxis::RightY, AxisDirection::Negative, "Right Stick Down" },
 		};
 
 		// Serialized suffix naming the half of an axis a trigger watches.

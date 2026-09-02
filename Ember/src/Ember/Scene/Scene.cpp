@@ -292,6 +292,9 @@ namespace Ember {
 	{
 		m_IsRuntime = true;
 
+		// A session that ended while paused must not start the next one paused.
+		m_Paused = false;
+
 		// Initialize systems (TODO: Loop over them and make system use scene->IsRuntime() to decide what to do in their OnSceneAttach
 		auto& systemManager = Application::Instance().GetSystemManager();
 		Utils::InitializeAnimationPoseCaches(this);
@@ -343,6 +346,7 @@ namespace Ember {
 	void Scene::OnRuntimeStop()
 	{
 		m_IsRuntime = false;
+		m_Paused = false;
 
 		auto& systemManager = Application::Instance().GetSystemManager();
 		systemManager.GetSystem<AudioSystem>()->OnSceneDetach(this);
@@ -369,9 +373,14 @@ namespace Ember {
 
 		auto& systemManager = Application::Instance().GetSystemManager();
 
+		// Pausing starves the simulation systems of time while the presentation ones keep the real
+		// delta, so menus, audio and rendering carry on over a frozen world. ScriptSystem is handed
+		// the real delta too - it gates itself per entity off ScriptComponent::RunWhenPaused.
+		const TimeStep simDelta = m_Paused ? TimeStep(0.0f) : delta;
+
 		{
 			EB_PROFILE_SCOPE("LifecycleSystem::OnUpdate");
-			systemManager.GetSystem<LifecycleSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<LifecycleSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			// Ahead of ScriptSystem so a script polling IsPointerOverUI() reads this frame,
@@ -385,11 +394,11 @@ namespace Ember {
 		}
 		{
 			EB_PROFILE_SCOPE("AISystem::OnUpdate");
-			systemManager.GetSystem<AISystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<AISystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("CharacterControllerSystem::OnUpdate");
-			systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<CharacterControllerSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			// Runs before AnimationSystem so its off-screen relevance results are available this frame.
@@ -400,15 +409,15 @@ namespace Ember {
 		}
 		{
 			EB_PROFILE_SCOPE("AnimationSystem::OnUpdate");
-			systemManager.GetSystem<AnimationSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<AnimationSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("PhysicsSystem::OnUpdate");
-			systemManager.GetSystem<PhysicsSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<PhysicsSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("ParticleSystem::OnUpdate");
-			systemManager.GetSystem<ParticleSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<ParticleSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("TransformSystem::OnUpdate");
@@ -416,7 +425,7 @@ namespace Ember {
 		}
 		{
 			EB_PROFILE_SCOPE("BoneSocketSystem::OnUpdate");
-			systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(delta, this);
+			systemManager.GetSystem<BoneSocketSystem>()->OnUpdate(simDelta, this);
 		}
 		{
 			EB_PROFILE_SCOPE("UILayoutSystem::OnUpdate");

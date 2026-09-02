@@ -503,8 +503,8 @@ namespace Ember {
 		ImDrawList* drawList = ImGui::GetWindowDrawList();
 		drawList->AddRect(origin, ImVec2(origin.x + previewSize, origin.y + previewSize), IM_COL32(120, 120, 120, 255));
 		drawList->AddCircle(centre, radius * settings.Deadzone, IM_COL32(120, 120, 120, 160));
-		drawList->AddCircleFilled(ImVec2(centre.x + raw.x * radius, centre.y + raw.y * radius), 3.0f, IM_COL32(150, 150, 150, 255));
-		drawList->AddCircleFilled(ImVec2(centre.x + conditioned.x * radius, centre.y + conditioned.y * radius), 3.0f, IM_COL32(255, 170, 60, 255));
+		drawList->AddCircleFilled(ImVec2(centre.x + raw.x * radius, centre.y - raw.y * radius), 3.0f, IM_COL32(150, 150, 150, 255));
+		drawList->AddCircleFilled(ImVec2(centre.x + conditioned.x * radius, centre.y - conditioned.y * radius), 3.0f, IM_COL32(255, 170, 60, 255));
 
 		ImGui::Dummy(ImVec2(previewSize, previewSize));
 		ImGui::TextDisabled("Grey is raw, orange is conditioned.");

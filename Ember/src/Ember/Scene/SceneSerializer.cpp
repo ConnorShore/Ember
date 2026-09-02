@@ -324,6 +324,7 @@ namespace Ember {
 			auto scriptNode = entityNode["ScriptComponent"];
 			scriptNode |= ryml::MAP;
 			scriptNode["ScriptUUID"] << (uint64_t)script.ScriptHandle;
+			scriptNode["RunWhenPaused"] << script.RunWhenPaused;
 
 			ryml::NodeRef overridesNode = scriptNode["UserPropertyOverrides"];
 			overridesNode |= ryml::SEQ;
@@ -1158,6 +1159,7 @@ namespace Ember {
 
 			auto& sc = deserializedEntity.AttachComponent<ScriptComponent>((UUID)uuidVal);
 			sc.UserPropertyOverrides = scriptUserOverrides;
+			Util::ReadField(scriptNode, "RunWhenPaused", sc.RunWhenPaused);
 		}
 
 		//if (entityNode.has_child("OutlineComponent"))

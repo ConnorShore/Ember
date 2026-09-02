@@ -76,6 +76,7 @@ namespace Ember {
 
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseClick(MousePressedEvent& e);
+		bool OnQuitRequested(QuitRequestedEvent& e);
 		void SyncEntitySelectionState();
 		void SyncSelectionOutlines();
 
