@@ -20,6 +20,7 @@ namespace Ember {
 		float StretchFactor = 0.0f; // If AlignWithVelocity is true, this controls how much particles stretch in the direction of movement (0 = no stretch, 1 = full stretch)
 
 		Vector4f ColorBegin, ColorEnd;
+		float ColorIntensity = 1.0f;
 		float ScaleBegin, ScaleEnd;
 
 		float CurrentScale;

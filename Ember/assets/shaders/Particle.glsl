@@ -56,12 +56,17 @@ in vec4 Color;
 in vec2 TexCoord;
 flat in uint TexIndex;
 
-out vec4 OutColor;
+layout(location = 0) out vec4 OutColor;
+layout(location = 1) out vec4 BrightColor;
+layout(location = 2) out int EntityID;
 
 uniform sampler2D u_Textures[32]; // Maximum texture slots
+uniform int u_EntityID;
 
 void main()
 {
-    vec4 texColor = texture(u_Textures[TexIndex], TexCoord); 
+    vec4 texColor = texture(u_Textures[TexIndex], TexCoord);
     OutColor = texColor * Color;
+    BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+    EntityID = u_EntityID;
 }

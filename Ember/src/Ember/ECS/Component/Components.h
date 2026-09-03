@@ -905,6 +905,8 @@ namespace Ember {
 		Vector4f ColorBegin = { 1.0f, 0.0f, 0.0f, 1.0f };
 		Vector4f ColorEnd = { 0.0f, 0.0f, 1.0f, 0.0f }; // Fades to blue and transparent
 
+		float ColorIntensity = 1.0f;
+
 		float ScaleBegin = 1.0f;
 		float ScaleEnd = 0.1f;
 		float ScaleVariation = 0.3f;

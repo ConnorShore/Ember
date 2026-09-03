@@ -667,3 +667,53 @@ EB_TEST_CASE(Render, EntityIdPassIdentifiesThePixelUnderTheCursor, Integration)
 	const EntityID empty = renderSystem->GetEntityIDAtPixel(2, 2);
 	EB_EXPECT_MSG(empty != cube.GetEntityHandle(), "a pixel of empty space resolved to the cube");
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Particles
+//////////////////////////////////////////////////////////////////////////
+
+EB_TEST_CASE(Render, ParticleColorIntensityScalesRgbButNotAlpha, Unit)
+{
+	// REGRESSION: emitter colours were capped at 1.0, so no particle could ever reach the bloom
+	// threshold. ColorIntensity lifts RGB into HDR and must leave alpha alone, or blending breaks.
+	auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
+	EB_EXPECT_MSG(particleSystem != nullptr, "the ParticleSystem is not registered");
+	if (particleSystem == nullptr)
+		return;
+
+	auto& particleManager = particleSystem->GetParticleManager();
+	particleManager.Reset();
+
+	ParticleEmitterComponent emitter;
+	emitter.ColorBegin = Vector4f(1.0f, 0.5f, 0.25f, 0.8f);
+	emitter.ColorEnd = emitter.ColorBegin;
+	emitter.ColorIntensity = 4.0f;
+	emitter.Lifetime = 1.0f;
+	emitter.LifetimeVariation = 0.0f;
+	emitter.ScaleVariation = 0.0f;
+	emitter.GravityMultiplier = 0.0f;
+
+	particleManager.Emit(emitter, Vector3f(0.0f));
+	particleManager.OnUpdate(Ember::Test::FixedStep());
+
+	const Particle* emitted = nullptr;
+	for (const auto& particle : particleManager.GetParticles())
+	{
+		if (particle.Active)
+		{
+			emitted = &particle;
+			break;
+		}
+	}
+
+	EB_EXPECT_MSG(emitted != nullptr, "the emitter produced no active particle");
+	if (emitted == nullptr)
+		return;
+
+	EB_EXPECT_NEAR(emitted->CurrentColor.r, 4.0f, 1e-4);
+	EB_EXPECT_NEAR(emitted->CurrentColor.g, 2.0f, 1e-4);
+	EB_EXPECT_NEAR(emitted->CurrentColor.b, 1.0f, 1e-4);
+	EB_EXPECT_NEAR(emitted->CurrentColor.a, 0.8f, 1e-4);
+
+	particleManager.Reset();
+}

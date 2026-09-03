@@ -79,6 +79,7 @@ namespace Ember {
 				{
 					UI::PropertyGrid::Color4("Color Begin", component.ColorBegin);
 					UI::PropertyGrid::Color4("Color End", component.ColorEnd);
+					UI::PropertyGrid::Float("Color Intensity", component.ColorIntensity);
 
 					UI::PropertyGrid::Float("Scale Begin", component.ScaleBegin);
 					UI::PropertyGrid::Float("Scale End", component.ScaleEnd);

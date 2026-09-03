@@ -38,6 +38,7 @@ namespace Ember {
 
 		particle.ColorBegin = component.ColorBegin;
 		particle.ColorEnd = component.ColorEnd;
+		particle.ColorIntensity = component.ColorIntensity;
 
 		particle.ScaleBegin = component.ScaleBegin + component.ScaleVariation * (Random::Float() - 0.5f);
 		particle.ScaleEnd = component.ScaleEnd;
@@ -89,6 +90,7 @@ namespace Ember {
 
 			// Update particle color/scale based on emitter's start/end props and life ratio
 			particle.CurrentColor = Math::Lerp(particle.ColorEnd, particle.ColorBegin, lifeRatio);
+			particle.CurrentColor = Vector4f(Vector3f(particle.CurrentColor) * particle.ColorIntensity, particle.CurrentColor.a);
 			particle.CurrentScale = Math::Lerp(particle.ScaleEnd, particle.ScaleBegin, lifeRatio);
 		}
 	}

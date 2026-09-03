@@ -143,11 +143,15 @@ namespace Ember {
 					textureIndex = (uint32_t)std::distance(m_TextureSlots.begin(), it);
 					//textureIndex = (uint32_t)std::distance(m_TextureSlots.begin(), it) + 1; // +1 because 0 is our default white texture
 				}
-				else
+				else if (m_CurrentTexSlotIndex < m_TextureSlots.size())
 				{
 					// New texture found! Add it to the list.
-					m_TextureSlots[m_CurrentTexSlotIndex++] = particle.TextureHandle;
-					textureIndex = m_CurrentTexSlotIndex;
+					m_TextureSlots[m_CurrentTexSlotIndex] = particle.TextureHandle;
+					textureIndex = m_CurrentTexSlotIndex++;
+				}
+				else
+				{
+					textureIndex = 0;
 				}
 			}
 
@@ -182,6 +186,8 @@ namespace Ember {
 
 		// Tell the shader about the array of samplers
 		m_ParticleShader->SetIntArray("u_Textures", samplers, usedTextureSlots);
+
+		m_ParticleShader->SetInt(Constants::Uniforms::EntityID, Constants::Entities::InvalidEntityID);
 
 		// The shader needs the camera up/right vectors to build the billboard matrix!
 		Vector3f camRight = Vector3f(context.CameraTransform[0]);

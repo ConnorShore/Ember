@@ -52,6 +52,7 @@ namespace Ember {
 			"VelocityVariation", RefProp(&ParticleEmitterComponent::VelocityVariation),
 			"ColorBegin", RefProp(&ParticleEmitterComponent::ColorBegin),
 			"ColorEnd", RefProp(&ParticleEmitterComponent::ColorEnd),
+			"ColorIntensity", RefProp(&ParticleEmitterComponent::ColorIntensity),
 			"ScaleBegin", RefProp(&ParticleEmitterComponent::ScaleBegin),
 			"ScaleEnd", RefProp(&ParticleEmitterComponent::ScaleEnd),
 			"ScaleVariation", RefProp(&ParticleEmitterComponent::ScaleVariation),
