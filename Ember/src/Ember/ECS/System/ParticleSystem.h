@@ -9,13 +9,9 @@ namespace Ember {
 	class ParticleSystem : public System
 	{
 	public:
-		ParticleSystem(uint32_t maxParticles = 10000);
+		ParticleSystem() = default;
 		virtual ~ParticleSystem() = default;
 
 		virtual void OnUpdate(TimeStep delta, Scene* scene) override;
-
-		ParticleManager& GetParticleManager() const { return *m_ParticleManager.Ptr(); }
-	private:
-		ScopedPtr<ParticleManager> m_ParticleManager;
 	};
 }

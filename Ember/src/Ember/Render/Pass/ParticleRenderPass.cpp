@@ -15,8 +15,6 @@ namespace Ember {
 
 	void ParticleRenderPass::Init()
 	{
-		m_ParticleManager = &Application::Instance().GetSystem<ParticleSystem>()->GetParticleManager();
-		
 		auto quadVAO = PrimitiveGenerator::CreateQuad(1.0f, 1.0f)->GetVertexArray();
 		auto quadVBO = quadVAO->GetVertexBuffer();
 		auto quadIBO = quadVAO->GetIndexBuffer();
@@ -43,6 +41,11 @@ namespace Ember {
 
 	void ParticleRenderPass::Execute(RenderContext& context)
 	{
+		if (!context.ActiveScene)
+			return;
+
+		auto& particleManager = context.ActiveScene->GetParticleManager();
+
 		m_InstancedData.clear();
 		m_TextureSlots.fill(Constants::InvalidUUID);
 		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID;
@@ -54,8 +57,8 @@ namespace Ember {
 
 		// Only copy active particles to avoid sorting the entire pool every frame
 		std::vector<Particle> pool;
-		pool.reserve(m_ParticleManager->GetMaxParticles());
-		for (const auto& p : m_ParticleManager->GetParticles())
+		pool.reserve(particleManager.GetMaxParticles());
+		for (const auto& p : particleManager.GetParticles())
 		{
 			if (p.Active)
 				pool.push_back(p);

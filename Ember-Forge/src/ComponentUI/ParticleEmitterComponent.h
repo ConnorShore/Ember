@@ -1,6 +1,10 @@
 #pragma once
 #include "ComponentUI.h"
 #include "Ui/PropertyGrid.h"
+#include "Ui/ParticleEffectPropertiesUI.h"
+
+#include <Ember/Asset/Serializers/ParticleEffectSerializer.h>
+#include <Ember/Asset/Serializers/AssetRegistrySerializer.h>
 
 #include <imgui/imgui.h>
 
@@ -18,114 +22,141 @@ namespace Ember {
 			// Push the component's memory address as an ID so multiple emitters don't clash in ImGui
 			ImGui::PushID(&component);
 
-			// --- 1. GENERAL SECTION ---
-			// Using DefaultOpen so the user immediately sees the most critical properties
-			if (ImGui::TreeNodeEx("General", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				if (UI::PropertyGrid::Begin("ParticleGeneralProps"))
-				{
-					UI::PropertyGrid::Checkbox("Active", component.IsActive);
-					UI::PropertyGrid::Float("Emission Rate", component.EmissionRate);
-					UI::PropertyGrid::Float("Lifetime", component.Lifetime);
-					UI::PropertyGrid::Float("Lifetime Variation", component.LifetimeVariation);
+			auto effect = component.ResolveEffect();
+			auto instance = DynamicPointerCast<ParticleEffectInstance>(effect);
+			bool isInstanced = instance != nullptr;
 
-					UI::PropertyGrid::End();
+			if (UI::PropertyGrid::Begin("ParticleEmitterProps"))
+			{
+				UI::PropertyGrid::Checkbox("Active", component.IsActive);
+
+				// An instance has no file of its own, so show the asset it was cloned from
+				auto displayedEffect = isInstanced ? instance->GetSourceEffect() : effect;
+				std::string effectName = displayedEffect ? displayedEffect->GetName() : "None (Particle Effect)";
+				if (isInstanced)
+					effectName += "  (instance)";
+
+				std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetParticleEffect);
+				std::string droppedPath;
+
+				UI::UICallbackFunc browseFunc = [&]() {
+					auto effectDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::ParticleEffect);
+					std::string extensions = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetParticleEffect);
+					std::string effectFile = FileDialog::OpenFile(effectDir.string().c_str(), std::format("Particle Effects ({})", extensions).c_str(), extensions.c_str());
+					if (!effectFile.empty())
+					{
+						auto loaded = m_AssetManager.Load<ParticleEffect>(effectFile, false);
+						if (loaded)
+							component.EffectHandle = loaded->GetUUID();
+					}
+					};
+
+				if (UI::PropertyGrid::AssetReference("Particle Effect", effectName, payloadType, droppedPath, browseFunc, nullptr))
+				{
+					auto loaded = m_AssetManager.Load<ParticleEffect>(droppedPath, false);
+					if (loaded)
+						component.EffectHandle = loaded->GetUUID();
 				}
-				ImGui::TreePop();
+
+				UI::PropertyGrid::End();
 			}
 
-			// --- 2. PHYSICS & MOVEMENT SECTION ---
-			if (ImGui::TreeNode("Physics & Movement"))
-			{
-				if (UI::PropertyGrid::Begin("ParticlePhysicsProps"))
-				{
-					UI::PropertyGrid::Float3("Velocity", component.Velocity);
-					UI::PropertyGrid::Float3("Velocity Variation", component.VelocityVariation);
-					UI::PropertyGrid::Float("Gravity Multiplier", component.GravityMultiplier);
-					UI::PropertyGrid::Float("Drag", component.Drag);
+			bool openCreateModal = false;
+			if (ImGui::Button("New Effect"))
+				openCreateModal = true;
 
-					UI::PropertyGrid::End();
-				}
-				ImGui::TreePop();
+			auto sourceEffect = isInstanced ? instance->GetSourceEffect() : effect;
+			if (sourceEffect && !sourceEffect->GetFilePath().empty())
+			{
+				ImGui::SameLine();
+				if (ImGui::Button("Edit Effect"))
+					m_Context->RequestParticleEffectOpenPath = sourceEffect->GetFilePath();
 			}
 
-			// --- 3. ROTATION & ALIGNMENT SECTION ---
-			if (ImGui::TreeNode("Rotation & Alignment"))
+			if (isInstanced)
 			{
-				if (UI::PropertyGrid::Begin("ParticleRotationProps"))
+				ImGui::SameLine();
+				if (ImGui::Button("Revert to Asset"))
 				{
-					UI::PropertyGrid::Checkbox("Align With Velocity", component.AlignWithVelocity);
-
-					// UX Trick: Hide/Show properties based on the alignment mode!
-					if (component.AlignWithVelocity)
-					{
-						UI::PropertyGrid::Float("Stretch Factor", component.StretchFactor, 0.01f);
-					}
-					else
-					{
-						UI::PropertyGrid::Float("Rotation Speed", component.AngularVelocity);
-						UI::PropertyGrid::Float("Rotation Speed Variation", component.AngularVelocityVariation);
-					}
-
-					UI::PropertyGrid::End();
+					component.RevertToSourceEffect();
+					effect = component.ResolveEffect();
+					instance = nullptr;
+					isInstanced = false;
 				}
-				ImGui::TreePop();
 			}
 
-			// --- 4. VISUALS SECTION ---
-			if (ImGui::TreeNode("Visuals"))
+			if (isInstanced)
+				ImGui::TextDisabled("Overridden on this entity only.");
+			else if (effect)
+				ImGui::TextDisabled("Shared asset - edits here create a per-entity instance.");
+
+			ImGui::Separator();
+
+			// Editing any property clones the shared asset first, so tweaking one emitter never
+			// silently retunes every other user of the same effect.
+			if (effect)
 			{
-				if (UI::PropertyGrid::Begin("ParticleVisualsProps"))
+				ParticleEffectProperties preview = effect->Properties;
+				if (UI::DrawParticleEffectProperties(preview, m_AssetManager, "EmitterEffectProps"))
 				{
-					UI::PropertyGrid::Color4("Color Begin", component.ColorBegin);
-					UI::PropertyGrid::Color4("Color End", component.ColorEnd);
-					UI::PropertyGrid::Float("Color Intensity", component.ColorIntensity);
-
-					UI::PropertyGrid::Float("Scale Begin", component.ScaleBegin);
-					UI::PropertyGrid::Float("Scale End", component.ScaleEnd);
-					UI::PropertyGrid::Float("Scale Variation", component.ScaleVariation);
-
-					// Texture asset picker
-					bool textureExists = component.TextureHandle != Constants::Assets::DefaultWhiteTexUUID;
-					std::string fileName = "None (Texture)";
-
-					if (textureExists)
-					{
-						auto textureAsset = m_AssetManager.GetAsset<Texture>(component.TextureHandle);
-						if (textureAsset)
-							fileName = std::filesystem::path(textureAsset->GetFilePath()).filename().string();
-					}
-
-					auto textureDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::Texture);
-					std::string payloadType = DragDropUtils::DragDropPayloadTypeToString(DragDropPayloadType::AssetTexture);
-					std::string droppedPath;
-
-					UI::UICallbackFunc browseFunc = [&]() {
-						std::string extensions = DragDropUtils::DragDropPayloadTypeToExtension(DragDropPayloadType::AssetTexture);
-						std::string textureFile = FileDialog::OpenFile(textureDir.string().c_str(), std::format("Textures ({})", extensions).c_str(), extensions.c_str());
-						if (!textureFile.empty())
-						{
-							auto texture = m_AssetManager.Load<Texture>(textureFile);
-							component.TextureHandle = texture->GetUUID();
-						}
-						};
-
-					UI::UICallbackFunc clearFunc = textureExists ? UI::UICallbackFunc([&]() {
-						component.TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
-						}) : nullptr;
-
-					if (UI::PropertyGrid::AssetReference("Texture Asset", fileName, payloadType, droppedPath, browseFunc, clearFunc))
-					{
-						auto texture = m_AssetManager.Load<Texture>(droppedPath);
-						component.TextureHandle = texture->GetUUID();
-					}
-
-					UI::PropertyGrid::End();
+					auto editable = component.GetInstanced(effect->GetName() + "_Instance");
+					if (editable)
+						editable->Properties = preview;
 				}
-				ImGui::TreePop();
 			}
+
+			if (openCreateModal)
+				ImGui::OpenPopup("Create Particle Effect");
+
+			RenderCreateEffectModal(component);
 
 			ImGui::PopID();
+		}
+
+	private:
+		inline void RenderCreateEffectModal(ParticleEmitterComponent& component)
+		{
+			if (!ImGui::BeginPopupModal("Create Particle Effect", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+				return;
+
+			static char effectNameBuffer[256] = "NewParticleEffect";
+			ImGui::InputText("Name", effectNameBuffer, sizeof(effectNameBuffer));
+
+			if (ImGui::Button("Create", ImVec2(120, 0)))
+			{
+				std::string newEffectName(effectNameBuffer);
+				auto effectDir = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::ParticleEffect);
+				std::filesystem::create_directories(effectDir);
+
+				std::filesystem::path filePath = effectDir / (newEffectName + ".ebparticle");
+
+				auto newEffect = m_AssetManager.Create<ParticleEffect>(UUID(), newEffectName);
+				newEffect->SetFilePath(filePath.string());
+				newEffect->SetIsEngineAsset(false);
+
+				if (ParticleEffectSerializer::Serialize(filePath, newEffect))
+				{
+					m_AssetManager.Register<ParticleEffect>(newEffect);
+					component.EffectHandle = newEffect->GetUUID();
+
+					AssetRegistrySerializer registrySerializer(&m_AssetManager);
+					registrySerializer.Serialize(ProjectManager::GetActive()->GetAssetsFilePath().string());
+
+					m_Context->RequestParticleEffectOpenPath = filePath.string();
+				}
+				else
+				{
+					EB_CORE_ERROR("Failed to serialize new particle effect!");
+				}
+
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
 		}
 	};
 

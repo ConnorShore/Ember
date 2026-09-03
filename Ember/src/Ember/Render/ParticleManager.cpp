@@ -15,7 +15,7 @@ namespace Ember {
 		m_ParticleIndex = maxParticles - 1; // Start at the end of the pool so the first particle will be at index 0
 	}
 
-	void ParticleManager::Emit(const ParticleEmitterComponent& component, const Vector3f& position, const Quaternion& worldRotation)
+	void ParticleManager::Emit(const ParticleEffectProperties& properties, const Vector3f& position, const Quaternion& worldRotation)
 	{
 		Particle& particle = m_ParticlePool[m_ParticleIndex];
 
@@ -23,42 +23,42 @@ namespace Ember {
 		particle.Active = true;
 		particle.Position = position;
 
-		particle.GravityMultiplier = component.GravityMultiplier;
+		particle.GravityMultiplier = properties.GravityMultiplier;
 
-		particle.Drag = component.Drag;
-		particle.AngularVelocity = component.AngularVelocity + component.AngularVelocityVariation * (Random::Float() - 0.5f);
+		particle.Drag = properties.Drag;
+		particle.AngularVelocity = properties.AngularVelocity + properties.AngularVelocityVariation * (Random::Float() - 0.5f);
 
 		// Apply props with variation when necessary, then rotate into world space
-		Vector3f localVelocity = component.Velocity + component.VelocityVariation * Vector3f(
+		Vector3f localVelocity = properties.Velocity + properties.VelocityVariation * Vector3f(
 			Random::Float() - 0.5f,
 			Random::Float() - 0.5f,
 			Random::Float() - 0.5f
 		);
 		particle.Velocity = worldRotation * localVelocity;
 
-		particle.ColorBegin = component.ColorBegin;
-		particle.ColorEnd = component.ColorEnd;
-		particle.ColorIntensity = component.ColorIntensity;
+		particle.ColorBegin = properties.ColorBegin;
+		particle.ColorEnd = properties.ColorEnd;
+		particle.ColorIntensity = properties.ColorIntensity;
 
-		particle.ScaleBegin = component.ScaleBegin + component.ScaleVariation * (Random::Float() - 0.5f);
-		particle.ScaleEnd = component.ScaleEnd;
+		particle.ScaleBegin = properties.ScaleBegin + properties.ScaleVariation * (Random::Float() - 0.5f);
+		particle.ScaleEnd = properties.ScaleEnd;
 
-		particle.Lifetime = component.Lifetime + component.LifetimeVariation * (Random::Float() - 0.5f);
+		particle.Lifetime = properties.Lifetime + properties.LifetimeVariation * (Random::Float() - 0.5f);
 		particle.LifeRemaining = particle.Lifetime;
 
-		particle.AlignWithVelocity = component.AlignWithVelocity;
-		particle.StretchFactor = component.StretchFactor;
+		particle.AlignWithVelocity = properties.AlignWithVelocity;
+		particle.StretchFactor = properties.StretchFactor;
 
-		particle.TextureHandle = component.TextureHandle;
+		particle.TextureHandle = properties.TextureHandle;
 
 		// Move the index backwards. If it hits 0, wrap back around to the top
 		m_ParticleIndex = (m_ParticleIndex == 0) ? m_MaxParticles - 1 : m_ParticleIndex - 1;
 	}
 
-	void ParticleManager::EmitBurst(const ParticleEmitterComponent& component, const Vector3f& position, uint32_t count, const Quaternion& worldRotation)
+	void ParticleManager::EmitBurst(const ParticleEffectProperties& properties, const Vector3f& position, uint32_t count, const Quaternion& worldRotation)
 	{
 		for (uint32_t i = 0; i < count; i++)
-			Emit(component, position, worldRotation);
+			Emit(properties, position, worldRotation);
 	}
 
 	void ParticleManager::OnUpdate(TimeStep delta)
@@ -93,6 +93,17 @@ namespace Ember {
 			particle.CurrentColor = Vector4f(Vector3f(particle.CurrentColor) * particle.ColorIntensity, particle.CurrentColor.a);
 			particle.CurrentScale = Math::Lerp(particle.ScaleEnd, particle.ScaleBegin, lifeRatio);
 		}
+	}
+
+	uint32_t ParticleManager::GetActiveParticleCount() const
+	{
+		uint32_t count = 0;
+		for (const auto& particle : m_ParticlePool)
+		{
+			if (particle.Active)
+				count++;
+		}
+		return count;
 	}
 
 	void ParticleManager::Reset()

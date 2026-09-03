@@ -59,7 +59,7 @@ namespace Ember {
 		m_SystemManager.RegisterSystem(SharedPtr<PhysicsSystem>::Create());
 		m_SystemManager.RegisterSystem(SharedPtr<TransformSystem>::Create());
 		m_SystemManager.RegisterSystem(SharedPtr<BoneSocketSystem>::Create());
-		m_SystemManager.RegisterSystem(SharedPtr<ParticleSystem>::Create(Constants::Renderer::MaxParticles));
+		m_SystemManager.RegisterSystem(SharedPtr<ParticleSystem>::Create());
 		m_SystemManager.RegisterSystem(SharedPtr<RenderSystem>::Create());
 		m_SystemManager.RegisterSystem(SharedPtr<CharacterControllerSystem>::Create());
 		m_SystemManager.RegisterSystem(SharedPtr<LifecycleSystem>::Create());

@@ -484,6 +484,9 @@ namespace Ember {
 			case DragDropPayloadType::AssetPrefab:
 				m_Context->RequestedPrefabOpenPath = filePath.string();
 				break;
+			case DragDropPayloadType::AssetParticleEffect:
+				m_Context->RequestParticleEffectOpenPath = filePath.string();
+				break;
 			default:
 				break;
 			}
@@ -793,6 +796,9 @@ namespace Ember {
 					m_SkeletonPath.clear();
 				}
 
+				if (ImGui::MenuItem("Particle Effect"))
+					CreateParticleEffectAsset();
+
 				ImGui::EndMenu();
 			}
 
@@ -965,6 +971,9 @@ namespace Ember {
 		case DragDropPayloadType::AssetNavMeshData:
 			asset = assetManager.Load<NavigationMeshData>(path, false);
 			break;
+		case DragDropPayloadType::AssetParticleEffect:
+			asset = assetManager.Load<ParticleEffect>(path, false);
+			break;
 		case DragDropPayloadType::Scene:
 			asset = assetManager.Load<Scene>(path, false);
 			break;
@@ -983,6 +992,46 @@ namespace Ember {
 		}
 
 		return asset;
+	}
+
+	void AssetManagerPanel::CreateParticleEffectAsset()
+	{
+		auto project = ProjectManager::GetActive();
+		if (!project)
+			return;
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+
+		std::filesystem::path targetDirectory = m_CurrentDirectory.empty() ? project->GetDefaultDirectoryForAsset(AssetType::ParticleEffect) : m_CurrentDirectory;
+		std::filesystem::create_directories(targetDirectory);
+
+		std::string effectName = "NewParticleEffect";
+		std::filesystem::path filePath = targetDirectory / (effectName + ".ebparticle");
+		for (uint32_t suffix = 1; std::filesystem::exists(filePath); suffix++)
+		{
+			effectName = std::format("NewParticleEffect{}", suffix);
+			filePath = targetDirectory / (effectName + ".ebparticle");
+		}
+
+		auto effect = assetManager.Create<ParticleEffect>(UUID(), effectName);
+		if (!effect)
+			return;
+
+		effect->SetFilePath(filePath.string());
+		effect->SetIsEngineAsset(false);
+
+		if (!ParticleEffectSerializer::Serialize(filePath, effect))
+		{
+			EB_CORE_ERROR("Failed to serialize new particle effect '{}'", filePath.string());
+			return;
+		}
+
+		assetManager.Register<ParticleEffect>(effect);
+
+		AssetRegistrySerializer serializer(&assetManager);
+		serializer.Serialize(project->GetAssetsFilePath().string());
+
+		m_Context->RequestParticleEffectOpenPath = filePath.string();
 	}
 
 	void AssetManagerPanel::RenderTextureOptions(const std::string& filePath)

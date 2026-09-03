@@ -131,10 +131,12 @@ namespace Ember {
 		bool SaveOpenPrefab();
 		void OpenAnimationState(const std::string& path);
 		void OpenSkeletonMask(const std::string& path);
+		void OpenParticleEffect(const std::string& path);
 		void HandleSceneOpenRequest();
 		void HandlePrefabOpenRequest();
 		void HandleAnimationOpenRequest();
 		void HandleSkeletonMaskOpenRequest();
+		void HandleParticleEffectOpenRequest();
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;
@@ -148,6 +150,7 @@ namespace Ember {
 		void OpenPrefabViewer(const std::string& prefabPath);
 		void OpenAnimationViewer(const std::string& animationStatePath);
 		void OpenSkeletonMaskViewer(const std::string& skeletonMaskPath);
+		void OpenParticleEffectViewer(const std::string& effectPath);
 
 		void SetNewScene(SharedPtr<Scene> newScene);
 

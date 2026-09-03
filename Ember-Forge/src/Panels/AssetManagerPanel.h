@@ -45,6 +45,8 @@ namespace Ember {
 		void RenderScriptOptions(const std::string& filePath);
 		void RenderSkeletonMaskOptions(const std::string& filePath);
 
+		void CreateParticleEffectAsset();
+
 		void RenderRenameScenePopup();
 		void RenameScene();
 

@@ -117,6 +117,8 @@ namespace Ember {
 				return GetScenesDirectory();
 			case AssetType::NavMeshData:
 				return GetAssetDirectory() / "NavMeshes";
+			case AssetType::ParticleEffect:
+				return GetAssetDirectory() / "VFX";
 			default:
 				return GetAssetDirectory();
 			}

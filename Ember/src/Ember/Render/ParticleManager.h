@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Ember/ECS/Component/Components.h"
+#include "Ember/Asset/ParticleEffect.h"
 #include "Ember/Render/Particle.h"
+#include "Ember/Core/Time.h"
 
 #include <vector>
 
@@ -13,13 +14,14 @@ namespace Ember {
 		ParticleManager(uint32_t maxParticles = 10000);
 		virtual ~ParticleManager() = default;
 
-		void Emit(const ParticleEmitterComponent& component, const Vector3f& position, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
-		void EmitBurst(const ParticleEmitterComponent& component, const Vector3f& position, uint32_t count, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+		void Emit(const ParticleEffectProperties& properties, const Vector3f& position, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+		void EmitBurst(const ParticleEffectProperties& properties, const Vector3f& position, uint32_t count, const Quaternion& worldRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
 		void OnUpdate(TimeStep delta);
 
 		void Reset();
 
 		uint32_t GetMaxParticles() const { return m_MaxParticles; }
+		uint32_t GetActiveParticleCount() const;
 
 		const std::vector<Particle>& GetParticles() const { return m_ParticlePool; }
 

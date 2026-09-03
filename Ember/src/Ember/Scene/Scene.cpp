@@ -204,13 +204,19 @@ namespace Ember {
 	}
 
 	Scene::Scene(UUID uuid, const std::string& name, const std::string& filePath)
-		: Asset(uuid, name, filePath, AssetType::Scene), m_Registry(ScopedPtr<Registry>::Create()), m_PoolManager(ScopedPtr<PoolManager>::Create())
+		: Asset(uuid, name, filePath, AssetType::Scene), m_Registry(ScopedPtr<Registry>::Create()), m_PoolManager(ScopedPtr<PoolManager>::Create()),
+		m_ParticleManager(ScopedPtr<ParticleManager>::Create(Constants::Renderer::MaxParticles))
 	{
 
 	}
 
 	Scene::~Scene()
 	{
+	}
+
+	ParticleManager& Scene::GetParticleManager()
+	{
+		return *m_ParticleManager;
 	}
 
 	void Scene::Clear()
@@ -220,6 +226,7 @@ namespace Ember {
 		m_EntityOrder.clear();
 		m_PoolManager = ScopedPtr<PoolManager>::Create();
 		m_Registry = ScopedPtr<Registry>::Create();
+		m_ParticleManager->Reset();
 	}
 
 	// Deep-copies the scene, preserving all UUIDs so relationships remain valid
@@ -364,7 +371,7 @@ namespace Ember {
 			Utils::ResetPhysicsRuntimeState(entity);
 		}
 
-		systemManager.GetSystem<ParticleSystem>()->GetParticleManager().Reset();
+		m_ParticleManager->Reset();
 	}
 
 	void Scene::OnUpdateRuntime(TimeStep delta)

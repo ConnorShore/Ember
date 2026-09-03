@@ -5,6 +5,7 @@
 #include "PrefabViewportViewer.h"
 #include "AnimationViewportViewer.h"
 #include "SkeletonMaskViewportViewer.h"
+#include "ParticleEffectViewportViewer.h"
 
 #include <functional>
 #include <string>
@@ -38,6 +39,7 @@ namespace Ember {
 		size_t AddPrefabViewer(SharedPtr<Scene> scene, SharedPtr<Prefab> prefab, Entity rootEntity, const std::string& filePath, const std::string& title);
 		size_t AddAnimationViewer(SharedPtr<Scene> scene, SharedPtr<AnimationController> animationController, const std::string& filePath, const std::string& title);
 		size_t AddSkeletonMaskViewer(SharedPtr<Scene> scene, SharedPtr<SkeletonMask> skeletonMask, const std::string& filePath, const std::string& title);
+		size_t AddParticleEffectViewer(SharedPtr<ParticleEffect> effect, const std::string& filePath, const std::string& title);
 
 		EditorViewportViewer* GetActiveViewer();
 		const EditorViewportViewer* GetActiveViewer() const;

@@ -676,24 +676,19 @@ EB_TEST_CASE(Render, ParticleColorIntensityScalesRgbButNotAlpha, Unit)
 {
 	// REGRESSION: emitter colours were capped at 1.0, so no particle could ever reach the bloom
 	// threshold. ColorIntensity lifts RGB into HDR and must leave alpha alone, or blending breaks.
-	auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
-	EB_EXPECT_MSG(particleSystem != nullptr, "the ParticleSystem is not registered");
-	if (particleSystem == nullptr)
-		return;
+	Ember::Test::SceneFixture scene("ParticleIntensityScene");
 
-	auto& particleManager = particleSystem->GetParticleManager();
-	particleManager.Reset();
+	ParticleEffectProperties properties;
+	properties.ColorBegin = Vector4f(1.0f, 0.5f, 0.25f, 0.8f);
+	properties.ColorEnd = properties.ColorBegin;
+	properties.ColorIntensity = 4.0f;
+	properties.Lifetime = 1.0f;
+	properties.LifetimeVariation = 0.0f;
+	properties.ScaleVariation = 0.0f;
+	properties.GravityMultiplier = 0.0f;
 
-	ParticleEmitterComponent emitter;
-	emitter.ColorBegin = Vector4f(1.0f, 0.5f, 0.25f, 0.8f);
-	emitter.ColorEnd = emitter.ColorBegin;
-	emitter.ColorIntensity = 4.0f;
-	emitter.Lifetime = 1.0f;
-	emitter.LifetimeVariation = 0.0f;
-	emitter.ScaleVariation = 0.0f;
-	emitter.GravityMultiplier = 0.0f;
-
-	particleManager.Emit(emitter, Vector3f(0.0f));
+	auto& particleManager = scene->GetParticleManager();
+	particleManager.Emit(properties, Vector3f(0.0f));
 	particleManager.OnUpdate(Ember::Test::FixedStep());
 
 	const Particle* emitted = nullptr;
@@ -714,6 +709,61 @@ EB_TEST_CASE(Render, ParticleColorIntensityScalesRgbButNotAlpha, Unit)
 	EB_EXPECT_NEAR(emitted->CurrentColor.g, 2.0f, 1e-4);
 	EB_EXPECT_NEAR(emitted->CurrentColor.b, 1.0f, 1e-4);
 	EB_EXPECT_NEAR(emitted->CurrentColor.a, 0.8f, 1e-4);
+}
 
-	particleManager.Reset();
+EB_TEST_CASE(Render, ParticlePoolsAreScopedToTheirScene, Unit)
+{
+	// The editor's effect preview renders its own scene in the same frame as the main viewport,
+	// so one scene's particles must never show up in another's pool.
+	Ember::Test::SceneFixture sceneA("ParticleSceneA");
+	Ember::Test::SceneFixture sceneB("ParticleSceneB");
+
+	ParticleEffectProperties properties;
+	properties.LifetimeVariation = 0.0f;
+
+	sceneA->GetParticleManager().EmitBurst(properties, Vector3f(0.0f), 5);
+
+	EB_EXPECT_MSG(sceneA->GetParticleManager().GetActiveParticleCount() == 5,
+		"the emitting scene should hold exactly the 5 particles it burst");
+	EB_EXPECT_MSG(sceneB->GetParticleManager().GetActiveParticleCount() == 0,
+		"a second scene saw particles emitted by the first");
+}
+
+EB_TEST_CASE(Render, ParticleEffectInstanceDivergesWithoutMutatingAsset, Unit)
+{
+	Ember::Test::SceneFixture scene("ParticleInstanceScene");
+	auto& assetManager = Application::Instance().GetAssetManager();
+
+	auto sharedEffect = assetManager.Create<ParticleEffect>(UUID(), "SharedTestEffect");
+	sharedEffect->Properties.EmissionRate = 200.0f;
+
+	Entity shared = scene->AddEntity("SharedEmitter");
+	shared.AttachComponent<ParticleEmitterComponent>(ParticleEmitterComponent(sharedEffect->GetUUID()));
+
+	Entity overridden = scene->AddEntity("OverridingEmitter");
+	overridden.AttachComponent<ParticleEmitterComponent>(ParticleEmitterComponent(sharedEffect->GetUUID()));
+
+	// Re-fetched after every attach: attaching invalidates references into the packed storage.
+	auto instance = overridden.GetComponent<ParticleEmitterComponent>().GetInstanced("OverrideInstance");
+	EB_EXPECT_MSG(instance != nullptr, "GetInstanced returned nothing for a valid effect handle");
+	if (instance == nullptr)
+		return;
+
+	instance->Properties.EmissionRate = 250.0f;
+
+	EB_EXPECT_NEAR(sharedEffect->Properties.EmissionRate, 200.0f, 1e-4);
+
+	auto sharedEffectAfter = shared.GetComponent<ParticleEmitterComponent>().ResolveEffect();
+	auto overriddenEffectAfter = overridden.GetComponent<ParticleEmitterComponent>().ResolveEffect();
+	EB_EXPECT_MSG(sharedEffectAfter != nullptr && overriddenEffectAfter != nullptr, "an emitter failed to resolve its effect");
+	if (!sharedEffectAfter || !overriddenEffectAfter)
+		return;
+
+	EB_EXPECT_NEAR(sharedEffectAfter->Properties.EmissionRate, 200.0f, 1e-4);
+	EB_EXPECT_NEAR(overriddenEffectAfter->Properties.EmissionRate, 250.0f, 1e-4);
+
+	EB_EXPECT_MSG(overridden.GetComponent<ParticleEmitterComponent>().IsInstanced(),
+		"the overriding emitter should report an instanced effect");
+	EB_EXPECT_MSG(!shared.GetComponent<ParticleEmitterComponent>().IsInstanced(),
+		"the untouched emitter should still point at the shared asset");
 }

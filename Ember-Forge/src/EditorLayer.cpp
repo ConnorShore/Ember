@@ -529,6 +529,7 @@ namespace Ember {
 		HandlePrefabOpenRequest();
 		HandleAnimationOpenRequest();
 		HandleSkeletonMaskOpenRequest();
+		HandleParticleEffectOpenRequest();
 
 		// Pop up for new project
 		RenderNewScenePopup();
@@ -1179,6 +1180,8 @@ namespace Ember {
 						static_cast<AnimationViewportViewer*>(m_Context.ActiveViewportViewer)->SaveAnimationStateMachine(this);
 					else if (viewerType == EditorViewportViewer::Type::SkeletonMask)
 						static_cast<SkeletonMaskViewportViewer*>(m_Context.ActiveViewportViewer)->SaveSkeletonMask(this);
+					else if (viewerType == EditorViewportViewer::Type::Particle)
+						static_cast<ParticleEffectViewportViewer*>(m_Context.ActiveViewportViewer)->SaveParticleEffect(this);
 					else
 						SaveScene(false);
 				}
@@ -2580,6 +2583,16 @@ namespace Ember {
 		OpenSkeletonMask(path);
 	}
 
+	void EditorLayer::HandleParticleEffectOpenRequest()
+	{
+		if (m_Context.RequestParticleEffectOpenPath.empty())
+			return;
+
+		std::string path = m_Context.RequestParticleEffectOpenPath;
+		m_Context.RequestParticleEffectOpenPath.clear();
+		OpenParticleEffect(path);
+	}
+
 	EditorViewportViewer* EditorLayer::GetActiveViewer()
 	{
 		return m_ViewportTabs.GetActiveViewer();
@@ -2880,6 +2893,44 @@ namespace Ember {
 		ActivateViewer(viewerIndex);
 
 		auto evt = UINotificationEvent(std::format("Opened Skeleton Mask: {}", std::filesystem::path(skeletonMaskPath).filename().string()));
+		m_Context.EventCallback(evt);
+	}
+
+	void EditorLayer::OpenParticleEffect(const std::string& path)
+	{
+		std::string effectFile = path;
+		if (effectFile.empty())
+		{
+			std::string effectDirectory = ProjectManager::GetActive()->GetDefaultDirectoryForAsset(AssetType::ParticleEffect).string();
+			effectFile = FileDialog::OpenFile(effectDirectory.c_str(), "Ember Particle Effect (*.ebparticle)", "*.ebparticle");
+		}
+
+		OpenParticleEffectViewer(effectFile);
+	}
+
+	void EditorLayer::OpenParticleEffectViewer(const std::string& effectPath)
+	{
+		if (effectPath.empty())
+			return;
+
+		int existingViewerIndex = m_ViewportTabs.FindViewer(EditorViewportViewer::Type::Particle, effectPath);
+		if (existingViewerIndex >= 0)
+		{
+			ActivateViewer(static_cast<size_t>(existingViewerIndex));
+			return;
+		}
+
+		auto& assetManager = Application::Instance().GetAssetManager();
+		auto effect = assetManager.Load<ParticleEffect>(effectPath, false);
+		if (!effect)
+			return;
+
+		std::string effectFilePath = effect->GetFilePath().empty() ? EditorViewportTabs::NormalizedPath(effectPath).string() : effect->GetFilePath();
+		std::string title = EditorViewportTabs::TitleFromPath(effectPath, effect->GetName());
+		size_t viewerIndex = m_ViewportTabs.AddParticleEffectViewer(effect, effectFilePath, title);
+		ActivateViewer(viewerIndex);
+
+		auto evt = UINotificationEvent(std::format("Opened Particle Effect: {}", std::filesystem::path(effectPath).filename().string()));
 		m_Context.EventCallback(evt);
 	}
 

@@ -226,6 +226,64 @@ EB_TEST_CASE(Assets, PhysicsMaterialCookedRoundTrip, Integration)
 	Ember::Test::RemoveTempFile(cookedPath);
 }
 
+EB_TEST_CASE(Assets, ParticleEffectSourceRoundTrip, Integration)
+{
+	const std::string path = TempFile("roundtrip.ebparticle");
+	Ember::Test::RemoveTempFile(path);
+
+	{
+		auto effect = SharedPtr<ParticleEffect>::Create(UUID(), "EmberTest_RoundTripEffect", path);
+		effect->Properties.EmissionRate = 175.0f;
+		effect->Properties.ColorBegin = Vector4f(0.25f, 0.5f, 0.75f, 1.0f);
+		effect->Properties.ColorIntensity = 4.5f;
+		effect->Properties.Velocity = Vector3f(1.0f, 2.0f, -3.0f);
+		effect->Properties.AlignWithVelocity = true;
+		effect->Properties.TextureHandle = (UUID)1234567890ull;
+
+		EB_CHECK_MSG(ParticleEffectSerializer::Serialize(path, effect), "failed to write the particle effect");
+	}
+
+	EB_CHECK_MSG(std::filesystem::exists(path), "serializer reported success but wrote no file");
+
+	auto loaded = ParticleEffectSerializer::Deserialize(UUID(), path);
+	EB_CHECK_MSG(loaded != nullptr, "failed to read back the particle effect just written");
+
+	EB_EXPECT_NEAR(loaded->Properties.EmissionRate, 175.0f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorIntensity, 4.5f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorBegin.b, 0.75f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.Velocity.z, -3.0f, 1e-5);
+	EB_EXPECT(loaded->Properties.AlignWithVelocity);
+	EB_EXPECT_EQ((uint64_t)loaded->Properties.TextureHandle, 1234567890ull);
+	EB_EXPECT_EQ(loaded->GetName(), std::string("EmberTest_RoundTripEffect"));
+
+	Ember::Test::RemoveTempFile(path);
+}
+
+EB_TEST_CASE(Assets, ParticleEffectCookedRoundTrip, Integration)
+{
+	const std::string sourcePath = TempFile("cooked_roundtrip.ebparticle");
+	const std::string cookedPath = TempFile("cooked_roundtrip.bin");
+	Ember::Test::RemoveTempFile(cookedPath);
+
+	auto effect = SharedPtr<ParticleEffect>::Create(UUID(), "EmberTest_CookedEffect", sourcePath);
+	effect->Properties.EmissionRate = 42.0f;
+	effect->Properties.ColorIntensity = 3.25f;
+	effect->Properties.ScaleEnd = 0.125f;
+	effect->Properties.AlignWithVelocity = true;
+
+	EB_CHECK_MSG(ParticleEffectSerializer::SerializeCooked(cookedPath, effect), "failed to write the cooked effect");
+	EB_CHECK(std::filesystem::exists(cookedPath));
+
+	auto loaded = ParticleEffectSerializer::DeserializeCooked(UUID(), cookedPath);
+	EB_CHECK_MSG(loaded != nullptr, "failed to read back the cooked effect");
+	EB_EXPECT_NEAR(loaded->Properties.EmissionRate, 42.0f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorIntensity, 3.25f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ScaleEnd, 0.125f, 1e-5);
+	EB_EXPECT(loaded->Properties.AlignWithVelocity);
+
+	Ember::Test::RemoveTempFile(cookedPath);
+}
+
 EB_TEST_CASE(Assets, LoadDeduplicatesByAbsolutePath, Integration)
 {
 	// Loading the same file twice must hand back the SAME asset. Without this, a mesh referenced by

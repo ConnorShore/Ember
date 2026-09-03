@@ -18,6 +18,7 @@
 namespace Ember {
 
 	class Entity;
+	class ParticleManager;
 
 	enum class SceneState
 	{
@@ -156,6 +157,7 @@ namespace Ember {
 
 		inline Registry& GetRegistry() { return *m_Registry; }
 		inline PoolManager& GetPoolManager() { return *m_PoolManager; }
+		ParticleManager& GetParticleManager();
 
 		inline bool IsRuntime() const { return m_IsRuntime; }
 
@@ -180,6 +182,7 @@ namespace Ember {
 	private:
 		ScopedPtr<Registry> m_Registry;
 		ScopedPtr<PoolManager> m_PoolManager;
+		ScopedPtr<ParticleManager> m_ParticleManager;
 
 		std::unordered_map<UUID, EntityID> m_EntityUUIDMap;
 		std::vector<UUID> m_EntityOrder;

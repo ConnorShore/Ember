@@ -4,6 +4,7 @@
 #include "Ember/ECS/Component/Components.h"
 #include "Ember/ECS/Component/ComponentList.h"
 #include "Ember/Utils/SerializationUtils.h"
+#include "Ember/Asset/Serializers/ParticleEffectSerializer.h"
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/RenderSystem.h"
 #include "Ember/Render/VFX/BloomPass.h"
@@ -468,34 +469,21 @@ namespace Ember {
 			auto& emitter = entity.GetComponent<ParticleEmitterComponent>();
 			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
 			emitterNode |= ryml::MAP;
-			emitterNode["EmissionRate"] << emitter.EmissionRate;
-			Util::SerializeVector3f(emitterNode["Velocity"], emitter.Velocity);
-			Util::SerializeVector3f(emitterNode["VelocityVariation"], emitter.VelocityVariation);
-
-			emitterNode["Drag"] << emitter.Drag;
-
-			emitterNode["AngularVelocity"] << emitter.AngularVelocity;
-			emitterNode["AngularVelocityVariation"] << emitter.AngularVelocityVariation;
-
-			Util::SerializeVector4f(emitterNode["ColorBegin"], emitter.ColorBegin);
-			Util::SerializeVector4f(emitterNode["ColorEnd"], emitter.ColorEnd);
-			emitterNode["ColorIntensity"] << emitter.ColorIntensity;
-
-			emitterNode["ScaleBegin"] << emitter.ScaleBegin;
-			emitterNode["ScaleEnd"] << emitter.ScaleEnd;
-			emitterNode["ScaleVariation"] << emitter.ScaleVariation;
-
-			emitterNode["TextureHandle"] << (uint64_t)emitter.TextureHandle;
-
-			emitterNode["Lifetime"] << emitter.Lifetime;
-			emitterNode["LifetimeVariation"] << emitter.LifetimeVariation;
-
-			emitterNode["GravityMultiplier"] << emitter.GravityMultiplier;
-
-			emitterNode["AlignWithVelocity"] << emitter.AlignWithVelocity;
-			emitterNode["StretchFactor"] << emitter.StretchFactor;
-
 			emitterNode["IsActive"] << emitter.IsActive;
+
+			// An instanced effect has no file of its own, so its overrides ride along with the entity
+			auto instance = DynamicPointerCast<ParticleEffectInstance>(emitter.ResolveEffect());
+			if (instance != nullptr)
+			{
+				auto sourceEffect = instance->GetSourceEffect();
+				emitterNode["EffectHandle"] << (sourceEffect ? (uint64_t)sourceEffect->GetUUID() : (uint64_t)Constants::InvalidUUID);
+				emitterNode["InstanceUUID"] << (uint64_t)instance->GetUUID();
+				ParticleEffectSerializer::SerializeProperties(emitterNode["Overrides"], instance->Properties);
+			}
+			else
+			{
+				emitterNode["EffectHandle"] << (uint64_t)emitter.EffectHandle;
+			}
 		}
 		if (entity.ContainsComponent<PostProcessVolumeComponent>())
 		{
@@ -1350,27 +1338,31 @@ namespace Ember {
 		{
 			ryml::NodeRef emitterNode = entityNode["ParticleEmitterComponent"];
 			auto& pec = deserializedEntity.AttachComponent<ParticleEmitterComponent>();
-			emitterNode["EmissionRate"] >> pec.EmissionRate;
-			Util::DeserializeVector3f(emitterNode["Velocity"], pec.Velocity);
-			Util::DeserializeVector3f(emitterNode["VelocityVariation"], pec.VelocityVariation);
-			emitterNode["Drag"] >> pec.Drag;
-			emitterNode["AngularVelocity"] >> pec.AngularVelocity;
-			emitterNode["AngularVelocityVariation"] >> pec.AngularVelocityVariation;
-			Util::DeserializeVector4f(emitterNode["ColorBegin"], pec.ColorBegin);
-			Util::DeserializeVector4f(emitterNode["ColorEnd"], pec.ColorEnd);
-			emitterNode["ColorIntensity"] >> pec.ColorIntensity;
-			emitterNode["ScaleBegin"] >> pec.ScaleBegin;
-			emitterNode["ScaleEnd"] >> pec.ScaleEnd;
-			emitterNode["ScaleVariation"] >> pec.ScaleVariation;
-			uint64_t texId;
-			emitterNode["TextureHandle"] >> texId;
-			pec.TextureHandle = (UUID)texId;
-			emitterNode["Lifetime"] >> pec.Lifetime;
-			emitterNode["LifetimeVariation"] >> pec.LifetimeVariation;
-			emitterNode["GravityMultiplier"] >> pec.GravityMultiplier;
-			emitterNode["AlignWithVelocity"] >> pec.AlignWithVelocity;
-			emitterNode["StretchFactor"] >> pec.StretchFactor;
+			uint64_t effectId = (uint64_t)Constants::Assets::DefaultParticleEffectUUID;
+			emitterNode["EffectHandle"] >> effectId;
+			pec.EffectHandle = (UUID)effectId;
+
 			emitterNode["IsActive"] >> pec.IsActive;
+
+			if (emitterNode.has_child("Overrides"))
+			{
+				auto& assetManager = Application::Instance().GetAssetManager();
+				auto sourceEffect = assetManager.GetAsset<ParticleEffect>(pec.EffectHandle);
+
+				uint64_t instanceId = 0;
+				Util::ReadField(emitterNode, "InstanceUUID", instanceId);
+
+				std::string instanceName = (sourceEffect ? sourceEffect->GetName() : std::string("ParticleEffect")) + "_Instance";
+				auto instance = instanceId != 0
+					? SharedPtr<ParticleEffectInstance>::Create((UUID)instanceId, instanceName, sourceEffect)
+					: SharedPtr<ParticleEffectInstance>::Create(instanceName, sourceEffect);
+
+				ParticleEffectSerializer::DeserializeProperties(emitterNode["Overrides"], instance->Properties);
+				instance->SetIsEngineAsset(false);
+				assetManager.Register(instance);
+
+				pec.EffectHandle = instance->GetUUID();
+			}
 		}
 
 		if (entityNode.has_child("AudioSourceComponent"))

@@ -111,6 +111,9 @@ namespace Ember::Constants {
 		inline const char* StandardUnlitMat = "StandardUnlit";
 		inline const uint64_t StandardUnlitMatUUID = 33;
 
+		inline const char* DefaultParticleEffect = "DefaultParticleEffect";
+		inline const uint64_t DefaultParticleEffectUUID = 34;
+
 		inline const uint64_t SphereMeshUUID = 50;
 		inline const uint64_t CubeMeshUUID = 51;
 		inline const uint64_t QuadMeshUUID = 52;

@@ -104,6 +104,8 @@ namespace Ember {
 
 		auto fallbackMat = Create<MaterialInstance>(Constants::Assets::DefaultMatUUID, Constants::Assets::DefaultMat, geometryMaterial);
 
+		auto defaultParticleEffect = Create<ParticleEffect>(Constants::Assets::DefaultParticleEffectUUID, Constants::Assets::DefaultParticleEffect);
+
 		// Basic Meshes
 		auto sphereMesh = PrimitiveGenerator::CreateSphere();
 		auto cubeMesh = PrimitiveGenerator::CreateCube();

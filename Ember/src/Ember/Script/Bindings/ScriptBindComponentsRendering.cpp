@@ -5,8 +5,45 @@
 
 #include "Ember/Core/Application.h"
 #include "Ember/ECS/System/ParticleSystem.h"
+#include "Ember/Scene/Scene.h"
+#include "Ember/Scene/SceneManager.h"
 
 namespace Ember {
+	namespace {
+		// Reads through to the effect asset; writing instances it first so one entity's tweak
+		// doesn't leak into every other user of the same effect.
+		template<typename T>
+		static auto ParticleEffectProperty(T ParticleEffectProperties::* member)
+		{
+			return sol::property(
+				[member](ComponentRef<ParticleEmitterComponent>& ref) -> T {
+					auto effect = ref.Resolve().ResolveEffect();
+					if (!effect)
+						return T{};
+
+					return effect->Properties.*member;
+				},
+				[member](ComponentRef<ParticleEmitterComponent>& ref, T value) {
+					auto instance = ref.Resolve().GetInstanced("ScriptEffectInstance");
+					if (instance)
+						instance->Properties.*member = value;
+				});
+		}
+
+		static void BurstFromEmitter(ComponentRef<ParticleEmitterComponent>& emitterRef, const Vector3f& position, uint32_t count, const Quaternion& worldRotation)
+		{
+			auto scene = Application::Instance().GetSceneManager().GetActiveScene();
+			if (!scene)
+				return;
+
+			auto effect = emitterRef.Resolve().ResolveEffect();
+			if (!effect)
+				return;
+
+			scene->GetParticleManager().EmitBurst(effect->Properties, position, count, worldRotation);
+		}
+	}
+
 	void BindRenderingComponents(sol::state& state)
 	{
 		// Bound as resolving handles (see ScriptComponentRef.h): safe to cache in Lua.
@@ -47,20 +84,23 @@ namespace Ember {
 		);
 
 		state.new_usertype<ComponentRef<ParticleEmitterComponent>>("ParticleEmitterComponent",
-			"EmissionRate", RefProp(&ParticleEmitterComponent::EmissionRate),
-			"Velocity", RefProp(&ParticleEmitterComponent::Velocity),
-			"VelocityVariation", RefProp(&ParticleEmitterComponent::VelocityVariation),
-			"ColorBegin", RefProp(&ParticleEmitterComponent::ColorBegin),
-			"ColorEnd", RefProp(&ParticleEmitterComponent::ColorEnd),
-			"ColorIntensity", RefProp(&ParticleEmitterComponent::ColorIntensity),
-			"ScaleBegin", RefProp(&ParticleEmitterComponent::ScaleBegin),
-			"ScaleEnd", RefProp(&ParticleEmitterComponent::ScaleEnd),
-			"ScaleVariation", RefProp(&ParticleEmitterComponent::ScaleVariation),
-			"TextureHandle", RefProp(&ParticleEmitterComponent::TextureHandle),
-			"Lifetime", RefProp(&ParticleEmitterComponent::Lifetime),
-			"LifetimeVariation", RefProp(&ParticleEmitterComponent::LifetimeVariation),
-			"GravityMultiplier", RefProp(&ParticleEmitterComponent::GravityMultiplier),
-			"IsActive", RefProp(&ParticleEmitterComponent::IsActive)
+			"EffectHandle", RefProp(&ParticleEmitterComponent::EffectHandle),
+			"IsActive", RefProp(&ParticleEmitterComponent::IsActive),
+			"IsInstanced", RefMethod(&ParticleEmitterComponent::IsInstanced),
+			"RevertToSourceEffect", RefMethod(&ParticleEmitterComponent::RevertToSourceEffect),
+			"EmissionRate", ParticleEffectProperty(&ParticleEffectProperties::EmissionRate),
+			"Velocity", ParticleEffectProperty(&ParticleEffectProperties::Velocity),
+			"VelocityVariation", ParticleEffectProperty(&ParticleEffectProperties::VelocityVariation),
+			"ColorBegin", ParticleEffectProperty(&ParticleEffectProperties::ColorBegin),
+			"ColorEnd", ParticleEffectProperty(&ParticleEffectProperties::ColorEnd),
+			"ColorIntensity", ParticleEffectProperty(&ParticleEffectProperties::ColorIntensity),
+			"ScaleBegin", ParticleEffectProperty(&ParticleEffectProperties::ScaleBegin),
+			"ScaleEnd", ParticleEffectProperty(&ParticleEffectProperties::ScaleEnd),
+			"ScaleVariation", ParticleEffectProperty(&ParticleEffectProperties::ScaleVariation),
+			"TextureHandle", ParticleEffectProperty(&ParticleEffectProperties::TextureHandle),
+			"Lifetime", ParticleEffectProperty(&ParticleEffectProperties::Lifetime),
+			"LifetimeVariation", ParticleEffectProperty(&ParticleEffectProperties::LifetimeVariation),
+			"GravityMultiplier", ParticleEffectProperty(&ParticleEffectProperties::GravityMultiplier)
 		);
 
 		// Global Particles API for one-shot emission (impacts, explosions, etc.)
@@ -69,14 +109,10 @@ namespace Ember {
 		sol::table particles = state.create_named_table("Particles");
 		particles.set_function("Burst", sol::overload(
 			[](ComponentRef<ParticleEmitterComponent>& emitterRef, const Vector3f& position, uint32_t count) {
-				auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
-				if (particleSystem)
-					particleSystem->GetParticleManager().EmitBurst(emitterRef.Resolve(), position, count);
+				BurstFromEmitter(emitterRef, position, count, Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
 			},
 			[](ComponentRef<ParticleEmitterComponent>& emitterRef, const Vector3f& position, uint32_t count, const Quaternion& worldRotation) {
-				auto particleSystem = Application::Instance().GetSystem<ParticleSystem>();
-				if (particleSystem)
-					particleSystem->GetParticleManager().EmitBurst(emitterRef.Resolve(), position, count, worldRotation);
+				BurstFromEmitter(emitterRef, position, count, worldRotation);
 			}
 		));
 

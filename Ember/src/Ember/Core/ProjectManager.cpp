@@ -6,6 +6,7 @@
 #include "Ember/Asset/Serializers/ModelSerializer.h"
 #include "Ember/Asset/Serializers/MeshSerializer.h"
 #include "Ember/Asset/Serializers/PhysicsMaterialSerializer.h"
+#include "Ember/Asset/Serializers/ParticleEffectSerializer.h"
 #include "Ember/Asset/Serializers/NavigationMeshSerializer.h"
 #include "Ember/Asset/Serializers/SkeletonSerializer.h"
 #include "Ember/Asset/Serializers/SkeletonMaskSerializer.h"
@@ -76,6 +77,10 @@ namespace Ember {
 				NavigationMeshSerializer::SerializeCooked(navMeshAsset->GetFilePath(), navMeshAsset);
 			});
 
+			CookAssets<ParticleEffect>(assetManager, [](const SharedPtr<ParticleEffect>& effectAsset) {
+				ParticleEffectSerializer::SerializeCooked(effectAsset->GetFilePath(), effectAsset);
+			});
+
 			CookAssets<Material>(assetManager, [&](const SharedPtr<Material>& materialAsset) {
 				MaterialSerializer::SerializeCooked(materialAsset->GetFilePath(), materialAsset);
 			});
@@ -141,6 +146,7 @@ namespace Ember {
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Fonts");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "Audio");
 		std::filesystem::create_directories(project->GetAssetDirectory() / "NavMeshes");
+		std::filesystem::create_directories(project->GetAssetDirectory() / "VFX");
 
 		std::filesystem::create_directories(project->GetScenesDirectory());
 

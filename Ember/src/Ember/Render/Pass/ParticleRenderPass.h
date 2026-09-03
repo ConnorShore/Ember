@@ -29,8 +29,6 @@ namespace Ember {
 		void DrawParticles();
 
 	private:
-		ParticleManager* m_ParticleManager = nullptr;
-		
 		SharedPtr<VertexArray> m_ParticleVAO;
 		SharedPtr<VertexBuffer> m_ParticleVBO;
 		SharedPtr<Shader> m_ParticleShader;

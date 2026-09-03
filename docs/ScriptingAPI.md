@@ -640,19 +640,54 @@ positions the measured text block inside the element's rect.
 
 #### `ParticleEmitterComponent`
 
+The emitter's tuning lives in a shared **Particle Effect** asset (`.ebparticle`), not on the
+component. The component only says which effect to play and whether it is running.
+
+| Field            | Type     |
+| ---------------- | -------- |
+| `EffectHandle` | `UUID` |
+| `IsActive`     | `bool` |
+
+| Method                    | Returns  |
+| ------------------------- | -------- |
+| `IsInstanced()`         | `bool` |
+| `RevertToSourceEffect()`| —        |
+
+The effect's own properties are also readable and writable straight off the component:
+
 | Field                         | Type         |
 | ----------------------------- | ------------ |
 | `EmissionRate`              | `float`    |
 | `Velocity`                  | `Vector3f` |
 | `VelocityVariation`         | `Vector3f` |
 | `ColorBegin` / `ColorEnd` | `Vector4f` |
+| `ColorIntensity`            | `float`    |
 | `ScaleBegin` / `ScaleEnd` | `float`    |
 | `ScaleVariation`            | `float`    |
 | `TextureHandle`             | `UUID`     |
 | `Lifetime`                  | `float`    |
 | `LifetimeVariation`         | `float`    |
 | `GravityMultiplier`         | `float`    |
-| `IsActive`                  | `bool`     |
+
+Reading one of these returns the value from the effect asset. **Writing one clones the effect into a
+per-entity instance first**, so retuning one emitter never changes every other entity playing the
+same effect. `IsInstanced()` reports whether that has happened, and `RevertToSourceEffect()` drops
+the instance and goes back to the shared asset.
+
+```lua
+local emitter = entity:GetComponent("ParticleEmitterComponent")
+
+emitter.IsActive = true
+emitter.EmissionRate = 250   -- this entity only; the shared asset is untouched
+```
+
+Because a write goes through the instance, assigning to a *member* of a vector field does not stick —
+assign the whole value instead:
+
+```lua
+emitter.Velocity.y = 5                       -- no effect
+emitter.Velocity = Vector3f.new(0, 5, 0)     -- correct
+```
 
 ### Lighting Components
 
@@ -1317,9 +1352,11 @@ Returned asset types expose at minimum:
 
 ## Particles
 
-The global `Particles` table emits one-shot bursts from a `ParticleEmitterComponent`. This is useful
-for impacts, pickups, muzzle flashes, and explosions where you do not want to keep an emitter entity
-running continuously.
+The global `Particles` table emits one-shot bursts from a `ParticleEmitterComponent`, using whichever
+Particle Effect asset that emitter points at. This is useful for impacts, pickups, muzzle flashes,
+and explosions where you do not want to keep an emitter entity running continuously.
+
+Particles are owned by the scene that emits them, so a burst never leaks into another open scene.
 
 ```lua
 local emitter = entity:GetComponent("ParticleEmitterComponent")

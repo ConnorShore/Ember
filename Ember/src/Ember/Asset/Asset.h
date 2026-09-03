@@ -28,7 +28,8 @@ namespace Ember {
 		Font,
 		AudioClip,
 		Scene,
-		NavMeshData
+		NavMeshData,
+		ParticleEffect
 	};
 
 	static std::string GetAssetTypeString(AssetType type)
@@ -52,6 +53,7 @@ namespace Ember {
 		case AssetType::AudioClip: return "AudioClip";
 		case AssetType::Scene: return "Scene";
 		case AssetType::NavMeshData: return "NavMeshData";
+		case AssetType::ParticleEffect: return "ParticleEffect";
 		default: EB_CORE_ASSERT(false, "Unknown asset type!"); return "";
 		}
 	}
@@ -75,7 +77,8 @@ namespace Ember {
 		if (typeStr == "AudioClip") return AssetType::AudioClip;
 		if (typeStr == "Scene") return AssetType::Scene;
 		if (typeStr == "NavMeshData") return AssetType::NavMeshData;
-		
+		if (typeStr == "ParticleEffect") return AssetType::ParticleEffect;
+
 		EB_CORE_ASSERT(false, "Unknown asset type!"); 
 		return AssetType::None;
 	}
