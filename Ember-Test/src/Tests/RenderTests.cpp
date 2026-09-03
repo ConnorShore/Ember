@@ -9,6 +9,7 @@
 #include "TestFramework.h"
 #include "TestHelpers.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -766,4 +767,52 @@ EB_TEST_CASE(Render, ParticleEffectInstanceDivergesWithoutMutatingAsset, Unit)
 		"the overriding emitter should report an instanced effect");
 	EB_EXPECT_MSG(!shared.GetComponent<ParticleEmitterComponent>().IsInstanced(),
 		"the untouched emitter should still point at the shared asset");
+}
+
+// Regression: Emit() set every field except Rotation, so a recycled pool slot inherited the spin its
+// previous occupant had accumulated and kept integrating it without bound.
+EB_TEST_CASE(Render, ParticleEmitSeedsRotationInsteadOfInheriting, Unit)
+{
+	constexpr uint32_t poolSize = 8;
+	ParticleManager manager(poolSize);
+
+	ParticleEffectProperties properties;
+	properties.Lifetime = 0.1f;
+	properties.LifetimeVariation = 0.0f;
+	properties.AngularVelocity = 100.0f; // Spins well past a full turn within one lifetime
+	properties.AngularVelocityVariation = 0.0f;
+	properties.GravityMultiplier = 0.0f;
+
+	manager.EmitBurst(properties, Vector3f(0.0f), poolSize);
+
+	// Run long enough for every particle to spin past 2pi and then expire, freeing its slot
+	for (int step = 0; step < 12; step++)
+		manager.OnUpdate(TimeStep(0.02f));
+
+	EB_EXPECT_EQ(manager.GetActiveParticleCount(), 0u);
+
+	manager.EmitBurst(properties, Vector3f(0.0f), poolSize);
+
+	for (const auto& particle : manager.GetParticles())
+	{
+		EB_EXPECT_MSG(particle.Rotation >= 0.0f && particle.Rotation < Math::TwoPi,
+			"a recycled particle kept its predecessor's accumulated rotation");
+	}
+}
+
+EB_TEST_CASE(Render, ParticleEmitCopiesBlendModeFromEffect, Unit)
+{
+	ParticleManager manager(4);
+
+	ParticleEffectProperties properties;
+	properties.BlendMode = ParticleBlendMode::Additive;
+
+	manager.Emit(properties, Vector3f(0.0f));
+
+	const auto& particles = manager.GetParticles();
+	auto emitted = std::find_if(particles.begin(), particles.end(), [](const Particle& p) { return p.Active; });
+
+	EB_CHECK_MSG(emitted != particles.end(), "Emit produced no active particle");
+	EB_EXPECT_MSG(emitted->BlendMode == ParticleBlendMode::Additive,
+		"the particle did not inherit the effect's blend mode, so the render pass would batch it as alpha");
 }

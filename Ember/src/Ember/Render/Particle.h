@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Ember/Asset/ParticleEffect.h"
 #include "Ember/Asset/UUID.h"
 #include "Ember/Math/Math.h"
 
@@ -27,6 +28,7 @@ namespace Ember {
 		Vector4f CurrentColor;
 
 		UUID TextureHandle;
+		ParticleBlendMode BlendMode = ParticleBlendMode::Alpha;
 		// TODO: Support sprite sheets for animated particles
 		// TODO: Add dampening to velocity for "thicker" particles or "thicker" air
 

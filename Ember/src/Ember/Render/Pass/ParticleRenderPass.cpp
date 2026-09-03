@@ -46,39 +46,61 @@ namespace Ember {
 
 		auto& particleManager = context.ActiveScene->GetParticleManager();
 
-		m_InstancedData.clear();
-		m_TextureSlots.fill(Constants::InvalidUUID);
-		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID;
-		m_CurrentTexSlotIndex = 1;
+		// Only copy active particles to avoid sorting the entire pool every frame
+		m_AlphaParticles.clear();
+		m_AdditiveParticles.clear();
+		for (const auto& p : particleManager.GetParticles())
+		{
+			if (!p.Active)
+				continue;
 
-		RenderAction::UseBlending(true);
+			if (p.BlendMode == ParticleBlendMode::Additive)
+				m_AdditiveParticles.push_back(p);
+			else
+				m_AlphaParticles.push_back(p);
+		}
+
+		if (m_AlphaParticles.empty() && m_AdditiveParticles.empty())
+			return;
+
 		RenderAction::UseDepthTest(true);
 		RenderAction::UseDepthMask(false);
 
-		// Only copy active particles to avoid sorting the entire pool every frame
-		std::vector<Particle> pool;
-		pool.reserve(particleManager.GetMaxParticles());
-		for (const auto& p : particleManager.GetParticles())
-		{
-			if (p.Active)
-				pool.push_back(p);
-		}
-
-		SortParticlesByCameraDistance(context, pool);
-		PackDataForGPU(context, pool);
-
-		if (m_InstancedData.empty())
-			return;
-
 		m_FramebufferInputs["HDRScene"]->Bind();
 
-		BindTextures(context, m_CurrentTexSlotIndex);
-		DrawParticles();
+		// Alpha particles occlude one another, so they have to resolve back to front
+		SortParticlesByCameraDistance(context, m_AlphaParticles);
+		DrawBatch(context, m_AlphaParticles, RendererAPI::BlendMode::Alpha);
+
+		// Additive is order-independent, so this batch skips the sort entirely
+		DrawBatch(context, m_AdditiveParticles, RendererAPI::BlendMode::Additive);
 
 		m_FramebufferInputs["HDRScene"]->Unbind();
 
 		RenderAction::UseDepthMask(true);
 		RenderAction::UseBlending(false);
+	}
+
+	void ParticleRenderPass::DrawBatch(const RenderContext& context, const std::vector<Particle>& particles, RendererAPI::BlendMode mode)
+	{
+		if (particles.empty())
+			return;
+
+		// Each batch is its own draw call, so it gets its own sampler array
+		m_InstancedData.clear();
+		m_TextureSlots.fill(Constants::InvalidUUID);
+		m_TextureSlots[0] = Constants::Assets::DefaultWhiteTexUUID;
+		m_CurrentTexSlotIndex = 1;
+
+		PackDataForGPU(context, particles);
+
+		if (m_InstancedData.empty())
+			return;
+
+		RenderAction::UseBlending(true, mode);
+
+		BindTextures(context, m_CurrentTexSlotIndex);
+		DrawParticles();
 	}
 
 	void ParticleRenderPass::OnViewportResize(uint32_t width, uint32_t height)
@@ -103,6 +125,10 @@ namespace Ember {
 	{
 		m_InstancedData.reserve(sortedParticles.size());
 
+		// The shader spans the quad with these, so velocity alignment has to be measured in the same basis
+		const Vector3f camRight = Vector3f(context.CameraTransform[0]);
+		const Vector3f camUp = Vector3f(context.CameraTransform[1]);
+
 		// See what is the first index in m_TextureSlots that is still empty (value = 0)
 		//uint32_t usedTextureSlots = 1; // Start with max slots, we'll decrease if we find empty ones
 		for (const auto& particle : sortedParticles)
@@ -114,10 +140,6 @@ namespace Ember {
 			data.Position = particle.Position;
 			data.Color = particle.CurrentColor;
 
-			float speed = Math::Length(particle.Velocity);
-
-			// Calculate the rotation angle based on the velocity vector
-			float velocityAngle = std::atan2(particle.Velocity.y, particle.Velocity.x);
 			if (particle.AlignWithVelocity)
 			{
 				float speed = Math::Length(particle.Velocity);
@@ -126,8 +148,9 @@ namespace Ember {
 					particle.CurrentScale                                     // Y stays normal
 				};
 
-				// Rotate in direction of velocity vector
-				data.Rotation = std::atan2(particle.Velocity.y, particle.Velocity.x);
+				// Project the velocity onto the billboard plane, otherwise the streak only lines up
+				// for a camera looking down -Z
+				data.Rotation = Math::Atan2(Math::Dot(particle.Velocity, camUp), Math::Dot(particle.Velocity, camRight));
 			}
 			else
 			{

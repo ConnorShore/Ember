@@ -121,8 +121,8 @@ Quality / polish / scope-expansion. Pick up opportunistically.
 - [Ember/src/Ember/Render/Pass/ShadowRenderPass.h](Ember/src/Ember/Render/Pass/ShadowRenderPass.h#L42) — Move `m_BlendOverlap` to a uniform so editor + shader stay in sync.
 - [Ember/src/Ember/Render/Pass/ShadowRenderPass.cpp](Ember/src/Ember/Render/Pass/ShadowRenderPass.cpp#L234), [line 242](Ember/src/Ember/Render/Pass/ShadowRenderPass.cpp#L242) — Multi-shadow-map array + cascade shadows for spotlights (only if your game leans on spotlights).
 - [Ember/src/Ember/Render/VFX/VFXTypes.h](Ember/src/Ember/Render/VFX/VFXTypes.h#L28) — Per-volume LUT UUID + bake/save logic for color grading.
-- [Ember/src/Ember/Render/Particle.h](Ember/src/Ember/Render/Particle.h#L29) — Sprite-sheet support for animated particles.
-- [Ember/src/Ember/Render/Particle.h](Ember/src/Ember/Render/Particle.h#L30) — Velocity damping for thicker particles.
+- [Ember/src/Ember/Render/Particle.h](Ember/src/Ember/Render/Particle.h#L32) — Sprite-sheet support for animated particles.
+- [Ember/src/Ember/Render/Particle.h](Ember/src/Ember/Render/Particle.h#L33) — Velocity damping for thicker particles.
 - [Ember-Forge/src/EditorLayer.cpp](Ember-Forge/src/EditorLayer.cpp#L808) — Orthographic mode in ImGuizmo for 2D scenes (only if you want a 2D game).
 
 ### Editor / asset workflow polish

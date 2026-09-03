@@ -49,16 +49,21 @@ namespace Ember {
 			use ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 		}
 
-		void RendererAPI::UseBlending(bool use)
+		void RendererAPI::UseBlending(bool use, BlendMode mode)
 		{
-			if (use)
-			{
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			}
-			else
+			if (!use)
 			{
 				glDisable(GL_BLEND);
+				return;
+			}
+
+			glEnable(GL_BLEND);
+
+			switch (mode)
+			{
+			case BlendMode::Additive:	glBlendFunc(GL_SRC_ALPHA, GL_ONE); break;
+			case BlendMode::Alpha:		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); break;
+			default:					EB_CORE_ASSERT(false, "Unknown blend mode specified!");
 			}
 		}
 

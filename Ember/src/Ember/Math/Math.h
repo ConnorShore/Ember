@@ -76,6 +76,8 @@ namespace Ember {
 	namespace MathConstants {
 		inline constexpr float Epsilon = 1.0e-6f;
 		inline constexpr float ParallelDotThreshold = 0.99f;
+		inline constexpr float Pi = 3.14159265358979323846f;
+		inline constexpr float TwoPi = Pi * 2.0f;
 	}
 
 	namespace MathDetail {
@@ -165,6 +167,8 @@ namespace Ember {
 	public:
 		static inline constexpr float Epsilon = MathConstants::Epsilon;
 		static inline constexpr float ParallelDotThreshold = MathConstants::ParallelDotThreshold;
+		static inline constexpr float Pi = MathConstants::Pi;
+		static inline constexpr float TwoPi = MathConstants::TwoPi;
 
 		static inline float RandomFloat(float min, float max)
 		{
@@ -463,6 +467,11 @@ namespace Ember {
 		static inline float Pow(float base, float exponent)
 		{
 			return glm::pow(base, exponent);
+		}
+
+		static inline float Exp(float x)
+		{
+			return glm::exp(x);
 		}
 
 		static inline float Round(float x)

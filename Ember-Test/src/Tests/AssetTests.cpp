@@ -239,6 +239,7 @@ EB_TEST_CASE(Assets, ParticleEffectSourceRoundTrip, Integration)
 		effect->Properties.Velocity = Vector3f(1.0f, 2.0f, -3.0f);
 		effect->Properties.AlignWithVelocity = true;
 		effect->Properties.TextureHandle = (UUID)1234567890ull;
+		effect->Properties.BlendMode = ParticleBlendMode::Additive;
 
 		EB_CHECK_MSG(ParticleEffectSerializer::Serialize(path, effect), "failed to write the particle effect");
 	}
@@ -254,7 +255,63 @@ EB_TEST_CASE(Assets, ParticleEffectSourceRoundTrip, Integration)
 	EB_EXPECT_NEAR(loaded->Properties.Velocity.z, -3.0f, 1e-5);
 	EB_EXPECT(loaded->Properties.AlignWithVelocity);
 	EB_EXPECT_EQ((uint64_t)loaded->Properties.TextureHandle, 1234567890ull);
+	EB_EXPECT(loaded->Properties.BlendMode == ParticleBlendMode::Additive);
 	EB_EXPECT_EQ(loaded->GetName(), std::string("EmberTest_RoundTripEffect"));
+
+	Ember::Test::RemoveTempFile(path);
+}
+
+// The round-trip tests write and read with the same code, so they would still pass if every key on
+// disk were renamed. This pins the actual authored format that the shipped .ebparticle files use.
+EB_TEST_CASE(Assets, ParticleEffectParsesAuthoredSourceFormat, Integration)
+{
+	const std::string path = TempFile("authored.ebparticle");
+	Ember::Test::RemoveTempFile(path);
+
+	{
+		std::ofstream fout(path);
+		EB_CHECK_MSG(fout.is_open(), "could not write the authored particle effect");
+		fout <<
+			"Version: 2\n"
+			"ParticleEffect: EmberTest_AuthoredEffect\n"
+			"UUID: 17042753974293300699\n"
+			"Properties:\n"
+			"  EmissionRate: 45\n"
+			"  Lifetime: 0.45\n"
+			"  LifetimeVariation: 0.15\n"
+			"  Velocity: [0,0.9,0]\n"
+			"  VelocityVariation: [0.25,0.35,0.25]\n"
+			"  GravityMultiplier: -0.08\n"
+			"  Drag: 1.2\n"
+			"  AngularVelocity: 0.8\n"
+			"  AngularVelocityVariation: 2.5\n"
+			"  AlignWithVelocity: 0\n"
+			"  StretchFactor: 0\n"
+			"  ColorBegin: [1,0.85,0.35,1]\n"
+			"  ColorEnd: [1,0.22,0.03,0]\n"
+			"  ColorIntensity: 3.2\n"
+			"  ScaleBegin: 0.16\n"
+			"  ScaleEnd: 0.04\n"
+			"  ScaleVariation: 0.06\n"
+			"  TextureHandle: 2615814691088578839\n"
+			"  BlendMode: Additive\n";
+	}
+
+	auto loaded = ParticleEffectSerializer::Deserialize(UUID(), path);
+	EB_CHECK_MSG(loaded != nullptr, "the authored particle effect failed to parse");
+
+	EB_EXPECT_EQ(loaded->GetName(), std::string("EmberTest_AuthoredEffect"));
+	EB_EXPECT_NEAR(loaded->Properties.EmissionRate, 45.0f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.GravityMultiplier, -0.08f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.Velocity.y, 0.9f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.VelocityVariation.z, 0.25f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorBegin.g, 0.85f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorEnd.a, 0.0f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ColorIntensity, 3.2f, 1e-5);
+	EB_EXPECT_NEAR(loaded->Properties.ScaleEnd, 0.04f, 1e-5);
+	EB_EXPECT(!loaded->Properties.AlignWithVelocity);
+	EB_EXPECT_EQ((uint64_t)loaded->Properties.TextureHandle, 2615814691088578839ull);
+	EB_EXPECT(loaded->Properties.BlendMode == ParticleBlendMode::Additive);
 
 	Ember::Test::RemoveTempFile(path);
 }
@@ -270,6 +327,7 @@ EB_TEST_CASE(Assets, ParticleEffectCookedRoundTrip, Integration)
 	effect->Properties.ColorIntensity = 3.25f;
 	effect->Properties.ScaleEnd = 0.125f;
 	effect->Properties.AlignWithVelocity = true;
+	effect->Properties.BlendMode = ParticleBlendMode::Additive;
 
 	EB_CHECK_MSG(ParticleEffectSerializer::SerializeCooked(cookedPath, effect), "failed to write the cooked effect");
 	EB_CHECK(std::filesystem::exists(cookedPath));
@@ -280,6 +338,7 @@ EB_TEST_CASE(Assets, ParticleEffectCookedRoundTrip, Integration)
 	EB_EXPECT_NEAR(loaded->Properties.ColorIntensity, 3.25f, 1e-5);
 	EB_EXPECT_NEAR(loaded->Properties.ScaleEnd, 0.125f, 1e-5);
 	EB_EXPECT(loaded->Properties.AlignWithVelocity);
+	EB_EXPECT(loaded->Properties.BlendMode == ParticleBlendMode::Additive);
 
 	Ember::Test::RemoveTempFile(cookedPath);
 }

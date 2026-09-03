@@ -28,6 +28,12 @@ namespace Ember {
 			Back
 		};
 
+		enum class BlendMode
+		{
+			Alpha,		// src * srcAlpha + dst * (1 - srcAlpha)
+			Additive	// src * srcAlpha + dst
+		};
+
 		enum class DepthFunction
 		{
 			Less,
@@ -50,7 +56,7 @@ namespace Ember {
 		virtual void CullFace(Face face) = 0;
 		virtual void UseDepthTest(bool use) = 0;
 		virtual void UseDepthMask(bool use) = 0;
-		virtual void UseBlending(bool use) = 0;
+		virtual void UseBlending(bool use, BlendMode mode) = 0;
 		virtual void UseCubeMapSeamless(bool use) = 0;
 		virtual void UseScissorTest(bool use) = 0;
 		virtual bool IsScissorTestEnabled() const = 0;

@@ -44,9 +44,10 @@ namespace Ember {
 			m_RendererApi->UseDepthTest(use);
 		}
 
-		static inline void UseBlending(bool use)
+		// The default is deliberately here rather than on the virtual, where it would bind statically.
+		static inline void UseBlending(bool use, RendererAPI::BlendMode mode = RendererAPI::BlendMode::Alpha)
 		{
-			m_RendererApi->UseBlending(use);
+			m_RendererApi->UseBlending(use, mode);
 		}
 
 		static inline void UseCubeMapSeamless(bool use)

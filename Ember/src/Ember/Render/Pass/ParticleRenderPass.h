@@ -2,14 +2,15 @@
 
 #include "RenderPass.h"
 
+#include "Ember/Render/Particle.h"
+#include "Ember/Render/RendererAPI.h"
+
 #include <vector>
 #include <array>
 
 namespace Ember {
 
 	class ParticleManager;
-	struct ParticleVertex;
-	struct Particle;
 
 	class ParticleRenderPass : public RenderPass
 	{
@@ -28,10 +29,16 @@ namespace Ember {
 		void BindTextures(const RenderContext& context, uint32_t usedTextureSlots);
 		void DrawParticles();
 
+		// One draw call per blend mode, since a single instanced draw cannot switch GL blend state mid-flight
+		void DrawBatch(const RenderContext& context, const std::vector<Particle>& particles, RendererAPI::BlendMode mode);
+
 	private:
 		SharedPtr<VertexArray> m_ParticleVAO;
 		SharedPtr<VertexBuffer> m_ParticleVBO;
 		SharedPtr<Shader> m_ParticleShader;
+
+		std::vector<Particle> m_AlphaParticles;
+		std::vector<Particle> m_AdditiveParticles;
 
 		std::vector<ParticleVertex> m_InstancedData;
 		std::array<UUID, 32> m_TextureSlots; // Max of 32 texture slots in the shader (including the default white texture at slot 0)

@@ -81,6 +81,21 @@ namespace Ember::UI {
 				changed |= UI::PropertyGrid::Color4("Color End", properties.ColorEnd);
 				changed |= UI::PropertyGrid::Float("Color Intensity", properties.ColorIntensity);
 
+				if (UI::PropertyGrid::BeginComboBox("Blend Mode", ParticleBlendModeToString(properties.BlendMode)))
+				{
+					if (UI::PropertyGrid::ComboBoxItem("Alpha", properties.BlendMode == ParticleBlendMode::Alpha))
+					{
+						properties.BlendMode = ParticleBlendMode::Alpha;
+						changed = true;
+					}
+					if (UI::PropertyGrid::ComboBoxItem("Additive", properties.BlendMode == ParticleBlendMode::Additive))
+					{
+						properties.BlendMode = ParticleBlendMode::Additive;
+						changed = true;
+					}
+					UI::PropertyGrid::EndComboBox();
+				}
+
 				changed |= UI::PropertyGrid::Float("Scale Begin", properties.ScaleBegin);
 				changed |= UI::PropertyGrid::Float("Scale End", properties.ScaleEnd);
 				changed |= UI::PropertyGrid::Float("Scale Variation", properties.ScaleVariation);

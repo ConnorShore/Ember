@@ -28,6 +28,9 @@ namespace Ember {
 		particle.Drag = properties.Drag;
 		particle.AngularVelocity = properties.AngularVelocity + properties.AngularVelocityVariation * (Random::Float() - 0.5f);
 
+		// Must be seeded, not inherited: the slot still holds the accumulated rotation of its last occupant
+		particle.Rotation = Random::Float() * Math::TwoPi;
+
 		// Apply props with variation when necessary, then rotate into world space
 		Vector3f localVelocity = properties.Velocity + properties.VelocityVariation * Vector3f(
 			Random::Float() - 0.5f,
@@ -50,6 +53,7 @@ namespace Ember {
 		particle.StretchFactor = properties.StretchFactor;
 
 		particle.TextureHandle = properties.TextureHandle;
+		particle.BlendMode = properties.BlendMode;
 
 		// Move the index backwards. If it hits 0, wrap back around to the top
 		m_ParticleIndex = (m_ParticleIndex == 0) ? m_MaxParticles - 1 : m_ParticleIndex - 1;
@@ -79,7 +83,7 @@ namespace Ember {
 
 			particle.LifeRemaining -= delta;
 
-			particle.Velocity *= std::exp(-particle.Drag * (float)delta);	// Apply drag
+			particle.Velocity *= Math::Exp(-particle.Drag * (float)delta);	// Apply drag
 			particle.Velocity += gravity * particle.GravityMultiplier * (float)delta;	// Apply gravity
 			particle.Position += particle.Velocity * (float)delta;
 

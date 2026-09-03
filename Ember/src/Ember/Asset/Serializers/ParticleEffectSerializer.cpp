@@ -19,9 +19,9 @@ namespace {
 
 namespace Ember {
 	namespace {
-		constexpr uint32_t PARTICLE_EFFECT_SOURCE_FILE_VERSION = 1;
+		constexpr uint32_t PARTICLE_EFFECT_SOURCE_FILE_VERSION = 2; // 2 added BlendMode
 		constexpr uint32_t PARTICLE_EFFECT_COOKED_MAGIC = 0x45425045; // EBPE
-		constexpr uint32_t PARTICLE_EFFECT_COOKED_VERSION = 1;
+		constexpr uint32_t PARTICLE_EFFECT_COOKED_VERSION = 2; // 2 added BlendMode
 
 		std::filesystem::path GetCookedPath(const std::filesystem::path& filepath)
 		{
@@ -58,6 +58,7 @@ namespace Ember {
 		node["ScaleVariation"] << properties.ScaleVariation;
 
 		node["TextureHandle"] << (uint64_t)properties.TextureHandle;
+		node["BlendMode"] << ParticleBlendModeToString(properties.BlendMode);
 	}
 
 	void ParticleEffectSerializer::DeserializeProperties(ryml::NodeRef node, ParticleEffectProperties& properties)
@@ -87,6 +88,10 @@ namespace Ember {
 		uint64_t textureHandle = (uint64_t)properties.TextureHandle;
 		Util::ReadField(node, "TextureHandle", textureHandle);
 		properties.TextureHandle = (UUID)textureHandle;
+
+		std::string blendMode = ParticleBlendModeToString(properties.BlendMode);
+		Util::ReadField(node, "BlendMode", blendMode);
+		properties.BlendMode = ParticleBlendModeFromString(blendMode);
 	}
 
 	bool ParticleEffectSerializer::SerializeSource(const std::filesystem::path& filepath, const SharedPtr<ParticleEffect>& effect)
@@ -182,6 +187,7 @@ namespace Ember {
 		WriteRaw(stream, properties.ScaleVariation);
 
 		WriteRaw(stream, (uint64_t)properties.TextureHandle);
+		WriteRaw(stream, (uint8_t)properties.BlendMode);
 		return true;
 	}
 
@@ -226,6 +232,10 @@ namespace Ember {
 		uint64_t textureHandle = 0;
 		ReadRaw(stream, textureHandle);
 		properties.TextureHandle = (UUID)textureHandle;
+
+		uint8_t blendMode = (uint8_t)ParticleBlendMode::Alpha;
+		ReadRaw(stream, blendMode);
+		properties.BlendMode = (ParticleBlendMode)blendMode;
 
 		return effect;
 	}

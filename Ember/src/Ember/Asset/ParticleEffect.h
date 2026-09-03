@@ -8,6 +8,32 @@
 
 namespace Ember {
 
+	// Alpha lets smoke darken what is behind it; Additive accumulates brightness so overlapping
+	// flame particles get hotter toward the core instead of converging on the nearest one.
+	enum class ParticleBlendMode : uint8_t
+	{
+		Alpha = 0,
+		Additive
+	};
+
+	inline const char* ParticleBlendModeToString(ParticleBlendMode mode)
+	{
+		switch (mode)
+		{
+		case ParticleBlendMode::Alpha:		return "Alpha";
+		case ParticleBlendMode::Additive:	return "Additive";
+		default:							return "Alpha";
+		}
+	}
+
+	inline ParticleBlendMode ParticleBlendModeFromString(const std::string& mode)
+	{
+		if (mode == "Additive")
+			return ParticleBlendMode::Additive;
+
+		return ParticleBlendMode::Alpha;
+	}
+
 	struct ParticleEffectProperties
 	{
 		float EmissionRate = 50.0f;
@@ -33,6 +59,7 @@ namespace Ember {
 		float ScaleVariation = 0.3f;
 
 		UUID TextureHandle = Constants::Assets::DefaultWhiteTexUUID;
+		ParticleBlendMode BlendMode = ParticleBlendMode::Alpha;
 
 		float Lifetime = 1.0f;
 		float LifetimeVariation = 0.2f;

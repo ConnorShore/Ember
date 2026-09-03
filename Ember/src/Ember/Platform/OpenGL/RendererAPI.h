@@ -15,7 +15,7 @@ namespace Ember {
 			virtual void CullFace(Face face) override;
 			virtual void UseDepthTest(bool use) override;
 			virtual void UseDepthMask(bool use) override;
-			virtual void UseBlending(bool use) override;
+			virtual void UseBlending(bool use, BlendMode mode) override;
 			virtual void UseCubeMapSeamless(bool use) override;
 			virtual void UseScissorTest(bool use) override;
 			virtual bool IsScissorTestEnabled() const override;
