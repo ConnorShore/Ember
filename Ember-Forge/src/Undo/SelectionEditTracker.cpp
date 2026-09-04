@@ -29,6 +29,14 @@ namespace Ember {
 			return;
 		}
 
+		// Closing or switching a tab swaps the scene mid-frame, and the baseline only describes the
+		// scene it was captured from - diffing it against a different one would push a bogus edit.
+		if (scene != m_BaselineScene)
+		{
+			Reset();
+			m_BaselineScene = scene;
+		}
+
 		// IsAnyItemActive stays true for a whole drag and for as long as a text field holds focus,
 		// which is exactly the window an edit should be coalesced over.
 		bool interacting = ImGui::IsAnyItemActive() || gizmoActive;
@@ -72,6 +80,7 @@ namespace Ember {
 		m_WasInteracting = false;
 		m_BaselineSelection.clear();
 		m_Baseline = EntitySetSnapshot();
+		m_BaselineScene = nullptr;
 	}
 
 }

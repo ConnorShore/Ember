@@ -142,6 +142,7 @@ namespace Ember {
 		const EditorViewportViewer* GetActiveViewer() const;
 		void OnViewportViewerActivated(size_t previousViewerIndex, size_t activeViewerIndex, EditorViewportViewer& activeViewer);
 		bool OnViewportViewerCloseRequested(size_t viewerIndex, EditorViewportViewer& viewer, bool saveBeforeClose);
+		void DropEntityStateForViewer(EditorViewportViewer& viewer);
 		void ActivateViewer(size_t viewerIndex);
 		bool CloseViewer(size_t viewerIndex, bool saveBeforeClose);
 		bool CloseAllViewers(bool savePrefabs);

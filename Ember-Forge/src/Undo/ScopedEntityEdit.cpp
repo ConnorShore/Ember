@@ -21,6 +21,7 @@ namespace Ember {
 		if (!scene || !m_Context.ActiveUndoStack())
 			return;
 
+		m_Scene = scene;
 		m_Active = true;
 		m_SelectionBefore = m_Context.SelectionUUIDs();
 		m_Before = EntitySetSnapshot::Capture(scene, m_Affected, m_IncludeDescendants);
@@ -45,7 +46,7 @@ namespace Ember {
 
 		auto scene = m_Context.ActiveScene();
 		UndoStack* undoStack = m_Context.ActiveUndoStack();
-		if (!scene || !undoStack)
+		if (!scene || scene != m_Scene || !undoStack)
 			return;
 
 		EntitySetSnapshot after = EntitySetSnapshot::Capture(scene, m_Affected, m_IncludeDescendants);

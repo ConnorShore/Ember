@@ -64,6 +64,9 @@ namespace Ember {
 		std::vector<ScopedPtr<EditorViewportViewer>> m_Viewers;
 		int m_ActiveViewerIndex = -1;
 		bool m_SyncActiveViewerSelection = false;
-		uint8_t m_ActiveTabIndex = 0;
+
+		// Set when a different tab becomes active and consumed by the next render, which is where the
+		// viewer can be handed the editor to open against.
+		bool m_PendingActiveViewerOpen = false;
 	};
 }

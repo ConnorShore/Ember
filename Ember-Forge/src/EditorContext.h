@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EditorPreferences.h"
-#include "Viewers/EditorViewportViewer.h"
+#include "Viewers/EditorViewportTabs.h"
 
 #include <Ember/Core/Application.h>
 #include <Ember/Scene/Scene.h>
@@ -75,10 +75,18 @@ namespace Ember {
 			SetSelection(entities);
 		}
 
+		// Derived from the tab list rather than cached, because closing a tab destroys its viewer and
+		// a stored pointer would dangle for the rest of the frame.
+		EditorViewportViewer* ActiveViewportViewer() const
+		{
+			return ViewportTabs ? ViewportTabs->GetActiveViewer() : nullptr;
+		}
+
 		// Undo history belongs to the scene in the active tab, not to the editor as a whole.
 		UndoStack* ActiveUndoStack() const
 		{
-			return ActiveViewportViewer ? &ActiveViewportViewer->GetUndoStack() : nullptr;
+			EditorViewportViewer* viewer = ActiveViewportViewer();
+			return viewer ? &viewer->GetUndoStack() : nullptr;
 		}
 
 		// Public because EditorContext must stay an aggregate for its designated-initialiser setup.
@@ -143,7 +151,9 @@ namespace Ember {
 		SharedPtr<Scene> ActiveScene() const { return Application::Instance().GetSceneManager().GetActiveScene(); }
 
 		SceneState CurrentSceneState = SceneState::Edit;
-		EditorViewportViewer* ActiveViewportViewer = nullptr;
+
+		// Owned by EditorLayer; the tabs are the single source of truth for which viewer is active.
+		EditorViewportTabs* ViewportTabs = nullptr;
 
 		bool IsEditingPrefab = false;
 		Entity PrefabRootEntity;

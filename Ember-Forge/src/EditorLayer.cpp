@@ -65,6 +65,7 @@ namespace Ember {
 			.SelectedEntity = m_InvalidEntity
 		};
 		m_Context.Preferences = &m_Preferences;
+		m_Context.ViewportTabs = &m_ViewportTabs;
 		m_Context.SpawnPosition = [this]() { return GetSpawnPosition(); };
 
 		m_EditorRenderPassSettings = {
@@ -1173,15 +1174,16 @@ namespace Ember {
 				}
 				else if (activeProject && control)
 				{
-					auto viewerType = m_Context.ActiveViewportViewer ? m_Context.ActiveViewportViewer->GetType() : EditorViewportViewer::Type::None;
+					EditorViewportViewer* activeViewer = m_Context.ActiveViewportViewer();
+					auto viewerType = activeViewer ? activeViewer->GetType() : EditorViewportViewer::Type::None;
 					if (viewerType == EditorViewportViewer::Type::Prefab)
 						SaveOpenPrefab();
 					else if (viewerType == EditorViewportViewer::Type::Animation)
-						static_cast<AnimationViewportViewer*>(m_Context.ActiveViewportViewer)->SaveAnimationStateMachine(this);
+						static_cast<AnimationViewportViewer*>(activeViewer)->SaveAnimationStateMachine(this);
 					else if (viewerType == EditorViewportViewer::Type::SkeletonMask)
-						static_cast<SkeletonMaskViewportViewer*>(m_Context.ActiveViewportViewer)->SaveSkeletonMask(this);
+						static_cast<SkeletonMaskViewportViewer*>(activeViewer)->SaveSkeletonMask(this);
 					else if (viewerType == EditorViewportViewer::Type::Particle)
-						static_cast<ParticleEffectViewportViewer*>(m_Context.ActiveViewportViewer)->SaveParticleEffect(this);
+						static_cast<ParticleEffectViewportViewer*>(activeViewer)->SaveParticleEffect(this);
 					else
 						SaveScene(false);
 				}
@@ -1703,7 +1705,8 @@ namespace Ember {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
 
-		auto viewportType = m_Context.ActiveViewportViewer ? m_Context.ActiveViewportViewer->GetType() : EditorViewportViewer::Type::None;
+		EditorViewportViewer* activeViewer = m_Context.ActiveViewportViewer();
+		auto viewportType = activeViewer ? activeViewer->GetType() : EditorViewportViewer::Type::None;
 		ImGui::BeginDisabled(m_Context.CurrentSceneState != SceneState::Edit);
 
 		// --- PLAY STANDALONE (Orange Tint) ---
@@ -1779,7 +1782,7 @@ namespace Ember {
 	void EditorLayer::RenderViewportControlsOverlay()
 	{
 		// The editor camera only drives the view in Edit mode; Play belongs to the scene camera.
-		if (m_Context.CurrentSceneState != SceneState::Edit || !m_Context.ActiveViewportViewer)
+		if (m_Context.CurrentSceneState != SceneState::Edit || !m_Context.ActiveViewportViewer())
 			return;
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
@@ -1908,6 +1911,10 @@ namespace Ember {
 		m_EditTracker.Reset();
 		m_Context.PendingEntityRemovals.clear();
 		m_Context.PendingComponentRemovals.clear();
+
+		// Outline bookkeeping holds handles too, and the scene they point at is what just went away.
+		m_PreviouslyOutlined.clear();
+		m_LastOutlinedSelection.clear();
 		m_EditorRenderPassSettings.SelectedEntity = Constants::Entities::InvalidEntityID;
 	}
 	
@@ -2675,15 +2682,51 @@ namespace Ember {
 		{
 			ActivateViewer(viewerIndex);
 
-			if (m_SavePrefabsWithoutPrompt)
-				return SaveOpenPrefab();
+			if (!m_SavePrefabsWithoutPrompt)
+			{
+				m_PendingPrefabCloseViewerIndex = static_cast<int>(viewerIndex);
+				m_ShowClosePrefabPrompt = true;
+				return false;
+			}
 
-			m_PendingPrefabCloseViewerIndex = static_cast<int>(viewerIndex);
-			m_ShowClosePrefabPrompt = true;
-			return false;
+			if (!SaveOpenPrefab())
+				return false;
 		}
 
+		DropEntityStateForViewer(viewer);
 		return true;
+	}
+
+	// An Entity is a handle plus a raw Scene*, so every editor-side cache of them has to be emptied of
+	// this tab's entities while its scene is still alive - the close destroys it moments later.
+	void EditorLayer::DropEntityStateForViewer(EditorViewportViewer& viewer)
+	{
+		auto scene = viewer.GetScene();
+		if (!scene)
+			return;
+
+		std::unordered_set<Entity> closing;
+		for (Entity entity : scene->GetAllEntities())
+		{
+			// Detached now rather than queued, since the deferred pass runs after the scene is gone.
+			if (entity.ContainsComponent<OutlineComponent>())
+				entity.DetachComponent<OutlineComponent>();
+
+			closing.insert(entity);
+		}
+
+		auto isClosing = [&closing](Entity entity) { return closing.contains(entity); };
+
+		std::erase_if(m_PreviouslyOutlined, isClosing);
+		std::erase_if(m_LastOutlinedSelection, isClosing);
+		std::erase_if(m_Context.SelectedEntities, isClosing);
+		std::erase_if(m_Context.PendingEntityRemovals, isClosing);
+		std::erase_if(m_Context.PendingComponentRemovals, [&isClosing](const auto& pending) { return isClosing(pending.first); });
+
+		m_Context.SyncActiveEntity();
+
+		if (isClosing(m_PreviousSelectedEntity))
+			m_PreviousSelectedEntity = Entity();
 	}
 
 	void EditorLayer::ActivateViewer(size_t viewerIndex)

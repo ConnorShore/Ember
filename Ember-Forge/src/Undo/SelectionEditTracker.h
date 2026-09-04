@@ -24,6 +24,10 @@ namespace Ember {
 		bool m_WasInteracting = false;
 		std::vector<UUID> m_BaselineSelection;
 		EntitySetSnapshot m_Baseline;
+
+		// A strong reference, so a closed tab's scene cannot be freed and its address reused by the
+		// scene that replaces it, which would defeat the identity check in OnFrameEnd.
+		SharedPtr<Scene> m_BaselineScene;
 	};
 
 }

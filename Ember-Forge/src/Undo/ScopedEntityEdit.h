@@ -30,6 +30,9 @@ namespace Ember {
 
 	private:
 		EditorContext& m_Context;
+
+		// The scene the capture was taken from; the diff is dropped if the active tab changed under us.
+		SharedPtr<Scene> m_Scene;
 		std::string m_Label;
 		std::vector<UUID> m_Affected;
 		std::vector<UUID> m_SelectionBefore;

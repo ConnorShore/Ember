@@ -51,8 +51,6 @@ namespace Ember {
 
 		if (m_Viewers.empty())
 		{
-			editor->GetContext().ActiveViewportViewer = nullptr;
-
 			ImGui::TextDisabled("No scene or prefab open.");
 			ImGui::End();
 			return false;
@@ -77,16 +75,15 @@ namespace Ember {
 
 					if (tabOpen)
 					{
-						// If first frame tab is opened, call viewer.OnOpen()
-						if (viewerIndex != m_ActiveTabIndex)
+						// Keyed off the activation rather than a remembered index, which closing a tab
+						// shifts out from under the viewer it named.
+						if (m_PendingActiveViewerOpen && static_cast<int>(viewerIndex) == m_ActiveViewerIndex)
 						{
 							viewer.OnOpen(editor);
-							m_ActiveTabIndex = static_cast<uint8_t>(viewerIndex);
+							m_PendingActiveViewerOpen = false;
 						}
 
 						// Give the concrete viewer control over its own ImGui render pass
-						editor->GetContext().ActiveViewportViewer = &viewer;
-
 						viewer.OnImGuiRender(editor);
 						renderedActiveTab = true;
 					}
@@ -188,6 +185,11 @@ namespace Ember {
 			return;
 
 		size_t previousViewerIndex = m_ActiveViewerIndex >= 0 ? static_cast<size_t>(m_ActiveViewerIndex) : static_cast<size_t>(-1);
+
+		// Re-activating the tab that is already active is not an open.
+		if (previousViewerIndex != viewerIndex)
+			m_PendingActiveViewerOpen = true;
+
 		m_ActiveViewerIndex = static_cast<int>(viewerIndex);
 		m_SyncActiveViewerSelection = true;
 		activateViewer(previousViewerIndex, viewerIndex, *m_Viewers[viewerIndex]);
@@ -202,10 +204,11 @@ namespace Ember {
 
 		bool closedActiveViewer = static_cast<int>(viewerIndex) == m_ActiveViewerIndex;
 		m_Viewers.erase(m_Viewers.begin() + static_cast<std::ptrdiff_t>(viewerIndex));
-		if (m_Viewers.empty()) 
-		{ 
+		if (m_Viewers.empty())
+		{
 			m_ActiveViewerIndex = -1;
-			return true; 
+			m_PendingActiveViewerOpen = false;
+			return true;
 		}
 
 		if (closedActiveViewer) 
@@ -225,6 +228,6 @@ namespace Ember {
 	}
 
 	void EditorViewportTabs::Clear() {
-		m_Viewers.clear(); m_ActiveViewerIndex = -1; m_SyncActiveViewerSelection = false;
+		m_Viewers.clear(); m_ActiveViewerIndex = -1; m_SyncActiveViewerSelection = false; m_PendingActiveViewerOpen = false;
 	}
 }

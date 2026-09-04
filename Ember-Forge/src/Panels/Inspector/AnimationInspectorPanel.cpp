@@ -75,7 +75,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::OnImGuiRender()
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 
 		auto selectedState = animationViewport->GetSelectedState();
 		auto selectedTransition = animationViewport->GetSelectedTransition();
@@ -128,7 +128,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderAnimationState(AnimationState* animState)
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 		std::string nodeLabel = std::format("Animation State: {}###AnimStateNode_{}", animState->Name, animState->Id);
 		if (UI::Nodes::BeginRemoveableExpandableNode(nodeLabel, [&]() {
 			animationViewport->DeleteNode(animState->Id);
@@ -138,7 +138,7 @@ namespace Ember {
 			{
 				if (UI::PropertyGrid::InputText("Name", animState->Name))
 				{
-					auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+					auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 					animationViewport->RenameNode(animState->Id, animState->Name);
 				}
 
@@ -174,7 +174,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderAnimationTransition(AnimationTransition* animTransition)
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 		auto* stateMachine = animationViewport->GetEditableStateMachine();
 		if (!stateMachine)
 			return;
@@ -249,7 +249,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderTransitionConditions(AnimationTransition* animTransition)
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 		auto* stateMachine = animationViewport->GetEditableStateMachine();
 		auto controller = animationViewport->GetAnimationController();
 		if (!stateMachine || !controller)
@@ -429,7 +429,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderAddParameterPopup()
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 		auto controller = animationViewport->GetAnimationController();
 		if (!controller)
 			return;
@@ -485,7 +485,7 @@ namespace Ember {
 
 	void AnimationInspectorPanel::RenderAnimationParametersTable()
 	{
-		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer);
+		auto animationViewport = static_cast<AnimationViewportViewer*>(m_Context->ActiveViewportViewer());
 		auto controller = animationViewport->GetAnimationController();
 		if (!controller)
 			return;
