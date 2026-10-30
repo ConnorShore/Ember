@@ -61,6 +61,34 @@ namespace {
 			scene.OnUpdateEdit(Ember::Test::FixedStep(), settings);
 	}
 
+	// Same fixed camera as above, but with a selectable projection type and no golden-image
+	// obligations, so the ortho variant is free to differ from the committed references.
+	void RenderSkyboxToBackbuffer(Scene& scene, Camera::ProjectionType projection, int passes = 2)
+	{
+		const Viewport viewport = WindowViewport();
+		Sys<RenderSystem>()->OnViewportResize(viewport.Width, viewport.Height);
+
+		Camera camera;
+		camera.SetPerspective(60.0f, 0.1f, 100.0f);
+		camera.SetViewportSize(viewport.Width, viewport.Height);
+
+		// Ortho props first: SetOrthographic rebuilds the matrix for the type that is still current.
+		if (projection == Camera::ProjectionType::Orthographic)
+		{
+			camera.SetOrthographic(10.0f, -100.0f, 100.0f);
+			camera.SetProjectionType(Camera::ProjectionType::Orthographic);
+		}
+
+		RenderPassSettings settings;
+		settings.ActiveCamera = &camera;
+		settings.CameraTransform = Math::Inverse(Math::LookAt(Vector3f(0.0f, 2.0f, 5.0f), Vector3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f)));
+		settings.ScreenSpaceMode = ScreenSpaceRenderMode::None;
+
+		RenderAction::SetViewport(0, 0, viewport.Width, viewport.Height);
+		for (int i = 0; i < passes; ++i)
+			scene.OnUpdateEdit(Ember::Test::FixedStep(), settings);
+	}
+
 	// Compares the current back buffer to a golden, minting it instead when EMBER_TEST_WRITE_GOLDEN
 	// is set and skipping when the golden does not exist yet.
 	void CompareToGolden(const std::string& goldenName, int channelTolerance = 16, double maxDiffFraction = 0.02)
@@ -213,6 +241,43 @@ EB_TEST_CASE(Render, EmptySceneIsDarkButDoesNotCrash, Visual)
 
 	// Whatever it draws, it must not be a saturated white screen.
 	EB_EXPECT_LT(stats.WhiteFraction, 0.5);
+}
+
+EB_TEST_CASE(Render, OrthographicSkyboxFillsTheViewLikePerspective, Visual)
+{
+	// An orthographic projection has no per-vertex w, so the skybox shader's push-to-the-far-plane
+	// trick used to collapse the sky cube into a small quad at the origin instead of filling the
+	// view. Relative to the perspective frame, so it is machine-independent.
+	Ember::Test::RequireDefaultAssets();
+
+	SharedPtr<Skybox> skybox = Sys<RenderSystem>()->GetSkybox();
+	EB_CHECK_MSG(skybox != nullptr, "the render system has no skybox to draw");
+
+	const bool wasEnabled = skybox->Enabled();
+	skybox->SetEnabled(true);
+
+	SceneFixture scene("VisualOrthoSkyboxScene");
+
+	RenderSkyboxToBackbuffer(*scene, Camera::ProjectionType::Perspective);
+	const Viewport viewport = WindowViewport();
+	const RenderSystem::BackbufferStats perspective =
+		RenderSystem::ComputeBackbufferStats(viewport.Width, viewport.Height);
+
+	RenderSkyboxToBackbuffer(*scene, Camera::ProjectionType::Orthographic);
+	const RenderSystem::BackbufferStats orthographic =
+		RenderSystem::ComputeBackbufferStats(viewport.Width, viewport.Height);
+
+	skybox->SetEnabled(wasEnabled);
+
+	EB_CHECK(perspective.Valid);
+	EB_CHECK(orthographic.Valid);
+
+	EB_NOTE("perspective mean luminance " + std::to_string(perspective.MeanLuminance)
+		+ ", orthographic " + std::to_string(orthographic.MeanLuminance));
+
+	// Both cameras look the same way with the same field of view, so a sky that fills the frame
+	// lands at near-identical exposure. The collapsed cube leaves most of the frame unpainted.
+	EB_EXPECT_NEAR(orthographic.MeanLuminance, perspective.MeanLuminance, 0.05);
 }
 
 //////////////////////////////////////////////////////////////////////////

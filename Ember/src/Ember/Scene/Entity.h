@@ -61,7 +61,7 @@ namespace Ember {
 		inline EntityID GetEntityHandle() const { return m_EntityHandle; }
 		UUID GetUUID() const;
 		const std::string& GetName() const;
-		const bool IsValid() const { return m_EntityHandle != Constants::Entities::InvalidEntityID; }
+		const bool IsValid() const { return m_EntityHandle != Constants::Entities::InvalidEntityID && m_SceneHandle != nullptr; }
 
 		// Must stay const: a non-const conversion binds the implicit object argument better than
 		// `operator bool() const`, so a boolean context would silently select this one and invert.

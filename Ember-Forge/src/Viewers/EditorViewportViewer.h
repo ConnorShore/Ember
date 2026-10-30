@@ -39,6 +39,7 @@ namespace Ember {
 		virtual void OnOpen(EditorLayer* editor) {}
 		virtual void OnUpdate(TimeStep delta, EditorLayer* editor) {}
 		virtual void OnImGuiRender(EditorLayer* editor) = 0;
+		virtual void OnRenderOverlays(EditorLayer* editor, TimeStep delta) {}
 
 		// History is per tab, so a scene and a prefab being edited side by side never share a stack;
 		// closing the tab discards it.

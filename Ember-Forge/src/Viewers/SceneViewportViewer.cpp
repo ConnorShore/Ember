@@ -3,6 +3,8 @@
 #include "SceneViewportViewer.h"
 #include "EditorLayer.h"
 #include "UI/DragDropTypes.h"
+#include "UI/Overlays/ProjectionOverlay.h"
+#include "UI/Overlays/StatsOverlay.h"
 
 #include <imgui/imgui.h>
 
@@ -100,5 +102,15 @@ namespace Ember {
 		}
 
 		editor->GetViewportGizmos().Render(&context, editor->GetCamera(), editor->GetViewportBounds(), editor->GetGizmoType());
+	}
+
+	void SceneViewportViewer::OnRenderOverlays(EditorLayer* editor, TimeStep delta)
+	{
+		UI::ViewportOverlayPlacement placement;
+
+		if (editor->IsStatsOverlayVisible())
+			placement.Position.y += UI::StatsOverlay::Draw(editor, placement, delta).y + 8.0f;
+
+		UI::ProjectionOverlay::Draw(editor, placement);
 	}
 }

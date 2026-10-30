@@ -86,6 +86,9 @@ namespace Ember {
 					auto& targetTransform = targetEntity.GetComponent<TransformComponent>();
 
 					auto gridEntity = scene->GetEntity(agentComp.GridEntity);
+					if (!gridEntity.IsValid())
+						continue;
+
 					Vector3f startPos = transform.GetWorldTransform()[3];
 					Vector3f targetPos = targetTransform.GetWorldTransform()[3];
 

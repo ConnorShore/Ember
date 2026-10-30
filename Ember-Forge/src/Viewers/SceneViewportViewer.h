@@ -9,6 +9,7 @@ namespace Ember {
 	public:
 		SceneViewportViewer(SharedPtr<Scene> scene, const std::string& filePath, const std::string& title);
 		virtual void OnImGuiRender(EditorLayer* editor) override;
+		virtual void OnRenderOverlays(EditorLayer* editor, TimeStep delta) override;
 	};
 
 }

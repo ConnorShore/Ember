@@ -15,6 +15,7 @@ namespace Ember {
 
 		virtual void OnOpen(EditorLayer* editor) override;
 		virtual void OnImGuiRender(EditorLayer* editor) override;
+		virtual void OnRenderOverlays(EditorLayer* editor, TimeStep delta) override;
 
 		void RefreshPrefab();
 

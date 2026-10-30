@@ -6,6 +6,7 @@
 #include "ProjectSettingsDialog.h"
 #include "WelcomeDialog.h"
 #include "Utils/ViewportGizmoController.h"
+#include "UI/Overlays/ViewportOverlay.h"
 #include "Undo/SelectionEditTracker.h"
 #include "Viewers/EditorViewportTabs.h"
 
@@ -50,6 +51,11 @@ namespace Ember {
 		void SetViewportBounds(const Vector2f& min, const Vector2f& max) { m_ViewportBounds[0] = min; m_ViewportBounds[1] = max; }
 		Vector2f* GetViewportBounds() { return m_ViewportBounds; }
 		void SetCameraPreviewViewportSize(const Vector2f& size) { m_CameraPreviewViewportSize = size; }
+
+		// The rendered image starts below the viewport tab bar rather than at m_ViewportBounds[0],
+		// since the image is anchored to the bottom of the content region.
+		UI::ViewportImageRect GetViewportImageRect() const { return { { m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportSize.y }, m_ViewportBounds[1] }; }
+		bool IsStatsOverlayVisible() const { return m_ShowStatsWindow; }
 
 		// Where a newly created entity should go: the surface under the cursor when there is one, so
 		// nothing silently lands at the world origin underneath the level.
@@ -100,14 +106,7 @@ namespace Ember {
 		// Viewport-local pixel under the cursor, Y flipped for OpenGL; false when outside the image.
 		bool TryGetViewportPixel(int& outX, int& outY) const;
 
-		void RenderStatsOverlay(TimeStep delta);
-		void RenderViewportControlsOverlay();
-		float CalculateFPS(TimeStep delta);
 		void ClearEntitySelectionState();
-
-		// Top edge of the rendered image, which starts below the viewport tab bar rather than at
-		// m_ViewportBounds[0] - the image is anchored to the bottom of the content region.
-		float ViewportImageTop() const { return m_ViewportBounds[1].y - m_ViewportSize.y; }
 
 		void CreateEntity();
 		void RemoveEntity(Entity entity);
@@ -236,9 +235,6 @@ namespace Ember {
 		bool m_SavePrefabsWithoutPrompt = false;
 		int m_PendingPrefabCloseViewerIndex = -1;
 
-		// Height already taken by overlays above, so viewport overlays stack instead of overlapping.
-		float m_ViewportOverlayOffsetY = 0.0f;
-
 		Entity m_PreviousSelectedEntity = m_InvalidEntity;
 
 		// Which entities currently carry an OutlineComponent, and the selection that produced them.
@@ -279,11 +275,5 @@ namespace Ember {
 			uint32_t PauseButtonTextureID;
 			uint32_t StopButtonTextureID;
 		} m_ToolbarProps;
-
-		struct ViewportOverlayProps
-		{
-			uint32_t PerspectiveTextureID;
-			uint32_t OrthographicTextureID;
-		} m_ViewportOverlayProps;
 	};
 }

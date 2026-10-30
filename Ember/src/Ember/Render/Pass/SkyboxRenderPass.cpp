@@ -8,6 +8,15 @@
 
 namespace Ember {
 
+	static Matrix4f SkyProjection(const Camera& camera)
+	{
+		if (!camera.IsOrthographic())
+			return camera.GetProjectionMatrix();
+
+		const auto& perspective = camera.GetPerspectiveProps();
+		return Math::Perspective(perspective.FieldOfView, camera.GetAspectRatio(), perspective.NearClip, perspective.FarClip);
+	}
+
 	void SkyboxRenderPass::Init()
 	{
 		auto& assetManager = Application::Instance().GetAssetManager();
@@ -30,7 +39,7 @@ namespace Ember {
 		auto skyboxShader = Application::Instance().GetAssetManager().GetAsset<Shader>(Constants::Assets::SkyboxShad);
 		skyboxShader->Bind();
 
-		skyboxShader->SetMatrix4(Constants::Uniforms::Projection, context.ActiveCamera->GetProjectionMatrix());
+		skyboxShader->SetMatrix4(Constants::Uniforms::Projection, SkyProjection(*context.ActiveCamera));
 		skyboxShader->SetMatrix4(Constants::Uniforms::View, Math::Inverse(context.CameraTransform));
 
 		// Bind the cubemap
